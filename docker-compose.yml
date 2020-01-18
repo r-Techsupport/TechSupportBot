@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+
+    basement_bot:
+        image: effprime/basement-bot
+        container_name: basement_bot
+        build: .
+        env_file: .env
