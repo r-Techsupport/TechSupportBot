@@ -21,6 +21,7 @@ class PluginLoader:
         """Adds functions as commands from the plugins directory.
         """
         for plugin in self._get_modules():
+            logging.info(f"Loading: {plugin}")
             self.bot.load_extension(plugin)
 
     @staticmethod

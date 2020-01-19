@@ -1,5 +1,6 @@
-from discord.ext import commands
 from random import choice
+
+from discord.ext import commands
 
 
 def setup(bot):
