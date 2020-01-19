@@ -1,4 +1,4 @@
-"""Basement Bot main thread
+"""Basement Bot main thread.
 """
 
 import os
