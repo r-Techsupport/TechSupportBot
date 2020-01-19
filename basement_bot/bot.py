@@ -1,9 +1,10 @@
 """Module for the main bot object.
 """
-
 import logging
+import os
 
 from discord.ext.commands import Bot
+from discord import Game
 
 from plugin import PluginLoader
 
@@ -16,9 +17,10 @@ class BasementBot(Bot):
         debug (bool): True if debug mode enabled
     """
 
-    def __init__(self, command_prefix, debug):
+    def __init__(self, command_prefix, debug, game=None):
         self.command_prefix = command_prefix
         self.debug = debug
+        self.game = game
         super().__init__(command_prefix)
 
         self._set_logging()
@@ -27,19 +29,12 @@ class BasementBot(Bot):
         self.plugin_loader.load_plugins()
 
     async def on_ready(self):
-        """Logs startup success. Runs after initialization is complete.
+        """Runs final setup steps.
         """
+        if self.game:
+            await self.change_presence(activity=Game(name=self.game))
         logging.info(f"Initialization complete")
         logging.info(f"Commands available with the `{self.command_prefix}` prefix")
-
-    async def on_error(self, event, *args, **kwargs):
-        """Logs any errors handled on an event.
-            
-        parameters:
-            event (discord.Event): the event on which the error is handled
-        """
-        error = f"Error when running {event}: {args}, {kwargs}"
-        logging.error(error)
 
     def _set_logging(self):
         """Sets logging level.
