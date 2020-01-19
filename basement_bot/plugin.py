@@ -3,6 +3,7 @@
 import glob
 import logging
 from os.path import basename, dirname, isfile, join
+import os
 
 from discord.ext import commands
 
@@ -35,3 +36,18 @@ class PluginLoader:
             if isfile(f) and not f.endswith("__init__.py")
         ]
         return module_names
+
+
+# Utility functions
+
+
+def get_api_key(name):
+    """Grabs an API key from the environment and fails if nothing is found.
+
+    parameters:
+        name (str): the name of the environmental variable
+    """
+    key = os.environ.get(name, None)
+    if not key:
+        logging.error(f"Unable to locate API key name {name}")
+    return key
