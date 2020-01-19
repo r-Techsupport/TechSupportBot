@@ -1,14 +1,25 @@
+"""Module for plugin loading.
+"""
+
 import logging
 from os.path import dirname, basename, isfile, join
 import importlib
 import glob
 
 class PluginLoader():
+    """Handles plugin loading.
+
+    parameters:
+        bot (discord.ext.commands.Bot): the bot object to which plugins are loading
+    """
 
     def __init__(self, bot):
         self.bot = bot
 
     def load_plugins(self):
+        """Adds functions as commands from the plugins directory.
+        """
+
         wildcard = f"{join(dirname(__file__))}/plugins/*.py"
         files = glob.glob(wildcard)
         module_names = [ 
