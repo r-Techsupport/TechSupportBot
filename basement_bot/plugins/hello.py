@@ -7,4 +7,4 @@ def setup(bot):
 
 @commands.command(name="hello")
 async def hello(ctx):
-    await ctx.send("Hello to you!")
+    await ctx.send(f"Hello, {ctx.author}!")

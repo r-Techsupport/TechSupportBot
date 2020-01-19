@@ -1,9 +1,10 @@
-"""Module for plugin loading.
+"""Module for plugin functions.
 """
+
 import glob
 import logging
-from os.path import basename, dirname, isfile, join
 import os
+from os.path import basename, dirname, isfile, join
 
 from discord.ext import commands
 
