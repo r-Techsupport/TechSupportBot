@@ -3,18 +3,19 @@
 
 import logging
 
-from plugin import PluginLoader
-
 from discord.ext.commands import Bot
+
+from plugin import PluginLoader
 
 
 class BasementBot(Bot):
-    """Handles initialization and event handlers.
+    """Defines initialization and event handlers.
 
     parameters:
         command_prefix (str): the prefix for commands
         debug (bool): True if debug mode enabled
     """
+
     def __init__(self, command_prefix, debug):
         self.command_prefix = command_prefix
         self.debug = debug
@@ -30,7 +31,6 @@ class BasementBot(Bot):
         """
         logging.info(f"Initialization complete")
         logging.info(f"Commands available with the `{self.command_prefix}` prefix")
-        logging.debug("Debug logging enabled")
 
     async def on_error(self, event, *args, **kwargs):
         """Logs any errors handled on an event.
@@ -44,6 +44,5 @@ class BasementBot(Bot):
     def _set_logging(self):
         """Sets logging level.
         """
-        logging.getLogger().setLevel(
-            logging.DEBUG if self.debug else logging.INFO
-        )
+        logging.getLogger().setLevel(logging.DEBUG if self.debug else logging.INFO)
+        logging.debug("Debug logging enabled")
