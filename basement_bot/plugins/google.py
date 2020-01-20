@@ -11,6 +11,7 @@ def setup(bot):
 @commands.command(name="g")
 async def google(ctx, *args):
     if not CSE_ID or not DEV_KEY:
+        await ctx.send("Looks like I'm missing some API keys. RIP!")
         return
 
     args = " ".join(args)
