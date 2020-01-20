@@ -12,4 +12,4 @@ verify_ssl = true
 "psycopg2-binary" = "==2.8.4"
 
 [requires]
-python_version = "3.7"do
+python_version = "3.7"
