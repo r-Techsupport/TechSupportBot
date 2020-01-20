@@ -1,9 +1,8 @@
 from discord.ext import commands
 
 from database import DatabaseHandler
-from sqlalchemy import Column, Integer, String
-
 from plugin import tagged_response
+from sqlalchemy import Column, Integer, String
 
 db_handler = DatabaseHandler()
 
@@ -46,9 +45,11 @@ async def add_factoid(ctx, arg1, *args):
         await tagged_response(ctx, f"Successfully added factoid trigger: *{arg1}*")
 
     except Exception:
-        await tagged_response(ctx, "I ran into an issue handling your factoid addition...")
+        await tagged_response(
+            ctx, "I ran into an issue handling your factoid addition..."
+        )
         raise RuntimeError("Error handling new factoid information")
-        
+
 
 @commands.command(name="f")
 async def delete_factoid(ctx, arg):
@@ -62,9 +63,11 @@ async def delete_factoid(ctx, arg):
         await tagged_response(ctx, f"Successfully deleted factoid trigger: *{arg}*")
 
     except Exception:
-        await tagged_response(ctx, "I ran into an issue handling your factoid deletion...")
+        await tagged_response(
+            ctx, "I ran into an issue handling your factoid deletion..."
+        )
         raise RuntimeError("Error querying/deleting factoid")
-        
+
 
 @commands.command(name="q")
 async def get_factoid(ctx, arg):
