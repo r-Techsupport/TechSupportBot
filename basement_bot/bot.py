@@ -3,8 +3,8 @@
 import logging
 import os
 
-from discord.ext.commands import Bot
 from discord import Game
+from discord.ext.commands import Bot
 
 from plugin import PluginLoader
 

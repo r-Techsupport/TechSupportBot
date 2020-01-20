@@ -3,6 +3,8 @@ import json
 import requests
 from discord.ext import commands
 
+from plugin import tagged_response
+
 
 def setup(bot):
     bot.add_command(urban)
@@ -14,7 +16,7 @@ async def urban(ctx, *args):
     definitions = requests.get(f"{BASE_URL}{arg}").json().get("list")
 
     if not definitions:
-        await ctx.send(f"No results found for: *{arg}*")
+        await tagged_response(ctx, f"No results found for: *{arg}*")
         return
 
     message = (
@@ -24,8 +26,9 @@ async def urban(ctx, *args):
         .replace("]", "")
         .replace("\n", "")
     )
-    await ctx.send(
-        f'*{message}* ... (See more results: {SEE_MORE_URL}{arg.replace(" ","%20")})'
+    await tagged_response(
+        ctx,
+        f'*{message}* ... (See more results: {SEE_MORE_URL}{arg.replace(" ","%20")})',
     )
 
 

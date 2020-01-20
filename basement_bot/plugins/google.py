@@ -1,7 +1,7 @@
 import requests
 from discord.ext import commands
 
-from plugin import get_api_key
+from plugin import get_api_key, tagged_response
 
 
 def setup(bot):
@@ -11,7 +11,7 @@ def setup(bot):
 @commands.command(name="g")
 async def google(ctx, *args):
     if not CSE_ID or not DEV_KEY:
-        await ctx.send("Looks like I'm missing some API keys. RIP!")
+        await tagged_response(ctx, "Looks like I'm missing some API keys. RIP!")
         return
 
     args = " ".join(args)
@@ -22,10 +22,10 @@ async def google(ctx, *args):
     )
 
     if not parsed:
-        await ctx.send(f"No results found for: *{args}*")
+        await tagged_response(ctx, f"No results found for: *{args}*")
         return
 
-    await ctx.send(parsed[0].get("link"))
+    await tagged_response(ctx, parsed[0].get("link"))
 
 
 CSE_ID = get_api_key("GOOGLE_CSE_ID")

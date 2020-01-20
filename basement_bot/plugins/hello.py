@@ -1,5 +1,7 @@
 from discord.ext import commands
 
+from plugin import tagged_response
+
 
 def setup(bot):
     bot.add_command(hello)
@@ -7,4 +9,4 @@ def setup(bot):
 
 @commands.command(name="hello")
 async def hello(ctx):
-    await ctx.send(f"Hello, {ctx.author}!")
+    await tagged_response(ctx, "Hello!")

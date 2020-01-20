@@ -52,3 +52,7 @@ def get_api_key(name):
     if not key:
         logging.error(f"Unable to locate API key name {name}")
     return key
+
+
+async def tagged_response(ctx, message):
+    await ctx.send(f"{ctx.message.author.mention} {message}")
