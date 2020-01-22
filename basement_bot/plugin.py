@@ -30,7 +30,7 @@ class PluginLoader:
 
             except Exception as e:
                 logging.error(f"Failed to load {plugin}: {e}")
-            
+
     @staticmethod
     def _get_modules():
         """Gets the list of plugin modules.
