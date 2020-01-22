@@ -10,7 +10,7 @@ from discord.ext import commands
 
 
 class PluginLoader:
-    """Handles plugin loading.
+    """Wrapper for plugin loading.
 
     parameters:
         bot (BasementBot): the bot object to which plugins are loading

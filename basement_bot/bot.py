@@ -15,6 +15,7 @@ class BasementBot(Bot):
     parameters:
         command_prefix (str): the prefix for commands
         debug (bool): True if debug mode enabled
+        game (str): the game title to display
     """
 
     def __init__(self, command_prefix, debug, game=None):
