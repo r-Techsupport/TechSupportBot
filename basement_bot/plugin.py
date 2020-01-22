@@ -13,7 +13,7 @@ class PluginLoader:
     """Handles plugin loading.
 
     parameters:
-        bot (discord.ext.commands.Bot): the bot object to which plugins are loading
+        bot (BasementBot): the bot object to which plugins are loading
     """
 
     def __init__(self, bot):
@@ -23,34 +23,40 @@ class PluginLoader:
         """Adds functions as commands from the plugins directory.
         """
         for plugin in self._get_modules():
-            logging.info(f"Loading: {plugin}")
-            self.bot.load_extension(plugin)
+            logging.info(f"Loading plugin module {plugin}")
 
+            try:
+                self.bot.load_extension(plugin)
+
+            except Exception as e:
+                logging.error(f"Failed to load {plugin}: {e}")
+            
     @staticmethod
     def _get_modules():
         """Gets the list of plugin modules.
         """
         files = glob.glob(f"{join(dirname(__file__))}/plugins/*.py")
-        module_names = [
+        return [
             f"plugins.{basename(f)[:-3]}"
             for f in files
             if isfile(f) and not f.endswith("__init__.py")
         ]
-        return module_names
 
 
 # Utility functions
 
 
-def get_api_key(name):
+def get_api_key(name, raise_exception=True):
     """Grabs an API key from the environment and fails if nothing is found.
 
     parameters:
         name (str): the name of the environmental variable
+        raise_exception (bool): True if an exception should be raised 
     """
     key = os.environ.get(name, None)
     if not key:
-        logging.error(f"Unable to locate API key name {name}")
+        if raise_exception:
+            raise NameError(f"Unable to locate API key name {name}")
     return key
 
 
