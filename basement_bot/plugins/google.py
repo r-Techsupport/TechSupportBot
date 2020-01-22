@@ -28,6 +28,6 @@ async def google(ctx, *args):
     await tagged_response(ctx, parsed[0].get("link"))
 
 
-CSE_ID = get_api_key("GOOGLE_CSE_ID")
-DEV_KEY = get_api_key("GOOGLE_DEV_KEY")
+CSE_ID = get_api_key("GOOGLE_CSE_ID", raise_exception=False)
+DEV_KEY = get_api_key("GOOGLE_DEV_KEY", raise_exception=False)
 API_URL = "https://www.googleapis.com/customsearch/v1"
