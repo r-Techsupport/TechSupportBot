@@ -1,8 +1,8 @@
 from discord.ext import commands
+from sqlalchemy import Column, Integer, String
 
 from database import DatabaseHandler
 from plugin import tagged_response
-from sqlalchemy import Column, Integer, String
 
 db_handler = DatabaseHandler()
 
