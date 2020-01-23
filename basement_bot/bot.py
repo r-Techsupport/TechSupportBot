@@ -6,7 +6,10 @@ import os
 from discord import Game
 from discord.ext.commands import Bot
 
+from logger import get_logger
 from plugin import PluginLoader
+
+log = get_logger("Basement Bot")
 
 
 class BasementBot(Bot):
@@ -14,17 +17,13 @@ class BasementBot(Bot):
 
     parameters:
         command_prefix (str): the prefix for commands
-        debug (bool): True if debug mode enabled
         game (str): the game title to display
     """
 
-    def __init__(self, command_prefix, debug, game=None):
+    def __init__(self, command_prefix, game=None):
         self.command_prefix = command_prefix
-        self.debug = debug
         self.game = game
         super().__init__(command_prefix)
-
-        self._set_logging()
 
         self.plugin_loader = PluginLoader(self)
         self.plugin_loader.load_plugins()
@@ -34,11 +33,5 @@ class BasementBot(Bot):
         """
         if self.game:
             await self.change_presence(activity=Game(name=self.game))
-        logging.info(f"Initialization complete")
-        logging.info(f"Commands available with the `{self.command_prefix}` prefix")
-
-    def _set_logging(self):
-        """Sets logging level.
-        """
-        logging.getLogger().setLevel(logging.DEBUG if self.debug else logging.INFO)
-        logging.debug("Debug logging enabled")
+        log.info(f"Initialization complete")
+        log.info(f"Commands available with the `{self.command_prefix}` prefix")

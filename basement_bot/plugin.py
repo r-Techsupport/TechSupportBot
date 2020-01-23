@@ -8,6 +8,10 @@ from os.path import basename, dirname, isfile, join
 
 from discord.ext import commands
 
+from logger import get_logger
+
+log = get_logger("Plugin Loader")
+
 
 class PluginLoader:
     """Wrapper for plugin loading.
@@ -23,13 +27,13 @@ class PluginLoader:
         """Adds functions as commands from the plugins directory.
         """
         for plugin in self._get_modules():
-            logging.info(f"Loading plugin module {plugin}")
+            log.info(f"Loading plugin module {plugin}")
 
             try:
                 self.bot.load_extension(plugin)
 
             except Exception as e:
-                logging.exception(f"Failed to load {plugin}: {str(e)}")
+                log.exception(f"Failed to load {plugin}: {str(e)}")
 
     @staticmethod
     def _get_modules():
