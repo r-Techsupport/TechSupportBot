@@ -11,3 +11,12 @@ test:
 
 build:
 	docker build -t basementbot-image .
+
+up:
+	docker-compose up -d
+
+down:
+	docker-compose down
+
+logs:
+	docker logs basement_bot -f

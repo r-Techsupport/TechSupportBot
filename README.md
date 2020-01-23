@@ -51,3 +51,15 @@ Each command must have its first arg as `ctx` which is the context for the comma
 There are utility functions in `plugin.py` for helping with this process. For example, `tagged_response` sends a message with the command author tagged.
 
 For more information, see [the Discord.py docs](https://discordpy.readthedocs.io/en/latest/ext/commands/commands.html).
+
+## Makefile
+
+The Makefile offers shortcut commands for development.
+
+* `check-format` checks the formatting without changing files.
+* `format` checks formatting and changes files.
+* `test` runs unit tests.
+* `build` builds the Docker image.
+* `up` spins up the container suite.
+* `down` brings down the container suite.
+* `logs` shows the main container logs.
