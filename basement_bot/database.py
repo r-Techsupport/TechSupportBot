@@ -1,8 +1,14 @@
+"""Module for handling database interactions.
+"""
+
+import logging
 import os
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
+from utils import get_env_value
 
 
 class DatabaseHandler:
@@ -11,8 +17,8 @@ class DatabaseHandler:
 
     def __init__(self):
 
-        env_info = self._get_env()
-        db_string = f'postgres://admin:{env_info["password"]}@db/basement_bot'
+        db_string = self._get_db_string()
+        logging.debug(f"Connecting to DB: {db_string}")
 
         self.engine = create_engine(db_string, echo=True)
         self.Session = sessionmaker(bind=self.engine)
@@ -24,13 +30,14 @@ class DatabaseHandler:
         self.Base.metadata.create_all(self.engine)
 
     @staticmethod
-    def _get_env():
+    def _get_db_string():
         """Gathers database environmental information.
         """
-        data = {}
-        password = os.environ.get("POSTGRES_PASSWORD")
-        if not password:
-            raise RuntimeError("Unable to get database password from environment")
-        data["password"] = password
 
-        return data
+        user = get_env_value("DB_USER")
+        name = get_env_value("DB_NAME")
+        address = get_env_value("DB_ADDRESS")
+        password = get_env_value("DB_PASSWORD")
+        prefix = get_env_value("DB_PREFIX")
+
+        return f"{prefix}://{user}:{password}@{address}/{name}"

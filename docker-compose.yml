@@ -3,7 +3,7 @@ version: '3'
 services:
 
     bot:
-        image: effprime/basement-bot
+        image: effprime/basement-bot:latest
         container_name: basement_bot
         build: .
         env_file: .env
@@ -14,5 +14,11 @@ services:
         image: postgres:12.0-alpine
         container_name: basement_bot_db
         volumes:
-            - ./db:/var/lib/postgresql/data/
-        env_file: .env
+            - db_volume:/var/lib/postgresql/data/
+        environment:
+            - POSTGRES_USER=${DB_USER}
+            - POSTGRES_PASS=${DB_PASSWORD}
+            - POSTGRES_DB=${DB_NAME}
+
+volumes:
+    db_volume:

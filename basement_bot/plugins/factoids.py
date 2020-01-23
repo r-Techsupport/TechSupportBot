@@ -2,7 +2,7 @@ from discord.ext import commands
 from sqlalchemy import Column, Integer, String
 
 from database import DatabaseHandler
-from plugin import tagged_response
+from utils import tagged_response
 
 db_handler = DatabaseHandler()
 

@@ -29,7 +29,7 @@ class PluginLoader:
                 self.bot.load_extension(plugin)
 
             except Exception as e:
-                logging.error(f"Failed to load {plugin}: {e}")
+                logging.exception(f"Failed to load {plugin}: {str(e)}")
 
     @staticmethod
     def _get_modules():
@@ -41,24 +41,3 @@ class PluginLoader:
             for f in files
             if isfile(f) and not f.endswith("__init__.py")
         ]
-
-
-# Utility functions
-
-
-def get_api_key(name, raise_exception=True):
-    """Grabs an API key from the environment and fails if nothing is found.
-
-    parameters:
-        name (str): the name of the environmental variable
-        raise_exception (bool): True if an exception should be raised 
-    """
-    key = os.environ.get(name, None)
-    if not key:
-        if raise_exception:
-            raise NameError(f"Unable to locate API key name {name}")
-    return key
-
-
-async def tagged_response(ctx, message):
-    await ctx.send(f"{ctx.message.author.mention} {message}")

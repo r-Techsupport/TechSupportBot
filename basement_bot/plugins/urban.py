@@ -3,7 +3,7 @@ import json
 import requests
 from discord.ext import commands
 
-from plugin import tagged_response
+from utils import tagged_response
 
 
 def setup(bot):

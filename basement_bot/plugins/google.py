@@ -1,7 +1,7 @@
 import requests
 from discord.ext import commands
 
-from plugin import get_api_key, tagged_response
+from utils import get_env_value, tagged_response
 
 
 def setup(bot):
@@ -28,6 +28,6 @@ async def google(ctx, *args):
     await tagged_response(ctx, parsed[0].get("link"))
 
 
-CSE_ID = get_api_key("GOOGLE_CSE_ID", raise_exception=False)
-DEV_KEY = get_api_key("GOOGLE_DEV_KEY", raise_exception=False)
+CSE_ID = get_env_value("GOOGLE_CSE_ID", raise_exception=False)
+DEV_KEY = get_env_value("GOOGLE_DEV_KEY", raise_exception=False)
 API_URL = "https://www.googleapis.com/customsearch/v1"
