@@ -1,9 +1,6 @@
 """Module for handling database interactions.
 """
 
-import logging
-import os
-
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -18,6 +15,7 @@ class DatabaseHandler:
     """Wrapper for SQLAlchemy functions.
     """
 
+    # pylint: disable=too-few-public-methods
     def __init__(self):
 
         db_string = self._get_db_string()

@@ -1,7 +1,5 @@
 """Module for the main bot object.
 """
-import logging
-import os
 
 from discord import Game
 from discord.ext.commands import Bot

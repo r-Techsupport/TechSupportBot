@@ -9,7 +9,7 @@ def get_env_value(name, raise_exception=True):
 
     parameters:
         name (str): the name of the environmental variable
-        raise_exception (bool): True if an exception should be raised 
+        raise_exception (bool): True if an exception should be raised
     """
 
     key = os.environ.get(name, None)
@@ -20,4 +20,11 @@ def get_env_value(name, raise_exception=True):
 
 
 async def tagged_response(ctx, message):
+    """Sends a context response with the original author tagged.
+
+    parameters:
+        ctx (ctx): the context object
+        message (str): the message to send
+    """
+
     await ctx.send(f"{ctx.message.author.mention} {message}")

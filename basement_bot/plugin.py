@@ -2,11 +2,7 @@
 """
 
 import glob
-import logging
-import os
 from os.path import basename, dirname, isfile, join
-
-from discord.ext import commands
 
 from logger import get_logger
 
@@ -20,6 +16,7 @@ class PluginLoader:
         bot (BasementBot): the bot object to which plugins are loading
     """
 
+    # pylint: disable=too-few-public-methods
     def __init__(self, bot):
         self.bot = bot
 
@@ -32,7 +29,7 @@ class PluginLoader:
             try:
                 self.bot.load_extension(plugin)
 
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 log.exception(f"Failed to load {plugin}: {str(e)}")
 
     @staticmethod

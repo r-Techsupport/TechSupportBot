@@ -14,5 +14,6 @@ install:
 
 script:
   - "make check-format"
+  - "make lint"
   - "make test"
   - "make build"

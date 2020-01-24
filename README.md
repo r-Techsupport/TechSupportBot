@@ -58,8 +58,10 @@ The Makefile offers shortcut commands for development.
 
 * `check-format` checks the formatting without changing files.
 * `format` checks formatting and changes files.
+* `lint` runs pylint.
 * `test` runs unit tests.
 * `build` builds the Docker image.
 * `up` spins up the container suite.
+* `upb` builds and spins up the container suite.
 * `down` brings down the container suite.
 * `logs` shows the main container logs.
