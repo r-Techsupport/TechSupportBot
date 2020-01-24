@@ -48,7 +48,7 @@ This command would trigger with something like `.example arg arg lots of args`
 
 Each command must have its first arg as `ctx` which is the context for the command event. Each additional arg is an assumption that it be provided by the user (using `*args` helps in this case). 
 
-There are utility functions in `plugin.py` for helping with this process. For example, `tagged_response` sends a message with the command author tagged.
+There are utility functions in `utils.py` for helping with this process. For example, `tagged_response` sends a message with the command author tagged.
 
 For more information, see [the Discord.py docs](https://discordpy.readthedocs.io/en/latest/ext/commands/commands.html).
 
