@@ -3,7 +3,7 @@
 
 import logging
 
-from utils import get_env_value
+from utils.helpers import get_env_value
 
 
 def get_logger(name):

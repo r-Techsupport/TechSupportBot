@@ -1,11 +1,13 @@
 from discord.ext import commands
 from sqlalchemy import Column, Integer, String
 
-from database import DatabaseHandler
-from utils import tagged_response
+from utils.cogs import MatchPlugin
+from utils.database import DatabaseHandler
+from utils.helpers import get_env_value, tagged_response
+
+FACTOID_PREFIX = get_env_value("FACTOID_PREFIX")
 
 db_handler = DatabaseHandler()
-
 
 class Factoid(db_handler.Base):
     __tablename__ = "factoids"
@@ -19,7 +21,7 @@ db_handler.initialize()
 
 def setup(bot):
     bot.add_command(add_factoid)
-    bot.add_command(get_factoid)
+    bot.add_cog(FactoidMatch(bot))
     bot.add_command(delete_factoid)
 
 
@@ -48,7 +50,6 @@ async def add_factoid(ctx, arg1, *args):
         await tagged_response(
             ctx, "I ran into an issue handling your factoid addition..."
         )
-        raise RuntimeError("Error handling new factoid information")
 
 
 @commands.command(name="f")
@@ -66,20 +67,19 @@ async def delete_factoid(ctx, arg):
         await tagged_response(
             ctx, "I ran into an issue handling your factoid deletion..."
         )
-        raise RuntimeError("Error querying/deleting factoid")
 
+class FactoidMatch(MatchPlugin):
 
-@commands.command(name="q")
-async def get_factoid(ctx, arg):
-    db = db_handler.Session()
+    def match(self, content):
+        return bool(content.startswith(FACTOID_PREFIX))
 
-    try:
-        entry = db.query(Factoid).filter(Factoid.text == arg).first()
-        if entry:
-            await tagged_response(ctx, entry.message)
-        else:
-            await tagged_response(ctx, "No factoid exists!")
+    async def response(self, ctx, arg):
+        db = db_handler.Session()
 
-    except Exception:
-        await tagged_response(ctx, "I ran into an issue grabbing your factoid...")
-        raise RuntimeError("Error grabbing factoid")
+        try:
+            entry = db.query(Factoid).filter(Factoid.text == arg[1:]).first()
+            if entry:
+                await tagged_response(ctx, entry.message)
+
+        except Exception:
+            await tagged_response("I ran into an issue grabbing your factoid...")

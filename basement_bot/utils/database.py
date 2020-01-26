@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 from logger import get_logger
-from utils import get_env_value
+from utils.helpers import get_env_value
 
 log = get_logger("Database Handler")
 
@@ -16,12 +16,12 @@ class DatabaseHandler:
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self):
+    def __init__(self, echo=False):
 
         db_string = self._get_db_string()
         log.debug(f"Connecting to DB: {db_string}")
 
-        self.engine = create_engine(db_string, echo=True)
+        self.engine = create_engine(db_string, echo=echo)
         self.Session = sessionmaker(bind=self.engine)
         self.Base = declarative_base()
 
