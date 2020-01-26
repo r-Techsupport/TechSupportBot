@@ -6,6 +6,7 @@ from discord.ext.commands import Bot
 
 from loader import PluginLoader
 from logger import get_logger
+from utils.helpers import get_env_value
 
 log = get_logger("Basement Bot")
 
@@ -18,12 +19,12 @@ class BasementBot(Bot):
         game (str): the game title to display
     """
 
-    def __init__(self, command_prefix, game=None):
-        if command_prefix == "?":
-            command_prefix = "."
-        self.command_prefix = command_prefix
+    def __init__(self, prefix, game=None):
+        if prefix == get_env_value("FACTOID_PREFIX", raise_exception=False):
+            raise RuntimeError(f"Command prefix '{prefix}' cannot equal Factoid prefix")
+
         self.game = game
-        super().__init__(command_prefix)
+        super().__init__(prefix)
 
         self.plugin_loader = PluginLoader(self)
         self.plugin_loader.load_plugins()

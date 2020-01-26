@@ -16,12 +16,12 @@ class DatabaseHandler:
     """
 
     # pylint: disable=too-few-public-methods
-    def __init__(self):
+    def __init__(self, echo=False):
 
         db_string = self._get_db_string()
         log.debug(f"Connecting to DB: {db_string}")
 
-        self.engine = create_engine(db_string, echo=True)
+        self.engine = create_engine(db_string, echo=echo)
         self.Session = sessionmaker(bind=self.engine)
         self.Base = declarative_base()
 

@@ -3,10 +3,11 @@ from sqlalchemy import Column, Integer, String
 
 from utils.cogs import MatchPlugin
 from utils.database import DatabaseHandler
-from utils.helpers import tagged_response
+from utils.helpers import get_env_value, tagged_response
+
+FACTOID_PREFIX = get_env_value("FACTOID_PREFIX")
 
 db_handler = DatabaseHandler()
-
 
 class Factoid(db_handler.Base):
     __tablename__ = "factoids"
@@ -70,7 +71,7 @@ async def delete_factoid(ctx, arg):
 class FactoidMatch(MatchPlugin):
 
     def match(self, content):
-        return bool(content.startswith("?"))
+        return bool(content.startswith(FACTOID_PREFIX))
 
     async def response(self, ctx, arg):
         db = db_handler.Session()
