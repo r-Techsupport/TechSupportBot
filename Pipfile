@@ -13,6 +13,7 @@ pylint = "==2.4.4"
 requests = "==2.22.0"
 sqlalchemy = "*"
 psycopg2-binary = "==2.8.4"
+http3 = "==0.6.7"
 
 [requires]
 python_version = "3.7"
