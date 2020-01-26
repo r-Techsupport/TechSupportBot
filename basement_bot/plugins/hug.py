@@ -17,12 +17,18 @@ def setup(bot):
     bot.add_command(hug)
 
 
-@commands.command(name="hug")
+@commands.command(
+    name="hug",
+    brief="Hugs mentioned user(s)",
+    description="Hugs the user(s) mentioned after the command.",
+    usage="[mentioned-users]",
+    help="Limitations:\n\tIgnores plain text, @everyone, or @here."
+)
 async def hug(ctx):
-    """Hugs mentioned users
+    """Executes the hug command. Returns bot's response
 
-    usage:
-        .hug [mentioned-users]
+    parameters:
+        ctx (Context): the context
     """
     try:
         if not ctx.message.mentions:
