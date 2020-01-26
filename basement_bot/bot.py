@@ -4,8 +4,8 @@
 from discord import Game
 from discord.ext.commands import Bot
 
+from loader import PluginLoader
 from logger import get_logger
-from plugin import PluginLoader
 
 log = get_logger("Basement Bot")
 
@@ -19,6 +19,8 @@ class BasementBot(Bot):
     """
 
     def __init__(self, command_prefix, game=None):
+        if command_prefix == "?":
+            command_prefix = "."
         self.command_prefix = command_prefix
         self.game = game
         super().__init__(command_prefix)

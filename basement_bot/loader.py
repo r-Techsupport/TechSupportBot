@@ -1,4 +1,4 @@
-"""Module for plugin functions.
+"""Module for plugin loading.
 """
 
 import glob

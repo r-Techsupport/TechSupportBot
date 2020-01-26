@@ -1,7 +1,7 @@
 import requests
 from discord.ext import commands
 
-from utils import get_env_value, tagged_response
+from utils.helpers import get_env_value, tagged_response
 
 
 def setup(bot):

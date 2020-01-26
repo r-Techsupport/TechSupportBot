@@ -1,6 +1,6 @@
 from discord.ext import commands
 
-from utils import tagged_response
+from utils.helpers import tagged_response
 
 
 def setup(bot):
