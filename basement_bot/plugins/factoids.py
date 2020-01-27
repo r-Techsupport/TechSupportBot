@@ -9,6 +9,7 @@ FACTOID_PREFIX = get_env_value("FACTOID_PREFIX")
 
 db_handler = DatabaseHandler()
 
+
 class Factoid(db_handler.Base):
     __tablename__ = "factoids"
 
@@ -68,8 +69,8 @@ async def delete_factoid(ctx, arg):
             ctx, "I ran into an issue handling your factoid deletion..."
         )
 
-class FactoidMatch(MatchPlugin):
 
+class FactoidMatch(MatchPlugin):
     def match(self, content):
         return bool(content.startswith(FACTOID_PREFIX))
 

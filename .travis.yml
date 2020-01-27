@@ -1,19 +1,13 @@
-language: python
-python: 3.7
+language: minimal
 dist: xenial
 
 jobs:
   include:
     - name: main-pipeline
 
-install:
-  - "sudo apt update -y"
-  - "sudo apt install python3-pip"
-  - "sudo pip install pipenv"
-  - "pipenv sync -d"
-
 script:
+  - "make dev"
   - "make check-format"
   - "make lint"
   - "make test"
-  - "make build"
+  - "make prod"

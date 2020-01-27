@@ -5,8 +5,9 @@ services:
     bot:
         image: effprime/basement-bot:latest
         container_name: basement_bot
-        build: .
         env_file: .env
+        environment:
+            - DEBUG=0
         depends_on:
             - db
 

@@ -7,6 +7,7 @@ from logger import get_logger
 
 log = get_logger("Cogs")
 
+
 class BasicPlugin(commands.Cog):
     """The base plugin class.
 
@@ -16,6 +17,7 @@ class BasicPlugin(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+
 
 class MatchPlugin(BasicPlugin):
     """Plugin for matching a message.

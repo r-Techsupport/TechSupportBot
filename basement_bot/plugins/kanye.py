@@ -10,8 +10,10 @@ API_URL = "https://api.kanye.rest"
 MIN_WAIT = 3600
 MAX_WAIT = 21600
 
+
 def setup(bot):
     bot.loop.create_task(kanye_fact(bot))
+
 
 async def kanye_fact(bot):
     await bot.wait_until_ready()
