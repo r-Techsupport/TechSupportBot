@@ -12,7 +12,7 @@ pylint = "==2.4.4"
 "discord.py" = "==1.2.5"
 requests = "==2.22.0"
 sqlalchemy = "*"
-psycopg2 = "==2.8.4"
+psycopg2-binary = "==2.8.4"
 http3 = "==0.6.7"
 
 [requires]
