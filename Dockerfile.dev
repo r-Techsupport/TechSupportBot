@@ -1,0 +1,21 @@
+FROM python:3.7-alpine
+
+COPY Pipfile* /tmp/
+
+RUN apk update && \
+    apk add --no-cache \
+    postgresql-dev \
+    gcc \
+    musl-dev
+
+RUN pip install pipenv && \
+    cd /tmp && \
+    pipenv lock --requirements > requirements.txt && \
+    pipenv lock --requirements --dev > requirements-dev.txt && \
+    pip install --no-cache-dir -r /tmp/requirements.txt && \
+    pip install --no-cache-dir -r /tmp/requirements-dev.txt
+
+COPY . /app
+WORKDIR /app
+
+CMD python3 -u basement_bot/main.py

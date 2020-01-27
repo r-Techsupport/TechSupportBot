@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+
+    bot:
+        image: effprime/basement-bot:dev
+        container_name: basement_bot
+        environment:
+            - DEBUG=1
+        volumes:
+            - ./:/app
