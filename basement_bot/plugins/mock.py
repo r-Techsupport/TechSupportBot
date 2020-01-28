@@ -2,6 +2,11 @@ import logging
 
 from discord.ext import commands
 
+from utils.helpers import get_env_value, tagged_response
+
+COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
+SEARCH_LIMIT = 50
+
 
 def setup(bot):
     bot.add_command(mock)
@@ -22,19 +27,25 @@ def mock_string(string):
 
 @commands.command(name="sb")
 async def mock(ctx):
-    user_to_mock = ctx.message.mentions or None
+    user_to_mock = ctx.message.mentions[0] if ctx.message.mentions else None
 
     if not user_to_mock:
-        await ctx.send(f"You must tag a user if you want to mock them!")
+        await tagged_response(ctx, "You must tag a user if you want to mock them!")
         return
+
+    if user_to_mock.bot:
+        user_to_mock = ctx.author
 
     mock_message = None
-    async for message in ctx.channel.history(limit=200, oldest_first=True):
-        if message.author == user_to_mock[0] and not message.content.startswith("."):
+    async for message in ctx.channel.history(limit=SEARCH_LIMIT):
+        if message.author == user_to_mock and not message.content.startswith(
+            COMMAND_PREFIX
+        ):
             mock_message = message.content
+            break
 
     if not mock_message:
-        await ctx.send(f"No message found for user {user_to_mock[0]}")
+        await ctx.send(f"No message found for user {user_to_mock}")
         return
 
-    await ctx.send(mock_string(mock_message))
+    await tagged_response(ctx, mock_string(mock_message))

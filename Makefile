@@ -4,6 +4,9 @@ prod-image = $(image):latest
 drun = docker run -v $(shell pwd):/app -t $(dev-image) python3 -m
 main_dir = basement_bot
 
+make sync:
+	python3 -m pipenv sync -d
+
 check-format:
 	$(drun) black --check $(main_dir)
 	$(drun) isort --check-only --recursive $(main_dir)
