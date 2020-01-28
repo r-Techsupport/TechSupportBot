@@ -6,28 +6,49 @@ from utils.helpers import get_env_value, tagged_response
 
 def setup(bot):
     bot.add_command(google)
+    bot.add_command(youtube)
+
+
+def get_items(url, data):
+    return requests.get(url, params=data).json().get("items")
 
 
 @commands.command(name="g")
 async def google(ctx, *args):
     if not CSE_ID or not DEV_KEY:
-        await tagged_response(ctx, "Looks like I'm missing some API keys. RIP!")
+        await tagged_response(ctx, "Sorry, I don't have the Google API keys!")
         return
 
     args = " ".join(args)
-    parsed = (
-        requests.get(API_URL, params={"cx": CSE_ID, "q": args, "key": DEV_KEY})
-        .json()
-        .get("items")
-    )
+    items = get_items(GOOGLE_URL, data={"cx": CSE_ID, "q": args, "key": DEV_KEY})
 
-    if not parsed:
-        await tagged_response(ctx, f"No results found for: *{args}*")
+    if not items:
+        await tagged_response(ctx, f"No search results found for: *{args}*")
         return
 
-    await tagged_response(ctx, parsed[0].get("link"))
+    await tagged_response(ctx, items[0].get("link"))
+
+
+@commands.command(name="yt")
+async def youtube(ctx, *args):
+    if not DEV_KEY:
+        await tagged_response(ctx, "Sorry, I don't have the Google dev key!")
+        return
+
+    args = " ".join(args)
+    items = get_items(YOUTUBE_URL, data={"q": args, "key": DEV_KEY, "type": "video"})
+
+    if not items:
+        await tagged_response(ctx, f"No video results found for: *{args}*")
+        return
+
+    video_id = items[0].get("id", {}).get("videoId")
+    link = f"http://youtu.be/{video_id}"
+
+    await tagged_response(ctx, link)
 
 
 CSE_ID = get_env_value("GOOGLE_CSE_ID", raise_exception=False)
 DEV_KEY = get_env_value("GOOGLE_DEV_KEY", raise_exception=False)
-API_URL = "https://www.googleapis.com/customsearch/v1"
+GOOGLE_URL = "https://www.googleapis.com/customsearch/v1"
+YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=1"
