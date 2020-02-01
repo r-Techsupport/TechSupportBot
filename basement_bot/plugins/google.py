@@ -13,7 +13,16 @@ def get_items(url, data):
     return requests.get(url, params=data).json().get("items")
 
 
-@commands.command(name="g")
+@commands.command(
+    name="g",
+    brief="Googles that for you",
+    description=(
+        "Returns the top Google search result of the given search terms."
+        " Returns nothing if one is not found."
+    ),
+    usage="[search-terms]",
+    help="\nLimitations: Mentions should not be used.",
+)
 async def google(ctx, *args):
     if not CSE_ID or not DEV_KEY:
         await priv_response(ctx, "Sorry, I don't have the Google API keys!")
@@ -29,7 +38,16 @@ async def google(ctx, *args):
     await tagged_response(ctx, items[0].get("link"))
 
 
-@commands.command(name="yt")
+@commands.command(
+    name="yt",
+    brief="Returns top YouTube video result of search terms",
+    description=(
+        "Returns the top YouTube video result of the given search terms."
+        " Returns nothing if one is not found."
+    ),
+    usage="[search-terms]",
+    help="\nLimitations: Mentions should not be used.",
+)
 async def youtube(ctx, *args):
     if not DEV_KEY:
         await priv_response(ctx, "Sorry, I don't have the Google dev key!")

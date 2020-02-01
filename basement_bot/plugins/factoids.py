@@ -39,9 +39,13 @@ def setup(bot):
 @commands.command(
     name="r",
     brief="Creates custom trigger with a specified output",
-    description="Creates a custom trigger with a specified name that outputs any specified text, including mentions. All triggers are used by sending a message with a '?' appended in front of the trigger name.",
+    description=(
+        "Creates a custom trigger with a specified name that outputs any specified text,"
+        " including mentions. All triggers are used by sending a message with a '?'"
+        " appended in front of the trigger name."
+    ),
     usage="[trigger-name] [trigger-output]",
-    help="Trigger Usage:\n\t?[trigger-name]\n\nLimitations:\n\tMentions should not be used as triggers.",
+    help="Trigger Usage: ?[trigger-name]\n\nLimitations: Mentions should not be used as triggers.",
 )
 async def add_factoid(ctx, arg1, *args):
     if ctx.message.mentions:
@@ -80,11 +84,11 @@ async def add_factoid(ctx, arg1, *args):
 
 
 @commands.command(
-    name="r",
-    brief="Creates custom trigger with a specified output",
-    description="Creates a custom trigger with a specified name that outputs any specified text, including mentions. All triggers are used by sending a message with a '?' appended in front of the trigger name.",
-    usage="[trigger-name] [trigger-output]",
-    help="Trigger Usage:\n\t?[trigger-name]\n\nLimitations:\n\tMentions should not be used as triggers.",
+    name="f",
+    brief="Deletes an existing custom trigger",
+    description="Deletes an existing custom trigger.",
+    usage="[trigger-name]",
+    help="\nLimitations: Mentions should not be used as triggers.",
 )
 async def delete_factoid(ctx, arg):
     if ctx.message.mentions:

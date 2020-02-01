@@ -33,7 +33,20 @@ def setup(bot):
     bot.add_command(random_grab)
 
 
-@commands.command(name="grab")
+@commands.command(
+    name="grab",
+    brief="Grab the last message from the mentioned user",
+    description=(
+        "Gets the last message of the mentioned user and saves it"
+        " in the database for later retrieval."
+    ),
+    usage="[mentioned-user]",
+    help=(
+        "\nLimitations: The command will only look for a mentioned user."
+        " Any additional plain text, other mentioned users, or @here/@everyone"
+        " will be ignored."
+    ),
+)
 async def grab(ctx):
     channel = str(ctx.message.channel.id)
     user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
@@ -83,7 +96,17 @@ async def grab(ctx):
         await priv_response(ctx, "I had an issue remembering that message!")
 
 
-@commands.command(name="grabs")
+@commands.command(
+    name="grabs",
+    brief="Returns all grabbed messages of mentioned person",
+    description="Returns all grabbed messages of mentioned person from the database.",
+    usage="[mentioned-user]",
+    help=(
+        "\nLimitations: The command will only look for a mentioned user."
+        " Any additional plain text, other mentioned users, or @here/@everyone"
+        " will be ignored."
+    ),
+)
 async def get_grabs(ctx):
     channel = str(ctx.message.channel.id)
     user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
@@ -117,7 +140,16 @@ async def get_grabs(ctx):
         return
 
 
-@commands.command(name="grabr")
+@commands.command(
+    name="grabr",
+    brief="Returns a random grabbed message",
+    description="Returns a random grabbed message of a random user or of a mentioned user from the database.",
+    usage="[mentioned-user/blank]",
+    help=(
+        "\nLimitations: Any additional plain text, mentioned users, or @here/@everyone"
+        " will be ignored."
+    ),
+)
 async def random_grab(ctx):
     channel = str(ctx.message.channel.id)
     user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None

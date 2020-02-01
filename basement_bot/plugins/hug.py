@@ -22,7 +22,7 @@ def setup(bot):
     brief="Hugs mentioned user(s)",
     description="Hugs the user(s) mentioned after the command.",
     usage="[mentioned-users]",
-    help="Limitations:\n\tIgnores plain text, @everyone, or @here."
+    help="\nLimitations: Ignores plain text, @everyone, or @here.",
 )
 async def hug(ctx):
     """Executes the hug command. Returns bot's response
