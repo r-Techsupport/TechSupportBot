@@ -17,7 +17,7 @@ class Factoid(db_handler.Base):
     message = Column(String)
 
 
-db_handler.initialize()
+db_handler.create_all()
 
 
 def setup(bot):
