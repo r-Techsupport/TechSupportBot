@@ -25,7 +25,7 @@ class DatabaseHandler:
         self.Session = sessionmaker(bind=self.engine)
         self.Base = declarative_base()
 
-    def initialize(self):
+    def create_all(self):
         """Wraps table creation.
         """
         self.Base.metadata.create_all(self.engine)

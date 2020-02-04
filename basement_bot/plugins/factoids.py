@@ -6,6 +6,7 @@ from utils.database import DatabaseHandler
 from utils.helpers import get_env_value, tagged_response
 
 FACTOID_PREFIX = get_env_value("FACTOID_PREFIX")
+COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
 
 db_handler = DatabaseHandler()
 
@@ -17,10 +18,14 @@ class Factoid(db_handler.Base):
     message = Column(String)
 
 
-db_handler.initialize()
+db_handler.create_all()
 
 
 def setup(bot):
+    if FACTOID_PREFIX == COMMAND_PREFIX:
+        raise RuntimeError(
+            f"Command prefix '{COMMAND_PREFIX}' cannot equal Factoid prefix"
+        )
     bot.add_command(add_factoid)
     bot.add_cog(FactoidMatch(bot))
     bot.add_command(delete_factoid)
