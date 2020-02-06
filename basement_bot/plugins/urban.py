@@ -3,7 +3,7 @@ import json
 import requests
 from discord.ext import commands
 
-from utils.helpers import tagged_response
+from utils.helpers import priv_response, tagged_response
 
 
 def setup(bot):
@@ -16,7 +16,7 @@ async def urban(ctx, *args):
     definitions = requests.get(f"{BASE_URL}{arg}").json().get("list")
 
     if not definitions:
-        await tagged_response(ctx, f"No results found for: *{arg}*")
+        await priv_response(ctx, f"No results found for: *{arg}*")
         return
 
     message = (

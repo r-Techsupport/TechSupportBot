@@ -5,7 +5,7 @@ from random import choice
 
 from discord.ext import commands
 
-from utils.helpers import tagged_response
+from utils.helpers import priv_response, tagged_response
 
 
 def setup(bot):
@@ -26,11 +26,11 @@ async def hug(ctx):
     """
     try:
         if not ctx.message.mentions:
-            await tagged_response(ctx, "You hugging the air?")
+            await priv_response(ctx, "You hugging the air?")
             return
 
         if ctx.author in ctx.message.mentions:
-            await tagged_response(ctx, "You tried to hug yourself? You got issues")
+            await priv_response(ctx, "You tried to hug yourself? You got issues")
             return
 
         if len(ctx.message.mentions) > 1:
@@ -49,6 +49,7 @@ async def hug(ctx):
                 user_to_hug=ctx.message.mentions[0].mention,
             )
         )
+
     except:
         await ctx.send(f"I don't know what the fuck you're trying to do!")
 

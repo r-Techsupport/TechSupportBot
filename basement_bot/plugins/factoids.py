@@ -5,7 +5,7 @@ from sqlalchemy import Column, DateTime, Integer, String
 
 from utils.cogs import MatchPlugin
 from utils.database import DatabaseHandle
-from utils.helpers import get_env_value, tagged_response
+from utils.helpers import get_env_value, priv_response, tagged_response
 
 FACTOID_PREFIX = get_env_value("FACTOID_PREFIX")
 COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
@@ -39,13 +39,13 @@ def setup(bot):
 @commands.command(name="r")
 async def add_factoid(ctx, arg1, *args):
     if ctx.message.mentions:
-        await tagged_response(ctx, "Sorry, factoids don't work well with mentions.")
+        await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
         return
 
     channel = str(ctx.message.channel.id)
 
     if not args:
-        await tagged_response(ctx, "Factoids must not be blank!")
+        await priv_response(ctx, "Factoids must not be blank!")
         return
 
     db = db_handle.Session()
@@ -60,7 +60,7 @@ async def add_factoid(ctx, arg1, *args):
         if entry:
             # delete old one
             db.delete(entry)
-            await tagged_response(ctx, "Deleting previous entry of factoid trigger...")
+            await priv_response(ctx, "Deleting previous entry of factoid trigger...")
 
         # finally, add new entry
         db.add(Factoid(text=arg1.lower(), channel=channel, message=" ".join(args)))
@@ -68,7 +68,7 @@ async def add_factoid(ctx, arg1, *args):
         await tagged_response(ctx, f"Successfully added factoid trigger: *{arg1}*")
 
     except Exception:
-        await tagged_response(
+        await priv_response(
             ctx, "I ran into an issue handling your factoid addition..."
         )
 
@@ -76,7 +76,7 @@ async def add_factoid(ctx, arg1, *args):
 @commands.command(name="f")
 async def delete_factoid(ctx, arg):
     if ctx.message.mentions:
-        await tagged_response(ctx, "Sorry, factoids don't work well with mentions.")
+        await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
         return
 
     channel = str(ctx.message.channel.id)
@@ -95,7 +95,7 @@ async def delete_factoid(ctx, arg):
         await tagged_response(ctx, f"Successfully deleted factoid trigger: *{arg}*")
 
     except Exception:
-        await tagged_response(
+        await priv_response(
             ctx, "I ran into an issue handling your factoid deletion..."
         )
 
@@ -106,7 +106,7 @@ class FactoidMatch(MatchPlugin):
 
     async def response(self, ctx, arg):
         if ctx.message.mentions:
-            await tagged_response(ctx, "Sorry, factoids don't work well with mentions.")
+            await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
             return
 
         channel = str(ctx.message.channel.id)
@@ -123,4 +123,4 @@ class FactoidMatch(MatchPlugin):
                 await tagged_response(ctx, entry.message)
 
         except Exception:
-            await tagged_response("I ran into an issue grabbing your factoid...")
+            await priv_response("I ran into an issue grabbing your factoid...")
