@@ -38,6 +38,10 @@ def setup(bot):
 
 @commands.command(name="r")
 async def add_factoid(ctx, arg1, *args):
+    if ctx.message.mentions:
+        await tagged_response(ctx, "Sorry, factoids don't work well with mentions.")
+        return
+
     channel = str(ctx.message.channel.id)
 
     if not args:
@@ -71,6 +75,10 @@ async def add_factoid(ctx, arg1, *args):
 
 @commands.command(name="f")
 async def delete_factoid(ctx, arg):
+    if ctx.message.mentions:
+        await tagged_response(ctx, "Sorry, factoids don't work well with mentions.")
+        return
+
     channel = str(ctx.message.channel.id)
 
     db = db_handle.Session()
@@ -97,6 +105,10 @@ class FactoidMatch(MatchPlugin):
         return bool(content.startswith(FACTOID_PREFIX))
 
     async def response(self, ctx, arg):
+        if ctx.message.mentions:
+            await tagged_response(ctx, "Sorry, factoids don't work well with mentions.")
+            return
+
         channel = str(ctx.message.channel.id)
 
         db = db_handle.Session()
