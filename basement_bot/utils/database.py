@@ -8,10 +8,10 @@ from sqlalchemy.orm import sessionmaker
 from logger import get_logger
 from utils.helpers import get_env_value
 
-log = get_logger("Database Handler")
+log = get_logger("Database Handle")
 
 
-class DatabaseHandler:
+class DatabaseHandle:
     """Wrapper for SQLAlchemy functions.
     """
 
