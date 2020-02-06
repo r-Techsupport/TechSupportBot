@@ -28,3 +28,14 @@ async def tagged_response(ctx, message):
     """
 
     await ctx.send(f"{ctx.message.author.mention} {message}")
+
+
+async def priv_response(ctx, message):
+    """Sends a context private message to the original author.
+
+    parameters:
+        ctx (ctx): the context object
+        message (str): the message to send
+    """
+    channel = await ctx.message.author.create_dm()
+    await channel.send(message)

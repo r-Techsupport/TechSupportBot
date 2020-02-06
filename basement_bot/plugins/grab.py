@@ -5,7 +5,7 @@ from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
 
 from utils.database import DatabaseHandle
-from utils.helpers import get_env_value, tagged_response
+from utils.helpers import get_env_value, priv_response, tagged_response
 
 db_handle = DatabaseHandle()
 
@@ -39,11 +39,11 @@ async def grab(ctx):
     user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
     if not user_to_grab:
-        await tagged_response(ctx, "You must tag a user to grab!")
+        await priv_response(ctx, "You must tag a user to grab!")
         return
 
     if user_to_grab.bot:
-        await tagged_response(ctx, "Ain't gonna catch me slipping!")
+        await priv_response(ctx, "Ain't gonna catch me slipping!")
         return
 
     grab_message = None
@@ -55,7 +55,7 @@ async def grab(ctx):
             break
 
     if not grab_message:
-        await tagged_response(
+        await priv_response(
             ctx, f"Could not find a recent essage from user {user_to_grab}"
         )
 
@@ -72,15 +72,15 @@ async def grab(ctx):
             .count()
             != 0
         ):
-            await tagged_response(ctx, "That grab already exists!")
+            await priv_response(ctx, "That grab already exists!")
             return
         db.add(
             Grab(author_id=str(user_to_grab.id), channel=channel, message=grab_message,)
         )
         db.commit()
-        await tagged_response(ctx, f"Successfully saved: '*{grab_message}*'")
+        await priv_response(ctx, f"Successfully saved: '*{grab_message}*'")
     except Exception:
-        await tagged_response(ctx, "I had an issue remembering that message!")
+        await priv_response(ctx, "I had an issue remembering that message!")
 
 
 @commands.command(name="grabs")
@@ -89,11 +89,11 @@ async def get_grabs(ctx):
     user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
     if not user_to_grab:
-        await tagged_response(ctx, "You must tag a user to grab!")
+        await priv_response(ctx, "You must tag a user to grab!")
         return
 
     if user_to_grab.bot:
-        await tagged_response(ctx, "Ain't gonna catch me slipping!")
+        await priv_response(ctx, "Ain't gonna catch me slipping!")
         return
 
     db = db_handle.Session()
@@ -123,7 +123,7 @@ async def random_grab(ctx):
     user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
     if user_to_grab and user_to_grab.bot:
-        await tagged_response(ctx, "Ain't gonna catch me slipping!")
+        await priv_response(ctx, "Ain't gonna catch me slipping!")
         return
 
     db = db_handle.Session()
@@ -135,11 +135,16 @@ async def random_grab(ctx):
             )
         else:
             grabs = db.query(Grab).filter(Grab.channel == channel)
+
         if grabs:
             random_index = randint(0, grabs.count() - 1)
             message = f"'*{grabs[random_index].message}*'"
         else:
-            message = f"No messages found for {user_to_grab}"
+            await priv_response(
+                f"No messages found for {user_to_grab or 'this channel'}"
+            )
+            return
+
         await tagged_response(ctx, message)
     except Exception:
         return

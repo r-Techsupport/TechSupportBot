@@ -2,7 +2,7 @@ import logging
 
 from discord.ext import commands
 
-from utils.helpers import get_env_value, tagged_response
+from utils.helpers import get_env_value, priv_response, tagged_response
 
 COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
 SEARCH_LIMIT = 50
@@ -30,7 +30,7 @@ async def mock(ctx):
     user_to_mock = ctx.message.mentions[0] if ctx.message.mentions else None
 
     if not user_to_mock:
-        await tagged_response(ctx, "You must tag a user if you want to mock them!")
+        await priv_response(ctx, "You must tag a user if you want to mock them!")
         return
 
     if user_to_mock.bot:
@@ -45,7 +45,7 @@ async def mock(ctx):
             break
 
     if not mock_message:
-        await ctx.send(f"No message found for user {user_to_mock}")
+        await priv_response(ctx, f"No message found for user {user_to_mock}")
         return
 
     await tagged_response(ctx, mock_string(mock_message))
