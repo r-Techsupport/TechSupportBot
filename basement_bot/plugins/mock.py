@@ -25,7 +25,19 @@ def mock_string(string):
     return mock
 
 
-@commands.command(name="sb")
+@commands.command(
+    name="sb",
+    brief="MOcKS last MeSSAgE Of MeNtIONeD uSEr A LA moCkiNg SpONgEBob MeME",
+    description=(
+        "Returns last message of mentioned user following command changing"
+        " random characters to capital or lowercase."
+    ),
+    usage="[mentioned-user]",
+    help=(
+        "\nLimitations: Ignores any additional mentions after the command"
+        " and first mentioned user."
+    ),
+)
 async def mock(ctx):
     user_to_mock = ctx.message.mentions[0] if ctx.message.mentions else None
 

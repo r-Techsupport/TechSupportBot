@@ -10,7 +10,16 @@ def setup(bot):
     bot.add_command(urban)
 
 
-@commands.command(name="urb")
+@commands.command(
+    name="urb",
+    brief="Returns the top Urban Dictionary result of search terms",
+    description=(
+        "Returns the top Urban Dictionary result of the given search terms."
+        " Returns nothing if one is not found."
+    ),
+    usage="[search-terms]",
+    help="\nLimitations: Mentions should not be used.",
+)
 async def urban(ctx, *args):
     arg = " ".join(args).lower().strip()
     definitions = requests.get(f"{BASE_URL}{arg}").json().get("list")
