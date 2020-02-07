@@ -2,12 +2,24 @@ language: minimal
 dist: xenial
 
 jobs:
-  include:
-    - name: main-pipeline
 
-script:
-  - "make dev"
-  - "make check-format"
-  - "make lint"
-  - "make test"
-  - "make prod"
+  include:
+
+    - stage: test
+      script:
+        - make dev
+        - make check-format
+        - make lint
+        - make test
+
+    - stage: build
+      if: branch != master
+      script:
+        - make prod
+
+    - stage: deploy
+      if: branch = master
+      script:
+        - make prod
+        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        - docker push effprime/basement-bot:latest
