@@ -1,15 +1,15 @@
-"""Module for base cogs.
+"""Base cogs for making plugins.
 """
 
 from discord.ext import commands
 
-from logger import get_logger
+from utils.logger import get_logger
 
 log = get_logger("Cogs")
 
 
 class BasicPlugin(commands.Cog):
-    """The base plugin class.
+    """The base plugin.
 
     parameters:
         bot (Bot): the bot object
@@ -20,7 +20,7 @@ class BasicPlugin(commands.Cog):
 
 
 class MatchPlugin(BasicPlugin):
-    """Plugin for matching a message.
+    """Plugin for matching a specific criteria and responding.
     """
 
     @commands.Cog.listener()

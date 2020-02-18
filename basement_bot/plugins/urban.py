@@ -1,6 +1,6 @@
 import json
 
-import requests
+import http3
 from discord.ext import commands
 
 from utils.helpers import priv_response, tagged_response
@@ -21,11 +21,13 @@ def setup(bot):
     help="\nLimitations: Mentions should not be used.",
 )
 async def urban(ctx, *args):
-    arg = " ".join(args).lower().strip()
-    definitions = requests.get(f"{BASE_URL}{arg}").json().get("list")
+    http_client = http3.AsyncClient()
+    args = " ".join(args).lower().strip()
+    definitions = await http_client.get(f"{BASE_URL}{args}")
+    definitions = definitions.json().get("list")
 
     if not definitions:
-        await priv_response(ctx, f"No results found for: *{arg}*")
+        await priv_response(ctx, f"No results found for: *{args}*")
         return
 
     message = (
@@ -37,7 +39,7 @@ async def urban(ctx, *args):
     )
     await tagged_response(
         ctx,
-        f'*{message}* ... (See more results: {SEE_MORE_URL}{arg.replace(" ","%20")})',
+        f'*{message}* ... (See more results: {SEE_MORE_URL}{args.replace(" ","%20")})',
     )
 
 

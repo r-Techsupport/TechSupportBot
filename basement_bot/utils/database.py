@@ -1,18 +1,18 @@
-"""Module for handling database interactions.
+"""Database related functions.
 """
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from logger import get_logger
 from utils.helpers import get_env_value
+from utils.logger import get_logger
 
 log = get_logger("Database Handle")
 
 
-class DatabaseHandle:
-    """Wrapper for SQLAlchemy functions.
+class PluginDatabaseHandler:
+    """Wrapper for using a database in a plugin.
     """
 
     # pylint: disable=too-few-public-methods
