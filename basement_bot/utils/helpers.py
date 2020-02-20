@@ -1,4 +1,4 @@
-"""Module for helper functions.
+"""Standard helper functions for various use cases.
 """
 
 import os
@@ -23,7 +23,7 @@ async def tagged_response(ctx, message):
     """Sends a context response with the original author tagged.
 
     parameters:
-        ctx (ctx): the context object
+        ctx (Context): the context object
         message (str): the message to send
     """
 
@@ -34,8 +34,25 @@ async def priv_response(ctx, message):
     """Sends a context private message to the original author.
 
     parameters:
-        ctx (ctx): the context object
+        ctx (Context): the context object
         message (str): the message to send
     """
     channel = await ctx.message.author.create_dm()
     await channel.send(message)
+
+
+async def is_admin(ctx):
+    """Context checker for if the author is admin.
+
+    parameters:
+        ctx (Context): the context object
+    """
+    admins = get_env_value("ADMINS", raise_exception=False)
+    admins = admins.replace(" ", "").split(",")
+    status_ = bool(ctx.message.author.id in [int(id) for id in admins])
+
+    if not status_:
+        await priv_response(ctx, "You must be in the admin list to use this command")
+        return False
+
+    return True

@@ -1,17 +1,17 @@
-"""Module for the main bot object.
+"""The main bot functions.
 """
 
 from discord import Game
 from discord.ext.commands import Bot
 
-from loader import PluginLoader
-from logger import get_logger
+from plugin_api import PluginAPI
+from utils.logger import get_logger
 
 log = get_logger("Basement Bot")
 
 
 class BasementBot(Bot):
-    """Defines initialization and event handlers.
+    """The main bot object.
 
     parameters:
         command_prefix (str): the prefix for commands
@@ -19,16 +19,32 @@ class BasementBot(Bot):
     """
 
     def __init__(self, prefix, game=None):
-        self.game = game
         super().__init__(prefix)
-
-        self.plugin_loader = PluginLoader(self)
-        self.plugin_loader.load_plugins()
+        self.game = game
+        self.plugin_api = PluginAPI()
 
     async def on_ready(self):
-        """Runs final setup steps.
+        """Callback for when the bot is finished starting up.
         """
-        if self.game:
-            await self.change_presence(activity=Game(name=self.game))
-        log.info(f"Initialization complete")
         log.info(f"Commands available with the `{self.command_prefix}` prefix")
+
+    async def set_game(self, game):
+        """Sets the Discord activity to a given game.
+
+        parameters:
+            game (str): the name of the game to display
+        """
+        self.game = game
+        await self.change_presence(activity=Game(name=self.game))
+
+    async def start(self, *args, **kwargs):
+        """Loads initial plugins (blocking) and starts the connection.
+        """
+        self.plugin_api.load_plugins(self)
+        await super().start(*args, **kwargs)
+        await self.set_game(self.game)
+
+    async def shutdown(self):
+        """Cleans up for final shutdown of bot instance.
+        """
+        await self.logout()

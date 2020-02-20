@@ -16,7 +16,8 @@ format:
 	$(drun) isort --recursive $(main_dir)
 
 lint:
-	$(drun) pylint basement_bot/*.py basement_bot/utils/*.py
+	$(drun) pylint basement_bot/*.py
+	$(drun) pylint basement_bot/utils/*.py
 	# TODO: add basement_bot/plugins/*.py after plugins documented
 
 test:

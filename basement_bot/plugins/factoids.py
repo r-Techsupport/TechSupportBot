@@ -4,16 +4,16 @@ from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
 
 from utils.cogs import MatchPlugin
-from utils.database import DatabaseHandle
+from utils.database import PluginDatabaseHandler
 from utils.helpers import get_env_value, priv_response, tagged_response
 
 FACTOID_PREFIX = get_env_value("FACTOID_PREFIX")
 COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
 
-db_handle = DatabaseHandle()
+db_handler = PluginDatabaseHandler()
 
 
-class Factoid(db_handle.Base):
+class Factoid(db_handler.Base):
     __tablename__ = "factoids"
 
     pk = Column(Integer, primary_key=True)
@@ -23,7 +23,7 @@ class Factoid(db_handle.Base):
     time = Column(DateTime, default=datetime.datetime.utcnow)
 
 
-db_handle.create_all()
+db_handler.create_all()
 
 
 def setup(bot):
@@ -58,7 +58,7 @@ async def add_factoid(ctx, arg1, *args):
         await priv_response(ctx, "Factoids must not be blank!")
         return
 
-    db = db_handle.Session()
+    db = db_handler.Session()
 
     try:
         # first check if key already exists
@@ -97,7 +97,7 @@ async def delete_factoid(ctx, arg):
 
     channel = str(ctx.message.channel.id)
 
-    db = db_handle.Session()
+    db = db_handler.Session()
 
     try:
         entry = (
@@ -127,7 +127,7 @@ class FactoidMatch(MatchPlugin):
 
         channel = str(ctx.message.channel.id)
 
-        db = db_handle.Session()
+        db = db_handler.Session()
 
         try:
             entry = (

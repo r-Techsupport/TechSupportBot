@@ -1,4 +1,4 @@
-import requests
+import http3
 from discord.ext import commands
 
 from utils.helpers import get_env_value, priv_response, tagged_response
@@ -9,8 +9,10 @@ def setup(bot):
     bot.add_command(youtube)
 
 
-def get_items(url, data):
-    return requests.get(url, params=data).json().get("items")
+async def get_items(url, data):
+    http_client = http3.AsyncClient()
+    data = await http_client.get(url, params=data)
+    return data.json().get("items")
 
 
 @commands.command(
@@ -29,10 +31,12 @@ async def google(ctx, *args):
         return
 
     args = " ".join(args)
-    items = get_items(GOOGLE_URL, data={"cx": CSE_ID, "q": args, "key": DEV_KEY})
+    items = await get_items(GOOGLE_URL, data={"cx": CSE_ID, "q": args, "key": DEV_KEY})
 
     if not items:
-        await priv_response(ctx, f"No search results found for: *{args}*")
+        if args:
+            args = f"*{args}*"
+        await priv_response(ctx, f"No search results found for: {args}")
         return
 
     await tagged_response(ctx, items[0].get("link"))
@@ -54,10 +58,14 @@ async def youtube(ctx, *args):
         return
 
     args = " ".join(args)
-    items = get_items(YOUTUBE_URL, data={"q": args, "key": DEV_KEY, "type": "video"})
+    items = await get_items(
+        YOUTUBE_URL, data={"q": args, "key": DEV_KEY, "type": "video"}
+    )
 
     if not items:
-        await priv_response(ctx, f"No video results found for: *{args}*")
+        if args:
+            args = f"*{args}*"
+        await priv_response(ctx, f"No video results found for: {args}")
         return
 
     video_id = items[0].get("id", {}).get("videoId")
