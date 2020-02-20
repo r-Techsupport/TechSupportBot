@@ -1,6 +1,6 @@
 from discord.ext import commands
 
-from utils.helpers import tagged_response
+from utils.helpers import emoji_reaction
 
 
 def setup(bot):
@@ -10,12 +10,10 @@ def setup(bot):
 @commands.command(
     name="hello",
     brief="Hello!",
-    description="Returns the greeting 'Hello!' in a mention to the user sending the command.",
+    description="Returns the greeting 'HEY' as a reaction to the original command message.",
     usage="",
-    help=(
-        "\nLimitations: The bot will always only mention the user sending the command and"
-        " ignores all other mentions or plain text in the message."
-    ),
 )
 async def hello(ctx):
-    await tagged_response(ctx, "Hello!")
+    # H, E, Y
+    emojis = [u"\U0001F1ED", u"\U0001F1EA", u"\U0001F1FE"]
+    await emoji_reaction(ctx, emojis)

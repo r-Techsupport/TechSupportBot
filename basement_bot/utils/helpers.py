@@ -12,7 +12,6 @@ def get_env_value(name, default=None, raise_exception=True):
         default (any): the default value to return
         raise_exception (bool): True if an exception should raise on NoneType
     """
-
     key = os.environ.get(name, default)
     if key is None and raise_exception:
         raise NameError(f"Unable to locate env value: {name}")
@@ -26,8 +25,21 @@ async def tagged_response(ctx, message):
         ctx (Context): the context object
         message (str): the message to send
     """
-
     await ctx.send(f"{ctx.message.author.mention} {message}")
+
+
+async def emoji_reaction(ctx, emojis):
+    """Adds an emoji reaction to the given context message.
+
+    parameters:
+        ctx (Context): the context object
+        emojis (list, string): the set of (or single) emoji(s) in unicode format
+    """
+    if not isinstance(emojis, list):
+        emojis = [emojis]
+
+    for emoji in emojis:
+        await ctx.message.add_reaction(emoji)
 
 
 async def priv_response(ctx, message):
@@ -48,7 +60,8 @@ async def is_admin(ctx):
         ctx (Context): the context object
     """
     admins = get_env_value("ADMINS", raise_exception=False)
-    admins = admins.replace(" ", "").split(",")
+    admins = admins.replace(" ", "").split(",") if admins else []
+
     status_ = bool(ctx.message.author.id in [int(id) for id in admins])
 
     if not status_:
