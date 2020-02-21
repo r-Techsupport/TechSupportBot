@@ -13,8 +13,8 @@ def get_logger(name):
         name (str): the name for the logger.
     """
     try:
-        debug = int(get_env_value("DEBUG", raise_exception=False))
-    except ValueError:
+        debug = int(get_env_value("DEBUG"))
+    except (ValueError, NameError):
         debug = 0
 
     level = logging.DEBUG if debug else logging.INFO

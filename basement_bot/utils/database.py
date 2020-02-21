@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from utils.helpers import get_env_value
 from utils.logger import get_logger
 
-log = get_logger("Database Handle")
+log = get_logger("Database")
 
 
 class PluginDatabaseHandler:
@@ -17,7 +17,6 @@ class PluginDatabaseHandler:
 
     # pylint: disable=too-few-public-methods
     def __init__(self, echo=False):
-
         db_string = self._get_db_string()
         log.debug(f"Connecting to DB: {db_string}")
 

@@ -11,9 +11,6 @@ log = get_logger("Plugin Loader")
 
 class PluginAPI:
     """API for plugin loading.
-
-    parameters:
-        bot (BasementBot): the bot object to which plugins are loading
     """
 
     PLUGINS_DIR = f"{join(dirname(__file__))}/plugins"
@@ -28,7 +25,7 @@ class PluginAPI:
             basename(f)[:-3]
             for f in glob.glob(f"{self.PLUGINS_DIR}/*.py")
             if isfile(f) and not f.endswith("__init__.py")
-        ] or None
+        ]
 
     def get_status(self):
         """Gets the bot plugin status.
@@ -52,7 +49,7 @@ class PluginAPI:
 
         parameters:
             plugin_name (str): the name of the plugin file
-            bot (Bot): the bot object to which the plugin is loaded
+            bot (BasementBot): the bot object to which the plugin is loaded
             allow_failure (bool): True if loader does not raise an exception
         """
         if self.plugins.get(plugin_name):
@@ -73,7 +70,7 @@ class PluginAPI:
         """Loads all plugins currently in the plugins directory.
 
         parameters:
-            bot (Bot): the bot object to which the plugin is loaded
+            bot (BasementBot): the bot object to which the plugin is loaded
             allow_failure (bool): True if loader does not raise an exception
         """
         for plugin_name in self.get_modules():
