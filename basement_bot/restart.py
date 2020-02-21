@@ -53,5 +53,5 @@ class RestartManager:
         parameters:
             bot (BasementBot): the bot object to register
         """
-        if bot:
+        if bot.stable:
             bot.loop.create_task(bot.shutdown())
