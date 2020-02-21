@@ -4,7 +4,7 @@
 from discord import Game
 from discord.ext.commands import Bot
 
-from plugin_api import PluginAPI
+from plugin import PluginAPI
 from utils.logger import get_logger
 
 log = get_logger("Basement Bot")
@@ -26,6 +26,7 @@ class BasementBot(Bot):
     async def on_ready(self):
         """Callback for when the bot is finished starting up.
         """
+        await self.set_game(self.game)
         log.info(f"Commands available with the `{self.command_prefix}` prefix")
 
     async def set_game(self, game):
@@ -42,7 +43,6 @@ class BasementBot(Bot):
         """
         self.plugin_api.load_plugins(self)
         await super().start(*args, **kwargs)
-        await self.set_game(self.game)
 
     async def shutdown(self):
         """Cleans up for final shutdown of bot instance.
