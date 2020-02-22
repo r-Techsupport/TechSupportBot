@@ -15,7 +15,8 @@ class PluginAPI:
 
     PLUGINS_DIR = f"{join(dirname(__file__))}/plugins"
 
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
         self.plugins = {}
 
     def get_modules(self):
@@ -44,7 +45,7 @@ class PluginAPI:
         except Exception as e:
             return {"error": str(e)}
 
-    def load_plugin(self, plugin_name, bot, allow_failure=True):
+    def load_plugin(self, plugin_name, allow_failure=True):
         """Loads a plugin by name.
 
         parameters:
@@ -54,19 +55,43 @@ class PluginAPI:
         """
         if self.plugins.get(plugin_name):
             log.debug(f"Plugin {plugin_name} already loaded - ignoring")
-            return
+            return 126
 
         try:
-            bot.load_extension(f"plugins.{plugin_name}")
+            self.bot.load_extension(f"plugins.{plugin_name}")
             self.plugins[plugin_name] = {"status": "loaded"}
+            return 0
 
         except Exception as e:  # pylint: disable=broad-except
             if allow_failure:
                 log.exception(f"Failed to load {plugin_name}: {str(e)}")
-            else:
-                raise RuntimeError(str(e))
+                return 1
+            raise RuntimeError(str(e))
 
-    def load_plugins(self, bot, allow_failure=True):
+    def unload_plugin(self, plugin_name, allow_failure=True):
+        """Unloads a plugin by name.
+
+        parameters:
+            plugin_name (str): the name of the plugin file
+            bot (BasementBot): the bot object to which the plugin is loaded
+            allow_failure (bool): True if loader does not raise an exception
+        """
+        if not self.plugins.get(plugin_name):
+            log.debug(f"Plugin {plugin_name} not loaded - ignoring")
+            return 126
+
+        try:
+            self.bot.unload_extension(f"plugins.{plugin_name}")
+            del self.plugins[plugin_name]
+            return 0
+
+        except Exception as e:  # pylint: disable=broad-except
+            if allow_failure:
+                log.exception(f"Failed to unload {plugin_name}: {str(e)}")
+                return 1
+            raise RuntimeError(str(e))
+
+    def load_plugins(self, allow_failure=True):
         """Loads all plugins currently in the plugins directory.
 
         parameters:
@@ -75,4 +100,4 @@ class PluginAPI:
         """
         for plugin_name in self.get_modules():
             log.info(f"Loading plugin module {plugin_name}")
-            self.load_plugin(plugin_name, bot, allow_failure)
+            self.load_plugin(plugin_name, allow_failure)

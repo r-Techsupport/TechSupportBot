@@ -38,5 +38,8 @@ upp:
 down:
 	docker-compose down
 
+restart:
+	docker-compose restart
+
 logs:
 	docker logs basement_bot -f

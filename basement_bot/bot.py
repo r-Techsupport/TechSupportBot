@@ -21,7 +21,7 @@ class BasementBot(Bot):
     def __init__(self, prefix, game=None):
         super().__init__(prefix)
         self.game = game
-        self.plugin_api = PluginAPI()
+        self.plugin_api = PluginAPI(bot=self)
 
     async def on_ready(self):
         """Callback for when the bot is finished starting up.
@@ -41,7 +41,7 @@ class BasementBot(Bot):
     async def start(self, *args, **kwargs):
         """Loads initial plugins (blocking) and starts the connection.
         """
-        self.plugin_api.load_plugins(self)
+        self.plugin_api.load_plugins()
         await super().start(*args, **kwargs)
 
     async def shutdown(self):

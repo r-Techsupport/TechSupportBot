@@ -1,4 +1,8 @@
-"""Basement _bot main thread.
+"""Basement Bot main thread.
+
+This script runs on a loop until keyboard-exited.
+
+If running in development, a restart handler is used.
 """
 
 import asyncio
@@ -39,6 +43,7 @@ while True:
 
         log.info("Creating bot instance")
         _bot = bot.BasementBot(prefix=PREFIX, game=GAME)
+        _bot.stable = True
         if restart_manager:
             restart_manager.set_bot(_bot)
 
@@ -55,7 +60,8 @@ while True:
     except Exception as e:
         log.exception(e)
 
-    time.sleep(1)
+    _bot.stable = False
+    time.sleep(2)
 
 if restart_manager:
     restart_manager.stop()
