@@ -4,6 +4,7 @@
 from discord import Game
 from discord.ext.commands import Bot
 
+from database import DatabaseAPI
 from plugin import PluginAPI
 from utils.logger import get_logger
 
@@ -22,6 +23,7 @@ class BasementBot(Bot):
         super().__init__(prefix)
         self.game = game
         self.plugin_api = PluginAPI(bot=self)
+        self.database_api = DatabaseAPI(bot=self)
 
     async def on_ready(self):
         """Callback for when the bot is finished starting up.

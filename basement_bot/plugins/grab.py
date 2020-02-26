@@ -4,17 +4,15 @@ from random import randint
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
 
-from utils.database import PluginDatabaseHandler
+from database import DatabaseAPI
 from utils.helpers import get_env_value, priv_response, tagged_response
-
-db_handler = PluginDatabaseHandler()
 
 SEARCH_LIMIT = 50
 
 COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
 
 
-class Grab(db_handler.Base):
+class Grab(DatabaseAPI.Table):
     __tablename__ = "grabs"
 
     pk = Column(Integer, primary_key=True)
@@ -24,10 +22,8 @@ class Grab(db_handler.Base):
     time = Column(DateTime, default=datetime.datetime.utcnow)
 
 
-db_handler.create_all()
-
-
 def setup(bot):
+    bot.database_api.create_table(Grab)
     bot.add_command(grab)
     bot.add_command(get_grabs)
     bot.add_command(random_grab)
@@ -72,7 +68,7 @@ async def grab(ctx):
             ctx, f"Could not find a recent essage from user {user_to_grab}"
         )
 
-    db = db_handler.Session()
+    db = ctx.bot.database_api.get_session()
 
     try:
         if (
@@ -119,7 +115,7 @@ async def get_grabs(ctx):
         await priv_response(ctx, "Ain't gonna catch me slipping!")
         return
 
-    db = db_handler.Session()
+    db = ctx.bot.database_api.get_session()
 
     try:
         grabs = db.query(Grab).filter(
@@ -158,7 +154,7 @@ async def random_grab(ctx):
         await priv_response(ctx, "Ain't gonna catch me slipping!")
         return
 
-    db = db_handler.Session()
+    db = ctx.bot.database_api.get_session()
 
     try:
         if user_to_grab:
