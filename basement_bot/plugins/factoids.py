@@ -3,17 +3,15 @@ import datetime
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
 
+from database import DatabaseAPI
 from utils.cogs import MatchPlugin
-from utils.database import PluginDatabaseHandler
 from utils.helpers import get_env_value, priv_response, tagged_response
 
 FACTOID_PREFIX = get_env_value("FACTOID_PREFIX")
 COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
 
-db_handler = PluginDatabaseHandler()
 
-
-class Factoid(db_handler.Base):
+class Factoid(DatabaseAPI.Table):
     __tablename__ = "factoids"
 
     pk = Column(Integer, primary_key=True)
@@ -23,14 +21,13 @@ class Factoid(db_handler.Base):
     time = Column(DateTime, default=datetime.datetime.utcnow)
 
 
-db_handler.create_all()
-
-
 def setup(bot):
     if FACTOID_PREFIX == COMMAND_PREFIX:
         raise RuntimeError(
             f"Command prefix '{COMMAND_PREFIX}' cannot equal Factoid prefix"
         )
+
+    bot.database_api.create_table(Factoid)
     bot.add_command(add_factoid)
     bot.add_cog(FactoidMatch(bot))
     bot.add_command(delete_factoid)
@@ -47,18 +44,18 @@ def setup(bot):
     usage="[trigger-name] [trigger-output]",
     help="Trigger Usage: ?[trigger-name]\n\nLimitations: Mentions should not be used as triggers.",
 )
-async def add_factoid(ctx, arg1, *args):
+async def add_factoid(ctx, *args):
     if ctx.message.mentions:
         await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
         return
 
+    if len(args) >= 2:
+        arg1 = args[0]
+        args = args[1:]
+
     channel = str(ctx.message.channel.id)
 
-    if not args:
-        await priv_response(ctx, "Factoids must not be blank!")
-        return
-
-    db = db_handler.Session()
+    db = ctx.bot.database_api.get_session()
 
     try:
         # first check if key already exists
@@ -77,10 +74,13 @@ async def add_factoid(ctx, arg1, *args):
         db.commit()
         await tagged_response(ctx, f"Successfully added factoid trigger: *{arg1}*")
 
-    except Exception:
-        await priv_response(
-            ctx, "I ran into an issue handling your factoid addition..."
-        )
+    except Exception as e:
+        # await priv_response(
+        #     ctx, "I ran into an issue handling your factoid addition..."
+        # )
+        import logging
+
+        logging.exception(e)
 
 
 @commands.command(
@@ -90,14 +90,20 @@ async def add_factoid(ctx, arg1, *args):
     usage="[trigger-name]",
     help="\nLimitations: Mentions should not be used as triggers.",
 )
-async def delete_factoid(ctx, arg):
+async def delete_factoid(ctx, *args):
     if ctx.message.mentions:
         await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
         return
 
+    if not args:
+        await priv_response(ctx, "You must specify a factoid to delete!")
+        return
+    else:
+        arg = args[0]
+
     channel = str(ctx.message.channel.id)
 
-    db = db_handler.Session()
+    db = ctx.bot.database_api.get_session()
 
     try:
         entry = (
@@ -127,7 +133,7 @@ class FactoidMatch(MatchPlugin):
 
         channel = str(ctx.message.channel.id)
 
-        db = db_handler.Session()
+        db = ctx.bot.database_api.get_session()
 
         try:
             entry = (

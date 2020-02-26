@@ -60,7 +60,11 @@ while True:
     except Exception as e:
         log.exception(e)
 
-    _bot.stable = False
+    try:
+        _bot.stable = False
+    except NameError:
+        pass
+
     time.sleep(2)
 
 if restart_manager:
