@@ -1,5 +1,6 @@
 from discord.ext import commands
-from emoji import EMOJI_UNICODE
+from emoji import EMOJI_UNICODE, emojize
+from inflect import engine as inflect_engine
 
 from utils.helpers import get_env_value, priv_response, tagged_response
 
@@ -14,7 +15,13 @@ def setup(bot):
 
 
 def emoji_from_char(char):
-    return EMOJI_UNICODE.get(f":regional_indicator_symbol_letter_{char.lower()}:")
+    if char.isalpha():
+        return emojize(
+            f":regional_indicator_symbol_letter_{char.lower()}:", use_aliases=True
+        )
+    if char.isnumeric():
+        char = inflect_engine().number_to_words(char)
+        return emojize(f":{char}:", use_aliases=True)
 
 
 def emoji_message_from_string(string):
@@ -58,6 +65,10 @@ def emoji_reaction_from_string(string):
     usage="[message]",
 )
 async def emsg(ctx, *args):
+    if ctx.message.mentions:
+        await priv_response(ctx, "I can't make an emoji from a mention!")
+        return
+
     message = " ".join(args) if args else None
     if not message:
         await priv_response(ctx, "You must specify a message!")
