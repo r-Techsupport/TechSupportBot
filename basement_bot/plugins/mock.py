@@ -5,7 +5,7 @@ from discord.ext import commands
 from utils.helpers import get_env_value, priv_response, tagged_response
 
 COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
-SEARCH_LIMIT = 50
+SEARCH_LIMIT = 20
 
 
 def setup(bot):
@@ -27,7 +27,7 @@ def mock_string(string):
 
 @commands.command(
     name="sb",
-    brief="MOcKS last MeSSAgE Of MeNtIONeD uSEr A LA moCkiNg SpONgEBob MeME",
+    brief="MOcKS last MeSSAgE Of MeNtIONeD uSEr",
     description=(
         "Returns last message of mentioned user following command changing"
         " random characters to capital or lowercase."

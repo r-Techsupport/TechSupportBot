@@ -7,7 +7,7 @@ from sqlalchemy import Column, DateTime, Integer, String
 from database import DatabaseAPI
 from utils.helpers import get_env_value, priv_response, tagged_response
 
-SEARCH_LIMIT = 50
+SEARCH_LIMIT = 20
 
 COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
 
