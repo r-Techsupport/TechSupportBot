@@ -1,8 +1,7 @@
 from discord.ext import commands
 from emoji import EMOJI_UNICODE
 
-from utils.helpers import (emoji_reaction, get_env_value, priv_response,
-                           tagged_response)
+from utils.helpers import get_env_value, priv_response, tagged_response
 
 SEARCH_LIMIT = 20
 
