@@ -16,6 +16,7 @@ sqlalchemy = "*"
 psycopg2-binary = "==2.8.4"
 http3 = "==0.6.7"
 emoji = "==0.5.4"
+inflect = "==4.1.0"
 
 [requires]
 python_version = "3.7"
