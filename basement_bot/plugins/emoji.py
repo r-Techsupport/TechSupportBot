@@ -58,7 +58,7 @@ def emoji_reaction_from_string(string):
     usage="[message]",
 )
 async def emsg(ctx, *args):
-    message = " ".join(args[:-1]) if args else None
+    message = " ".join(args) if args else None
     if not message:
         await priv_response(ctx, "You must specify a message!")
         return
