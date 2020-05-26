@@ -21,7 +21,7 @@ lint:
 	# TODO: add basement_bot/plugins/*.py after plugins documented
 
 test:
-	echo "No testing mechanisms exist yet. Skipping!"
+	$(drun) pytest
 
 dev:
 	docker build -t $(dev-image) -f Dockerfile.dev .
