@@ -9,16 +9,15 @@ class TestPlugin(aiounittest.AsyncTestCase):
     TEST_MODULES = ["/foo/bar/test1.py", "/foo/bar/test2.py", "/foo/bar/__init__.py"]
 
     def test_init(self):
-        mock_bot = object()
+        mock_bot = mock.MagicMock()
         api = PluginAPI(mock_bot)
         self.assertEqual(api.bot, mock_bot)
         self.assertEqual(api.plugins, {})
 
-    # not sure why this patch is needed directly from the file
     @mock.patch("plugin.isfile", return_value=True)
     @mock.patch("glob.glob", return_value=TEST_MODULES)
     def test_get_modules(self, _mock_glob, _mock_isfile):
-        mock_bot = object()
+        mock_bot = mock.MagicMock()
         api = PluginAPI(mock_bot)
         modules = api.get_modules()
         self.assertTrue("test1" in modules)
