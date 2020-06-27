@@ -8,10 +8,10 @@ from utils.helpers import get_env_value
 
 
 def setup(bot):
-    bot.add_cog(KanyeQuotesPlugin(bot))
+    bot.add_cog(KanyeQuotes(bot))
 
 
-class KanyeQuotesPlugin(LoopPlugin):
+class KanyeQuotes(LoopPlugin):
 
     CHANNEL_ID = get_env_value("KANYE_CHANNEL")
     API_URL = "https://api.kanye.rest"
