@@ -2,15 +2,15 @@ import os
 
 from discord.ext import commands
 
-from utils.helpers import is_admin, priv_response, tagged_response
 from utils.cogs import BasicPlugin
+from utils.helpers import is_admin, priv_response, tagged_response
 
 
 def setup(bot):
     bot.add_cog(AdminControl(bot))
 
-class AdminControl(BasicPlugin):
 
+class AdminControl(BasicPlugin):
     @commands.check(is_admin)
     @commands.command(name="plugin_status", hidden=True)
     async def plugin_status(self, ctx, *args):
@@ -37,7 +37,6 @@ class AdminControl(BasicPlugin):
         await priv_response(ctx, f"Loaded plugins: {loaded}")
         await priv_response(ctx, f"Available plugins: {available}")
 
-
     @commands.check(is_admin)
     @commands.command(name="load_plugin", hidden=True)
     async def load_plugin(self, ctx, *args):
@@ -56,7 +55,6 @@ class AdminControl(BasicPlugin):
             await priv_response(ctx, f"Plugin `{plugin_name}` failed to load!")
         elif retval == 126:
             await priv_response(ctx, f"Plugin `{plugin_name}` is already loaded!")
-
 
     @commands.check(is_admin)
     @commands.command(name="unload_plugin", hidden=True)
@@ -77,7 +75,6 @@ class AdminControl(BasicPlugin):
         elif retval == 126:
             await priv_response(ctx, f"Plugin `{plugin_name}` is not loaded!")
 
-
     @commands.check(is_admin)
     @commands.command(name="enable_command", hidden=True)
     async def enable_command(self, ctx, *args):
@@ -96,7 +93,9 @@ class AdminControl(BasicPlugin):
                     ctx, f"Successfully enabled command: `{command_name}`"
                 )
             else:
-                await priv_response(ctx, f"Command `{command_name}` is already enabled!")
+                await priv_response(
+                    ctx, f"Command `{command_name}` is already enabled!"
+                )
 
     @commands.check(is_admin)
     @commands.command(name="disable_command", hidden=True)
@@ -116,8 +115,9 @@ class AdminControl(BasicPlugin):
                     ctx, f"Successfully disabled command: `{command_name}`"
                 )
             else:
-                await priv_response(ctx, f"Command `{command_name}` is already disabled!")
-
+                await priv_response(
+                    ctx, f"Command `{command_name}` is already disabled!"
+                )
 
     @commands.check(is_admin)
     @commands.command(name="game", hidden=True)
@@ -130,7 +130,6 @@ class AdminControl(BasicPlugin):
 
         else:
             await priv_response(ctx, "I cannot play a game with no name!")
-
 
     @commands.check(is_admin)
     @commands.command(name="restart", hidden=True)

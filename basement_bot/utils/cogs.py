@@ -17,7 +17,7 @@ class BasicPlugin(commands.Cog):
         bot (Bot): the bot object
     """
 
-    PLUGIN_TYPE = None
+    PLUGIN_TYPE = "BASIC"
 
     def __init__(self, bot):
         self.bot = bot
