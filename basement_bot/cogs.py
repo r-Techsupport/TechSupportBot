@@ -70,6 +70,7 @@ class DatabasePlugin(BasicPlugin):
     """Plugin for accessing the database.
     """
 
+    PLUGIN_TYPE = "DATABASE"
     BaseTable = declarative_base()
 
     def __init__(self, bot, model=None):
@@ -97,14 +98,13 @@ class LoopPlugin(BasicPlugin):
 
     def __init__(self, bot):
         super().__init__(bot)
-        self.state = False
+        self.state = True
         self.bot.loop.create_task(self._loop_execute())
 
     async def _loop_execute(self):
         """Loops through the execution method.
         """
         await self.loop_preconfig()
-        self.state = True
         while self.state:
             await self.bot.loop.create_task(
                 self.execute()
