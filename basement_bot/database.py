@@ -20,7 +20,7 @@ class DatabaseAPI:
         echo (bool): True for verbose logging
     """
 
-    Table = declarative_base()
+    BaseTable = declarative_base()
 
     def __init__(self, bot, echo=False):
         self.bot = bot

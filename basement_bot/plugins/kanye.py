@@ -19,7 +19,7 @@ class KanyeQuotes(LoopPlugin):
     MAX_WAIT = int(float(get_env_value("KANYE_MAX_HOURS")) * 3600)
     ON_START = bool(int(get_env_value("KANYE_ON_START", "1")))
 
-    async def preconfig(self):
+    async def loop_preconfig(self):
         if self.MIN_WAIT < 0 or self.MAX_WAIT < 0:
             raise RuntimeError("Min and max times must both be greater than 0")
         if self.MAX_WAIT - self.MIN_WAIT <= 0:

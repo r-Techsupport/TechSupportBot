@@ -4,6 +4,7 @@
 import asyncio
 
 from discord.ext import commands
+from sqlalchemy.ext.declarative import declarative_base
 
 from utils.logger import get_logger
 
@@ -65,6 +66,25 @@ class MatchPlugin(BasicPlugin):
         raise RuntimeError("Response function must be defined in sub-class")
 
 
+class DatabasePlugin(BasicPlugin):
+    """Plugin for accessing the database.
+    """
+
+    BaseTable = declarative_base()
+
+    def __init__(self, bot, model=None):
+        super().__init__(bot)
+        self.model = model
+        if self.model:
+            self.bot.database_api.create_table(self.model)
+        self.bot.loop.create_task(self.db_preconfig())
+        self.db_session = self.bot.database_api.get_session
+
+    async def db_preconfig(self):
+        """Preconfigures the environment before starting the plugin.
+        """
+
+
 class LoopPlugin(BasicPlugin):
     """Plugin for looping a task.
 
@@ -83,7 +103,7 @@ class LoopPlugin(BasicPlugin):
     async def _loop_execute(self):
         """Loops through the execution method.
         """
-        await self.preconfig()
+        await self.loop_preconfig()
         self.state = True
         while self.state:
             await self.bot.loop.create_task(
@@ -101,7 +121,7 @@ class LoopPlugin(BasicPlugin):
         """
         await asyncio.sleep(self.DEFAULT_WAIT)
 
-    async def preconfig(self):
+    async def loop_preconfig(self):
         """Preconfigures the environment before starting the loop.
         """
         raise RuntimeError("Preconfig function must be defined in sub-class")

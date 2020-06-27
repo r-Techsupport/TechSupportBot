@@ -3,15 +3,11 @@ import datetime
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
 
-from database import DatabaseAPI
-from utils.cogs import MatchPlugin
+from utils.cogs import DatabasePlugin, MatchPlugin
 from utils.helpers import get_env_value, priv_response, tagged_response
 
-FACTOID_PREFIX = get_env_value("FACTOID_PREFIX")
-COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
 
-
-class Factoid(DatabaseAPI.Table):
+class Factoid(DatabasePlugin.BaseTable):
     __tablename__ = "factoids"
 
     pk = Column(Integer, primary_key=True)
@@ -22,109 +18,111 @@ class Factoid(DatabaseAPI.Table):
 
 
 def setup(bot):
-    if FACTOID_PREFIX == COMMAND_PREFIX:
-        raise RuntimeError(
-            f"Command prefix '{COMMAND_PREFIX}' cannot equal Factoid prefix"
-        )
-
-    bot.database_api.create_table(Factoid)
-    bot.add_command(add_factoid)
-    bot.add_cog(FactoidMatch(bot))
-    bot.add_command(delete_factoid)
+    bot.add_cog(FactoidManager(bot, Factoid))
 
 
-@commands.command(
-    name="r",
-    brief="Creates custom trigger with a specified output",
-    description=(
-        "Creates a custom trigger with a specified name that outputs any specified text,"
-        " including mentions. All triggers are used by sending a message with a '?'"
-        " appended in front of the trigger name."
-    ),
-    usage="[trigger-name] [trigger-output]",
-    help="Trigger Usage: ?[trigger-name]\n\nLimitations: Mentions should not be used as triggers.",
-)
-async def add_factoid(ctx, *args):
-    if ctx.message.mentions:
-        await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
-        return
+class FactoidManager(DatabasePlugin, MatchPlugin):
 
-    if len(args) >= 2:
-        arg1 = args[0]
-        args = args[1:]
+    FACTOID_PREFIX = get_env_value("FACTOID_PREFIX")
+    COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
 
-    channel = str(ctx.message.channel.id)
+    async def db_preconfig(self):
+        if self.FACTOID_PREFIX == self.COMMAND_PREFIX:
+            raise RuntimeError(
+                f"Command prefix '{self.COMMAND_PREFIX}' cannot equal Factoid prefix"
+            )
 
-    db = ctx.bot.database_api.get_session()
+    @commands.command(
+        name="r",
+        brief="Creates custom trigger with a specified output",
+        description=(
+            "Creates a custom trigger with a specified name that outputs any specified text,"
+            " including mentions. All triggers are used by sending a message with a '?'"
+            " appended in front of the trigger name."
+        ),
+        usage="[trigger-name] [trigger-output]",
+        help="Trigger Usage: ?[trigger-name]\n\nLimitations: Mentions should not be used as triggers.",
+    )
+    async def add_factoid(self, ctx, *args):
+        if ctx.message.mentions:
+            await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
+            return
 
-    try:
-        # first check if key already exists
-        entry = (
-            db.query(Factoid)
-            .filter(Factoid.text == arg1, Factoid.channel == channel)
-            .first()
-        )
-        if entry:
-            # delete old one
-            db.delete(entry)
-            await priv_response(ctx, "Deleting previous entry of factoid trigger...")
+        if len(args) >= 2:
+            arg1 = args[0]
+            args = args[1:]
 
-        # finally, add new entry
-        db.add(Factoid(text=arg1.lower(), channel=channel, message=" ".join(args)))
-        db.commit()
-        await tagged_response(ctx, f"Successfully added factoid trigger: *{arg1}*")
+        channel = str(ctx.message.channel.id)
 
-    except Exception as e:
-        # await priv_response(
-        #     ctx, "I ran into an issue handling your factoid addition..."
-        # )
-        import logging
+        db = self.db_session()
 
-        logging.exception(e)
+        try:
+            # first check if key already exists
+            entry = (
+                db.query(Factoid)
+                .filter(Factoid.text == arg1, Factoid.channel == channel)
+                .first()
+            )
+            if entry:
+                # delete old one
+                db.delete(entry)
+                await priv_response(
+                    ctx, "Deleting previous entry of factoid trigger..."
+                )
 
-
-@commands.command(
-    name="f",
-    brief="Deletes an existing custom trigger",
-    description="Deletes an existing custom trigger.",
-    usage="[trigger-name]",
-    help="\nLimitations: Mentions should not be used as triggers.",
-)
-async def delete_factoid(ctx, *args):
-    if ctx.message.mentions:
-        await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
-        return
-
-    if not args:
-        await priv_response(ctx, "You must specify a factoid to delete!")
-        return
-    else:
-        arg = args[0]
-
-    channel = str(ctx.message.channel.id)
-
-    db = ctx.bot.database_api.get_session()
-
-    try:
-        entry = (
-            db.query(Factoid)
-            .filter(Factoid.text == arg, Factoid.channel == channel)
-            .first()
-        )
-        if entry:
-            db.delete(entry)
+            # finally, add new entry
+            db.add(Factoid(text=arg1.lower(), channel=channel, message=" ".join(args)))
             db.commit()
-        await tagged_response(ctx, f"Successfully deleted factoid trigger: *{arg}*")
+            await tagged_response(ctx, f"Successfully added factoid trigger: *{arg1}*")
 
-    except Exception:
-        await priv_response(
-            ctx, "I ran into an issue handling your factoid deletion..."
-        )
+        except Exception as e:
+            # await priv_response(
+            #     ctx, "I ran into an issue handling your factoid addition..."
+            # )
+            import logging
 
+            logging.exception(e)
 
-class FactoidMatch(MatchPlugin):
+    @commands.command(
+        name="f",
+        brief="Deletes an existing custom trigger",
+        description="Deletes an existing custom trigger.",
+        usage="[trigger-name]",
+        help="\nLimitations: Mentions should not be used as triggers.",
+    )
+    async def delete_factoid(self, ctx, *args):
+        if ctx.message.mentions:
+            await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
+            return
+
+        if not args:
+            await priv_response(ctx, "You must specify a factoid to delete!")
+            return
+        else:
+            arg = args[0]
+
+        channel = str(ctx.message.channel.id)
+
+        db = self.db_session()
+
+        try:
+            entry = (
+                db.query(Factoid)
+                .filter(Factoid.text == arg, Factoid.channel == channel)
+                .first()
+            )
+            if entry:
+                db.delete(entry)
+                db.commit()
+            await tagged_response(ctx, f"Successfully deleted factoid trigger: *{arg}*")
+
+        except Exception:
+            await priv_response(
+                ctx, "I ran into an issue handling your factoid deletion..."
+            )
+
     def match(self, content):
-        return bool(content.startswith(FACTOID_PREFIX))
+        return bool(content.startswith(self.FACTOID_PREFIX))
 
     async def response(self, ctx, arg):
         if ctx.message.mentions:
@@ -133,7 +131,7 @@ class FactoidMatch(MatchPlugin):
 
         channel = str(ctx.message.channel.id)
 
-        db = ctx.bot.database_api.get_session()
+        db = self.db_session()
 
         try:
             entry = (
