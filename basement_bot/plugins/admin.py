@@ -2,143 +2,137 @@ import os
 
 from discord.ext import commands
 
+from cogs import BasicPlugin
 from utils.helpers import is_admin, priv_response, tagged_response
 
 
 def setup(bot):
-    bot.add_command(plugin_status)
-    bot.add_command(load_plugin)
-    bot.add_command(unload_plugin)
-    bot.add_command(enable_command)
-    bot.add_command(disable_command)
-    bot.add_command(game)
-    bot.add_command(restart)
+    bot.add_cog(AdminControl(bot))
 
 
-@commands.check(is_admin)
-@commands.command(name="plugin_status", hidden=True)
-async def plugin_status(ctx, *args):
-    plugin_name = args[0].lower() if args else None
+class AdminControl(BasicPlugin):
+    @commands.check(is_admin)
+    @commands.command(name="plugin_status", hidden=True)
+    async def plugin_status(self, ctx, *args):
+        plugin_name = args[0].lower() if args else None
 
-    status_data = ctx.bot.plugin_api.get_status()
-    error = status_data.get("error")
-    if error:
-        await priv_response(ctx, f"Error: {error}")
-        return
+        status_data = ctx.bot.plugin_api.get_status()
+        error = status_data.get("error")
+        if error:
+            await priv_response(ctx, f"Error: {error}")
+            return
 
-    if plugin_name:
-        if plugin_name in status_data.get("loaded", []):
-            await priv_response(ctx, f"Plugin `{plugin_name}` is loaded")
+        if plugin_name:
+            if plugin_name in status_data.get("loaded", []):
+                await priv_response(ctx, f"Plugin `{plugin_name}` is loaded")
+            else:
+                await priv_response(ctx, f"Plugin `{plugin_name}` is not loaded")
+            return
+
+        loaded = [f"`{plugin}`" for plugin in status_data.get("loaded")]
+        loaded = ", ".join(loaded) if loaded else "*None*"
+        available = [f"`{plugin}`" for plugin in status_data.get("available")]
+        available = ", ".join(available) if available else "*None*"
+
+        await priv_response(ctx, f"Loaded plugins: {loaded}")
+        await priv_response(ctx, f"Available plugins: {available}")
+
+    @commands.check(is_admin)
+    @commands.command(name="load_plugin", hidden=True)
+    async def load_plugin(self, ctx, *args):
+        plugin_name = args[0].lower() if args else None
+        if not plugin_name:
+            await priv_response(ctx, "Invalid input")
+            return
+        elif not plugin_name.isalpha():
+            await priv_response(ctx, "Plugin name must be letters only")
+            return
+
+        retval = ctx.bot.plugin_api.load_plugin(plugin_name)
+        if retval == 0:
+            await priv_response(ctx, f"Plugin `{plugin_name}` loaded successfully!")
+        elif retval == 1:
+            await priv_response(ctx, f"Plugin `{plugin_name}` failed to load!")
+        elif retval == 126:
+            await priv_response(ctx, f"Plugin `{plugin_name}` is already loaded!")
+
+    @commands.check(is_admin)
+    @commands.command(name="unload_plugin", hidden=True)
+    async def unload_plugin(self, ctx, *args):
+        plugin_name = args[0].lower() if args else None
+        if not plugin_name:
+            await priv_response(ctx, "Invalid input")
+            return
+        elif not plugin_name.isalpha():
+            await priv_response(ctx, "Plugin name must be letters only")
+            return
+
+        retval = ctx.bot.plugin_api.unload_plugin(plugin_name)
+        if retval == 0:
+            await priv_response(ctx, f"Plugin `{plugin_name}` unloaded successfully!")
+        elif retval == 1:
+            await priv_response(ctx, f"Plugin `{plugin_name}` failed to unload!")
+        elif retval == 126:
+            await priv_response(ctx, f"Plugin `{plugin_name}` is not loaded!")
+
+    @commands.check(is_admin)
+    @commands.command(name="enable_command", hidden=True)
+    async def enable_command(self, ctx, *args):
+        command_name = args[0].lower() if args else None
+        if not command_name:
+            await priv_response(ctx, "Invalid input")
+            return
+
+        command_ = ctx.bot.get_command(command_name)
+        if not command_:
+            await priv_response(ctx, f"No such command: `{command_name}`")
         else:
-            await priv_response(ctx, f"Plugin `{plugin_name}` is not loaded")
-        return
+            if not command_.enabled:
+                command_.enabled = True
+                await priv_response(
+                    ctx, f"Successfully enabled command: `{command_name}`"
+                )
+            else:
+                await priv_response(
+                    ctx, f"Command `{command_name}` is already enabled!"
+                )
 
-    loaded = [f"`{plugin}`" for plugin in status_data.get("loaded")]
-    loaded = ", ".join(loaded) if loaded else "*None*"
-    available = [f"`{plugin}`" for plugin in status_data.get("available")]
-    available = ", ".join(available) if available else "*None*"
+    @commands.check(is_admin)
+    @commands.command(name="disable_command", hidden=True)
+    async def disable_command(self, ctx, *args):
+        command_name = args[0].lower() if args else None
+        if not command_name:
+            await priv_response(ctx, "Invalid input")
+            return
 
-    await priv_response(ctx, f"Loaded plugins: {loaded}")
-    await priv_response(ctx, f"Available plugins: {available}")
-
-
-@commands.check(is_admin)
-@commands.command(name="load_plugin", hidden=True)
-async def load_plugin(ctx, *args):
-    plugin_name = args[0].lower() if args else None
-    if not plugin_name:
-        await priv_response(ctx, "Invalid input")
-        return
-    elif not plugin_name.isalpha():
-        await priv_response(ctx, "Plugin name must be letters only")
-        return
-
-    retval = ctx.bot.plugin_api.load_plugin(plugin_name)
-    if retval == 0:
-        await priv_response(ctx, f"Plugin `{plugin_name}` loaded successfully!")
-    elif retval == 1:
-        await priv_response(ctx, f"Plugin `{plugin_name}` failed to load!")
-    elif retval == 126:
-        await priv_response(ctx, f"Plugin `{plugin_name}` is already loaded!")
-
-
-@commands.check(is_admin)
-@commands.command(name="unload_plugin", hidden=True)
-async def unload_plugin(ctx, *args):
-    plugin_name = args[0].lower() if args else None
-    if not plugin_name:
-        await priv_response(ctx, "Invalid input")
-        return
-    elif not plugin_name.isalpha():
-        await priv_response(ctx, "Plugin name must be letters only")
-        return
-
-    retval = ctx.bot.plugin_api.unload_plugin(plugin_name)
-    if retval == 0:
-        await priv_response(ctx, f"Plugin `{plugin_name}` unloaded successfully!")
-    elif retval == 1:
-        await priv_response(ctx, f"Plugin `{plugin_name}` failed to unload!")
-    elif retval == 126:
-        await priv_response(ctx, f"Plugin `{plugin_name}` is not loaded!")
-
-
-@commands.check(is_admin)
-@commands.command(name="enable_command", hidden=True)
-async def enable_command(ctx, *args):
-    command_name = args[0].lower() if args else None
-    if not command_name:
-        await priv_response(ctx, "Invalid input")
-        return
-
-    command_ = ctx.bot.get_command(command_name)
-    if not command_:
-        await priv_response(ctx, f"No such command: `{command_name}`")
-    else:
-        if not command_.enabled:
-            command_.enabled = True
-            await priv_response(
-                ctx, f"Successfully {option}d command: `{command_name}`"
-            )
+        command_ = ctx.bot.get_command(command_name)
+        if not command_:
+            await priv_response(ctx, f"No such command: `{command_name}`")
         else:
-            await priv_response(ctx, f"Command `{command_name}` is already enabled!")
+            if not command_.disabled:
+                command_.disabled = True
+                await priv_response(
+                    ctx, f"Successfully disabled command: `{command_name}`"
+                )
+            else:
+                await priv_response(
+                    ctx, f"Command `{command_name}` is already disabled!"
+                )
 
+    @commands.check(is_admin)
+    @commands.command(name="game", hidden=True)
+    async def game(self, ctx, *args):
+        game_ = " ".join(args)[:50]
 
-@commands.check(is_admin)
-@commands.command(name="disable_command", hidden=True)
-async def disable_command(ctx, *args):
-    command_name = args[0].lower() if args else None
-    if not command_name:
-        await priv_response(ctx, "Invalid input")
-        return
+        if not all(char == " " for char in game_):
+            await ctx.bot.set_game(game_)
+            await priv_response(ctx, f"Successfully set game to: *{game_}*")
 
-    command_ = ctx.bot.get_command(command_name)
-    if not command_:
-        await priv_response(ctx, f"No such command: `{command_name}`")
-    else:
-        if not command_.disabled:
-            command_.disabled = True
-            await priv_response(
-                ctx, f"Successfully {option}d command: `{command_name}`"
-            )
         else:
-            await priv_response(ctx, f"Command `{command_name}` is already disabled!")
+            await priv_response(ctx, "I cannot play a game with no name!")
 
-
-@commands.check(is_admin)
-@commands.command(name="game", hidden=True)
-async def game(ctx, *args):
-    game_ = " ".join(args)[:50]
-
-    if not all(char == " " for char in game_):
-        await ctx.bot.set_game(game_)
-        await priv_response(ctx, f"Successfully set game to: *{game_}*")
-
-    else:
-        await priv_response(ctx, "I cannot play a game with no name!")
-
-
-@commands.check(is_admin)
-@commands.command(name="restart", hidden=True)
-async def restart(ctx):
-    await tagged_response(ctx, "Rebooting! *Beep. boop. boop. bop.* :robot:")
-    await ctx.bot.shutdown()
+    @commands.check(is_admin)
+    @commands.command(name="restart", hidden=True)
+    async def restart(self, ctx):
+        await tagged_response(ctx, "Rebooting! *Beep. boop. boop. bop.* :robot:")
+        await ctx.bot.shutdown()

@@ -3,15 +3,15 @@ from random import randint
 
 import http3
 
-from utils.cogs import LoopPlugin
+from cogs import LoopPlugin
 from utils.helpers import get_env_value
 
 
 def setup(bot):
-    bot.add_cog(KanyeQuotesPlugin(bot))
+    bot.add_cog(KanyeQuotes(bot))
 
 
-class KanyeQuotesPlugin(LoopPlugin):
+class KanyeQuotes(LoopPlugin):
 
     CHANNEL_ID = get_env_value("KANYE_CHANNEL")
     API_URL = "https://api.kanye.rest"
@@ -19,7 +19,7 @@ class KanyeQuotesPlugin(LoopPlugin):
     MAX_WAIT = int(float(get_env_value("KANYE_MAX_HOURS")) * 3600)
     ON_START = bool(int(get_env_value("KANYE_ON_START", "1")))
 
-    async def preconfig(self):
+    async def loop_preconfig(self):
         if self.MIN_WAIT < 0 or self.MAX_WAIT < 0:
             raise RuntimeError("Min and max times must both be greater than 0")
         if self.MAX_WAIT - self.MIN_WAIT <= 0:

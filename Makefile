@@ -21,7 +21,7 @@ lint:
 	# TODO: add basement_bot/plugins/*.py after plugins documented
 
 test:
-	$(drun) pytest
+	$(drun) pytest --disable-warnings
 
 dev:
 	docker build -t $(dev-image) -f Dockerfile.dev .
