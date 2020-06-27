@@ -1,6 +1,8 @@
 """Base cogs for making plugins.
 """
 
+import asyncio
+
 from discord.ext import commands
 
 from utils.logger import get_logger
@@ -15,6 +17,8 @@ class BasicPlugin(commands.Cog):
         bot (Bot): the bot object
     """
 
+    PLUGIN_TYPE = None
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -22,6 +26,8 @@ class BasicPlugin(commands.Cog):
 class MatchPlugin(BasicPlugin):
     """Plugin for matching a specific criteria and responding.
     """
+
+    PLUGIN_TYPE = "MATCH"
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -57,3 +63,50 @@ class MatchPlugin(BasicPlugin):
             content (str): the message content
         """
         raise RuntimeError("Response function must be defined in sub-class")
+
+
+class LoopPlugin(BasicPlugin):
+    """Plugin for looping a task.
+
+    parameters:
+        bot (Bot): the bot object
+    """
+
+    PLUGIN_TYPE = "LOOP"
+    DEFAULT_WAIT = 30
+
+    def __init__(self, bot):
+        super().__init__(bot)
+        self.state = False
+        self.bot.loop.create_task(self._loop_execute())
+
+    async def _loop_execute(self):
+        """Loops through the execution method.
+        """
+        await self.preconfig()
+        self.state = True
+        while self.state:
+            await self.bot.loop.create_task(
+                self.execute()
+            )  # pylint: disable=not-callable
+            await self.wait()
+
+    def cog_unload(self):
+        """Allows the state to exit after unloading.
+        """
+        self.state = False
+
+    async def wait(self):
+        """The default wait method.
+        """
+        await asyncio.sleep(self.DEFAULT_WAIT)
+
+    async def preconfig(self):
+        """Preconfigures the environment before starting the loop.
+        """
+        raise RuntimeError("Preconfig function must be defined in sub-class")
+
+    async def execute(self):
+        """Runs sequentially after each wait method.
+        """
+        raise RuntimeError("Execute function must be defined in sub-class")

@@ -3,40 +3,45 @@ from random import randint
 
 import http3
 
+from utils.cogs import LoopPlugin
 from utils.helpers import get_env_value
-
-CHANNEL_ID = get_env_value("KANYE_CHANNEL")
-API_URL = "https://api.kanye.rest"
-MIN_WAIT = int(get_env_value("KANYE_MIN_HOURS")) * 3600
-MAX_WAIT = int(get_env_value("KANYE_MAX_HOURS")) * 3600
-ON_START = bool(int(get_env_value("KANYE_ON_START", "1")))
 
 
 def setup(bot):
-    if MIN_WAIT < 0 or MAX_WAIT < 0:
-        raise RuntimeError("Min and max times must both be greater than 0")
-    if MAX_WAIT - MIN_WAIT <= 0:
-        raise RuntimeError(f"Max time must be greater than min time")
-    bot.loop.create_task(kanye_fact(bot))
+    bot.add_cog(KanyeQuotesPlugin(bot))
 
 
-async def kanye_fact(bot):
-    await bot.wait_until_ready()
-    http_client = http3.AsyncClient()
+class KanyeQuotesPlugin(LoopPlugin):
 
-    channel = bot.get_channel(int(CHANNEL_ID))
-    if not channel:
-        return
+    CHANNEL_ID = get_env_value("KANYE_CHANNEL")
+    API_URL = "https://api.kanye.rest"
+    MIN_WAIT = int(float(get_env_value("KANYE_MIN_HOURS")) * 3600)
+    MAX_WAIT = int(float(get_env_value("KANYE_MAX_HOURS")) * 3600)
+    ON_START = bool(int(get_env_value("KANYE_ON_START", "1")))
 
-    if not ON_START:
-        await asyncio.sleep(randint(MIN_WAIT, MAX_WAIT))
+    async def preconfig(self):
+        if self.MIN_WAIT < 0 or self.MAX_WAIT < 0:
+            raise RuntimeError("Min and max times must both be greater than 0")
+        if self.MAX_WAIT - self.MIN_WAIT <= 0:
+            raise RuntimeError(f"Max time must be greater than min time")
 
-    while True:
-        fact = await http_client.get(API_URL)
+        await self.bot.wait_until_ready()
+        self.http_client = http3.AsyncClient()
+
+        self.channel = self.bot.get_channel(int(self.CHANNEL_ID))
+        if not self.channel:
+            raise RuntimeError("Unable to get channel for Kanye Quotes plugin")
+
+        if not self.ON_START:
+            self.wait()
+
+    async def execute(self):
+        fact = await self.http_client.get(self.API_URL)
         fact = fact.json().get("quote")
 
         if fact:
             message = f"'*{fact}*' - Kanye West"
-            await channel.send(message)
+            await self.channel.send(message)
 
-        await asyncio.sleep(randint(MIN_WAIT, MAX_WAIT))
+    async def wait(self):
+        await asyncio.sleep(randint(self.MIN_WAIT, self.MAX_WAIT))
