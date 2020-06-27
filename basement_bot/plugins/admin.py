@@ -2,7 +2,7 @@ import os
 
 from discord.ext import commands
 
-from utils.cogs import BasicPlugin
+from cogs import BasicPlugin
 from utils.helpers import is_admin, priv_response, tagged_response
 
 

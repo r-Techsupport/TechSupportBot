@@ -2,7 +2,7 @@ from discord.ext import commands
 from emoji import EMOJI_UNICODE, emojize
 from inflect import engine as inflect_engine
 
-from utils.cogs import BasicPlugin
+from cogs import BasicPlugin
 from utils.helpers import get_env_value, priv_response, tagged_response
 
 

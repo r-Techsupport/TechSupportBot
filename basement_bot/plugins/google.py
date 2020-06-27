@@ -1,7 +1,7 @@
 import http3
 from discord.ext import commands
 
-from utils.cogs import BasicPlugin
+from cogs import BasicPlugin
 from utils.helpers import get_env_value, priv_response, tagged_response
 
 

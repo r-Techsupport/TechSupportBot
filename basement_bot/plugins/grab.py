@@ -4,7 +4,7 @@ from random import randint
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
 
-from utils.cogs import DatabasePlugin
+from cogs import DatabasePlugin
 from utils.helpers import get_env_value, priv_response, tagged_response
 
 

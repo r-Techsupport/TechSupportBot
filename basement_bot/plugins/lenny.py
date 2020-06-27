@@ -2,7 +2,7 @@ from random import choice
 
 from discord.ext import commands
 
-from utils.cogs import BasicPlugin
+from cogs import BasicPlugin
 
 
 def setup(bot):

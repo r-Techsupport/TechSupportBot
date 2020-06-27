@@ -3,7 +3,7 @@ from random import randint
 
 import http3
 
-from utils.cogs import LoopPlugin
+from cogs import LoopPlugin
 from utils.helpers import get_env_value
 
 

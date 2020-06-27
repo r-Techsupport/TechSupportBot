@@ -3,7 +3,7 @@ import datetime
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
 
-from utils.cogs import DatabasePlugin, MatchPlugin
+from cogs import DatabasePlugin, MatchPlugin
 from utils.helpers import get_env_value, priv_response, tagged_response
 
 
