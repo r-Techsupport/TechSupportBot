@@ -5,16 +5,16 @@ from inflect import engine as inflect_engine
 from utils.cogs import BasicPlugin
 from utils.helpers import get_env_value, priv_response, tagged_response
 
-SEARCH_LIMIT = 20
-
-COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
-
 
 def setup(bot):
     bot.add_cog(LetterEmojis(bot))
 
 
 class LetterEmojis(BasicPlugin):
+
+    SEARCH_LIMIT = 20
+    COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
+
     @staticmethod
     def emoji_from_char(char):
         if char.isalpha():
@@ -99,10 +99,10 @@ class LetterEmojis(BasicPlugin):
         react_user = ctx.message.mentions[0]
 
         react_message = None
-        async for channel_message in ctx.channel.history(limit=SEARCH_LIMIT):
+        async for channel_message in ctx.channel.history(limit=self.SEARCH_LIMIT):
             if (
                 channel_message.author == react_user
-                and not channel_message.content.startswith(f"{COMMAND_PREFIX}")
+                and not channel_message.content.startswith(f"{self.COMMAND_PREFIX}")
             ):
                 react_message = channel_message
                 break
