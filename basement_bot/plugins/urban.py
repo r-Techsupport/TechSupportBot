@@ -27,6 +27,10 @@ class UrbanDictionary(BasicPlugin):
         help="\nLimitations: Mentions should not be used.",
     )
     async def urban(self, ctx, *args):
+        if not args:
+            await priv_response(ctx, "I can't search for nothing!")
+            return
+
         http_client = http3.AsyncClient()
         args = " ".join(args).lower().strip()
         definitions = await http_client.get(f"{self.BASE_URL}{args}")
