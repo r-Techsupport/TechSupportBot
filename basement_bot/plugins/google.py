@@ -36,6 +36,9 @@ class Googler(BasicPlugin):
         if not self.CSE_ID or not self.DEV_KEY:
             await priv_response(ctx, "Sorry, I don't have the Google API keys!")
             return
+        if not args:
+            await priv_response(ctx, "I can't search for nothing!")
+            return
 
         args = " ".join(args)
         items = await self.get_items(
@@ -63,6 +66,9 @@ class Googler(BasicPlugin):
     async def youtube(self, ctx, *args):
         if not self.DEV_KEY:
             await priv_response(ctx, "Sorry, I don't have the Google dev key!")
+            return
+        if not args:
+            await priv_response(ctx, "I can't search for nothing!")
             return
 
         args = " ".join(args)

@@ -22,6 +22,11 @@ class BasicPlugin(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.bot.loop.create_task(self.preconfig())
+
+    async def preconfig(self):
+        """Preconfigures the environment before starting the plugin.
+        """
 
 
 class MatchPlugin(BasicPlugin):
@@ -124,7 +129,6 @@ class LoopPlugin(BasicPlugin):
     async def loop_preconfig(self):
         """Preconfigures the environment before starting the loop.
         """
-        raise RuntimeError("Preconfig function must be defined in sub-class")
 
     async def execute(self):
         """Runs sequentially after each wait method.

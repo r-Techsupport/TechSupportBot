@@ -16,6 +16,9 @@ class UrbanDictionary(BasicPlugin):
     BASE_URL = "http://api.urbandictionary.com/v0/define?term="
     SEE_MORE_URL = "https://www.urbandictionary.com/define.php?term="
 
+    async def preconfig(self):
+        self.cached = {"last_query": None, "last_url": None, "all_urls": []}
+
     @commands.command(
         name="urb",
         brief="Returns the top Urban Dictionary result of search terms",
@@ -27,6 +30,10 @@ class UrbanDictionary(BasicPlugin):
         help="\nLimitations: Mentions should not be used.",
     )
     async def urban(self, ctx, *args):
+        if not args:
+            await priv_response(ctx, "I can't search for nothing!")
+            return
+
         http_client = http3.AsyncClient()
         args = " ".join(args).lower().strip()
         definitions = await http_client.get(f"{self.BASE_URL}{args}")
