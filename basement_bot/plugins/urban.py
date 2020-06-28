@@ -16,6 +16,9 @@ class UrbanDictionary(BasicPlugin):
     BASE_URL = "http://api.urbandictionary.com/v0/define?term="
     SEE_MORE_URL = "https://www.urbandictionary.com/define.php?term="
 
+    async def preconfig(self):
+        self.cached = {"last_query": None, "last_url": None, "all_urls": []}
+
     @commands.command(
         name="urb",
         brief="Returns the top Urban Dictionary result of search terms",

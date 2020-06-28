@@ -6,13 +6,14 @@ import cogs
 
 
 class TestBasicPlugin(aiounittest.AsyncTestCase):
+    def test_type(self):
+        self.assertEqual(cogs.BasicPlugin.PLUGIN_TYPE, "BASIC")
+
     def test_init(self):
         mock_bot = mock.MagicMock()
         plugin = cogs.BasicPlugin(mock_bot)
         self.assertEqual(plugin.bot, mock_bot)
-
-    def test_type(self):
-        self.assertEqual(cogs.BasicPlugin.PLUGIN_TYPE, "BASIC")
+        self.assertTrue(mock_bot.loop.create_task.called)
 
 
 class TestMatchPlugin(aiounittest.AsyncTestCase):
@@ -131,12 +132,6 @@ class TestLoopPlugin(aiounittest.AsyncTestCase):
         plugin = cogs.LoopPlugin(mock_bot)
         await plugin.wait()
         self.assertTrue(mock_sleep.called)
-
-    async def test_loop_preconfig(self):
-        mock_bot = mock.AsyncMock()
-        plugin = cogs.LoopPlugin(mock_bot)
-        with self.assertRaises(RuntimeError):
-            await plugin.loop_preconfig()
 
     async def test_execute(self):
         mock_bot = mock.AsyncMock()
