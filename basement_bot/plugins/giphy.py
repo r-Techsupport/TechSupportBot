@@ -20,6 +20,11 @@ class Giphy(BasicPlugin):
     async def preconfig(self):
         self.cached = {"last_query": None, "last_url": None, "all_urls": []}
 
+    @staticmethod
+    def parse_url(url):
+        index = url.find("?cid=")
+        return url[:index]
+
     @commands.command(
         name="giphy",
         brief="Grabs a random Giphy image",
@@ -36,8 +41,9 @@ class Giphy(BasicPlugin):
             return
 
         args_ = " ".join(args)
-        if self.cached.get("query") == args:
-            await tagged_response(ctx, random.choice(self.cached.get("urls")))
+        if self.cached.get("last_query") == args:
+            url = self.parse_url(random.choice(self.cached.get("all_urls")))
+            await tagged_response(ctx, url)
             return
 
         args_q = "+".join(args)
@@ -55,6 +61,7 @@ class Giphy(BasicPlugin):
 
         while True:
             url = random.choice(data).get("images", {}).get("original", {}).get("url")
+            url = self.parse_url(url)
             if url != self.cached.get("last_url"):
                 break
 
