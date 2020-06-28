@@ -33,7 +33,7 @@ class KanyeQuotes(LoopPlugin):
             raise RuntimeError("Unable to get channel for Kanye Quotes plugin")
 
         if not self.ON_START:
-            self.wait()
+            await self.wait()
 
     async def execute(self):
         fact = await self.http_client.get(self.API_URL)
