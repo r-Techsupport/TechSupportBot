@@ -1,9 +1,9 @@
+tag = 1.0.0
 image = effprime/basement-bot
 dev-image = $(image):dev
-prod-image = $(image)
+prod-image = $(image):$(tag)
 drun = docker run -v $(shell pwd):/app -t $(dev-image) python3 -m
 main_dir = basement_bot
-TRAVIS_TAG ?= latest
 
 make sync:
 	python3 -m pipenv sync -d
@@ -28,10 +28,10 @@ dev:
 	docker build -t $(dev-image) -f Dockerfile.dev .
 
 prod:
-	docker build -t $(prod-image):$(TRAVIS_TAG) -f Dockerfile .
+	docker build -t $(prod-image) -f Dockerfile .
 
 push:
-	docker push $(prod-image):$(TRAVIS_TAG)
+	docker push $(prod-image)
 
 upd:
 	docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
