@@ -22,4 +22,4 @@ jobs:
       script:
         - make prod
         - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-        - docker push effprime/basement-bot:latest
+        - docker push effprime/basement-bot:${TRAVIS_TAG:-latest}
