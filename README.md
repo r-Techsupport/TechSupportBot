@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/effprime/BasementBot.svg?branch=master)](https://travis-ci.org/effprime/BasementBot)
 
-BasementBot is a Discord bot designed for running in Docker. Written on top of the [Python Discord API](https://discordpy.readthedocs.io/en/latest/api.html), it provides loading custom plugins.
+BasementBot is a Discord bot designed for running in Docker. Written on top of the [Python Discord API](https://discordpy.readthedocs.io/en/latest/api.html), it provides the loading and unloading of custom plugins.
 
 # Setup
 
@@ -14,7 +14,7 @@ BasementBot is a Discord bot designed for running in Docker. Written on top of t
 
 * Fill out the settings appropriate to your bot.
 
-* Pull the Docker image:
+* Pull the latest Docker image:
     ```
     docker pull effprime/basement-bot:latest
     ```
@@ -51,11 +51,11 @@ BasementBot is a Discord bot designed for running in Docker. Written on top of t
     make prod
     ```
 
-## Makefile
+# Makefile
 
 The Makefile offers shortcut commands for development.
 
-* `make sync` makes an updated pipenv virtual environment.
+* `sync` makes an updated pipenv virtual environment.
 * `check-format` checks the formatting without changing files.
 * `format` checks formatting and changes files.
 * `lint` runs pylint.
@@ -68,11 +68,7 @@ The Makefile offers shortcut commands for development.
 * `restart` restarts the bot containers.
 * `logs` shows the main container logs.
 
-## Hot Reloading
-
-In development, the Docker images include a Watchdog-based service for watching changes to the code files. When something is edited, Docker has a volume set up to tell the service and reload the bot. You can disable this under the devevelopment `.env` settings.
-
-## Making Plugins
+# Making Plugins
 
 On startup, the bot will load all plugin files in the `basement_bot/plugins/` directory. 
 
@@ -95,8 +91,12 @@ This command would trigger with something like `.example hello greetings ha ha h
 
 Each command must have its first arg as `ctx` which is the context for the command event. Each additional arg is an assumption that it be provided by the user (using `*args` helps in this case). 
 
-There are utility functions in `utils.helpers` or `utils.cogs` modules for helping with this plugin-building process. For example, `utils.helpers.tagged_response` sends a message with the command author tagged.
+There are utility functions in `utils.helpers` or `cogs` modules for helping with this plugin-building process. For example, `utils.helpers.tagged_response` sends a message with the command author tagged. All plugins included with the repo are written as cog classes for a more structured approach. You can find information on this in the Discord.py docs.
 
 More advanced plugins can be written by interfacing with the bot's API. For instance, the admin plugin allows you to load and unpload plugins. You can also give the bot async tasks to run forever, or event listeners for a specific message.
 
 For more information, see [the Discord.py docs](https://discordpy.readthedocs.io/en/latest/ext/commands/commands.html).
+
+# Hot Reloading
+
+In development, the Docker images include a Watchdog-based service for watching changes to the code files. When something is edited, Docker has a volume set up to tell the service and reload the bot. You can disable this under the devevelopment `.env` settings.
