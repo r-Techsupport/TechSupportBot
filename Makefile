@@ -1,6 +1,6 @@
 image = effprime/basement-bot
 dev-image = $(image):dev
-prod-image = $(image):latest
+prod-image = $(image):${TRAVIS_TAG:-latest}
 drun = docker run -v $(shell pwd):/app -t $(dev-image) python3 -m
 main_dir = basement_bot
 
@@ -28,6 +28,9 @@ dev:
 
 prod:
 	docker build -t $(prod-image) -f Dockerfile .
+
+push:
+	docker push $(prod-image)
 
 upd:
 	docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d

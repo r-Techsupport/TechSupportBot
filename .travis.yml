@@ -17,9 +17,9 @@ jobs:
       script:
         - make prod
 
-    - stage: deploy
+    - stage: push
       if: branch = master
       script:
         - make prod
         - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-        - docker push effprime/basement-bot:${TRAVIS_TAG:-latest}
+        - make push
