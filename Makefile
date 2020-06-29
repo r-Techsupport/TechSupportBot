@@ -28,7 +28,7 @@ dev:
 	docker build -t $(dev-image) -f Dockerfile.dev .
 
 prod:
-	docker build -t $(prod-image) -f Dockerfile .
+	docker build -t $(prod-image):$(TRAVIS_TAG) -f Dockerfile .
 
 push:
 	docker push $(prod-image):$(TRAVIS_TAG)
