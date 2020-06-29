@@ -1,6 +1,7 @@
+tag = 1.0.0
 image = effprime/basement-bot
 dev-image = $(image):dev
-prod-image = $(image):${TRAVIS_TAG:-latest}
+prod-image = $(image):$(tag)
 drun = docker run -v $(shell pwd):/app -t $(dev-image) python3 -m
 main_dir = basement_bot
 
