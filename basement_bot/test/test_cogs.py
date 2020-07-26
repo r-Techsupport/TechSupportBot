@@ -59,7 +59,7 @@ class TestMatchPlugin(aiounittest.AsyncTestCase):
         mock_bot = mock.AsyncMock()
         plugin = cogs.MatchPlugin(mock_bot)
         with self.assertRaises(RuntimeError):
-            await plugin.match("foo")
+            await plugin.match("foo", "bar")
 
     async def test_response(self):
         mock_bot = mock.AsyncMock()

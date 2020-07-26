@@ -121,7 +121,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 ctx, "I ran into an issue handling your factoid deletion..."
             )
 
-    def match(self, content):
+    def match(self, _, content):
         return bool(content.startswith(self.FACTOID_PREFIX))
 
     async def response(self, ctx, arg):
