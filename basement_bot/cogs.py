@@ -48,15 +48,16 @@ class MatchPlugin(BasicPlugin):
         ctx = await self.bot.get_context(message)
 
         try:
-            if self.match(message.content):
+            if self.match(ctx, message.content):
                 await self.response(ctx, message.content)
         except Exception as e:
             log.exception(e)
 
-    def match(self, content):
+    def match(self, ctx, content):
         """Runs a boolean check on message content.
 
         parameters:
+            ctx (context): the context object
             content (str): the message content
         """
         raise RuntimeError("Match function must be defined in sub-class")
