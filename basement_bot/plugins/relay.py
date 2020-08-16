@@ -23,19 +23,22 @@ def setup(bot):
 class MqMixin:
 
     MQ_HOST = get_env_value("RELAY_MQ_HOST")
+    MQ_VHOST = get_env_value("RELAY_MQ_VHOST", raise_exception=False)
     MQ_USER = get_env_value("RELAY_MQ_USER")
     MQ_PASS = get_env_value("RELAY_MQ_PASS")
-    MQ_SSL = bool(int(get_env_value("RELAY_MQ_SSL")))
+    MQ_PORT = int(get_env_value("RELAY_MQ_PORT"))
     CHANNEL_ID = int(get_env_value("RELAY_CHANNEL"))
+    
     QUEUE = None
 
     def _get_connection(self):
         try:
             parameters = pika.ConnectionParameters(
                 self.MQ_HOST,
-                5671 if self.MQ_SSL else 5672,
+                self.MQ_PORT,
                 "/",
                 pika.PlainCredentials(self.MQ_USER, self.MQ_PASS),
+                virtual_host=self.MQ_VHOST
             )
             return pika.BlockingConnection(parameters)
         except Exception as e:
