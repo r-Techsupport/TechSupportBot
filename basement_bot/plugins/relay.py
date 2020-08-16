@@ -36,9 +36,8 @@ class MqMixin:
             parameters = pika.ConnectionParameters(
                 self.MQ_HOST,
                 self.MQ_PORT,
-                "/",
-                pika.PlainCredentials(self.MQ_USER, self.MQ_PASS),
-                virtual_host=self.MQ_VHOST
+                self.MQ_VHOST,
+                pika.PlainCredentials(self.MQ_USER, self.MQ_PASS)
             )
             return pika.BlockingConnection(parameters)
         except Exception as e:
