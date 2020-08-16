@@ -23,7 +23,7 @@ def setup(bot):
 class MqMixin:
 
     MQ_HOST = get_env_value("RELAY_MQ_HOST")
-    MQ_VHOST = get_env_value("RELAY_MQ_VHOST", raise_exception=False)
+    MQ_VHOST = get_env_value("RELAY_MQ_VHOST", default="/")
     MQ_USER = get_env_value("RELAY_MQ_USER")
     MQ_PASS = get_env_value("RELAY_MQ_PASS")
     MQ_PORT = int(get_env_value("RELAY_MQ_PORT"))
