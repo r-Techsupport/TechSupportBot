@@ -39,20 +39,25 @@ class HttpPlugin(BasicPlugin):
 
     @staticmethod
     def _get_client():
+        """Returns an Async HTTP client.
+        """
         return http3.AsyncClient()
 
-    async def http_call(self, method, *args):
+    async def http_call(self, method, *args, **kwargs):
         """Makes an HTTP request.
 
         args:
             method (string): the HTTP method to use
-            *args (...): the args with which to call the HTTP Python method
+            *args (...list): the args with which to call the HTTP Python method
+            **kwargs (...dict): the keyword args with which to call the HTTP Python method
         """
         client = self._get_client()
         method_fn = getattr(client, method.lower(), None)
         if not method_fn:
             raise AttributeError(f"Unable to use HTTP method: {method}")
-        response = await method_fn(*args)
+        log.debug(f"Making {method} HTTP call on URL: {args}")
+        response = await method_fn(*args, **kwargs)
+        log.debug(f"Received HTTP response: {response.json()}")
         return response
 
 
