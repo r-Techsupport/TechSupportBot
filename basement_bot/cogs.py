@@ -3,6 +3,8 @@
 
 import asyncio
 
+import aiocron
+import http3
 from discord.ext import commands
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -27,6 +29,31 @@ class BasicPlugin(commands.Cog):
     async def preconfig(self):
         """Preconfigures the environment before starting the plugin.
         """
+
+
+class HttpPlugin(BasicPlugin):
+    """Plugin for interfacing via HTTP.
+    """
+
+    PLUGIN_TYPE = "HTTP"
+
+    @staticmethod
+    def _get_client():
+        return http3.AsyncClient()
+
+    async def http_call(self, method, *args):
+        """Makes an HTTP request.
+
+        args:
+            method (string): the HTTP method to use
+            *args (...): the args with which to call the HTTP Python method
+        """
+        client = self._get_client()
+        method_fn = getattr(client, method.lower(), None)
+        if not method_fn:
+            raise AttributeError(f"Unable to use HTTP method: {method}")
+        response = await method_fn(*args)
+        return response
 
 
 class MatchPlugin(BasicPlugin):
@@ -101,6 +128,7 @@ class LoopPlugin(BasicPlugin):
 
     PLUGIN_TYPE = "LOOP"
     DEFAULT_WAIT = 30
+    CRON_CONFIG = None
 
     def __init__(self, bot):
         super().__init__(bot)
@@ -110,6 +138,7 @@ class LoopPlugin(BasicPlugin):
     async def _loop_execute(self):
         """Loops through the execution method.
         """
+        await self.bot.wait_until_ready()
         await self.loop_preconfig()
         while self.state:
             await self.bot.loop.create_task(
@@ -125,7 +154,10 @@ class LoopPlugin(BasicPlugin):
     async def wait(self):
         """The default wait method.
         """
-        await asyncio.sleep(self.DEFAULT_WAIT)
+        if self.CRON_CONFIG:
+            await aiocron.crontab(self.CRON_CONFIG).next()
+        else:
+            await asyncio.sleep(self.DEFAULT_WAIT)
 
     async def loop_preconfig(self):
         """Preconfigures the environment before starting the loop.

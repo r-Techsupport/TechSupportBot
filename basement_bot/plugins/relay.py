@@ -28,7 +28,7 @@ class MqMixin:
     MQ_PASS = get_env_value("RELAY_MQ_PASS")
     MQ_PORT = int(get_env_value("RELAY_MQ_PORT"))
     CHANNEL_ID = int(get_env_value("RELAY_CHANNEL"))
-    
+
     QUEUE = None
 
     def _get_connection(self):
@@ -37,7 +37,7 @@ class MqMixin:
                 self.MQ_HOST,
                 self.MQ_PORT,
                 self.MQ_VHOST,
-                pika.PlainCredentials(self.MQ_USER, self.MQ_PASS)
+                pika.PlainCredentials(self.MQ_USER, self.MQ_PASS),
             )
             return pika.BlockingConnection(parameters)
         except Exception as e:
@@ -289,15 +289,19 @@ class IRCReceiver(LoopPlugin, MqMixin, IrcFormatMixin):
             return
             # log.warning(f"Unable to find user associated with {data.event.command} target {data.event.content}")
 
-        # route appropriately
-        if data.event.command == "kick":
-            await target_guild.kick(target_user)
-        elif data.event.command == "ban":
-            await target_guild.ban(target_user, self.BAN_PERIOD_DAYS)
-        elif data.event.command == "unban":
-            await target_guild.unban(target_user)
-        else:
-            log.warning(f"Received unroutable command: {data.event.command}")
+        # very likely this will raise an exception :(
+        try:
+            # route appropriately
+            if data.event.command == "kick":
+                await target_guild.kick(target_user)
+            elif data.event.command == "ban":
+                await target_guild.ban(target_user, self.BAN_PERIOD_DAYS)
+            elif data.event.command == "unban":
+                await target_guild.unban(target_user)
+            else:
+                log.warning(f"Received unroutable command: {data.event.command}")
+        except Exception as e:
+            log.warning("Unable to send command: {e}")
 
     def deserialize(self, body):
         try:

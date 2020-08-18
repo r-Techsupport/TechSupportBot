@@ -15,7 +15,7 @@ class Giphy(BasicPlugin):
 
     DEV_KEY = get_env_value("GIPHY_DEV_KEY", raise_exception=False)
     GIPHY_URL = "http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"
-    SEARCH_LIMIT = 30
+    SEARCH_LIMIT = 5
 
     async def preconfig(self):
         self.cached = {"last_query": None, "last_url": None, "all_urls": []}
