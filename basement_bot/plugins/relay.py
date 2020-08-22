@@ -8,7 +8,8 @@ from discord.ext import commands
 from munch import Munch
 
 from cogs import LoopPlugin, MatchPlugin
-from utils.helpers import get_env_value, priv_response
+from utils.helpers import (get_env_value, get_guild_from_channel_id,
+                           priv_response)
 from utils.logger import get_logger
 
 logging.getLogger("pika").setLevel(logging.WARNING)
@@ -70,15 +71,15 @@ class MqMixin:
             method, _, body = mq_channel.basic_get(queue=self.QUEUE)
             if method:
                 mq_channel.basic_ack(method.delivery_tag)
-                mq_connection.close()
                 return body
+            mq_connection.close()
         except Exception as e:
             log.warning(f"Unable to consume from queue {RECV_QUEUE}: {e}")
 
 
 class IrcFormatMixin:
 
-    IRC_LOGO = "**[IRC]**"
+    IRC_LOGO = "\U0001F4E8"
 
     def format_message(self, data):
         if data.event.type == "message":
@@ -88,29 +89,36 @@ class IrcFormatMixin:
 
     @staticmethod
     def _get_permissions_label(permissions):
-        return "@" if permissions.op else ""
+        label = ""
+        if permissions:
+            if "v" in permissions:
+                label += "+"
+            if "o" in permissions:
+                label += "@"
+        return label
 
     def _format_chat_message(self, data):
-        return f"{self.IRC_LOGO} *{self._get_permissions_label(data.permissions)}{data.author.nickname}*: {data.event.content}"
+        return f"{self.IRC_LOGO} `{self._get_permissions_label(data.author.permissions)}{data.author.nickname}` {data.event.content}"
 
     def _format_event_message(self, data):
-        permissions_label = self._get_permissions_label(data.permissions)
+        permissions_label = self._get_permissions_label(data.author.permissions)
         if data.event.type == "join":
-            return f"{self.IRC_LOGO} *{permissions_label}{data.author.mask}* has joined {data.channel.name}!"
+            return f"{self.IRC_LOGO} `{permissions_label}{data.author.mask}` has joined {data.channel.name}!"
         elif data.event.type == "part":
-            return f"{self.IRC_LOGO} *{permissions_label}{data.author.mask}* left {data.channel.name}!"
+            return f"{self.IRC_LOGO} `{permissions_label}{data.author.mask}` left {data.channel.name}!"
         elif data.event.type == "kick":
-            return f"{self.IRC_LOGO} *{permissions_label}{data.author.mask}* kicked *{data.event.target}* from {data.channel.name}! (reason: *{data.event.content}*)."
+            return f"{self.IRC_LOGO} `{permissions_label}{data.author.mask}` kicked `{data.event.target}` from {data.channel.name}! (reason: *{data.event.content}*)."
         elif data.event.type == "action":
             # this isnt working well right now
-            return f"{self.IRC_LOGO} *{permissions_label}{data.author.nickname}* {data.event.content}"
+            return f"{self.IRC_LOGO} `{permissions_label}{data.author.nickname}` {data.event.content}"
         elif data.event.type == "other":
-            return f"{self.IRC_LOGO} *{data.author.mask}* did some configuration on {data.channel.name}..."
+            return f"{self.IRC_LOGO} `{data.author.mask}` did some configuration on {data.channel.name}..."
 
 
 class DiscordRelay(MatchPlugin, MqMixin):
 
     QUEUE = get_env_value("RELAY_MQ_SEND_QUEUE")
+    COMMANDS_ALLOWED = bool(int(get_env_value("RELAY_COMMANDS_ALLOWED", True, False)))
 
     def match(self, ctx, content):
         if ctx.channel.id == self.CHANNEL_ID:
@@ -130,6 +138,12 @@ class DiscordRelay(MatchPlugin, MqMixin):
         usage="<command> <arg>",
     )
     async def irc_command(self, ctx, *args):
+        if not self.COMMANDS_ALLOWED:
+            await priv_response(
+                ctx, "Relay cross-chat commands are disabled on my end."
+            )
+            return
+
         if ctx.channel.id != self.CHANNEL_ID:
             log.debug(f"IRC command issued outside of channel ID {self.CHANNEL_ID}")
             await priv_response(
@@ -164,7 +178,7 @@ class DiscordRelay(MatchPlugin, MqMixin):
                 ctx.content = target
                 await priv_response(
                     ctx,
-                    f"Sending `{command}` command with target `{target}` to IRC bot...",
+                    f"Sending **{command}** command with target `{target}` to IRC bot...",
                 )
                 self.publish(self.serialize("command", ctx))
 
@@ -192,6 +206,12 @@ class DiscordRelay(MatchPlugin, MqMixin):
         data.author.discriminator = ctx.author.discriminator
         data.author.is_bot = ctx.author.bot
         data.author.top_role = str(ctx.author.top_role)
+        # permissions data
+        data.author.permissions = Munch()
+        discord_permissions = ctx.author.permissions_in(ctx.channel)
+        data.author.permissions.kick = discord_permissions.kick_members
+        data.author.permissions.ban = discord_permissions.ban_members
+        data.author.permissions.admin = discord_permissions.administrator
 
         # server data
         data.server = Munch()
@@ -202,13 +222,6 @@ class DiscordRelay(MatchPlugin, MqMixin):
         data.channel = Munch()
         data.channel.name = ctx.channel.name
         data.channel.id = ctx.channel.id
-
-        # permissions data
-        data.permissions = Munch()
-        discord_permissions = ctx.author.permissions_in(ctx.channel)
-        data.permissions.kick = discord_permissions.kick_members
-        data.permissions.ban = discord_permissions.ban_members
-        data.permissions.admin = discord_permissions.administrator
 
         # non-lossy
         as_json = data.toJSON()
@@ -227,6 +240,8 @@ class IRCReceiver(LoopPlugin, MqMixin, IrcFormatMixin):
     QUEUE = get_env_value("RELAY_MQ_RECV_QUEUE")
     BAN_PERIOD_DAYS = int(get_env_value("RELAY_DISCORD_BAN_DAYS"))
     STALE_PERIOD_SECONDS = int(get_env_value("RELAY_STALE_SECONDS"))
+    IRC_TAG = get_env_value("RELAY_IRC_TAG", "$", False)
+    COMMANDS_ALLOWED = bool(int(get_env_value("RELAY_COMMANDS_ALLOWED", True, False)))
 
     async def loop_preconfig(self):
         await self.bot.wait_until_ready()
@@ -247,6 +262,11 @@ class IRCReceiver(LoopPlugin, MqMixin, IrcFormatMixin):
         if data.event.type in ["message", "join", "part", "kick", "action", "other"]:
             message = self.format_message(data)
             if message:
+                message = re.sub(
+                    r"\B\{0}\w+".format(self.IRC_TAG),
+                    self._get_mention_from_irc_tag,
+                    message,
+                )
                 await self.channel.send(message)
             else:
                 log.warning(f"Unable to format message for event: {response}")
@@ -259,21 +279,24 @@ class IRCReceiver(LoopPlugin, MqMixin, IrcFormatMixin):
             log.warning(f"Unable to handle event: {response}")
 
     async def process_command(self, data):
+        if not self.COMMANDS_ALLOWED:
+            log.debug(
+                f"Blocking incoming {data.event.command} request due to disabled config"
+            )
+            return
+
         # server-side permissions check
         if not getattr(data.permissions, "op") == True:
-            log.debug(f"Blocking incoming {data.event.command} request")
+            log.debug(
+                f"Blocking incoming {data.event.command} request due to permissions"
+            )
             return
 
         await self.channel.send(
-            f"Executing IRC `{data.event.command}` command from *{data.author.mask}* on target *{data.event.content}*"
+            f"Executing IRC **{data.event.command}** command from `{data.author.mask}` on target `{data.event.content}`"
         )
 
-        target_guild = None
-        for guild in self.bot.guilds:
-            for channel in guild.channels:
-                if channel.id == self.channel.id:
-                    target_guild = guild
-
+        target_guild = get_guild_from_channel_id(self.channel_id)
         if not target_guild:
             await self.channel.send(f"> Critical error! Aborting command")
             log.warning(
@@ -284,7 +307,7 @@ class IRCReceiver(LoopPlugin, MqMixin, IrcFormatMixin):
         target_user = target_guild.get_member_named(data.event.content)
         if not target_user:
             await self.channel.send(
-                f"Unable to locate target *{data.event.content}*! Aborting command"
+                f"Unable to locate target `{data.event.content}`! Aborting command"
             )
             return
             # log.warning(f"Unable to find user associated with {data.event.command} target {data.event.content}")
@@ -329,3 +352,14 @@ class IRCReceiver(LoopPlugin, MqMixin, IrcFormatMixin):
         if (now - time).total_seconds() > self.STALE_PERIOD_SECONDS:
             return True
         return False
+
+    def _get_mention_from_irc_tag(self, match):
+        tagged = match.group(0)
+        guild = get_guild_from_channel_id(self.bot, self.CHANNEL_ID)
+        if not guild:
+            return tagged
+        name = tagged.replace(self.IRC_TAG, "")
+        member = guild.get_member_named(name)
+        if not member:
+            return tagged
+        return member.mention

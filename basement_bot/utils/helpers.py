@@ -69,3 +69,16 @@ async def is_admin(ctx):
         return False
 
     return True
+
+
+def get_guild_from_channel_id(bot, channel_id):
+    """Helper for getting the guild associated with a channel.
+
+    parameters:
+        bot (BasementBot): the bot object
+        channel_id (Union[string, int]): the unique ID of the channel
+    """
+    for guild in bot.guilds:
+        for channel in guild.channels:
+            if channel.id == int(channel_id):
+                return guild
