@@ -41,6 +41,7 @@ class News(LoopPlugin, HttpPlugin):
             log.warning("Unable to retrieve articles from API response")
             return
 
+        shuffle(self.PREFER_SRCS)
         shuffle(articles)
         for article in articles:
             source = article.get("source", {}).get("name")
