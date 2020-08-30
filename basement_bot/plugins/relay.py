@@ -32,8 +32,10 @@ class MqMixin:
     RESPONSE_LIMIT = int(get_env_value("RELAY_RESPONSE_LIMIT", 3, False))
 
     QUEUE = None
+    connection = None
 
     def _get_connection(self):
+        
         try:
             parameters = pika.ConnectionParameters(
                 self.MQ_HOST,

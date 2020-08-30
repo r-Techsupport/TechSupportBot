@@ -53,11 +53,12 @@ async def priv_response(ctx, message):
     await channel.send(message)
 
 
-async def is_admin(ctx):
+async def is_admin(ctx, message_user=True):
     """Context checker for if the author is admin.
 
     parameters:
         ctx (Context): the context object
+        message_user (boolean): True if the user should be notified on failure
     """
     admins = get_env_value("ADMINS", raise_exception=False)
     admins = admins.replace(" ", "").split(",") if admins else []
@@ -65,7 +66,8 @@ async def is_admin(ctx):
     status_ = bool(ctx.message.author.id in [int(id) for id in admins])
 
     if not status_:
-        await priv_response(ctx, "You must be in the admin list to use this command")
+        if message_user:
+            await priv_response(ctx, "You must be in the admin list to use this command")
         return False
 
     return True

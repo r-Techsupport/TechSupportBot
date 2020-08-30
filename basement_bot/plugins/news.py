@@ -21,6 +21,8 @@ class News(LoopPlugin, HttpPlugin):
     PREFER_SRCS = get_env_value("NEWS_PREFER").split(",")
 
     async def loop_preconfig(self):
+        if not self.PREFER_SRCS:
+            raise RuntimeError("No news sources were provided")
         self.channel = self.bot.get_channel(int(self.CHANNEL_ID))
         if not self.channel:
             raise RuntimeError("Unable to get channel for News plugin")
