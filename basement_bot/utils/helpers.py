@@ -67,7 +67,9 @@ async def is_admin(ctx, message_user=True):
 
     if not status_:
         if message_user:
-            await priv_response(ctx, "You must be in the admin list to use this command")
+            await priv_response(
+                ctx, "You must be in the admin list to use this command"
+            )
         return False
 
     return True

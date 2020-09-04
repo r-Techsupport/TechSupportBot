@@ -1,10 +1,11 @@
+from discord import Forbidden
+
 from cogs import MatchPlugin
 from utils.helpers import get_env_value, is_admin, priv_response
 from utils.logger import get_logger
 
-from discord import Forbidden
-
 log = get_logger("Protector")
+
 
 def setup(bot):
     bot.add_cog(Protector(bot))
@@ -12,7 +13,13 @@ def setup(bot):
 
 class Protector(MatchPlugin):
 
-    EXCLUDE = [int(id) for id in get_env_value("PROTECT_EXCLUDE_CHANNELS", "", raise_exception=False).split(",") if id]
+    EXCLUDE = [
+        int(id)
+        for id in get_env_value(
+            "PROTECT_EXCLUDE_CHANNELS", "", raise_exception=False
+        ).split(",")
+        if id
+    ]
     LIMIT = int(get_env_value("PROTECT_LENGTH_LIMIT", 500, False))
 
     def match(self, ctx, content):

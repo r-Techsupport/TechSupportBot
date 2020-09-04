@@ -3,16 +3,14 @@ import json
 import logging
 import re
 
-import pika
 from discord.ext import commands
 from munch import Munch
 
-from cogs import LoopPlugin, MatchPlugin
+from cogs import LoopPlugin, MatchPlugin, MqPlugin
 from utils.helpers import (get_env_value, get_guild_from_channel_id,
                            priv_response)
 from utils.logger import get_logger
 
-logging.getLogger("pika").setLevel(logging.WARNING)
 log = get_logger("Relay Plugin")
 
 
@@ -21,140 +19,23 @@ def setup(bot):
     bot.add_cog(IRCReceiver(bot))
 
 
-class MqMixin:
+class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
 
+    QUEUE = get_env_value("RELAY_MQ_SEND_QUEUE")
+    COMMANDS_ALLOWED = bool(int(get_env_value("RELAY_COMMANDS_ALLOWED", True, False)))
+    DEFAULT_WAIT = int(get_env_value("RELAY_PUBLISH_SECONDS"))
+    SEND_LIMIT = int(get_env_value("RELAY_SEND_LIMIT", 3, False))
     MQ_HOST = get_env_value("RELAY_MQ_HOST")
     MQ_VHOST = get_env_value("RELAY_MQ_VHOST", "/", False)
     MQ_USER = get_env_value("RELAY_MQ_USER")
     MQ_PASS = get_env_value("RELAY_MQ_PASS")
     MQ_PORT = int(get_env_value("RELAY_MQ_PORT"))
     CHANNEL_ID = int(get_env_value("RELAY_CHANNEL"))
-    RESPONSE_LIMIT = int(get_env_value("RELAY_RESPONSE_LIMIT", 3, False))
-
-    QUEUE = None
-    connection = None
-
-    def _get_connection(self):
-        
-        try:
-            parameters = pika.ConnectionParameters(
-                self.MQ_HOST,
-                self.MQ_PORT,
-                self.MQ_VHOST,
-                pika.PlainCredentials(self.MQ_USER, self.MQ_PASS),
-            )
-            return pika.BlockingConnection(parameters)
-        except Exception as e:
-            e = str(e) or "No route to host"  # dumb correction to a blank error
-            log.warning(f"Unable to connect to RabbitMQ: {e}")
-
-    def publish(self, bodies):
-        mq_connection = None
-
-        try:
-            mq_connection = self._get_connection()
-            if not mq_connection:
-                log.warning(
-                    f"Unable to retrieve MQ connection - aborting publish: {bodies}"
-                )
-                return
-            mq_channel = mq_connection.channel()
-            mq_channel.queue_declare(queue=self.QUEUE, durable=True)
-            for body in bodies:
-                mq_channel.basic_publish(exchange="", routing_key=self.QUEUE, body=body)
-
-        except Exception as e:
-            log.warning(f"Unable to publish body to queue {self.SEND_QUEUE}: {e}")
-
-        if mq_connection:
-            mq_connection.close()
-
-    def consume(self):
-        mq_connection = None
-        bodies = []
-
-        try:
-            mq_connection = self._get_connection()
-            if not mq_connection:
-                log.warning(f"Unable to retrieve MQ connection - aborting consume")
-                return bodies
-            mq_channel = mq_connection.channel()
-            mq_channel.queue_declare(queue=self.QUEUE, durable=True)
-
-            checks = 0
-            while checks < self.RESPONSE_LIMIT:
-                body = self._get_ack(mq_channel)
-                checks += 1
-                if not body:
-                    break
-                bodies.append(body)
-
-        except Exception as e:
-            log.warning(f"Unable to consume from queue {RECV_QUEUE}: {e}")
-
-        if mq_connection:
-            mq_connection.close()
-
-        return bodies
-
-    def _get_ack(self, channel):
-        method, _, body = channel.basic_get(queue=self.QUEUE)
-        if method:
-            channel.basic_ack(method.delivery_tag)
-            return body
-
-
-class IrcFormatMixin:
-
-    IRC_LOGO = "\U0001F4E8"
-
-    def format_message(self, data):
-        if data.event.type == "message":
-            return self._format_chat_message(data)
-        else:
-            return self._format_event_message(data)
-
-    @staticmethod
-    def _get_permissions_label(permissions):
-        label = ""
-        if permissions:
-            if "v" in permissions:
-                label += "+"
-            if "o" in permissions:
-                label += "@"
-        return label
-
-    def _format_chat_message(self, data):
-        return f"{self.IRC_LOGO} `{self._get_permissions_label(data.author.permissions)}{data.author.nickname}` {data.event.content}"
-
-    def _format_event_message(self, data):
-        permissions_label = self._get_permissions_label(data.author.permissions)
-        if data.event.type == "join":
-            return f"{self.IRC_LOGO} `{permissions_label}{data.author.mask}` has joined {data.channel.name}!"
-        elif data.event.type == "part":
-            return f"{self.IRC_LOGO} `{permissions_label}{data.author.mask}` left {data.channel.name}!"
-        elif data.event.type == "quit":
-            return f"{self.IRC_LOGO} `{permissions_label}{data.author.mask}` quit ({data.event.content})"
-        elif data.event.type == "kick":
-            return f"{self.IRC_LOGO} `{permissions_label}{data.author.mask}` kicked `{data.event.target}` from {data.channel.name}! (reason: *{data.event.content}*)."
-        elif data.event.type == "action":
-            # this isnt working well right now
-            return f"{self.IRC_LOGO} `{permissions_label}{data.author.nickname}` {data.event.content}"
-        elif data.event.type == "other":
-            if data.event.irc_command.lower() == "mode":
-                return f"{self.IRC_LOGO} `{permissions_label}{data.author.nickname}` sets mode **{data.event.irc_paramlist[1]}** on `{data.event.irc_paramlist[2]}`"
-            else:
-                return f"{self.IRC_LOGO} `{data.author.mask}` did some configuration on {data.channel.name}..."
-
-
-class DiscordRelay(LoopPlugin, MatchPlugin, MqMixin):
-
-    QUEUE = get_env_value("RELAY_MQ_SEND_QUEUE")
-    COMMANDS_ALLOWED = bool(int(get_env_value("RELAY_COMMANDS_ALLOWED", True, False)))
-    DEFAULT_WAIT = int(get_env_value("RELAY_PUBLISH_SECONDS"))
-    SEND_LIMIT = int(get_env_value("RELAY_SEND_LIMIT", 3, False))
+    SEND_QUEUE = get_env_value("RELAY_MQ_SEND_QUEUE")
+    NOTICE_ERRORS = bool(int(get_env_value("RELAY_NOTICE_ERRORS", False, False)))
 
     async def preconfig(self):
+        self.channel = self.bot.get_channel(self.CHANNEL_ID)
         self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"] = []
 
     def match(self, ctx, content):
@@ -181,6 +62,11 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqMixin):
         ]
         if bodies:
             self.publish(bodies)
+            if self.mq_error_state and self.NOTICE_ERRORS:
+                await self.channel.send(
+                    "**ERROR**: unable to connect to relay event queue"
+                )
+
             # remove from buffer
             self.bot.plugin_api.plugins["relay"]["memory"][
                 "send_buffer"
@@ -294,7 +180,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqMixin):
         return f"@{user.name}" if user else "@user"
 
 
-class IRCReceiver(LoopPlugin, MqMixin, IrcFormatMixin):
+class IRCReceiver(LoopPlugin, MqPlugin):
 
     DEFAULT_WAIT = int(get_env_value("RELAY_CONSUME_SECONDS"))
     QUEUE = get_env_value("RELAY_MQ_RECV_QUEUE")
@@ -302,12 +188,25 @@ class IRCReceiver(LoopPlugin, MqMixin, IrcFormatMixin):
     STALE_PERIOD_SECONDS = int(get_env_value("RELAY_STALE_SECONDS"))
     IRC_TAG = get_env_value("RELAY_IRC_TAG", "$", False)
     COMMANDS_ALLOWED = bool(int(get_env_value("RELAY_COMMANDS_ALLOWED", True, False)))
+    MQ_HOST = get_env_value("RELAY_MQ_HOST")
+    MQ_VHOST = get_env_value("RELAY_MQ_VHOST", "/", False)
+    MQ_USER = get_env_value("RELAY_MQ_USER")
+    MQ_PASS = get_env_value("RELAY_MQ_PASS")
+    MQ_PORT = int(get_env_value("RELAY_MQ_PORT"))
+    CHANNEL_ID = int(get_env_value("RELAY_CHANNEL"))
+    RESPONSE_LIMIT = int(get_env_value("RELAY_RESPONSE_LIMIT", 3, False))
+    RECV_QUEUE = get_env_value("RELAY_MQ_RECV_QUEUE")
+    IRC_LOGO = "\U0001F4E8"  # emoji
+    NOTICE_ERRORS = bool(int(get_env_value("RELAY_NOTICE_ERRORS", False, False)))
 
     async def loop_preconfig(self):
         self.channel = self.bot.get_channel(self.CHANNEL_ID)
 
     async def execute(self):
         responses = self.consume()
+        if self.mq_error_state and self.NOTICE_ERRORS:
+            await self.channel.send("**ERROR**: unable to connect to relay event queue")
+
         for response in responses:
             await self.handle_event(response)
 
@@ -431,3 +330,41 @@ class IRCReceiver(LoopPlugin, MqMixin, IrcFormatMixin):
         if not member:
             return tagged
         return member.mention
+
+    def format_message(self, data):
+        if data.event.type == "message":
+            return self._format_chat_message(data)
+        else:
+            return self._format_event_message(data)
+
+    @staticmethod
+    def _get_permissions_label(permissions):
+        label = ""
+        if permissions:
+            if "v" in permissions:
+                label += "+"
+            if "o" in permissions:
+                label += "@"
+        return label
+
+    def _format_chat_message(self, data):
+        return f"{self.IRC_LOGO} `{self._get_permissions_label(data.author.permissions)}{data.author.nickname}` {data.event.content}"
+
+    def _format_event_message(self, data):
+        permissions_label = self._get_permissions_label(data.author.permissions)
+        if data.event.type == "join":
+            return f"{self.IRC_LOGO} `{permissions_label}{data.author.mask}` has joined {data.channel.name}!"
+        elif data.event.type == "part":
+            return f"{self.IRC_LOGO} `{permissions_label}{data.author.mask}` left {data.channel.name}!"
+        elif data.event.type == "quit":
+            return f"{self.IRC_LOGO} `{permissions_label}{data.author.mask}` quit ({data.event.content})"
+        elif data.event.type == "kick":
+            return f"{self.IRC_LOGO} `{permissions_label}{data.author.mask}` kicked `{data.event.target}` from {data.channel.name}! (reason: *{data.event.content}*)."
+        elif data.event.type == "action":
+            # this isnt working well right now
+            return f"{self.IRC_LOGO} `{permissions_label}{data.author.nickname}` {data.event.content}"
+        elif data.event.type == "other":
+            if data.event.irc_command.lower() == "mode":
+                return f"{self.IRC_LOGO} `{permissions_label}{data.author.nickname}` sets mode **{data.event.irc_paramlist[1]}** on `{data.event.irc_paramlist[2]}`"
+            else:
+                return f"{self.IRC_LOGO} `{data.author.mask}` did some configuration on {data.channel.name}..."
