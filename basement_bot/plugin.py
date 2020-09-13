@@ -59,7 +59,7 @@ class PluginAPI:
 
         try:
             self.bot.load_extension(f"plugins.{plugin_name}")
-            self.plugins[plugin_name] = {"status": "loaded"}
+            self.plugins[plugin_name] = {"status": "loaded", "memory": {}}
             return 0
 
         except Exception as e:  # pylint: disable=broad-except

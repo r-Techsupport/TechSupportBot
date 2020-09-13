@@ -9,12 +9,14 @@ RUN apk update && \
 RUN pip install pipenv && \
     cd /tmp && pipenv lock --requirements > requirements.txt && \
     pip install --no-cache-dir -r /tmp/requirements.txt
+WORKDIR /var/BasementBot
+COPY . .
 
 # Production stage
 FROM python:3.7-alpine
 RUN apk add --no-cache \
     libpq
-COPY --from=builder /usr/local /usr/local
-COPY ./basement_bot /var/basement_bot
 WORKDIR /var/basement_bot
+COPY --from=builder /usr/local /usr/local
+COPY --from=builder /var/BasementBot/basement_bot .
 CMD python3 -u main.py

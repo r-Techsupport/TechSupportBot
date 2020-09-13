@@ -53,11 +53,12 @@ async def priv_response(ctx, message):
     await channel.send(message)
 
 
-async def is_admin(ctx):
+async def is_admin(ctx, message_user=True):
     """Context checker for if the author is admin.
 
     parameters:
         ctx (Context): the context object
+        message_user (boolean): True if the user should be notified on failure
     """
     admins = get_env_value("ADMINS", raise_exception=False)
     admins = admins.replace(" ", "").split(",") if admins else []
@@ -65,7 +66,24 @@ async def is_admin(ctx):
     status_ = bool(ctx.message.author.id in [int(id) for id in admins])
 
     if not status_:
-        await priv_response(ctx, "You must be in the admin list to use this command")
+        if message_user:
+            await priv_response(
+                ctx, "You must be in the admin list to use this command"
+            )
         return False
 
     return True
+
+
+def get_guild_from_channel_id(bot, channel_id):
+    """Helper for getting the guild associated with a channel.
+
+    parameters:
+        bot (BasementBot): the bot object
+        channel_id (Union[string, int]): the unique ID of the channel
+    """
+    for guild in bot.guilds:
+        for channel in guild.channels:
+            if channel.id == int(channel_id):
+                return guild
+    return None

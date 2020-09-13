@@ -1,7 +1,6 @@
-import http3
 from discord.ext import commands
 
-from cogs import BasicPlugin
+from cogs import HttpPlugin
 from utils.helpers import get_env_value, priv_response, tagged_response
 
 
@@ -9,17 +8,15 @@ def setup(bot):
     bot.add_cog(Googler(bot))
 
 
-class Googler(BasicPlugin):
+class Googler(HttpPlugin):
 
     CSE_ID = get_env_value("GOOGLE_CSE_ID", raise_exception=False)
     DEV_KEY = get_env_value("GOOGLE_DEV_KEY", raise_exception=False)
     GOOGLE_URL = "https://www.googleapis.com/customsearch/v1"
     YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=1"
 
-    @staticmethod
-    async def get_items(url, data):
-        http_client = http3.AsyncClient()
-        data = await http_client.get(url, params=data)
+    async def get_items(self, url, data):
+        data = await self.http_call("get", url, params=data)
         return data.json().get("items")
 
     @commands.command(

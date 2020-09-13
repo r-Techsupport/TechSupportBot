@@ -1,9 +1,8 @@
 import random
 
-import http3
 from discord.ext import commands
 
-from cogs import BasicPlugin
+from cogs import HttpPlugin
 from utils.helpers import get_env_value, priv_response, tagged_response
 
 
@@ -11,11 +10,11 @@ def setup(bot):
     bot.add_cog(Giphy(bot))
 
 
-class Giphy(BasicPlugin):
+class Giphy(HttpPlugin):
 
     DEV_KEY = get_env_value("GIPHY_DEV_KEY", raise_exception=False)
     GIPHY_URL = "http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"
-    SEARCH_LIMIT = 30
+    SEARCH_LIMIT = 5
 
     async def preconfig(self):
         self.cached = {"last_query": None, "last_url": None, "all_urls": []}
@@ -47,9 +46,8 @@ class Giphy(BasicPlugin):
             return
 
         args_q = "+".join(args)
-        http_client = http3.AsyncClient()
-        response = await http_client.get(
-            self.GIPHY_URL.format(args_q, self.DEV_KEY, self.SEARCH_LIMIT)
+        response = await self.http_call(
+            "get", self.GIPHY_URL.format(args_q, self.DEV_KEY, self.SEARCH_LIMIT)
         )
         response = response.json()
         data = response.get("data")

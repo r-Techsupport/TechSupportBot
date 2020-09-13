@@ -2,12 +2,17 @@
 """
 
 import asyncio
+import logging
 
+import aiocron
+import http3
+import pika
 from discord.ext import commands
 from sqlalchemy.ext.declarative import declarative_base
 
 from utils.logger import get_logger
 
+logging.getLogger("pika").setLevel(logging.WARNING)
 log = get_logger("Cogs")
 
 
@@ -27,6 +32,36 @@ class BasicPlugin(commands.Cog):
     async def preconfig(self):
         """Preconfigures the environment before starting the plugin.
         """
+
+
+class HttpPlugin(BasicPlugin):
+    """Plugin for interfacing via HTTP.
+    """
+
+    PLUGIN_TYPE = "HTTP"
+
+    @staticmethod
+    def _get_client():
+        """Returns an Async HTTP client.
+        """
+        return http3.AsyncClient()
+
+    async def http_call(self, method, *args, **kwargs):
+        """Makes an HTTP request.
+
+        args:
+            method (string): the HTTP method to use
+            *args (...list): the args with which to call the HTTP Python method
+            **kwargs (...dict): the keyword args with which to call the HTTP Python method
+        """
+        client = self._get_client()
+        method_fn = getattr(client, method.lower(), None)
+        if not method_fn:
+            raise AttributeError(f"Unable to use HTTP method: {method}")
+        log.debug(f"Making {method} HTTP call on URL: {args}")
+        response = await method_fn(*args, **kwargs)
+        log.debug(f"Received HTTP response: {response.json()}")
+        return response
 
 
 class MatchPlugin(BasicPlugin):
@@ -101,6 +136,7 @@ class LoopPlugin(BasicPlugin):
 
     PLUGIN_TYPE = "LOOP"
     DEFAULT_WAIT = 30
+    CRON_CONFIG = None
 
     def __init__(self, bot):
         super().__init__(bot)
@@ -110,6 +146,7 @@ class LoopPlugin(BasicPlugin):
     async def _loop_execute(self):
         """Loops through the execution method.
         """
+        await self.bot.wait_until_ready()
         await self.loop_preconfig()
         while self.state:
             await self.bot.loop.create_task(
@@ -125,7 +162,10 @@ class LoopPlugin(BasicPlugin):
     async def wait(self):
         """The default wait method.
         """
-        await asyncio.sleep(self.DEFAULT_WAIT)
+        if self.CRON_CONFIG:
+            await aiocron.crontab(self.CRON_CONFIG).next()
+        else:
+            await asyncio.sleep(self.DEFAULT_WAIT)
 
     async def loop_preconfig(self):
         """Preconfigures the environment before starting the loop.
@@ -135,3 +175,102 @@ class LoopPlugin(BasicPlugin):
         """Runs sequentially after each wait method.
         """
         raise RuntimeError("Execute function must be defined in sub-class")
+
+
+class MqPlugin(BasicPlugin):
+    """Plugin for sending and receiving queue events.
+
+    parameters:
+        bot (Bot): the bot object
+    """
+
+    MQ_HOST = None
+    MQ_VHOST = None
+    MQ_USER = None
+    MQ_PASS = None
+    MQ_PORT = None
+    CHANNEL_ID = None
+    RESPONSE_LIMIT = None
+
+    SEND_QUEUE = None
+    RECV_QUEUE = None
+
+    connection = None
+    mq_error_state = False
+
+    # pylint: disable=attribute-defined-outside-init
+    def connect(self):
+        """Sets the connection attribute to an active connection.
+        """
+        self.parameters = pika.ConnectionParameters(
+            self.MQ_HOST,
+            self.MQ_PORT,
+            self.MQ_VHOST,
+            pika.PlainCredentials(self.MQ_USER, self.MQ_PASS),
+        )
+        try:
+            self.connection = pika.BlockingConnection(self.parameters)
+            return True
+        except Exception as e:
+            e = str(e) or "No route to host"  # dumb correction to a blank error
+            log.warning(f"Unable to connect to MQ: {e}")
+        return False
+
+    def publish(self, bodies):
+        """Sends a list of events to the event queue.
+
+        parameters:
+            bodies (list): the list of events
+        """
+        while True:
+            try:
+                mq_channel = self.connection.channel()
+                mq_channel.queue_declare(queue=self.SEND_QUEUE, durable=True)
+                for body in bodies:
+                    mq_channel.basic_publish(
+                        exchange="", routing_key=self.SEND_QUEUE, body=body
+                    )
+                self.mq_error_state = False
+                break
+            except Exception as e:
+                log.debug(f"Unable to publish: {e}")
+                if not self.connect():
+                    self.mq_error_state = True
+                    break
+
+    def consume(self):
+        """Retrieves a list of events from the event queue.
+        """
+        bodies = []
+
+        while True:
+            try:
+                mq_channel = self.connection.channel()
+                mq_channel.queue_declare(queue=self.RECV_QUEUE, durable=True)
+                checks = 0
+                while checks < self.RESPONSE_LIMIT:
+                    body = self._get_ack(mq_channel)
+                    checks += 1
+                    if not body:
+                        break
+                    bodies.append(body)
+                self.mq_error_state = False
+                break
+            except Exception as e:
+                log.debug(f"Unable to publish: {e}")
+                if not self.connect():
+                    self.mq_error_state = True
+                    break
+
+        return bodies
+
+    def _get_ack(self, channel):
+        """Gets a body and acknowledges its consumption.
+
+        parameters:
+            channel (PikaChannel): the channel on which to consume
+        """
+        method, _, body = channel.basic_get(queue=self.RECV_QUEUE)
+        if method:
+            channel.basic_ack(method.delivery_tag)
+        return body
