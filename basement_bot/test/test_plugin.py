@@ -32,12 +32,12 @@ class TestPlugin(aiounittest.AsyncTestCase):
         code = api.load_plugin("foo")
         self.assertEqual(code, 0)
         self.assertTrue(mock_bot.load_extension.called)
-        self.assertEqual(api.plugins["foo"], {"status": "loaded"})
+        self.assertEqual(api.plugins["foo"], {"status": "loaded", "memory": {}})
 
         # test already loaded
         mock_bot = mock.MagicMock()
         api = PluginAPI(mock_bot)
-        api.plugins["foo"] = {"status": "loaded"}
+        api.plugins["foo"] = {"status": "loaded", "memory": {}}
         code = api.load_plugin("foo")
         self.assertEqual(code, 126)
         self.assertTrue(not mock_bot.load_extension.called)

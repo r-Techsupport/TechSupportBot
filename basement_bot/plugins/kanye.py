@@ -1,9 +1,7 @@
 import asyncio
 from random import randint
 
-import http3
-
-from cogs import LoopPlugin
+from cogs import HttpPlugin, LoopPlugin
 from utils.helpers import get_env_value
 
 
@@ -11,7 +9,7 @@ def setup(bot):
     bot.add_cog(KanyeQuotes(bot))
 
 
-class KanyeQuotes(LoopPlugin):
+class KanyeQuotes(LoopPlugin, HttpPlugin):
 
     CHANNEL_ID = get_env_value("KANYE_CHANNEL")
     API_URL = "https://api.kanye.rest"
@@ -25,9 +23,6 @@ class KanyeQuotes(LoopPlugin):
         if self.MAX_WAIT - self.MIN_WAIT <= 0:
             raise RuntimeError(f"Max time must be greater than min time")
 
-        await self.bot.wait_until_ready()
-        self.http_client = http3.AsyncClient()
-
         self.channel = self.bot.get_channel(int(self.CHANNEL_ID))
         if not self.channel:
             raise RuntimeError("Unable to get channel for Kanye Quotes plugin")
@@ -36,11 +31,11 @@ class KanyeQuotes(LoopPlugin):
             await self.wait()
 
     async def execute(self):
-        fact = await self.http_client.get(self.API_URL)
-        fact = fact.json().get("quote")
+        response = await self.http_call("get", self.API_URL)
+        quote = response.json().get("quote")
 
-        if fact:
-            message = f"'*{fact}*' - Kanye West"
+        if quote:
+            message = f"'*{quote}*' - Kanye West"
             await self.channel.send(message)
 
     async def wait(self):

@@ -15,7 +15,7 @@ class BasementBot(Bot):
     """The main bot object.
 
     parameters:
-        command_prefix (str): the prefix for commands
+        prefix (str): the prefix for commands
         game (str): the game title to display
     """
 

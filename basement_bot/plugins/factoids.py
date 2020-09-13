@@ -23,7 +23,7 @@ def setup(bot):
 
 class FactoidManager(DatabasePlugin, MatchPlugin):
 
-    FACTOID_PREFIX = get_env_value("FACTOID_PREFIX")
+    FACTOID_PREFIX = get_env_value("FACTOID_PREFIX", "?", False)
     COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
 
     async def db_preconfig(self):
@@ -121,7 +121,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 ctx, "I ran into an issue handling your factoid deletion..."
             )
 
-    def match(self, content):
+    def match(self, _, content):
         return bool(content.startswith(self.FACTOID_PREFIX))
 
     async def response(self, ctx, arg):

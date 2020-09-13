@@ -2,7 +2,7 @@ tag = 1.0.0
 image = effprime/basement-bot
 dev-image = $(image):dev
 prod-image = $(image):$(tag)
-drun = docker run -v $(shell pwd):/app -t $(dev-image) python3 -m
+drun = docker run -v $(shell pwd):/var/BasementBot -t $(dev-image) python3 -m
 main_dir = basement_bot
 
 make sync:
@@ -37,7 +37,7 @@ upd:
 	docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
 
 upp:
-	docker-compose -f docker-compose.yml up -d
+	TAG=$(tag) docker-compose -f docker-compose.yml up -d
 
 down:
 	docker-compose down

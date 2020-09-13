@@ -1,9 +1,8 @@
 import json
 
-import http3
 from discord.ext import commands
 
-from cogs import BasicPlugin
+from cogs import HttpPlugin
 from utils.helpers import priv_response, tagged_response
 
 
@@ -11,7 +10,7 @@ def setup(bot):
     bot.add_cog(UrbanDictionary(bot))
 
 
-class UrbanDictionary(BasicPlugin):
+class UrbanDictionary(HttpPlugin):
 
     BASE_URL = "http://api.urbandictionary.com/v0/define?term="
     SEE_MORE_URL = "https://www.urbandictionary.com/define.php?term="
@@ -34,9 +33,8 @@ class UrbanDictionary(BasicPlugin):
             await priv_response(ctx, "I can't search for nothing!")
             return
 
-        http_client = http3.AsyncClient()
         args = " ".join(args).lower().strip()
-        definitions = await http_client.get(f"{self.BASE_URL}{args}")
+        definitions = await self.http_call("get", f"{self.BASE_URL}{args}")
         definitions = definitions.json().get("list")
 
         if not definitions:
