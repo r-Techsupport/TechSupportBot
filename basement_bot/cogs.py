@@ -198,6 +198,7 @@ class MqPlugin(BasicPlugin):
     connection = None
     mq_error_state = False
 
+    # pylint: disable=attribute-defined-outside-init
     def connect(self):
         """Sets the connection attribute to an active connection.
         """
@@ -218,7 +219,8 @@ class MqPlugin(BasicPlugin):
     def publish(self, bodies):
         """Sends a list of events to the event queue.
 
-        bodies (list): the list of events
+        parameters:
+            bodies (list): the list of events
         """
         while True:
             try:
@@ -263,9 +265,12 @@ class MqPlugin(BasicPlugin):
         return bodies
 
     def _get_ack(self, channel):
-        """
+        """Gets a body and acknowledges its consumption.
+
+        parameters:
+            channel (PikaChannel): the channel on which to consume
         """
         method, _, body = channel.basic_get(queue=self.RECV_QUEUE)
         if method:
             channel.basic_ack(method.delivery_tag)
-            return body
+        return body

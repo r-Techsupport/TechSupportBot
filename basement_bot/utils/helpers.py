@@ -86,3 +86,4 @@ def get_guild_from_channel_id(bot, channel_id):
         for channel in guild.channels:
             if channel.id == int(channel_id):
                 return guild
+    return None

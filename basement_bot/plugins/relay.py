@@ -33,6 +33,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
     CHANNEL_ID = int(get_env_value("RELAY_CHANNEL"))
     SEND_QUEUE = get_env_value("RELAY_MQ_SEND_QUEUE")
     NOTICE_ERRORS = bool(int(get_env_value("RELAY_NOTICE_ERRORS", False, False)))
+    FACTOID_PREFIX = get_env_value("FACTOID_PREFIX", "?", False)
 
     async def preconfig(self):
         self.channel = self.bot.get_channel(self.CHANNEL_ID)
@@ -41,14 +42,22 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
     def match(self, ctx, content):
         if ctx.channel.id == self.CHANNEL_ID:
             if not content.startswith(self.bot.command_prefix):
+                if (
+                    content.startswith(self.FACTOID_PREFIX)
+                    and self.bot.plugin_api.plugins.get("factoids") is None
+                ):
+                    ctx.content = content
+                    ctx.factoid = True
                 return True
         return False
 
     async def response(self, ctx, content):
+        type_ = "factoid" if getattr(ctx, "factoid", None) else "message"
+
         # subs in actual mentions if possible
         ctx.content = re.sub(r"<@?!?(\d+)>", self._get_nick_from_id_match, content)
         self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"].append(
-            self.serialize("message", ctx)
+            self.serialize(type_, ctx)
         )
 
     async def execute(self):
@@ -73,6 +82,11 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
             ] = self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"][
                 len(bodies) :
             ]
+
+    # @commands.command(
+    #     name="?"
+    #     brief="Factoid commands for the IRC relay"
+    # )
 
     @commands.command(
         name="irc",
@@ -225,7 +239,12 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             "kick",
             "action",
             "other",
+            "factoid",
         ]:
+            if data.event.target == "factoid_request":
+                log.debug("Ignoring factoid request event")
+                return
+
             message = self.format_message(data)
             if message:
                 message = re.sub(
@@ -290,7 +309,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             else:
                 log.warning(f"Received unroutable command: {data.event.command}")
         except Exception as e:
-            log.warning("Unable to send command: {e}")
+            log.warning(f"Unable to send command: {e}")
 
     def deserialize(self, body):
         try:
@@ -368,3 +387,5 @@ class IRCReceiver(LoopPlugin, MqPlugin):
                 return f"{self.IRC_LOGO} `{permissions_label}{data.author.nickname}` sets mode **{data.event.irc_paramlist[1]}** on `{data.event.irc_paramlist[2]}`"
             else:
                 return f"{self.IRC_LOGO} `{data.author.mask}` did some configuration on {data.channel.name}..."
+        elif data.event.type == "factoid":
+            return f"{self.IRC_LOGO} {data.event.content}"

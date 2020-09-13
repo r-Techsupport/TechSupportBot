@@ -23,7 +23,7 @@ def setup(bot):
 
 class FactoidManager(DatabasePlugin, MatchPlugin):
 
-    FACTOID_PREFIX = get_env_value("FACTOID_PREFIX")
+    FACTOID_PREFIX = get_env_value("FACTOID_PREFIX", "?", False)
     COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
 
     async def db_preconfig(self):
