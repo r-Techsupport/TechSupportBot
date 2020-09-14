@@ -36,9 +36,7 @@ class Protector(MatchPlugin):
             return
 
         try:
-            await ctx.message.edit(
-                content="**MESSAGE DELETED - use https://pastebin.com**"
-            )
+            await ctx.message.delete()
             await priv_response(
                 ctx,
                 f"Your message was deleted because it was greater than {self.LIMIT} characters. Please use a Pastebin (https://pastebin.com)",
