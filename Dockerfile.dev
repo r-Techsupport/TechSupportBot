@@ -17,5 +17,6 @@ RUN pip install pipenv && \
 
 WORKDIR /var/BasementBot
 COPY . .
+COPY config.yaml basement_bot
 
 CMD python3 -u basement_bot/main.py
