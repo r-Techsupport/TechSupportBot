@@ -1,4 +1,4 @@
-tag = 1.1.0
+tag = 1.1.1
 image = effprime/basement-bot
 dev-image = $(image):dev
 prod-image = $(image):$(tag)
