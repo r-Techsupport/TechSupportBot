@@ -1,0 +1,59 @@
+main:
+    required:
+        command_prefix: "."
+        auth_token:
+    optional:
+        game: 
+    database:
+        user: admin
+        password: admin
+        name: basement_bot
+        host: db
+        prefix: postgres
+    dev:
+        hot_reload: False
+    disabled_plugins:
+
+plugins:
+    admin:
+        admins:
+    factoids:
+        prefix:
+    google:
+        cse_id:
+        dev_key:
+    giphy:
+        dev_key:
+    kanye:
+        channel:
+        min_hours:
+        max_hours:
+        on_start: False
+    news:
+        channel:
+        api_key:
+        cron:
+        country:
+        prefer:
+    relay:
+        mq_host:
+        mq_vhost:
+        mq_port:
+        mq_user:
+        mq_pass:
+        channel:
+        mq_send_queue:  DiscordToIRC
+        mq_recv_queue: IRCToDiscord
+        discord_ban_days: 14
+        stale_seconds: 600
+        publish_seconds: 2
+        consume_seconds: 2
+        commands_allowed: True
+        irc_tag_prefix: $
+        response_limit: 3
+        send_limit: 3
+    protect:
+        excluded_channels:
+        length_limit: 500
+        
+        
