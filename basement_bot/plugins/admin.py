@@ -11,6 +11,7 @@ def setup(bot):
 
 
 class AdminControl(BasicPlugin):
+
     @commands.check(is_admin)
     @commands.command(name="plugin_status", hidden=True)
     async def plugin_status(self, ctx, *args):
@@ -33,9 +34,12 @@ class AdminControl(BasicPlugin):
         loaded = ", ".join(loaded) if loaded else "*None*"
         available = [f"`{plugin}`" for plugin in status_data.get("available")]
         available = ", ".join(available) if available else "*None*"
+        disabled = [f"`{plugin}`" for plugin in status_data.get("disabled")]
+        disabled = ", ".join(disabled) if disabled else "*None*"
 
         await priv_response(ctx, f"Loaded plugins: {loaded}")
         await priv_response(ctx, f"Available plugins: {available}")
+        await priv_response(ctx, f"Disabled plugins: {disabled}")
 
     @commands.check(is_admin)
     @commands.command(name="load_plugin", hidden=True)

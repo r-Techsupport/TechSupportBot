@@ -75,12 +75,14 @@ class BasementBot(Bot):
             config = yaml.safe_load(iostream)
         self.config = munch.munchify(config)
 
+        self.config.main.disabled_plugins = self.config.main.disabled_plugins or []
+
         if validate:
-            self.validate_config()
+            self._validate_config()
 
         return self.config
 
-    def validate_config(self):
+    def _validate_config(self):
         """Loops through defined sections of bot config to check for missing values.
         """
 
@@ -95,9 +97,14 @@ class BasementBot(Bot):
                             if v is None:
                                 error_key = k
                     if error_key:
-                        raise ValueError(
-                            f"Config key {error_key} from {section}.{sub} not supplied"
-                        )
+                        if section == "plugins":
+                            log.warning(f"Disabling loading of plugin {sub} due to missing config key {error_key}")
+                            # disable the plugin if we can't get its config
+                            self.config.main.disabled_plugins.append(sub)
+                        else:
+                            raise ValueError(
+                                f"Config key {error_key} from {section}.{sub} not supplied"
+                            )
 
         check_all("main", ["required", "database"])
         check_all("plugins", list(self.config.plugins.keys()))
