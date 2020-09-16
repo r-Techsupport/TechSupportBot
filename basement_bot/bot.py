@@ -35,7 +35,10 @@ class BasementBot(Bot):
         self.database_api = DatabaseAPI(bot=self)
 
         if run:
+            log.debug("Bot starting upon init")
             self.start(self.config.main.required.auth_token)
+        else:
+            log.debug("Bot created but not started")
 
     async def on_ready(self):
         """Callback for when the bot is finished starting up.
@@ -56,14 +59,14 @@ class BasementBot(Bot):
     def start(self, token):
         """Loads initial plugins (blocking) and starts the connection.
         """
+        log.debug("Starting bot...")
         self.plugin_api.load_plugins()
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(super().start(token))
-
-    async def shutdown(self):
-        """Cleans up for final shutdown of bot instance.
-        """
-        await self.logout()
+        try:
+            self.loop.run_until_complete(super().start(token))
+        except KeyboardInterrupt:
+            self.loop.run_until_complete(self.logout())
+        finally:
+            self.loop.close()
 
     def _load_config(self, validate):
         """Loads the config yaml file into a bot object.
