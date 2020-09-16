@@ -8,7 +8,6 @@ import yaml
 from discord import Game
 from discord.ext.commands import Bot
 
-from config import ConfigAPI
 from database import DatabaseAPI
 from plugin import PluginAPI
 from utils.logger import get_logger
@@ -23,7 +22,7 @@ class BasementBot(Bot):
     CONFIG_PATH = "./config.yaml"
 
     def __init__(self, run=True):
-        self.config = self._load_config()
+        self.config = self._load_config(validate=True)
         super().__init__(self.config.main.required.command_prefix)
 
         self.game = (
@@ -66,11 +65,39 @@ class BasementBot(Bot):
         """
         await self.logout()
 
-    def _load_config(self):
+    def _load_config(self, validate):
+        """Loads the config yaml file into a bot object.
+
+        parameters:
+            validate (bool): True if validations should be ran on the file
+        """
         with open(self.CONFIG_PATH) as iostream:
             config = yaml.safe_load(iostream)
-        for key, value in config.get("main", {}).get("required", {}).items():
-            if not value:
-                raise ValueError(f"Required config {key} not supplied")
         self.config = munch.munchify(config)
+
+        if validate:
+            self.validate_config()
+
         return self.config
+
+    def validate_config(self):
+        """Loops through defined sections of bot config to check for missing values.
+        """
+
+        def check_all(section, subsections):
+            for sub in subsections:
+                for key, value in self.config.get(section, {}).get(sub, {}).items():
+                    error_key = None
+                    if value is None:
+                        error_key = key
+                    elif isinstance(value, dict):
+                        for k, v in value.items():
+                            if v is None:
+                                error_key = k
+                    if error_key:
+                        raise ValueError(
+                            f"Config key {error_key} from {section}.{sub} not supplied"
+                        )
+
+        check_all("main", ["required", "database"])
+        check_all("plugins", list(self.config.plugins.keys()))

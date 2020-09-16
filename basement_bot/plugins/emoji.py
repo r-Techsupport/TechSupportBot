@@ -13,7 +13,6 @@ def setup(bot):
 class LetterEmojis(BasicPlugin):
 
     SEARCH_LIMIT = 20
-    COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
 
     @staticmethod
     def emoji_from_char(char):
@@ -102,7 +101,9 @@ class LetterEmojis(BasicPlugin):
         async for channel_message in ctx.channel.history(limit=self.SEARCH_LIMIT):
             if (
                 channel_message.author == react_user
-                and not channel_message.content.startswith(f"{self.COMMAND_PREFIX}")
+                and not channel_message.content.startswith(
+                    f"{self.bot.config.main.required.command_prefix}"
+                )
             ):
                 react_message = channel_message
                 break

@@ -22,14 +22,13 @@ def setup(bot):
 
 
 class FactoidManager(DatabasePlugin, MatchPlugin):
-
-    FACTOID_PREFIX = get_env_value("FACTOID_PREFIX", "?", False)
-    COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
-
     async def db_preconfig(self):
-        if self.FACTOID_PREFIX == self.COMMAND_PREFIX:
+        factoid_prefix = self.bot.config.plugins.factoids.prefix
+        command_prefix = self.bot.config.main.required.command_prefix
+
+        if factoid_prefix == command_prefix:
             raise RuntimeError(
-                f"Command prefix '{self.COMMAND_PREFIX}' cannot equal Factoid prefix"
+                f"Command prefix '{command_prefix}' cannot equal Factoid prefix"
             )
 
     @commands.command(
@@ -122,7 +121,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             )
 
     def match(self, _, content):
-        return bool(content.startswith(self.FACTOID_PREFIX))
+        return bool(content.startswith(self.bot.config.plugins.factoids.prefix))
 
     async def response(self, ctx, arg):
         if ctx.message.mentions:

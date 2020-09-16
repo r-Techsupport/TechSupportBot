@@ -10,15 +10,13 @@ main:
         name: basement_bot
         host: db
         prefix: postgres
-    dev:
-        hot_reload: False
-    disabled_plugins:
+    disabled_plugins: []
 
 plugins:
     admin:
-        admins:
+        admins: []
     factoids:
-        prefix:
+        prefix: "?"
     google:
         cse_id:
         dev_key:
@@ -34,7 +32,7 @@ plugins:
         api_key:
         cron:
         country:
-        prefer:
+        prefer: []
     relay:
         mq_host:
         mq_vhost:
@@ -49,11 +47,11 @@ plugins:
         publish_seconds: 2
         consume_seconds: 2
         commands_allowed: True
-        irc_tag_prefix: $
+        irc_tag_prefix: "$"
         response_limit: 3
         send_limit: 3
     protect:
-        excluded_channels:
+        excluded_channels: []
         length_limit: 500
         
         
