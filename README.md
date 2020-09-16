@@ -96,7 +96,3 @@ There are utility functions in `utils.helpers` or `cogs` modules for helping wit
 More advanced plugins can be written by interfacing with the bot's API. For instance, the admin plugin allows you to load and unpload plugins. You can also give the bot async tasks to run forever, or event listeners for a specific message.
 
 For more information, see [the Discord.py docs](https://discordpy.readthedocs.io/en/latest/ext/commands/commands.html).
-
-# Hot Reloading
-
-In development, the Docker images include a Watchdog-based service for watching changes to the code files. When something is edited, Docker has a volume set up to tell the service and reload the bot. You can disable this under the devevelopment `.env` settings.
