@@ -11,6 +11,10 @@ def setup(bot):
 
 
 class AdminControl(BasicPlugin):
+
+    HAS_CONFIG = False
+    PLUGIN_NAME = __name__
+
     @commands.check(is_admin)
     @commands.command(name="plugin_status", hidden=True)
     async def plugin_status(self, ctx, *args):

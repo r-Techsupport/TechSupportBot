@@ -9,6 +9,10 @@ def setup(bot):
 
 
 class Greeter(BasicPlugin):
+
+    PLUGIN_NAME = __name__
+    HAS_CONFIG = False
+
     @commands.command(
         name="hello",
         brief="Hello!",

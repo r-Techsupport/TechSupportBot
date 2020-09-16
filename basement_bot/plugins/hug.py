@@ -15,6 +15,9 @@ def setup(bot):
 
 class Hugger(BasicPlugin):
 
+    PLUGIN_NAME = __name__
+    HAS_CONFIG = False
+
     HUGS_SELECTION = [
         "{user_giving_hug} hugs {user_to_hug} forever and ever and ever",
         "{user_giving_hug} wraps arms around {user_to_hug} and clings forever",

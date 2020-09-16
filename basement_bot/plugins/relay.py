@@ -20,29 +20,18 @@ def setup(bot):
 
 class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
 
-    QUEUE = get_env_value("RELAY_MQ_SEND_QUEUE")
-    COMMANDS_ALLOWED = bool(int(get_env_value("RELAY_COMMANDS_ALLOWED", True, False)))
-    DEFAULT_WAIT = int(get_env_value("RELAY_PUBLISH_SECONDS"))
-    SEND_LIMIT = int(get_env_value("RELAY_SEND_LIMIT", 3, False))
-    MQ_HOST = get_env_value("RELAY_MQ_HOST")
-    MQ_VHOST = get_env_value("RELAY_MQ_VHOST", "/", False)
-    MQ_USER = get_env_value("RELAY_MQ_USER")
-    MQ_PASS = get_env_value("RELAY_MQ_PASS")
-    MQ_PORT = int(get_env_value("RELAY_MQ_PORT"))
-    CHANNEL_ID = int(get_env_value("RELAY_CHANNEL"))
-    SEND_QUEUE = get_env_value("RELAY_MQ_SEND_QUEUE")
-    NOTICE_ERRORS = bool(int(get_env_value("RELAY_NOTICE_ERRORS", False, False)))
-    FACTOID_PREFIX = get_env_value("FACTOID_PREFIX", "?", False)
+    PLUGIN_NAME = __name__
+    WAIT_KEY = "publish_seconds"
 
     async def preconfig(self):
-        self.channel = self.bot.get_channel(self.CHANNEL_ID)
+        self.channel = self.bot.get_channel(self.config.channel)
         self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"] = []
 
     def match(self, ctx, content):
-        if ctx.channel.id == self.CHANNEL_ID:
+        if ctx.channel.id == self.config.channel:
             if not content.startswith(self.bot.command_prefix):
                 if (
-                    content.startswith(self.FACTOID_PREFIX)
+                    content.startswith(self.bot.config.plugins.factoids.prefix)
                     and self.bot.plugin_api.plugins.get("factoids") is None
                 ):
                     ctx.content = content
@@ -66,11 +55,11 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
             for idx, body in enumerate(
                 self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"]
             )
-            if idx + 1 <= self.SEND_LIMIT
+            if idx + 1 <= self.config.send_limit
         ]
         if bodies:
             self.publish(bodies)
-            if self.mq_error_state and self.NOTICE_ERRORS:
+            if self.mq_error_state and self.config.notice_errors:
                 await self.channel.send(
                     "**ERROR**: unable to connect to relay event queue"
                 )
@@ -82,11 +71,6 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
                 len(bodies) :
             ]
 
-    # @commands.command(
-    #     name="?"
-    #     brief="Factoid commands for the IRC relay"
-    # )
-
     @commands.command(
         name="irc",
         brief="Commands for IRC relay",
@@ -94,14 +78,14 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         usage="<command> <arg>",
     )
     async def irc_command(self, ctx, *args):
-        if not self.COMMANDS_ALLOWED:
+        if not self.config.commands_allowed:
             await priv_response(
                 ctx, "Relay cross-chat commands are disabled on my end."
             )
             return
 
-        if ctx.channel.id != self.CHANNEL_ID:
-            log.debug(f"IRC command issued outside of channel ID {self.CHANNEL_ID}")
+        if ctx.channel.id != self.config.channel:
+            log.debug(f"IRC command issued outside of channel ID {self.config.channel}")
             await priv_response(
                 ctx, "That command can only be used from the IRC relay channel."
             )
@@ -195,30 +179,17 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
 
 class IRCReceiver(LoopPlugin, MqPlugin):
 
-    DEFAULT_WAIT = int(get_env_value("RELAY_CONSUME_SECONDS"))
-    QUEUE = get_env_value("RELAY_MQ_RECV_QUEUE")
-    BAN_PERIOD_DAYS = int(get_env_value("RELAY_DISCORD_BAN_DAYS"))
-    STALE_PERIOD_SECONDS = int(get_env_value("RELAY_STALE_SECONDS"))
-    IRC_TAG = get_env_value("RELAY_IRC_TAG", "$", False)
-    COMMANDS_ALLOWED = bool(int(get_env_value("RELAY_COMMANDS_ALLOWED", True, False)))
-    MQ_HOST = get_env_value("RELAY_MQ_HOST")
-    MQ_VHOST = get_env_value("RELAY_MQ_VHOST", "/", False)
-    MQ_USER = get_env_value("RELAY_MQ_USER")
-    MQ_PASS = get_env_value("RELAY_MQ_PASS")
-    MQ_PORT = int(get_env_value("RELAY_MQ_PORT"))
-    CHANNEL_ID = int(get_env_value("RELAY_CHANNEL"))
-    RESPONSE_LIMIT = int(get_env_value("RELAY_RESPONSE_LIMIT", 3, False))
-    RECV_QUEUE = get_env_value("RELAY_MQ_RECV_QUEUE")
+    PLUGIN_NAME = __name__
+    WAIT_KEY = "consume_seconds"
     IRC_LOGO = "\U0001F4E8"  # emoji
-    NOTICE_ERRORS = bool(int(get_env_value("RELAY_NOTICE_ERRORS", False, False)))
 
     async def loop_preconfig(self):
-        self.channel = self.bot.get_channel(self.CHANNEL_ID)
+        self.channel = self.bot.get_channel(self.config.channel)
 
     async def execute(self):
         responses = self.consume()
-        if self.mq_error_state and self.NOTICE_ERRORS:
-            await self.channel.send("**ERROR**: unable to connect to relay event queue")
+        if self.mq_error_state and self.config.notice_errors:
+            await self.channel.send("**ERROR**: Unable to connect to relay event queue")
 
         for response in responses:
             await self.handle_event(response)
@@ -247,7 +218,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             message = self.format_message(data)
             if message:
                 message = re.sub(
-                    r"\B\{0}\w+".format(self.IRC_TAG),
+                    r"\B\{0}\w+".format(self.config.irc_tag_prefix),
                     self._get_mention_from_irc_tag,
                     message,
                 )
@@ -263,7 +234,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             log.warning(f"Unable to handle event: {response}")
 
     async def process_command(self, data):
-        if not self.COMMANDS_ALLOWED:
+        if not self.config.commands_allowed:
             log.debug(
                 f"Blocking incoming {data.event.command} request due to disabled config"
             )
@@ -280,7 +251,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             f"Executing IRC **{data.event.command}** command from `{data.author.mask}` on target `{data.event.content}`"
         )
 
-        target_guild = get_guild_from_channel_id(self.bot, self.CHANNEL_ID)
+        target_guild = get_guild_from_channel_id(self.bot, self.config.channel)
         if not target_guild:
             await self.channel.send(f"> Critical error! Aborting command")
             log.warning(
@@ -302,7 +273,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             if data.event.command == "kick":
                 await target_guild.kick(target_user)
             elif data.event.command == "ban":
-                await target_guild.ban(target_user, self.BAN_PERIOD_DAYS)
+                await target_guild.ban(target_user, self.config.discord_ban_days)
             elif data.event.command == "unban":
                 await target_guild.unban(target_user)
             else:
@@ -324,7 +295,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             return
         if self.time_stale(time):
             log.warning(
-                f"Incoming data failed stale check ({self.STALE_PERIOD_SECONDS} seconds)"
+                f"Incoming data failed stale check ({self.config.stale_seconds} seconds)"
             )
             return
 
@@ -334,16 +305,16 @@ class IRCReceiver(LoopPlugin, MqPlugin):
     def time_stale(self, time):
         time = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f")
         now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-        if (now - time).total_seconds() > self.STALE_PERIOD_SECONDS:
+        if (now - time).total_seconds() > self.config.stale_seconds:
             return True
         return False
 
     def _get_mention_from_irc_tag(self, match):
         tagged = match.group(0)
-        guild = get_guild_from_channel_id(self.bot, self.CHANNEL_ID)
+        guild = get_guild_from_channel_id(self.bot, self.config.channel)
         if not guild:
             return tagged
-        name = tagged.replace(self.IRC_TAG, "")
+        name = tagged.replace(self.config.irc_tag_prefix, "")
         member = guild.get_member_named(name)
         if not member:
             return tagged

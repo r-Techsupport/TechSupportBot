@@ -1,7 +1,7 @@
 from discord.ext import commands
 
 from cogs import HttpPlugin
-from utils.helpers import get_env_value, priv_response
+from utils.helpers import priv_response
 
 
 def setup(bot):
@@ -10,8 +10,10 @@ def setup(bot):
 
 class ISSLocator(HttpPlugin):
 
+    PLUGIN_NAME = __name__
     ISS_URL = "http://api.open-notify.org/iss-now.json"
     GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
+    HAS_CONFIG = False
 
     @commands.command(
         name="iss",

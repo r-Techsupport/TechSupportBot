@@ -3,7 +3,7 @@ from emoji import EMOJI_UNICODE, emojize
 from inflect import engine as inflect_engine
 
 from cogs import BasicPlugin
-from utils.helpers import get_env_value, priv_response, tagged_response
+from utils.helpers import priv_response, tagged_response
 
 
 def setup(bot):
@@ -12,6 +12,8 @@ def setup(bot):
 
 class LetterEmojis(BasicPlugin):
 
+    PLUGIN_NAME = __name__
+    HAS_CONFIG = False
     SEARCH_LIMIT = 20
 
     @staticmethod

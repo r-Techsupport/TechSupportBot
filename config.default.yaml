@@ -1,9 +1,10 @@
 main:
     required:
         command_prefix: "."
-        auth_token:
+        auth_token: 
     optional:
-        game: 
+        game: RuneScape
+    admins: []
     database:
         user: admin
         password: admin
@@ -13,8 +14,6 @@ main:
     disabled_plugins: []
 
 plugins:
-    admin:
-        admins: []
     factoids:
         prefix: "?"
     google:
@@ -26,13 +25,18 @@ plugins:
         channel:
         min_hours:
         max_hours:
-        on_start: False
+        on_start: True
     news:
         channel:
         api_key:
-        cron:
-        country:
-        prefer: []
+        cron_config: "0 17 * * *"
+        country: US
+        prefer: [
+            "CNN",
+            "CBS",
+            "NBC",
+            "FOX"
+        ]
     relay:
         mq_host:
         mq_vhost:
@@ -47,9 +51,10 @@ plugins:
         publish_seconds: 2
         consume_seconds: 2
         commands_allowed: True
-        irc_tag_prefix: "$"
+        irc_tag_prefix: $
         response_limit: 3
         send_limit: 3
+        notice_errors: True
     protect:
         excluded_channels: []
         length_limit: 500

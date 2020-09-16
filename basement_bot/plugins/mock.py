@@ -3,7 +3,7 @@ import logging
 from discord.ext import commands
 
 from cogs import BasicPlugin
-from utils.helpers import get_env_value, priv_response, tagged_response
+from utils.helpers import priv_response, tagged_response
 
 
 def setup(bot):
@@ -11,7 +11,9 @@ def setup(bot):
 
 
 class Mocker(BasicPlugin):
-    COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
+
+    PLUGIN_NAME = __name__
+    HAS_CONFIG = False
     SEARCH_LIMIT = 20
 
     @staticmethod
@@ -53,7 +55,7 @@ class Mocker(BasicPlugin):
         mock_message = None
         async for message in ctx.channel.history(limit=self.SEARCH_LIMIT):
             if message.author == user_to_mock and not message.content.startswith(
-                self.COMMAND_PREFIX
+                self.bot.config.main.required.command_prefix
             ):
                 mock_message = message.content
                 break
