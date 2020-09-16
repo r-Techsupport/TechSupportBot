@@ -2,8 +2,9 @@
 """
 
 import glob
-import munch
 from os.path import basename, dirname, isfile, join
+
+import munch
 
 from utils.logger import get_logger
 
@@ -44,7 +45,7 @@ class PluginAPI:
                 ],
                 "disabled": [
                     plugin for plugin in self.bot.config.main.disabled_plugins
-                ]
+                ],
             }
         except Exception as e:
             return {"error": str(e)}
@@ -57,25 +58,24 @@ class PluginAPI:
             bot (BasementBot): the bot object to which the plugin is loaded
             allow_failure (bool): True if loader does not raise an exception
         """
-
         if self.plugins.get(plugin_name):
-            message = f"Plugin {plugin_name} already loaded - ignoring"
+            message = f"Plugin `{plugin_name}` already loaded - ignoring"
             log.warning(message)
             return self._make_response(False, message)
 
         if plugin_name in self.bot.config.main.disabled_plugins:
-            message = f"Plugin {plugin_name} is disabled in bot config - ignoring"
+            message = f"Plugin `{plugin_name}` is disabled in bot config - ignoring"
             log.warning(message)
             return self._make_response(False, message)
 
         try:
             self.bot.load_extension(f"plugins.{plugin_name}")
             self.plugins[plugin_name] = {"status": "loaded", "memory": {}}
-            return self._make_response(True, f"Successfully loaded {plugin_name}")
+            return self._make_response(True, f"Successfully loaded `{plugin_name}`")
 
         except Exception as e:  # pylint: disable=broad-except
             if allow_failure:
-                message = f"Failed to load {plugin_name}: {str(e)}"
+                message = f"Failed to load `{plugin_name}`: {str(e)}"
                 log.warning(message)
                 return self._make_response(False, message)
             else:
@@ -90,21 +90,21 @@ class PluginAPI:
             allow_failure (bool): True if loader does not raise an exception
         """
         if not self.plugins.get(plugin_name):
-            message = f"Plugin {plugin_name} not loaded - ignoring"
+            message = f"Plugin `{plugin_name}` not loaded - ignoring"
             log.debug(message)
             return self._make_response(False, message)
 
         try:
             self.bot.unload_extension(f"plugins.{plugin_name}")
             del self.plugins[plugin_name]
-            return self._make_response(True, f"Successfully unloaded {plugin_name}")
+            return self._make_response(True, f"Successfully unloaded `{plugin_name}`")
 
         except Exception as e:  # pylint: disable=broad-except
             if allow_failure:
-                message = f"Failed to unload {plugin_name}: {str(e)}"
+                message = f"Failed to unload `{plugin_name}`: {str(e)}"
                 log.warning(message)
                 return self._make_response(False, message)
-                
+
             raise RuntimeError(str(e))
 
     def load_plugins(self, allow_failure=True):
@@ -115,11 +115,9 @@ class PluginAPI:
             allow_failure (bool): True if loader does not raise an exception
         """
         for plugin_name in self.get_modules():
-            log.info(f"Attempting to load plugin module {plugin_name}")
+            log.info(f"Attempting to load plugin module `{plugin_name}`")
             self.load_plugin(plugin_name, allow_failure)
 
+    @staticmethod
     def _make_response(status, message):
-        return munch.munchify({
-            "status": status,
-            "message": message
-        })
+        return munch.munchify({"status": status, "message": message})

@@ -98,7 +98,9 @@ class BasementBot(Bot):
                                 error_key = k
                     if error_key:
                         if section == "plugins":
-                            log.warning(f"Disabling loading of plugin {sub} due to missing config key {error_key}")
+                            log.warning(
+                                f"Disabling loading of plugin {sub} due to missing config key {error_key}"
+                            )
                             # disable the plugin if we can't get its config
                             self.config.main.disabled_plugins.append(sub)
                         else:
