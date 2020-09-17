@@ -95,36 +95,43 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
 
         permissions = ctx.author.permissions_in(ctx.channel)
 
-        if len(args) > 0:
-            command = args[0]
-            if command in ["kick", "ban", "unban"] and len(args) > 1:
+        if len(args) == 0:
+            await priv_response(ctx, "No IRC command provided. Try `.help irc`")
+            return
 
-                permissions = ctx.author.permissions_in(ctx.channel)
-                if (
-                    command == "kick"
-                    and not (permissions.kick_members or permissions.administrator)
-                ) or (
-                    command in ["ban", "unban"]
-                    and not (permissions.ban_members or permissions.administrator)
-                ):
-                    log.warning(
-                        f"Unauthorized IRC command issued by {ctx.message.author.name}"
-                    )
-                    await priv_response(
-                        ctx, f"You do not have permission to issue that relay command"
-                    )
-                    return
+        command = args[0]
+        if len(args) == 1:
+            await priv_response(ctx, f"No target provided for IRC command {command}")
+            return
 
-                target = args[1]
-                ctx.irc_command = command
-                ctx.content = target
+        target = args[1]
+        if command in ["kick", "ban", "unban"]:
+            permissions = ctx.author.permissions_in(ctx.channel)
+            if (
+                command == "kick"
+                and not (permissions.kick_members or permissions.administrator)
+            ) or (
+                command in ["ban", "unban"]
+                and not (permissions.ban_members or permissions.administrator)
+            ):
+                log.warning(
+                    f"Unauthorized IRC command issued by {ctx.message.author.name}"
+                )
                 await priv_response(
-                    ctx,
-                    f"Sending **{command}** command with target `{target}` to IRC bot...",
+                    ctx, f"You do not have permission to issue that relay command"
                 )
-                self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"].append(
-                    self.serialize("command", ctx)
-                )
+                return
+
+        # elif command == "whois":
+
+        ctx.irc_command = command
+        ctx.content = target
+        await priv_response(
+            ctx, f"Sending **{command}** command with target `{target}` to IRC bot...",
+        )
+        self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"].append(
+            self.serialize("command", ctx)
+        )
 
     @staticmethod
     def serialize(type_, ctx):
