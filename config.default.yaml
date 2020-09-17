@@ -43,7 +43,7 @@ plugins:
         mq_port:
         mq_user:
         mq_pass:
-        channel:
+        channel_map: {}
         mq_send_queue:  DiscordToIRC
         mq_recv_queue: IRCToDiscord
         discord_ban_days: 14
