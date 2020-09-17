@@ -2,6 +2,7 @@ import datetime
 import json
 import logging
 import re
+import uuid
 
 from discord.ext import commands
 from munch import Munch
@@ -48,6 +49,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
             self.serialize(type_, ctx)
         )
 
+    # main looper
     async def execute(self):
         # grab from buffer
         bodies = [
@@ -73,72 +75,13 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
                 len(bodies) :
             ]
 
-    @commands.command(
-        name="irc",
-        brief="Commands for IRC relay",
-        descrption="Run a command (eg. kick/ban) on the relayed IRC",
-        usage="<command> <arg>",
-    )
-    async def irc_command(self, ctx, *args):
-        if not self.config.commands_allowed:
-            await priv_response(
-                ctx, "Relay cross-chat commands are disabled on my end."
-            )
-            return
-
-        if ctx.channel.id not in self.channels:
-            log.debug(f"IRC command issued outside of channel ID {self.config.channel}")
-            await priv_response(
-                ctx, "That command can only be used from the IRC relay channels."
-            )
-            return
-
-        permissions = ctx.author.permissions_in(ctx.channel)
-
-        if len(args) == 0:
-            await priv_response(ctx, "No IRC command provided. Try `.help irc`")
-            return
-
-        command = args[0]
-        if len(args) == 1:
-            await priv_response(ctx, f"No target provided for IRC command {command}")
-            return
-
-        target = args[1]
-        if command in ["kick", "ban", "unban"]:
-            permissions = ctx.author.permissions_in(ctx.channel)
-            if (
-                command == "kick"
-                and not (permissions.kick_members or permissions.administrator)
-            ) or (
-                command in ["ban", "unban"]
-                and not (permissions.ban_members or permissions.administrator)
-            ):
-                log.warning(
-                    f"Unauthorized IRC command issued by {ctx.message.author.name}"
-                )
-                await priv_response(
-                    ctx, f"You do not have permission to issue that relay command"
-                )
-                return
-
-        # elif command == "whois":
-
-        ctx.irc_command = command
-        ctx.content = target
-        await priv_response(
-            ctx, f"Sending **{command}** command with target `{target}` to IRC bot...",
-        )
-        self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"].append(
-            self.serialize("command", ctx)
-        )
-
     @staticmethod
     def serialize(type_, ctx):
         data = Munch()
 
         # event data
         data.event = Munch()
+        data.event.id = uuid.uuid4()
         data.event.type = type_
         data.event.time = datetime.datetime.now(datetime.timezone.utc).strftime(
             "%Y-%m-%d %H:%M:%S.%f"
@@ -185,6 +128,47 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         user = self.bot.get_user(id)
         return f"@{user.name}" if user else "@user"
 
+    @commands.command(
+        name="irc",
+        brief="Commands for IRC relay",
+        descrption="Run a command (eg. kick/ban) on the relayed IRC",
+        usage="<command> <arg>",
+    )
+    async def irc_command(self, ctx, *args):
+        if not self.config.commands_allowed:
+            await priv_response(ctx, "Relay cross-chat commands are disabled on my end")
+            return
+
+        if ctx.channel.id not in self.channels:
+            log.debug(f"IRC command issued outside of channel ID {self.config.channel}")
+            await priv_response(
+                ctx, "That command can only be used from the IRC relay channels"
+            )
+            return
+
+        permissions = ctx.author.permissions_in(ctx.channel)
+
+        if len(args) == 0:
+            await priv_response(ctx, "No IRC command provided. Try `.help irc`")
+            return
+
+        command = args[0]
+        if len(args) == 1:
+            await priv_response(ctx, f"No target provided for IRC command {command}")
+            return
+
+        target = args[1]
+
+        ctx.irc_command = command
+        ctx.content = target
+
+        await priv_response(
+            ctx, f"Sending **{command}** command with target `{target}` to IRC bot...",
+        )
+        self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"].append(
+            self.serialize("command", ctx)
+        )
+
 
 class IRCReceiver(LoopPlugin, MqPlugin):
 
@@ -195,6 +179,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
     async def preconfig(self):
         self.channels = list(self.config.channel_map.values())
 
+    # main looper
     async def execute(self):
         responses = self.consume()
         if self.mq_error_state and self.config.notice_errors:
@@ -227,7 +212,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
                 log.debug("Ignoring factoid request event")
                 return
 
-            message = self.format_message(data)
+            message = self.process_message(data)
             if message:
                 message = re.sub(
                     r"\B\{0}\w+".format(self.config.irc_tag_prefix),
@@ -235,14 +220,10 @@ class IRCReceiver(LoopPlugin, MqPlugin):
                     message,
                 )
 
-                channel = None
-                for channel_id in self.channels:
-                    if channel_id == self.config.channel_map.get(data.channel.name):
-                        channel = self.bot.get_channel(channel_id)
-                        if not channel:
-                            log.warning("Unable to find channel to send command alert")
-                            return
-                        break
+                channel = self._get_channel(data)
+                if not channel:
+                    log.warning("Unable to find channel to send command alert")
+                    return
                 await channel.send(message)
 
             else:
@@ -262,19 +243,30 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             )
             return
 
-        # server-side permissions check
+        if data.event.command in ["kick", "ban", "unban"]:
+            await self._process_user_command(data)
+        else:
+            log.warning(f"Received unroutable command: {data.event.command}")
+
+    @staticmethod
+    def _data_has_op(data):
         if "o" not in data.author.permissions:
+            return False
+        return True
+
+    def _get_channel(self, data):
+        for channel_id in self.channels:
+            if channel_id == self.config.channel_map.get(data.channel.name):
+                return self.bot.get_channel(channel_id)
+
+    async def _process_user_command(self, data):
+        if not self._data_has_op(data):
             log.debug(
                 f"Blocking incoming {data.event.command} request due to permissions"
             )
             return
 
-        channel = None
-        for channel_id in self.channels:
-            if channel_id == self.config.channel_map.get(data.channel.name):
-                channel = self.bot.get_channel(channel_id)
-                break
-
+        channel = self._get_channel(data)
         if not channel:
             log.warning("Unable to find channel to send command alert")
             return
@@ -297,19 +289,15 @@ class IRCReceiver(LoopPlugin, MqPlugin):
                 f"Unable to locate target `{data.event.content}`! Aborting command"
             )
             return
-            # log.warning(f"Unable to find user associated with {data.event.command} target {data.event.content}")
 
         # very likely this will raise an exception :(
         try:
-            # route appropriately
             if data.event.command == "kick":
                 await target_guild.kick(target_user)
             elif data.event.command == "ban":
                 await target_guild.ban(target_user, self.config.discord_ban_days)
             elif data.event.command == "unban":
                 await target_guild.unban(target_user)
-            else:
-                log.warning(f"Received unroutable command: {data.event.command}")
         except Exception as e:
             log.warning(f"Unable to send command: {e}")
 
@@ -325,7 +313,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
         if not time:
             log.warning(f"Unable to retrieve time object from incoming data")
             return
-        if self.time_stale(time):
+        if self._time_stale(time):
             log.warning(
                 f"Incoming data failed stale check ({self.config.stale_seconds} seconds)"
             )
@@ -334,7 +322,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
         log.debug(f"Deserialized data: {body})")
         return deserialized
 
-    def time_stale(self, time):
+    def _time_stale(self, time):
         time = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f")
         now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
         if (now - time).total_seconds() > self.config.stale_seconds:
@@ -352,21 +340,11 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             return tagged
         return member.mention
 
-    def format_message(self, data):
+    def process_message(self, data):
         if data.event.type == "message":
             return self._format_chat_message(data)
         else:
             return self._format_event_message(data)
-
-    @staticmethod
-    def _get_permissions_label(permissions):
-        label = ""
-        if permissions:
-            if "v" in permissions:
-                label += "+"
-            if "o" in permissions:
-                label += "@"
-        return label
 
     def _format_chat_message(self, data):
         return f"{self.IRC_LOGO} `{self._get_permissions_label(data.author.permissions)}{data.author.nickname}` {data.event.content}"
@@ -391,3 +369,13 @@ class IRCReceiver(LoopPlugin, MqPlugin):
                 return f"{self.IRC_LOGO} `{data.author.mask}` did some configuration on {data.channel.name}..."
         elif data.event.type == "factoid":
             return f"{self.IRC_LOGO} {data.event.content}"
+
+    @staticmethod
+    def _get_permissions_label(permissions):
+        label = ""
+        if permissions:
+            if "v" in permissions:
+                label += "+"
+            if "o" in permissions:
+                label += "@"
+        return label
