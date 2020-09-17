@@ -6,9 +6,9 @@ BasementBot is a Discord bot designed for running in Docker. Written on top of t
 
 # Setup
 
-* Create a `.env` file from the `default.env` file in the repo.
-* In the `.env` file set your Discord developer `TOKEN` (see [here](https://discordapp.com/developers/docs/topics/oauth2))
-* (Optional) set any other `.env` variables. Some included plugins won't work without the correct API keys.
+* Create a `config.yaml` file from the `config.default.yaml` file in the repo.
+* In the `config.yaml` file set your Discord developer `token` (see [here](https://discordapp.com/developers/docs/topics/oauth2))
+* (Optional) set any other `config.yaml` variables. Some included plugins won't work without the correct API keys.
 
 ## Production
 
