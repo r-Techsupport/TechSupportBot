@@ -42,6 +42,9 @@ upp:
 down:
 	docker-compose down
 
+reboot:
+	make down && make dev && make upd && make logs
+
 restart:
 	docker-compose restart
 

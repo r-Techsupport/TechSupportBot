@@ -81,7 +81,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
 
         # event data
         data.event = Munch()
-        data.event.id = uuid.uuid4()
+        data.event.id = str(uuid.uuid4())
         data.event.type = type_
         data.event.time = datetime.datetime.now(datetime.timezone.utc).strftime(
             "%Y-%m-%d %H:%M:%S.%f"
@@ -157,7 +157,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
             await priv_response(ctx, f"No target provided for IRC command {command}")
             return
 
-        target = args[1]
+        target = " ".join(args[1:])
 
         ctx.irc_command = command
         ctx.content = target
@@ -275,7 +275,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             f"Executing IRC **{data.event.command}** command from `{data.author.mask}` on target `{data.event.content}`"
         )
 
-        target_guild = get_guild_from_channel_id(self.bot, self.config.channel)
+        target_guild = get_guild_from_channel_id(self.bot, channel.id)
         if not target_guild:
             await channel.send(f"> Critical error! Aborting command")
             log.warning(

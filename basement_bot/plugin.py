@@ -43,9 +43,7 @@ class PluginAPI:
                     for plugin in self.get_modules()
                     if not self.plugins.get(plugin)
                 ],
-                "disabled": [
-                    plugin for plugin in self.bot.config.main.disabled_plugins
-                ],
+                "disabled": self.bot.config.main.disabled_plugins,
             }
         except Exception as e:
             return {"error": str(e)}
@@ -78,8 +76,7 @@ class PluginAPI:
                 message = f"Failed to load `{plugin_name}`: {str(e)}"
                 log.warning(message)
                 return self._make_response(False, message)
-            else:
-                raise RuntimeError(str(e))
+            raise RuntimeError(str(e))
 
     def unload_plugin(self, plugin_name, allow_failure=True):
         """Unloads a plugin by name.

@@ -1,8 +1,6 @@
 """The main bot functions.
 """
 
-import asyncio
-
 import munch
 import yaml
 from discord import Game
@@ -56,13 +54,13 @@ class BasementBot(Bot):
         self.game = game
         await self.change_presence(activity=Game(name=self.game))
 
-    def start(self, token):
+    def start(self, *args, **kwargs):
         """Loads initial plugins (blocking) and starts the connection.
         """
         log.debug("Starting bot...")
         self.plugin_api.load_plugins()
         try:
-            self.loop.run_until_complete(super().start(token))
+            self.loop.run_until_complete(super().start(*args, **kwargs))
         except KeyboardInterrupt:
             self.loop.run_until_complete(self.logout())
         finally:
@@ -101,6 +99,7 @@ class BasementBot(Bot):
                                 error_key = k
                     if error_key:
                         if section == "plugins":
+                            # pylint: disable=line-too-long
                             log.warning(
                                 f"Disabling loading of plugin {sub} due to missing config key {error_key}"
                             )

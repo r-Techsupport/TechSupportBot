@@ -38,10 +38,9 @@ class BasicPlugin(commands.Cog):
                 raise ValueError(
                     f"PLUGIN_NAME not provided for plugin {self.__class__.__name__}"
                 )
-            else:
-                raise ValueError(
-                    f"No valid configuration found for plugin {self.PLUGIN_NAME}"
-                )
+            raise ValueError(
+                f"No valid configuration found for plugin {self.PLUGIN_NAME}"
+            )
 
         self.bot.loop.create_task(self.preconfig())
 
