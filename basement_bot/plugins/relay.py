@@ -24,11 +24,11 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
     WAIT_KEY = "publish_seconds"
 
     async def preconfig(self):
-        self.channel = self.bot.get_channel(self.config.channel)
+        self.channels = list(self.config.channel_map.values())
         self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"] = []
 
     def match(self, ctx, content):
-        if ctx.channel.id == self.config.channel:
+        if ctx.channel.id in self.channels:
             if not content.startswith(self.bot.command_prefix):
                 if (
                     content.startswith(self.bot.config.plugins.factoids.prefix)
@@ -60,9 +60,11 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         if bodies:
             self.publish(bodies)
             if self.mq_error_state and self.config.notice_errors:
-                await self.channel.send(
-                    "**ERROR**: unable to connect to relay event queue"
+                # just send to first channel on the map
+                channel = self.bot.get_channel(
+                    self.config.channel_map.get(self.config.channel_map.keys()[0])
                 )
+                await channel.send("**ERROR**: Unable to connect to relay event queue")
 
             # remove from buffer
             self.bot.plugin_api.plugins["relay"]["memory"][
@@ -84,10 +86,10 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
             )
             return
 
-        if ctx.channel.id != self.config.channel:
+        if ctx.channel.id not in self.channels:
             log.debug(f"IRC command issued outside of channel ID {self.config.channel}")
             await priv_response(
-                ctx, "That command can only be used from the IRC relay channel."
+                ctx, "That command can only be used from the IRC relay channels."
             )
             return
 
@@ -183,13 +185,16 @@ class IRCReceiver(LoopPlugin, MqPlugin):
     WAIT_KEY = "consume_seconds"
     IRC_LOGO = "\U0001F4E8"  # emoji
 
-    async def loop_preconfig(self):
-        self.channel = self.bot.get_channel(self.config.channel)
+    async def preconfig(self):
+        self.channels = list(self.config.channel_map.values())
 
     async def execute(self):
         responses = self.consume()
         if self.mq_error_state and self.config.notice_errors:
-            await self.channel.send("**ERROR**: Unable to connect to relay event queue")
+            channel = self.bot.get_channel(
+                self.config.channel_map.get(self.config.channel_map.keys()[0])
+            )
+            await channel.send("**ERROR**: Unable to connect to relay event queue")
 
         for response in responses:
             await self.handle_event(response)
@@ -222,7 +227,17 @@ class IRCReceiver(LoopPlugin, MqPlugin):
                     self._get_mention_from_irc_tag,
                     message,
                 )
-                await self.channel.send(message)
+
+                channel = None
+                for channel_id in self.channels:
+                    if channel_id == self.config.channel_map.get(data.channel.name):
+                        channel = self.bot.get_channel(channel_id)
+                        if not channel:
+                            log.warning("Unable to find channel to send command alert")
+                            return
+                        break
+                await channel.send(message)
+
             else:
                 log.warning(f"Unable to format message for event: {response}")
 
@@ -247,13 +262,23 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             )
             return
 
-        await self.channel.send(
+        channel = None
+        for channel_id in self.channels:
+            if channel_id == self.config.channel_map.get(data.channel.name):
+                channel = self.bot.get_channel(channel_id)
+                break
+
+        if not channel:
+            log.warning("Unable to find channel to send command alert")
+            return
+
+        await channel.send(
             f"Executing IRC **{data.event.command}** command from `{data.author.mask}` on target `{data.event.content}`"
         )
 
         target_guild = get_guild_from_channel_id(self.bot, self.config.channel)
         if not target_guild:
-            await self.channel.send(f"> Critical error! Aborting command")
+            await channel.send(f"> Critical error! Aborting command")
             log.warning(
                 f"Unable to find guild associated with relay channel (this is unusual)"
             )
@@ -261,7 +286,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
 
         target_user = target_guild.get_member_named(data.event.content)
         if not target_user:
-            await self.channel.send(
+            await channel.send(
                 f"Unable to locate target `{data.event.content}`! Aborting command"
             )
             return
