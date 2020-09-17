@@ -241,7 +241,9 @@ class MqPlugin(BasicPlugin):
                 self.mq_error_state = False
                 break
             except Exception as e:
-                log.debug(f"Unable to publish: {e}")
+                if self.connection is not None:
+                    log.debug(self.connection)
+                    log.debug(f"Unable to publish: {e}")
                 if not self.connect():
                     self.mq_error_state = True
                     break
@@ -265,7 +267,8 @@ class MqPlugin(BasicPlugin):
                 self.mq_error_state = False
                 break
             except Exception as e:
-                log.debug(f"Unable to publish: {e}")
+                if self.connection is not None:
+                    log.debug(f"Unable to consume: {e}")
                 if not self.connect():
                     self.mq_error_state = True
                     break
