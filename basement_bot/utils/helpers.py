@@ -60,10 +60,10 @@ async def is_admin(ctx, message_user=True):
         ctx (Context): the context object
         message_user (boolean): True if the user should be notified on failure
     """
-    admins = get_env_value("ADMINS", raise_exception=False)
-    admins = admins.replace(" ", "").split(",") if admins else []
 
-    status_ = bool(ctx.message.author.id in [int(id) for id in admins])
+    status_ = bool(
+        ctx.message.author.id in [int(id) for id in ctx.bot.config.main.admins]
+    )
 
     if not status_:
         if message_user:

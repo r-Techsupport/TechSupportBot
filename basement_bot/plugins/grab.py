@@ -5,7 +5,7 @@ from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
 
 from cogs import DatabasePlugin
-from utils.helpers import get_env_value, priv_response, tagged_response
+from utils.helpers import priv_response, tagged_response
 
 
 class Grab(DatabasePlugin.BaseTable):
@@ -24,8 +24,9 @@ def setup(bot):
 
 class Grabber(DatabasePlugin):
 
+    PLUGIN_NAME = __name__
+    HAS_CONFIG = False
     SEARCH_LIMIT = 20
-    COMMAND_PREFIX = get_env_value("COMMAND_PREFIX")
 
     @commands.command(
         name="grab",
@@ -56,7 +57,7 @@ class Grabber(DatabasePlugin):
         grab_message = None
         async for message in ctx.channel.history(limit=self.SEARCH_LIMIT):
             if message.author == user_to_grab and not message.content.startswith(
-                f"{self.COMMAND_PREFIX}grab"
+                f"{self.bot.config.main.required.command_prefix}grab"
             ):
                 grab_message = message.content
                 break

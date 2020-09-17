@@ -12,8 +12,10 @@ def setup(bot):
 
 class UrbanDictionary(HttpPlugin):
 
+    PLUGIN_NAME = __name__
     BASE_URL = "http://api.urbandictionary.com/v0/define?term="
     SEE_MORE_URL = "https://www.urbandictionary.com/define.php?term="
+    HAS_CONFIG = False
 
     async def preconfig(self):
         self.cached = {"last_query": None, "last_url": None, "all_urls": []}

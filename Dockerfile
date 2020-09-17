@@ -11,6 +11,7 @@ RUN pip install pipenv && \
     pip install --no-cache-dir -r /tmp/requirements.txt
 WORKDIR /var/BasementBot
 COPY . .
+COPY config.yaml basement_bot
 
 # Production stage
 FROM python:3.7-alpine

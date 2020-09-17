@@ -1,0 +1,62 @@
+main:
+    required:
+        command_prefix: "."
+        auth_token: 
+    optional:
+        game: RuneScape
+    admins: []
+    database:
+        user: admin
+        password: admin
+        name: basement_bot
+        host: db
+        prefix: postgres
+    disabled_plugins: []
+
+plugins:
+    factoids:
+        prefix: "?"
+    google:
+        cse_id:
+        dev_key:
+    giphy:
+        dev_key:
+    kanye:
+        channel:
+        min_hours:
+        max_hours:
+        on_start: True
+    news:
+        channel:
+        api_key:
+        cron_config: "0 17 * * *"
+        country: US
+        prefer: [
+            "CNN",
+            "CBS",
+            "NBC",
+            "FOX"
+        ]
+    relay:
+        mq_host:
+        mq_vhost:
+        mq_port:
+        mq_user:
+        mq_pass:
+        channel:
+        mq_send_queue:  DiscordToIRC
+        mq_recv_queue: IRCToDiscord
+        discord_ban_days: 14
+        stale_seconds: 600
+        publish_seconds: 2
+        consume_seconds: 2
+        commands_allowed: True
+        irc_tag_prefix: $
+        response_limit: 3
+        send_limit: 3
+        notice_errors: True
+    protect:
+        excluded_channels: []
+        length_limit: 500
+        
+        
