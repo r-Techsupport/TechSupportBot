@@ -3,7 +3,8 @@ import os
 from discord.ext import commands
 
 from cogs import BasicPlugin
-from utils.helpers import is_admin, priv_response, tagged_response
+from utils.helpers import (embed_from_kwargs, is_admin, priv_response,
+                           tagged_response)
 
 
 def setup(bot):
@@ -40,9 +41,17 @@ class AdminControl(BasicPlugin):
         disabled = [f"`{plugin}`" for plugin in status_data.get("disabled")]
         disabled = ", ".join(disabled) if disabled else "*None*"
 
-        await priv_response(ctx, f"Loaded plugins: {loaded}")
-        await priv_response(ctx, f"Unloaded plugins: {unloaded}")
-        await priv_response(ctx, f"Disabled plugins: {disabled}")
+        await priv_response(
+            ctx,
+            embed=embed_from_kwargs(
+                title="Plugin Status",
+                **{"loaded": loaded, "unloaded": unloaded, "disabled": disabled},
+            ),
+        )
+
+        # await priv_response(ctx, f"Loaded plugins: {loaded}")
+        # await priv_response(ctx, f"Unloaded plugins: {unloaded}")
+        # await priv_response(ctx, f"Disabled plugins: {disabled}")
 
     @commands.check(is_admin)
     @commands.command(name="load_plugin", hidden=True)

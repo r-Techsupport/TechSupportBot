@@ -3,9 +3,13 @@
 
 import os
 
+from discord import Embed
+
 
 def get_env_value(name, default=None, raise_exception=True):
     """Grabs an env value from the environment and fails if nothing is found.
+
+    Note: this isn't needed for config anymore.
 
     parameters:
         name (str): the name of the environmental variable
@@ -18,14 +22,30 @@ def get_env_value(name, default=None, raise_exception=True):
     return key
 
 
-async def tagged_response(ctx, message):
+async def tagged_response(ctx, message, embed=None):
     """Sends a context response with the original author tagged.
 
     parameters:
         ctx (Context): the context object
         message (str): the message to send
+        embed (discord.Embed): the discord embed object to send
     """
-    await ctx.send(f"{ctx.message.author.mention} {message}")
+    await ctx.send(f"{ctx.message.author.mention} {message}", embed=embed)
+
+
+async def priv_response(ctx, message=None, embed=None):
+    """Sends a context private message to the original author.
+
+    parameters:
+        ctx (Context): the context object
+        message (str): the message to send
+        embed (discord.Embed): the discord embed object to send
+    """
+    channel = await ctx.message.author.create_dm()
+    if message:
+        await channel.send(message, embed=embed)
+    else:
+        await channel.send(embed=embed)
 
 
 async def emoji_reaction(ctx, emojis):
@@ -40,17 +60,6 @@ async def emoji_reaction(ctx, emojis):
 
     for emoji in emojis:
         await ctx.message.add_reaction(emoji)
-
-
-async def priv_response(ctx, message):
-    """Sends a context private message to the original author.
-
-    parameters:
-        ctx (Context): the context object
-        message (str): the message to send
-    """
-    channel = await ctx.message.author.create_dm()
-    await channel.send(message)
 
 
 async def is_admin(ctx, message_user=True):
@@ -87,3 +96,17 @@ def get_guild_from_channel_id(bot, channel_id):
             if channel.id == int(channel_id):
                 return guild
     return None
+
+
+def embed_from_kwargs(title=None, description=None, **kwargs):
+    """Wrapper for generating an embed from a set of key, values.
+
+    parameters:
+        title (str): the title for the embed
+        description (str): the description for the embed
+        **kwargs (dict): a set of keyword values to be displayed
+    """
+    embed = Embed(title=title, description=description)
+    for key, value in kwargs.items():
+        embed.add_field(name=key, value=value, inline=False)
+    return embed
