@@ -4,6 +4,7 @@ import logging
 import re
 import uuid
 
+from discord import Embed
 from discord.ext import commands
 from munch import Munch
 
@@ -140,7 +141,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
             return
 
         if ctx.channel.id not in self.channels:
-            log.debug(f"IRC command issued outside of channel ID {self.config.channel}")
+            log.debug(f"IRC command issued outside of allowed channels")
             await priv_response(
                 ctx, "That command can only be used from the IRC relay channels"
             )
@@ -262,14 +263,33 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             requester = self.bot.get_user(response.request.author)
 
     async def _process_whois_response(self, data):
-        author_id = data.event.content.request.author
+        response = data.event.content
+        author_id = response.request.author
         requester = self.bot.get_user(author_id)
         if not requester:
-            log.warning(f"Unable to find user with ID {author_id} associated with response")
+            log.warning(
+                f"Unable to find user with ID {author_id} associated with response"
+            )
             return
-
         dm_channel = await requester.create_dm()
-        await dm_channel.send(data.event.content.payload)
+
+        embed = Embed(title=f"WHOIS Response for {response.payload.nick}")
+        embed.add_field(
+            name="User", value=response.payload.user or "Not found", inline=False
+        )
+        embed.add_field(
+            name="Host", value=response.payload.host or "Not found", inline=False
+        )
+        embed.add_field(
+            name="Realname",
+            value=response.payload.realname or "Not found",
+            inline=False,
+        )
+        embed.add_field(
+            name="Server", value=response.payload.server or "Not found", inline=False
+        )
+
+        await dm_channel.send(embed=embed)
 
     @staticmethod
     def _data_has_op(data):
