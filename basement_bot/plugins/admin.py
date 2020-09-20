@@ -137,8 +137,8 @@ class AdminControl(BasicPlugin):
         else:
             await priv_response(ctx, "I cannot play a game with no name!")
 
-    @commands.check(is_admin)
-    @commands.command(name="restart", hidden=True)
-    async def restart(self, ctx):
-        await tagged_response(ctx, "Rebooting! *Beep. boop. boop. bop.* :robot:")
-        await ctx.bot.shutdown()
+    # @commands.check(is_admin)
+    # @commands.command(name="restart", hidden=True)
+    # async def restart(self, ctx):
+    #     await tagged_response(ctx, "Rebooting! *Beep. boop. boop. bop.* :robot:")
+    #     await ctx.bot.shutdown()
