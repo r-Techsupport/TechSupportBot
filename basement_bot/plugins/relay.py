@@ -233,6 +233,9 @@ class IRCReceiver(LoopPlugin, MqPlugin):
         elif data.event.type == "command":
             await self.process_command(data)
 
+        elif data.event.type == "response":
+            await self.process_response(data)
+
         else:
             log.warning(f"Unable to handle event: {response}")
 
@@ -247,6 +250,26 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             await self._process_user_command(data)
         else:
             log.warning(f"Received unroutable command: {data.event.command}")
+
+    async def process_response(self, data):
+        response = data.event.content
+        if not response:
+            log.warning("Received empty response")
+            return
+
+        if response.type == "whois":
+            await self._process_whois_response(data)
+            requester = self.bot.get_user(response.request.author)
+
+    async def _process_whois_response(self, data):
+        author_id = data.event.content.request.author
+        requester = self.bot.get_user(author_id)
+        if not requester:
+            log.warning(f"Unable to find user with ID {author_id} associated with response")
+            return
+
+        dm_channel = await requester.create_dm()
+        await dm_channel.send(data.event.content.payload)
 
     @staticmethod
     def _data_has_op(data):
