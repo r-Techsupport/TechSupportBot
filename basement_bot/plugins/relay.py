@@ -185,7 +185,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
         responses = self.consume()
         if self.mq_error_state and self.config.notice_errors:
             channel = self.bot.get_channel(
-                self.config.channel_map.get(self.config.channel_map.keys()[0])
+                self.config.channel_map.get(list(self.config.channel_map.keys())[0])
             )
             await channel.send("**ERROR**: Unable to connect to relay event queue")
 
