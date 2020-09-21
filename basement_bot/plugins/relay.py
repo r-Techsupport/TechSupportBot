@@ -141,7 +141,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
             return
 
         if ctx.channel.id not in self.channels:
-            log.debug(f"IRC command issued outside of allowed channels")
+            log.warning(f"IRC command issued outside of allowed channels")
             await priv_response(
                 ctx, "That command can only be used from the IRC relay channels"
             )
@@ -307,7 +307,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
 
     async def _process_user_command(self, data):
         if not self._data_has_op(data):
-            log.debug(
+            log.warning(
                 f"Blocking incoming {data.event.command} request due to permissions"
             )
             return
