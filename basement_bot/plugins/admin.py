@@ -3,8 +3,7 @@ import os
 from discord.ext import commands
 
 from cogs import BasicPlugin
-from utils.helpers import (embed_from_kwargs, is_admin, priv_response,
-                           tagged_response)
+from utils.helpers import *
 
 
 def setup(bot):
@@ -45,7 +44,7 @@ class AdminControl(BasicPlugin):
             ctx,
             embed=embed_from_kwargs(
                 title="Plugin Status",
-                **{"loaded": loaded, "unloaded": unloaded, "disabled": disabled},
+                **{"Loaded": loaded, "Unloaded": unloaded, "Disabled": disabled},
             ),
         )
 
