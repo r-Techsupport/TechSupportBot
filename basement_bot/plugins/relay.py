@@ -179,15 +179,18 @@ class IRCReceiver(LoopPlugin, MqPlugin):
 
     async def preconfig(self):
         self.channels = list(self.config.channel_map.values())
+        self.error_count = 0
 
     # main looper
     async def execute(self):
         responses = self.consume()
-        if self.mq_error_state and self.config.notice_errors:
+        if self.mq_error_state and self.config.notice_errors and self.error_count < 5:
             channel = self.bot.get_channel(
                 self.config.channel_map.get(list(self.config.channel_map.keys())[0])
             )
             await channel.send("**ERROR**: Unable to connect to relay event queue")
+            self.error_count += 1
+            return
 
         for response in responses:
             await self.handle_event(response)
