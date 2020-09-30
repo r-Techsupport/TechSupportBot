@@ -1,34 +1,16 @@
 import aiounittest
 import mock
-import munch
 from discord import Game
 
 from bot import BasementBot
-
-
-def _get_mock_dict():
-    return {
-        "main": {
-            "required": {"auth_token": "foo", "command_prefix": "bar"},
-            "optional": {"game": "foo"},
-            "disabled_plugins": [],
-        },
-        "plugins": {
-            "mock_plugin": {"foo": "bar", "foo2": None},
-            "mock_plugin_2": {"foo": {"foo": None}},
-        },
-    }
-
-
-def _get_mock_config():
-    return munch.munchify(_get_mock_dict())
+from utils.test import *
 
 
 class TestBot(aiounittest.AsyncTestCase):
     @mock.patch("bot.BasementBot.start", return_value=None)
     @mock.patch("database.DatabaseAPI.__init__", return_value=None)
     @mock.patch("plugin.PluginAPI.__init__", return_value=None)
-    @mock.patch("bot.BasementBot._load_config", return_value=_get_mock_config())
+    @mock.patch("bot.BasementBot._load_config", return_value=get_mock_config())
     @mock.patch("discord.ext.commands.Bot.__init__", return_value=None)
     def test_init(
         self,
@@ -73,7 +55,7 @@ class TestBot(aiounittest.AsyncTestCase):
         self.assertTrue(bbot.plugin_api.load_plugins.called)
         self.assertTrue(bbot.loop.run_until_complete.called)
 
-    @mock.patch("yaml.safe_load", return_value=_get_mock_dict())
+    @mock.patch("yaml.safe_load", return_value=get_mock_dict())
     @mock.patch("builtins.open", new_callable=mock.mock_open(read_data=""))
     @mock.patch("bot.BasementBot._validate_config", return_value=None)
     @mock.patch("bot.BasementBot.__init__", return_value=None)
@@ -89,7 +71,7 @@ class TestBot(aiounittest.AsyncTestCase):
     @mock.patch("bot.BasementBot.__init__", return_value=None)
     async def test_validate_config(self, _mock_bot):
         bbot = BasementBot(True)
-        bbot.config = _get_mock_config()
+        bbot.config = get_mock_config()
 
         bbot._validate_config()
         self.assertTrue("mock_plugin" in bbot.config.main.disabled_plugins)
