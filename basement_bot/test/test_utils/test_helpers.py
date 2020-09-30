@@ -37,13 +37,12 @@ class TestHelpers(aiounittest.AsyncTestCase):
         self.assertTrue(context.message.author.create_dm.called)
 
     @mock.patch("utils.helpers.priv_response")
-    @mock.patch("utils.helpers.get_env_value", return_value="12345,67890")
-    async def test_is_admin(self, mock_get_env_value, mock_priv_response):
+    async def test_is_admin(self, mock_priv_response):
         # test normal admin
         context = mock.AsyncMock()
         context.message.author.id = 67890
+        context.bot.config.main.admins = ["12345", "67890"]
         permission = await utils.helpers.is_admin(context)
-        self.assertTrue(mock_get_env_value.called)
         self.assertEqual(permission, True)
 
         # test not admin
@@ -53,6 +52,7 @@ class TestHelpers(aiounittest.AsyncTestCase):
         self.assertEqual(permission, False)
 
         # test empty admin list
-        mock_get_env_value.return_value = None
+        context.bot.config.main.admins = []
+        context.message.author.id = 67890
         permission = await utils.helpers.is_admin(context)
         self.assertEqual(permission, False)
