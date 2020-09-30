@@ -29,8 +29,9 @@ class TestPlugin(aiounittest.AsyncTestCase):
 
         # test normal loading
         api = PluginAPI(mock_bot)
-        code = api.load_plugin("foo")
-        self.assertEqual(code, 0)
+        response = api.load_plugin("foo")
+        self.assertEqual(response.status, True)
+        self.assertEqual(response.message, f"Successfully loaded `foo`")
         self.assertTrue(mock_bot.load_extension.called)
         self.assertEqual(api.plugins["foo"], {"status": "loaded", "memory": {}})
 
@@ -38,36 +39,40 @@ class TestPlugin(aiounittest.AsyncTestCase):
         mock_bot = mock.MagicMock()
         api = PluginAPI(mock_bot)
         api.plugins["foo"] = {"status": "loaded", "memory": {}}
-        code = api.load_plugin("foo")
-        self.assertEqual(code, 126)
+        response = api.load_plugin("foo")
+        self.assertEqual(response.status, False)
+        self.assertEqual(response.message, "Plugin `foo` already loaded - ignoring")
         self.assertTrue(not mock_bot.load_extension.called)
 
         # test exception passing
         mock_bot = mock.MagicMock()
         mock_bot.load_extension.side_effect = OSError
         api = PluginAPI(mock_bot)
-        code = api.load_plugin("foo")
-        self.assertEqual(code, 1)
+        response = api.load_plugin("foo")
+        self.assertEqual(response.status, False)
+        self.assertEqual(response.message, "Failed to load `foo`: ")
 
         # test exception raising
         with self.assertRaises(RuntimeError):
             api = PluginAPI(mock_bot)
-            code = api.load_plugin("foo", False)
+            response = api.load_plugin("foo", False)
 
     def test_unload_plugin(self):
         mock_bot = mock.MagicMock()
 
         # test already unloaded
         api = PluginAPI(mock_bot)
-        code = api.unload_plugin("foo")
-        self.assertEqual(code, 126)
+        response = api.unload_plugin("foo")
+        self.assertEqual(response.status, False)
+        self.assertEqual(response.message, "Plugin `foo` not loaded - ignoring")
 
         # test normal unloading
         mock_bot = mock.MagicMock()
         api = PluginAPI(mock_bot)
         api.plugins["foo"] = {"status": "loaded"}
-        code = api.unload_plugin("foo")
-        self.assertEqual(code, 0)
+        response = api.unload_plugin("foo")
+        self.assertEqual(response.status, True)
+        self.assertEqual(response.message, "Successfully unloaded `foo`")
         self.assertTrue(mock_bot.unload_extension.called)
         self.assertEqual(api.plugins.get("foo"), None)
 
@@ -76,14 +81,15 @@ class TestPlugin(aiounittest.AsyncTestCase):
         mock_bot.unload_extension.side_effect = OSError
         api = PluginAPI(mock_bot)
         api.plugins["foo"] = {"status": "loaded"}
-        code = api.unload_plugin("foo")
-        self.assertEqual(code, 1)
+        response = api.unload_plugin("foo")
+        self.assertEqual(response.status, False)
+        self.assertEqual(response.message, "Failed to unload `foo`: ")
 
         # test exception raising
         with self.assertRaises(RuntimeError):
             api = PluginAPI(mock_bot)
             api.plugins["foo"] = {"status": "loaded"}
-            code = api.unload_plugin("foo", False)
+            response = api.unload_plugin("foo", False)
 
     @mock.patch("plugin.PluginAPI.load_plugin")
     @mock.patch("plugin.isfile", return_value=True)
