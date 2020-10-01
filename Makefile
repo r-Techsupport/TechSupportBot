@@ -25,9 +25,11 @@ test:
 	$(drun) pytest --disable-warnings
 
 dev:
+	make establish_config
 	docker build -t $(dev-image) -f Dockerfile.dev .
 
 prod:
+	make establish_config
 	docker build -t $(prod-image) -f Dockerfile .
 
 push:
@@ -50,3 +52,9 @@ restart:
 
 logs:
 	docker logs basement_bot -f
+
+establish_config:
+	@if [ ! -f "./config.yaml" ]; then\
+		touch ./config.yaml;\
+	fi
+		
