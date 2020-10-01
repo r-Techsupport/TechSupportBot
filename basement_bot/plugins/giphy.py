@@ -3,7 +3,7 @@ import random
 from discord.ext import commands
 
 from cogs import HttpPlugin
-from utils.helpers import get_env_value, priv_response, tagged_response
+from utils.helpers import priv_response, tagged_response
 
 
 def setup(bot):
@@ -12,7 +12,7 @@ def setup(bot):
 
 class Giphy(HttpPlugin):
 
-    DEV_KEY = get_env_value("GIPHY_DEV_KEY", raise_exception=False)
+    PLUGIN_NAME = __name__
     GIPHY_URL = "http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"
     SEARCH_LIMIT = 5
 
@@ -32,9 +32,6 @@ class Giphy(HttpPlugin):
         help="\nLimitations: Mentions should not be used.",
     )
     async def giphy(self, ctx, *args):
-        if not self.DEV_KEY:
-            await priv_response(ctx, "Sorry, I don't have the Giphy API key!")
-            return
         if not args:
             await priv_response(ctx, "I can't search for nothing!")
             return
@@ -47,7 +44,8 @@ class Giphy(HttpPlugin):
 
         args_q = "+".join(args)
         response = await self.http_call(
-            "get", self.GIPHY_URL.format(args_q, self.DEV_KEY, self.SEARCH_LIMIT)
+            "get",
+            self.GIPHY_URL.format(args_q, self.config.dev_key, self.SEARCH_LIMIT),
         )
         response = response.json()
         data = response.get("data")

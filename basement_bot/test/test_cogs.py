@@ -1,19 +1,39 @@
 import aiounittest
 import mock
+import munch
 import sqlalchemy
 
 import cogs
+from utils.test import *
 
 
 class TestBasicPlugin(aiounittest.AsyncTestCase):
     def test_type(self):
         self.assertEqual(cogs.BasicPlugin.PLUGIN_TYPE, "BASIC")
 
-    def test_init(self):
+    @mock.patch("cogs.BasicPlugin.preconfig", return_value=None)
+    def test_init(self, mock_preconfig):
         mock_bot = mock.MagicMock()
-        plugin = cogs.BasicPlugin(mock_bot)
+        mock_bot.config = get_mock_config()
+
+        class test_plugin(cogs.BasicPlugin):
+            PLUGIN_NAME = "plugin.foo"
+            HAS_CONFIG = False
+
+        plugin = test_plugin(mock_bot)
+        self.assertEqual(plugin.PLUGIN_NAME, "foo")
         self.assertEqual(plugin.bot, mock_bot)
         self.assertTrue(mock_bot.loop.create_task.called)
+        self.assertTrue(mock_preconfig.called)
+
+        test_plugin.PLUGIN_NAME = None
+        test_plugin.HAS_CONFIG = True
+        with self.assertRaises(ValueError):
+            plugin = test_plugin(mock_bot)
+
+        test_plugin.PLUGIN_NAME = "plugin.foo"
+        with self.assertRaises(ValueError):
+            plugin = test_plugin(mock_bot)
 
 
 class TestMatchPlugin(aiounittest.AsyncTestCase):
@@ -126,12 +146,23 @@ class TestLoopPlugin(aiounittest.AsyncTestCase):
         plugin.cog_unload()
         self.assertEqual(plugin.state, False)
 
+    @mock.patch("aiocron.Cron.next")
     @mock.patch("asyncio.sleep")
-    async def test_wait(self, mock_sleep):
-        mock_bot = mock.AsyncMock()
-        plugin = cogs.LoopPlugin(mock_bot)
+    async def test_wait(self, mock_sleep, mock_next):
+        mock_bot = mock.MagicMock()
+
+        class test_plugin(cogs.LoopPlugin):
+            PLUGIN_NAME = "plugin.foo"
+            HAS_CONFIG = False
+
+        plugin = test_plugin(mock_bot)
+        plugin.config = {}
         await plugin.wait()
         self.assertTrue(mock_sleep.called)
+
+        plugin.config = munch.munchify({"cron_config": "foo"})
+        await plugin.wait()
+        self.assertTrue(mock_next.called)
 
     async def test_execute(self):
         mock_bot = mock.AsyncMock()

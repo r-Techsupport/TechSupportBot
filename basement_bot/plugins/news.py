@@ -13,24 +13,20 @@ def setup(bot):
 
 class News(LoopPlugin, HttpPlugin):
 
-    CRON_CONFIG = get_env_value("NEWS_CRON", raise_exception=False).replace('"', "")
-    CHANNEL_ID = get_env_value("NEWS_CHANNEL")
+    PLUGIN_NAME = __name__
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
-    API_KEY = get_env_value("NEWS_API_KEY")
-    COUTNRY = get_env_value("NEWS_COUNTRY", raise_exception=False).upper() or "US"
-    PREFER_SRCS = get_env_value("NEWS_PREFER").split(",")
 
     async def loop_preconfig(self):
-        if not self.PREFER_SRCS:
+        if not self.config.prefer:
             raise RuntimeError("No news sources were provided")
-        self.channel = self.bot.get_channel(int(self.CHANNEL_ID))
+        self.channel = self.bot.get_channel(self.config.channel)
         if not self.channel:
             raise RuntimeError("Unable to get channel for News plugin")
         await self.wait()
 
     async def execute(self):
         response = await self.http_call(
-            "get", self.API_URL.format(self.API_KEY, self.COUTNRY)
+            "get", self.API_URL.format(self.config.api_key, self.config.country)
         )
         response_json = response.json() if response else None
 
@@ -43,14 +39,14 @@ class News(LoopPlugin, HttpPlugin):
             log.warning("Unable to retrieve articles from API response")
             return
 
-        shuffle(self.PREFER_SRCS)
+        shuffle(self.config.prefer)
         shuffle(articles)
         for article in articles:
             source = article.get("source", {}).get("name")
             if not source:
                 continue
 
-            for preference in self.PREFER_SRCS:
+            for preference in self.config.prefer:
                 if preference.lower() in source.lower():
                     url = article.get("url")
                     if not url:

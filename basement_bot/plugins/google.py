@@ -1,7 +1,7 @@
 from discord.ext import commands
 
 from cogs import HttpPlugin
-from utils.helpers import get_env_value, priv_response, tagged_response
+from utils.helpers import priv_response, tagged_response
 
 
 def setup(bot):
@@ -10,8 +10,7 @@ def setup(bot):
 
 class Googler(HttpPlugin):
 
-    CSE_ID = get_env_value("GOOGLE_CSE_ID", raise_exception=False)
-    DEV_KEY = get_env_value("GOOGLE_DEV_KEY", raise_exception=False)
+    PLUGIN_NAME = __name__
     GOOGLE_URL = "https://www.googleapis.com/customsearch/v1"
     YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=1"
 
@@ -30,16 +29,14 @@ class Googler(HttpPlugin):
         help="\nLimitations: Mentions should not be used.",
     )
     async def google(self, ctx, *args):
-        if not self.CSE_ID or not self.DEV_KEY:
-            await priv_response(ctx, "Sorry, I don't have the Google API keys!")
-            return
         if not args:
             await priv_response(ctx, "I can't search for nothing!")
             return
 
         args = " ".join(args)
         items = await self.get_items(
-            self.GOOGLE_URL, data={"cx": self.CSE_ID, "q": args, "key": self.DEV_KEY}
+            self.GOOGLE_URL,
+            data={"cx": self.config.cse_id, "q": args, "key": self.config.dev_key,},
         )
 
         if not items:
@@ -61,16 +58,14 @@ class Googler(HttpPlugin):
         help="\nLimitations: Mentions should not be used.",
     )
     async def youtube(self, ctx, *args):
-        if not self.DEV_KEY:
-            await priv_response(ctx, "Sorry, I don't have the Google dev key!")
-            return
         if not args:
             await priv_response(ctx, "I can't search for nothing!")
             return
 
         args = " ".join(args)
         items = await self.get_items(
-            self.YOUTUBE_URL, data={"q": args, "key": self.DEV_KEY, "type": "video"}
+            self.YOUTUBE_URL,
+            data={"q": args, "key": self.config.dev_key, "type": "video",},
         )
 
         if not items:

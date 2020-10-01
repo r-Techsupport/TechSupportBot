@@ -13,19 +13,12 @@ def setup(bot):
 
 class Protector(MatchPlugin):
 
-    EXCLUDE = [
-        int(id)
-        for id in get_env_value(
-            "PROTECT_EXCLUDE_CHANNELS", "", raise_exception=False
-        ).split(",")
-        if id
-    ]
-    LIMIT = int(get_env_value("PROTECT_LENGTH_LIMIT", 500, False))
+    PLUGIN_NAME = __name__
 
     def match(self, ctx, content):
-        if ctx.channel.id in self.EXCLUDE:
+        if ctx.channel.id in self.config.excluded_channels:
             return False
-        if not len(content) > self.LIMIT:
+        if not len(content) > self.config.length_limit:
             return False
         return True
 
@@ -36,10 +29,12 @@ class Protector(MatchPlugin):
             return
 
         try:
+            message_content = ctx.message.content
             await ctx.message.delete()
             await priv_response(
                 ctx,
-                f"Your message was deleted because it was greater than {self.LIMIT} characters. Please use a Pastebin (https://pastebin.com)",
+                f"Your message was deleted because it was greater than {self.config.length_limit} characters. Please use a Pastebin (https://pastebin.com)",
             )
+            await priv_response(f"Original message: ```{message_content}```")
         except Forbidden:
             log.warning("Unable to edit spam message due to missing permissions")

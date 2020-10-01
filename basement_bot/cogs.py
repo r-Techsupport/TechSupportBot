@@ -24,9 +24,24 @@ class BasicPlugin(commands.Cog):
     """
 
     PLUGIN_TYPE = "BASIC"
+    PLUGIN_NAME = None
+    HAS_CONFIG = True
 
     def __init__(self, bot):
         self.bot = bot
+
+        if self.PLUGIN_NAME and "." in self.PLUGIN_NAME:
+            self.PLUGIN_NAME = self.PLUGIN_NAME.split(".")[1]
+        self.config = self.bot.config.plugins.get(f"{self.PLUGIN_NAME}")
+        if not self.config and self.HAS_CONFIG:
+            if not self.PLUGIN_NAME:
+                raise ValueError(
+                    f"PLUGIN_NAME not provided for plugin {self.__class__.__name__}"
+                )
+            raise ValueError(
+                f"No valid configuration found for plugin {self.PLUGIN_NAME}"
+            )
+
         self.bot.loop.create_task(self.preconfig())
 
     async def preconfig(self):
@@ -136,7 +151,7 @@ class LoopPlugin(BasicPlugin):
 
     PLUGIN_TYPE = "LOOP"
     DEFAULT_WAIT = 30
-    CRON_CONFIG = None
+    WAIT_KEY = None
 
     def __init__(self, bot):
         super().__init__(bot)
@@ -162,10 +177,10 @@ class LoopPlugin(BasicPlugin):
     async def wait(self):
         """The default wait method.
         """
-        if self.CRON_CONFIG:
-            await aiocron.crontab(self.CRON_CONFIG).next()
+        if self.config.get("cron_config"):
+            await aiocron.crontab(self.config.cron_config).next()
         else:
-            await asyncio.sleep(self.DEFAULT_WAIT)
+            await asyncio.sleep(self.config.get(self.WAIT_KEY) or self.DEFAULT_WAIT)
 
     async def loop_preconfig(self):
         """Preconfigures the environment before starting the loop.
@@ -184,16 +199,7 @@ class MqPlugin(BasicPlugin):
         bot (Bot): the bot object
     """
 
-    MQ_HOST = None
-    MQ_VHOST = None
-    MQ_USER = None
-    MQ_PASS = None
-    MQ_PORT = None
-    CHANNEL_ID = None
-    RESPONSE_LIMIT = None
-
-    SEND_QUEUE = None
-    RECV_QUEUE = None
+    PLUGIN_TYPE = "MQ"
 
     connection = None
     mq_error_state = False
@@ -202,11 +208,12 @@ class MqPlugin(BasicPlugin):
     def connect(self):
         """Sets the connection attribute to an active connection.
         """
+
         self.parameters = pika.ConnectionParameters(
-            self.MQ_HOST,
-            self.MQ_PORT,
-            self.MQ_VHOST,
-            pika.PlainCredentials(self.MQ_USER, self.MQ_PASS),
+            self.config.mq_host,
+            self.config.mq_port,
+            self.config.mq_vhost,
+            pika.PlainCredentials(self.config.mq_user, self.config.mq_pass),
         )
         try:
             self.connection = pika.BlockingConnection(self.parameters)
@@ -225,15 +232,17 @@ class MqPlugin(BasicPlugin):
         while True:
             try:
                 mq_channel = self.connection.channel()
-                mq_channel.queue_declare(queue=self.SEND_QUEUE, durable=True)
+                mq_channel.queue_declare(queue=self.config.mq_send_queue, durable=True)
                 for body in bodies:
                     mq_channel.basic_publish(
-                        exchange="", routing_key=self.SEND_QUEUE, body=body
+                        exchange="", routing_key=self.config.mq_send_queue, body=body
                     )
                 self.mq_error_state = False
                 break
             except Exception as e:
-                log.debug(f"Unable to publish: {e}")
+                if self.connection is not None:
+                    log.debug(self.connection)
+                    log.debug(f"Unable to publish: {e}")
                 if not self.connect():
                     self.mq_error_state = True
                     break
@@ -246,9 +255,9 @@ class MqPlugin(BasicPlugin):
         while True:
             try:
                 mq_channel = self.connection.channel()
-                mq_channel.queue_declare(queue=self.RECV_QUEUE, durable=True)
+                mq_channel.queue_declare(queue=self.config.mq_recv_queue, durable=True)
                 checks = 0
-                while checks < self.RESPONSE_LIMIT:
+                while checks < self.config.response_limit:
                     body = self._get_ack(mq_channel)
                     checks += 1
                     if not body:
@@ -257,7 +266,8 @@ class MqPlugin(BasicPlugin):
                 self.mq_error_state = False
                 break
             except Exception as e:
-                log.debug(f"Unable to publish: {e}")
+                if self.connection is not None:
+                    log.debug(f"Unable to consume: {e}")
                 if not self.connect():
                     self.mq_error_state = True
                     break
@@ -270,7 +280,7 @@ class MqPlugin(BasicPlugin):
         parameters:
             channel (PikaChannel): the channel on which to consume
         """
-        method, _, body = channel.basic_get(queue=self.RECV_QUEUE)
+        method, _, body = channel.basic_get(queue=self.config.mq_recv_queue)
         if method:
             channel.basic_ack(method.delivery_tag)
         return body
