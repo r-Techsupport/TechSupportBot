@@ -35,10 +35,16 @@ class Embedder(BasicPlugin):
         embed = await self.process_request(ctx, request_body)
 
         if embed:
-            await ctx.send(embed=embed)
+            try:
+                await ctx.send(embed=embed)
+            except Exception:
+                await priv_response(
+                    ctx, "I couldn't send your embed... Check the formatting?"
+                )
         else:
             await priv_response(
-                ctx, "I was unable to generate an embed from your request"
+                ctx,
+                "I couldn't create an embed from your request... Check the formatting?",
             )
 
     async def process_request(self, ctx, request_body):
