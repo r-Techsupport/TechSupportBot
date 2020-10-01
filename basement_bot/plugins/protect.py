@@ -29,10 +29,12 @@ class Protector(MatchPlugin):
             return
 
         try:
+            message_content = ctx.message.content
             await ctx.message.delete()
             await priv_response(
                 ctx,
                 f"Your message was deleted because it was greater than {self.config.length_limit} characters. Please use a Pastebin (https://pastebin.com)",
             )
+            await priv_response(f"Original message: ```{message_content}```")
         except Forbidden:
             log.warning("Unable to edit spam message due to missing permissions")
