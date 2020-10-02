@@ -65,16 +65,19 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
             if self.mq_error_state and self.config.notice_errors:
                 # just send to first channel on the map
                 channel = self.bot.get_channel(
-                    self.config.channel_map.get(self.config.channel_map.keys()[0])
+                    self.config.channel_map.get(list(self.config.channel_map.keys())[0])
                 )
-                await channel.send("**ERROR**: Unable to connect to relay event queue")
-
-            # remove from buffer
-            self.bot.plugin_api.plugins["relay"]["memory"][
-                "send_buffer"
-            ] = self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"][
-                len(bodies) :
-            ]
+                if channel:
+                    await channel.send(
+                        "**ERROR**: Unable to connect to relay event queue"
+                    )
+            else:
+                # remove from buffer
+                self.bot.plugin_api.plugins["relay"]["memory"][
+                    "send_buffer"
+                ] = self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"][
+                    len(bodies) :
+                ]
 
     @staticmethod
     def serialize(type_, ctx):
