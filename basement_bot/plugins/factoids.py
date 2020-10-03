@@ -4,7 +4,7 @@ from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
 
 from cogs import DatabasePlugin, MatchPlugin
-from utils.helpers import priv_response, tagged_response
+from utils.helpers import embed_from_kwargs, priv_response, tagged_response
 
 
 class Factoid(DatabasePlugin.BaseTable):
@@ -121,6 +121,38 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             await priv_response(
                 ctx, "I ran into an issue handling your factoid deletion..."
             )
+
+    @commands.command(
+        name="ls_factoids",
+        brief="List all factoids",
+        description="Shows an embed with all the factoids",
+        usage="",
+        help="\nLimitations: Currently only shows up to 20",
+    )
+    async def list_all_factoids(self, ctx):
+        if ctx.message.mentions:
+            await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
+            return
+
+        db = self.db_session()
+
+        try:
+            factoids = db.query(Factoid).all()
+        except Exception:
+            await priv_response(ctx, "I was unable to get all the factoids...")
+
+        factoid_dict = {}
+        for index, factoid in enumerate(factoids):
+            factoid_dict[factoid.text] = factoid.message
+            # prevent too many factoids from showing
+            if index == 20:
+                break
+        embed = embed_from_kwargs(
+            title="Factoids",
+            description=f"Access factoids with the `{self.config.prefix}` prefix",
+            **factoid_dict,
+        )
+        await ctx.send(embed=embed)
 
     def match(self, _, content):
         return bool(content.startswith(self.config.prefix))
