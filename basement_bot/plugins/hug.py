@@ -49,7 +49,7 @@ class Hugger(BasicPlugin):
                 return
 
             if ctx.author in ctx.message.mentions:
-                await priv_response(ctx, "You tried to hug yourself? You got issues.")
+                await priv_response(ctx, "You tried to hug yourself? You got issues")
                 return
 
             if len(ctx.message.mentions) > 1:
