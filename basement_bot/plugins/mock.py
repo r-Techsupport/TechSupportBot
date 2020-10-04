@@ -1,5 +1,6 @@
 import logging
 
+from discord import Embed
 from discord.ext import commands
 
 from cogs import BasicPlugin
@@ -64,4 +65,8 @@ class Mocker(BasicPlugin):
             await priv_response(ctx, f"No message found for user {user_to_mock}")
             return
 
-        await tagged_response(ctx, self.mock_string(mock_message))
+        mock_string = self.mock_string(mock_message)
+        embed = Embed(title=f'"{mock_string}"', description=user_to_mock.name)
+        embed.set_thumbnail(url=user_to_mock.avatar_url)
+
+        await tagged_response(ctx, embed=embed)
