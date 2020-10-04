@@ -76,7 +76,6 @@ class Grabber(DatabasePlugin):
                 db.query(Grab)
                 .filter(
                     Grab.author_id == str(user_to_grab.id),
-                    Grab.channel == channel,
                     Grab.message == grab_message,
                 )
                 .count()
@@ -122,12 +121,10 @@ class Grabber(DatabasePlugin):
         db = self.db_session()
 
         try:
-            grabs = db.query(Grab).filter(
-                Grab.author_id == str(user_to_grab.id), Grab.channel == channel
-            )
+            grabs = db.query(Grab).filter(Grab.author_id == str(user_to_grab.id))
             embed = Embed(
                 title=f"Grabs for {user_to_grab.name}",
-                description=f"Channel: {ctx.message.channel.name}",
+                description=f"Let's take a stroll down memory lane...",
             )
             embed.set_thumbnail(url=user_to_grab.avatar_url)
             if grabs:
@@ -165,11 +162,9 @@ class Grabber(DatabasePlugin):
 
         try:
             if user_to_grab:
-                grabs = db.query(Grab).filter(
-                    Grab.author_id == str(user_to_grab.id), Grab.channel == channel
-                )
+                grabs = db.query(Grab).filter(Grab.author_id == str(user_to_grab.id))
             else:
-                grabs = db.query(Grab).filter(Grab.channel == channel)
+                grabs = db.query(Grab)
 
             if grabs:
                 random_index = randint(0, grabs.count() - 1)
