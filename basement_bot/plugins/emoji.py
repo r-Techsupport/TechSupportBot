@@ -15,9 +15,10 @@ class LetterEmojis(BasicPlugin):
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
     SEARCH_LIMIT = 20
+    KEY_MAP = {"?": "question", "!": "exclamation"}
 
-    @staticmethod
-    def emoji_from_char(char):
+    @classmethod
+    def emoji_from_char(cls, char):
         if char.isalpha():
             return emojize(
                 f":regional_indicator_symbol_letter_{char.lower()}:", use_aliases=True
@@ -25,6 +26,8 @@ class LetterEmojis(BasicPlugin):
         if char.isnumeric():
             char = inflect_engine().number_to_words(char)
             return emojize(f":{char}:", use_aliases=True)
+        if cls.KEY_MAP.get(char):
+            return emojize(f":{cls.KEY_MAP[char]}:", use_aliases=True)
 
     @classmethod
     def emoji_message_from_string(cls, string):
@@ -116,7 +119,7 @@ class LetterEmojis(BasicPlugin):
         emoji_list = self.emoji_reaction_from_string(message)
         if not emoji_list:
             await priv_response(
-                ctx, "Invalid message! Make sure there are no repeat letters!"
+                ctx, "Invalid message! Make sure there are no repeat characters!"
             )
             return
 
