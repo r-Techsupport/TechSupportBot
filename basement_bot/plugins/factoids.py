@@ -123,7 +123,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             )
 
     @commands.command(
-        name="ls_factoids",
+        name=f"lsf",
         brief="List all factoids",
         description="Shows an embed with all the factoids",
         usage="",

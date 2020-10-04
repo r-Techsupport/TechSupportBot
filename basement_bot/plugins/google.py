@@ -54,7 +54,7 @@ class Googler(HttpPlugin):
             snippet = item.get("snippet", "<Details Unknown>")
             if link:
                 embed.add_field(name=link, value=snippet, inline=False)
-            if index == 7:
+            if index == 2:
                 break
 
         await tagged_response(ctx, embed=embed)
