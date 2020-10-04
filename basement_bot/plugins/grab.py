@@ -1,6 +1,7 @@
 import datetime
 from random import randint
 
+from discord import Embed
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
 
@@ -66,6 +67,7 @@ class Grabber(DatabasePlugin):
             await priv_response(
                 ctx, f"Could not find a recent essage from user {user_to_grab}"
             )
+            return
 
         db = self.db_session()
 
@@ -123,19 +125,23 @@ class Grabber(DatabasePlugin):
             grabs = db.query(Grab).filter(
                 Grab.author_id == str(user_to_grab.id), Grab.channel == channel
             )
+            embed = Embed(
+                title=f"Grabs for {user_to_grab.name}",
+                description=f"Channel: {ctx.message.channel.name}",
+            )
+            embed.set_thumbnail(url=user_to_grab.avatar_url)
             if grabs:
-                message = ""
-                for grab_ in grabs[:-1]:
-                    message += f"'*{grab_.message}*', "
-                if message:
-                    message += f"and '*{grabs[-1].message}*'"
-                else:
-                    message = f"'*{grabs[-1].message}*'"
+                for index, grab_ in enumerate(grabs):
+                    embed.add_field(
+                        name=f'"{grab_.message}"', value=grab_.time.date(), inline=False
+                    )
+                    if index == 20:
+                        break
             else:
-                message = f"No messages found for {user_to_grab}"
-            await tagged_response(ctx, message)
-        except Exception:
-            return
+                embed.add_field(name=None, value="No grabs found!")
+            await tagged_response(ctx, embed=embed)
+        except Exception as e:
+            await tagged_response(ctx, e)
 
     @commands.command(
         name="grabr",
@@ -167,13 +173,18 @@ class Grabber(DatabasePlugin):
 
             if grabs:
                 random_index = randint(0, grabs.count() - 1)
-                message = f"'*{grabs[random_index].message}*'"
+                grab = grabs[random_index]
+                embed = Embed(
+                    title=f'"{grab.message}"',
+                    description=f"{user_to_grab.name}, {grab.time.date()}",
+                )
+                embed.set_thumbnail(url=user_to_grab.avatar_url)
             else:
                 await priv_response(
                     f"No messages found for {user_to_grab or 'this channel'}"
                 )
                 return
 
-            await tagged_response(ctx, message)
+            await tagged_response(ctx, embed=embed)
         except Exception:
             return
