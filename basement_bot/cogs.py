@@ -226,7 +226,7 @@ class MqPlugin(BasicPlugin):
         """
         try:
             self.connection.close()
-        except Exception as e:
+        except Exception:
             pass
 
     def publish(self, bodies):
