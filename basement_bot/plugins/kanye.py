@@ -1,5 +1,5 @@
 import asyncio
-from random import randint
+from random import choice, randint
 
 from discord import Embed
 
@@ -14,6 +14,13 @@ class KanyeQuotes(LoopPlugin, HttpPlugin):
 
     PLUGIN_NAME = __name__
     API_URL = "https://api.kanye.rest"
+    KANYE_PICS = [
+        "https://i.imgur.com/ITmTXGz.jpg",
+        "https://i.imgur.com/o8BkPrL.jpg",
+        "https://i.imgur.com/sA5qP3F.jpg",
+        "https://i.imgur.com/1fX29Y3.jpg",
+        "https://i.imgur.com/g1o2Gro.jpg",
+    ]
 
     async def loop_preconfig(self):
         min_wait = self.config.min_hours
@@ -37,8 +44,8 @@ class KanyeQuotes(LoopPlugin, HttpPlugin):
 
         if quote:
             message = f"'*{quote}*' - Kanye West"
-            embed = Embed(title=quote, description="Kanye Quest")
-            embed.set_thumbnail(url="https://i.imgur.com/ITmTXGz.jpg")
+            embed = Embed(title=f'"{quote}"', description="Kanye Quest")
+            embed.set_thumbnail(url=choice(self.KANYE_PICS))
             await self.channel.send(embed=embed)
 
     async def wait(self):
