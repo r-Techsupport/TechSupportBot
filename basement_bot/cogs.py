@@ -217,11 +217,17 @@ class MqPlugin(BasicPlugin):
         )
         try:
             self.connection = pika.BlockingConnection(self.parameters)
-            return True
         except Exception as e:
             e = str(e) or "No route to host"  # dumb correction to a blank error
             log.warning(f"Unable to connect to MQ: {e}")
-        return False
+
+    def _close(self):
+        """Attempts to close the connection.
+        """
+        try:
+            self.connection.close()
+        except Exception as e:
+            pass
 
     def publish(self, bodies):
         """Sends a list of events to the event queue.
@@ -229,49 +235,38 @@ class MqPlugin(BasicPlugin):
         parameters:
             bodies (list): the list of events
         """
-        while True:
-            try:
-                mq_channel = self.connection.channel()
-                mq_channel.queue_declare(queue=self.config.mq_send_queue, durable=True)
-                for body in bodies:
-                    mq_channel.basic_publish(
-                        exchange="", routing_key=self.config.mq_send_queue, body=body
-                    )
-                self.mq_error_state = False
-                break
-            except Exception as e:
-                if self.connection is not None:
-                    log.debug(self.connection)
-                    log.debug(f"Unable to publish: {e}")
-                if not self.connect():
-                    self.mq_error_state = True
-                    break
+        try:
+            self.connect()
+            mq_channel = self.connection.channel()
+            mq_channel.queue_declare(queue=self.config.mq_send_queue, durable=True)
+            for body in bodies:
+                mq_channel.basic_publish(
+                    exchange="", routing_key=self.config.mq_send_queue, body=body
+                )
+            self._close()
+        except Exception as e:
+            log.debug(f"Unable to publish: {e}")
 
     def consume(self):
         """Retrieves a list of events from the event queue.
         """
         bodies = []
 
-        while True:
-            try:
-                mq_channel = self.connection.channel()
-                mq_channel.queue_declare(queue=self.config.mq_recv_queue, durable=True)
-                checks = 0
-                while checks < self.config.response_limit:
-                    body = self._get_ack(mq_channel)
-                    checks += 1
-                    if not body:
-                        break
-                    bodies.append(body)
-                self.mq_error_state = False
-                break
-            except Exception as e:
-                if self.connection is not None:
-                    log.debug(f"Unable to consume: {e}")
-                if not self.connect():
-                    self.mq_error_state = True
+        try:
+            self.connect()
+            mq_channel = self.connection.channel()
+            mq_channel.queue_declare(queue=self.config.mq_recv_queue, durable=True)
+            checks = 0
+            while checks < self.config.response_limit:
+                body = self._get_ack(mq_channel)
+                checks += 1
+                if not body:
                     break
+                bodies.append(body)
+        except Exception as e:
+            log.debug(f"Unable to consume: {e}")
 
+        self._close()
         return bodies
 
     def _get_ack(self, channel):
