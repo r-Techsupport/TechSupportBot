@@ -1,3 +1,4 @@
+from discord import Embed
 from discord.ext import commands
 
 from cogs import HttpPlugin
@@ -51,6 +52,18 @@ class ISSLocator(HttpPlugin):
 
         if not location:
             location = "Unknown"
-        await ctx.send(
-            f"`{location} @ {latitude},{longitude}` https://spotthestation.nasa.gov/tracking_map.cfm"
+
+        embed = Embed(
+            title="ISS Location", description="Track the International Space Station!"
         )
+        embed.add_field(name="Location", value=location)
+        embed.add_field(name="Latitude", value=latitude)
+        embed.add_field(name="Longitude", value=longitude)
+        embed.add_field(
+            name="Real-time tracking",
+            value="https://spotthestation.nasa.gov/tracking_map.cfm",
+        )
+        embed.set_thumbnail(
+            url="https://cdn.icon-icons.com/icons2/1389/PNG/512/internationalspacestation_96150.png"
+        )
+        await ctx.send(embed=embed)

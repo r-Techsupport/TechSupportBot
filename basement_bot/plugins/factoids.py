@@ -123,7 +123,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             )
 
     @commands.command(
-        name="ls_factoids",
+        name=f"lsf",
         brief="List all factoids",
         description="Shows an embed with all the factoids",
         usage="",
@@ -135,9 +135,11 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             return
 
         db = self.db_session()
+        channel_name = ctx.channel.name
+        channel_id = str(ctx.channel.id)
 
         try:
-            factoids = db.query(Factoid).all()
+            factoids = db.query(Factoid).filter(Factoid.channel == channel_id).all()
         except Exception:
             await priv_response(ctx, "I was unable to get all the factoids...")
 
@@ -147,9 +149,14 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             # prevent too many factoids from showing
             if index == 20:
                 break
+        description = (
+            f"Access factoids with the `{self.config.prefix}` prefix"
+            if len(factoids) > 1
+            else "No factoids found!"
+        )
         embed = embed_from_kwargs(
-            title="Factoids",
-            description=f"Access factoids with the `{self.config.prefix}` prefix",
+            title=f"Factoids for {channel_name}",
+            description=description,
             **factoid_dict,
         )
         await ctx.send(embed=embed)

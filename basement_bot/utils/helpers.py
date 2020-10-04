@@ -22,7 +22,7 @@ def get_env_value(name, default=None, raise_exception=True):
     return key
 
 
-async def tagged_response(ctx, message, embed=None):
+async def tagged_response(ctx, message=None, embed=None):
     """Sends a context response with the original author tagged.
 
     parameters:
@@ -30,7 +30,12 @@ async def tagged_response(ctx, message, embed=None):
         message (str): the message to send
         embed (discord.Embed): the discord embed object to send
     """
-    await ctx.send(f"{ctx.message.author.mention} {message}", embed=embed)
+    message = (
+        f"{ctx.message.author.mention} {message}"
+        if message
+        else ctx.message.author.mention
+    )
+    await ctx.send(message, embed=embed)
 
 
 async def priv_response(ctx, message=None, embed=None):

@@ -202,7 +202,6 @@ class MqPlugin(BasicPlugin):
     PLUGIN_TYPE = "MQ"
 
     connection = None
-    mq_error_state = False
 
     # pylint: disable=attribute-defined-outside-init
     def connect(self):
@@ -243,9 +242,12 @@ class MqPlugin(BasicPlugin):
                 mq_channel.basic_publish(
                     exchange="", routing_key=self.config.mq_send_queue, body=body
                 )
-            self._close()
+            return True
         except Exception as e:
             log.debug(f"Unable to publish: {e}")
+            return False
+
+        self._close()
 
     def consume(self):
         """Retrieves a list of events from the event queue.
@@ -263,11 +265,12 @@ class MqPlugin(BasicPlugin):
                 if not body:
                     break
                 bodies.append(body)
+            return bodies, True
         except Exception as e:
             log.debug(f"Unable to consume: {e}")
+            return [], False
 
         self._close()
-        return bodies
 
     def _get_ack(self, channel):
         """Gets a body and acknowledges its consumption.

@@ -136,8 +136,31 @@ class AdminControl(BasicPlugin):
         else:
             await priv_response(ctx, "I cannot play a game with no name!")
 
-    # @commands.check(is_admin)
-    # @commands.command(name="restart", hidden=True)
-    # async def restart(self, ctx):
-    #     await tagged_response(ctx, "Rebooting! *Beep. boop. boop. bop.* :robot:")
-    #     await ctx.bot.shutdown()
+    @commands.check(is_admin)
+    @commands.command(name="delete_x", hidden=True)
+    async def delete_x_messages(self, ctx, *args):
+        if not args:
+            await priv_response(ctx, "Please provide a number of messages to delete")
+            return
+
+        try:
+            amount = int(args[0])
+            if amount <= 0:
+                amount = 1
+        except Exception:
+            amount = 1
+
+        await priv_response(ctx, "Starting deletion...")
+
+        counter = 0
+        async for message in ctx.channel.history(limit=100):
+            if counter >= amount:
+                break
+            if message.author.id == ctx.bot.user.id:
+                await message.delete()
+            counter += 1
+
+        await priv_response(
+            ctx,
+            f"I finished deleting {amount} of my most recent messages in that channel!",
+        )

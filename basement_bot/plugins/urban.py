@@ -1,5 +1,6 @@
 import json
 
+from discord import Embed
 from discord.ext import commands
 
 from cogs import HttpPlugin
@@ -16,6 +17,7 @@ class UrbanDictionary(HttpPlugin):
     BASE_URL = "http://api.urbandictionary.com/v0/define?term="
     SEE_MORE_URL = "https://www.urbandictionary.com/define.php?term="
     HAS_CONFIG = False
+    ICON_URL = "https://cdn.icon-icons.com/icons2/114/PNG/512/dictionary_19159.png"
 
     async def preconfig(self):
         self.cached = {"last_query": None, "last_url": None, "all_urls": []}
@@ -43,14 +45,25 @@ class UrbanDictionary(HttpPlugin):
             await priv_response(ctx, f"No results found for: *{args}*")
             return
 
-        message = (
-            definitions[0]
-            .get("definition")
-            .replace("[", "")
-            .replace("]", "")
-            .replace("\n", "")
+        args_no_spaces = args.replace(" ", "%20")
+        embed = Embed(
+            title=f"Results for {args}",
+            description=f"{self.SEE_MORE_URL}{args_no_spaces}",
         )
-        await tagged_response(
-            ctx,
-            f'*{message}* ... (See more results: {self.SEE_MORE_URL}{args.replace(" ","%20")})',
-        )
+        embed.set_thumbnail(url=self.ICON_URL)
+        for index, definition in enumerate(definitions):
+            message = (
+                definition.get("definition")
+                .replace("[", "")
+                .replace("]", "")
+                .replace("\n", "")
+            )
+            embed.add_field(
+                name=f"{message[:200]}",
+                value=definition.get("author", "Author Unknown"),
+                inline=False,
+            )
+            if index == 5:
+                break
+
+        await tagged_response(ctx, embed=embed)
