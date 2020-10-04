@@ -28,6 +28,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
     async def preconfig(self):
         self.channels = list(self.config.channel_map.values())
         self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"] = []
+        self.error_message_sent = False
 
     def match(self, ctx, content):
         if ctx.channel.id in self.channels:
@@ -61,23 +62,25 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
             if idx + 1 <= self.config.send_limit
         ]
         if bodies:
-            self.publish(bodies)
-            if self.mq_error_state and self.config.notice_errors:
+            success = self.publish(bodies)
+            if not success and self.config.notice_errors:
                 # just send to first channel on the map
                 channel = self.bot.get_channel(
                     self.config.channel_map.get(list(self.config.channel_map.keys())[0])
                 )
-                if channel:
+                if channel and not self.error_message_sent:
                     await channel.send(
                         "**ERROR**: Unable to connect to relay event queue"
                     )
-            else:
-                # remove from buffer
-                self.bot.plugin_api.plugins["relay"]["memory"][
-                    "send_buffer"
-                ] = self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"][
-                    len(bodies) :
-                ]
+                    self.error_message_sent = True
+                    return
+
+            # remove from buffer
+            self.bot.plugin_api.plugins["relay"]["memory"][
+                "send_buffer"
+            ] = self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"][
+                len(bodies) :
+            ]
 
     @staticmethod
     def serialize(type_, ctx):
@@ -183,17 +186,20 @@ class IRCReceiver(LoopPlugin, MqPlugin):
     async def preconfig(self):
         self.channels = list(self.config.channel_map.values())
         self.error_count = 0
+        self.error_message_sent = False
 
     # main looper
     async def execute(self):
-        responses = self.consume()
-        if self.mq_error_state and self.config.notice_errors and self.error_count < 5:
+        responses, success = self.consume()
+        if not success and self.config.notice_errors:
+            # just send to first channel on the map
             channel = self.bot.get_channel(
                 self.config.channel_map.get(list(self.config.channel_map.keys())[0])
             )
-            await channel.send("**ERROR**: Unable to connect to relay event queue")
-            self.error_count += 1
-            return
+            if channel and not self.error_message_sent:
+                await channel.send("**ERROR**: Unable to connect to relay event queue")
+                self.error_message_sent = True
+                return
 
         for response in responses:
             await self.handle_event(response)
