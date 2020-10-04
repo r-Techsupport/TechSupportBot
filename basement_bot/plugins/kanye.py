@@ -1,6 +1,8 @@
 import asyncio
 from random import randint
 
+from discord import Embed
+
 from cogs import HttpPlugin, LoopPlugin
 
 
@@ -35,7 +37,9 @@ class KanyeQuotes(LoopPlugin, HttpPlugin):
 
         if quote:
             message = f"'*{quote}*' - Kanye West"
-            await self.channel.send(message)
+            embed = Embed(title=quote, description="Kanye Quest")
+            embed.set_thumbnail(url="https://i.imgur.com/ITmTXGz.jpg")
+            await self.channel.send(embed=embed)
 
     async def wait(self):
         await asyncio.sleep(
