@@ -1,3 +1,4 @@
+from discord import Embed
 from discord.ext import commands
 
 from cogs import HttpPlugin
@@ -40,12 +41,23 @@ class Googler(HttpPlugin):
         )
 
         if not items:
-            if args:
-                args = f"*{args}*"
+            args = f"*{args}*"
             await priv_response(ctx, f"No search results found for: {args}")
             return
 
-        await tagged_response(ctx, items[0].get("link"))
+        embed = Embed(title=f"Results for {args}", value="https://google.com")
+        embed.set_thumbnail(
+            url="https://cdn.icon-icons.com/icons2/673/PNG/512/Google_icon-icons.com_60497.png"
+        )
+        for index, item in enumerate(items):
+            link = item.get("link")
+            snippet = item.get("snippet", "<Details Unknown>")
+            if link:
+                embed.add_field(name=link, value=snippet, inline=False)
+            if index == 7:
+                break
+
+        await tagged_response(ctx, embed=embed)
 
     @commands.command(
         name="yt",
