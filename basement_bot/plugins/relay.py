@@ -233,11 +233,20 @@ class IRCReceiver(LoopPlugin, MqPlugin):
                     message,
                 )
 
-                channel = self._get_channel(data)
-                if not channel:
-                    log.warning("Unable to find channel to send command alert")
-                    return
-                await channel.send(message)
+                if data.event.type == "quit":
+                    for channel_id in self.channels:
+                        channel = self.bot.get_channel(channel_id)
+                        if channel:
+                            await channel.send(message)
+                        else:
+                            log.warning("Unable to find channel to send quit event")
+
+                else:
+                    channel = self._get_channel(data)
+                    if not channel:
+                        log.warning("Unable to find channel to send command event")
+                        return
+                    await channel.send(message)
 
             else:
                 log.warning(f"Unable to format message for event: {response}")
