@@ -6,7 +6,7 @@ from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String, desc
 
 from cogs import DatabasePlugin
-from utils.helpers import priv_response, tagged_response
+from utils.helpers import *
 
 
 class Grab(DatabasePlugin.BaseTable):
@@ -133,8 +133,13 @@ class Grabber(DatabasePlugin):
             embed.set_thumbnail(url=user_to_grab.avatar_url)
             if grabs:
                 for index, grab_ in enumerate(grabs):
+                    filtered_message = sub_mentions_for_usernames(
+                        ctx.bot, str(grab_.message)
+                    )
                     embed.add_field(
-                        name=f'"{grab_.message}"', value=grab_.time.date(), inline=False
+                        name=f'"{filtered_message}"',
+                        value=grab_.time.date(),
+                        inline=False,
                     )
                     if index == 7:
                         break
@@ -142,7 +147,10 @@ class Grabber(DatabasePlugin):
                 embed.add_field(name=None, value="No grabs found!")
             await tagged_response(ctx, embed=embed)
         except Exception as e:
-            await tagged_response(ctx, e)
+            import logging
+
+            logging.exception(e)
+            return
 
     @commands.command(
         name="grabr",
@@ -173,8 +181,9 @@ class Grabber(DatabasePlugin):
             if grabs:
                 random_index = randint(0, grabs.count() - 1)
                 grab = grabs[random_index]
+                filtered_message = sub_mentions_for_usernames(ctx.bot, grab.message)
                 embed = Embed(
-                    title=f'"{grab.message}"',
+                    title=f'"{filtered_message}"',
                     description=f"{user_to_grab.name}, {grab.time.date()}",
                 )
                 embed.set_thumbnail(url=user_to_grab.avatar_url)
