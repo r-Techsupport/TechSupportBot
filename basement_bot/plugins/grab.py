@@ -111,7 +111,7 @@ class Grabber(DatabasePlugin):
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
         if not user_to_grab:
-            await priv_response(ctx, "You must tag a user to grab!")
+            await priv_response(ctx, "You must mention a user to get their grabs!")
             return
 
         if user_to_grab.bot:
@@ -147,10 +147,7 @@ class Grabber(DatabasePlugin):
                 embed.add_field(name=None, value="No grabs found!")
             await tagged_response(ctx, embed=embed)
         except Exception as e:
-            import logging
-
-            logging.exception(e)
-            return
+            await priv_response(ctx, "I had an issue retrieving all grabs!")
 
     @commands.command(
         name="grabr",
@@ -166,7 +163,11 @@ class Grabber(DatabasePlugin):
         channel = str(ctx.message.channel.id)
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
-        if user_to_grab and user_to_grab.bot:
+        if not user_to_grab:
+            await priv_response(ctx, "You must mention a user to get a random grab!")
+            return
+
+        if user_to_grab.bot:
             await priv_response(ctx, "Ain't gonna catch me slipping!")
             return
 
@@ -194,5 +195,6 @@ class Grabber(DatabasePlugin):
                 return
 
             await tagged_response(ctx, embed=embed)
+
         except Exception:
-            return
+            await priv_response(ctx, "I had an issue retrieving a random grab!")
