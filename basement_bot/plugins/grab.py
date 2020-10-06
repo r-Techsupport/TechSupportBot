@@ -3,7 +3,7 @@ from random import randint
 
 from discord import Embed
 from discord.ext import commands
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, DateTime, Integer, String, desc
 
 from cogs import DatabasePlugin
 from utils.helpers import priv_response, tagged_response
@@ -121,7 +121,11 @@ class Grabber(DatabasePlugin):
         db = self.db_session()
 
         try:
-            grabs = db.query(Grab).filter(Grab.author_id == str(user_to_grab.id))
+            grabs = (
+                db.query(Grab)
+                .order_by(desc(Grab.time))
+                .filter(Grab.author_id == str(user_to_grab.id))
+            )
             embed = Embed(
                 title=f"Grabs for {user_to_grab.name}",
                 description=f"Let's take a stroll down memory lane...",
@@ -132,7 +136,7 @@ class Grabber(DatabasePlugin):
                     embed.add_field(
                         name=f'"{grab_.message}"', value=grab_.time.date(), inline=False
                     )
-                    if index == 20:
+                    if index == 7:
                         break
             else:
                 embed.add_field(name=None, value="No grabs found!")
