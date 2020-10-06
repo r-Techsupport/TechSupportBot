@@ -59,11 +59,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         try:
             # first check if key already exists
-            entry = (
-                db.query(Factoid)
-                .filter(Factoid.text == arg1, Factoid.channel == channel)
-                .first()
-            )
+            entry = db.query(Factoid).filter(Factoid.text == arg1).first()
             if entry:
                 # delete old one
                 db.delete(entry)
@@ -107,11 +103,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         db = self.db_session()
 
         try:
-            entry = (
-                db.query(Factoid)
-                .filter(Factoid.text == arg, Factoid.channel == channel)
-                .first()
-            )
+            entry = db.query(Factoid).filter(Factoid.text == arg).first()
             if entry:
                 db.delete(entry)
                 db.commit()
@@ -139,7 +131,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         channel_id = str(ctx.channel.id)
 
         try:
-            factoids = db.query(Factoid).filter(Factoid.channel == channel_id).all()
+            factoids = db.query(Factoid).filter().all()
         except Exception:
             await priv_response(ctx, "I was unable to get all the factoids...")
 
@@ -155,11 +147,9 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             else "No factoids found!"
         )
         embed = embed_from_kwargs(
-            title=f"Factoids for {channel_name}",
-            description=description,
-            **factoid_dict,
+            title=f"Factoids", description=description, **factoid_dict,
         )
-        await ctx.send(embed=embed)
+        await priv_response(ctx, embed=embed)
 
     def match(self, _, content):
         return bool(content.startswith(self.config.prefix))
@@ -174,11 +164,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         db = self.db_session()
 
         try:
-            entry = (
-                db.query(Factoid)
-                .filter(Factoid.text == arg[1:], Factoid.channel == channel)
-                .first()
-            )
+            entry = db.query(Factoid).filter(Factoid.text == arg[1:]).first()
             if entry:
                 await tagged_response(ctx, entry.message)
 
