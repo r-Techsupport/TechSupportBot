@@ -131,7 +131,7 @@ class Grabber(DatabasePlugin):
                 description=f"Let's take a stroll down memory lane...",
             )
             embed.set_thumbnail(url=user_to_grab.avatar_url)
-            if grabs:
+            if len(grabs) > 0:
                 for index, grab_ in enumerate(grabs):
                     filtered_message = sub_mentions_for_usernames(
                         ctx.bot, str(grab_.message)
