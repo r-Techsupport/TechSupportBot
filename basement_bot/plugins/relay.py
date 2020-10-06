@@ -46,7 +46,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         type_ = "factoid" if getattr(ctx, "factoid", None) else "message"
 
         # subs in actual mentions if possible
-        ctx.content = re.sub(r"<@?!?(\d+)>", self._get_nick_from_id_match, content)
+        ctx.content = sub_mentions_for_usernames(self.bot, content)
         self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"].append(
             self.serialize(type_, ctx)
         )
@@ -129,11 +129,6 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         as_json = data.toJSON()
         log.debug(f"Serialized data: {as_json}")
         return as_json
-
-    def _get_nick_from_id_match(self, match):
-        id = int(match.group(1))
-        user = self.bot.get_user(id)
-        return f"@{user.name}" if user else "@user"
 
     @commands.command(
         name="irc",
