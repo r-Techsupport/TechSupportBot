@@ -127,8 +127,8 @@ def sub_mentions_for_usernames(bot, content):
     """
 
     def get_nick_from_id_match(match):
-        id = int(match.group(1))
-        user = bot.get_user(id)
+        id_ = int(match.group(1))
+        user = bot.get_user(id_)
         return f"@{user.name}" if user else "@user"
 
     return re.sub(r"<@?!?(\d+)>", get_nick_from_id_match, content)
