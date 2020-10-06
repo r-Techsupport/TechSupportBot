@@ -3,10 +3,10 @@ from random import randint
 
 from discord import Embed
 from discord.ext import commands
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, DateTime, Integer, String, desc
 
 from cogs import DatabasePlugin
-from utils.helpers import priv_response, tagged_response
+from utils.helpers import *
 
 
 class Grab(DatabasePlugin.BaseTable):
@@ -111,7 +111,7 @@ class Grabber(DatabasePlugin):
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
         if not user_to_grab:
-            await priv_response(ctx, "You must tag a user to grab!")
+            await priv_response(ctx, "You must mention a user to get their grabs!")
             return
 
         if user_to_grab.bot:
@@ -121,24 +121,33 @@ class Grabber(DatabasePlugin):
         db = self.db_session()
 
         try:
-            grabs = db.query(Grab).filter(Grab.author_id == str(user_to_grab.id))
+            grabs = (
+                db.query(Grab)
+                .order_by(desc(Grab.time))
+                .filter(Grab.author_id == str(user_to_grab.id))
+            )
             embed = Embed(
                 title=f"Grabs for {user_to_grab.name}",
                 description=f"Let's take a stroll down memory lane...",
             )
             embed.set_thumbnail(url=user_to_grab.avatar_url)
-            if grabs:
+            if len(grabs) > 0:
                 for index, grab_ in enumerate(grabs):
-                    embed.add_field(
-                        name=f'"{grab_.message}"', value=grab_.time.date(), inline=False
+                    filtered_message = sub_mentions_for_usernames(
+                        ctx.bot, str(grab_.message)
                     )
-                    if index == 20:
+                    embed.add_field(
+                        name=f'"{filtered_message}"',
+                        value=grab_.time.date(),
+                        inline=False,
+                    )
+                    if index == 7:
                         break
             else:
                 embed.add_field(name=None, value="No grabs found!")
             await tagged_response(ctx, embed=embed)
         except Exception as e:
-            await tagged_response(ctx, e)
+            await priv_response(ctx, "I had an issue retrieving all grabs!")
 
     @commands.command(
         name="grabr",
@@ -154,7 +163,11 @@ class Grabber(DatabasePlugin):
         channel = str(ctx.message.channel.id)
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
-        if user_to_grab and user_to_grab.bot:
+        if not user_to_grab:
+            await priv_response(ctx, "You must mention a user to get a random grab!")
+            return
+
+        if user_to_grab.bot:
             await priv_response(ctx, "Ain't gonna catch me slipping!")
             return
 
@@ -169,8 +182,9 @@ class Grabber(DatabasePlugin):
             if grabs:
                 random_index = randint(0, grabs.count() - 1)
                 grab = grabs[random_index]
+                filtered_message = sub_mentions_for_usernames(ctx.bot, grab.message)
                 embed = Embed(
-                    title=f'"{grab.message}"',
+                    title=f'"{filtered_message}"',
                     description=f"{user_to_grab.name}, {grab.time.date()}",
                 )
                 embed.set_thumbnail(url=user_to_grab.avatar_url)
@@ -181,5 +195,6 @@ class Grabber(DatabasePlugin):
                 return
 
             await tagged_response(ctx, embed=embed)
+
         except Exception:
-            return
+            await priv_response(ctx, "I had an issue retrieving a random grab!")

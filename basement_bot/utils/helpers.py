@@ -2,6 +2,7 @@
 """
 
 import os
+import re
 
 from discord import Embed
 
@@ -115,3 +116,19 @@ def embed_from_kwargs(title=None, description=None, **kwargs):
     for key, value in kwargs.items():
         embed.add_field(name=key, value=value, inline=False)
     return embed
+
+
+def sub_mentions_for_usernames(bot, content):
+    """Subs a string of Discord mentions with the corresponding usernames.
+
+    parameters:
+        bot (BasementBot): the bot object
+        content (str): the content to parse
+    """
+
+    def get_nick_from_id_match(match):
+        id_ = int(match.group(1))
+        user = bot.get_user(id_)
+        return f"@{user.name}" if user else "@user"
+
+    return re.sub(r"<@?!?(\d+)>", get_nick_from_id_match, content)

@@ -1,4 +1,5 @@
 import datetime
+import functools
 import json
 import logging
 import re
@@ -46,7 +47,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         type_ = "factoid" if getattr(ctx, "factoid", None) else "message"
 
         # subs in actual mentions if possible
-        ctx.content = re.sub(r"<@?!?(\d+)>", self._get_nick_from_id_match, content)
+        ctx.content = sub_mentions_for_usernames(self.bot, content)
         self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"].append(
             self.serialize(type_, ctx)
         )
@@ -129,11 +130,6 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         as_json = data.toJSON()
         log.debug(f"Serialized data: {as_json}")
         return as_json
-
-    def _get_nick_from_id_match(self, match):
-        id = int(match.group(1))
-        user = self.bot.get_user(id)
-        return f"@{user.name}" if user else "@user"
 
     @commands.command(
         name="irc",
@@ -227,11 +223,6 @@ class IRCReceiver(LoopPlugin, MqPlugin):
 
             message = self.process_message(data)
             if message:
-                message = re.sub(
-                    r"\B\{0}\w+".format(self.config.irc_tag_prefix),
-                    self._get_mention_from_irc_tag,
-                    message,
-                )
 
                 if data.event.type == "quit":
                     for channel_id in self.channels:
@@ -246,6 +237,21 @@ class IRCReceiver(LoopPlugin, MqPlugin):
                     if not channel:
                         log.warning("Unable to find channel to send command event")
                         return
+
+                    message = re.sub(
+                        r"\B\{0}\w+".format(self.config.irc_tag_prefix),
+                        functools.partial(
+                            self._get_mention_from_irc_tag_no_quotes, channel
+                        ),
+                        message,
+                    )
+                    message = re.sub(
+                        r"\{0}\"(.*?)\"".format(self.config.irc_tag_prefix),
+                        functools.partial(
+                            self._get_mention_from_irc_tag_with_quotes, channel
+                        ),
+                        message,
+                    )
                     await channel.send(message)
 
             else:
@@ -393,15 +399,22 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             return True
         return False
 
-    def _get_mention_from_irc_tag(self, match):
+    def _get_mention_from_irc_tag_no_quotes(self, channel, match):
         tagged = match.group(0)
-        guild = get_guild_from_channel_id(self.bot, self.config.channel)
+        return self._get_mention_from_irc_tag(channel, tagged)
+
+    def _get_mention_from_irc_tag_with_quotes(self, channel, match):
+        tagged = match.group(1)
+        return self._get_mention_from_irc_tag(channel, tagged)
+
+    def _get_mention_from_irc_tag(self, channel, tagged):
+        guild = get_guild_from_channel_id(self.bot, channel.id)
         if not guild:
             return tagged
         name = tagged.replace(self.config.irc_tag_prefix, "")
         member = guild.get_member_named(name)
         if not member:
-            return tagged
+            return tagged[1:] if tagged.startswith("$") else tagged
         return member.mention
 
     def process_message(self, data):
