@@ -25,7 +25,12 @@ class Protector(MatchPlugin):
         ctx.actions.lengthAlert = None
 
         for keyString in list(self.config.stringMap.keys()):
-            if keyString in content:
+            filterObject = self.config.stringMap[keyString]
+            if filterObject.get("sensitive") is None:
+                filterObject.sensitive = True
+            keyString = keyString if filterObject.sensitive else keyString.lower()
+            search = content if filterObject.sensitive else content.lower()
+            if keyString in search:
                 ctx.actions.stringAlert = self.config.stringMap[keyString]
                 break
 
