@@ -132,3 +132,28 @@ def sub_mentions_for_usernames(bot, content):
         return f"@{user.name}" if user else "@user"
 
     return re.sub(r"<@?!?(\d+)>", get_nick_from_id_match, content)
+
+
+async def delete_message_with_reason(
+    ctx, message, reason, private=True, send_original=True
+):
+    """Deletes a message and provide a reason to the user.
+
+    parameters:
+        ctx (Context): the context object for the message
+        message (Message): the message object
+        reason (str): the reason to provide for deletion
+        private (bool): True if the reason should be private messaged
+        send_original (bool): True if the user should be provided the original message
+    """
+    send_func = priv_response if private else tagged_response
+
+    content = message.content
+    try:
+        await message.delete()
+    except Forbidden:
+        log.warning(f"Unable to delete message {message.id} due to missing permissions")
+        return
+    await send_func(ctx, f"Your message was deleted because: `{reason}`")
+    if send_original:
+        await send_func(ctx, f"Original message: ```{content}```")

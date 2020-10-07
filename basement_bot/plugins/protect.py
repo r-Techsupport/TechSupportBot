@@ -47,7 +47,7 @@ class Protector(MatchPlugin):
 
     async def handle_string_alert(self, ctx, content):
         if ctx.actions.stringAlert.delete:
-            await self._delete_message_with_reason(
+            await delete_message_with_reason(
                 ctx,
                 ctx.message,
                 ctx.actions.stringAlert.message,
@@ -61,26 +61,8 @@ class Protector(MatchPlugin):
             await tagged_response(ctx, ctx.actions.stringAlert.message)
 
     async def handle_length_alert(self, ctx, content):
-        await _delete_message_with_reason(
+        await delete_message_with_reason(
             ctx,
             ctx.message,
             f"Message greater than {self.config.length_limit} characters",
         )
-
-    @staticmethod
-    async def _delete_message_with_reason(
-        ctx, message, reason, private=True, send_original=True
-    ):
-        send_func = priv_response if private else tagged_response
-
-        content = message.content
-        try:
-            await message.delete()
-        except Forbidden:
-            log.warning(
-                f"Unable to delete message {message.id} due to missing permissions"
-            )
-            return
-        await send_func(ctx, f"Your message was deleted because: {reason}")
-        if send_original:
-            await send_func(ctx, f"Original message: ```{content}```")
