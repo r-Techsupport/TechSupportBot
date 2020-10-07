@@ -57,6 +57,12 @@ plugins:
         notice_errors: True
     protect:
         excluded_channels: []
+        stringMap:
+            "bad word/sentence here":
+                message: That is a bad word/sentence!
+                delete: true
+                private: false
+                sensitive: true
         length_limit: 500
         
         
