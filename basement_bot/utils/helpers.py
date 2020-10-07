@@ -4,7 +4,7 @@
 import os
 import re
 
-from discord import Embed
+from discord import Embed, Forbidden, NotFound
 
 
 def get_env_value(name, default=None, raise_exception=True):
@@ -154,6 +154,10 @@ async def delete_message_with_reason(
     except Forbidden:
         log.warning(f"Unable to delete message {message.id} due to missing permissions")
         return
+    except NotFound:
+        log.warning(f"Unable to delete message because it couldn't be found")
+        return
+
     await send_func(ctx, f"Your message was deleted because: `{reason}`")
     if send_original:
         await send_func(ctx, f"Original message: ```{content}```")
