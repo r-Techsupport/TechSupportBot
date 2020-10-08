@@ -51,7 +51,7 @@ class Googler(HttpPlugin):
         )
         for index, item in enumerate(items):
             link = item.get("link")
-            snippet = item.get("snippet", "<Details Unknown>")
+            snippet = item.get("snippet", "<Details Unknown>").replace("\n", "")
             if link:
                 embed.add_field(name=link, value=snippet, inline=False)
             if index == 2:
