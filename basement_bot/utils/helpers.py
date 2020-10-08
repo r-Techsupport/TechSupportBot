@@ -4,7 +4,7 @@
 import os
 import re
 
-from discord import Embed
+from discord import Embed, Forbidden, NotFound
 
 
 def get_env_value(name, default=None, raise_exception=True):
@@ -132,3 +132,26 @@ def sub_mentions_for_usernames(bot, content):
         return f"@{user.name}" if user else "@user"
 
     return re.sub(r"<@?!?(\d+)>", get_nick_from_id_match, content)
+
+
+async def delete_message_with_reason(ctx, message, reason, private=True, original=True):
+    """Deletes a message and provide a reason to the user.
+
+    parameters:
+        ctx (Context): the context object for the message
+        message (Message): the message object
+        reason (str): the reason to provide for deletion
+        private (bool): True if the reason should be private messaged
+        original (bool): True if the user should be provided the original message
+    """
+    send_func = priv_response if private else tagged_response
+
+    content = message.content
+    try:
+        await message.delete()
+    except (Forbidden, NotFound):
+        return
+
+    await send_func(ctx, f"Your message was deleted because: `{reason}`")
+    if original:
+        await send_func(ctx, f"Original message: ```{content}```")

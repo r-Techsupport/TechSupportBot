@@ -44,7 +44,9 @@ class Grabber(DatabasePlugin):
         ),
     )
     async def grab(self, ctx):
-        channel = str(ctx.message.channel.id)
+        channel = getattr(ctx.message, "channel", None)
+        channel = str(channel.id) if channel else None
+
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
         if not user_to_grab:
@@ -107,7 +109,6 @@ class Grabber(DatabasePlugin):
         ),
     )
     async def get_grabs(self, ctx):
-        channel = str(ctx.message.channel.id)
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
         if not user_to_grab:
@@ -131,7 +132,7 @@ class Grabber(DatabasePlugin):
                 description=f"Let's take a stroll down memory lane...",
             )
             embed.set_thumbnail(url=user_to_grab.avatar_url)
-            if len(grabs) > 0:
+            if len(list(grabs)) > 0:
                 for index, grab_ in enumerate(grabs):
                     filtered_message = sub_mentions_for_usernames(
                         ctx.bot, str(grab_.message)
@@ -148,6 +149,9 @@ class Grabber(DatabasePlugin):
             await tagged_response(ctx, embed=embed)
         except Exception as e:
             await priv_response(ctx, "I had an issue retrieving all grabs!")
+            import logging
+
+            logging.exception(e)
 
     @commands.command(
         name="grabr",
@@ -160,7 +164,6 @@ class Grabber(DatabasePlugin):
         ),
     )
     async def random_grab(self, ctx):
-        channel = str(ctx.message.channel.id)
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
         if not user_to_grab:

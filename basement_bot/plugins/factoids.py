@@ -53,7 +53,8 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             arg1 = args[0]
             args = args[1:]
 
-        channel = str(ctx.message.channel.id)
+        channel = getattr(ctx.message, "channel", None)
+        channel = str(channel.id) if channel else None
 
         db = self.db_session()
 
@@ -98,8 +99,6 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         else:
             arg = args[0]
 
-        channel = str(ctx.message.channel.id)
-
         db = self.db_session()
 
         try:
@@ -127,8 +126,6 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             return
 
         db = self.db_session()
-        channel_name = ctx.channel.name
-        channel_id = str(ctx.channel.id)
 
         try:
             factoids = db.query(Factoid).filter().all()
@@ -158,8 +155,6 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         if ctx.message.mentions:
             await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
             return
-
-        channel = str(ctx.message.channel.id)
 
         db = self.db_session()
 

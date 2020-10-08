@@ -1,7 +1,8 @@
 from discord import Forbidden
+from munch import Munch
 
 from cogs import MatchPlugin
-from utils.helpers import get_env_value, is_admin, priv_response
+from utils.helpers import *
 from utils.logger import get_logger
 
 log = get_logger("Protector")
@@ -18,23 +19,55 @@ class Protector(MatchPlugin):
     def match(self, ctx, content):
         if ctx.channel.id in self.config.excluded_channels:
             return False
-        if not len(content) > self.config.length_limit:
-            return False
+
+        ctx.actions = Munch()
+        ctx.actions.stringAlert = None
+        ctx.actions.lengthAlert = None
+
+        for keyString in list(self.config.stringMap.keys()):
+            filterObject = self.config.stringMap[keyString]
+            if filterObject.get("sensitive") is None:
+                filterObject.sensitive = True
+            keyString = keyString if filterObject.sensitive else keyString.lower()
+            search = content if filterObject.sensitive else content.lower()
+            if keyString in search:
+                ctx.actions.stringAlert = self.config.stringMap[keyString]
+                break
+
+        if len(content) > self.config.length_limit:
+            ctx.actions.lengthAlert = True
+
         return True
 
     async def response(self, ctx, content):
         admin = await is_admin(ctx, False)
         if admin:
-            log.info(f"Allowing spam message by admin {ctx.author.name}")
             return
 
-        try:
-            message_content = ctx.message.content
-            await ctx.message.delete()
-            await priv_response(
+        if ctx.actions.stringAlert:
+            await self.handle_string_alert(ctx, content)
+
+        if ctx.actions.lengthAlert:
+            await self.handle_length_alert(ctx, content)
+
+    async def handle_string_alert(self, ctx, content):
+        if ctx.actions.stringAlert.delete:
+            await delete_message_with_reason(
                 ctx,
-                f"Your message was deleted because it was greater than {self.config.length_limit} characters. Please use a Pastebin (https://pastebin.com)",
+                ctx.message,
+                ctx.actions.stringAlert.message,
+                ctx.actions.stringAlert.private,
             )
-            await priv_response(ctx, f"Original message: ```{message_content}```")
-        except Forbidden:
-            log.warning("Unable to edit spam message due to missing permissions")
+            return
+
+        if ctx.actions.stringAlert.private:
+            await priv_response(ctx, ctx.actions.stringAlert.message)
+        else:
+            await tagged_response(ctx, ctx.actions.stringAlert.message)
+
+    async def handle_length_alert(self, ctx, content):
+        await delete_message_with_reason(
+            ctx,
+            ctx.message,
+            f"Message greater than {self.config.length_limit} characters",
+        )
