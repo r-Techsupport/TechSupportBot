@@ -4,7 +4,9 @@ main:
         auth_token: 
     optional:
         game: RuneScape
-    admins: []
+    admins:
+        ids: []
+        roles: []
     database:
         user: admin
         password: admin
