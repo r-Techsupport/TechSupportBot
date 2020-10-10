@@ -76,18 +76,21 @@ async def is_admin(ctx, message_user=True):
         message_user (boolean): True if the user should be notified on failure
     """
 
-    status_ = bool(
-        ctx.message.author.id in [int(id) for id in ctx.bot.config.main.admins]
+    id_is_admin = bool(
+        ctx.message.author.id in [int(id) for id in ctx.bot.config.main.admins.ids]
     )
+    role_is_admin = False
+    for role in ctx.message.author.roles:
+        if role.name in ctx.bot.config.main.admins.roles:
+            role_is_admin = True
+            break
 
-    if not status_:
-        if message_user:
-            await priv_response(
-                ctx, "You must be in the admin list to use this command"
-            )
-        return False
+    if any([id_is_admin, role_is_admin]):
+        return True
 
-    return True
+    if message_user:
+        await priv_response(ctx, "You must be an admin to use this command")
+    return False
 
 
 def get_guild_from_channel_id(bot, channel_id):

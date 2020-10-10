@@ -41,7 +41,7 @@ class TestHelpers(aiounittest.AsyncTestCase):
         # test normal admin
         context = mock.AsyncMock()
         context.message.author.id = 67890
-        context.bot.config.main.admins = ["12345", "67890"]
+        context.bot.config.main.admins.ids = ["12345", "67890"]
         permission = await utils.helpers.is_admin(context)
         self.assertEqual(permission, True)
 
@@ -52,7 +52,7 @@ class TestHelpers(aiounittest.AsyncTestCase):
         self.assertEqual(permission, False)
 
         # test empty admin list
-        context.bot.config.main.admins = []
+        context.bot.config.main.admins.ids = []
         context.message.author.id = 67890
         permission = await utils.helpers.is_admin(context)
         self.assertEqual(permission, False)
