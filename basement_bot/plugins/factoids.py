@@ -28,6 +28,8 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         factoid_prefix = self.config.prefix
         command_prefix = self.bot.config.main.required.command_prefix
 
+        self.bot.plugin_api.plugins.factoids.memory.factoid_events = []
+
         if factoid_prefix == command_prefix:
             raise RuntimeError(
                 f"Command prefix '{command_prefix}' cannot equal Factoid prefix"
@@ -162,6 +164,11 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             entry = db.query(Factoid).filter(Factoid.text == arg[1:]).first()
             if entry:
                 await tagged_response(ctx, entry.message)
+                while (
+                    len(self.bot.plugin_api.plugins.factoids.memory.factoid_events) > 10
+                ):
+                    del self.bot.plugin_api.plugins.factoids.memory.factoid_events[0]
+                self.bot.plugin_api.plugins.factoids.memory.factoid_events.append(ctx)
 
         except Exception:
             await priv_response("I ran into an issue grabbing your factoid...")
