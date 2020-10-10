@@ -34,22 +34,13 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
     def match(self, ctx, content):
         if ctx.channel.id in self.channels:
             if not content.startswith(self.bot.command_prefix):
-                if (
-                    content.startswith(self.bot.config.plugins.factoids.prefix)
-                    and self.bot.plugin_api.plugins.get("factoids") is None
-                ):
-                    ctx.content = content
-                    ctx.factoid = True
                 return True
         return False
 
     async def response(self, ctx, content):
-        type_ = "factoid" if getattr(ctx, "factoid", None) else "message"
-
-        # subs in actual mentions if possible
         ctx.content = sub_mentions_for_usernames(self.bot, content)
         self.bot.plugin_api.plugins.relay.memory.send_buffer.append(
-            self.serialize(type_, ctx)
+            self.serialize("message", ctx)
         )
 
         if not self.bot.plugin_api.plugins.get("factoids"):
@@ -229,11 +220,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             "kick",
             "action",
             "other",
-            "factoid",
         ]:
-            if data.event.target == "factoid_request":
-                log.debug("Ignoring factoid request event")
-                return
 
             message = self.process_message(data)
             if message:
@@ -458,8 +445,6 @@ class IRCReceiver(LoopPlugin, MqPlugin):
                 return f"{self.IRC_LOGO} `{permissions_label}{data.author.nickname}` sets mode **{data.event.irc_paramlist[1]}** on `{data.event.irc_paramlist[2]}`"
             else:
                 return f"{self.IRC_LOGO} `{data.author.mask}` did some configuration on {data.channel.name}..."
-        elif data.event.type == "factoid":
-            return f"{self.IRC_LOGO} {data.event.content}"
 
     @staticmethod
     def _get_permissions_label(permissions):
