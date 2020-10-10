@@ -4,7 +4,7 @@ from discord import Embed
 from discord.ext import commands
 
 from cogs import BasicPlugin
-from utils.helpers import priv_response, tagged_response
+from utils.helpers import *
 
 
 def setup(bot):
@@ -65,7 +65,8 @@ class Mocker(BasicPlugin):
             await priv_response(ctx, f"No message found for user {user_to_mock}")
             return
 
-        mock_string = self.mock_string(mock_message)
+        filtered_message = sub_mentions_for_usernames(ctx.bot, mock_message)
+        mock_string = self.mock_string(filtered_message)
         embed = Embed(title=f'"{mock_string}"', description=user_to_mock.name)
         embed.set_thumbnail(url=user_to_mock.avatar_url)
 
