@@ -19,7 +19,7 @@ class PluginAPI:
 
     def __init__(self, bot):
         self.bot = bot
-        self.plugins = {}
+        self.plugins = munch.Munch()
 
     def get_modules(self):
         """Gets the current list of plugin modules.
@@ -68,7 +68,7 @@ class PluginAPI:
 
         try:
             self.bot.load_extension(f"plugins.{plugin_name}")
-            self.plugins[plugin_name] = {"status": "loaded", "memory": {}}
+            self.plugins[plugin_name] = {"status": "loaded", "memory": munch.Munch()}
             return self._make_response(True, f"Successfully loaded `{plugin_name}`")
 
         except Exception as e:  # pylint: disable=broad-except

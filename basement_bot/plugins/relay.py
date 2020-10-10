@@ -28,7 +28,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
 
     async def preconfig(self):
         self.channels = list(self.config.channel_map.values())
-        self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"] = []
+        self.bot.plugin_api.plugins.relay.memory.send_buffer = []
         self.error_message_sent = False
 
     def match(self, ctx, content):
@@ -48,7 +48,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
 
         # subs in actual mentions if possible
         ctx.content = sub_mentions_for_usernames(self.bot, content)
-        self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"].append(
+        self.bot.plugin_api.plugins.relay.memory.send_buffer.append(
             self.serialize(type_, ctx)
         )
 
@@ -58,7 +58,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         bodies = [
             body
             for idx, body in enumerate(
-                self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"]
+                self.bot.plugin_api.plugins.relay.memory.send_buffer
             )
             if idx + 1 <= self.config.send_limit
         ]
@@ -77,9 +77,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
                     return
 
             # remove from buffer
-            self.bot.plugin_api.plugins["relay"]["memory"][
-                "send_buffer"
-            ] = self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"][
+            self.bot.plugin_api.plugins.relay.memory.send_buffer = self.bot.plugin_api.plugins.relay.memory.send_buffer[
                 len(bodies) :
             ]
 
@@ -168,7 +166,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         await priv_response(
             ctx, f"Sending **{command}** command with target `{target}` to IRC bot...",
         )
-        self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"].append(
+        self.bot.plugin_api.plugins.relay.memory.send_buffer.append(
             self.serialize("command", ctx)
         )
 
