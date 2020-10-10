@@ -168,6 +168,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                     len(self.bot.plugin_api.plugins.factoids.memory.factoid_events) > 10
                 ):
                     del self.bot.plugin_api.plugins.factoids.memory.factoid_events[0]
+                ctx.content = entry.message
                 self.bot.plugin_api.plugins.factoids.memory.factoid_events.append(ctx)
 
         except Exception:

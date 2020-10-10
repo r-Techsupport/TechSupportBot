@@ -68,7 +68,9 @@ class PluginAPI:
 
         try:
             self.bot.load_extension(f"plugins.{plugin_name}")
-            self.plugins[plugin_name] = {"status": "loaded", "memory": munch.Munch()}
+            self.plugins[plugin_name] = munch.munchify(
+                {"status": "loaded", "memory": {}}
+            )
             return self._make_response(True, f"Successfully loaded `{plugin_name}`")
 
         except Exception as e:  # pylint: disable=broad-except

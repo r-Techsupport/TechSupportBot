@@ -52,6 +52,22 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
             self.serialize(type_, ctx)
         )
 
+        if not self.bot.plugin_api.plugins.get("factoids"):
+            return
+        if self.bot.plugin_api.plugins.factoids.memory.get("factoid_events") is None:
+            log.warning("Factoid events buffer not found in Factoids memory")
+            return
+
+        buffer_length = len(self.bot.plugin_api.plugins.factoids.memory.factoid_events)
+        limit = 5 if buffer_length >= 5 else buffer_length
+        for ctx in self.bot.plugin_api.plugins.factoids.memory.factoid_events[0:limit]:
+            self.bot.plugin_api.plugins.relay.memory.send_buffer.append(
+                self.serialize("factoid", ctx)
+            )
+        self.bot.plugin_api.plugins.factoids.memory.factoid_events = self.bot.plugin_api.plugins.factoids.memory.factoid_events[
+            limit:
+        ]
+
     # main looper
     async def execute(self):
         # grab from buffer
