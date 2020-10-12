@@ -7,6 +7,7 @@ import uuid
 
 from discord import Embed
 from discord.ext import commands
+from discord.ext.commands import Context
 from munch import Munch
 
 from cogs import LoopPlugin, MatchPlugin, MqPlugin
@@ -28,28 +29,19 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
 
     async def preconfig(self):
         self.channels = list(self.config.channel_map.values())
-        self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"] = []
+        self.bot.plugin_api.plugins.relay.memory.send_buffer = []
         self.error_message_sent = False
 
     def match(self, ctx, content):
         if ctx.channel.id in self.channels:
             if not content.startswith(self.bot.command_prefix):
-                if (
-                    content.startswith(self.bot.config.plugins.factoids.prefix)
-                    and self.bot.plugin_api.plugins.get("factoids") is None
-                ):
-                    ctx.content = content
-                    ctx.factoid = True
                 return True
         return False
 
     async def response(self, ctx, content):
-        type_ = "factoid" if getattr(ctx, "factoid", None) else "message"
-
-        # subs in actual mentions if possible
         ctx.content = sub_mentions_for_usernames(self.bot, content)
-        self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"].append(
-            self.serialize(type_, ctx)
+        self.bot.plugin_api.plugins.relay.memory.send_buffer.append(
+            self.serialize("message", ctx)
         )
 
     # main looper
@@ -58,10 +50,26 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         bodies = [
             body
             for idx, body in enumerate(
-                self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"]
+                self.bot.plugin_api.plugins.relay.memory.send_buffer
             )
             if idx + 1 <= self.config.send_limit
         ]
+
+        if self.bot.plugin_api.plugins.get(
+            "factoids"
+        ) and self.bot.plugin_api.plugins.factoids.memory.get("factoid_events"):
+            buffer_length = len(
+                self.bot.plugin_api.plugins.factoids.memory.factoid_events
+            )
+            limit = 5 if buffer_length >= 5 else buffer_length
+            for ctx in self.bot.plugin_api.plugins.factoids.memory.factoid_events[
+                0:limit
+            ]:
+                bodies.append(self.serialize("factoid", ctx))
+            self.bot.plugin_api.plugins.factoids.memory.factoid_events = self.bot.plugin_api.plugins.factoids.memory.factoid_events[
+                limit:
+            ]
+
         if bodies:
             success = self.publish(bodies)
             if not success and self.config.notice_errors:
@@ -77,9 +85,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
                     return
 
             # remove from buffer
-            self.bot.plugin_api.plugins["relay"]["memory"][
-                "send_buffer"
-            ] = self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"][
+            self.bot.plugin_api.plugins.relay.memory.send_buffer = self.bot.plugin_api.plugins.relay.memory.send_buffer[
                 len(bodies) :
             ]
 
@@ -168,7 +174,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         await priv_response(
             ctx, f"Sending **{command}** command with target `{target}` to IRC bot...",
         )
-        self.bot.plugin_api.plugins["relay"]["memory"]["send_buffer"].append(
+        self.bot.plugin_api.plugins.relay.memory.send_buffer.append(
             self.serialize("command", ctx)
         )
 
@@ -217,9 +223,6 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             "other",
             "factoid",
         ]:
-            if data.event.target == "factoid_request":
-                log.debug("Ignoring factoid request event")
-                return
 
             message = self.process_message(data)
             if message:
@@ -253,6 +256,10 @@ class IRCReceiver(LoopPlugin, MqPlugin):
                         message,
                     )
                     await channel.send(message)
+
+                    # perform factoid event if message requested it
+                    if data.event.type == "factoid":
+                        await self._process_factoid_request(data)
 
             else:
                 log.warning(f"Unable to format message for event: {response}")
@@ -418,7 +425,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
         return member.mention
 
     def process_message(self, data):
-        if data.event.type == "message":
+        if data.event.type in ["message", "factoid"]:
             return self._format_chat_message(data)
         else:
             return self._format_event_message(data)
@@ -444,8 +451,6 @@ class IRCReceiver(LoopPlugin, MqPlugin):
                 return f"{self.IRC_LOGO} `{permissions_label}{data.author.nickname}` sets mode **{data.event.irc_paramlist[1]}** on `{data.event.irc_paramlist[2]}`"
             else:
                 return f"{self.IRC_LOGO} `{data.author.mask}` did some configuration on {data.channel.name}..."
-        elif data.event.type == "factoid":
-            return f"{self.IRC_LOGO} {data.event.content}"
 
     @staticmethod
     def _get_permissions_label(permissions):
@@ -456,3 +461,23 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             if "o" in permissions:
                 label += "@"
         return label
+
+    async def _process_factoid_request(self, data):
+        factoid_plugin = self.bot.cogs.get("FactoidManager")
+        if not factoid_plugin:
+            log.warning(
+                "Factoid request processer called when Factoid plugin not loaded"
+            )
+            return
+
+        # (this approach is hackier than I prefer)
+        channel = self._get_channel(data)
+        message = await channel.send(data.event.content)
+        ctx = await self.bot.get_context(message)
+
+        try:
+            await factoid_plugin.response(ctx, data.event.content)
+        except Exception as e:
+            log.warning(f"Unable to issue Factoids request: {e}")
+
+        await message.delete()
