@@ -44,22 +44,6 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
             self.serialize("message", ctx)
         )
 
-        if not self.bot.plugin_api.plugins.get("factoids"):
-            return
-        if self.bot.plugin_api.plugins.factoids.memory.get("factoid_events") is None:
-            log.warning("Factoid events buffer not found in Factoids memory")
-            return
-
-        buffer_length = len(self.bot.plugin_api.plugins.factoids.memory.factoid_events)
-        limit = 5 if buffer_length >= 5 else buffer_length
-        for ctx in self.bot.plugin_api.plugins.factoids.memory.factoid_events[0:limit]:
-            self.bot.plugin_api.plugins.relay.memory.send_buffer.append(
-                self.serialize("factoid", ctx)
-            )
-        self.bot.plugin_api.plugins.factoids.memory.factoid_events = self.bot.plugin_api.plugins.factoids.memory.factoid_events[
-            limit:
-        ]
-
     # main looper
     async def execute(self):
         # grab from buffer
@@ -70,6 +54,22 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
             )
             if idx + 1 <= self.config.send_limit
         ]
+
+        if self.bot.plugin_api.plugins.get(
+            "factoids"
+        ) and self.bot.plugin_api.plugins.factoids.memory.get("factoid_events"):
+            buffer_length = len(
+                self.bot.plugin_api.plugins.factoids.memory.factoid_events
+            )
+            limit = 5 if buffer_length >= 5 else buffer_length
+            for ctx in self.bot.plugin_api.plugins.factoids.memory.factoid_events[
+                0:limit
+            ]:
+                bodies.append(self.serialize("factoid", ctx))
+            self.bot.plugin_api.plugins.factoids.memory.factoid_events = self.bot.plugin_api.plugins.factoids.memory.factoid_events[
+                limit:
+            ]
+
         if bodies:
             success = self.publish(bodies)
             if not success and self.config.notice_errors:
@@ -477,7 +477,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
 
         try:
             await factoid_plugin.response(ctx, data.event.content)
-        except Exception:
-            pass
+        except Exception as e:
+            log.warning(f"Unable to issue Factoids request: {e}")
 
         await message.delete()
