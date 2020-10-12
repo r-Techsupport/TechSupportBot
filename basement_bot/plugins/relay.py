@@ -7,6 +7,7 @@ import uuid
 
 from discord import Embed
 from discord.ext import commands
+from discord.ext.commands import Context
 from munch import Munch
 
 from cogs import LoopPlugin, MatchPlugin, MqPlugin
@@ -220,6 +221,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             "kick",
             "action",
             "other",
+            "factoid",
         ]:
 
             message = self.process_message(data)
@@ -254,6 +256,10 @@ class IRCReceiver(LoopPlugin, MqPlugin):
                         message,
                     )
                     await channel.send(message)
+
+                    # perform factoid event if message requested it
+                    if data.event.type == "factoid":
+                        await self._process_factoid_request(data)
 
             else:
                 log.warning(f"Unable to format message for event: {response}")
@@ -419,7 +425,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
         return member.mention
 
     def process_message(self, data):
-        if data.event.type == "message":
+        if data.event.type in ["message", "factoid"]:
             return self._format_chat_message(data)
         else:
             return self._format_event_message(data)
@@ -455,3 +461,23 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             if "o" in permissions:
                 label += "@"
         return label
+
+    async def _process_factoid_request(self, data):
+        factoid_plugin = self.bot.cogs.get("FactoidManager")
+        if not factoid_plugin:
+            log.warning(
+                "Factoid request processer called when Factoid plugin not loaded"
+            )
+            return
+
+        # (this approach is hackier than I prefer)
+        channel = self._get_channel(data)
+        message = await channel.send(data.event.content)
+        ctx = await self.bot.get_context(message)
+
+        try:
+            await factoid_plugin.response(ctx, data.event.content)
+        except Exception:
+            pass
+
+        await message.delete()
