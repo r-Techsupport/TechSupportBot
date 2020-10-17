@@ -17,7 +17,7 @@ class Protector(MatchPlugin):
     PLUGIN_NAME = __name__
 
     def match(self, ctx, content):
-        if ctx.channel.id in self.config.excluded_channels:
+        if not ctx.channel.id in self.config.included_channels:
             return False
 
         ctx.actions = Munch()

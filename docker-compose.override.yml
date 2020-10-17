@@ -9,3 +9,7 @@ services:
             - DEBUG=1
         volumes:
             - ./:/app
+
+    db:
+        ports:
+            - "5432:5432"

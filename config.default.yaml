@@ -58,7 +58,7 @@ plugins:
         send_limit: 3
         notice_errors: True
     protect:
-        excluded_channels: []
+        included_channels: []
         stringMap:
             "bad word/sentence here":
                 message: That is a bad word/sentence!

@@ -29,6 +29,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
 
     async def preconfig(self):
         self.channels = list(self.config.channel_map.values())
+        self.bot.plugin_api.plugins.relay.memory.channels = self.channels
         self.bot.plugin_api.plugins.relay.memory.send_buffer = []
         self.error_message_sent = False
 
