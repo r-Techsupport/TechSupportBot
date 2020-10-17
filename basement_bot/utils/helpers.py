@@ -81,7 +81,7 @@ async def is_admin(ctx, message_user=True):
         ctx.message.author.id in [int(id) for id in ctx.bot.config.main.admins.ids]
     )
     role_is_admin = False
-    for role in ctx.message.author.roles:
+    for role in getattr(ctx.message.author, "roles", []):
         if role.name in ctx.bot.config.main.admins.roles:
             role_is_admin = True
             break
