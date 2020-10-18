@@ -1,6 +1,7 @@
 """Standard helper functions for various use cases.
 """
 
+import ast
 import os
 import re
 
@@ -80,7 +81,7 @@ async def is_admin(ctx, message_user=True):
         ctx.message.author.id in [int(id) for id in ctx.bot.config.main.admins.ids]
     )
     role_is_admin = False
-    for role in ctx.message.author.roles:
+    for role in getattr(ctx.message.author, "roles", []):
         if role.name in ctx.bot.config.main.admins.roles:
             role_is_admin = True
             break
@@ -158,3 +159,17 @@ async def delete_message_with_reason(ctx, message, reason, private=True, origina
     await send_func(ctx, f"Your message was deleted because: `{reason}`")
     if original:
         await send_func(ctx, f"Original message: ```{content}```")
+
+
+async def get_json_from_attachment(message):
+    """Returns a JSON object parsed from a message's attachment.
+
+    parameters:
+        message (Message): the message object
+    """
+    try:
+        json_bytes = await message.attachments[0].read()
+        json_str = json_bytes.decode("UTF-8")
+        return ast.literal_eval(json_str)
+    except Exception:
+        return None

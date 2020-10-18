@@ -1,10 +1,15 @@
 import datetime
+import json
 
+from discord import Embed
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
 
 from cogs import DatabasePlugin, MatchPlugin
-from utils.helpers import embed_from_kwargs, priv_response, tagged_response
+from utils.helpers import *
+from utils.logger import get_logger
+
+log = get_logger("Factoids")
 
 
 class Factoid(DatabasePlugin.BaseTable):
@@ -15,6 +20,7 @@ class Factoid(DatabasePlugin.BaseTable):
     channel = Column(String)
     message = Column(String)
     time = Column(DateTime, default=datetime.datetime.utcnow)
+    embed_config = Column(String, default=None)
 
 
 def setup(bot):
@@ -28,11 +34,14 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         factoid_prefix = self.config.prefix
         command_prefix = self.bot.config.main.required.command_prefix
 
+        self.bot.plugin_api.plugins.factoids.memory.factoid_events = []
+
         if factoid_prefix == command_prefix:
             raise RuntimeError(
                 f"Command prefix '{command_prefix}' cannot equal Factoid prefix"
             )
 
+    @commands.check(is_admin)
     @commands.command(
         name="r",
         brief="Creates custom trigger with a specified output",
@@ -49,9 +58,20 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
             return
 
+        embed_config = await get_json_from_attachment(ctx.message)
+        if embed_config:
+            try:
+                Embed.from_dict(embed_config)
+                embed_config = json.dumps(embed_config)
+            except Exception:
+                embed_config = None
+
         if len(args) >= 2:
             arg1 = args[0]
             args = args[1:]
+        else:
+            await priv_response(ctx, "Invalid input!")
+            return
 
         channel = getattr(ctx.message, "channel", None)
         channel = str(channel.id) if channel else None
@@ -69,18 +89,23 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 )
 
             # finally, add new entry
-            db.add(Factoid(text=arg1.lower(), channel=channel, message=" ".join(args)))
+            db.add(
+                Factoid(
+                    text=arg1.lower(),
+                    channel=channel,
+                    message=" ".join(args),
+                    embed_config=embed_config,
+                )
+            )
             db.commit()
             await tagged_response(ctx, f"Successfully added factoid trigger: *{arg1}*")
 
         except Exception as e:
-            # await priv_response(
-            #     ctx, "I ran into an issue handling your factoid addition..."
-            # )
-            import logging
+            await priv_response(
+                ctx, "I ran into an issue handling your factoid addition..."
+            )
 
-            logging.exception(e)
-
+    @commands.check(is_admin)
     @commands.command(
         name="f",
         brief="Deletes an existing custom trigger",
@@ -113,6 +138,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 ctx, "I ran into an issue handling your factoid deletion..."
             )
 
+    @commands.check(is_admin)
     @commands.command(
         name=f"lsf",
         brief="List all factoids",
@@ -128,16 +154,21 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         db = self.db_session()
 
         try:
-            factoids = db.query(Factoid).filter().all()
+            factoids = db.query(Factoid).filter(bool(Factoid.message) == True).all()
         except Exception:
             await priv_response(ctx, "I was unable to get all the factoids...")
 
         factoid_dict = {}
-        for index, factoid in enumerate(factoids):
+        index = 0
+        for factoid in factoids:
+            if factoid.embed_config:
+                continue
             factoid_dict[factoid.text] = factoid.message
             # prevent too many factoids from showing
             if index == 20:
                 break
+            index += 1
+
         description = (
             f"Access factoids with the `{self.config.prefix}` prefix"
             if len(factoids) > 1
@@ -161,7 +192,31 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         try:
             entry = db.query(Factoid).filter(Factoid.text == arg[1:]).first()
             if entry:
-                await tagged_response(ctx, entry.message)
+                if entry.embed_config:
+                    embed_config = json.loads(entry.embed_config)
+                    embed = Embed.from_dict(embed_config)
+                    message = None
+                else:
+                    embed = None
+                    message = entry.message
+                await tagged_response(ctx, message=message, embed=embed)
 
-        except Exception:
-            await priv_response("I ran into an issue grabbing your factoid...")
+                if not self.bot.plugin_api.plugins.get("relay"):
+                    return
+
+                if ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.channels:
+                    ctx.content = entry.message
+                    self.bot.plugin_api.plugins.factoids.memory.factoid_events.append(
+                        ctx
+                    )
+                    while (
+                        len(self.bot.plugin_api.plugins.factoids.memory.factoid_events)
+                        > 10
+                    ):
+                        del self.bot.plugin_api.plugins.factoids.memory.factoid_events[
+                            0
+                        ]
+
+        except Exception as e:
+            log.warning(f"Unable to get factoid: {e}")
+            await priv_response(ctx, "I ran into an issue grabbing your factoid...")
