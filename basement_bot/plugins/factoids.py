@@ -200,6 +200,10 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                     embed = None
                     message = entry.message
                 await tagged_response(ctx, message=message, embed=embed)
+
+                if not self.bot.plugin_api.plugins.get("relay"):
+                    return
+
                 if ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.channels:
                     ctx.content = entry.message
                     self.bot.plugin_api.plugins.factoids.memory.factoid_events.append(
