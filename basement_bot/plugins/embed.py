@@ -24,12 +24,9 @@ class Embedder(BasicPlugin):
             await priv_response(ctx, "Please provide a JSON file for your embed")
             return
 
-        try:
-            json_bytes = await ctx.message.attachments[0].read()
-            json_str = json_bytes.decode("UTF-8")
-            request_body = ast.literal_eval(json_str)
-        except Exception as e:
-            await priv_response(ctx, f"I couldn't parse your JSON: ```{e}```")
+        request_body = await get_json_from_attachment(ctx.message)
+        if not request_body:
+            await priv_response(ctx, "I was unable to parse your JSON file!")
             return
 
         embeds = await self.process_request(ctx, request_body)
