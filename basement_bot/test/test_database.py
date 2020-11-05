@@ -2,6 +2,7 @@ import aiounittest
 import mock
 
 from database import DatabaseAPI
+from utils.test import get_mock_config
 
 
 class TestDatabase(aiounittest.AsyncTestCase):
@@ -34,10 +35,12 @@ class TestDatabase(aiounittest.AsyncTestCase):
         api.create_table(table)
         self.assertTrue(table.__table__.create)
 
-    @mock.patch("database.get_env_value", return_value="bar")
     @mock.patch("database.DatabaseAPI.__init__", return_value=None)
-    def test_get_db_string(self, _mock_init, _mock_get_env_value):
+    def test_get_db_string(self, _mock_init):
         mock_bot = mock.MagicMock()
-        api = DatabaseAPI(mock_bot)
+        mock_bot.config = get_mock_config()
+
+        api = DatabaseAPI(bot=mock_bot)
+        api.bot = mock_bot
         db_string = api._get_db_string()
-        self.assertEqual(db_string, "bar://bar:bar@bar/bar")
+        self.assertEqual(db_string, "bar://bar:bar@bar:5432/bar")

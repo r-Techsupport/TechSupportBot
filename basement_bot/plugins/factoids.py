@@ -171,7 +171,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         description = (
             f"Access factoids with the `{self.config.prefix}` prefix"
-            if len(factoids) > 1
+            if len(factoids) > 0
             else "No factoids found!"
         )
         embed = embed_from_kwargs(
