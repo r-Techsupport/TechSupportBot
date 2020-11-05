@@ -11,6 +11,14 @@ def get_mock_dict():
         "main": {
             "required": {"auth_token": "foo", "command_prefix": "bar"},
             "optional": {"game": "foo"},
+            "database": {
+                "user": "bar",
+                "password": "bar",
+                "name": "bar",
+                "host": "bar",
+                "prefix": "bar",
+                "port": 5432,
+            },
             "disabled_plugins": [],
         },
         "plugins": {

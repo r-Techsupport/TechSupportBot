@@ -13,6 +13,7 @@ main:
         name: basement_bot
         host: db
         prefix: postgres
+        port: 5432
     disabled_plugins: []
 
 plugins:
