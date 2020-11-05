@@ -7,22 +7,8 @@ services:
         container_name: basement_bot
         stop_signal: SIGINT
         restart: unless-stopped
-        env_file: .env
         environment:
             - DEBUG=0
-        depends_on:
-            - db
-
-    db:
-        image: postgres:12.0-alpine
-        container_name: basement_bot_db
-        restart: unless-stopped
-        volumes:
-            - db_volume:/var/lib/postgresql/data/
-        environment:
-            - POSTGRES_USER=${DB_USER}
-            - POSTGRES_PASS=${DB_PASSWORD}
-            - POSTGRES_DB=${DB_NAME}
 
 volumes:
     db_volume:
