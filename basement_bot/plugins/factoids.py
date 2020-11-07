@@ -1,11 +1,10 @@
 import datetime
 import json
 
+from cogs import DatabasePlugin, MatchPlugin
 from discord import Embed
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
-
-from cogs import DatabasePlugin, MatchPlugin
 from utils.helpers import *
 from utils.logger import get_logger
 
@@ -175,7 +174,9 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             else "No factoids found!"
         )
         embed = embed_from_kwargs(
-            title=f"Factoids", description=description, **factoid_dict,
+            title=f"Factoids",
+            description=description,
+            **factoid_dict,
         )
         await priv_response(ctx, embed=embed)
 

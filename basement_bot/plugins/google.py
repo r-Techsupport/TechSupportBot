@@ -1,7 +1,6 @@
+from cogs import HttpPlugin
 from discord import Embed
 from discord.ext import commands
-
-from cogs import HttpPlugin
 from utils.helpers import priv_response, tagged_response
 
 
@@ -37,7 +36,11 @@ class Googler(HttpPlugin):
         args = " ".join(args)
         items = await self.get_items(
             self.GOOGLE_URL,
-            data={"cx": self.config.cse_id, "q": args, "key": self.config.dev_key,},
+            data={
+                "cx": self.config.cse_id,
+                "q": args,
+                "key": self.config.dev_key,
+            },
         )
 
         if not items:
@@ -77,7 +80,11 @@ class Googler(HttpPlugin):
         args = " ".join(args)
         items = await self.get_items(
             self.YOUTUBE_URL,
-            data={"q": args, "key": self.config.dev_key, "type": "video",},
+            data={
+                "q": args,
+                "key": self.config.dev_key,
+                "type": "video",
+            },
         )
 
         if not items:

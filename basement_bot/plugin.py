@@ -11,8 +11,7 @@ log = get_logger("Plugin Loader")
 
 
 class PluginAPI:
-    """API for plugin loading.
-    """
+    """API for plugin loading."""
 
     PLUGINS_DIR = f"{join(dirname(__file__))}/plugins"
 
@@ -21,8 +20,7 @@ class PluginAPI:
         self.plugins = munch.Munch()
 
     def get_modules(self):
-        """Gets the current list of plugin modules.
-        """
+        """Gets the current list of plugin modules."""
         return [
             basename(f)[:-3]
             for f in glob.glob(f"{self.PLUGINS_DIR}/*.py")

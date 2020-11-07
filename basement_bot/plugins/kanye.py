@@ -1,9 +1,8 @@
 import asyncio
 from random import choice, randint
 
-from discord import Embed
-
 from cogs import HttpPlugin, LoopPlugin
+from discord import Embed
 
 
 def setup(bot):
@@ -50,5 +49,8 @@ class KanyeQuotes(LoopPlugin, HttpPlugin):
 
     async def wait(self):
         await asyncio.sleep(
-            randint(self.config.min_hours * 3600, self.config.max_hours * 3600,)
+            randint(
+                self.config.min_hours * 3600,
+                self.config.max_hours * 3600,
+            )
         )

@@ -44,20 +44,17 @@ class BasicPlugin(commands.Cog):
         self.bot.loop.create_task(self.preconfig())
 
     async def preconfig(self):
-        """Preconfigures the environment before starting the plugin.
-        """
+        """Preconfigures the environment before starting the plugin."""
 
 
 class HttpPlugin(BasicPlugin):
-    """Plugin for interfacing via HTTP.
-    """
+    """Plugin for interfacing via HTTP."""
 
     PLUGIN_TYPE = "HTTP"
 
     @staticmethod
     def _get_client():
-        """Returns an Async HTTP client.
-        """
+        """Returns an Async HTTP client."""
         return http3.AsyncClient()
 
     async def http_call(self, method, *args, **kwargs):
@@ -79,8 +76,7 @@ class HttpPlugin(BasicPlugin):
 
 
 class MatchPlugin(BasicPlugin):
-    """Plugin for matching a specific criteria and responding.
-    """
+    """Plugin for matching a specific criteria and responding."""
 
     PLUGIN_TYPE = "MATCH"
 
@@ -122,8 +118,7 @@ class MatchPlugin(BasicPlugin):
 
 
 class DatabasePlugin(BasicPlugin):
-    """Plugin for accessing the database.
-    """
+    """Plugin for accessing the database."""
 
     PLUGIN_TYPE = "DATABASE"
     BaseTable = declarative_base()
@@ -137,8 +132,7 @@ class DatabasePlugin(BasicPlugin):
         self.db_session = self.bot.database_api.get_session
 
     async def db_preconfig(self):
-        """Preconfigures the environment before starting the plugin.
-        """
+        """Preconfigures the environment before starting the plugin."""
 
 
 class LoopPlugin(BasicPlugin):
@@ -158,8 +152,7 @@ class LoopPlugin(BasicPlugin):
         self.bot.loop.create_task(self._loop_execute())
 
     async def _loop_execute(self):
-        """Loops through the execution method.
-        """
+        """Loops through the execution method."""
         await self.bot.wait_until_ready()
         await self.loop_preconfig()
         while self.state:
@@ -169,25 +162,21 @@ class LoopPlugin(BasicPlugin):
             await self.wait()
 
     def cog_unload(self):
-        """Allows the state to exit after unloading.
-        """
+        """Allows the state to exit after unloading."""
         self.state = False
 
     async def wait(self):
-        """The default wait method.
-        """
+        """The default wait method."""
         if self.config.get("cron_config"):
             await aiocron.crontab(self.config.cron_config).next()
         else:
             await asyncio.sleep(self.config.get(self.WAIT_KEY) or self.DEFAULT_WAIT)
 
     async def loop_preconfig(self):
-        """Preconfigures the environment before starting the loop.
-        """
+        """Preconfigures the environment before starting the loop."""
 
     async def execute(self):
-        """Runs sequentially after each wait method.
-        """
+        """Runs sequentially after each wait method."""
         raise RuntimeError("Execute function must be defined in sub-class")
 
 
@@ -204,8 +193,7 @@ class MqPlugin(BasicPlugin):
 
     # pylint: disable=attribute-defined-outside-init
     def connect(self):
-        """Sets the connection attribute to an active connection.
-        """
+        """Sets the connection attribute to an active connection."""
 
         self.parameters = pika.ConnectionParameters(
             self.config.mq_host,
@@ -220,8 +208,7 @@ class MqPlugin(BasicPlugin):
             log.warning(f"Unable to connect to MQ: {e}")
 
     def _close(self):
-        """Attempts to close the connection.
-        """
+        """Attempts to close the connection."""
         try:
             self.connection.close()
         except Exception:
@@ -249,8 +236,7 @@ class MqPlugin(BasicPlugin):
         self._close()
 
     def consume(self):
-        """Retrieves a list of events from the event queue.
-        """
+        """Retrieves a list of events from the event queue."""
         bodies = []
 
         try:

@@ -5,8 +5,7 @@ import munch
 
 
 def get_mock_dict():
-    """Gets a mock config as a dict.
-    """
+    """Gets a mock config as a dict."""
     return {
         "main": {
             "required": {"auth_token": "foo", "command_prefix": "bar"},
@@ -29,6 +28,5 @@ def get_mock_dict():
 
 
 def get_mock_config():
-    """Wraps the mock config as a Munch object.
-    """
+    """Wraps the mock config as a Munch object."""
     return munch.munchify(get_mock_dict())

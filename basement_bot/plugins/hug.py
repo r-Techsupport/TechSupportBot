@@ -3,9 +3,8 @@
 
 from random import choice
 
-from discord.ext import commands
-
 from cogs import BasicPlugin
+from discord.ext import commands
 from utils.helpers import priv_response, tagged_response
 
 

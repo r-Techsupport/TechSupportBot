@@ -13,8 +13,7 @@ log = get_logger("Basement Bot")
 
 
 class BasementBot(Bot):
-    """The main bot object.
-    """
+    """The main bot object."""
 
     CONFIG_PATH = "./config.yaml"
 
@@ -38,8 +37,7 @@ class BasementBot(Bot):
             log.debug("Bot created but not started")
 
     async def on_ready(self):
-        """Callback for when the bot is finished starting up.
-        """
+        """Callback for when the bot is finished starting up."""
         if self.game:
             await self.set_game(self.game)
         log.info(f"Commands available with the `{self.command_prefix}` prefix")
@@ -54,8 +52,7 @@ class BasementBot(Bot):
         await self.change_presence(activity=Game(name=self.game))
 
     def start(self, *args, **kwargs):
-        """Loads initial plugins (blocking) and starts the connection.
-        """
+        """Loads initial plugins (blocking) and starts the connection."""
         log.debug("Starting bot...")
         self.plugin_api.load_plugins()
         try:
@@ -83,8 +80,7 @@ class BasementBot(Bot):
         return self.config
 
     def _validate_config(self):
-        """Loops through defined sections of bot config to check for missing values.
-        """
+        """Loops through defined sections of bot config to check for missing values."""
 
         def check_all(section, subsections):
             for sub in subsections:
