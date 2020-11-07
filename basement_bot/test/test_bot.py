@@ -1,7 +1,8 @@
 import aiounittest
 import mock
-from bot import BasementBot
 from discord import Game
+
+from bot import BasementBot
 from utils.test import *
 
 

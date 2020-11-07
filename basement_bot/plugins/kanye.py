@@ -1,8 +1,9 @@
 import asyncio
 from random import choice, randint
 
-from cogs import HttpPlugin, LoopPlugin
 from discord import Embed
+
+from cogs import HttpPlugin, LoopPlugin
 
 
 def setup(bot):
