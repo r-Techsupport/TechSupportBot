@@ -158,11 +158,15 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             factoids = db.query(Factoid).filter(bool(Factoid.message) == True).all()
         except Exception:
             await priv_response(ctx, "I was unable to get all the factoids...")
+            return
 
         factoid_dict = {}
         index = 0
         for factoid in factoids:
-            factoid_dict[factoid.text] = factoid.message
+            factoid_key = (
+                f"{factoid.text} (embed)" if factoid.embed_config else factoid.text
+            )
+            factoid_dict[factoid_key] = factoid.message
             # prevent too many factoids from showing
             if index + 1 == self.config.list_all_max:
                 break
