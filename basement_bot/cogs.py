@@ -9,7 +9,6 @@ import http3
 import pika
 from discord.ext import commands
 from sqlalchemy.ext.declarative import declarative_base
-
 from utils.logger import get_logger
 
 logging.getLogger("pika").setLevel(logging.WARNING)

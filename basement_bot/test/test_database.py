@@ -1,6 +1,5 @@
 import aiounittest
 import mock
-
 from database import DatabaseAPI
 from utils.test import get_mock_config
 

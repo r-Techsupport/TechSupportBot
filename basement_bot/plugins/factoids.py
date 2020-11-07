@@ -1,11 +1,10 @@
 import datetime
 import json
 
+from cogs import DatabasePlugin, MatchPlugin
 from discord import Embed
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
-
-from cogs import DatabasePlugin, MatchPlugin
 from utils.helpers import *
 from utils.logger import get_logger
 
@@ -101,6 +100,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             await tagged_response(ctx, f"Successfully added factoid trigger: *{arg1}*")
 
         except Exception as e:
+            log.warning(f"Unable to add factoid: {e}")
             await priv_response(
                 ctx, "I ran into an issue handling your factoid addition..."
             )
@@ -133,7 +133,8 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 db.commit()
             await tagged_response(ctx, f"Successfully deleted factoid trigger: *{arg}*")
 
-        except Exception:
+        except Exception as e:
+            log.warning(f"Unable to forget factoid: {e}")
             await priv_response(
                 ctx, "I ran into an issue handling your factoid deletion..."
             )
@@ -161,8 +162,6 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         factoid_dict = {}
         index = 0
         for factoid in factoids:
-            if factoid.embed_config:
-                continue
             factoid_dict[factoid.text] = factoid.message
             # prevent too many factoids from showing
             if index == 20:

@@ -1,6 +1,5 @@
 import aiounittest
 import mock
-
 from plugin import PluginAPI
 
 

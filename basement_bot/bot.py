@@ -3,10 +3,9 @@
 
 import munch
 import yaml
+from database import DatabaseAPI
 from discord import Game
 from discord.ext.commands import Bot
-
-from database import DatabaseAPI
 from plugin import PluginAPI
 from utils.logger import get_logger
 

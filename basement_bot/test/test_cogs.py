@@ -1,9 +1,8 @@
 import aiounittest
+import cogs
 import mock
 import munch
 import sqlalchemy
-
-import cogs
 from utils.test import *
 
 
