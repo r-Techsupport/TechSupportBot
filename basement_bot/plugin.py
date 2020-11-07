@@ -75,7 +75,7 @@ class PluginAPI:
                 message = f"Failed to load `{plugin_name}`: {str(e)}"
                 log.warning(message)
                 return self._make_response(False, message)
-            raise RuntimeError(str(e))
+            raise RuntimeError from e
 
     def unload_plugin(self, plugin_name, allow_failure=True):
         """Unloads a plugin by name.
@@ -101,7 +101,7 @@ class PluginAPI:
                 log.warning(message)
                 return self._make_response(False, message)
 
-            raise RuntimeError(str(e))
+            raise RuntimeError from e
 
     def load_plugins(self, allow_failure=True):
         """Loads all plugins currently in the plugins directory.

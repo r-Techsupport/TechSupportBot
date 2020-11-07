@@ -51,6 +51,7 @@ class BasementBot(Bot):
         self.game = game
         await self.change_presence(activity=Game(name=self.game))
 
+    # pylint: disable=invalid-overridden-method
     def start(self, *args, **kwargs):
         """Loads initial plugins (blocking) and starts the connection."""
         log.debug("Starting bot...")
