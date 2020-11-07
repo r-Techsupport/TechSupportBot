@@ -141,7 +141,7 @@ class Grabber(DatabasePlugin):
                         value=grab_.time.date(),
                         inline=False,
                     )
-                    if index == 7:
+                    if index + 1 == self.config.grabs_max:
                         break
             else:
                 embed.add_field(name=None, value="No grabs found!")

@@ -164,7 +164,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         for factoid in factoids:
             factoid_dict[factoid.text] = factoid.message
             # prevent too many factoids from showing
-            if index == 20:
+            if index + 1 == self.config.list_all_max:
                 break
             index += 1
 

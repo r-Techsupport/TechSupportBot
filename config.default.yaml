@@ -17,8 +17,13 @@ main:
     disabled_plugins: []
 
 plugins:
+    urban:
+        responses_max: 3
+    grab:
+        grabs_max: 3
     factoids:
         prefix: "?"
+        list_all_max: 5
     google:
         cse_id:
         dev_key:

@@ -62,7 +62,7 @@ class UrbanDictionary(HttpPlugin):
                 value=definition.get("author", "Author Unknown"),
                 inline=False,
             )
-            if index == 5:
+            if index + 1 == self.config.responses_max:
                 break
 
         await tagged_response(ctx, embed=embed)
