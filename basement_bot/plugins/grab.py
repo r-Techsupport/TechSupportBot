@@ -144,7 +144,8 @@ class Grabber(DatabasePlugin):
                     if index + 1 == self.config.grabs_max:
                         break
             else:
-                embed.add_field(name=None, value="No grabs found!")
+                # override main embed
+                embed.description = "No grabs found!"
             await tagged_response(ctx, embed=embed)
         except Exception as e:
             await priv_response(ctx, "I had an issue retrieving all grabs!")
