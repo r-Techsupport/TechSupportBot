@@ -72,5 +72,9 @@ plugins:
                 private: false
                 sensitive: true
         length_limit: 500
+    logger:
+        input_channels: []
+        output_channel:
+        embed_color: 0xF1C40F
         
         
