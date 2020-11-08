@@ -47,10 +47,6 @@ class AdminControl(BasicPlugin):
             ),
         )
 
-        # await priv_response(ctx, f"Loaded plugins: {loaded}")
-        # await priv_response(ctx, f"Unloaded plugins: {unloaded}")
-        # await priv_response(ctx, f"Disabled plugins: {disabled}")
-
     @commands.check(is_admin)
     @commands.command(name="load_plugin", hidden=True)
     async def load_plugin(self, ctx, *args):
