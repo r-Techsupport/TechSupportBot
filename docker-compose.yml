@@ -9,6 +9,3 @@ services:
         restart: unless-stopped
         environment:
             - DEBUG=0
-
-volumes:
-    db_volume:
