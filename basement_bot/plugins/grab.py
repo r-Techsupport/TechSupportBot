@@ -149,9 +149,6 @@ class Grabber(DatabasePlugin):
             await tagged_response(ctx, embed=embed)
         except Exception as e:
             await priv_response(ctx, "I had an issue retrieving all grabs!")
-            import logging
-
-            logging.exception(e)
 
     @commands.command(
         name="grabr",
