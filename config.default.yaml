@@ -76,5 +76,8 @@ plugins:
         input_channels: []
         output_channel:
         embed_color: 0xF1C40F
+    weather:
+        dev_key: 
+        units: imperial
         
         

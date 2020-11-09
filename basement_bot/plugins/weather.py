@@ -32,7 +32,7 @@ class Weather(HttpPlugin):
         name="we",
         brief="Gives the weather",
         description="Returns the weather for a given area",
-        usage="[zip-code] [country-code] or [city-name]",
+        usage="[city/town] [state-code] [country-code]",
     )
     async def we(self, ctx, *args):
         if not args:
@@ -42,8 +42,17 @@ class Weather(HttpPlugin):
             args = args[:3]
 
         response = await self.http_call("get", self.get_url(args))
-        embed = self.generate_embed(munch.munchify(response.json()))
+        if response.status_code == 404:
+            await priv_response(ctx, "I could not find a location from your search!")
+            return
+        elif response.status_code != 200:
+            await priv_response(
+                ctx,
+                "I had some trouble looking up the weather for you... try again later!",
+            )
+            return
 
+        embed = self.generate_embed(munch.munchify(response.json()))
         await tagged_response(ctx, embed=embed)
 
     def generate_embed(self, response):
