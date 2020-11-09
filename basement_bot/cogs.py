@@ -69,9 +69,16 @@ class HttpPlugin(BasicPlugin):
         method_fn = getattr(client, method.lower(), None)
         if not method_fn:
             raise AttributeError(f"Unable to use HTTP method: {method}")
+
         log.debug(f"Making {method} HTTP call on URL: {args}")
-        response = await method_fn(*args, **kwargs)
-        log.debug(f"Received HTTP response: {response.json()}")
+        try:
+            response = await method_fn(*args, **kwargs)
+        except Exception as e:
+            log.error(f"Unable to process HTTP call: {e}")
+            response = None
+
+        if response:
+            log.debug(f"Received HTTP response: {response.json()}")
         return response
 
 
