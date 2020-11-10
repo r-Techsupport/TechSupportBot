@@ -58,15 +58,20 @@ class Weather(HttpPlugin):
     def generate_embed(self, response):
         embed = Embed(title=f"Weather for {response.name} ({response.sys.country})")
 
-        descriptions = ",".join(weather.description for weather in response.weather)
+        descriptions = ", ".join(weather.description for weather in response.weather)
         embed.add_field(name="Description", value=descriptions, inline=False)
 
-        embed.add_field(name=f"Temp ({self.temp_unit})", value=int(response.main.temp))
+        embed.add_field(
+            name=f"Temp ({self.temp_unit})",
+            value=f"{int(response.main.temp)} (feels like {int(response.main.feels_like)})",
+            inline=False,
+        )
         embed.add_field(
             name=f"Low ({self.temp_unit})", value=int(response.main.temp_min)
         )
         embed.add_field(
-            name=f"High ({self.temp_unit})", value=int(response.main.temp_max)
+            name=f"High ({self.temp_unit})",
+            value=int(response.main.temp_max),
         )
 
         return embed
