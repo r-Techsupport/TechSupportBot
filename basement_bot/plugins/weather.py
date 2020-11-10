@@ -74,5 +74,8 @@ class Weather(HttpPlugin):
             value=int(response.main.temp_max),
         )
         embed.add_field(name="Humidity", value=f"{int(response.main.humidity)} %")
+        embed.set_thumbnail(
+            url="https://cdn.icon-icons.com/icons2/8/PNG/256/cloudyweather_cloud_inpart_day_wind_thunder_sunny_rain_darkness_nublad_1459.png"
+        )
 
         return embed
