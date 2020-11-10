@@ -34,33 +34,59 @@ class Googler(HttpPlugin):
             return
 
         args = " ".join(args)
-        items = await self.get_items(
-            self.GOOGLE_URL,
-            data={
-                "cx": self.config.cse_id,
-                "q": args,
-                "key": self.config.dev_key,
-            },
-        )
+
+        data = {
+            "cx": self.config.cse_id,
+            "q": args,
+            "key": self.config.dev_key,
+        }
+        if getattr(ctx, "image_search", None):
+            data["searchType"] = "image"
+
+        items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
             args = f"*{args}*"
             await priv_response(ctx, f"No search results found for: {args}")
             return
 
-        embed = Embed(title=f"Results for {args}", value="https://google.com")
-        embed.set_thumbnail(
-            url="https://cdn.icon-icons.com/icons2/673/PNG/512/Google_icon-icons.com_60497.png"
-        )
-        for index, item in enumerate(items):
-            link = item.get("link")
-            snippet = item.get("snippet", "<Details Unknown>").replace("\n", "")
-            if link:
-                embed.add_field(name=link, value=snippet, inline=False)
-            if index == 2:
-                break
+        message = embed = None
+        if not getattr(ctx, "image_search", None):
+            embed = Embed(title=f"Results for {args}", value="https://google.com")
+            embed.set_thumbnail(
+                url="https://cdn.icon-icons.com/icons2/673/PNG/512/Google_icon-icons.com_60497.png"
+            )
+            for index, item in enumerate(items):
+                link = item.get("link")
+                snippet = item.get("snippet", "<Details Unknown>").replace("\n", "")
+                if link:
+                    embed.add_field(name=link, value=snippet, inline=False)
+                if index + 1 == self.config.responses_max:
+                    break
+        else:
+            message = items[0].get("link")
+            if not message:
+                await priv_response(
+                    ctx,
+                    "I had an issue processing Google's response... try again later!",
+                )
+                return
 
-        await tagged_response(ctx, embed=embed)
+        await tagged_response(ctx, message=message, embed=embed)
+
+    @commands.command(
+        name="gis",
+        brief="Google Image searches that for you",
+        description=(
+            "Returns the top Google image search result of the given search terms."
+            " Returns nothing if one is not found."
+        ),
+        usage="[search-terms]",
+        help="\nLimitations: Mentions should not be used.",
+    )
+    async def google_image(self, ctx, *args):
+        ctx.image_search = True
+        await self.google(ctx, *args)
 
     @commands.command(
         name="yt",
