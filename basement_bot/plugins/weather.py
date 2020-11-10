@@ -73,5 +73,6 @@ class Weather(HttpPlugin):
             name=f"High ({self.temp_unit})",
             value=int(response.main.temp_max),
         )
+        embed.add_field(name="Humidity", value=f"{int(response.main.humidity)} %")
 
         return embed
