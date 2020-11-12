@@ -207,7 +207,7 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False):
             reaction, user = await ctx.bot.wait_for(
                 "reaction_add", timeout=timeout, check=check
             )
-        except TimeoutError:
+        except Exception:
             break
 
         if user.bot:
@@ -230,3 +230,8 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False):
             await reaction.remove(user)
         except Forbidden:
             pass
+
+    try:
+        await message.delete()
+    except Forbidden:
+        pass

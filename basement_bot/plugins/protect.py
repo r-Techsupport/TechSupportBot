@@ -1,5 +1,4 @@
 from cogs import MatchPlugin
-from discord import Forbidden
 from munch import Munch
 from utils.helpers import *
 from utils.logger import get_logger
