@@ -209,39 +209,36 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
     for unicode_reaction in ["\u25C0", "\u25B6", "\u274C"]:
         await message.add_reaction(unicode_reaction)
 
-    def check(reaction, user):
-        if reaction.message.id != message.id:
-            return False
-        if restrict and user.id != ctx.author.id:
-            return False
-        return True
-
     while True:
         if (datetime.datetime.now() - start_time).seconds > timeout:
             break
 
         try:
             reaction, user = await ctx.bot.wait_for(
-                "reaction_add", timeout=timeout, check=check
+                "reaction_add", timeout=timeout, check=lambda r, u: not bool(u.bot)
             )
         except Exception:
             break
 
-        if user.bot:
-            continue
+        # check if the reaction should be processed
+        if (reaction.message.id != message.id) or (
+            restrict and user.id != ctx.author.id
+        ):
+            # this is checked first so it can pass to the deletion
+            pass
 
-        if str(reaction) == "\u25B6" and index < len(embeds) - 1:
-            # move forward
+        # move forward
+        elif str(reaction) == "\u25B6" and index < len(embeds) - 1:
             index += 1
             await message.edit(embed=embeds[index])
 
+        # move backward
         elif str(reaction) == "\u25C0" and index > 0:
-            # move backward
             index -= 1
             await message.edit(embed=embeds[index])
 
+        # delete the embed
         elif str(reaction) == "\u274C" and user.id == ctx.author.id:
-            # delete the embed
             await priv_response(ctx, "Deleting paginated response...")
             break
 
