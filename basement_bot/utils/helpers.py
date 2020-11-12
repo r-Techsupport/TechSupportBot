@@ -2,6 +2,7 @@
 """
 
 import ast
+import datetime
 import os
 import re
 
@@ -173,3 +174,59 @@ async def get_json_from_attachment(message):
         return ast.literal_eval(json_str)
     except Exception:
         return None
+
+
+async def paginate(ctx, embeds, timeout=300, tag_user=False):
+    """Paginates a set of embed objects for users to sort through
+
+    parameters:
+        ctx (Context): the context object for the message
+        embeds (discord.Embed[]): the embeds to paginate (one embed per page)
+        timeout (int) (seconds): the time to wait before exiting the reaction listener
+        tag_user (bool): True if the context user should be mentioned in the response
+    """
+    for index, embed in enumerate(embeds):
+        embed.set_footer(text=f"Page {index+1}")
+
+    start_time = datetime.datetime.now()
+    index = 0
+
+    if tag_user:
+        message = await tagged_response(ctx, embed=embeds[index])
+    else:
+        message = await ctx.send(embed=embeds[index])
+
+    await message.add_reaction("\u25C0")
+    await message.add_reaction("\u25B6")
+
+    while True:
+
+        check = lambda r, u: r.message.id == message.id
+
+        try:
+            reaction, user = await ctx.bot.wait_for(
+                "reaction_add", timeout=timeout, check=check
+            )
+        except TimeoutError:
+            break
+
+        if user.bot:
+            continue
+
+        if (datetime.datetime.now() - start_time).seconds > timeout:
+            break
+
+        if str(reaction) == "\u25B6" and index < len(embeds) - 1:
+            # move forward
+            index += 1
+            await message.edit(embed=embeds[index])
+
+        elif str(reaction) == "\u25C0" and index > 0:
+            # move backward
+            index -= 1
+            await message.edit(embed=embeds[index])
+
+        try:
+            await reaction.remove(user)
+        except Forbidden:
+            pass
