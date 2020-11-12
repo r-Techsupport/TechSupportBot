@@ -132,23 +132,40 @@ class Grabber(DatabasePlugin):
             )
             embed.set_thumbnail(url=user_to_grab.avatar_url)
             if len(list(grabs)) > 0:
+                embeds = []
+                field_counter = 1
                 for index, grab_ in enumerate(grabs):
                     filtered_message = sub_mentions_for_usernames(
                         ctx.bot, str(grab_.message)
+                    )
+                    embed = (
+                        Embed(
+                            title=f"Grabs for {user_to_grab.name}",
+                            description=f"Let's take a stroll down memory lane...",
+                        )
+                        if field_counter == 1
+                        else embed
                     )
                     embed.add_field(
                         name=f'"{filtered_message}"',
                         value=grab_.time.date(),
                         inline=False,
                     )
-                    if index + 1 == self.config.grabs_max:
-                        break
-            else:
-                # override main embed
-                embed.description = "No grabs found!"
-            await tagged_response(ctx, embed=embed)
+                    if (
+                        field_counter == self.config.grabs_max
+                        or index == len(list(grabs)) - 1
+                    ):
+                        embed.set_thumbnail(url=user_to_grab.avatar_url)
+                        embeds.append(embed)
+                        field_counter = 1
+                    else:
+                        field_counter += 1
+                await paginate(ctx, embeds=embeds)
         except Exception as e:
             await priv_response(ctx, "I had an issue retrieving all grabs!")
+            import logging
+
+            logging.error(e)
 
     @commands.command(
         name="grabr",
