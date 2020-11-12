@@ -75,7 +75,7 @@ class Googler(HttpPlugin):
                 else:
                     field_counter += 1
 
-            await paginate(ctx, embeds=embeds)
+            await paginate(ctx, embeds=embeds, restrict=True)
 
         else:
             message = items[0].get("link")

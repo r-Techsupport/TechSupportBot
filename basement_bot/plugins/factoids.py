@@ -187,7 +187,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             else:
                 field_counter += 1
 
-        await paginate(ctx, embeds=embeds)
+        await paginate(ctx, embeds=embeds, restrict=True)
 
     def match(self, _, content):
         return bool(content.startswith(self.config.prefix))
