@@ -185,8 +185,6 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 embeds.append(embed)
                 field_counter = 1
 
-        log.info(embeds)
-
         await paginate(ctx, embeds=embeds)
 
     def match(self, _, content):
