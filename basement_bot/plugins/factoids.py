@@ -54,7 +54,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
     )
     async def add_factoid(self, ctx, *args):
         if ctx.message.mentions:
-            await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
+            await priv_response(ctx, "Sorry, factoids don't work well with mentions")
             return
 
         embed_config = await get_json_from_attachment(ctx.message)
@@ -115,7 +115,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
     )
     async def delete_factoid(self, ctx, *args):
         if ctx.message.mentions:
-            await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
+            await priv_response(ctx, "Sorry, factoids don't work well with mentions")
             return
 
         if not args:
@@ -149,7 +149,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
     )
     async def list_all_factoids(self, ctx):
         if ctx.message.mentions:
-            await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
+            await priv_response(ctx, "Sorry, factoids don't work well with mentions")
             return
 
         db = self.db_session()
@@ -158,6 +158,9 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             factoids = db.query(Factoid).filter(bool(Factoid.message) == True).all()
         except Exception:
             await priv_response(ctx, "I was unable to get all the factoids...")
+            return
+        if len(list(factoids)) == 0:
+            await priv_response(ctx, "No factoids found!")
             return
 
         field_counter = 1

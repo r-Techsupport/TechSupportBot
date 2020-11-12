@@ -7,6 +7,7 @@ import os
 import re
 
 from discord import Embed, Forbidden, NotFound
+from discord.channel import DMChannel
 
 
 def get_env_value(name, default=None, raise_exception=True):
@@ -77,7 +78,6 @@ async def is_admin(ctx, message_user=True):
         ctx (Context): the context object
         message_user (boolean): True if the user should be notified on failure
     """
-
     id_is_admin = bool(
         ctx.message.author.id in [int(id) for id in ctx.bot.config.main.admins.ids]
     )
@@ -176,7 +176,8 @@ async def get_json_from_attachment(message):
         return None
 
 
-async def paginate(ctx, embeds, timeout=300, tag_user=False):
+# pylint: disable=too-many-branches
+async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
     """Paginates a set of embed objects for users to sort through
 
     parameters:
@@ -184,9 +185,18 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False):
         embeds (discord.Embed[]): the embeds to paginate (one embed per page)
         timeout (int) (seconds): the time to wait before exiting the reaction listener
         tag_user (bool): True if the context user should be mentioned in the response
+        restrict (bool): True if only the caller and admins can navigate the pages
     """
+    if isinstance(ctx.channel, DMChannel):
+        await priv_response(
+            ctx,
+            "*I can't send paginated responses to a DM. Here's the first page...*",
+        )
+        await priv_response(ctx, embed=embeds[0])
+        return
+
     for index, embed in enumerate(embeds):
-        embed.set_footer(text=f"Page {index+1}")
+        embed.set_footer(text=f"Page {index+1} of {len(embeds)}")
 
     start_time = datetime.datetime.now()
     index = 0
@@ -196,12 +206,19 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False):
     else:
         message = await ctx.send(embed=embeds[index])
 
-    await message.add_reaction("\u25C0")
-    await message.add_reaction("\u25B6")
+    for unicode_reaction in ["\u25C0", "\u25B6", "\u274C"]:
+        await message.add_reaction(unicode_reaction)
+
+    def check(reaction, user):
+        if reaction.message.id != message.id:
+            return False
+        if restrict and user.id != ctx.author.id:
+            return False
+        return True
 
     while True:
-
-        check = lambda r, u: r.message.id == message.id
+        if (datetime.datetime.now() - start_time).seconds > timeout:
+            break
 
         try:
             reaction, user = await ctx.bot.wait_for(
@@ -213,9 +230,6 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False):
         if user.bot:
             continue
 
-        if (datetime.datetime.now() - start_time).seconds > timeout:
-            break
-
         if str(reaction) == "\u25B6" and index < len(embeds) - 1:
             # move forward
             index += 1
@@ -225,6 +239,11 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False):
             # move backward
             index -= 1
             await message.edit(embed=embeds[index])
+
+        elif str(reaction) == "\u274C" and user.id == ctx.author.id:
+            # delete the embed
+            await priv_response(ctx, "Deleting paginated response...")
+            break
 
         try:
             await reaction.remove(user)

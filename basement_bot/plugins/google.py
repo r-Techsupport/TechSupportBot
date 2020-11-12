@@ -86,7 +86,7 @@ class Googler(HttpPlugin):
                 )
                 return
 
-        await tagged_response(ctx, message=message, embed=embed)
+            await tagged_response(ctx, message=message, embed=embed)
 
     @commands.command(
         name="gis",
