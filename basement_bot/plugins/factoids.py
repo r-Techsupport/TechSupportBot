@@ -160,36 +160,41 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             await priv_response(ctx, "I was unable to get all the factoids...")
             return
 
-        factoid_dict = {}
-        index = 0
-        for factoid in factoids:
-            factoid_key = (
-                f"{factoid.text} (embed)" if factoid.embed_config else factoid.text
+        field_counter = 1
+        embeds = []
+        for index, factoid in enumerate(factoids):
+            embed = (
+                Embed(
+                    title="Factoids",
+                    description=f"Access factoids with the `{self.config.prefix}` prefix",
+                )
+                if field_counter == 1
+                else embed
             )
-            factoid_dict[factoid_key] = factoid.message
-            # prevent too many factoids from showing
-            if index + 1 == self.config.list_all_max:
-                break
-            index += 1
+            embed.add_field(
+                name=f"{factoid.text} (embed)"
+                if factoid.embed_config
+                else factoid.text,
+                value=factoid.message,
+                inline=False,
+            )
+            field_counter = (
+                1 if field_counter == self.config.list_all_max else field_counter + 1
+            )
+            if field_counter == self.config.list_all_max or index == len(factoids) - 1:
+                embeds.append(embed)
+                field_counter = 1
 
-        description = (
-            f"Access factoids with the `{self.config.prefix}` prefix"
-            if len(factoids) > 0
-            else "No factoids found!"
-        )
-        embed = embed_from_kwargs(
-            title=f"Factoids",
-            description=description,
-            **factoid_dict,
-        )
-        await priv_response(ctx, embed=embed)
+        log.info(embeds)
+
+        await paginate(ctx, embeds=embeds)
 
     def match(self, _, content):
         return bool(content.startswith(self.config.prefix))
 
     async def response(self, ctx, arg):
         if ctx.message.mentions:
-            await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
+            await priv_response(ctx, "Sorry, factoids don't work well with mentions")
             return
 
         db = self.db_session()
