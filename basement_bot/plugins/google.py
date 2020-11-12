@@ -67,6 +67,9 @@ class Googler(HttpPlugin):
                     field_counter == self.config.responses_max
                     or index == len(items) - 1
                 ):
+                    embed.set_thumbnail(
+                        url="https://cdn.icon-icons.com/icons2/673/PNG/512/Google_icon-icons.com_60497.png"
+                    )
                     embeds.append(embed)
                     field_counter = 1
                 else:
