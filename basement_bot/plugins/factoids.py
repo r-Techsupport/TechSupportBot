@@ -178,12 +178,11 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 value=factoid.message,
                 inline=False,
             )
-            field_counter = (
-                1 if field_counter == self.config.list_all_max else field_counter + 1
-            )
             if field_counter == self.config.list_all_max or index == len(factoids) - 1:
                 embeds.append(embed)
                 field_counter = 1
+            else:
+                field_counter += 1
 
         await paginate(ctx, embeds=embeds)
 

@@ -1,7 +1,7 @@
 from cogs import HttpPlugin
 from discord import Embed
 from discord.ext import commands
-from utils.helpers import priv_response, tagged_response
+from utils.helpers import paginate, priv_response, tagged_response
 
 
 def setup(bot):
@@ -52,17 +52,28 @@ class Googler(HttpPlugin):
 
         message = embed = None
         if not getattr(ctx, "image_search", None):
-            embed = Embed(title=f"Results for {args}", value="https://google.com")
-            embed.set_thumbnail(
-                url="https://cdn.icon-icons.com/icons2/673/PNG/512/Google_icon-icons.com_60497.png"
-            )
+            field_counter = 1
+            embeds = []
             for index, item in enumerate(items):
                 link = item.get("link")
                 snippet = item.get("snippet", "<Details Unknown>").replace("\n", "")
-                if link:
-                    embed.add_field(name=link, value=snippet, inline=False)
-                if index + 1 == self.config.responses_max:
-                    break
+                embed = (
+                    Embed(title=f"Results for {args}", value="https://google.com")
+                    if field_counter == 1
+                    else embed
+                )
+                embed.add_field(name=link, value=snippet, inline=False)
+                if (
+                    field_counter == self.config.responses_max
+                    or index == len(items) - 1
+                ):
+                    embeds.append(embed)
+                    field_counter = 1
+                else:
+                    field_counter += 1
+
+            await paginate(ctx, embeds=embeds)
+
         else:
             message = items[0].get("link")
             if not message:
