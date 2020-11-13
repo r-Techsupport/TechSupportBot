@@ -26,7 +26,7 @@ def get_env_value(name, default=None, raise_exception=True):
     return key
 
 
-async def tagged_response(ctx, message=None, embed=None):
+async def tagged_response(ctx, content=None, embed=None):
     """Sends a context response with the original author tagged.
 
     parameters:
@@ -34,15 +34,15 @@ async def tagged_response(ctx, message=None, embed=None):
         message (str): the message to send
         embed (discord.Embed): the discord embed object to send
     """
-    message = (
-        f"{ctx.message.author.mention} {message}"
-        if message
+    content = (
+        f"{ctx.message.author.mention} {content}"
+        if content
         else ctx.message.author.mention
     )
-    await ctx.send(message, embed=embed)
+    await ctx.send(content, embed=embed)
 
 
-async def priv_response(ctx, message=None, embed=None):
+async def priv_response(ctx, content=None, embed=None):
     """Sends a context private message to the original author.
 
     parameters:
@@ -51,8 +51,8 @@ async def priv_response(ctx, message=None, embed=None):
         embed (discord.Embed): the discord embed object to send
     """
     channel = await ctx.message.author.create_dm()
-    if message:
-        await channel.send(message, embed=embed)
+    if content:
+        await channel.send(content, embed=embed)
     else:
         await channel.send(embed=embed)
 
@@ -182,28 +182,36 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
 
     parameters:
         ctx (Context): the context object for the message
-        embeds (discord.Embed[]): the embeds to paginate (one embed per page)
+        embeds (Union[discord.Embed, str][]): the embeds (or URLs to render them) to paginate
         timeout (int) (seconds): the time to wait before exiting the reaction listener
         tag_user (bool): True if the context user should be mentioned in the response
         restrict (bool): True if only the caller and admins can navigate the pages
     """
+    # limit large outputs
+    embeds = embeds[:10]
+
     for index, embed in enumerate(embeds):
-        embed.set_footer(text=f"Page {index+1} of {len(embeds)}")
+        if isinstance(embed, Embed):
+            embed.set_footer(text=f"Page {index+1} of {len(embeds)}")
+
+    index = 0
+    get_args = lambda index: {
+        "content": embeds[index] if not isinstance(embeds[index], Embed) else None,
+        "embed": embeds[index] if isinstance(embeds[index], Embed) else None,
+    }
+
+    if tag_user:
+        message = await tagged_response(ctx, **get_args(index))
+    else:
+        message = await ctx.send(**get_args(index))
 
     if (
         isinstance(ctx.channel, DMChannel)
         or ctx.bot.wait_events >= ctx.bot.config.main.required.max_waits
     ):
-        await ctx.send(embed=embeds[0])
         return
 
     start_time = datetime.datetime.now()
-    index = 0
-
-    if tag_user:
-        message = await tagged_response(ctx, embed=embeds[index])
-    else:
-        message = await ctx.send(embed=embeds[index])
 
     for unicode_reaction in ["\u25C0", "\u25B6", "\u26D4"]:
         await message.add_reaction(unicode_reaction)
@@ -229,12 +237,12 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
         # move forward
         elif str(reaction) == "\u25B6" and index < len(embeds) - 1:
             index += 1
-            await message.edit(embed=embeds[index])
+            await message.edit(**get_args(index))
 
         # move backward
         elif str(reaction) == "\u25C0" and index > 0:
             index -= 1
-            await message.edit(embed=embeds[index])
+            await message.edit(**get_args(index))
 
         # delete the embed
         elif str(reaction) == "\u26D4" and user.id == ctx.author.id:

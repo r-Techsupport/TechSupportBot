@@ -209,7 +209,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 else:
                     embed = None
                     message = entry.message
-                await tagged_response(ctx, message=message, embed=embed)
+                await tagged_response(ctx, content=message, embed=embed)
 
                 if not self.bot.plugin_api.plugins.get("relay"):
                     return

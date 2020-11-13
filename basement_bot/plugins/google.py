@@ -86,7 +86,7 @@ class Googler(HttpPlugin):
                 )
                 return
 
-            await tagged_response(ctx, message=message, embed=embed)
+            await tagged_response(ctx, content=message, embed=embed)
 
     @commands.command(
         name="gis",
@@ -136,4 +136,11 @@ class Googler(HttpPlugin):
         video_id = items[0].get("id", {}).get("videoId")
         link = f"http://youtu.be/{video_id}"
 
-        await tagged_response(ctx, link)
+        embeds = []
+        for item in items:
+            video_id = item.get("id", {}).get("videoId")
+            link = f"http://youtu.be/{video_id}" if video_id else None
+            if link:
+                embeds.append(link)
+
+        await paginate(ctx, embeds)
