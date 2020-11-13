@@ -51,9 +51,9 @@ class Googler(HttpPlugin):
             return
 
         message = embed = None
+        embeds = []
         if not getattr(ctx, "image_search", None):
             field_counter = 1
-            embeds = []
             for index, item in enumerate(items):
                 link = item.get("link")
                 snippet = item.get("snippet", "<Details Unknown>").replace("\n", "")
@@ -75,18 +75,18 @@ class Googler(HttpPlugin):
                 else:
                     field_counter += 1
 
-            await paginate(ctx, embeds=embeds, restrict=True)
-
         else:
-            message = items[0].get("link")
-            if not message:
-                await priv_response(
-                    ctx,
-                    "I had an issue processing Google's response... try again later!",
-                )
-                return
+            for item in items:
+                link = item.get("link")
+                if not message:
+                    await priv_response(
+                        ctx,
+                        "I had an issue processing Google's response... try again later!",
+                    )
+                    return
+                embeds.append(link)
 
-            await tagged_response(ctx, content=message, embed=embed)
+        await paginate(ctx, embeds=embeds, restrict=True)
 
     @commands.command(
         name="gis",
@@ -143,4 +143,4 @@ class Googler(HttpPlugin):
             if link:
                 embeds.append(link)
 
-        await paginate(ctx, embeds)
+        await paginate(ctx, embeds, restrict=True)
