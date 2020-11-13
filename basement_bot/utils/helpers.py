@@ -50,11 +50,14 @@ async def priv_response(ctx, content=None, embed=None):
         message (str): the message to send
         embed (discord.Embed): the discord embed object to send
     """
-    channel = await ctx.message.author.create_dm()
-    if content:
-        await channel.send(content, embed=embed)
-    else:
-        await channel.send(embed=embed)
+    try:
+        channel = await ctx.message.author.create_dm()
+        if content:
+            await channel.send(content, embed=embed)
+        else:
+            await channel.send(embed=embed)
+    except Forbidden:
+        pass
 
 
 async def emoji_reaction(ctx, emojis):
