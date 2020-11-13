@@ -78,7 +78,7 @@ class Googler(HttpPlugin):
         else:
             for item in items:
                 link = item.get("link")
-                if not message:
+                if not link:
                     await priv_response(
                         ctx,
                         "I had an issue processing Google's response... try again later!",

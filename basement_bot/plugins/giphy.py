@@ -52,4 +52,4 @@ class Giphy(HttpPlugin):
             url = self.parse_url(url)
             embeds.append(url)
 
-        await paginate(ctx, embeds)
+        await paginate(ctx, embeds, restrict=True)
