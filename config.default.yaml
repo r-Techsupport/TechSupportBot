@@ -2,6 +2,7 @@ main:
     required:
         command_prefix: "."
         auth_token: 
+        max_waits: 10
     optional:
         game: RuneScape
     admins:

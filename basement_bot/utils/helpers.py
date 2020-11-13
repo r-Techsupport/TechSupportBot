@@ -187,16 +187,15 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
         tag_user (bool): True if the context user should be mentioned in the response
         restrict (bool): True if only the caller and admins can navigate the pages
     """
-    if isinstance(ctx.channel, DMChannel):
-        await priv_response(
-            ctx,
-            "*I can't send paginated responses to a DM. Here's the first page...*",
-        )
-        await priv_response(ctx, embed=embeds[0])
-        return
-
     for index, embed in enumerate(embeds):
         embed.set_footer(text=f"Page {index+1} of {len(embeds)}")
+
+    if (
+        isinstance(ctx.channel, DMChannel)
+        or ctx.bot.wait_events >= ctx.bot.config.main.required.max_waits
+    ):
+        await ctx.send(embed=embeds[0])
+        return
 
     start_time = datetime.datetime.now()
     index = 0
@@ -206,7 +205,7 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
     else:
         message = await ctx.send(embed=embeds[index])
 
-    for unicode_reaction in ["\u25C0", "\u25B6", "\u274C"]:
+    for unicode_reaction in ["\u25C0", "\u25B6", "\u26D4"]:
         await message.add_reaction(unicode_reaction)
 
     while True:
@@ -238,8 +237,8 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
             await message.edit(embed=embeds[index])
 
         # delete the embed
-        elif str(reaction) == "\u274C" and user.id == ctx.author.id:
-            await priv_response(ctx, "Deleting paginated response...")
+        elif str(reaction) == "\u26D4" and user.id == ctx.author.id:
+            await priv_response(ctx, "Stopping pagination...")
             break
 
         try:
@@ -248,6 +247,6 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
             pass
 
     try:
-        await message.delete()
+        await message.clear_reactions()
     except Forbidden:
         pass

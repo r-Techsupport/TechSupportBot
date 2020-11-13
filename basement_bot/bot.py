@@ -19,6 +19,7 @@ class BasementBot(Bot):
 
     def __init__(self, run=True):
         self.config = self._load_config(validate=True)
+        self.wait_events = 0
         super().__init__(self.config.main.required.command_prefix)
 
         self.game = (
@@ -109,3 +110,14 @@ class BasementBot(Bot):
 
         check_all("main", ["required", "database"])
         check_all("plugins", list(self.config.plugins.keys()))
+
+    async def wait_for(self, *args, **kwargs):
+        """Wraps the wait_for method to limit the maximum concurrent listeners."""
+        if self.wait_events > self.config.main.required.max_waits:
+            log.warning("Ignoring wait-for call due to max listeners reached")
+            return (None, None, None, None)
+
+        self.wait_events += 1
+        response_tuple = await super().wait_for(*args, **kwargs)
+        self.wait_events -= 1
+        return response_tuple
