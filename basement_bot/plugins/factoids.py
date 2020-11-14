@@ -2,7 +2,7 @@ import datetime
 import json
 
 from cogs import DatabasePlugin, MatchPlugin
-from discord import Embed
+from discord import Embed, HTTPException
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
 from utils.helpers import *
@@ -57,13 +57,11 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             await priv_response(ctx, "Sorry, factoids don't work well with mentions")
             return
 
-        embed_config = await get_json_from_attachment(ctx.message)
+        embed_config = await get_json_from_attachment(ctx, ctx.message)
         if embed_config:
-            try:
-                Embed.from_dict(embed_config)
-                embed_config = json.dumps(embed_config)
-            except Exception:
-                embed_config = None
+            embed_config = json.dumps(embed_config)
+        elif embed_config == {}:
+            return
 
         if len(args) >= 2:
             arg1 = args[0]
@@ -209,6 +207,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 else:
                     embed = None
                     message = entry.message
+
                 await tagged_response(ctx, content=message, embed=embed)
 
                 if not self.bot.plugin_api.plugins.get("relay"):
@@ -228,5 +227,9 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                         ]
 
         except Exception as e:
+            if isinstance(e, HTTPException) and getattr(e, "code", 0) == 50035:
+                await priv_response(ctx, "Unable to render Embed from Factoid...")
+                return
+
             log.warning(f"Unable to get factoid: {e}")
             await priv_response(ctx, "I ran into an issue grabbing your factoid...")

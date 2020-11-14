@@ -165,18 +165,24 @@ async def delete_message_with_reason(ctx, message, reason, private=True, origina
         await send_func(ctx, f"Original message: ```{content}```")
 
 
-async def get_json_from_attachment(message):
+async def get_json_from_attachment(ctx, message, message_user=True):
     """Returns a JSON object parsed from a message's attachment.
 
     parameters:
         message (Message): the message object
     """
+    if not message.attachments:
+        return None
+
     try:
         json_bytes = await message.attachments[0].read()
         json_str = json_bytes.decode("UTF-8")
         return ast.literal_eval(json_str)
-    except Exception:
-        return None
+    # this could probably be more specific
+    except Exception as e:
+        if message_user:
+            await priv_response(ctx, f"I was unable to parse your JSON: {e}")
+        return {}
 
 
 # pylint: disable=too-many-branches
@@ -227,6 +233,7 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
             reaction, user = await ctx.bot.wait_for(
                 "reaction_add", timeout=timeout, check=lambda r, u: not bool(u.bot)
             )
+        # this seems to raise an odd timeout error, for now just catch-all
         except Exception:
             break
 
