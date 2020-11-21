@@ -256,7 +256,6 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
 
         # delete the embed
         elif str(reaction) == "\u26D4" and user.id == ctx.author.id:
-            await priv_response(ctx, "Stopping pagination...")
             break
 
         try:
