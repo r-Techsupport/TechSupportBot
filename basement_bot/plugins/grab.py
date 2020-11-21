@@ -1,11 +1,10 @@
 import datetime
 from random import randint
 
+from cogs import DatabasePlugin
 from discord import Embed
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String, desc
-
-from cogs import DatabasePlugin
 from utils.helpers import *
 
 
@@ -127,31 +126,42 @@ class Grabber(DatabasePlugin):
                 .order_by(desc(Grab.time))
                 .filter(Grab.author_id == str(user_to_grab.id))
             )
-            embed = Embed(
-                title=f"Grabs for {user_to_grab.name}",
-                description=f"Let's take a stroll down memory lane...",
-            )
-            embed.set_thumbnail(url=user_to_grab.avatar_url)
-            if len(list(grabs)) > 0:
-                for index, grab_ in enumerate(grabs):
-                    filtered_message = sub_mentions_for_usernames(
-                        ctx.bot, str(grab_.message)
-                    )
-                    embed.add_field(
-                        name=f'"{filtered_message}"',
-                        value=grab_.time.date(),
-                        inline=False,
-                    )
-                    if index == 7:
-                        break
-            else:
-                embed.add_field(name=None, value="No grabs found!")
-            await tagged_response(ctx, embed=embed)
-        except Exception as e:
+        except Exception:
             await priv_response(ctx, "I had an issue retrieving all grabs!")
-            import logging
+            return
+        if len(list(grabs)) == 0:
+            await priv_response(ctx, f"No grabs found for {user_to_grab.name}")
+            return
 
-            logging.exception(e)
+        embed = Embed(
+            title=f"Grabs for {user_to_grab.name}",
+            description=f"Let's take a stroll down memory lane...",
+        )
+        embed.set_thumbnail(url=user_to_grab.avatar_url)
+        embeds = []
+        field_counter = 1
+        for index, grab_ in enumerate(grabs):
+            filtered_message = sub_mentions_for_usernames(ctx.bot, str(grab_.message))
+            embed = (
+                Embed(
+                    title=f"Grabs for {user_to_grab.name}",
+                    description=f"Let's take a stroll down memory lane...",
+                )
+                if field_counter == 1
+                else embed
+            )
+            embed.add_field(
+                name=f'"{filtered_message}"',
+                value=grab_.time.date(),
+                inline=False,
+            )
+            if field_counter == self.config.grabs_max or index == len(list(grabs)) - 1:
+                embed.set_thumbnail(url=user_to_grab.avatar_url)
+                embeds.append(embed)
+                field_counter = 1
+            else:
+                field_counter += 1
+        await paginate(ctx, embeds=embeds, restrict=True)
 
     @commands.command(
         name="grabr",

@@ -1,11 +1,10 @@
 import datetime
 import json
 
-from discord import Embed
+from cogs import DatabasePlugin, MatchPlugin
+from discord import Embed, HTTPException
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
-
-from cogs import DatabasePlugin, MatchPlugin
 from utils.helpers import *
 from utils.logger import get_logger
 
@@ -43,7 +42,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
     @commands.check(is_admin)
     @commands.command(
-        name="r",
+        name="remember",
         brief="Creates custom trigger with a specified output",
         description=(
             "Creates a custom trigger with a specified name that outputs any specified text,"
@@ -55,16 +54,14 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
     )
     async def add_factoid(self, ctx, *args):
         if ctx.message.mentions:
-            await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
+            await priv_response(ctx, "Sorry, factoids don't work well with mentions")
             return
 
-        embed_config = await get_json_from_attachment(ctx.message)
+        embed_config = await get_json_from_attachment(ctx, ctx.message)
         if embed_config:
-            try:
-                Embed.from_dict(embed_config)
-                embed_config = json.dumps(embed_config)
-            except Exception:
-                embed_config = None
+            embed_config = json.dumps(embed_config)
+        elif embed_config == {}:
+            return
 
         if len(args) >= 2:
             arg1 = args[0]
@@ -101,13 +98,14 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             await tagged_response(ctx, f"Successfully added factoid trigger: *{arg1}*")
 
         except Exception as e:
+            log.warning(f"Unable to add factoid: {e}")
             await priv_response(
                 ctx, "I ran into an issue handling your factoid addition..."
             )
 
     @commands.check(is_admin)
     @commands.command(
-        name="f",
+        name="forget",
         brief="Deletes an existing custom trigger",
         description="Deletes an existing custom trigger.",
         usage="[trigger-name]",
@@ -115,7 +113,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
     )
     async def delete_factoid(self, ctx, *args):
         if ctx.message.mentions:
-            await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
+            await priv_response(ctx, "Sorry, factoids don't work well with mentions")
             return
 
         if not args:
@@ -133,10 +131,52 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 db.commit()
             await tagged_response(ctx, f"Successfully deleted factoid trigger: *{arg}*")
 
-        except Exception:
+        except Exception as e:
+            log.warning(f"Unable to forget factoid: {e}")
             await priv_response(
                 ctx, "I ran into an issue handling your factoid deletion..."
             )
+
+    @commands.check(is_admin)
+    @commands.command(
+        name=f"cat",
+        brief="List all factoids",
+        description="Shows an embed with all the factoids",
+        usage="",
+        help="\nLimitations: Currently only shows up to 20",
+    )
+    async def cat_factoid(self, ctx, *args):
+        if ctx.message.mentions:
+            await priv_response(ctx, "Sorry, factoids don't work well with mentions")
+            return
+
+        if not args:
+            await priv_response(ctx, "You must specify a factoid to delete!")
+            return
+        else:
+            arg = args[0]
+
+        db = self.db_session()
+
+        try:
+            entry = db.query(Factoid).filter(Factoid.text == arg).first()
+            if entry:
+                if entry.embed_config:
+                    try:
+                        message = json.dumps(json.loads(entry.embed_config), indent=2)
+                    except Exception:
+                        await priv_response(
+                            ctx, "I was unable to parse the JSON for that factoid!"
+                        )
+                        return
+                else:
+                    message = entry.message
+
+                await tagged_response(ctx, f"```{message}```")
+
+        except Exception as e:
+            log.warning(f"Unable to get factoid: {e}")
+            await priv_response(ctx, "I ran into an issue catting your factoid info...")
 
     @commands.check(is_admin)
     @commands.command(
@@ -148,7 +188,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
     )
     async def list_all_factoids(self, ctx):
         if ctx.message.mentions:
-            await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
+            await priv_response(ctx, "Sorry, factoids don't work well with mentions")
             return
 
         db = self.db_session()
@@ -157,34 +197,43 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             factoids = db.query(Factoid).filter(bool(Factoid.message) == True).all()
         except Exception:
             await priv_response(ctx, "I was unable to get all the factoids...")
+            return
+        if len(list(factoids)) == 0:
+            await priv_response(ctx, "No factoids found!")
+            return
 
-        factoid_dict = {}
-        index = 0
-        for factoid in factoids:
-            if factoid.embed_config:
-                continue
-            factoid_dict[factoid.text] = factoid.message
-            # prevent too many factoids from showing
-            if index == 20:
-                break
-            index += 1
+        field_counter = 1
+        embeds = []
+        for index, factoid in enumerate(factoids):
+            embed = (
+                Embed(
+                    title="Factoids",
+                    description=f"Access factoids with the `{self.config.prefix}` prefix",
+                )
+                if field_counter == 1
+                else embed
+            )
+            embed.add_field(
+                name=f"{factoid.text} (embed)"
+                if factoid.embed_config
+                else factoid.text,
+                value=factoid.message,
+                inline=False,
+            )
+            if field_counter == self.config.list_all_max or index == len(factoids) - 1:
+                embeds.append(embed)
+                field_counter = 1
+            else:
+                field_counter += 1
 
-        description = (
-            f"Access factoids with the `{self.config.prefix}` prefix"
-            if len(factoids) > 1
-            else "No factoids found!"
-        )
-        embed = embed_from_kwargs(
-            title=f"Factoids", description=description, **factoid_dict,
-        )
-        await priv_response(ctx, embed=embed)
+        await paginate(ctx, embeds=embeds, restrict=True)
 
     def match(self, _, content):
         return bool(content.startswith(self.config.prefix))
 
     async def response(self, ctx, arg):
         if ctx.message.mentions:
-            await priv_response(ctx, "Sorry, factoids don't work well with mentions.")
+            await priv_response(ctx, "Sorry, factoids don't work well with mentions")
             return
 
         db = self.db_session()
@@ -199,7 +248,8 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 else:
                     embed = None
                     message = entry.message
-                await tagged_response(ctx, message=message, embed=embed)
+
+                await tagged_response(ctx, content=message, embed=embed)
 
                 if not self.bot.plugin_api.plugins.get("relay"):
                     return
@@ -218,5 +268,9 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                         ]
 
         except Exception as e:
+            if isinstance(e, HTTPException) and getattr(e, "code", 0) == 50035:
+                await priv_response(ctx, "Unable to render Embed from Factoid...")
+                return
+
             log.warning(f"Unable to get factoid: {e}")
             await priv_response(ctx, "I ran into an issue grabbing your factoid...")

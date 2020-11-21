@@ -2,10 +2,12 @@
 """
 
 import ast
+import datetime
 import os
 import re
 
 from discord import Embed, Forbidden, NotFound
+from discord.channel import DMChannel
 
 
 def get_env_value(name, default=None, raise_exception=True):
@@ -24,7 +26,7 @@ def get_env_value(name, default=None, raise_exception=True):
     return key
 
 
-async def tagged_response(ctx, message=None, embed=None):
+async def tagged_response(ctx, content=None, embed=None):
     """Sends a context response with the original author tagged.
 
     parameters:
@@ -32,15 +34,15 @@ async def tagged_response(ctx, message=None, embed=None):
         message (str): the message to send
         embed (discord.Embed): the discord embed object to send
     """
-    message = (
-        f"{ctx.message.author.mention} {message}"
-        if message
+    content = (
+        f"{ctx.message.author.mention} {content}"
+        if content
         else ctx.message.author.mention
     )
-    await ctx.send(message, embed=embed)
+    await ctx.send(content, embed=embed)
 
 
-async def priv_response(ctx, message=None, embed=None):
+async def priv_response(ctx, content=None, embed=None):
     """Sends a context private message to the original author.
 
     parameters:
@@ -48,11 +50,14 @@ async def priv_response(ctx, message=None, embed=None):
         message (str): the message to send
         embed (discord.Embed): the discord embed object to send
     """
-    channel = await ctx.message.author.create_dm()
-    if message:
-        await channel.send(message, embed=embed)
-    else:
-        await channel.send(embed=embed)
+    try:
+        channel = await ctx.message.author.create_dm()
+        if content:
+            await channel.send(content, embed=embed)
+        else:
+            await channel.send(embed=embed)
+    except Forbidden:
+        pass
 
 
 async def emoji_reaction(ctx, emojis):
@@ -76,7 +81,6 @@ async def is_admin(ctx, message_user=True):
         ctx (Context): the context object
         message_user (boolean): True if the user should be notified on failure
     """
-
     id_is_admin = bool(
         ctx.message.author.id in [int(id) for id in ctx.bot.config.main.admins.ids]
     )
@@ -161,15 +165,106 @@ async def delete_message_with_reason(ctx, message, reason, private=True, origina
         await send_func(ctx, f"Original message: ```{content}```")
 
 
-async def get_json_from_attachment(message):
+async def get_json_from_attachment(ctx, message, message_user=True):
     """Returns a JSON object parsed from a message's attachment.
 
     parameters:
         message (Message): the message object
     """
+    if not message.attachments:
+        return None
+
     try:
         json_bytes = await message.attachments[0].read()
         json_str = json_bytes.decode("UTF-8")
         return ast.literal_eval(json_str)
-    except Exception:
-        return None
+    # this could probably be more specific
+    except Exception as e:
+        if message_user:
+            await priv_response(ctx, f"I was unable to parse your JSON: {e}")
+        return {}
+
+
+# pylint: disable=too-many-branches
+async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
+    """Paginates a set of embed objects for users to sort through
+
+    parameters:
+        ctx (Context): the context object for the message
+        embeds (Union[discord.Embed, str][]): the embeds (or URLs to render them) to paginate
+        timeout (int) (seconds): the time to wait before exiting the reaction listener
+        tag_user (bool): True if the context user should be mentioned in the response
+        restrict (bool): True if only the caller and admins can navigate the pages
+    """
+    # limit large outputs
+    embeds = embeds[:10]
+
+    for index, embed in enumerate(embeds):
+        if isinstance(embed, Embed):
+            embed.set_footer(text=f"Page {index+1} of {len(embeds)}")
+
+    index = 0
+    get_args = lambda index: {
+        "content": embeds[index] if not isinstance(embeds[index], Embed) else None,
+        "embed": embeds[index] if isinstance(embeds[index], Embed) else None,
+    }
+
+    if tag_user:
+        message = await tagged_response(ctx, **get_args(index))
+    else:
+        message = await ctx.send(**get_args(index))
+
+    if (
+        isinstance(ctx.channel, DMChannel)
+        or ctx.bot.wait_events >= ctx.bot.config.main.required.max_waits
+    ):
+        return
+
+    start_time = datetime.datetime.now()
+
+    for unicode_reaction in ["\u25C0", "\u25B6", "\u26D4"]:
+        await message.add_reaction(unicode_reaction)
+
+    while True:
+        if (datetime.datetime.now() - start_time).seconds > timeout:
+            break
+
+        try:
+            reaction, user = await ctx.bot.wait_for(
+                "reaction_add", timeout=timeout, check=lambda r, u: not bool(u.bot)
+            )
+        # this seems to raise an odd timeout error, for now just catch-all
+        except Exception:
+            break
+
+        # check if the reaction should be processed
+        if (reaction.message.id != message.id) or (
+            restrict and user.id != ctx.author.id
+        ):
+            # this is checked first so it can pass to the deletion
+            pass
+
+        # move forward
+        elif str(reaction) == "\u25B6" and index < len(embeds) - 1:
+            index += 1
+            await message.edit(**get_args(index))
+
+        # move backward
+        elif str(reaction) == "\u25C0" and index > 0:
+            index -= 1
+            await message.edit(**get_args(index))
+
+        # delete the embed
+        elif str(reaction) == "\u26D4" and user.id == ctx.author.id:
+            await priv_response(ctx, "Stopping pagination...")
+            break
+
+        try:
+            await reaction.remove(user)
+        except Forbidden:
+            pass
+
+    try:
+        await message.clear_reactions()
+    except Forbidden:
+        pass

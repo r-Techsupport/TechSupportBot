@@ -10,11 +10,11 @@ make sync:
 
 check-format:
 	$(drun) black --check $(main_dir)
-	$(drun) isort --check-only --recursive $(main_dir)
+	$(drun) isort --check-only ./$(main_dir)
 
 format:
 	$(drun) black $(main_dir)
-	$(drun) isort --recursive $(main_dir)
+	$(drun) isort ./$(main_dir)
 
 lint:
 	$(drun) pylint basement_bot/*.py
@@ -57,4 +57,3 @@ establish_config:
 	@if [ ! -f "./config.yaml" ]; then\
 		touch ./config.yaml;\
 	fi
-		

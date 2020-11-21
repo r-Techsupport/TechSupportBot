@@ -1,8 +1,7 @@
 import os
 
-from discord.ext import commands
-
 from cogs import BasicPlugin
+from discord.ext import commands
 from utils.helpers import *
 
 
@@ -47,10 +46,6 @@ class AdminControl(BasicPlugin):
                 **{"Loaded": loaded, "Unloaded": unloaded, "Disabled": disabled},
             ),
         )
-
-        # await priv_response(ctx, f"Loaded plugins: {loaded}")
-        # await priv_response(ctx, f"Unloaded plugins: {unloaded}")
-        # await priv_response(ctx, f"Disabled plugins: {disabled}")
 
     @commands.check(is_admin)
     @commands.command(name="load_plugin", hidden=True)

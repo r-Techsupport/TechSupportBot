@@ -5,15 +5,13 @@ import glob
 from os.path import basename, dirname, isfile, join
 
 import munch
-
 from utils.logger import get_logger
 
 log = get_logger("Plugin Loader")
 
 
 class PluginAPI:
-    """API for plugin loading.
-    """
+    """API for plugin loading."""
 
     PLUGINS_DIR = f"{join(dirname(__file__))}/plugins"
 
@@ -22,8 +20,7 @@ class PluginAPI:
         self.plugins = munch.Munch()
 
     def get_modules(self):
-        """Gets the current list of plugin modules.
-        """
+        """Gets the current list of plugin modules."""
         return [
             basename(f)[:-3]
             for f in glob.glob(f"{self.PLUGINS_DIR}/*.py")
@@ -78,7 +75,7 @@ class PluginAPI:
                 message = f"Failed to load `{plugin_name}`: {str(e)}"
                 log.warning(message)
                 return self._make_response(False, message)
-            raise RuntimeError(str(e))
+            raise RuntimeError from e
 
     def unload_plugin(self, plugin_name, allow_failure=True):
         """Unloads a plugin by name.
@@ -104,7 +101,7 @@ class PluginAPI:
                 log.warning(message)
                 return self._make_response(False, message)
 
-            raise RuntimeError(str(e))
+            raise RuntimeError from e
 
     def load_plugins(self, allow_failure=True):
         """Loads all plugins currently in the plugins directory.

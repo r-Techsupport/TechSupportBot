@@ -5,12 +5,11 @@ import logging
 import re
 import uuid
 
+from cogs import LoopPlugin, MatchPlugin, MqPlugin
 from discord import Embed
 from discord.ext import commands
 from discord.ext.commands import Context
 from munch import Munch
-
-from cogs import LoopPlugin, MatchPlugin, MqPlugin
 from utils.helpers import *
 from utils.logger import get_logger
 
@@ -67,9 +66,9 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
                 0:limit
             ]:
                 bodies.append(self.serialize("factoid", ctx))
-            self.bot.plugin_api.plugins.factoids.memory.factoid_events = self.bot.plugin_api.plugins.factoids.memory.factoid_events[
-                limit:
-            ]
+            self.bot.plugin_api.plugins.factoids.memory.factoid_events = (
+                self.bot.plugin_api.plugins.factoids.memory.factoid_events[limit:]
+            )
 
         if bodies:
             success = self.publish(bodies)
@@ -86,9 +85,9 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
                     return
 
             # remove from buffer
-            self.bot.plugin_api.plugins.relay.memory.send_buffer = self.bot.plugin_api.plugins.relay.memory.send_buffer[
-                len(bodies) :
-            ]
+            self.bot.plugin_api.plugins.relay.memory.send_buffer = (
+                self.bot.plugin_api.plugins.relay.memory.send_buffer[len(bodies) :]
+            )
 
     @staticmethod
     def serialize(type_, ctx):
@@ -173,7 +172,8 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         ctx.content = target
 
         await priv_response(
-            ctx, f"Sending **{command}** command with target `{target}` to IRC bot...",
+            ctx,
+            f"Sending **{command}** command with target `{target}` to IRC bot...",
         )
         self.bot.plugin_api.plugins.relay.memory.send_buffer.append(
             self.serialize("command", ctx)

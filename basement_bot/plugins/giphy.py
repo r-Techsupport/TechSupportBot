@@ -1,9 +1,8 @@
 import random
 
-from discord.ext import commands
-
 from cogs import HttpPlugin
-from utils.helpers import priv_response, tagged_response
+from discord.ext import commands
+from utils.helpers import paginate, priv_response
 
 
 def setup(bot):
@@ -15,9 +14,6 @@ class Giphy(HttpPlugin):
     PLUGIN_NAME = __name__
     GIPHY_URL = "http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"
     SEARCH_LIMIT = 5
-
-    async def preconfig(self):
-        self.cached = {"last_query": None, "last_url": None, "all_urls": []}
 
     @staticmethod
     def parse_url(url):
@@ -37,11 +33,6 @@ class Giphy(HttpPlugin):
             return
 
         args_ = " ".join(args)
-        if self.cached.get("last_query") == args:
-            url = self.parse_url(random.choice(self.cached.get("all_urls")))
-            await tagged_response(ctx, url)
-            return
-
         args_q = "+".join(args)
         response = await self.http_call(
             "get",
@@ -55,15 +46,10 @@ class Giphy(HttpPlugin):
             await priv_response(ctx, f"No search results found for: {args_f}")
             return
 
-        while True:
-            url = random.choice(data).get("images", {}).get("original", {}).get("url")
+        embeds = []
+        for item in data:
+            url = item.get("images", {}).get("original", {}).get("url")
             url = self.parse_url(url)
-            if url != self.cached.get("last_url"):
-                break
+            embeds.append(url)
 
-        await tagged_response(ctx, url)
-
-        urls_list = []
-        for gif_ in data:
-            urls_list.append(gif_.get("images", {}).get("original", {}).get("url"))
-        self.cached = {"last_query": args_, "last_url": url, "all_urls": urls_list}
+        await paginate(ctx, embeds, restrict=True)

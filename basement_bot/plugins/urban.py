@@ -1,10 +1,9 @@
 import json
 
+from cogs import HttpPlugin
 from discord import Embed
 from discord.ext import commands
-
-from cogs import HttpPlugin
-from utils.helpers import priv_response, tagged_response
+from utils.helpers import paginate, priv_response, tagged_response
 
 
 def setup(bot):
@@ -46,11 +45,8 @@ class UrbanDictionary(HttpPlugin):
             return
 
         args_no_spaces = args.replace(" ", "%20")
-        embed = Embed(
-            title=f"Results for {args}",
-            description=f"{self.SEE_MORE_URL}{args_no_spaces}",
-        )
-        embed.set_thumbnail(url=self.ICON_URL)
+        embeds = []
+        field_counter = 1
         for index, definition in enumerate(definitions):
             message = (
                 definition.get("definition")
@@ -58,12 +54,27 @@ class UrbanDictionary(HttpPlugin):
                 .replace("]", "")
                 .replace("\n", "")
             )
+            embed = (
+                Embed(
+                    title=f"Results for {args}",
+                    description=f"{self.SEE_MORE_URL}{args_no_spaces}",
+                )
+                if field_counter == 1
+                else embed
+            )
             embed.add_field(
                 name=f"{message[:200]}",
                 value=definition.get("author", "Author Unknown"),
                 inline=False,
             )
-            if index == 5:
-                break
+            if (
+                field_counter == self.config.responses_max
+                or index == len(definitions) - 1
+            ):
+                embed.set_thumbnail(url=self.ICON_URL)
+                embeds.append(embed)
+                field_counter = 1
+            else:
+                field_counter += 1
 
-        await tagged_response(ctx, embed=embed)
+        await paginate(ctx, embeds=embeds, restrict=True)

@@ -1,8 +1,7 @@
 from random import choice
 
-from discord.ext import commands
-
 from cogs import BasicPlugin
+from discord.ext import commands
 
 
 def setup(bot):
