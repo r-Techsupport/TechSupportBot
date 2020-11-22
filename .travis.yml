@@ -24,7 +24,6 @@ before_deploy:
 deploy:
   provider: releases
   token: ${GITHUB_OAUTH_TOKEN}
-  file: ${TRAVIS_TAG}.tar.gz
   edge: true
 
 after_success:
