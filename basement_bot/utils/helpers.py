@@ -6,6 +6,7 @@ import datetime
 import os
 import re
 
+import munch
 from discord import Embed, Forbidden, NotFound
 from discord.channel import DMChannel
 
@@ -39,7 +40,8 @@ async def tagged_response(ctx, content=None, embed=None):
         if content
         else ctx.message.author.mention
     )
-    await ctx.send(content, embed=embed)
+    message = await ctx.send(content, embed=embed)
+    return message
 
 
 async def priv_response(ctx, content=None, embed=None):
@@ -50,14 +52,16 @@ async def priv_response(ctx, content=None, embed=None):
         message (str): the message to send
         embed (discord.Embed): the discord embed object to send
     """
+    message = None
     try:
         channel = await ctx.message.author.create_dm()
         if content:
-            await channel.send(content, embed=embed)
+            message = await channel.send(content, embed=embed)
         else:
-            await channel.send(embed=embed)
+            message = await channel.send(embed=embed)
     except Forbidden:
         pass
+    return message
 
 
 async def emoji_reaction(ctx, emojis):
@@ -165,22 +169,29 @@ async def delete_message_with_reason(ctx, message, reason, private=True, origina
         await send_func(ctx, f"Original message: ```{content}```")
 
 
-async def get_json_from_attachment(ctx, message, message_user=True):
+async def get_json_from_attachment(
+    ctx, message, send_msg_on_none=True, send_msg_on_failure=True
+):
     """Returns a JSON object parsed from a message's attachment.
 
     parameters:
         message (Message): the message object
+        send_msg_on_none (bool): True if a message should be DM'd when no attachments are found
+        send_msg_on_failure (bool): True if a message should be DM'd when JSON is invalid
     """
     if not message.attachments:
+        if send_msg_on_none:
+            await priv_response(ctx, "I couldn't find any message attachments!")
         return None
 
     try:
         json_bytes = await message.attachments[0].read()
         json_str = json_bytes.decode("UTF-8")
-        return ast.literal_eval(json_str)
+        # hehehe munch ~~O< oooo
+        return munch.munchify(ast.literal_eval(json_str))
     # this could probably be more specific
     except Exception as e:
-        if message_user:
+        if send_msg_on_failure:
             await priv_response(ctx, f"I was unable to parse your JSON: {e}")
         return {}
 

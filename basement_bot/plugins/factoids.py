@@ -57,7 +57,9 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             await priv_response(ctx, "Sorry, factoids don't work well with mentions")
             return
 
-        embed_config = await get_json_from_attachment(ctx, ctx.message)
+        embed_config = await get_json_from_attachment(
+            ctx, ctx.message, send_msg_on_error=False
+        )
         if embed_config:
             embed_config = json.dumps(embed_config)
         elif embed_config == {}:

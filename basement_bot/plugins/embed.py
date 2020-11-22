@@ -21,7 +21,6 @@ class Embedder(BasicPlugin):
 
         request_body = await get_json_from_attachment(ctx, ctx.message)
         if not request_body:
-            await priv_response(ctx, "I was unable to parse your JSON file!")
             return
 
         embeds = await self.process_request(ctx, request_body)
