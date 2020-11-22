@@ -19,6 +19,7 @@ jobs:
 before_deploy:
   - export TRAVIS_TAG=${TRAVIS_TAG:-${TRAVIS_BRANCH}-$(git log --format=%h -1)}
   - git tag $TRAVIS_TAG
+  - cd ..
   - tar -czvf ${TRAVIS_TAG}.tar.gz ${TRAVIS_BUILD_DIR}
 deploy:
   provider: releases
