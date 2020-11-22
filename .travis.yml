@@ -1,25 +1,25 @@
-language: minimal
-dist: xenial
+language: ruby
 
-jobs:
+services:
+  - docker
 
-  include:
-
-    - stage: testing
-      script:
-        - make dev
-        - make check-format
-        - make lint
-        - make test
-        - make prod
+script:
+  - make dev
+  - make check-format
+  - make lint
+  - make test
+  - make prod
 
 before_deploy:
-  - export TRAVIS_TAG=${TRAVIS_TAG:-${TRAVIS_BRANCH}-$(git log --format=%h -1)}
+  - export TRAVIS_TAG=${TRAVIS_BRANCH}-travis${TRAVIS_BUILD_NUMBER}
   - git tag $TRAVIS_TAG
+  - docker tag effprime/basement-bot:prod effprime/basement-bot:${TRAVIS_TAG}
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - docker push effprime/basement-bot:${TRAVIS_TAG}
+
 deploy:
   provider: releases
-  token: ${GITHUB_OAUTH_TOKEN}
-  edge: true
+  api_key: ${GITHUB_OAUTH_TOKEN}
 
 after_success:
   - wget https://raw.githubusercontent.com/DiscordHooks/travis-ci-discord-webhook/master/send.sh
