@@ -30,7 +30,7 @@ class Poller(BasicPlugin):
             "Cookie Dough",
             "Other..."
         ],
-        "timeout": 5,
+        "timeout": 60,
     }"""
 
     async def preconfig(self):
@@ -40,7 +40,12 @@ class Poller(BasicPlugin):
         ]
 
     @commands.check(is_admin)
-    @commands.command(name="poll")
+    @commands.command(
+        name="poll",
+        brief="Poll generator",
+        description="Creates a poll for everyone to vote in (only admins can make polls)",
+        usage="help",
+    )
     async def generate_poll(self, ctx, *args):
         if len(args) != 0 and args[0] == "help":
             await tagged_response(
@@ -57,6 +62,8 @@ class Poller(BasicPlugin):
             return
 
         request_body = await self.validate_data(ctx, request_body)
+        if not request_body:
+            return
 
         message = await tagged_response(ctx, "Poll loading...")
 
@@ -144,7 +151,7 @@ class Poller(BasicPlugin):
                 continue
 
             try:
-                # simple
+                # just DO it \^/
                 vote = options[self.option_emojis.index(reaction.emoji)]
             except ValueError:
                 return None
@@ -155,7 +162,14 @@ class Poller(BasicPlugin):
 
         unique_votes = list(voted.values())
         # I thought of this myself
-        return {option: unique_votes.count(option) for option in set(unique_votes)}
+        results = {option: unique_votes.count(option) for option in set(unique_votes)}
+
+        # this ensures even the 0 votes show up
+        for option in options:
+            if not results.get(option):
+                results[option] = 0
+
+        return results
 
     async def validate_data(self, ctx, request_body):
         # probably shouldn't touch this
@@ -167,18 +181,31 @@ class Poller(BasicPlugin):
         timeout = request_body.get("timeout")
 
         if not question:
-            await priv_response(ctx, "No poll question provided! (`name` key)")
-            return
-        if len(options) < 2 or len(options) > max_options:
+            await priv_response(ctx, "I did not find a poll question (`question` key)")
+            return None
+        elif not isinstance(question, str):
             await priv_response(
-                ctx, f"I need between 2 and {max_options} questions! (`questions` key)"
+                ctx, "I need the poll question to be a string (`question` key)"
             )
-            return
-        if not image_url:
+            return None
+
+        if not isinstance(options, list):
+            await priv_response(
+                ctx, "I need the poll options to be a list (`question` key)"
+            )
+            return None
+        elif len(options) < 2 or len(options) > max_options:
+            await priv_response(
+                ctx, f"I need between 2 and {max_options} options! (`options` key)"
+            )
+            return None
+
+        if not image_url or not isinstance(image_url, str):
             request_body.image_url = (
                 "https://cdn.icon-icons.com/icons2/259/PNG/128/ic_poll_128_28553.png"
             )
-        if not timeout:
+
+        if not timeout or not isinstance(timeout, int):
             request_body.timeout = 60
         elif request_body.timeout > 300:
             request_body.timeout = 300
