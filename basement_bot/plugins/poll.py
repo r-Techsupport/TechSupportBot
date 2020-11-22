@@ -127,6 +127,7 @@ class Poller(BasicPlugin):
     async def wait_for_results(self, ctx, message, timeout, options):
         voted = {}
         message_id = message.id
+        option_emojis = self.option_emojis[: len(options)]
         while True:
             try:
                 reaction, user = await ctx.bot.wait_for(
@@ -143,7 +144,7 @@ class Poller(BasicPlugin):
                 # return None
                 break
 
-            elif not reaction.emoji in self.option_emojis:
+            elif not reaction.emoji in option_emojis:
                 try:
                     await reaction.remove(user)
                 except Forbidden:
@@ -152,7 +153,7 @@ class Poller(BasicPlugin):
 
             try:
                 # just DO it \^/
-                vote = options[self.option_emojis.index(reaction.emoji)]
+                vote = options[option_emojis.index(reaction.emoji)]
             except ValueError:
                 return None
 
