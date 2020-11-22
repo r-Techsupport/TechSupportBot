@@ -13,16 +13,18 @@ jobs:
         - make test
 
     - stage: build
-      if: branch != master
       script:
         - make prod
 
-    - stage: push
-      if: branch = master
-      script:
-        - make prod
-        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-        - make push
+before_deploy:
+  - export TRAVIS_TAG=${TRAVIS_TAG:-${TRAVIS_BRANCH}-$(git log --format=%h -1)}
+  - git tag $TRAVIS_TAG
+  - tar -czvf ${TRAVIS_TAG}.tar.gz ${TRAVIS_BUILD_DIR}
+deploy:
+  provider: releases
+  token: ${GITHUB_OAUTH_TOKEN}
+  file: ${TRAVIS_TAG}.tar.gz
+  edge: true
 
 after_success:
   - wget https://raw.githubusercontent.com/DiscordHooks/travis-ci-discord-webhook/master/send.sh
