@@ -40,7 +40,12 @@ class Poller(BasicPlugin):
         ]
 
     @commands.check(is_admin)
-    @commands.command(name="poll")
+    @commands.command(
+        name="poll",
+        brief="Poll generator",
+        description="Creates a poll for everyone to vote in (only admins can make polls)",
+        usage="help",
+    )
     async def generate_poll(self, ctx, *args):
         if len(args) != 0 and args[0] == "help":
             await tagged_response(
