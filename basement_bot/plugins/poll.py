@@ -3,6 +3,7 @@ import asyncio
 from cogs import BasicPlugin
 from discord import Embed, Forbidden, NotFound
 from discord import utils as discord_utils
+from discord.channel import DMChannel
 from discord.ext import commands
 from emoji import emojize
 from utils.helpers import *
@@ -18,6 +19,7 @@ class Poller(BasicPlugin):
     HAS_CONFIG = False
 
     OPTION_EMOJIS = ["one", "two", "three", "four", "five"]
+    STOP_EMOJI = "\u26D4"
     EXAMPLE_JSON = """
     {
         "question": "Best ice cream",
@@ -36,8 +38,6 @@ class Poller(BasicPlugin):
             emojize(f":{emoji_text}:", use_aliases=True)
             for emoji_text in self.OPTION_EMOJIS
         ]
-        # stop button
-        self.option_emojis.append("\u26D4")
 
     @commands.check(is_admin)
     @commands.command(name="poll")
@@ -46,6 +46,10 @@ class Poller(BasicPlugin):
             await tagged_response(
                 ctx, f"Upload a JSON like this: ```{self.EXAMPLE_JSON}```"
             )
+            return
+
+        if isinstance(ctx.channel, DMChannel):
+            await priv_response(ctx, "I cannot create a poll in a DM")
             return
 
         request_body = await get_json_from_attachment(ctx, ctx.message)
@@ -74,13 +78,15 @@ class Poller(BasicPlugin):
             embed.add_field(name=option, value=index + 1, inline=False)
             await message.add_reaction(self.option_emojis[index])
         # stop button reaction
-        await message.add_reaction(self.option_emojis[-1])
+        await message.add_reaction(self.STOP_EMOJI)
 
         await message.edit(content=None, embed=embed)
 
-        # jesus take the wheel because these might not be in order
-        counts = await self.wait_for_results(ctx, message, request_body.timeout)
-        if not counts:
+        results = await self.wait_for_results(
+            ctx, message, request_body.timeout, request_body.options
+        )
+        if results is None:
+            await priv_response(ctx, "I ran into an issue grabbing the poll results...")
             try:
                 await message.edit(content="*Poll aborted!*", embed=None)
                 await message.clear_reactions()
@@ -92,30 +98,27 @@ class Poller(BasicPlugin):
             except Forbidden:
                 pass
             return
-
-        total = sum(counts)
-        if total == 0:
+        elif results == {}:
             await priv_response(
                 ctx, "Nobody voted in the poll, so I won't bother showing any results"
             )
             return
 
+        total = sum(count for count in results.values())
         embed = Embed(
             title=f"Poll results for `{request_body.question}`",
             description=f"Votes: {total}",
         )
         embed.set_thumbnail(url=request_body.image_url)
 
-        for index, count in enumerate(counts):
+        for option, count in results.items():
             percentage = str((count * 100) // total)
-            embed.add_field(
-                name=request_body.options[index], value=f"{percentage}%", inline=False
-            )
+            embed.add_field(name=option, value=f"{percentage}%", inline=False)
 
         await tagged_response(ctx, embed=embed)
 
-    async def wait_for_results(self, ctx, message, timeout):
-        voted = set()
+    async def wait_for_results(self, ctx, message, timeout, options):
+        voted = {}
         message_id = message.id
         while True:
             try:
@@ -128,40 +131,31 @@ class Poller(BasicPlugin):
             if reaction.message.id != message_id:
                 continue
 
-            elif user.id in voted or not reaction.emoji in self.option_emojis:
+            # stop button check
+            elif reaction.emoji == self.STOP_EMOJI and user.id == ctx.message.author.id:
+                # return None
+                break
+
+            elif not reaction.emoji in self.option_emojis:
                 try:
                     await reaction.remove(user)
                 except Forbidden:
                     return None
-
                 continue
 
-            # stop button check
-            elif (
-                reaction.emoji == self.option_emojis[-1]
-                and user.id == ctx.message.author.id
-            ):
+            try:
+                # simple
+                vote = options[self.option_emojis.index(reaction.emoji)]
+            except ValueError:
                 return None
 
-            voted.add(user.id)
+            voted[user.id] = vote
 
-        # this gets the message object with the *actual* reactions (???)
-        # https://github.com/Rapptz/discord.py/issues/861
-        await asyncio.sleep(2)
-        message = discord_utils.get(ctx.bot.cached_messages, id=message.id)
-        if not message:
-            return None
-
-        results = []
-        for reaction in message.reactions:
-            if not reaction.emoji in self.option_emojis:
-                continue
-            results.append(reaction.count - 1)
-
-        # delete the poll message (doing it here because of the weird caching thing)
         await message.delete()
 
-        return results
+        unique_votes = list(voted.values())
+        # I thought of this myself
+        return {option: unique_votes.count(option) for option in set(unique_votes)}
 
     async def validate_data(self, ctx, request_body):
         # probably shouldn't touch this
