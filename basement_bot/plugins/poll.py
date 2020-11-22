@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 
 from cogs import BasicPlugin
 from discord import Embed, Forbidden, NotFound
@@ -77,7 +78,7 @@ class Poller(BasicPlugin):
 
         embed = Embed(
             title=request_body.question,
-            description=f"Poll ends in {display_timeout} {display_timeout_units}",
+            description=f"Poll timeout: {display_timeout} {display_timeout_units}",
         )
         embed.set_thumbnail(url=request_body.image_url)
 
@@ -125,10 +126,16 @@ class Poller(BasicPlugin):
         await tagged_response(ctx, embed=embed)
 
     async def wait_for_results(self, ctx, message, timeout, options):
+        start_time = datetime.datetime.now()
         voted = {}
         message_id = message.id
         option_emojis = self.option_emojis[: len(options)]
         while True:
+            time_passed = (datetime.datetime.now() - start_time).seconds
+            if time_passed > timeout:
+                break
+            timeout = timeout - time_passed
+
             try:
                 reaction, user = await ctx.bot.wait_for(
                     "reaction_add", timeout=timeout, check=lambda r, u: not bool(u.bot)
