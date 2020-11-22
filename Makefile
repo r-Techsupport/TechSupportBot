@@ -1,7 +1,6 @@
-tag = 1.4.2
 image = effprime/basement-bot
 dev-image = $(image):dev
-prod-image = $(image):$(tag)
+prod-image = $(image):prod
 drun = docker run -v $(shell pwd):/var/BasementBot -t $(dev-image) python3 -m
 main_dir = basement_bot
 
@@ -31,9 +30,6 @@ dev:
 prod:
 	make establish_config
 	docker build -t $(prod-image) -f Dockerfile .
-
-push:
-	docker push $(prod-image)
 
 upd:
 	docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
