@@ -180,7 +180,6 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             log.warning(f"Unable to get factoid: {e}")
             await priv_response(ctx, "I ran into an issue catting your factoid info...")
 
-    @commands.check(is_admin)
     @commands.command(
         name=f"lsf",
         brief="List all factoids",
