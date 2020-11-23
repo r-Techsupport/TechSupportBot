@@ -10,18 +10,6 @@ script:
   - make test
   - make prod
 
-before_deploy:
-  - docker tag effprime/basement-bot:prod effprime/basement-bot:${TRAVIS_TAG}
-  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-
-deploy:
-  provider: releases
-  api_key: ${GITHUB_OAUTH_TOKEN}
-  on:
-    tags: true
-  script: docker push effprime/basement-bot:${TRAVIS_TAG}
-    
-
 after_success:
   - wget https://raw.githubusercontent.com/DiscordHooks/travis-ci-discord-webhook/master/send.sh
   - chmod +x send.sh
