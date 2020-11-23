@@ -14,25 +14,22 @@ BasementBot is a Discord bot designed for running in Docker. Written on top of t
 
 * Fill out the settings appropriate to your bot.
 
-* Pull the latest Docker image:
+* Build the prod image:
     ```
-    docker pull effprime/basement-bot:latest
+    make prod
     ```
 
 * Run the Docker image using a `docker-compose.yml` configuration (see repo):
     ```
-    docker-compose up -d
+    make upp
     ```
 
 * Check the logs to verify things are working:
     ```
-    docker logs basement_bot
+    make logs
     ```
 
-* Run commands with the prefix you set in the `.env` file (defaults to `.`):
-    ```
-    .help
-    ```
+* Run Discord commands with the prefix you set in the `.env` file (defaults to `.`)
 
 ## Development
 
@@ -46,11 +43,6 @@ BasementBot is a Discord bot designed for running in Docker. Written on top of t
     make upd
     ```
 
-* Build the prod image:
-    ```
-    make prod
-    ```
-
 # Makefile
 
 The Makefile offers shortcut commands for development.
@@ -62,10 +54,11 @@ The Makefile offers shortcut commands for development.
 * `test` runs unit tests.
 * `dev` builds the dev Docker image.
 * `prod` builds the prod Docker image.
-* `upd` spins up the development bot containers.
-* `upp` spins up the production bot containers.
-* `down` brings down the bot containers.
-* `restart` restarts the bot containers.
+* `upd` spins up the development bot container.
+* `upp` spins up the production bot container.
+* `down` brings down the bot container.
+* `reboot` restarts the dev container.
+* `restart` restarts the bot container.
 * `logs` shows the main container logs.
 
 # Making Plugins
