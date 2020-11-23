@@ -106,13 +106,14 @@ class Poller(BasicPlugin):
             except Forbidden:
                 pass
             return
-        elif results == {}:
+
+        total = sum(count for count in results.values())
+        if total == 0:
             await priv_response(
                 ctx, "Nobody voted in the poll, so I won't bother showing any results"
             )
             return
 
-        total = sum(count for count in results.values())
         embed = Embed(
             title=f"Poll results for `{request_body.question}`",
             description=f"Votes: {total}",
