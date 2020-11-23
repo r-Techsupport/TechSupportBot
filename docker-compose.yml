@@ -3,7 +3,7 @@ version: '3'
 services:
 
     bot:
-        image: effprime/basement-bot:${TAG:-latest}
+        image: effprime/basement-bot:prod
         container_name: basement_bot
         stop_signal: SIGINT
         restart: unless-stopped
