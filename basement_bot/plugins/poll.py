@@ -85,8 +85,6 @@ class Poller(BasicPlugin):
         for index, option in enumerate(request_body.options):
             embed.add_field(name=option, value=index + 1, inline=False)
             await message.add_reaction(self.option_emojis[index])
-        # stop button reaction
-        await message.add_reaction(self.STOP_EMOJI)
 
         await message.edit(content=None, embed=embed)
 
@@ -127,45 +125,31 @@ class Poller(BasicPlugin):
         await tagged_response(ctx, embed=embed)
 
     async def wait_for_results(self, ctx, message, timeout, options):
-        start_time = datetime.datetime.now()
-        voted = {}
-        message_id = message.id
         option_emojis = self.option_emojis[: len(options)]
-        while True:
-            time_passed = (datetime.datetime.now() - start_time).seconds
-            if time_passed > timeout:
-                break
-            timeout = timeout - time_passed
+        await asyncio.sleep(timeout)
 
-            try:
-                reaction, user = await ctx.bot.wait_for(
-                    "reaction_add", timeout=timeout, check=lambda r, u: not bool(u.bot)
-                )
-            except Exception:
-                break
+        # count the votes after the poll finishes
+        voted = {}
+        excluded = set()
+        cached_message = discord_utils.get(ctx.bot.cached_messages, id=message.id)
+        if not cached_message:
+            return None
 
-            if reaction.message.id != message_id:
-                continue
+        for reaction in cached_message.reactions:
+            async for user in reaction.users():
+                if user.bot:
+                    continue
 
-            # stop button check
-            elif reaction.emoji == self.STOP_EMOJI and user.id == ctx.message.author.id:
-                # return None
-                break
+                if voted.get(user.id):
+                    # delete their vote and exclude them from the count
+                    del voted[user.id]
+                    excluded.add(user.id)
 
-            elif not reaction.emoji in option_emojis:
-                try:
-                    await reaction.remove(user)
-                except Forbidden:
-                    return None
-                continue
-
-            try:
-                # just DO it \^/
-                vote = options[option_emojis.index(reaction.emoji)]
-            except ValueError:
-                return None
-
-            voted[user.id] = vote
+                if not user.id in excluded:
+                    try:
+                        voted[user.id] = options[option_emojis.index(reaction.emoji)]
+                    except ValueError:
+                        pass
 
         await message.delete()
 
