@@ -140,47 +140,6 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 ctx, "I ran into an issue handling your factoid deletion..."
             )
 
-    @commands.check(is_admin)
-    @commands.command(
-        name=f"cat",
-        brief="List all factoids",
-        description="Shows an embed with all the factoids",
-        usage="",
-        help="\nLimitations: Currently only shows up to 20",
-    )
-    async def cat_factoid(self, ctx, *args):
-        if ctx.message.mentions:
-            await priv_response(ctx, "Sorry, factoids don't work well with mentions")
-            return
-
-        if not args:
-            await priv_response(ctx, "You must specify a factoid to delete!")
-            return
-        else:
-            arg = args[0]
-
-        db = self.db_session()
-
-        try:
-            entry = db.query(Factoid).filter(Factoid.text == arg).first()
-            if entry:
-                if entry.embed_config:
-                    try:
-                        message = json.dumps(json.loads(entry.embed_config), indent=2)
-                    except Exception:
-                        await priv_response(
-                            ctx, "I was unable to parse the JSON for that factoid!"
-                        )
-                        return
-                else:
-                    message = entry.message
-
-                await tagged_response(ctx, f"```{message}```")
-
-        except Exception as e:
-            log.warning(f"Unable to get factoid: {e}")
-            await priv_response(ctx, "I ran into an issue catting your factoid info...")
-
     @commands.command(
         name=f"lsf",
         brief="List all factoids",
