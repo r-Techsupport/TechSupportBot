@@ -23,11 +23,12 @@ class Factoid(DatabasePlugin.BaseTable):
 
 
 def setup(bot):
-    bot.add_cog(FactoidManager(bot, Factoid))
+    bot.add_cog(FactoidManager(bot))
 
 
 class FactoidManager(DatabasePlugin, MatchPlugin):
     PLUGIN_NAME = __name__
+    MODEL = Factoid
 
     async def db_preconfig(self):
         factoid_prefix = self.config.prefix

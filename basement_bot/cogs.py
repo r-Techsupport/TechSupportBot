@@ -129,12 +129,12 @@ class DatabasePlugin(BasicPlugin):
 
     PLUGIN_TYPE = "DATABASE"
     BaseTable = declarative_base()
+    MODEL = None
 
-    def __init__(self, bot, model=None):
+    def __init__(self, bot):
         super().__init__(bot)
-        self.model = model
-        if self.model:
-            self.bot.database_api.create_table(self.model)
+        if self.MODEL:
+            self.bot.database_api.create_table(self.MODEL)
         self.bot.loop.create_task(self.db_preconfig())
         self.db_session = self.bot.database_api.get_session
 
