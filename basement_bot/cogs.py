@@ -195,6 +195,7 @@ class LoopPlugin(BasicPlugin):
         """Allows the state to exit after unloading."""
         self.state = False
 
+    # pylint: disable=method-hidden
     async def wait(self):
         """The default wait method."""
         if self.config.get("cron_config"):
@@ -207,14 +208,7 @@ class LoopPlugin(BasicPlugin):
 
             await asyncio.sleep(sleep_time)
 
-    async def loop_preconfig(self):
-        """Preconfigures the environment before starting the loop."""
-
-    async def execute(self):
-        """Runs sequentially after each wait method."""
-        raise RuntimeError("Execute function must be defined in sub-class")
-
-    def setup_random_waiting(self, min_key, max_key, units="seconds"):
+    def setup_random_waiting(self, min_key, max_key):
         """Validates min and max wait times from config and sets the wait method to be random.
 
         parameters:
@@ -233,6 +227,7 @@ class LoopPlugin(BasicPlugin):
         if max_wait - min_wait <= 0:
             raise RuntimeError("Max time must be greater than min time")
 
+        # pylint: disable=method-hidden
         async def random_wait():
             await asyncio.sleep(
                 randint(
@@ -241,6 +236,13 @@ class LoopPlugin(BasicPlugin):
             )
 
         self.wait = random_wait
+
+    async def loop_preconfig(self):
+        """Preconfigures the environment before starting the loop."""
+
+    async def execute(self):
+        """Runs sequentially after each wait method."""
+        raise RuntimeError("Execute function must be defined in sub-class")
 
 
 class MqPlugin(BasicPlugin):

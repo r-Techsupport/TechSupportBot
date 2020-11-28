@@ -1,6 +1,6 @@
 import asyncio
 import datetime
-from random import choice
+from random import choice, choices
 
 from cogs import DatabasePlugin, LoopPlugin
 from discord import Color as embed_colors
@@ -30,10 +30,13 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
     DUCK_PIC_URL = "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
     BEFRIEND_URL = "https://cdn.icon-icons.com/icons2/603/PNG/512/heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
     KILL_URL = "https://cdn.icon-icons.com/icons2/1919/PNG/512/huntingtarget_122049.png"
-    UNITS = "hours"
+    UNITS = "seconds"
 
     async def loop_preconfig(self):
         self.cooldowns = {}
+
+        if self.config.success_percent > 100 or self.config.success_percent < 0:
+            self.config.success_percent = 80
 
         self.channel = self.bot.get_channel(self.config.channel)
         if not self.channel:
@@ -42,7 +45,11 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
         self.setup_random_waiting("min_hours", "max_hours")
 
     def message_check(self, message):
-        if not message.content in ["bef", "bang"]:
+        # ignore other channels
+        if message.channel.id != self.channel.id:
+            return False
+
+        if not message.content.lower() in ["bef", "bang"]:
             return False
 
         if self.cooldowns.get(message.author.id):
@@ -51,7 +58,8 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
             ).seconds < self.config.cooldown_seconds:
                 return False
 
-        choice_ = choice([True, False])
+        weights = (self.config.success_percent, 100 - self.config.success_percent)
+        choice_ = choice(choices([True, False], cum_weights=weights, k=2))
         if not choice_:
             self.cooldowns[message.author.id] = datetime.datetime.now()
 
