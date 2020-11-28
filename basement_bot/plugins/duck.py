@@ -30,7 +30,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
     DUCK_PIC_URL = "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
     BEFRIEND_URL = "https://cdn.icon-icons.com/icons2/603/PNG/512/heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
     KILL_URL = "https://cdn.icon-icons.com/icons2/1919/PNG/512/huntingtarget_122049.png"
-    UNITS = "seconds"
+    UNITS = "hours"
 
     async def loop_preconfig(self):
         self.cooldowns = {}

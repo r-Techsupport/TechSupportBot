@@ -80,5 +80,11 @@ plugins:
     weather:
         dev_key: 
         units: imperial
-        
-        
+    duck:
+        channel: 
+        min_hours: 1
+        max_hours: 2
+        on_start: False
+        timeout_seconds: 30
+        cooldown_seconds: 10
+        success_percent: 80
