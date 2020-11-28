@@ -1,6 +1,6 @@
 import asyncio
 import datetime
-from random import choice, randint
+from random import choice
 
 from cogs import DatabasePlugin, LoopPlugin
 from discord import Color as embed_colors
@@ -30,25 +30,16 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
     DUCK_PIC_URL = "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
     BEFRIEND_URL = "https://cdn.icon-icons.com/icons2/603/PNG/512/heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
     KILL_URL = "https://cdn.icon-icons.com/icons2/1919/PNG/512/huntingtarget_122049.png"
+    UNITS = "hours"
 
     async def loop_preconfig(self):
-        self.waiting = True
         self.cooldowns = {}
-
-        min_wait = self.config.min_hours
-        max_wait = self.config.max_hours
-
-        if min_wait < 0 or max_wait < 0:
-            raise RuntimeError("Min and max times must both be greater than 0")
-        if max_wait - min_wait <= 0:
-            raise RuntimeError(f"Max time must be greater than min time")
 
         self.channel = self.bot.get_channel(self.config.channel)
         if not self.channel:
             raise RuntimeError("Unable to get channel for DuckHunt plugin")
 
-        if not self.config.on_start:
-            await self.wait()
+        self.setup_random_waiting("min_hours", "max_hours")
 
     def message_check(self, message):
         if not message.content in ["bef", "bang"]:
@@ -78,8 +69,6 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
         return choice_
 
     async def execute(self):
-        self.waiting = False
-
         start_time = datetime.datetime.now()
         embed = Embed(
             title="*Quack Quack*",
@@ -96,7 +85,6 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
                 check=self.message_check,
             )
         except Exception as e:
-            await self.channel.send(f"```{e}```")
             pass
 
         await message.delete()
@@ -105,8 +93,6 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
             duration = (datetime.datetime.now() - start_time).seconds
             action = "befriended" if response_message.content == "bef" else "killed"
             await self.handle_winner(response_message.author, action, duration)
-
-        self.waiting = True
 
     async def handle_winner(self, winner, action, duration):
         db = self.db_session()
@@ -147,14 +133,6 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
         )
 
         await self.channel.send(embed=embed)
-
-    async def wait(self):
-        await asyncio.sleep(
-            randint(
-                self.config.min_hours * 3600,
-                self.config.max_hours * 3600,
-            )
-        )
 
     @commands.command(
         name="duck_stats",

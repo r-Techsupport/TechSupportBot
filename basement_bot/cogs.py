@@ -3,6 +3,7 @@
 
 import asyncio
 import logging
+from random import randint
 
 import aiocron
 import http3
@@ -60,7 +61,7 @@ class HttpPlugin(BasicPlugin):
     async def http_call(self, method, *args, **kwargs):
         """Makes an HTTP request.
 
-        args:
+        parameters:
             method (string): the HTTP method to use
             *args (...list): the args with which to call the HTTP Python method
             **kwargs (...dict): the keyword args with which to call the HTTP Python method
@@ -152,21 +153,43 @@ class LoopPlugin(BasicPlugin):
     PLUGIN_TYPE = "LOOP"
     DEFAULT_WAIT = 30
     WAIT_KEY = None
+    UNITS = "seconds"
 
     def __init__(self, bot):
         super().__init__(bot)
         self.state = True
         self.bot.loop.create_task(self._loop_execute())
+        self.execution_locked = False
+
+        if self.UNITS == "seconds":
+            conversion_factor = 1
+        elif self.UNITS == "minutes":
+            conversion_factor = 60
+        elif self.UNITS == "hours":
+            conversion_factor = 3600
+
+        self.conversion_factor = conversion_factor
 
     async def _loop_execute(self):
         """Loops through the execution method."""
+        if not self.config.get("on_start"):
+            await self.wait()
+
         await self.bot.wait_until_ready()
         await self.loop_preconfig()
         while self.state:
-            await self.bot.loop.create_task(
-                self.execute()
-            )  # pylint: disable=not-callable
-            await self.wait()
+            if not self.execution_locked:
+                await self.bot.loop.create_task(
+                    self._execute()
+                )  # pylint: disable=not-callable
+                await self.wait()
+            else:
+                await asyncio.sleep(1)
+
+    async def _execute(self):
+        self.execution_locked = True
+        await self.execute()
+        self.execution_locked = False
 
     def cog_unload(self):
         """Allows the state to exit after unloading."""
@@ -177,7 +200,12 @@ class LoopPlugin(BasicPlugin):
         if self.config.get("cron_config"):
             await aiocron.crontab(self.config.cron_config).next()
         else:
-            await asyncio.sleep(self.config.get(self.WAIT_KEY) or self.DEFAULT_WAIT)
+            if self.config.get(self.WAIT_KEY):
+                sleep_time = self.config.get(self.WAIT_KEY) * self.conversion_factor
+            else:
+                sleep_time = self.DEFAULT_WAIT
+
+            await asyncio.sleep(sleep_time)
 
     async def loop_preconfig(self):
         """Preconfigures the environment before starting the loop."""
@@ -185,6 +213,34 @@ class LoopPlugin(BasicPlugin):
     async def execute(self):
         """Runs sequentially after each wait method."""
         raise RuntimeError("Execute function must be defined in sub-class")
+
+    def setup_random_waiting(self, min_key, max_key, units="seconds"):
+        """Validates min and max wait times from config and sets the wait method to be random.
+
+        parameters:
+            min_key (str): the key to lookup the min wait config value
+            max_key (str): the key to lookup the max wait config value
+            units (str): the units that the wait times are in
+        """
+        min_wait = self.config.get(min_key)
+        max_wait = self.config.get(max_key)
+        if not min_wait or not max_wait:
+            raise RuntimeError(
+                f"Min and/or max wait times not found from keys {min_key}, {max_key}"
+            )
+        if min_wait < 0 or max_wait < 0:
+            raise RuntimeError("Min and max times must both be greater than 0")
+        if max_wait - min_wait <= 0:
+            raise RuntimeError("Max time must be greater than min time")
+
+        async def random_wait():
+            await asyncio.sleep(
+                randint(
+                    min_wait * self.conversion_factor, max_wait * self.conversion_factor
+                )
+            )
+
+        self.wait = random_wait
 
 
 class MqPlugin(BasicPlugin):
