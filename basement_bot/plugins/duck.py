@@ -80,7 +80,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
         start_time = datetime.datetime.now()
         embed = Embed(
             title="*Quack Quack*",
-            description="Befriend the duck with `bef` or kill with `bang`!",
+            description="Befriend the duck with `bef` or shoot with `bang`",
         )
         embed.set_image(url=self.DUCK_PIC_URL)
         message = await self.channel.send(embed=embed)
@@ -203,6 +203,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
             embed.add_field(
                 name=self.get_user_text(duck_user),
                 value=f"Friends: `{duck_user.befriend_count}`",
+                inline=False,
             )
             if field_counter == 3 or index == len(duck_users) - 1:
                 embeds.append(embed)
@@ -239,6 +240,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
             embed.add_field(
                 name=self.get_user_text(duck_user),
                 value=f"Kills: `{duck_user.kill_count}`",
+                inline=False,
             )
             if field_counter == 3 or index == len(duck_users) - 1:
                 embeds.append(embed)
