@@ -203,6 +203,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
             embed.add_field(
                 name=self.get_user_text(duck_user),
                 value=f"Friends: `{duck_user.befriend_count}`",
+                inline=False,
             )
             if field_counter == 3 or index == len(duck_users) - 1:
                 embeds.append(embed)
@@ -239,6 +240,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
             embed.add_field(
                 name=self.get_user_text(duck_user),
                 value=f"Kills: `{duck_user.kill_count}`",
+                inline=False,
             )
             if field_counter == 3 or index == len(duck_users) - 1:
                 embeds.append(embed)
