@@ -7,7 +7,6 @@ script:
   - make dev
   - make check-format
   - make lint
-  - make test
   - make prod
 
 after_success:
