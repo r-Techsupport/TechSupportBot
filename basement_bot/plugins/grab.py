@@ -19,7 +19,7 @@ class Grab(DatabasePlugin.BaseTable):
 
 
 def setup(bot):
-    bot.add_cog(Grabber(bot, Grab))
+    bot.add_cog(Grabber(bot))
 
 
 class Grabber(DatabasePlugin):
@@ -27,6 +27,7 @@ class Grabber(DatabasePlugin):
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
     SEARCH_LIMIT = 20
+    MODEL = Grab
 
     @commands.command(
         name="grab",

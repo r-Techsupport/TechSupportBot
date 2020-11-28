@@ -20,22 +20,14 @@ class KanyeQuotes(LoopPlugin, HttpPlugin):
         "https://i.imgur.com/1fX29Y3.jpg",
         "https://i.imgur.com/g1o2Gro.jpg",
     ]
+    UNITS = "hours"
 
     async def loop_preconfig(self):
-        min_wait = self.config.min_hours
-        max_wait = self.config.max_hours
-
-        if min_wait < 0 or max_wait < 0:
-            raise RuntimeError("Min and max times must both be greater than 0")
-        if max_wait - min_wait <= 0:
-            raise RuntimeError(f"Max time must be greater than min time")
-
         self.channel = self.bot.get_channel(self.config.channel)
         if not self.channel:
             raise RuntimeError("Unable to get channel for Kanye Quotes plugin")
 
-        if not self.config.on_start:
-            await self.wait()
+        self.setup_random_waiting("min_hours", "max_hours")
 
     async def execute(self):
         response = await self.http_call("get", self.API_URL)

@@ -3,6 +3,7 @@
 
 import asyncio
 import logging
+from random import randint
 
 import aiocron
 import http3
@@ -60,7 +61,7 @@ class HttpPlugin(BasicPlugin):
     async def http_call(self, method, *args, **kwargs):
         """Makes an HTTP request.
 
-        args:
+        parameters:
             method (string): the HTTP method to use
             *args (...list): the args with which to call the HTTP Python method
             **kwargs (...dict): the keyword args with which to call the HTTP Python method
@@ -129,12 +130,12 @@ class DatabasePlugin(BasicPlugin):
 
     PLUGIN_TYPE = "DATABASE"
     BaseTable = declarative_base()
+    MODEL = None
 
-    def __init__(self, bot, model=None):
+    def __init__(self, bot):
         super().__init__(bot)
-        self.model = model
-        if self.model:
-            self.bot.database_api.create_table(self.model)
+        if self.MODEL:
+            self.bot.database_api.create_table(self.MODEL)
         self.bot.loop.create_task(self.db_preconfig())
         self.db_session = self.bot.database_api.get_session
 
@@ -152,32 +153,89 @@ class LoopPlugin(BasicPlugin):
     PLUGIN_TYPE = "LOOP"
     DEFAULT_WAIT = 30
     WAIT_KEY = None
+    UNITS = "seconds"
 
     def __init__(self, bot):
         super().__init__(bot)
         self.state = True
         self.bot.loop.create_task(self._loop_execute())
+        self.execution_locked = False
+
+        if self.UNITS == "seconds":
+            conversion_factor = 1
+        elif self.UNITS == "minutes":
+            conversion_factor = 60
+        elif self.UNITS == "hours":
+            conversion_factor = 3600
+
+        self.conversion_factor = conversion_factor
 
     async def _loop_execute(self):
         """Loops through the execution method."""
+        if not self.config.get("on_start"):
+            await self.wait()
+
         await self.bot.wait_until_ready()
         await self.loop_preconfig()
         while self.state:
-            await self.bot.loop.create_task(
-                self.execute()
-            )  # pylint: disable=not-callable
-            await self.wait()
+            if not self.execution_locked:
+                await self.bot.loop.create_task(
+                    self._execute()
+                )  # pylint: disable=not-callable
+                await self.wait()
+            else:
+                await asyncio.sleep(1)
+
+    async def _execute(self):
+        self.execution_locked = True
+        await self.execute()
+        self.execution_locked = False
 
     def cog_unload(self):
         """Allows the state to exit after unloading."""
         self.state = False
 
+    # pylint: disable=method-hidden
     async def wait(self):
         """The default wait method."""
         if self.config.get("cron_config"):
             await aiocron.crontab(self.config.cron_config).next()
         else:
-            await asyncio.sleep(self.config.get(self.WAIT_KEY) or self.DEFAULT_WAIT)
+            if self.config.get(self.WAIT_KEY):
+                sleep_time = self.config.get(self.WAIT_KEY) * self.conversion_factor
+            else:
+                sleep_time = self.DEFAULT_WAIT
+
+            await asyncio.sleep(sleep_time)
+
+    def setup_random_waiting(self, min_key, max_key):
+        """Validates min and max wait times from config and sets the wait method to be random.
+
+        parameters:
+            min_key (str): the key to lookup the min wait config value
+            max_key (str): the key to lookup the max wait config value
+            units (str): the units that the wait times are in
+        """
+        min_wait = self.config.get(min_key)
+        max_wait = self.config.get(max_key)
+        if not min_wait or not max_wait:
+            raise RuntimeError(
+                f"Min and/or max wait times not found from keys {min_key}, {max_key}"
+            )
+        if min_wait < 0 or max_wait < 0:
+            raise RuntimeError("Min and max times must both be greater than 0")
+        if max_wait - min_wait <= 0:
+            raise RuntimeError("Max time must be greater than min time")
+
+        # pylint: disable=method-hidden
+        async def random_wait():
+            await asyncio.sleep(
+                randint(
+                    min_wait * self.conversion_factor, max_wait * self.conversion_factor
+                )
+            )
+
+        self.wait = random_wait
 
     async def loop_preconfig(self):
         """Preconfigures the environment before starting the loop."""

@@ -27,19 +27,17 @@ def get_env_value(name, default=None, raise_exception=True):
     return key
 
 
-async def tagged_response(ctx, content=None, embed=None):
+async def tagged_response(ctx, content=None, embed=None, target=None):
     """Sends a context response with the original author tagged.
 
     parameters:
         ctx (Context): the context object
         message (str): the message to send
         embed (discord.Embed): the discord embed object to send
+        target (discord.Member): the Discord user to tag
     """
-    content = (
-        f"{ctx.message.author.mention} {content}"
-        if content
-        else ctx.message.author.mention
-    )
+    who_to_tag = target.mention if target else ctx.message.author.mention
+    content = f"{who_to_tag} {content}" if content else who_to_tag
     message = await ctx.send(content, embed=embed)
     return message
 

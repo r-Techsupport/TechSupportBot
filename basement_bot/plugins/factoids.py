@@ -23,11 +23,12 @@ class Factoid(DatabasePlugin.BaseTable):
 
 
 def setup(bot):
-    bot.add_cog(FactoidManager(bot, Factoid))
+    bot.add_cog(FactoidManager(bot))
 
 
 class FactoidManager(DatabasePlugin, MatchPlugin):
     PLUGIN_NAME = __name__
+    MODEL = Factoid
 
     async def db_preconfig(self):
         factoid_prefix = self.config.prefix
@@ -58,7 +59,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             return
 
         embed_config = await get_json_from_attachment(
-            ctx, ctx.message, send_msg_on_error=False
+            ctx, ctx.message, send_msg_on_failure=False
         )
         if embed_config:
             embed_config = json.dumps(embed_config)
@@ -139,47 +140,6 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 ctx, "I ran into an issue handling your factoid deletion..."
             )
 
-    @commands.check(is_admin)
-    @commands.command(
-        name=f"cat",
-        brief="List all factoids",
-        description="Shows an embed with all the factoids",
-        usage="",
-        help="\nLimitations: Currently only shows up to 20",
-    )
-    async def cat_factoid(self, ctx, *args):
-        if ctx.message.mentions:
-            await priv_response(ctx, "Sorry, factoids don't work well with mentions")
-            return
-
-        if not args:
-            await priv_response(ctx, "You must specify a factoid to delete!")
-            return
-        else:
-            arg = args[0]
-
-        db = self.db_session()
-
-        try:
-            entry = db.query(Factoid).filter(Factoid.text == arg).first()
-            if entry:
-                if entry.embed_config:
-                    try:
-                        message = json.dumps(json.loads(entry.embed_config), indent=2)
-                    except Exception:
-                        await priv_response(
-                            ctx, "I was unable to parse the JSON for that factoid!"
-                        )
-                        return
-                else:
-                    message = entry.message
-
-                await tagged_response(ctx, f"```{message}```")
-
-        except Exception as e:
-            log.warning(f"Unable to get factoid: {e}")
-            await priv_response(ctx, "I ran into an issue catting your factoid info...")
-
     @commands.command(
         name=f"lsf",
         brief="List all factoids",
@@ -229,18 +189,26 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         await paginate(ctx, embeds=embeds, restrict=True)
 
-    def match(self, _, content):
-        return bool(content.startswith(self.config.prefix))
+    def match(self, ctx, content):
+        return content.startswith(self.config.prefix)
 
     async def response(self, ctx, arg):
-        if ctx.message.mentions:
-            await priv_response(ctx, "Sorry, factoids don't work well with mentions")
+        query = arg[1:]
+        user_mentioned = None
+        if len(ctx.message.mentions) == 1:
+            # tag this user instead of the caller
+            user_mentioned = ctx.message.mentions[0]
+            query = query.split(" ")[0]
+        elif len(ctx.message.mentions) > 1:
+            await priv_response(
+                ctx, "I can only tag one user when referencing a factoid!"
+            )
             return
 
         db = self.db_session()
 
         try:
-            entry = db.query(Factoid).filter(Factoid.text == arg[1:]).first()
+            entry = db.query(Factoid).filter(Factoid.text == query).first()
             if entry:
                 if entry.embed_config:
                     embed_config = json.loads(entry.embed_config)
@@ -250,11 +218,14 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                     embed = None
                     message = entry.message
 
-                await tagged_response(ctx, content=message, embed=embed)
+                await tagged_response(
+                    ctx, content=message, embed=embed, target=user_mentioned
+                )
 
                 if not self.bot.plugin_api.plugins.get("relay"):
                     return
 
+                # add to the relay plugin queue if it's loaded
                 if ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.channels:
                     ctx.content = entry.message
                     self.bot.plugin_api.plugins.factoids.memory.factoid_events.append(
