@@ -80,7 +80,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
         start_time = datetime.datetime.now()
         embed = Embed(
             title="*Quack Quack*",
-            description="Befriend the duck with `bef` or kill with `bang`!",
+            description="Befriend the duck with `bef` or shoot with `bang`",
         )
         embed.set_image(url=self.DUCK_PIC_URL)
         message = await self.channel.send(embed=embed)
