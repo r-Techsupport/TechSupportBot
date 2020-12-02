@@ -19,9 +19,11 @@ class News(LoopPlugin, HttpPlugin):
     async def loop_preconfig(self):
         if not self.config.prefer:
             raise RuntimeError("No news sources were provided")
+
         self.channel = self.bot.get_channel(self.config.channel)
         if not self.channel:
             raise RuntimeError("Unable to get channel for News plugin")
+
         await self.wait()
 
     async def execute(self):

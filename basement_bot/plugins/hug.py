@@ -42,31 +42,27 @@ class Hugger(BasicPlugin):
         parameters:
             ctx (Context): the context
         """
-        try:
-            if not ctx.message.mentions:
-                await priv_response(ctx, "You hugging the air?")
-                return
+        if not ctx.message.mentions:
+            await priv_response(ctx, "You hugging the air?")
+            return
 
-            if ctx.author in ctx.message.mentions:
-                await priv_response(ctx, "You tried to hug yourself? You got issues")
-                return
+        if ctx.author in ctx.message.mentions:
+            await priv_response(ctx, "You tried to hug yourself? You got issues")
+            return
 
-            if len(ctx.message.mentions) > 1:
-                mentions = [m.mention for m in ctx.message.mentions]
-                await ctx.send(
-                    choice(hugs).format(
-                        user_giving_hug=ctx.author.mention,
-                        user_to_hug=", ".join(mentions[:-1]) + ", and " + mentions[-1],
-                    )
-                )
-                return
-
+        if len(ctx.message.mentions) > 1:
+            mentions = [m.mention for m in ctx.message.mentions]
             await ctx.send(
                 choice(self.HUGS_SELECTION).format(
                     user_giving_hug=ctx.author.mention,
-                    user_to_hug=ctx.message.mentions[0].mention,
+                    user_to_hug=", ".join(mentions[:-1]) + ", and " + mentions[-1],
                 )
             )
+            return
 
-        except:
-            await ctx.send(f"I don't know what you're trying to do!")
+        await ctx.send(
+            choice(self.HUGS_SELECTION).format(
+                user_giving_hug=ctx.author.mention,
+                user_to_hug=ctx.message.mentions[0].mention,
+            )
+        )

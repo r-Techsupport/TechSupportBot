@@ -20,5 +20,10 @@ class Greeter(BasicPlugin):
     )
     async def hello(self, ctx):
         # H, E, Y
-        emojis = [u"\U0001F1ED", u"\U0001F1EA", u"\U0001F1FE"]
-        await emoji_reaction(ctx, emojis)
+        # emojis = [u"\U0001F1ED", u"\U0001F1EA", u"\U0001F1FE"]
+        # await emoji_reaction(ctx, emojis)
+        from discord import Embed
+
+        embed = Embed()
+        embed.add_field(value="bitch")
+        await ctx.send(embed=embed)

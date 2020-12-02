@@ -52,11 +52,10 @@ async def priv_response(ctx, content=None, embed=None):
     """
     message = None
     try:
-        channel = await ctx.message.author.create_dm()
         if content:
-            message = await channel.send(content, embed=embed)
+            message = await ctx.author.send(content, embed=embed)
         else:
-            message = await channel.send(embed=embed)
+            message = await ctx.author.send(embed=embed)
     except Forbidden:
         pass
     return message
@@ -145,7 +144,7 @@ def sub_mentions_for_usernames(bot, content):
 
 
 async def delete_message_with_reason(ctx, message, reason, private=True, original=True):
-    """Deletes a message and provide a reason to the user.
+    """Deletes a message and provides a reason to the user.
 
     parameters:
         ctx (Context): the context object for the message

@@ -1,10 +1,13 @@
 """The main bot functions.
 """
 
+import sys
+
 import munch
 import yaml
 from database import DatabaseAPI
-from discord import Game
+from discord import Forbidden, Game
+from discord.ext import commands
 from discord.ext.commands import Bot
 from plugin import PluginAPI
 from utils.logger import get_logger
@@ -17,8 +20,8 @@ class BasementBot(Bot):
 
     CONFIG_PATH = "./config.yaml"
 
-    def __init__(self, run=True):
-        self.config = self._load_config(validate=True)
+    def __init__(self, run=True, validate_config=True):
+        self.config = self._load_config(validate=validate_config)
         self.wait_events = 0
         super().__init__(self.config.main.required.command_prefix)
 
@@ -42,6 +45,34 @@ class BasementBot(Bot):
         if self.game:
             await self.set_game(self.game)
         log.info(f"Commands available with the `{self.command_prefix}` prefix")
+
+    async def on_error(self, event_method, *args, **kwargs):
+        """Handles all exceptions raised.
+
+        parameters:
+            event_method (str): the event method associated with the error (eg. message)
+        """
+        passed_exception = kwargs.get("passed_exception")
+        _, exception, _ = (
+            sys.exc_info() if not passed_exception else (None, passed_exception, None)
+        )
+
+        log.error(exception)
+
+        app_info = await self.application_info()
+        try:
+            await app_info.owner.send(f"```{exception}```")
+        except Forbidden:
+            pass
+
+    async def on_command_error(self, context, exception):
+        """Catches command errors and sends them to the main error handler.
+
+        parameters:
+            context (discord.Context): the context associated with the exception
+            exception (Exception): the exception object associated with the error
+        """
+        await self.on_error("command", context=context, passed_exception=exception)
 
     async def set_game(self, game):
         """Sets the Discord activity to a given game.

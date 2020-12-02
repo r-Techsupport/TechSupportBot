@@ -99,7 +99,9 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
 
         if response_message:
             duration = (datetime.datetime.now() - start_time).seconds
-            action = "befriended" if response_message.content == "bef" else "killed"
+            action = (
+                "befriended" if response_message.content.lower() == "bef" else "killed"
+            )
             await self.handle_winner(response_message.author, action, duration)
 
     async def handle_winner(self, winner, action, duration):
