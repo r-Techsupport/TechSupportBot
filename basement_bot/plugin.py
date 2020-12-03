@@ -5,18 +5,19 @@ import glob
 from os.path import basename, dirname, isfile, join
 
 import munch
+from api import BotAPI
 from utils.logger import get_logger
 
 log = get_logger("Plugin Loader")
 
 
-class PluginAPI:
+class PluginAPI(BotAPI):
     """API for plugin loading."""
 
     PLUGINS_DIR = f"{join(dirname(__file__))}/plugins"
 
     def __init__(self, bot):
-        self.bot = bot
+        super().__init__(bot)
         self.plugins = munch.Munch()
 
     def get_modules(self):
