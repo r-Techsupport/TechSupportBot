@@ -172,11 +172,12 @@ class LoopPlugin(BasicPlugin):
 
     async def _loop_execute(self):
         """Loops through the execution method."""
+        await self.bot.wait_until_ready()
+        await self.loop_preconfig()
+
         if not self.config.get("on_start"):
             await self.wait()
 
-        await self.bot.wait_until_ready()
-        await self.loop_preconfig()
         while self.state:
             if not self.execution_locked:
                 await self.bot.loop.create_task(

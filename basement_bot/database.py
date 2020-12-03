@@ -1,6 +1,7 @@
 """Provides an interface for database sessions.
 """
 
+from api import BotAPI
 from sqlalchemy import create_engine
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.ext.declarative import declarative_base
@@ -10,7 +11,7 @@ from utils.logger import get_logger
 log = get_logger("Database")
 
 
-class DatabaseAPI:
+class DatabaseAPI(BotAPI):
     """API for accessing a database.
 
     parameters:
@@ -21,7 +22,7 @@ class DatabaseAPI:
     BaseTable = declarative_base()
 
     def __init__(self, bot, echo=False):
-        self.bot = bot
+        super().__init__(bot)
         self.db_string = self._get_db_string()
         log.debug(f"Connecting to DB: {self.db_string}")
         self.engine = create_engine(self.db_string, echo=echo)

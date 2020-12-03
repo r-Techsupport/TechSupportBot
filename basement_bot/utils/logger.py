@@ -18,8 +18,7 @@ def get_logger(name):
         debug = 0
 
     level = logging.DEBUG if debug else logging.INFO
-    formatting = "%(asctime)s [%(name)s, %(levelname)s]: %(message)s"
-    logging.basicConfig(format=formatting, level=level)
+    logging.basicConfig(level=level)
 
     logger = logging.getLogger(name)
 
