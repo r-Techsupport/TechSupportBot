@@ -13,9 +13,16 @@ class SafeEmbed(Embed):
             value (str): the value of the field
             inline (bool): True if the field should be inlined with the last field
         """
-        if len(name) > 255:
+
+        # if the value cannot be stringified, it is not valid
+        try:
+            value = str(value)
+        except Exception:
+            value = ""
+
+        if len(name) > 256:
             name = name[:256]
-        if len(value) > 255:
+        if len(value) > 256:
             value = value[:256]
 
         return super().add_field(name=name, value=value, inline=inline)

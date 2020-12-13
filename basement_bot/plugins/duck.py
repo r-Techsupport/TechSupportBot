@@ -128,6 +128,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
             db.add(duck_user)
 
         db.commit()
+        db.close()
 
         embed = SafeEmbed(
             title=f"Duck {action}!",
@@ -166,6 +167,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
         duck_user = (
             db.query(DuckUser).filter(DuckUser.author_id == str(query_user.id)).first()
         )
+        db.close()
         if not duck_user:
             await priv_response(ctx, "That user has not partcipated in the duck hunt")
             return
@@ -188,6 +190,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
     async def friends(self, ctx):
         db = self.db_session()
         duck_users = db.query(DuckUser).order_by(DuckUser.befriend_count.desc()).all()
+        db.close()
         if len(list(duck_users)) == 0:
             await priv_response(
                 ctx, "Nobody appears to be participating in the Duck Hunt"
@@ -225,6 +228,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
     async def killers(self, ctx):
         db = self.db_session()
         duck_users = db.query(DuckUser).order_by(DuckUser.kill_count.desc()).all()
+        db.close()
         if len(list(duck_users)) == 0:
             await priv_response(
                 ctx, "Nobody appears to be participating in the Duck Hunt"
