@@ -2,9 +2,9 @@ import datetime
 from random import randint
 
 from cogs import DatabasePlugin
-from discord import Embed
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String, desc
+from utils.embed import SafeEmbed
 from utils.helpers import *
 
 
@@ -134,7 +134,7 @@ class Grabber(DatabasePlugin):
             await priv_response(ctx, f"No grabs found for {user_to_grab.name}")
             return
 
-        embed = Embed(
+        embed = SafeEmbed(
             title=f"Grabs for {user_to_grab.name}",
             description=f"Let's take a stroll down memory lane...",
         )
@@ -144,7 +144,7 @@ class Grabber(DatabasePlugin):
         for index, grab_ in enumerate(grabs):
             filtered_message = sub_mentions_for_usernames(ctx.bot, str(grab_.message))
             embed = (
-                Embed(
+                SafeEmbed(
                     title=f"Grabs for {user_to_grab.name}",
                     description=f"Let's take a stroll down memory lane...",
                 )
@@ -197,7 +197,7 @@ class Grabber(DatabasePlugin):
                 random_index = randint(0, grabs.count() - 1)
                 grab = grabs[random_index]
                 filtered_message = sub_mentions_for_usernames(ctx.bot, grab.message)
-                embed = Embed(
+                embed = SafeEmbed(
                     title=f'"{filtered_message}"',
                     description=f"{user_to_grab.name}, {grab.time.date()}",
                 )

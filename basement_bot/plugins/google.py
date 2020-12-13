@@ -1,6 +1,6 @@
 from cogs import HttpPlugin
-from discord import Embed
 from discord.ext import commands
+from utils.embed import SafeEmbed
 from utils.helpers import paginate, priv_response, tagged_response
 
 
@@ -58,7 +58,7 @@ class Googler(HttpPlugin):
                 link = item.get("link")
                 snippet = item.get("snippet", "<Details Unknown>").replace("\n", "")
                 embed = (
-                    Embed(title=f"Results for {args}", value="https://google.com")
+                    SafeEmbed(title=f"Results for {args}", value="https://google.com")
                     if field_counter == 1
                     else embed
                 )

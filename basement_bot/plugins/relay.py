@@ -6,10 +6,10 @@ import re
 import uuid
 
 from cogs import LoopPlugin, MatchPlugin, MqPlugin
-from discord import Embed
 from discord.ext import commands
 from discord.ext.commands import Context
 from munch import Munch
+from utils.embed import SafeEmbed
 from utils.helpers import *
 from utils.logger import get_logger
 
@@ -308,7 +308,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             return
         dm_channel = await requester.create_dm()
 
-        embed = Embed(title=f"WHOIS Response for {response.payload.nick}")
+        embed = SafeEmbed(title=f"WHOIS Response for {response.payload.nick}")
         embed.add_field(
             name="User", value=response.payload.user or "Not found", inline=False
         )

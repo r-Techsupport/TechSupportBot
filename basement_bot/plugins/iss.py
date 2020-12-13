@@ -1,6 +1,6 @@
 from cogs import HttpPlugin
-from discord import Embed
 from discord.ext import commands
+from utils.embed import SafeEmbed
 from utils.helpers import priv_response
 
 
@@ -52,7 +52,7 @@ class ISSLocator(HttpPlugin):
         if not location:
             location = "Unknown"
 
-        embed = Embed(
+        embed = SafeEmbed(
             title="ISS Location", description="Track the International Space Station!"
         )
         embed.add_field(name="Location", value=location)

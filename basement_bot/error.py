@@ -3,8 +3,9 @@
 
 import discord.ext.commands as error_enum
 from api import BotAPI
-from discord import Embed, Forbidden
+from discord import Forbidden
 from discord.ext.commands import Cog
+from utils.embed import SafeEmbed
 from utils.logger import get_logger
 
 log = get_logger("Error")
@@ -157,7 +158,7 @@ class ErrorAPI(BotAPI):
             context (discord.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
-        embed = Embed(title="Error! :confounded:")
+        embed = SafeEmbed(title="Error! :confounded:")
         embed.add_field(name="Event", value=event_method, inline=False)
 
         # inject context data if relevant

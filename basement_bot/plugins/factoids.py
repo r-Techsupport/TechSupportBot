@@ -2,9 +2,10 @@ import datetime
 import json
 
 from cogs import DatabasePlugin, MatchPlugin
-from discord import Embed, HTTPException
+from discord import HTTPException
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
+from utils.embed import SafeEmbed
 from utils.helpers import *
 from utils.logger import get_logger
 
@@ -167,7 +168,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         embeds = []
         for index, factoid in enumerate(factoids):
             embed = (
-                Embed(
+                SafeEmbed(
                     title="Factoids",
                     description=f"Access factoids with the `{self.config.prefix}` prefix",
                 )

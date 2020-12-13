@@ -1,8 +1,8 @@
 import logging
 
 from cogs import BasicPlugin
-from discord import Embed
 from discord.ext import commands
+from utils.embed import SafeEmbed
 from utils.helpers import *
 
 
@@ -66,7 +66,7 @@ class Mocker(BasicPlugin):
 
         filtered_message = sub_mentions_for_usernames(ctx.bot, mock_message)
         mock_string = self.mock_string(filtered_message)
-        embed = Embed(title=f'"{mock_string}"', description=user_to_mock.name)
+        embed = SafeEmbed(title=f'"{mock_string}"', description=user_to_mock.name)
         embed.set_thumbnail(url=user_to_mock.avatar_url)
 
         await tagged_response(ctx, embed=embed)

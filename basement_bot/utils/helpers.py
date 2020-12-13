@@ -7,8 +7,9 @@ import os
 import re
 
 import munch
-from discord import Embed, Forbidden, NotFound
+from discord import Forbidden, NotFound
 from discord.channel import DMChannel
+from utils.embed import SafeEmbed
 
 
 def get_env_value(name, default=None, raise_exception=True):
@@ -121,7 +122,7 @@ def embed_from_kwargs(title=None, description=None, **kwargs):
         description (str): the description for the embed
         **kwargs (dict): a set of keyword values to be displayed
     """
-    embed = Embed(title=title, description=description)
+    embed = SafeEmbed(title=title, description=description)
     for key, value in kwargs.items():
         embed.add_field(name=key, value=value, inline=False)
     return embed
@@ -208,13 +209,13 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
     embeds = embeds[:10]
 
     for index, embed in enumerate(embeds):
-        if isinstance(embed, Embed):
+        if isinstance(embed, SafeEmbed):
             embed.set_footer(text=f"Page {index+1} of {len(embeds)}")
 
     index = 0
     get_args = lambda index: {
-        "content": embeds[index] if not isinstance(embeds[index], Embed) else None,
-        "embed": embeds[index] if isinstance(embeds[index], Embed) else None,
+        "content": embeds[index] if not isinstance(embeds[index], SafeEmbed) else None,
+        "embed": embeds[index] if isinstance(embeds[index], SafeEmbed) else None,
     }
 
     if tag_user:

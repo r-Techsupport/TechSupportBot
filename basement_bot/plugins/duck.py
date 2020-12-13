@@ -4,9 +4,9 @@ from random import choice, choices
 
 from cogs import DatabasePlugin, LoopPlugin
 from discord import Color as embed_colors
-from discord import Embed
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
+from utils.embed import SafeEmbed
 from utils.helpers import *
 
 
@@ -78,7 +78,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
 
     async def execute(self):
         start_time = datetime.datetime.now()
-        embed = Embed(
+        embed = SafeEmbed(
             title="*Quack Quack*",
             description="Befriend the duck with `bef` or shoot with `bang`",
         )
@@ -129,7 +129,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
 
         db.commit()
 
-        embed = Embed(
+        embed = SafeEmbed(
             title=f"Duck {action}!",
             description=f"{winner.mention} {action} the duck in {duration} seconds!",
         )
@@ -170,7 +170,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
             await priv_response(ctx, "That user has not partcipated in the duck hunt")
             return
 
-        embed = Embed(title="Duck Stats", description=query_user.mention)
+        embed = SafeEmbed(title="Duck Stats", description=query_user.mention)
         embed.color = embed_colors.green()
         embed.add_field(name="Friends", value=duck_user.befriend_count)
         embed.add_field(name="Kills", value=duck_user.kill_count)
@@ -197,7 +197,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
         field_counter = 1
         embeds = []
         for index, duck_user in enumerate(duck_users):
-            embed = Embed(title="Duck Friendships") if field_counter == 1 else embed
+            embed = SafeEmbed(title="Duck Friendships") if field_counter == 1 else embed
 
             embed.set_thumbnail(url=self.DUCK_PIC_URL)
             embed.color = embed_colors.green()
@@ -234,7 +234,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin):
         field_counter = 1
         embeds = []
         for index, duck_user in enumerate(duck_users):
-            embed = Embed(title="Duck Kills") if field_counter == 1 else embed
+            embed = SafeEmbed(title="Duck Kills") if field_counter == 1 else embed
 
             embed.set_thumbnail(url=self.DUCK_PIC_URL)
             embed.color = embed_colors.green()
