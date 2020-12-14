@@ -1,8 +1,8 @@
 import json
 
 from cogs import HttpPlugin
-from discord import Embed
 from discord.ext import commands
+from utils.embed import SafeEmbed
 from utils.helpers import paginate, priv_response, tagged_response
 
 
@@ -55,7 +55,7 @@ class UrbanDictionary(HttpPlugin):
                 .replace("\n", "")
             )
             embed = (
-                Embed(
+                SafeEmbed(
                     title=f"Results for {args}",
                     description=f"{self.SEE_MORE_URL}{args_no_spaces}",
                 )

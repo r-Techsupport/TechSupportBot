@@ -2,9 +2,10 @@ import datetime
 import json
 
 from cogs import DatabasePlugin, MatchPlugin
-from discord import Embed, HTTPException
+from discord import HTTPException
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String
+from utils.embed import SafeEmbed
 from utils.helpers import *
 from utils.logger import get_logger
 
@@ -78,33 +79,25 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         db = self.db_session()
 
-        try:
-            # first check if key already exists
-            entry = db.query(Factoid).filter(Factoid.text == arg1).first()
-            if entry:
-                # delete old one
-                db.delete(entry)
-                await priv_response(
-                    ctx, "Deleting previous entry of factoid trigger..."
-                )
+        # first check if key already exists
+        entry = db.query(Factoid).filter(Factoid.text == arg1).first()
+        if entry:
+            # delete old one
+            db.delete(entry)
+            await priv_response(ctx, "Deleting previous entry of factoid trigger...")
 
-            # finally, add new entry
-            db.add(
-                Factoid(
-                    text=arg1.lower(),
-                    channel=channel,
-                    message=" ".join(args),
-                    embed_config=embed_config,
-                )
+        # finally, add new entry
+        db.add(
+            Factoid(
+                text=arg1.lower(),
+                channel=channel,
+                message=" ".join(args),
+                embed_config=embed_config,
             )
-            db.commit()
-            await tagged_response(ctx, f"Successfully added factoid trigger: *{arg1}*")
-
-        except Exception as e:
-            log.warning(f"Unable to add factoid: {e}")
-            await priv_response(
-                ctx, "I ran into an issue handling your factoid addition..."
-            )
+        )
+        db.commit()
+        db.close()
+        await tagged_response(ctx, f"Successfully added factoid trigger: *{arg1}*")
 
     @commands.check(is_admin)
     @commands.command(
@@ -127,18 +120,12 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         db = self.db_session()
 
-        try:
-            entry = db.query(Factoid).filter(Factoid.text == arg).first()
-            if entry:
-                db.delete(entry)
-                db.commit()
-            await tagged_response(ctx, f"Successfully deleted factoid trigger: *{arg}*")
-
-        except Exception as e:
-            log.warning(f"Unable to forget factoid: {e}")
-            await priv_response(
-                ctx, "I ran into an issue handling your factoid deletion..."
-            )
+        entry = db.query(Factoid).filter(Factoid.text == arg).first()
+        if entry:
+            db.delete(entry)
+            db.commit()
+        db.close()
+        await tagged_response(ctx, f"Successfully deleted factoid trigger: *{arg}*")
 
     @commands.command(
         name=f"lsf",
@@ -154,20 +141,18 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         db = self.db_session()
 
-        try:
-            factoids = db.query(Factoid).filter(bool(Factoid.message) == True).all()
-        except Exception:
-            await priv_response(ctx, "I was unable to get all the factoids...")
-            return
+        factoids = db.query(Factoid).filter(bool(Factoid.message) == True).all()
         if len(list(factoids)) == 0:
             await priv_response(ctx, "No factoids found!")
             return
+
+        db.close()
 
         field_counter = 1
         embeds = []
         for index, factoid in enumerate(factoids):
             embed = (
-                Embed(
+                SafeEmbed(
                     title="Factoids",
                     description=f"Access factoids with the `{self.config.prefix}` prefix",
                 )
@@ -207,42 +192,30 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         db = self.db_session()
 
-        try:
-            entry = db.query(Factoid).filter(Factoid.text == query).first()
-            if entry:
-                if entry.embed_config:
-                    embed_config = json.loads(entry.embed_config)
-                    embed = Embed.from_dict(embed_config)
-                    message = None
-                else:
-                    embed = None
-                    message = entry.message
+        entry = db.query(Factoid).filter(Factoid.text == query).first()
+        db.close()
 
-                await tagged_response(
-                    ctx, content=message, embed=embed, target=user_mentioned
-                )
+        if entry:
+            if entry.embed_config:
+                embed_config = json.loads(entry.embed_config)
+                embed = Embed.from_dict(embed_config)
+                message = None
+            else:
+                embed = None
+                message = entry.message
 
-                if not self.bot.plugin_api.plugins.get("relay"):
-                    return
+            await tagged_response(
+                ctx, content=message, embed=embed, target=user_mentioned
+            )
 
-                # add to the relay plugin queue if it's loaded
-                if ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.channels:
-                    ctx.content = entry.message
-                    self.bot.plugin_api.plugins.factoids.memory.factoid_events.append(
-                        ctx
-                    )
-                    while (
-                        len(self.bot.plugin_api.plugins.factoids.memory.factoid_events)
-                        > 10
-                    ):
-                        del self.bot.plugin_api.plugins.factoids.memory.factoid_events[
-                            0
-                        ]
-
-        except Exception as e:
-            if isinstance(e, HTTPException) and getattr(e, "code", 0) == 50035:
-                await priv_response(ctx, "Unable to render Embed from Factoid...")
+            if not self.bot.plugin_api.plugins.get("relay"):
                 return
 
-            log.warning(f"Unable to get factoid: {e}")
-            await priv_response(ctx, "I ran into an issue grabbing your factoid...")
+            # add to the relay plugin queue if it's loaded
+            if ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.channels:
+                ctx.content = entry.message
+                self.bot.plugin_api.plugins.factoids.memory.factoid_events.append(ctx)
+                while (
+                    len(self.bot.plugin_api.plugins.factoids.memory.factoid_events) > 10
+                ):
+                    del self.bot.plugin_api.plugins.factoids.memory.factoid_events[0]

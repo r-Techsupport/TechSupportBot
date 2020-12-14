@@ -1,5 +1,5 @@
 from cogs import MatchPlugin
-from discord import Embed
+from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -23,7 +23,7 @@ class Logger(MatchPlugin):
         return self.bot.get_channel(self.config.output_channel)
 
     def generate_embed(self, ctx):
-        embed = Embed(title="Logger Event")
+        embed = SafeEmbed(title="Logger Event")
         embed.add_field(name="Content", value=ctx.message.content[:256], inline=False)
         embed.add_field(name="Author", value=ctx.author.name)
         embed.add_field(name="Channel", value=ctx.channel.name)

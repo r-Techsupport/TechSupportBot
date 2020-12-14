@@ -2,7 +2,7 @@ import asyncio
 from random import choice, randint
 
 from cogs import HttpPlugin, LoopPlugin
-from discord import Embed
+from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -35,7 +35,7 @@ class KanyeQuotes(LoopPlugin, HttpPlugin):
 
         if quote:
             message = f"'*{quote}*' - Kanye West"
-            embed = Embed(title=f'"{quote}"', description="Kanye Quest")
+            embed = SafeEmbed(title=f'"{quote}"', description="Kanye Quest")
             embed.set_thumbnail(url=choice(self.KANYE_PICS))
             await self.channel.send(embed=embed)
 

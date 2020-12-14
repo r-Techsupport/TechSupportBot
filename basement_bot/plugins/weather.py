@@ -1,7 +1,7 @@
 import munch
 from cogs import HttpPlugin
-from discord import Embed
 from discord.ext import commands
+from utils.embed import SafeEmbed
 from utils.helpers import *
 
 
@@ -56,7 +56,7 @@ class Weather(HttpPlugin):
         await tagged_response(ctx, embed=embed)
 
     def generate_embed(self, response):
-        embed = Embed(title=f"Weather for {response.name} ({response.sys.country})")
+        embed = SafeEmbed(title=f"Weather for {response.name} ({response.sys.country})")
 
         descriptions = ", ".join(weather.description for weather in response.weather)
         embed.add_field(name="Description", value=descriptions, inline=False)

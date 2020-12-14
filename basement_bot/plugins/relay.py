@@ -6,10 +6,10 @@ import re
 import uuid
 
 from cogs import LoopPlugin, MatchPlugin, MqPlugin
-from discord import Embed
 from discord.ext import commands
 from discord.ext.commands import Context
 from munch import Munch
+from utils.embed import SafeEmbed
 from utils.helpers import *
 from utils.logger import get_logger
 
@@ -242,20 +242,18 @@ class IRCReceiver(LoopPlugin, MqPlugin):
                         log.warning("Unable to find channel to send command event")
                         return
 
-                    message = re.sub(
-                        r"\B\{0}\w+".format(self.config.irc_tag_prefix),
-                        functools.partial(
-                            self._get_mention_from_irc_tag_no_quotes, channel
-                        ),
-                        message,
-                    )
-                    message = re.sub(
-                        r"\{0}\"(.*?)\"".format(self.config.irc_tag_prefix),
-                        functools.partial(
-                            self._get_mention_from_irc_tag_with_quotes, channel
-                        ),
-                        message,
-                    )
+                    guild = get_guild_from_channel_id(self.bot, channel.id)
+
+                    if guild:
+                        new_message = ""
+                        for word in message.split(" "):
+                            member = guild.get_member_named(word)
+                            if member:
+                                new_message += f"{member.mention} "
+                            else:
+                                new_message += f"{word} "
+                        message = new_message
+
                     await channel.send(message)
 
                     # perform factoid event if message requested it
@@ -308,7 +306,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             return
         dm_channel = await requester.create_dm()
 
-        embed = Embed(title=f"WHOIS Response for {response.payload.nick}")
+        embed = SafeEmbed(title=f"WHOIS Response for {response.payload.nick}")
         embed.add_field(
             name="User", value=response.payload.user or "Not found", inline=False
         )
@@ -369,23 +367,15 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             return
 
         # very likely this will raise an exception :(
-        try:
-            if data.event.command == "kick":
-                await target_guild.kick(target_user)
-            elif data.event.command == "ban":
-                await target_guild.ban(target_user, self.config.discord_ban_days)
-            elif data.event.command == "unban":
-                await target_guild.unban(target_user)
-        except Exception as e:
-            log.warning(f"Unable to send command: {e}")
+        if data.event.command == "kick":
+            await target_guild.kick(target_user)
+        elif data.event.command == "ban":
+            await target_guild.ban(target_user, self.config.discord_ban_days)
+        elif data.event.command == "unban":
+            await target_guild.unban(target_user)
 
     def deserialize(self, body):
-        try:
-            deserialized = Munch.fromJSON(body)
-        except Exception as e:
-            log.warning(f"Unable to Munch-deserialize incoming data: {e}")
-            log.warning(f"Full body: {body}")
-            return
+        deserialized = Munch.fromJSON(body)
 
         time = deserialized.event.time
         if not time:
@@ -406,24 +396,6 @@ class IRCReceiver(LoopPlugin, MqPlugin):
         if (now - time).total_seconds() > self.config.stale_seconds:
             return True
         return False
-
-    def _get_mention_from_irc_tag_no_quotes(self, channel, match):
-        tagged = match.group(0)
-        return self._get_mention_from_irc_tag(channel, tagged)
-
-    def _get_mention_from_irc_tag_with_quotes(self, channel, match):
-        tagged = match.group(1)
-        return self._get_mention_from_irc_tag(channel, tagged)
-
-    def _get_mention_from_irc_tag(self, channel, tagged):
-        guild = get_guild_from_channel_id(self.bot, channel.id)
-        if not guild:
-            return tagged
-        name = tagged.replace(self.config.irc_tag_prefix, "")
-        member = guild.get_member_named(name)
-        if not member:
-            return tagged[1:] if tagged.startswith("$") else tagged
-        return member.mention
 
     def process_message(self, data):
         if data.event.type in ["message", "factoid"]:
@@ -478,9 +450,6 @@ class IRCReceiver(LoopPlugin, MqPlugin):
         message = await channel.send(data.event.content)
         ctx = await self.bot.get_context(message)
 
-        try:
-            await factoid_plugin.response(ctx, data.event.content)
-        except Exception as e:
-            log.warning(f"Unable to issue Factoids request: {e}")
+        await factoid_plugin.response(ctx, data.event.content)
 
         await message.delete()

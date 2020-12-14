@@ -60,7 +60,6 @@ plugins:
         publish_seconds: 2
         consume_seconds: 2
         commands_allowed: True
-        irc_tag_prefix: $
         response_limit: 3
         send_limit: 3
         notice_errors: True

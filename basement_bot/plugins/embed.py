@@ -1,5 +1,6 @@
 from cogs import BasicPlugin
 from discord.ext import commands
+from utils.embed import SafeEmbed
 from utils.helpers import *
 
 
@@ -57,7 +58,7 @@ class Embedder(BasicPlugin):
         embeds = []
         try:
             for embed_request in request_body.get("embeds", []):
-                embeds.append(Embed.from_dict(embed_request))
+                embeds.append(SafeEmbed.from_dict(embed_request))
         except Exception:
             pass
 

@@ -1,10 +1,13 @@
 """Provides an interface for handling runtime errors.
 """
 
+import traceback
+
 import discord.ext.commands as error_enum
 from api import BotAPI
-from discord import Embed, Forbidden
+from discord import Forbidden
 from discord.ext.commands import Cog
+from utils.embed import SafeEmbed
 from utils.logger import get_logger
 
 log = get_logger("Error")
@@ -101,13 +104,19 @@ class ErrorAPI(BotAPI):
         if type(exception) in self.IGNORE_ERRORS:
             return
 
-        log.error(exception)
+        exception_string = "".join(
+            traceback.format_exception(
+                type(exception), exception, exception.__traceback__
+            )
+        )
+        log.error(exception_string)
 
-        embed = self.generate_error_embed(event_method, context, exception)
+        embed = self.generate_error_embed(event_method, context)
 
         app_info = await self.bot.application_info()
         try:
             await app_info.owner.send(embed=embed)
+            await app_info.owner.send(f"```{exception_string}```")
         except Forbidden:
             pass
 
@@ -149,7 +158,7 @@ class ErrorAPI(BotAPI):
         context.error_message = error_message
         await self.handle_error("command", exception, context=context)
 
-    def generate_error_embed(self, event_method, context, exception):
+    def generate_error_embed(self, event_method, context):
         """Wrapper for generating the error embed.
 
         parameters:
@@ -157,7 +166,7 @@ class ErrorAPI(BotAPI):
             context (discord.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
-        embed = Embed(title="Error! :confounded:")
+        embed = SafeEmbed(title="Error! :confounded:")
         embed.add_field(name="Event", value=event_method, inline=False)
 
         # inject context data if relevant
@@ -188,11 +197,11 @@ class ErrorAPI(BotAPI):
                 inline=False,
             )
             embed.add_field(
-                name="DM", value=f'*"{getattr(context, "error_message", "*Unknown*")}"*'
+                name="DM",
+                value=f'*"{getattr(context, "error_message", "*Unknown*")}"*',
+                inline=True,
             )
 
-        embed.add_field(name="Exception", value=f"```{exception}```", inline=False)
-        embed.add_field(name="Type", value=f"`{type(exception)}`", inline=False)
         embed.set_thumbnail(url=self.bot.user.avatar_url)
 
         return embed

@@ -2,11 +2,12 @@ import asyncio
 import datetime
 
 from cogs import BasicPlugin
-from discord import Embed, Forbidden, NotFound
+from discord import Forbidden, NotFound
 from discord import utils as discord_utils
 from discord.channel import DMChannel
 from discord.ext import commands
 from emoji import emojize
+from utils.embed import SafeEmbed
 from utils.helpers import *
 
 
@@ -76,7 +77,7 @@ class Poller(BasicPlugin):
         )
         display_timeout_units = "seconds" if request_body.timeout <= 60 else "minutes"
 
-        embed = Embed(
+        embed = SafeEmbed(
             title=request_body.question,
             description=f"Poll timeout: {display_timeout} {display_timeout_units}",
         )
@@ -112,7 +113,7 @@ class Poller(BasicPlugin):
             )
             return
 
-        embed = Embed(
+        embed = SafeEmbed(
             title=f"Poll results for `{request_body.question}`",
             description=f"Votes: {total}",
         )

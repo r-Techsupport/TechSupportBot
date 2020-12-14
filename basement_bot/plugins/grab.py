@@ -2,9 +2,9 @@ import datetime
 from random import randint
 
 from cogs import DatabasePlugin
-from discord import Embed
 from discord.ext import commands
 from sqlalchemy import Column, DateTime, Integer, String, desc
+from utils.embed import SafeEmbed
 from utils.helpers import *
 
 
@@ -73,29 +73,27 @@ class Grabber(DatabasePlugin):
 
         db = self.db_session()
 
-        try:
-            if (
-                db.query(Grab)
-                .filter(
-                    Grab.author_id == str(user_to_grab.id),
-                    Grab.message == grab_message,
-                )
-                .count()
-                != 0
-            ):
-                await priv_response(ctx, "That grab already exists!")
-                return
-            db.add(
-                Grab(
-                    author_id=str(user_to_grab.id),
-                    channel=channel,
-                    message=grab_message,
-                )
+        if (
+            db.query(Grab)
+            .filter(
+                Grab.author_id == str(user_to_grab.id),
+                Grab.message == grab_message,
             )
-            db.commit()
-            await priv_response(ctx, f"Successfully saved: '*{grab_message}*'")
-        except Exception:
-            await priv_response(ctx, "I had an issue remembering that message!")
+            .count()
+            != 0
+        ):
+            await priv_response(ctx, "That grab already exists!")
+            return
+        db.add(
+            Grab(
+                author_id=str(user_to_grab.id),
+                channel=channel,
+                message=grab_message,
+            )
+        )
+        db.commit()
+        db.close()
+        await priv_response(ctx, f"Successfully saved: '*{grab_message}*'")
 
     @commands.command(
         name="grabs",
@@ -121,20 +119,17 @@ class Grabber(DatabasePlugin):
 
         db = self.db_session()
 
-        try:
-            grabs = (
-                db.query(Grab)
-                .order_by(desc(Grab.time))
-                .filter(Grab.author_id == str(user_to_grab.id))
-            )
-        except Exception:
-            await priv_response(ctx, "I had an issue retrieving all grabs!")
-            return
+        grabs = (
+            db.query(Grab)
+            .order_by(desc(Grab.time))
+            .filter(Grab.author_id == str(user_to_grab.id))
+        )
+        db.close()
         if len(list(grabs)) == 0:
             await priv_response(ctx, f"No grabs found for {user_to_grab.name}")
             return
 
-        embed = Embed(
+        embed = SafeEmbed(
             title=f"Grabs for {user_to_grab.name}",
             description=f"Let's take a stroll down memory lane...",
         )
@@ -144,7 +139,7 @@ class Grabber(DatabasePlugin):
         for index, grab_ in enumerate(grabs):
             filtered_message = sub_mentions_for_usernames(ctx.bot, str(grab_.message))
             embed = (
-                Embed(
+                SafeEmbed(
                     title=f"Grabs for {user_to_grab.name}",
                     description=f"Let's take a stroll down memory lane...",
                 )
@@ -187,28 +182,26 @@ class Grabber(DatabasePlugin):
 
         db = self.db_session()
 
-        try:
-            if user_to_grab:
-                grabs = db.query(Grab).filter(Grab.author_id == str(user_to_grab.id))
-            else:
-                grabs = db.query(Grab)
+        if user_to_grab:
+            grabs = db.query(Grab).filter(Grab.author_id == str(user_to_grab.id))
+        else:
+            grabs = db.query(Grab)
 
-            if grabs:
-                random_index = randint(0, grabs.count() - 1)
-                grab = grabs[random_index]
-                filtered_message = sub_mentions_for_usernames(ctx.bot, grab.message)
-                embed = Embed(
-                    title=f'"{filtered_message}"',
-                    description=f"{user_to_grab.name}, {grab.time.date()}",
-                )
-                embed.set_thumbnail(url=user_to_grab.avatar_url)
-            else:
-                await priv_response(
-                    f"No messages found for {user_to_grab or 'this channel'}"
-                )
-                return
+        db.close()
 
-            await tagged_response(ctx, embed=embed)
+        if grabs:
+            random_index = randint(0, grabs.count() - 1)
+            grab = grabs[random_index]
+            filtered_message = sub_mentions_for_usernames(ctx.bot, grab.message)
+            embed = SafeEmbed(
+                title=f'"{filtered_message}"',
+                description=f"{user_to_grab.name}, {grab.time.date()}",
+            )
+            embed.set_thumbnail(url=user_to_grab.avatar_url)
+        else:
+            await priv_response(
+                f"No messages found for {user_to_grab or 'this channel'}"
+            )
+            return
 
-        except Exception:
-            await priv_response(ctx, "I had an issue retrieving a random grab!")
+        await tagged_response(ctx, embed=embed)
