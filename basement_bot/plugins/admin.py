@@ -202,7 +202,7 @@ class AdminControl(BasicPlugin):
     @commands.check(is_admin)
     @commands.command(hidden=True)
     async def echo_user(self, ctx, user_id, *args):
-        user = await self.bot.fetch_user(user_id)
+        user = await self.bot.fetch_user(int(user_id))
         if not user:
             await priv_response(ctx, "I couldn't find that user")
             return
