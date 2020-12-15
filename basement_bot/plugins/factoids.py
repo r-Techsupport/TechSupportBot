@@ -199,7 +199,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         if entry:
             if entry.embed_config:
                 embed_config = json.loads(entry.embed_config)
-                embed = Embed.from_dict(embed_config)
+                embed = SafeEmbed.from_dict(embed_config)
                 message = None
             else:
                 embed = None
