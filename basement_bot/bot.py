@@ -59,7 +59,7 @@ class BasementBot(Bot):
         if (
             owner
             and isinstance(message.channel, DMChannel)
-            # and message.author.id != owner.id
+            and message.author.id != owner.id
             and not message.author.bot
         ):
             await owner.send(f'PM from {message.author.mention}: "{message.content}"')
