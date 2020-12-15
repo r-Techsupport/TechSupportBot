@@ -93,6 +93,7 @@ class Grabber(DatabasePlugin):
         )
         db.commit()
         db.close()
+
         await priv_response(ctx, f"Successfully saved: '*{grab_message}*'")
 
     @commands.command(
@@ -124,7 +125,6 @@ class Grabber(DatabasePlugin):
             .order_by(desc(Grab.time))
             .filter(Grab.author_id == str(user_to_grab.id))
         )
-        db.close()
         if len(list(grabs)) == 0:
             await priv_response(ctx, f"No grabs found for {user_to_grab.name}")
             return
@@ -157,6 +157,9 @@ class Grabber(DatabasePlugin):
                 field_counter = 1
             else:
                 field_counter += 1
+
+        db.close()
+
         await paginate(ctx, embeds=embeds, restrict=True)
 
     @commands.command(
@@ -187,8 +190,6 @@ class Grabber(DatabasePlugin):
         else:
             grabs = db.query(Grab)
 
-        db.close()
-
         if grabs:
             random_index = randint(0, grabs.count() - 1)
             grab = grabs[random_index]
@@ -203,5 +204,7 @@ class Grabber(DatabasePlugin):
                 f"No messages found for {user_to_grab or 'this channel'}"
             )
             return
+
+        db.close()
 
         await tagged_response(ctx, embed=embed)
