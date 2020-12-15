@@ -124,7 +124,9 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         if entry:
             db.delete(entry)
             db.commit()
+
         db.close()
+
         await tagged_response(ctx, f"Successfully deleted factoid trigger: *{arg}*")
 
     @commands.command(
@@ -219,4 +221,4 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 ):
                     del self.bot.plugin_api.plugins.factoids.memory.factoid_events[0]
 
-            db.close()
+        db.close()
