@@ -60,7 +60,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             return
 
         embed_config = await get_json_from_attachment(
-            ctx, ctx.message, send_msg_on_failure=False
+            ctx, ctx.message, send_msg_on_none=False, send_msg_on_failure=False
         )
         if embed_config:
             embed_config = json.dumps(embed_config)
