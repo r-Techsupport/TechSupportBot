@@ -7,6 +7,7 @@ import munch
 import yaml
 from database import DatabaseAPI
 from discord import Game
+from discord.channel import DMChannel
 from discord.ext.commands import Bot
 from error import ErrorAPI
 from plugin import PluginAPI
@@ -46,6 +47,24 @@ class BasementBot(Bot):
         if self.game:
             await self.set_game(self.game)
         log.info(f"Commands available with the `{self.command_prefix}` prefix")
+
+    async def on_message(self, message):
+        """Catches messages and acts appropriately.
+
+        parameters:
+            message (discord.Message): the` message object
+        """
+        owner = await self.get_owner()
+
+        if (
+            owner
+            and isinstance(message.channel, DMChannel)
+            # and message.author.id != owner.id
+            and not message.author.bot
+        ):
+            await owner.send(f'PM from {message.author.mention}: "{message.content}"')
+
+        await self.process_commands(message)
 
     async def on_error(self, event_method, *args, **kwargs):
         """Catches non-command errors and sends them to the error API for processing.
@@ -148,3 +167,8 @@ class BasementBot(Bot):
         response_tuple = await super().wait_for(*args, **kwargs)
         self.wait_events -= 1
         return response_tuple
+
+    async def get_owner(self):
+        """Gets the owner object for the bot application."""
+        app_info = await self.application_info()
+        return app_info.owner if app_info else None

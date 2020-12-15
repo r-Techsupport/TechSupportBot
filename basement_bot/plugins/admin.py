@@ -183,3 +183,33 @@ class AdminControl(BasicPlugin):
             ctx,
             f"I finished trying to delete {amount} most recent messages in that channel",
         )
+
+    @commands.check(is_admin)
+    @commands.command(hidden=True)
+    async def echo_channel(self, ctx, channel_id, *args):
+        channel = self.bot.get_channel(int(channel_id))
+        if not channel:
+            await priv_response(ctx, "I couldn't find that channel")
+            return
+
+        message = " ".join(args)
+        if not message:
+            await priv_response(ctx, "I need a message to echo")
+            return
+
+        await channel.send(content=message)
+
+    @commands.check(is_admin)
+    @commands.command(hidden=True)
+    async def echo_user(self, ctx, user_id, *args):
+        user = await self.bot.fetch_user(user_id)
+        if not user:
+            await priv_response(ctx, "I couldn't find that user")
+            return
+
+        message = " ".join(args)
+        if not message:
+            await priv_response(ctx, "I need a message to echo")
+            return
+
+        await user.send(content=message)
