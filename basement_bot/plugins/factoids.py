@@ -124,7 +124,9 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         if entry:
             db.delete(entry)
             db.commit()
+
         db.close()
+
         await tagged_response(ctx, f"Successfully deleted factoid trigger: *{arg}*")
 
     @commands.command(
@@ -145,8 +147,6 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         if len(list(factoids)) == 0:
             await priv_response(ctx, "No factoids found!")
             return
-
-        db.close()
 
         field_counter = 1
         embeds = []
@@ -172,6 +172,8 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             else:
                 field_counter += 1
 
+        db.close()
+
         await paginate(ctx, embeds=embeds, restrict=True)
 
     def match(self, ctx, content):
@@ -193,7 +195,6 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         db = self.db_session()
 
         entry = db.query(Factoid).filter(Factoid.text == query).first()
-        db.close()
 
         if entry:
             if entry.embed_config:
@@ -219,3 +220,5 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                     len(self.bot.plugin_api.plugins.factoids.memory.factoid_events) > 10
                 ):
                     del self.bot.plugin_api.plugins.factoids.memory.factoid_events[0]
+
+        db.close()

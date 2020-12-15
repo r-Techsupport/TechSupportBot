@@ -188,8 +188,16 @@ class LoopPlugin(BasicPlugin):
                 await asyncio.sleep(1)
 
     async def _execute(self):
+        """Private method for performing the main execution method."""
         self.execution_locked = True
-        await self.execute()
+
+        try:
+            await self.execute()
+        except Exception as e:
+            # exceptions here aren't caught by the bot's on_error,
+            # so catch them manually
+            await self.bot.error_api.handle_error("loop_cog", e)
+
         self.execution_locked = False
 
     def cog_unload(self):
