@@ -104,7 +104,8 @@ class MatchPlugin(BasicPlugin):
             if self.match(ctx, message.content):
                 await self.response(ctx, message.content)
         except Exception as e:
-            log.exception(e)
+            # this isn't technically a command error, so we have to pretend it is
+            await self.bot.error_api.handle_command_error(ctx, e)
 
     def match(self, ctx, content):
         """Runs a boolean check on message content.
