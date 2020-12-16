@@ -7,8 +7,9 @@ import os
 import re
 
 import munch
-from discord import Forbidden, NotFound
+from discord import Forbidden
 from discord.channel import DMChannel
+from discord.errors import HTTPException
 from utils.embed import SafeEmbed
 
 
@@ -39,7 +40,10 @@ async def tagged_response(ctx, content=None, embed=None, target=None):
     """
     who_to_tag = target.mention if target else ctx.message.author.mention
     content = f"{who_to_tag} {content}" if content else who_to_tag
-    message = await ctx.send(content, embed=embed)
+    try:
+        message = await ctx.send(content, embed=embed)
+    except HTTPException:
+        message = None
     return message
 
 
@@ -51,14 +55,13 @@ async def priv_response(ctx, content=None, embed=None):
         message (str): the message to send
         embed (discord.Embed): the discord embed object to send
     """
-    message = None
     try:
         if content:
             message = await ctx.author.send(content, embed=embed)
         else:
             message = await ctx.author.send(embed=embed)
-    except Forbidden:
-        pass
+    except (Forbidden, HTTPException):
+        message = None
     return message
 
 
@@ -73,7 +76,10 @@ async def emoji_reaction(ctx, emojis):
         emojis = [emojis]
 
     for emoji in emojis:
-        await ctx.message.add_reaction(emoji)
+        try:
+            await ctx.message.add_reaction(emoji)
+        except Forbidden:
+            pass
 
 
 async def is_admin(ctx, message_user=True):
@@ -157,10 +163,8 @@ async def delete_message_with_reason(ctx, message, reason, private=True, origina
     send_func = priv_response if private else tagged_response
 
     content = message.content
-    try:
-        await message.delete()
-    except (Forbidden, NotFound):
-        return
+
+    await message.delete()
 
     await send_func(ctx, f"Your message was deleted because: `{reason}`")
     if original:

@@ -28,8 +28,31 @@ def setup(bot):
 
 
 class FactoidManager(DatabasePlugin, MatchPlugin):
+
     PLUGIN_NAME = __name__
     MODEL = Factoid
+    EXAMPLE_JSON = """
+    {
+        "color": 16747116,
+        "author": {
+            "name": "Crystal Disk Info",
+            "icon_url": "https://cdn.icon-icons.com/icons2/10/PNG/256/savedisk_floppydisk_guardar_1543.png"
+        },
+        "fields": [
+            {
+                "name": "1. To check hard drive health, download Crystal Disk Info (CDI):",
+                "value": "https://osdn.net/projects/crystaldiskinfo/downloads/73319/CrystalDiskInfo8_7_0.exe"
+            },
+            {
+                "name": "2. At the top of the programs window, copy the contents ",
+                "value": "`Edit` -> `Copy`"
+            },
+            {
+                "name": "3. Publish the results in a Pastebin",
+                "value": "https://pastebin.com"
+            }
+        ]
+    }"""
 
     async def db_preconfig(self):
         factoid_prefix = self.config.prefix
@@ -143,7 +166,12 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         db = self.db_session()
 
-        factoids = db.query(Factoid).filter(bool(Factoid.message) == True).all()
+        factoids = (
+            db.query(Factoid)
+            .filter(bool(Factoid.message) == True)
+            .order_by(Factoid.text)
+            .all()
+        )
         if len(list(factoids)) == 0:
             await priv_response(ctx, "No factoids found!")
             return
@@ -205,9 +233,13 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 embed = None
                 message = entry.message
 
-            await tagged_response(
+            message = await tagged_response(
                 ctx, content=message, embed=embed, target=user_mentioned
             )
+
+            if not message:
+                await priv_response(ctx, "I was unable to render that factoid")
+                return
 
             if not self.bot.plugin_api.plugins.get("relay"):
                 return
@@ -222,3 +254,36 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                     del self.bot.plugin_api.plugins.factoids.memory.factoid_events[0]
 
         db.close()
+
+    @commands.check(is_admin)
+    @commands.command(
+        brief="Gets raw factoid data",
+        description="Gets (cats) the raw data of a factoid object",
+        usage="[factoid-name]",
+        help="\nLimitations: None",
+    )
+    async def cat(self, ctx, *args):
+        if not args:
+            await tagged_response(ctx, f"(Example) ```{self.EXAMPLE_JSON}```")
+            return
+
+        arg = args[0]
+
+        db = self.db_session()
+
+        entry = db.query(Factoid).filter(Factoid.text == arg).first()
+
+        if not entry:
+            await priv_response(ctx, "I couldn't find that factoid!")
+            return
+
+        # hashtag python
+        formatted = (
+            json.dumps(json.loads(entry.embed_config), indent=4)
+            if entry.embed_config
+            else entry.message
+        )
+
+        db.close()
+
+        await tagged_response(ctx, f"```{formatted}```")
