@@ -30,11 +30,12 @@ class Corrector(BasicPlugin):
 
             if to_replace in message.content:
                 new_content = message.content.replace(to_replace, f"**{replacement}**")
+                target = message.author
                 break
 
         if new_content:
             await tagged_response(
-                ctx, f"*Correction:* {new_content} :white_check_mark:"
+                ctx, f"*Correction:* {new_content} :white_check_mark:", target=target
             )
         else:
             await priv_response(ctx, "I couldn't find any message to correct")
