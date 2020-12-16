@@ -15,10 +15,10 @@ class Corrector(BasicPlugin):
 
     @commands.command(
         aliases=["c"],
-        brief="Gets raw factoid data",
-        description="Gets (cats) the raw data of a factoid object",
-        usage="[factoid-name]",
-        help="\nLimitations: None",
+        brief="Corrects a message",
+        description="Replaces the most recent text with your text",
+        usage="[to_replace] [replacement]",
+        help="\nLimitations: max search limit",
     )
     async def correct(self, ctx, to_replace, replacement):
         new_content = None
