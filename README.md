@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/effprime/BasementBot.svg?branch=master)](https://travis-ci.org/effprime/BasementBot)
 
-BasementBot is a Discord bot designed for running in Docker. Written on top of the [Python Discord API](https://discordpy.readthedocs.io/en/latest/api.html), it provides the loading and unloading of custom plugins.
+BasementBot is a Dockerized Discord bot. Written on top of the [Python Discord API](https://discordpy.readthedocs.io/en/latest/api.html), it provides the loading and unloading of custom plugins to extend and scale the bot as much as you want.
 
 # Setup
 
