@@ -227,10 +227,7 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
     else:
         message = await ctx.send(**get_args(index))
 
-    if (
-        isinstance(ctx.channel, DMChannel)
-        or ctx.bot.wait_events >= ctx.bot.config.main.required.max_waits
-    ):
+    if isinstance(ctx.channel, DMChannel):
         return
 
     start_time = datetime.datetime.now()
