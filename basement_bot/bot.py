@@ -23,7 +23,6 @@ class BasementBot(Bot):
 
     def __init__(self, run=True, validate_config=True):
         self.config = self._load_config(validate=validate_config)
-        self.wait_events = 0
         super().__init__(self.config.main.required.command_prefix)
 
         self.game = (
@@ -156,17 +155,6 @@ class BasementBot(Bot):
                     raise ValueError(
                         f"Config key {error_key} from {section}.{subsection} not supplied"
                     )
-
-    async def wait_for(self, *args, **kwargs):
-        """Wraps the wait_for method to limit the maximum concurrent listeners."""
-        if self.wait_events > self.config.main.required.max_waits:
-            log.warning("Ignoring wait-for call due to max listeners reached")
-            return (None, None, None, None)
-
-        self.wait_events += 1
-        response_tuple = await super().wait_for(*args, **kwargs)
-        self.wait_events -= 1
-        return response_tuple
 
     async def get_owner(self):
         """Gets the owner object for the bot application."""
