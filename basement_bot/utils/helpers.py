@@ -7,26 +7,10 @@ import os
 import re
 
 import munch
-from discord import Forbidden
+from discord import Forbidden, NotFound
 from discord.channel import DMChannel
 from discord.errors import HTTPException
 from utils.embed import SafeEmbed
-
-
-def get_env_value(name, default=None, raise_exception=True):
-    """Grabs an env value from the environment and fails if nothing is found.
-
-    Note: this isn't needed for config anymore.
-
-    parameters:
-        name (str): the name of the environmental variable
-        default (any): the default value to return
-        raise_exception (bool): True if an exception should raise on NoneType
-    """
-    key = os.environ.get(name, default)
-    if key is None and raise_exception:
-        raise NameError(f"Unable to locate env value: {name}")
-    return key
 
 
 async def tagged_response(ctx, content=None, embed=None, target=None):
@@ -232,7 +216,7 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
 
     start_time = datetime.datetime.now()
 
-    for unicode_reaction in ["\u25C0", "\u25B6", "\u26D4"]:
+    for unicode_reaction in ["\u25C0", "\u25B6", "\u26D4", "\U0001F5D1"]:
         await message.add_reaction(unicode_reaction)
 
     while True:
@@ -264,8 +248,13 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
             index -= 1
             await message.edit(**get_args(index))
 
-        # delete the embed
+        # stop pagination
         elif str(reaction) == "\u26D4" and user.id == ctx.author.id:
+            break
+
+        # delete embed
+        elif str(reaction) == "\U0001F5D1" and user.id == ctx.author.id:
+            await message.delete()
             break
 
         try:
@@ -275,5 +264,5 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
 
     try:
         await message.clear_reactions()
-    except Forbidden:
+    except (Forbidden, NotFound):
         pass

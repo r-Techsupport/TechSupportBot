@@ -113,10 +113,11 @@ class ErrorAPI(BotAPI):
 
         embed = self.generate_error_embed(event_method, context)
 
-        app_info = await self.bot.application_info()
         try:
-            await app_info.owner.send(embed=embed)
-            await app_info.owner.send(f"```{exception_string}```")
+            owner = await self.bot.get_owner()
+            if owner:
+                await owner.send(embed=embed)
+                await owner.send(f"```{exception_string}```")
         except Forbidden:
             pass
 
