@@ -3,7 +3,6 @@
 
 import ast
 import datetime
-import os
 import re
 
 import munch
