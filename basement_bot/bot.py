@@ -3,8 +3,7 @@
 
 import sys
 
-import munch
-import yaml
+from config import ConfigAPI
 from database import DatabaseAPI
 from discord import Game
 from discord.channel import DMChannel
@@ -17,12 +16,22 @@ log = get_logger("Basement Bot")
 
 
 class BasementBot(Bot):
-    """The main bot object."""
+    """The main bot object.
 
-    CONFIG_PATH = "./config.yaml"
+    parameters:
+        run (bool): True if the bot should run on instantiation
+        validate_config (bool): True if the bot's config should be validated
+    """
 
     def __init__(self, run=True, validate_config=True):
-        self.config = self._load_config(validate=validate_config)
+        # the config API will set this
+        self.config = None
+
+        self.config_api = ConfigAPI(bot=self, validate=validate_config)
+        self.plugin_api = PluginAPI(bot=self)
+        self.database_api = DatabaseAPI(bot=self)
+        self.error_api = ErrorAPI(bot=self)
+
         super().__init__(self.config.main.required.command_prefix)
 
         self.game = (
@@ -30,10 +39,6 @@ class BasementBot(Bot):
             if self.config.main.optional.get("game")
             else None
         )
-
-        self.plugin_api = PluginAPI(bot=self)
-        self.database_api = DatabaseAPI(bot=self)
-        self.error_api = ErrorAPI(bot=self)
 
         if run:
             log.debug("Bot starting upon init")
@@ -103,58 +108,6 @@ class BasementBot(Bot):
             self.loop.run_until_complete(self.logout())
         finally:
             self.loop.close()
-
-    def _load_config(self, validate):
-        """Loads the config yaml file into a bot object.
-
-        parameters:
-            validate (bool): True if validations should be ran on the file
-        """
-        with open(self.CONFIG_PATH) as iostream:
-            config = yaml.safe_load(iostream)
-        self.config = munch.munchify(config)
-
-        self.config.main.disabled_plugins = self.config.main.disabled_plugins or []
-
-        if validate:
-            self.validate_config()
-
-        return self.config
-
-    def validate_config(self):
-        """Validates several config subsections."""
-        for subsection in ["required", "database"]:
-            self._validate_config_subsection("main", subsection)
-        for subsection in list(self.config.plugins.keys()):
-            self._validate_config_subsection("plugins", subsection)
-
-    def _validate_config_subsection(self, section, subsection):
-        """Loops through a config subsection to check for missing values.
-
-        section (str): the section name containing the subsection
-        subsection (str): the subsection name
-        """
-        for key, value in self.config.get(section, {}).get(subsection, {}).items():
-            error_key = None
-            if value is None:
-                error_key = key
-            elif isinstance(value, dict):
-                for k, v in value.items():
-                    if v is None:
-                        error_key = k
-            if error_key:
-                if section == "plugins":
-                    if not subsection in self.config.main.disabled_plugins:
-                        # pylint: disable=line-too-long
-                        log.warning(
-                            f"Disabling loading of plugin {subsection} due to missing config key {error_key}"
-                        )
-                        # disable the plugin if we can't get its config
-                        self.config.main.disabled_plugins.append(subsection)
-                else:
-                    raise ValueError(
-                        f"Config key {error_key} from {section}.{subsection} not supplied"
-                    )
 
     async def get_owner(self):
         """Gets the owner object for the bot application."""
