@@ -1,7 +1,6 @@
-from random import randint, shuffle
+from random import shuffle
 
 from cogs import HttpPlugin, LoopPlugin
-from utils.helpers import get_env_value
 from utils.logger import get_logger
 
 log = get_logger("News Plugin")

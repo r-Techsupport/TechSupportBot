@@ -114,7 +114,7 @@ class ErrorAPI(BotAPI):
         embed = self.generate_error_embed(event_method, context)
 
         try:
-            owner = self.bot.get_owner()
+            owner = await self.bot.get_owner()
             if owner:
                 await owner.send(embed=embed)
                 await owner.send(f"```{exception_string}```")

@@ -2,8 +2,7 @@
 """
 
 import logging
-
-from utils.helpers import get_env_value
+import os
 
 
 def get_logger(name):
@@ -12,10 +11,7 @@ def get_logger(name):
     parameters:
         name (str): the name for the logger.
     """
-    try:
-        debug = int(get_env_value("DEBUG"))
-    except (ValueError, NameError):
-        debug = 0
+    debug = os.environ.get("DEBUG", 0)
 
     level = logging.DEBUG if debug else logging.INFO
     logging.basicConfig(level=level)
