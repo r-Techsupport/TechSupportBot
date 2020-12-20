@@ -20,6 +20,7 @@ class Giphy(HttpPlugin):
         index = url.find("?cid=")
         return url[:index]
 
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="giphy",
         brief="Grabs a random Giphy image",

@@ -29,6 +29,7 @@ class Hugger(BasicPlugin):
         "{user_giving_hug} squeezes {user_to_hug} to death",
     ]
 
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="hug",
         brief="Hugs mentioned user(s)",

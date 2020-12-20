@@ -65,30 +65,6 @@ async def emoji_reaction(ctx, emojis):
             pass
 
 
-async def is_admin(ctx, message_user=True):
-    """Context checker for if the author is admin.
-
-    parameters:
-        ctx (Context): the context object
-        message_user (boolean): True if the user should be notified on failure
-    """
-    id_is_admin = bool(
-        ctx.message.author.id in [int(id) for id in ctx.bot.config.main.admins.ids]
-    )
-    role_is_admin = False
-    for role in getattr(ctx.message.author, "roles", []):
-        if role.name in ctx.bot.config.main.admins.roles:
-            role_is_admin = True
-            break
-
-    if any([id_is_admin, role_is_admin]):
-        return True
-
-    if message_user:
-        await priv_response(ctx, "You must be an admin to use this command")
-    return False
-
-
 def get_guild_from_channel_id(bot, channel_id):
     """Helper for getting the guild associated with a channel.
 

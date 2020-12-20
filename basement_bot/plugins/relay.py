@@ -32,7 +32,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         self.bot.plugin_api.plugins.relay.memory.send_buffer = []
         self.error_message_sent = False
 
-    def match(self, ctx, content):
+    async def match(self, ctx, content):
         if ctx.channel.id in self.channels:
             if not content.startswith(self.bot.command_prefix):
                 return True

@@ -15,6 +15,7 @@ class ISSLocator(HttpPlugin):
     GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
     HAS_CONFIG = False
 
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="iss",
         brief="Finds the International Space Station",

@@ -10,7 +10,7 @@ class Logger(MatchPlugin):
 
     PLUGIN_NAME = __name__
 
-    def match(self, ctx, _):
+    async def match(self, ctx, _):
         if not ctx.channel.id in self.config.input_channels:
             return False
         return True

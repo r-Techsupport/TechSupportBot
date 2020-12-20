@@ -858,6 +858,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
 
         await self.channel.send(embed=embed)
 
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="duck_stats",
         brief="Get duck stats",
@@ -895,6 +896,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
 
         await tagged_response(ctx, embed=embed)
 
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="duck_friends",
         brief="Get duck friendship scores",
@@ -934,6 +936,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
 
         await paginate(ctx, embeds=embeds, restrict=True)
 
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="duck_killers",
         brief="Get duck kill scores",
