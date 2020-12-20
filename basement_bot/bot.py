@@ -8,7 +8,7 @@ from config import ConfigAPI
 from database import DatabaseAPI
 from discord import Game
 from discord.channel import DMChannel
-from discord.ext.commands import Bot
+from discord.ext import commands
 from error import ErrorAPI
 from plugin import PluginAPI
 from utils.logger import get_logger
@@ -16,7 +16,7 @@ from utils.logger import get_logger
 log = get_logger("Basement Bot")
 
 
-class BasementBot(Bot):
+class BasementBot(commands.Bot):
     """The main bot object.
 
     parameters:
@@ -106,7 +106,10 @@ class BasementBot(Bot):
 
         self.plugin_api.load_plugins()
 
-        self.add_cog(AdminControl(self))
+        try:
+            self.add_cog(AdminControl(self))
+        except (TypeError, commands.CommandError) as e:
+            log.warning(f"Could not load AdminControl cog: {e}")
 
         try:
             self.loop.run_until_complete(super().start(*args, **kwargs))
@@ -136,7 +139,8 @@ class BasementBot(Bot):
 
         # the user is not a bot admin, so they can't do this
         if ctx.command.cog.ADMIN_ONLY:
-            return False
+            # treat this as a command error to be caught by the dispatcher
+            raise commands.MissingPermissions(["bot_admin"])
 
         result = await super().can_run(ctx, call_once=call_once)
         return result

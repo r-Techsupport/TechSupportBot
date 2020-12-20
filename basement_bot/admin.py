@@ -1,21 +1,33 @@
-import os
+"""Cog for controlling the bot.
+"""
 
 from cogs import BasicPlugin
 from discord.ext import commands
-from utils.helpers import *
+from utils.helpers import embed_from_kwargs, priv_response
 
 
 class AdminControl(BasicPlugin):
+    """Cog object for admin-only bot control"""
+
+    ADMIN_ONLY = True
 
     HAS_CONFIG = False
     PLUGIN_NAME = __name__
-    ADMIN_ONLY = True
 
-    @commands.command(name="plugin_status", hidden=True)
+    @commands.command(hidden=True)
     async def plugin_status(self, ctx, *args):
+        """Gets the status of the bot plugins.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.Ctx): the context object for the message
+            args [list]: the space-or-quote-delimitted args
+        """
         plugin_name = args[0].lower() if args else None
 
         status_data = ctx.bot.plugin_api.get_status()
+
         error = status_data.get("error")
         if error:
             await priv_response(ctx, f"Error: {error}")
@@ -43,34 +55,62 @@ class AdminControl(BasicPlugin):
             ),
         )
 
-    @commands.command(name="load_plugin", hidden=True)
+    @commands.command(hidden=True)
     async def load_plugin(self, ctx, *args):
+        """Loads a plugin by filename.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.Ctx): the context object for the message
+            args [list]: the space-or-quote-delimitted args
+        """
         plugin_name = args[0].lower() if args else None
+
         if not plugin_name:
             await priv_response(ctx, "Invalid input")
             return
-        elif not plugin_name.isalpha():
+
+        if not plugin_name.isalpha():
             await priv_response(ctx, "Plugin name must be letters only")
             return
 
         response = ctx.bot.plugin_api.load_plugin(plugin_name)
         await priv_response(ctx, response.message)
 
-    @commands.command(name="unload_plugin", hidden=True)
+    @commands.command(hidden=True)
     async def unload_plugin(self, ctx, *args):
+        """Unloads a plugin by filename.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.Ctx): the context object for the message
+            args [list]: the space-or-quote-delimitted args
+        """
         plugin_name = args[0].lower() if args else None
+
         if not plugin_name:
             await priv_response(ctx, "Invalid input")
             return
-        elif not plugin_name.isalpha():
+
+        if not plugin_name.isalpha():
             await priv_response(ctx, "Plugin name must be letters only")
             return
 
         response = ctx.bot.plugin_api.unload_plugin(plugin_name)
         await priv_response(ctx, response.message)
 
-    @commands.command(name="enable_command", hidden=True)
+    @commands.command(hidden=True)
     async def enable_command(self, ctx, *args):
+        """Enables a command by name.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.Ctx): the context object for the message
+            args [list]: the space-or-quote-delimitted args
+        """
         command_name = args[0].lower() if args else None
         if not command_name:
             await priv_response(ctx, "Invalid input")
@@ -90,8 +130,16 @@ class AdminControl(BasicPlugin):
                     ctx, f"Command `{command_name}` is already enabled!"
                 )
 
-    @commands.command(name="disable_command", hidden=True)
+    @commands.command(hidden=True)
     async def disable_command(self, ctx, *args):
+        """Disables a command by name.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.Ctx): the context object for the message
+            args [list]: the space-or-quote-delimitted args
+        """
         command_name = args[0].lower() if args else None
         if not command_name:
             await priv_response(ctx, "Invalid input")
@@ -111,8 +159,16 @@ class AdminControl(BasicPlugin):
                     ctx, f"Command `{command_name}` is already disabled!"
                 )
 
-    @commands.command(name="game", hidden=True)
-    async def game(self, ctx, *args):
+    @commands.command(hidden=True)
+    async def set_game(self, ctx, *args):
+        """Sets the bot's game (activity) by name.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.Ctx): the context object for the message
+            args [list]: the space-or-quote-delimitted args
+        """
         game_ = " ".join(args)[:50]
 
         if not all(char == " " for char in game_):
@@ -124,6 +180,14 @@ class AdminControl(BasicPlugin):
 
     @commands.command(name="delete_bot_x", hidden=True)
     async def delete_x_bot_messages(self, ctx, *args):
+        """Deletes a set number of bot messages.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.Ctx): the context object for the message
+            args [list]: the space-or-quote-delimitted args
+        """
         if not args:
             await priv_response(ctx, "Please provide a number of messages to delete")
             return
@@ -152,6 +216,14 @@ class AdminControl(BasicPlugin):
 
     @commands.command(name="delete_all_x", hidden=True)
     async def delete_x_messages(self, ctx, *args):
+        """Deletes a set number of messages.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.Ctx): the context object for the message
+            args [list]: the space-or-quote-delimitted args
+        """
         if not args:
             await priv_response(ctx, "Please provide a number of messages to delete")
             return
@@ -179,6 +251,15 @@ class AdminControl(BasicPlugin):
 
     @commands.command(hidden=True)
     async def echo_channel(self, ctx, channel_id, *args):
+        """Sends a message to a specified channel.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.Ctx): the context object for the calling message
+            channel_id (str): the ID of the channel to send the echoed message
+            args [list]: the space-or-quote-delimitted args
+        """
         channel = self.bot.get_channel(int(channel_id))
         if not channel:
             await priv_response(ctx, "I couldn't find that channel")
@@ -193,6 +274,15 @@ class AdminControl(BasicPlugin):
 
     @commands.command(hidden=True)
     async def echo_user(self, ctx, user_id, *args):
+        """Sends a message to a specified user.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.Ctx): the context object for the calling message
+            user_id (str): the ID of the user to send the echoed message
+            args [list]: the space-or-quote-delimitted args
+        """
         user = await self.bot.fetch_user(int(user_id))
         if not user:
             await priv_response(ctx, "I couldn't find that user")
