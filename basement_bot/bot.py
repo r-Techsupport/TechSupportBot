@@ -3,11 +3,12 @@
 
 import sys
 
+from admin import AdminControl
 from config import ConfigAPI
 from database import DatabaseAPI
 from discord import Game
 from discord.channel import DMChannel
-from discord.ext.commands import Bot
+from discord.ext import commands
 from error import ErrorAPI
 from plugin import PluginAPI
 from utils.logger import get_logger
@@ -15,7 +16,7 @@ from utils.logger import get_logger
 log = get_logger("Basement Bot")
 
 
-class BasementBot(Bot):
+class BasementBot(commands.Bot):
     """The main bot object.
 
     parameters:
@@ -56,7 +57,7 @@ class BasementBot(Bot):
         """Catches messages and acts appropriately.
 
         parameters:
-            message (discord.Message): the` message object
+            message (discord.Message): the message object
         """
         owner = await self.get_owner()
 
@@ -68,7 +69,8 @@ class BasementBot(Bot):
         ):
             await owner.send(f'PM from {message.author.mention}: "{message.content}"')
 
-        await self.process_commands(message)
+        ctx = await self.get_context(message)
+        await self.invoke(ctx)
 
     async def on_error(self, event_method, *args, **kwargs):
         """Catches non-command errors and sends them to the error API for processing.
@@ -101,7 +103,14 @@ class BasementBot(Bot):
     def start(self, *args, **kwargs):
         """Loads initial plugins (blocking) and starts the connection."""
         log.debug("Starting bot...")
+
         self.plugin_api.load_plugins()
+
+        try:
+            self.add_cog(AdminControl(self))
+        except (TypeError, commands.CommandError) as e:
+            log.warning(f"Could not load AdminControl cog: {e}")
+
         try:
             self.loop.run_until_complete(super().start(*args, **kwargs))
         except KeyboardInterrupt:
@@ -113,3 +122,53 @@ class BasementBot(Bot):
         """Gets the owner object for the bot application."""
         app_info = await self.application_info()
         return app_info.owner if app_info else None
+
+    async def can_run(self, ctx, *, call_once=False):
+        """Wraps the default can_run check to evaluate if a check call is necessary.
+
+        This method wraps the GroupMixin method.
+
+        parameters:
+            ctx (discord.Context): the context associated with the command
+            call_once (bool): True if the check should be retrieved from the call_once attribute
+        """
+        is_bot_admin = await self.is_bot_admin(ctx)
+
+        if is_bot_admin:
+            return True
+
+        # the user is not a bot admin, so they can't do this
+        cog = getattr(ctx.command, "cog", None)
+        if getattr(cog, "ADMIN_ONLY", False):
+            # treat this as a command error to be caught by the dispatcher
+            raise commands.MissingPermissions(["bot_admin"])
+
+        result = await super().can_run(ctx, call_once=call_once)
+        return result
+
+    async def is_bot_admin(self, ctx):
+        """Processes command context against admin/owner data.
+
+        Command checks are disabled if the context author is the owner.
+
+        They are also ignored if the author is bot admin in the config.
+
+        parameters:
+            ctx (discord.Context): the context associated with the command
+        """
+        owner = await self.get_owner()
+        if getattr(owner, "id", None) == ctx.author.id:
+            return True
+
+        if ctx.message.author.id in [int(id) for id in self.config.main.admins.ids]:
+            return True
+
+        role_is_admin = False
+        for role in getattr(ctx.message.author, "roles", []):
+            if role.name in self.config.main.admins.roles:
+                role_is_admin = True
+                break
+        if role_is_admin:
+            return True
+
+        return False

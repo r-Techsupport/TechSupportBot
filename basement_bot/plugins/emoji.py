@@ -62,6 +62,7 @@ class LetterEmojis(BasicPlugin):
             return None
         return emoji_list
 
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="emsg",
         brief="H E L L O!",
@@ -84,6 +85,7 @@ class LetterEmojis(BasicPlugin):
         else:
             await priv_response(ctx, "I can't get any emoji letters from your message!")
 
+    @commands.has_permissions(add_reactions=True)
     @commands.command(
         name="ermsg",
         brief="H E L O! but as a reaction...",

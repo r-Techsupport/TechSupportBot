@@ -29,6 +29,7 @@ class Grabber(DatabasePlugin):
     SEARCH_LIMIT = 20
     MODEL = Grab
 
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="grab",
         brief="Grab the last message from the mentioned user",
@@ -96,6 +97,7 @@ class Grabber(DatabasePlugin):
 
         await priv_response(ctx, f"Successfully saved: '*{grab_message}*'")
 
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="grabs",
         brief="Returns all grabbed messages of mentioned person",
@@ -162,6 +164,7 @@ class Grabber(DatabasePlugin):
 
         await paginate(ctx, embeds=embeds, restrict=True)
 
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="grabr",
         brief="Returns a random grabbed message",

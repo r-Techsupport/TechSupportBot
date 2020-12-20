@@ -21,7 +21,7 @@ class ErrorMessageTemplate:
         keys: Union[str, list]: the key(s) to be looked up from the exception
     """
 
-    DEFAULT_MESSAGE = "I ran into an error processing your command..."
+    DEFAULT_MESSAGE = "I ran into an error processing your command"
 
     def __init__(self, message_format=None, keys=None):
         if keys:
@@ -65,6 +65,10 @@ class ErrorAPI(BotAPI):
         ),
         error_enum.TooManyArguments: ErrorMessageTemplate(
             "You provided too many arguments to that command"
+        ),
+        error_enum.MissingPermissions: ErrorMessageTemplate(
+            "I am unable to do that because you lack the permission(s): `%s`",
+            "missing_perms",
         ),
         error_enum.BotMissingAnyRole: ErrorMessageTemplate(
             "I am unable to do that because I lack the permission(s): `%s`",

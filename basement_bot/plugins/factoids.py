@@ -53,6 +53,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             }
         ]
     }"""
+    MATCH_PERMISSIONS = ["send_messages"]
 
     async def db_preconfig(self):
         factoid_prefix = self.config.prefix
@@ -65,7 +66,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 f"Command prefix '{command_prefix}' cannot equal Factoid prefix"
             )
 
-    @commands.check(is_admin)
+    @commands.has_permissions(manage_messages=True)
     @commands.command(
         name="remember",
         brief="Creates custom trigger with a specified output",
@@ -122,7 +123,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         db.close()
         await tagged_response(ctx, f"Successfully added factoid trigger: *{arg1}*")
 
-    @commands.check(is_admin)
+    @commands.has_permissions(manage_messages=True)
     @commands.command(
         name="forget",
         brief="Deletes an existing custom trigger",
@@ -152,6 +153,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         await tagged_response(ctx, f"Successfully deleted factoid trigger: *{arg}*")
 
+    @commands.has_permissions(manage_messages=True)
     @commands.command(
         name=f"lsf",
         brief="List all factoids",
@@ -204,7 +206,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         await paginate(ctx, embeds=embeds, restrict=True)
 
-    def match(self, ctx, content):
+    async def match(self, ctx, content):
         return content.startswith(self.config.prefix)
 
     async def response(self, ctx, arg):
@@ -255,7 +257,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         db.close()
 
-    @commands.check(is_admin)
+    @commands.has_permissions(manage_messages=True)
     @commands.command(
         brief="Gets raw factoid data",
         description="Gets (cats) the raw data of a factoid object",

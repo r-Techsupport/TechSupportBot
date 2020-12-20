@@ -18,6 +18,7 @@ class Googler(HttpPlugin):
         data = await self.http_call("get", url, params=data)
         return data.json().get("items")
 
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="g",
         brief="Googles that for you",
@@ -88,6 +89,7 @@ class Googler(HttpPlugin):
 
         await paginate(ctx, embeds=embeds, restrict=True)
 
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="gis",
         brief="Google Image searches that for you",

@@ -21,6 +21,7 @@ class UrbanDictionary(HttpPlugin):
     async def preconfig(self):
         self.cached = {"last_query": None, "last_url": None, "all_urls": []}
 
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="urb",
         brief="Returns the top Urban Dictionary result of search terms",

@@ -13,11 +13,11 @@ class Embedder(BasicPlugin):
     PLUGIN_NAME = "Embedder"
     HAS_CONFIG = False
 
-    @commands.check(is_admin)
+    @commands.has_permissions(manage_messages=True)
     @commands.command(name="embed", brief="", description="", usage="")
     async def embed(self, ctx, *args):
         if not ctx.message.attachments:
-            await priv_response(ctx, "Please provide a JSON file for your embed")
+            await priv_response(ctx, "Please provide a JSON file for your embed(s)")
             return
 
         request_body = await get_json_from_attachment(ctx, ctx.message)

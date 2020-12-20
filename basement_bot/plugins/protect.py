@@ -14,7 +14,7 @@ class Protector(MatchPlugin):
 
     PLUGIN_NAME = __name__
 
-    def match(self, ctx, content):
+    async def match(self, ctx, content):
         if not ctx.channel.id in self.config.included_channels:
             return False
 
@@ -38,7 +38,7 @@ class Protector(MatchPlugin):
         return True
 
     async def response(self, ctx, content):
-        admin = await is_admin(ctx, False)
+        admin = await self.bot.is_bot_admin(ctx)
         if admin:
             return
 

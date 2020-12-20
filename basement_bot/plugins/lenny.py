@@ -37,6 +37,7 @@ class Lenny(BasicPlugin):
         "✺◟( ͡° ͜ʖ ͡°)◞✺",
     ]
 
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="len",
         brief="( ͡° ͜ʖ ͡°)",
