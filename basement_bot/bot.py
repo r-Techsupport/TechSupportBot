@@ -138,7 +138,8 @@ class BasementBot(commands.Bot):
             return True
 
         # the user is not a bot admin, so they can't do this
-        if ctx.command.cog.ADMIN_ONLY:
+        cog = getattr(ctx.command, "cog", None)
+        if getattr(cog, "ADMIN_ONLY", False):
             # treat this as a command error to be caught by the dispatcher
             raise commands.MissingPermissions(["bot_admin"])
 
