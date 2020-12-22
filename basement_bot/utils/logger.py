@@ -11,7 +11,10 @@ def get_logger(name):
     parameters:
         name (str): the name for the logger.
     """
-    debug = os.environ.get("DEBUG", 0)
+    try:
+        debug = int(os.environ.get("DEBUG", 0))
+    except Exception:
+        debug = 0
 
     level = logging.DEBUG if debug else logging.INFO
     logging.basicConfig(level=level)
