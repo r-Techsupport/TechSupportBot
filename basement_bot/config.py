@@ -48,9 +48,10 @@ class ConfigAPI(BotAPI):
 
     def validate_config_subsection(self, section, subsection):
         """Loops through a config subsection to check for missing values.
-
-        section (str): the section name containing the subsection
-        subsection (str): the subsection name
+        
+        parameters:
+            section (str): the section name containing the subsection
+            subsection (str): the subsection name
         """
         for key, value in self.config.get(section, {}).get(subsection, {}).items():
             error_key = None
