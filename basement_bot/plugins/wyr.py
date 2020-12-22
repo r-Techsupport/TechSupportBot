@@ -1,3 +1,4 @@
+import uuid
 from random import choice
 
 from cogs import BasicPlugin
@@ -13,6 +14,7 @@ class Question:
     def __init__(self, a, b):
         self.a = a
         self.b = b
+        self.id = uuid.uuid4()
 
     def get_question(self):
         return f"Would you rather: {self.a} **OR** {self.b}?"
@@ -22,6 +24,9 @@ class WouldYouRather(BasicPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
+
+    async def preconfig(self):
+        self.last = None
 
     QUESTIONS = [
         Question(
@@ -79,4 +84,9 @@ class WouldYouRather(BasicPlugin):
         usage="[message]",
     )
     async def wyr(self, ctx):
-        await tagged_response(ctx, choice(self.QUESTIONS).get_question())
+        while True:
+            question = choice(self.QUESTIONS).get_question()
+            if self.last != question.id:
+                break
+
+        await tagged_response(ctx, question)

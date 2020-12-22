@@ -13,7 +13,7 @@ class Corrector(BasicPlugin):
     HAS_CONFIG = False
     SEARCH_LIMIT = 50
 
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         aliases=["c"],
         brief="Corrects a message",
