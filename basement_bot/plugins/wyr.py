@@ -75,18 +75,18 @@ class WouldYouRather(BasicPlugin):
         ),
     ]
 
-    @commands.cooldown(1, 300, commands.BucketType.guild)
+    @commands.cooldown(1, 60, commands.BucketType.guild)
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="wyr",
-        brief="H E L L O!",
-        description="Creates a regional_indiciator_X emoji message.",
-        usage="[message]",
+        brief="Gets a Would You Rather... question",
+        description="Creates a random Would You Rather question",
+        limitations="60 sec cooldown per guild",
     )
     async def wyr(self, ctx):
         while True:
-            question = choice(self.QUESTIONS).get_question()
+            question = choice(self.QUESTIONS)
             if self.last != question.id:
                 break
 
-        await tagged_response(ctx, question)
+        await tagged_response(ctx, question.get_question())
