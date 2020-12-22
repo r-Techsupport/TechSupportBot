@@ -87,6 +87,7 @@ class WouldYouRather(BasicPlugin):
         while True:
             question = choice(self.QUESTIONS)
             if self.last != question.id:
+                self.last = question.id
                 break
 
         await tagged_response(ctx, question.get_question())
