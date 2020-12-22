@@ -4,6 +4,7 @@
 import traceback
 
 import discord.ext.commands as error_enum
+import munch
 from api import BotAPI
 from discord import Forbidden
 from discord.ext.commands import Cog
@@ -18,18 +19,26 @@ class ErrorMessageTemplate:
 
     parameters:
         message_format (str): the substition formatted (%s) message
-        keys: Union[str, list]: the key(s) to be looked up from the exception
+        lookups (Union[str, list]): the lookup objects to reference
     """
 
     DEFAULT_MESSAGE = "I ran into an error processing your command"
 
-    def __init__(self, message_format=None, keys=None):
-        if keys:
-            self.keys = keys if isinstance(keys, list) else [keys]
-        else:
-            self.keys = []
-
+    def __init__(self, message_format=None, lookups=None):
         self.message_format = message_format
+
+        if lookups:
+            lookups = lookups if isinstance(lookups, list) else [lookups]
+        else:
+            lookups = []
+
+        self.lookups = []
+        for lookup in lookups:
+            try:
+                self.lookups.append(munch.munchify(lookup))
+            except Exception:
+                # abort message formatting
+                self.message_format = None
 
     def get_message(self, exception=None):
         """Gets a message from a given exception.
@@ -43,10 +52,17 @@ class ErrorMessageTemplate:
             return self.DEFAULT_MESSAGE
 
         values = []
-        for key in self.keys:
-            value = getattr(exception, key, None)
+        for lookup in self.lookups:
+            value = getattr(exception, lookup.key, None)
             if not value:
                 return self.DEFAULT_MESSAGE
+
+            if lookup.get("wrapper"):
+                try:
+                    value = lookup.wrapper(value)
+                except Exception:
+                    log.warning("Unable to wrap lookup key")
+
             values.append(value)
 
         return self.message_format % tuple(values)
@@ -68,30 +84,31 @@ class ErrorAPI(BotAPI):
         ),
         error_enum.MissingPermissions: ErrorMessageTemplate(
             "I am unable to do that because you lack the permission(s): `%s`",
-            "missing_perms",
+            {"key": "missing_perms"},
         ),
         error_enum.BotMissingAnyRole: ErrorMessageTemplate(
             "I am unable to do that because I lack the permission(s): `%s`",
-            "missing_perms",
+            {"key": "missing_perms"},
         ),
         error_enum.UnexpectedQuoteError: ErrorMessageTemplate(
             "I wasn't able to understand your command because of an unexpected quote (%s)",
-            "quote",
+            {"key": "quote"},
         ),
         error_enum.InvalidEndOfQuotedStringError: ErrorMessageTemplate(
             "You provided an unreadable char after your quote: `%s`",
-            "char",
+            {"key": "char"},
         ),
         error_enum.ExpectedClosingQuoteError: ErrorMessageTemplate(
             "You did not close your quote with a `%s`",
-            "close_quote",
+            {"key": "close_quotes"},
         ),
         error_enum.CheckFailure: ErrorMessageTemplate(
             "You are not allowed to use that command"
         ),
         error_enum.DisabledCommand: ErrorMessageTemplate("That command is disabled"),
         error_enum.CommandOnCooldown: ErrorMessageTemplate(
-            "That command is on cooldown for you"
+            "That command is on cooldown for you. Try again in %s seconds",
+            {"key": "retry_after", "wrapper": int},
         ),
     }
 

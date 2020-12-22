@@ -1,3 +1,4 @@
+import uuid
 from random import choice
 
 from cogs import BasicPlugin
@@ -13,6 +14,7 @@ class Question:
     def __init__(self, a, b):
         self.a = a
         self.b = b
+        self.id = uuid.uuid4()
 
     def get_question(self):
         return f"Would you rather: {self.a} **OR** {self.b}?"
@@ -22,6 +24,9 @@ class WouldYouRather(BasicPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
+
+    async def preconfig(self):
+        self.last = None
 
     QUESTIONS = [
         Question(
@@ -70,13 +75,18 @@ class WouldYouRather(BasicPlugin):
         ),
     ]
 
-    @commands.cooldown(1, 300, commands.BucketType.guild)
+    @commands.cooldown(1, 60, commands.BucketType.guild)
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="wyr",
-        brief="H E L L O!",
-        description="Creates a regional_indiciator_X emoji message.",
-        usage="[message]",
+        brief="Gets a Would You Rather... question",
+        description="Creates a random Would You Rather question",
+        limitations="60 sec cooldown per guild",
     )
     async def wyr(self, ctx):
-        await tagged_response(ctx, choice(self.QUESTIONS).get_question())
+        while True:
+            question = choice(self.QUESTIONS)
+            if self.last != question.id:
+                break
+
+        await tagged_response(ctx, question.get_question())
