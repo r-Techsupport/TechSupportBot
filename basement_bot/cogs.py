@@ -80,7 +80,8 @@ class HttpPlugin(BasicPlugin):
             response = None
 
         if response:
-            log.debug(f"Received HTTP response: {response.json()}")
+            log.debug(f"Received HTTP response: {response.text}")
+
         return response
 
 

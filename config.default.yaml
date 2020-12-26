@@ -86,3 +86,5 @@ plugins:
         timeout_seconds: 30
         cooldown_seconds: 10
         success_percent: 80
+    wolfram:
+        api_key:
