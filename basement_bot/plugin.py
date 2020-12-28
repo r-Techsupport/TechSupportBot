@@ -33,16 +33,17 @@ class PluginAPI(BotAPI):
 
         returns (dict): the set of loaded and available to load plugins
         """
+        statuses = {}
         try:
-            return {
-                "loaded": [key for key, _ in self.plugins.items()],
-                "unloaded": [
-                    plugin
-                    for plugin in self.get_modules()
-                    if not self.plugins.get(plugin)
-                ],
-                "disabled": self.bot.config.main.disabled_plugins,
-            }
+            for plugin_name in self.get_modules():
+                status = "loaded" if self.plugins.get(plugin_name) else "unloaded"
+                if (
+                    status == "unloaded"
+                    and plugin_name in self.bot.config.main.disabled_plugins
+                ):
+                    status = "disabled"
+                statuses[plugin_name] = status
+            return statuses
         except Exception as e:
             return {"error": str(e)}
 

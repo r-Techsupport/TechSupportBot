@@ -51,7 +51,7 @@ class Googler(HttpPlugin):
             await priv_response(ctx, f"No search results found for: {args}")
             return
 
-        message = embed = None
+        embed = None
         embeds = []
         if not getattr(ctx, "image_search", None):
             field_counter = 1
