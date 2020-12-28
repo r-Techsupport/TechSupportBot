@@ -749,6 +749,14 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
             if (
                 datetime.datetime.now() - self.cooldowns.get(message.author.id)
             ).seconds < self.config.cooldown_seconds:
+                self.cooldowns[message.author.id] = datetime.datetime.now()
+                self.bot.loop.create_task(
+                    priv_response(
+                        None,
+                        content=f"I said to wait {self.config.cooldown_seconds} seconds! Resetting cooldown",
+                        target=message.author,
+                    )
+                )
                 return False
 
         weights = (self.config.success_percent, 100 - self.config.success_percent)
@@ -785,6 +793,8 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         return f'"{message}" -*{author}*'
 
     async def execute(self):
+        self.cooldowns = {}
+
         start_time = datetime.datetime.now()
         embed = SafeEmbed(
             title="*Quack Quack*",
