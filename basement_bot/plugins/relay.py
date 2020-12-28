@@ -34,8 +34,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
 
     async def match(self, ctx, content):
         if ctx.channel.id in self.channels:
-            if not content.startswith(self.bot.command_prefix):
-                return True
+            return True
         return False
 
     async def response(self, ctx, content):
