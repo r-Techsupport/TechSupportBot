@@ -14,11 +14,11 @@ class Wolfram(HttpPlugin):
 
     @commands.has_permissions(send_messages=True)
     @commands.command(
-        name="wa", 
-        aliases=["math"],         
+        name="wa",
+        aliases=["math"],
         brief="Search Wolfram Alpha",
         description="Searches the simple answer Wolfram Alpha API",
-        usage="[query]"
+        usage="[query]",
     )
     async def simple_search(self, ctx, *args):
         if not args:

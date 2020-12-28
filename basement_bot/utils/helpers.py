@@ -30,7 +30,7 @@ async def tagged_response(ctx, content=None, embed=None, target=None):
     return message
 
 
-async def priv_response(ctx, content=None, embed=None):
+async def priv_response(ctx, content=None, embed=None, target=None):
     """Sends a context private message to the original author.
 
     parameters:
@@ -38,11 +38,12 @@ async def priv_response(ctx, content=None, embed=None):
         message (str): the message to send
         embed (discord.Embed): the discord embed object to send
     """
+    who_to_dm = target or ctx.author
     try:
         if content:
-            message = await ctx.author.send(content, embed=embed)
+            message = await who_to_dm.send(content, embed=embed)
         else:
-            message = await ctx.author.send(embed=embed)
+            message = await who_to_dm.send(embed=embed)
     except (Forbidden, HTTPException):
         message = None
     return message
