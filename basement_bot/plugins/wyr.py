@@ -513,7 +513,7 @@ class WouldYouRather(BasicPlugin):
         Question("watch a two-hour movie", "watch two hours of shows"),
     ]
 
-    @commands.cooldown(1, 60, commands.BucketType.guild)
+    @commands.cooldown(1, 30, commands.BucketType.guild)
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="wyr",
