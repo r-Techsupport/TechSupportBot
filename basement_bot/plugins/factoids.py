@@ -66,7 +66,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 f"Command prefix '{command_prefix}' cannot equal Factoid prefix"
             )
 
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="remember",
         brief="Creates custom trigger with a specified output",
@@ -123,7 +123,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         db.close()
         await tagged_response(ctx, f"Successfully added factoid trigger: *{arg1}*")
 
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="forget",
         brief="Deletes an existing custom trigger",
@@ -153,7 +153,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         await tagged_response(ctx, f"Successfully deleted factoid trigger: *{arg}*")
 
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name=f"lsf",
         brief="List all factoids",
@@ -257,7 +257,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         db.close()
 
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Gets raw factoid data",
         description="Gets (cats) the raw data of a factoid object",
