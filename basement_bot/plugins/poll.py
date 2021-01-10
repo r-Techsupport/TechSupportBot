@@ -93,12 +93,12 @@ class Poller(BasicPlugin):
             ctx, message, request_body.timeout, request_body.options
         )
         if results is None:
-            await priv_response(ctx, "I ran into an issue grabbing the poll results...")
+            await tagged_response(ctx, "I ran into an issue grabbing the poll results...")
             try:
                 await message.edit(content="*Poll aborted!*", embed=None)
                 await message.clear_reactions()
             except NotFound:
-                await priv_response(
+                await tagged_response(
                     ctx,
                     "I could not find the poll message. It might have been deleted?",
                 )
@@ -108,7 +108,7 @@ class Poller(BasicPlugin):
 
         total = sum(count for count in results.values())
         if total == 0:
-            await priv_response(
+            await tagged_response(
                 ctx, "Nobody voted in the poll, so I won't bother showing any results"
             )
             return
@@ -175,21 +175,21 @@ class Poller(BasicPlugin):
         timeout = request_body.get("timeout")
 
         if not question:
-            await priv_response(ctx, "I did not find a poll question (`question` key)")
+            await tagged_response(ctx, "I did not find a poll question (`question` key)")
             return None
         elif not isinstance(question, str):
-            await priv_response(
+            await tagged_response(
                 ctx, "I need the poll question to be a string (`question` key)"
             )
             return None
 
         if not isinstance(options, list):
-            await priv_response(
+            await tagged_response(
                 ctx, "I need the poll options to be a list (`question` key)"
             )
             return None
         elif len(options) < 2 or len(options) > max_options:
-            await priv_response(
+            await tagged_response(
                 ctx, f"I need between 2 and {max_options} options! (`options` key)"
             )
             return None

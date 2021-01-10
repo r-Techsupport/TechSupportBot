@@ -144,12 +144,12 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
     )
     async def irc_command(self, ctx, *args):
         if not self.config.commands_allowed:
-            await priv_response(ctx, "Relay cross-chat commands are disabled on my end")
+            await tagged_response(ctx, "Relay cross-chat commands are disabled on my end")
             return
 
         if ctx.channel.id not in self.channels:
             log.warning(f"IRC command issued outside of allowed channels")
-            await priv_response(
+            await tagged_response(
                 ctx, "That command can only be used from the IRC relay channels"
             )
             return
@@ -157,12 +157,12 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         permissions = ctx.author.permissions_in(ctx.channel)
 
         if len(args) == 0:
-            await priv_response(ctx, "No IRC command provided. Try `.help irc`")
+            await tagged_response(ctx, "No IRC command provided. Try `.help irc`")
             return
 
         command = args[0]
         if len(args) == 1:
-            await priv_response(ctx, f"No target provided for IRC command {command}")
+            await tagged_response(ctx, f"No target provided for IRC command {command}")
             return
 
         target = " ".join(args[1:])
@@ -170,7 +170,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         ctx.irc_command = command
         ctx.content = target
 
-        await priv_response(
+        await tagged_response(
             ctx,
             f"Sending **{command}** command with target `{target}` to IRC bot...",
         )

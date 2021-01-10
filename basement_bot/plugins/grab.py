@@ -51,11 +51,11 @@ class Grabber(DatabasePlugin):
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
         if not user_to_grab:
-            await priv_response(ctx, "You must tag a user to grab!")
+            await tagged_response(ctx, "You must tag a user to grab!")
             return
 
         if user_to_grab.bot:
-            await priv_response(ctx, "Ain't gonna catch me slipping!")
+            await tagged_response(ctx, "Ain't gonna catch me slipping!")
             return
 
         grab_message = None
@@ -67,7 +67,7 @@ class Grabber(DatabasePlugin):
                 break
 
         if not grab_message:
-            await priv_response(
+            await tagged_response(
                 ctx, f"Could not find a recent essage from user {user_to_grab}"
             )
             return
@@ -83,7 +83,7 @@ class Grabber(DatabasePlugin):
             .count()
             != 0
         ):
-            await priv_response(ctx, "That grab already exists!")
+            await tagged_response(ctx, "That grab already exists!")
             return
         db.add(
             Grab(
@@ -95,7 +95,7 @@ class Grabber(DatabasePlugin):
         db.commit()
         db.close()
 
-        await priv_response(ctx, f"Successfully saved: '*{grab_message}*'")
+        await tagged_response(ctx, f"Successfully saved: '*{grab_message}*'")
 
     @commands.has_permissions(send_messages=True)
     @commands.command(
@@ -113,11 +113,11 @@ class Grabber(DatabasePlugin):
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
         if not user_to_grab:
-            await priv_response(ctx, "You must mention a user to get their grabs!")
+            await tagged_response(ctx, "You must mention a user to get their grabs!")
             return
 
         if user_to_grab.bot:
-            await priv_response(ctx, "Ain't gonna catch me slipping!")
+            await tagged_response(ctx, "Ain't gonna catch me slipping!")
             return
 
         db = self.db_session()
@@ -128,7 +128,7 @@ class Grabber(DatabasePlugin):
             .filter(Grab.author_id == str(user_to_grab.id))
         )
         if len(list(grabs)) == 0:
-            await priv_response(ctx, f"No grabs found for {user_to_grab.name}")
+            await tagged_response(ctx, f"No grabs found for {user_to_grab.name}")
             return
 
         embed = SafeEmbed(
@@ -179,11 +179,11 @@ class Grabber(DatabasePlugin):
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
         if not user_to_grab:
-            await priv_response(ctx, "You must mention a user to get a random grab!")
+            await tagged_response(ctx, "You must mention a user to get a random grab!")
             return
 
         if user_to_grab.bot:
-            await priv_response(ctx, "Ain't gonna catch me slipping!")
+            await tagged_response(ctx, "Ain't gonna catch me slipping!")
             return
 
         db = self.db_session()
@@ -203,7 +203,7 @@ class Grabber(DatabasePlugin):
             )
             embed.set_thumbnail(url=user_to_grab.avatar_url)
         else:
-            await priv_response(
+            await tagged_response(
                 f"No messages found for {user_to_grab or 'this channel'}"
             )
             return

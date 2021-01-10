@@ -1,6 +1,6 @@
 from cogs import BasicPlugin
 from discord.ext import commands
-from utils.helpers import priv_response, tagged_response
+from utils.helpers import tagged_response
 
 
 def setup(bot):
@@ -39,4 +39,4 @@ class Corrector(BasicPlugin):
                 ctx, f"*Correction:* {new_content} :white_check_mark:", target=target
             )
         else:
-            await priv_response(ctx, "I couldn't find any message to correct")
+            await tagged_response(ctx, "I couldn't find any message to correct")

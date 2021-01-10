@@ -1,7 +1,7 @@
 from cogs import HttpPlugin
 from discord.ext import commands
 from utils.embed import SafeEmbed
-from utils.helpers import paginate, priv_response, tagged_response
+from utils.helpers import paginate, tagged_response
 
 
 def setup(bot):
@@ -31,7 +31,7 @@ class Googler(HttpPlugin):
     )
     async def google(self, ctx, *args):
         if not args:
-            await priv_response(ctx, "I can't search for nothing!")
+            await tagged_response(ctx, "I can't search for nothing!")
             return
 
         args = " ".join(args)
@@ -48,7 +48,7 @@ class Googler(HttpPlugin):
 
         if not items:
             args = f"*{args}*"
-            await priv_response(ctx, f"No search results found for: {args}")
+            await tagged_response(ctx, f"No search results found for: {args}")
             return
 
         embed = None
@@ -80,7 +80,7 @@ class Googler(HttpPlugin):
             for item in items:
                 link = item.get("link")
                 if not link:
-                    await priv_response(
+                    await tagged_response(
                         ctx,
                         "I had an issue processing Google's response... try again later!",
                     )
@@ -116,7 +116,7 @@ class Googler(HttpPlugin):
     )
     async def youtube(self, ctx, *args):
         if not args:
-            await priv_response(ctx, "I can't search for nothing!")
+            await tagged_response(ctx, "I can't search for nothing!")
             return
 
         args = " ".join(args)
@@ -132,7 +132,7 @@ class Googler(HttpPlugin):
         if not items:
             if args:
                 args = f"*{args}*"
-            await priv_response(ctx, f"No video results found for: {args}")
+            await tagged_response(ctx, f"No video results found for: {args}")
             return
 
         video_id = items[0].get("id", {}).get("videoId")

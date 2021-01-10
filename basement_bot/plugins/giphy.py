@@ -2,7 +2,7 @@ import random
 
 from cogs import HttpPlugin
 from discord.ext import commands
-from utils.helpers import paginate, priv_response
+from utils.helpers import paginate, tagged_response
 
 
 def setup(bot):
@@ -30,7 +30,7 @@ class Giphy(HttpPlugin):
     )
     async def giphy(self, ctx, *args):
         if not args:
-            await priv_response(ctx, "I can't search for nothing!")
+            await tagged_response(ctx, "I can't search for nothing!")
             return
 
         args_ = " ".join(args)
@@ -44,7 +44,7 @@ class Giphy(HttpPlugin):
 
         if not data:
             args_f = f"*{args_}*"
-            await priv_response(ctx, f"No search results found for: {args_f}")
+            await tagged_response(ctx, f"No search results found for: {args_f}")
             return
 
         embeds = []
