@@ -38,7 +38,7 @@ class Evaluator(BasicPlugin):
             try:
                 result = eval(expression)
             except SyntaxError:
-                result = None
+                result = "Syntax Error"
             except Exception as e:
                 error_ = e
 
