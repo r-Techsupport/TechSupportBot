@@ -110,6 +110,7 @@ class ErrorAPI(BotAPI):
             "That command is on cooldown for you. Try again in %s seconds",
             {"key": "retry_after", "wrapper": int},
         ),
+        error_enum.NotOwner: ErrorMessageTemplate("Only the bot owner can do that"),
     }
 
     IGNORE_ERRORS = set([error_enum.CommandNotFound])
