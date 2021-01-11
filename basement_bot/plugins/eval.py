@@ -1,0 +1,70 @@
+import asyncio
+import datetime
+from threading import Thread
+
+from cogs import BasicPlugin
+from discord.ext import commands
+from utils.helpers import tagged_response
+
+
+def setup(bot):
+    bot.add_cog(Evaluator(bot))
+
+
+class Evaluator(BasicPlugin):
+
+    PLUGIN_NAME = __name__
+    HAS_CONFIG = False
+    THREAD_WAIT_MINUTES = 10
+    POLL_WAIT = 1
+    UNDEFINED_RESULT = "@UNDEFINED@"
+
+    @commands.is_owner()
+    @commands.command(
+        name="eval",
+        brief="Evalulates Python code",
+        description="Evaluates a Python expression",
+        usage='"<Python expression>',
+    )
+    async def evalulate(self, ctx, *, expression):
+        global result
+        global error_
+        result = self.UNDEFINED_RESULT
+        error_ = None
+
+        def thread_func(expression):
+            global result
+            global error_
+            try:
+                result = eval(expression)
+            except SyntaxError:
+                result = None
+            except Exception as e:
+                error_ = e
+
+        thread = Thread(target=thread_func, args=(str(expression),))
+
+        thread.start()
+
+        finish_time = datetime.datetime.now() + datetime.timedelta(
+            minutes=self.THREAD_WAIT_MINUTES
+        )
+
+        while True:
+            if result != self.UNDEFINED_RESULT:
+                await tagged_response(
+                    ctx, f"`{result}`" if result is not None else "`None`"
+                )
+                return
+
+            elif error_ is not None:
+                raise RuntimeError(f"Thread finished with error: {error_}")
+
+            elif datetime.datetime.now() > finish_time:
+                await tagged_response(
+                    ctx,
+                    f"Result not received from eval() after {self.THREAD_WAIT_MINUTES} minutes",
+                )
+                return
+
+            await asyncio.sleep(self.POLL_WAIT)
