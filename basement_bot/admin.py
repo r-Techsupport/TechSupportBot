@@ -200,13 +200,12 @@ class AdminControl(BasicPlugin):
 
         try:
             await ctx.channel.purge(limit=amount, check=check)
+            await tagged_response(
+                ctx,
+                f"I finished deleting {amount} messages",
+            )
         except Forbidden:
-            pass
-
-        await tagged_response(
-            ctx,
-            f"I finished trying to delete {amount} messages",
-        )
+            await tagged_response(ctx, "I am not allowed to delete messages")
 
     @commands.command(hidden=True)
     async def echo_channel(self, ctx, channel_id, *args):
