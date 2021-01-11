@@ -73,14 +73,15 @@ class HttpPlugin(BasicPlugin):
             raise AttributeError(f"Unable to use HTTP method: {method}")
 
         log.debug(f"Making {method} HTTP call on URL: {args}")
+        
         try:
             response = await method_fn(*args, **kwargs)
+            response = response.json()
         except Exception as e:
-            log.error(f"Unable to process HTTP call: {e}")
-            response = None
+            await self.bot.error_api.handle_error("http_cog", e)
+            response = {}
 
-        if response:
-            log.debug(f"Received HTTP response: {response.text}")
+        log.debug(f"Received HTTP response: {response}")
 
         return response
 

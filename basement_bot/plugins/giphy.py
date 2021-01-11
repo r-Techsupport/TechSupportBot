@@ -39,7 +39,6 @@ class Giphy(HttpPlugin):
             "get",
             self.GIPHY_URL.format(args_q, self.config.dev_key, self.SEARCH_LIMIT),
         )
-        response = response.json()
         data = response.get("data")
 
         if not data:

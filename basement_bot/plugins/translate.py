@@ -24,7 +24,6 @@ class GoogleTranslate(HttpPlugin):
             "get",
             self.API_URL.format(message, src, dest),
         )
-        response = response.json()
         translated = response.get("responseData", {}).get("translatedText")
 
         if not translated:

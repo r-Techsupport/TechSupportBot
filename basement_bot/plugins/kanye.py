@@ -31,7 +31,7 @@ class KanyeQuotes(LoopPlugin, HttpPlugin):
 
     async def execute(self):
         response = await self.http_call("get", self.API_URL)
-        quote = response.json().get("quote")
+        quote = response.get("quote")
 
         if quote:
             message = f"'*{quote}*' - Kanye West"

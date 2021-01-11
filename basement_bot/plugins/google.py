@@ -15,8 +15,8 @@ class Googler(HttpPlugin):
     YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=1"
 
     async def get_items(self, url, data):
-        data = await self.http_call("get", url, params=data)
-        return data.json().get("items")
+        response = await self.http_call("get", url, params=data)
+        return response.get("items")
 
     @commands.has_permissions(send_messages=True)
     @commands.command(

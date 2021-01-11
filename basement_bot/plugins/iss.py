@@ -30,7 +30,7 @@ class ISSLocator(HttpPlugin):
                 ctx, "I had trouble calling the ISS API. Maybe it's down?"
             )
             return
-        coordinates = response.json().get("iss_position", {})
+        coordinates = response.get("iss_position", {})
         longitude, latitude = coordinates.get("longitude"), coordinates.get("latitude")
         if not longitude or not latitude:
             await tagged_response(
@@ -47,7 +47,7 @@ class ISSLocator(HttpPlugin):
             )
             return
         else:
-            osmtags = response.json().get("osmtags", {})
+            osmtags = response.get("osmtags", {})
             location = osmtags.get("name")
 
         if not location:

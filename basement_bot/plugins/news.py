@@ -29,13 +29,8 @@ class News(LoopPlugin, HttpPlugin):
         response = await self.http_call(
             "get", self.API_URL.format(self.config.api_key, self.config.country)
         )
-        response_json = response.json() if response else None
 
-        if not response_json:
-            log.warning("Unable to retrieve response from API")
-            return
-
-        articles = response_json.get("articles")
+        articles = response.get("articles")
         if not articles:
             log.warning("Unable to retrieve articles from API response")
             return

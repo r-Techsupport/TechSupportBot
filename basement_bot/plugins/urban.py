@@ -38,8 +38,8 @@ class UrbanDictionary(HttpPlugin):
             return
 
         args = " ".join(args).lower().strip()
-        definitions = await self.http_call("get", f"{self.BASE_URL}{args}")
-        definitions = definitions.json().get("list")
+        response = await self.http_call("get", f"{self.BASE_URL}{args}")
+        definitions = response.get("list")
 
         if not definitions:
             await tagged_response(ctx, f"No results found for: *{args}*")
