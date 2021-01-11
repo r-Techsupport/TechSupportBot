@@ -4,10 +4,10 @@ from utils.helpers import tagged_response
 
 
 def setup(bot):
-    bot.add_cog(GoogleTranslate(bot))
+    bot.add_cog(Translator(bot))
 
 
-class GoogleTranslate(HttpPlugin):
+class Translator(HttpPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
@@ -27,7 +27,7 @@ class GoogleTranslate(HttpPlugin):
         translated = response.get("responseData", {}).get("translatedText")
 
         if not translated:
-            await tagged_response("I could not translate your message")
+            await tagged_response(ctx, "I could not translate your message")
             return
 
         await tagged_response(ctx, translated)
