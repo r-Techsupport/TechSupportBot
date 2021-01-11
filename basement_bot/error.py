@@ -217,7 +217,7 @@ class ErrorAPI(BotAPI):
                 inline=False,
             )
             embed.add_field(
-                name="DM",
+                name="Response",
                 value=f'*"{getattr(context, "error_message", "*Unknown*")}"*',
                 inline=True,
             )
