@@ -21,6 +21,7 @@ plugins:
         responses_max: 3
     grab:
         grabs_max: 3
+        invalid_channels: []
     factoids:
         prefix: "?"
         list_all_max: 5

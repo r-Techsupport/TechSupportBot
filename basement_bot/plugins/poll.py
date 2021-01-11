@@ -93,7 +93,9 @@ class Poller(BasicPlugin):
             ctx, message, request_body.timeout, request_body.options
         )
         if results is None:
-            await tagged_response(ctx, "I ran into an issue grabbing the poll results...")
+            await tagged_response(
+                ctx, "I ran into an issue grabbing the poll results..."
+            )
             try:
                 await message.edit(content="*Poll aborted!*", embed=None)
                 await message.clear_reactions()
@@ -175,7 +177,9 @@ class Poller(BasicPlugin):
         timeout = request_body.get("timeout")
 
         if not question:
-            await tagged_response(ctx, "I did not find a poll question (`question` key)")
+            await tagged_response(
+                ctx, "I did not find a poll question (`question` key)"
+            )
             return None
         elif not isinstance(question, str):
             await tagged_response(

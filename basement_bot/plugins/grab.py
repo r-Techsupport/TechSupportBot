@@ -29,6 +29,17 @@ class Grabber(DatabasePlugin):
     SEARCH_LIMIT = 20
     MODEL = Grab
 
+    async def invalid_channel(self, ctx):
+        if isinstance(ctx.channel, DMChannel):
+            await priv_response(ctx, "I can't grab a message in a DM!")
+            return False
+
+        if ctx.channel.id in self.config.invalid_channels:
+            await tagged_response(ctx, "Grabs are disabled for this channel")
+            return False
+
+        return True
+
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="grab",
@@ -45,8 +56,8 @@ class Grabber(DatabasePlugin):
         ),
     )
     async def grab(self, ctx):
-        channel = getattr(ctx.message, "channel", None)
-        channel = str(channel.id) if channel else None
+        if self.invalid_channel(ctx):
+            return
 
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
@@ -88,7 +99,7 @@ class Grabber(DatabasePlugin):
         db.add(
             Grab(
                 author_id=str(user_to_grab.id),
-                channel=channel,
+                channel=str(ctx.channel.id),
                 message=grab_message,
             )
         )
@@ -110,6 +121,9 @@ class Grabber(DatabasePlugin):
         ),
     )
     async def get_grabs(self, ctx):
+        if self.invalid_channel(ctx):
+            return
+
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
         if not user_to_grab:
@@ -176,6 +190,9 @@ class Grabber(DatabasePlugin):
         ),
     )
     async def random_grab(self, ctx):
+        if self.invalid_channel(ctx):
+            return
+
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
 
         if not user_to_grab:

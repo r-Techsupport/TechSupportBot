@@ -10,7 +10,7 @@ def setup(bot):
 class Wolfram(HttpPlugin):
 
     PLUGIN_NAME = __name__
-    API_URL = "http://api.wolframalpha.com/v1/result?appid=%s&i=%s"
+    API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
 
     @commands.has_permissions(send_messages=True)
     @commands.command(
@@ -27,7 +27,7 @@ class Wolfram(HttpPlugin):
 
         query = "+".join(args)
 
-        url = self.API_URL % (self.config.api_key, query)
+        url = self.API_URL.format(self.config.api_key, query)
 
         response = await self.http_call("get", url)
 

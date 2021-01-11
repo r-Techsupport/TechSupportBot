@@ -144,7 +144,9 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
     )
     async def irc_command(self, ctx, *args):
         if not self.config.commands_allowed:
-            await tagged_response(ctx, "Relay cross-chat commands are disabled on my end")
+            await tagged_response(
+                ctx, "Relay cross-chat commands are disabled on my end"
+            )
             return
 
         if ctx.channel.id not in self.channels:

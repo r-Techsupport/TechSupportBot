@@ -83,7 +83,9 @@ class LetterEmojis(BasicPlugin):
         if emoji_message:
             await tagged_response(ctx, emoji_message)
         else:
-            await tagged_response(ctx, "I can't get any emoji letters from your message!")
+            await tagged_response(
+                ctx, "I can't get any emoji letters from your message!"
+            )
 
     @commands.has_permissions(add_reactions=True)
     @commands.command(
