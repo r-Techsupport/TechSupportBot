@@ -3,7 +3,7 @@ import json
 from cogs import HttpPlugin
 from discord.ext import commands
 from utils.embed import SafeEmbed
-from utils.helpers import paginate, priv_response, tagged_response
+from utils.helpers import paginate, tagged_response
 
 
 def setup(bot):
@@ -34,15 +34,15 @@ class UrbanDictionary(HttpPlugin):
     )
     async def urban(self, ctx, *args):
         if not args:
-            await priv_response(ctx, "I can't search for nothing!")
+            await tagged_response(ctx, "I can't search for nothing!")
             return
 
         args = " ".join(args).lower().strip()
-        definitions = await self.http_call("get", f"{self.BASE_URL}{args}")
-        definitions = definitions.json().get("list")
+        response = await self.http_call("get", f"{self.BASE_URL}{args}")
+        definitions = response.get("list")
 
         if not definitions:
-            await priv_response(ctx, f"No results found for: *{args}*")
+            await tagged_response(ctx, f"No results found for: *{args}*")
             return
 
         args_no_spaces = args.replace(" ", "%20")

@@ -37,17 +37,17 @@ class Weather(HttpPlugin):
     )
     async def we(self, ctx, *args):
         if not args:
-            await priv_response(ctx, "I can't search for nothing!")
+            await tagged_response(ctx, "I can't search for nothing!")
             return
         if len(args) > 3:
             args = args[:3]
 
         response = await self.http_call("get", self.get_url(args))
         if response.status_code == 404:
-            await priv_response(ctx, "I could not find a location from your search!")
+            await tagged_response(ctx, "I could not find a location from your search!")
             return
         elif response.status_code != 200:
-            await priv_response(
+            await tagged_response(
                 ctx,
                 "I had some trouble looking up the weather for you... try again later!",
             )

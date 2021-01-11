@@ -17,7 +17,7 @@ class Embedder(BasicPlugin):
     @commands.command(name="embed", brief="", description="", usage="")
     async def embed(self, ctx, *args):
         if not ctx.message.attachments:
-            await priv_response(ctx, "Please provide a JSON file for your embed(s)")
+            await tagged_response(ctx, "Please provide a JSON file for your embed(s)")
             return
 
         request_body = await get_json_from_attachment(ctx, ctx.message)
@@ -26,7 +26,7 @@ class Embedder(BasicPlugin):
 
         embeds = await self.process_request(ctx, request_body)
         if not embeds:
-            await priv_response(
+            await tagged_response(
                 ctx, "I was unable to generate any embeds from your request"
             )
             return

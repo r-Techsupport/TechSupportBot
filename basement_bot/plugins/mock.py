@@ -47,7 +47,7 @@ class Mocker(BasicPlugin):
         user_to_mock = ctx.message.mentions[0] if ctx.message.mentions else None
 
         if not user_to_mock:
-            await priv_response(ctx, "You must tag a user if you want to mock them!")
+            await tagged_response(ctx, "You must tag a user if you want to mock them!")
             return
 
         if user_to_mock.bot:
@@ -62,7 +62,7 @@ class Mocker(BasicPlugin):
                 break
 
         if not mock_message:
-            await priv_response(ctx, f"No message found for user {user_to_mock}")
+            await tagged_response(ctx, f"No message found for user {user_to_mock}")
             return
 
         filtered_message = sub_mentions_for_usernames(ctx.bot, mock_message)

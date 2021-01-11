@@ -751,7 +751,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
             ).seconds < self.config.cooldown_seconds:
                 self.cooldowns[message.author.id] = datetime.datetime.now()
                 self.bot.loop.create_task(
-                    priv_response(
+                    tagged_response(
                         None,
                         content=f"I said to wait {self.config.cooldown_seconds} seconds! Resetting cooldown",
                         target=message.author,
@@ -882,7 +882,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         )
 
         if query_user.bot:
-            await priv_response(
+            await tagged_response(
                 ctx, "If it looks like a duck, quacks like a duck, it's a duck!"
             )
             return
@@ -893,7 +893,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         )
 
         if not duck_user:
-            await priv_response(ctx, "That user has not partcipated in the duck hunt")
+            await tagged_response(ctx, "That user has not partcipated in the duck hunt")
             return
 
         embed = SafeEmbed(title="Duck Stats", description=query_user.mention)
@@ -918,7 +918,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         db = self.db_session()
         duck_users = db.query(DuckUser).order_by(DuckUser.befriend_count.desc()).all()
         if len(list(duck_users)) == 0:
-            await priv_response(
+            await tagged_response(
                 ctx, "Nobody appears to be participating in the Duck Hunt"
             )
             return
@@ -958,7 +958,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         db = self.db_session()
         duck_users = db.query(DuckUser).order_by(DuckUser.kill_count.desc()).all()
         if len(list(duck_users)) == 0:
-            await priv_response(
+            await tagged_response(
                 ctx, "Nobody appears to be participating in the Duck Hunt"
             )
             return

@@ -2,7 +2,7 @@ from cogs import BasicPlugin
 from discord.ext import commands
 from emoji import EMOJI_UNICODE, emojize
 from inflect import engine as inflect_engine
-from utils.helpers import priv_response, tagged_response
+from utils.helpers import tagged_response
 
 
 def setup(bot):
@@ -71,19 +71,21 @@ class LetterEmojis(BasicPlugin):
     )
     async def emsg(self, ctx, *args):
         if ctx.message.mentions:
-            await priv_response(ctx, "I can't make an emoji from a mention!")
+            await tagged_response(ctx, "I can't make an emoji from a mention!")
             return
 
         message = " ".join(args) if args else None
         if not message:
-            await priv_response(ctx, "You must specify a message!")
+            await tagged_response(ctx, "You must specify a message!")
             return
 
         emoji_message = self.emoji_message_from_string(message)
         if emoji_message:
             await tagged_response(ctx, emoji_message)
         else:
-            await priv_response(ctx, "I can't get any emoji letters from your message!")
+            await tagged_response(
+                ctx, "I can't get any emoji letters from your message!"
+            )
 
     @commands.has_permissions(add_reactions=True)
     @commands.command(
@@ -95,11 +97,11 @@ class LetterEmojis(BasicPlugin):
     async def ermsg(self, ctx, *args):
         message = " ".join(args[:-1]) if args else None
         if not message:
-            await priv_response(ctx, "You must specify a message!")
+            await tagged_response(ctx, "You must specify a message!")
             return
 
         if not len(ctx.message.mentions) == 1:
-            await priv_response(ctx, "You must mention a specific user to react to!")
+            await tagged_response(ctx, "You must mention a specific user to react to!")
             return
         react_user = ctx.message.mentions[0]
 
@@ -114,12 +116,12 @@ class LetterEmojis(BasicPlugin):
                 react_message = channel_message
                 break
         if not react_message:
-            await priv_response(ctx, f"No valid messages found to react to!")
+            await tagged_response(ctx, "No valid messages found to react to!")
             return
 
         emoji_list = self.emoji_reaction_from_string(message)
         if not emoji_list:
-            await priv_response(
+            await tagged_response(
                 ctx, "Invalid message! Make sure there are no repeat characters!"
             )
             return
