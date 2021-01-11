@@ -2,6 +2,7 @@
 """
 
 from cogs import BasicPlugin
+from discord import Forbidden
 from discord.ext import commands
 from utils.embed import SafeEmbed
 from utils.helpers import paginate, tagged_response
@@ -167,9 +168,9 @@ class AdminControl(BasicPlugin):
         else:
             await tagged_response(ctx, "I cannot play a game with no name!")
 
-    @commands.command(name="delete_bot_x", hidden=True)
-    async def delete_x_bot_messages(self, ctx, *args):
-        """Deletes a set number of bot messages.
+    @commands.command(name="purge", hidden=True)
+    async def purge(self, ctx, *args):
+        """Deletes a set number messages.
 
         This is a command and should be accessed via Discord.
 
@@ -177,61 +178,34 @@ class AdminControl(BasicPlugin):
             ctx (discord.Ctx): the context object for the message
             args [list]: the space-or-quote-delimitted args
         """
-        if not args:
-            await tagged_response(ctx, "Please provide a number of messages to delete")
-            return
-
-        try:
-            amount = int(args[0])
-            if amount <= 0:
-                amount = 1
-        except Exception:
-            amount = 1
-
-        counter = 0
-        async for message in ctx.channel.history(limit=500):
-            if counter >= amount:
-                break
-            if message.author.id == ctx.bot.user.id:
-                await message.delete()
-                counter += 1
-
-        await tagged_response(
-            ctx,
-            f"I finished trying to delete {amount} of my most recent messages in that channel",
+        # dat constant lookup
+        targets = (
+            set(user.id for user in ctx.message.mentions)
+            if ctx.message.mentions
+            else None
         )
 
-    @commands.command(name="delete_all_x", hidden=True)
-    async def delete_x_messages(self, ctx, *args):
-        """Deletes a set number of messages.
+        try:
+            amount = int(args[-1])
+        except (IndexError, ValueError):
+            amount = 0
 
-        This is a command and should be accessed via Discord.
+        if amount <= 0 or amount > 50:
+            amount = 50
 
-        parameters:
-            ctx (discord.Ctx): the context object for the message
-            args [list]: the space-or-quote-delimitted args
-        """
-        if not args:
-            await tagged_response(ctx, "Please provide a number of messages to delete")
-            return
+        def check(message):
+            if not targets or message.author.id in targets:
+                return True
+            return False
 
         try:
-            amount = int(args[0])
-            if amount <= 0:
-                amount = 1
-        except Exception:
-            amount = 1
-
-        counter = 0
-        async for message in ctx.channel.history(limit=500):
-            if counter >= amount:
-                break
-            await message.delete()
-            counter += 1
+            await ctx.channel.purge(limit=amount, check=check)
+        except Forbidden:
+            pass
 
         await tagged_response(
             ctx,
-            f"I finished trying to delete {amount} most recent messages in that channel",
+            f"I finished trying to delete {amount} messages",
         )
 
     @commands.command(hidden=True)

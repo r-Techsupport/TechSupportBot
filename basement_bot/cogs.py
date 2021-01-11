@@ -73,7 +73,7 @@ class HttpPlugin(BasicPlugin):
             raise AttributeError(f"Unable to use HTTP method: {method}")
 
         log.debug(f"Making {method} HTTP call on URL: {args}")
-        
+
         try:
             response = await method_fn(*args, **kwargs)
             response = response.json()
