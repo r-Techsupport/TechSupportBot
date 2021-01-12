@@ -1,7 +1,7 @@
 from cogs import HttpPlugin
 from discord.ext import commands
 from utils.embed import SafeEmbed
-from utils.helpers import paginate, tagged_response, with_typing
+from utils.helpers import task_paginate, tagged_response, with_typing
 
 
 def setup(bot):
