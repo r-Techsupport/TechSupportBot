@@ -875,7 +875,6 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         brief="Get duck stats",
         description="Gets duck friendships and kills for yourself or another user",
         usage="@user (defaults to yourself)",
-        help="",
     )
     async def stats(self, ctx, *args):
         query_user = (
@@ -915,8 +914,6 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         name="duck_friends",
         brief="Get duck friendship scores",
         description="Gets duck friendship scores for all users",
-        usage="",
-        help="",
     )
     async def friends(self, ctx):
         db = self.db_session()
@@ -956,8 +953,6 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         name="duck_killers",
         brief="Get duck kill scores",
         description="Gets duck kill scores for all users",
-        usage="",
-        help="",
     )
     async def killers(self, ctx):
         db = self.db_session()

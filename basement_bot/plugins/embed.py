@@ -29,7 +29,7 @@ class Embedder(BasicPlugin):
 
         embeds = await self.process_request(ctx, request_body)
         if not embeds:
-            await tagged_response(
+            await self.bot.h.tagged_response(
                 ctx, "I was unable to generate any embeds from your request"
             )
             return
