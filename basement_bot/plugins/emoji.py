@@ -1,6 +1,7 @@
 from cogs import BasicPlugin
+from discord import Forbidden
 from discord.ext import commands
-from emoji import EMOJI_UNICODE, emojize
+from emoji import emojize
 from helper import with_typing
 from inflect import engine as inflect_engine
 

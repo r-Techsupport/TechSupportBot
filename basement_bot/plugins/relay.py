@@ -190,7 +190,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
 
     PLUGIN_NAME = __name__
     WAIT_KEY = "consume_seconds"
-    IRC_LOGO = "\U0001F4E8"  # emoji
+    IRC_LOGO = "🇮🇷🇨"
 
     async def preconfig(self):
         self.channels = list(self.config.channel_map.values())
