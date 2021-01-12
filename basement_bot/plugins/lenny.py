@@ -2,7 +2,7 @@ from random import choice
 
 from cogs import BasicPlugin
 from discord.ext import commands
-from utils.helpers import with_typing
+from helper import with_typing
 
 
 def setup(bot):

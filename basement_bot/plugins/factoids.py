@@ -4,9 +4,9 @@ import json
 from cogs import DatabasePlugin, MatchPlugin
 from discord import HTTPException
 from discord.ext import commands
+from helper import with_typing
 from sqlalchemy import Column, DateTime, Integer, String
 from utils.embed import SafeEmbed
-from utils.helpers import *
 from utils.logger import get_logger
 
 log = get_logger("Factoids")
@@ -81,10 +81,12 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
     )
     async def add_factoid(self, ctx, *args):
         if ctx.message.mentions:
-            await tagged_response(ctx, "Sorry, factoids don't work well with mentions")
+            await self.bot.h.tagged_response(
+                ctx, "Sorry, factoids don't work well with mentions"
+            )
             return
 
-        embed_config = await get_json_from_attachment(
+        embed_config = await self.bot.h.get_json_from_attachment(
             ctx, ctx.message, send_msg_on_none=False, send_msg_on_failure=False
         )
         if embed_config:
@@ -96,7 +98,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             arg1 = args[0]
             args = args[1:]
         else:
-            await tagged_response(ctx, "Invalid input!")
+            await self.bot.h.tagged_response(ctx, "Invalid input!")
             return
 
         channel = getattr(ctx.message, "channel", None)
@@ -109,7 +111,9 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         if entry:
             # delete old one
             db.delete(entry)
-            await tagged_response(ctx, "Deleting previous entry of factoid trigger...")
+            await self.bot.h.tagged_response(
+                ctx, "Deleting previous entry of factoid trigger..."
+            )
 
         # finally, add new entry
         db.add(
@@ -122,7 +126,9 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         )
         db.commit()
         db.close()
-        await tagged_response(ctx, f"Successfully added factoid trigger: *{arg1}*")
+        await self.bot.h.tagged_response(
+            ctx, f"Successfully added factoid trigger: *{arg1}*"
+        )
 
     @with_typing
     @commands.has_permissions(send_messages=True)
@@ -135,11 +141,15 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
     )
     async def delete_factoid(self, ctx, *args):
         if ctx.message.mentions:
-            await tagged_response(ctx, "Sorry, factoids don't work well with mentions")
+            await self.bot.h.tagged_response(
+                ctx, "Sorry, factoids don't work well with mentions"
+            )
             return
 
         if not args:
-            await tagged_response(ctx, "You must specify a factoid to delete!")
+            await self.bot.h.tagged_response(
+                ctx, "You must specify a factoid to delete!"
+            )
             return
         else:
             arg = args[0]
@@ -153,7 +163,9 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         db.close()
 
-        await tagged_response(ctx, f"Successfully deleted factoid trigger: *{arg}*")
+        await self.bot.h.tagged_response(
+            ctx, f"Successfully deleted factoid trigger: *{arg}*"
+        )
 
     @with_typing
     @commands.has_permissions(send_messages=True)
@@ -166,7 +178,9 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
     )
     async def list_all_factoids(self, ctx):
         if ctx.message.mentions:
-            await tagged_response(ctx, "Sorry, factoids don't work well with mentions")
+            await self.bot.h.tagged_response(
+                ctx, "Sorry, factoids don't work well with mentions"
+            )
             return
 
         db = self.db_session()
@@ -178,7 +192,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             .all()
         )
         if len(list(factoids)) == 0:
-            await tagged_response(ctx, "No factoids found!")
+            await self.bot.h.tagged_response(ctx, "No factoids found!")
             return
 
         field_counter = 1
@@ -207,9 +221,9 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         db.close()
 
-        task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
 
-    async def match(self, ctx, content):
+    async def match(self, _, content):
         return content.startswith(self.config.prefix)
 
     async def response(self, ctx, arg):
@@ -220,7 +234,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             user_mentioned = ctx.message.mentions[0]
             query = query.split(" ")[0]
         elif len(ctx.message.mentions) > 1:
-            await tagged_response(
+            await self.bot.h.tagged_response(
                 ctx, "I can only tag one user when referencing a factoid!"
             )
             return
@@ -238,12 +252,14 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 embed = None
                 message = entry.message
 
-            message = await tagged_response(
+            message = await self.bot.h.tagged_response(
                 ctx, content=message, embed=embed, target=user_mentioned
             )
 
             if not message:
-                await tagged_response(ctx, "I was unable to render that factoid")
+                await self.bot.h.tagged_response(
+                    ctx, "I was unable to render that factoid"
+                )
                 return
 
             if not self.bot.plugin_api.plugins.get("relay"):
@@ -270,7 +286,9 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
     )
     async def cat(self, ctx, *args):
         if not args:
-            await tagged_response(ctx, f"(Example) ```{self.EXAMPLE_JSON}```")
+            await self.bot.h.tagged_response(
+                ctx, f"(Example) ```{self.EXAMPLE_JSON}```"
+            )
             return
 
         arg = args[0]
@@ -280,7 +298,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         entry = db.query(Factoid).filter(Factoid.text == arg).first()
 
         if not entry:
-            await tagged_response(ctx, "I couldn't find that factoid!")
+            await self.bot.h.tagged_response(ctx, "I couldn't find that factoid!")
             return
 
         # hashtag python
@@ -292,4 +310,4 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         db.close()
 
-        await tagged_response(ctx, f"```{formatted}```")
+        await self.bot.h.tagged_response(ctx, f"```{formatted}```")

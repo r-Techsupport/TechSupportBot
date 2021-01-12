@@ -1,7 +1,7 @@
 from cogs import HttpPlugin
 from discord.ext import commands
+from helper import with_typing
 from utils.embed import SafeEmbed
-from utils.helpers import tagged_response, with_typing
 
 
 def setup(bot):
@@ -27,14 +27,14 @@ class ISSLocator(HttpPlugin):
         # get ISS coordinates
         response = await self.http_call("get", self.ISS_URL)
         if not response:
-            await tagged_response(
+            await self.bot.h.tagged_response(
                 ctx, "I had trouble calling the ISS API. Maybe it's down?"
             )
             return
         coordinates = response.get("iss_position", {})
         longitude, latitude = coordinates.get("longitude"), coordinates.get("latitude")
         if not longitude or not latitude:
-            await tagged_response(
+            await self.bot.h.tagged_response(
                 ctx, "I couldn't find the ISS coordinates from the API response"
             )
             return
@@ -43,7 +43,7 @@ class ISSLocator(HttpPlugin):
         location = None
         response = await self.http_call("get", self.GEO_URL.format(latitude, longitude))
         if not response:
-            await tagged_response(
+            await self.bot.h.tagged_response(
                 ctx, "I had trouble calling the GEO API. Maybe it's down?"
             )
             return

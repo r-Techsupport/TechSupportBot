@@ -1,7 +1,7 @@
 from cogs import BasicPlugin
 from discord.ext import commands
+from helper import with_typing
 from utils.embed import SafeEmbed
-from utils.helpers import *
 
 
 def setup(bot):
@@ -18,10 +18,12 @@ class Embedder(BasicPlugin):
     @commands.command(name="embed", brief="", description="", usage="")
     async def embed(self, ctx, *args):
         if not ctx.message.attachments:
-            await tagged_response(ctx, "Please provide a JSON file for your embed(s)")
+            await self.bot.h.tagged_response(
+                ctx, "Please provide a JSON file for your embed(s)"
+            )
             return
 
-        request_body = await get_json_from_attachment(ctx, ctx.message)
+        request_body = await self.bot.h.get_json_from_attachment(ctx, ctx.message)
         if not request_body:
             return
 
@@ -44,13 +46,15 @@ class Embedder(BasicPlugin):
 
         if delete:
             if args and args[0] == "keep":
-                await priv_response(ctx, "I couldn't generate all of your embeds")
+                await self.bot.h.priv_response(
+                    ctx, "I couldn't generate all of your embeds"
+                )
                 return
 
             for message in sent_messages:
                 await message.delete()
 
-            await priv_response(
+            await self.bot.h.priv_response(
                 ctx,
                 "I couldn't generate all of your embeds, so I gave you a blank slate. Use `keep` if you want to keep them next time",
             )

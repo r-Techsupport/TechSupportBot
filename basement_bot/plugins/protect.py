@@ -1,6 +1,5 @@
 from cogs import MatchPlugin
 from munch import Munch
-from utils.helpers import *
 from utils.logger import get_logger
 
 log = get_logger("Protector")
@@ -48,10 +47,9 @@ class Protector(MatchPlugin):
         if ctx.actions.lengthAlert:
             await self.handle_length_alert(ctx, content)
 
-    async def handle_string_alert(self, ctx, content):
+    async def handle_string_alert(self, ctx, _):
         if ctx.actions.stringAlert.delete:
-            await delete_message_with_reason(
-                ctx,
+            await self.bot.h.delete_message_with_reason(
                 ctx.message,
                 ctx.actions.stringAlert.message,
                 ctx.actions.stringAlert.private,
@@ -59,13 +57,12 @@ class Protector(MatchPlugin):
             return
 
         if ctx.actions.stringAlert.private:
-            await priv_response(ctx, ctx.actions.stringAlert.message)
+            await self.bot.h.priv_response(ctx, ctx.actions.stringAlert.message)
         else:
-            await tagged_response(ctx, ctx.actions.stringAlert.message)
+            await self.bot.h.tagged_response(ctx, ctx.actions.stringAlert.message)
 
-    async def handle_length_alert(self, ctx, content):
-        await delete_message_with_reason(
-            ctx,
+    async def handle_length_alert(self, ctx, _):
+        await self.bot.h.delete_message_with_reason(
             ctx.message,
             f"Message greater than {self.config.length_limit} characters",
         )
