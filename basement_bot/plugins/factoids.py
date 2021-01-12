@@ -158,7 +158,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
     @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
-        name=f"lsf",
+        name="lsf",
         brief="List all factoids",
         description="Shows an embed with all the factoids",
         usage="",

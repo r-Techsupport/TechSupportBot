@@ -282,6 +282,7 @@ def with_typing(command):
 
     # this has to be done so invoke will see the original signature
     typing_wrapper.__signature__ = original_signature
+    typing_wrapper.__name__ = command.name
 
     # calls the internal setter
     command.callback = typing_wrapper
