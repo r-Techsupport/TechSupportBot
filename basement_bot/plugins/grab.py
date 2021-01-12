@@ -32,13 +32,13 @@ class Grabber(DatabasePlugin):
     async def invalid_channel(self, ctx):
         if isinstance(ctx.channel, DMChannel):
             await priv_response(ctx, "I can't grab a message in a DM!")
-            return False
+            return True
 
         if ctx.channel.id in self.config.invalid_channels:
             await tagged_response(ctx, "Grabs are disabled for this channel")
-            return False
+            return True
 
-        return True
+        return False
 
     @with_typing
     @commands.has_permissions(send_messages=True)
