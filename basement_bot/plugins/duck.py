@@ -917,7 +917,12 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
     )
     async def friends(self, ctx):
         db = self.db_session()
-        duck_users = db.query(DuckUser).order_by(DuckUser.befriend_count.desc()).all()
+        duck_users = (
+            db.query(DuckUser)
+            .filter(DuckUser.befriend_count > 0)
+            .order_by(DuckUser.befriend_count.desc())
+            .all()
+        )
         if len(list(duck_users)) == 0:
             await self.bot.h.tagged_response(
                 ctx, "Nobody appears to be participating in the Duck Hunt"
@@ -956,7 +961,12 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
     )
     async def killers(self, ctx):
         db = self.db_session()
-        duck_users = db.query(DuckUser).order_by(DuckUser.kill_count.desc()).all()
+        duck_users = (
+            db.query(DuckUser)
+            .filter(DuckUser.kill_count > 0)
+            .order_by(DuckUser.kill_count.desc())
+            .all()
+        )
         if len(list(duck_users)) == 0:
             await self.bot.h.tagged_response(
                 ctx, "Nobody appears to be participating in the Duck Hunt"
