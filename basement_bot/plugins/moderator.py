@@ -1,7 +1,6 @@
 from cogs import BasicPlugin
 from discord import Forbidden
 from discord.ext import commands
-from utils.helpers import tagged_response
 
 
 def setup(bot):
