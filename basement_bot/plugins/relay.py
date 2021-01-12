@@ -38,7 +38,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         return False
 
     async def response(self, ctx, content):
-        ctx.content = self.bot.h.sub_mentions_for_usernames(self.bot, content)
+        ctx.content = self.bot.h.sub_mentions_for_usernames(content)
         self.bot.plugin_api.plugins.relay.memory.send_buffer.append(
             self.serialize("message", ctx)
         )
