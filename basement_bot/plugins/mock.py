@@ -70,7 +70,7 @@ class Mocker(BasicPlugin):
             )
             return
 
-        filtered_message = self.bot.h.sub_mentions_for_usernames(ctx.bot, mock_message)
+        filtered_message = self.bot.h.sub_mentions_for_usernames(mock_message)
         mock_string = self.mock_string(filtered_message)
         embed = SafeEmbed(title=f'"{mock_string}"', description=user_to_mock.name)
         embed.set_thumbnail(url=user_to_mock.avatar_url)

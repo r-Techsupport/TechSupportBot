@@ -160,9 +160,7 @@ class Grabber(DatabasePlugin):
         embeds = []
         field_counter = 1
         for index, grab_ in enumerate(grabs):
-            filtered_message = self.bot.h.sub_mentions_for_usernames(
-                ctx.bot, str(grab_.message)
-            )
+            filtered_message = self.bot.h.sub_mentions_for_usernames(str(grab_.message))
             embed = (
                 SafeEmbed(
                     title=f"Grabs for {user_to_grab.name}",
@@ -225,9 +223,7 @@ class Grabber(DatabasePlugin):
         if grabs:
             random_index = randint(0, grabs.count() - 1)
             grab = grabs[random_index]
-            filtered_message = self.bot.h.sub_mentions_for_usernames(
-                ctx.bot, grab.message
-            )
+            filtered_message = self.bot.h.sub_mentions_for_usernames(grab.message)
             embed = SafeEmbed(
                 title=f'"{filtered_message}"',
                 description=f"{user_to_grab.name}, {grab.time.date()}",
