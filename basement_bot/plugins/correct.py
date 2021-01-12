@@ -1,6 +1,6 @@
 from cogs import BasicPlugin
 from discord.ext import commands
-from utils.helpers import tagged_response
+from utils.helpers import tagged_response, with_typing
 
 
 def setup(bot):
@@ -13,6 +13,7 @@ class Corrector(BasicPlugin):
     HAS_CONFIG = False
     SEARCH_LIMIT = 50
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         aliases=["c"],

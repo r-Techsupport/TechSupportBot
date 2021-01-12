@@ -868,6 +868,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
 
         await self.channel.send(embed=embed)
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="duck_stats",
@@ -906,6 +907,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
 
         await tagged_response(ctx, embed=embed)
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="duck_friends",
@@ -944,8 +946,9 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
 
         db.close()
 
-        await paginate(ctx, embeds=embeds, restrict=True)
+        task_paginate(ctx, embeds=embeds, restrict=True)
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="duck_killers",
@@ -984,7 +987,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
 
         db.close()
 
-        await paginate(ctx, embeds=embeds, restrict=True)
+        task_paginate(ctx, embeds=embeds, restrict=True)
 
     def get_user_text(self, duck_user):
         user = self.bot.get_user(int(duck_user.author_id))

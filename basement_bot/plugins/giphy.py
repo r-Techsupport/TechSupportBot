@@ -2,7 +2,7 @@ import random
 
 from cogs import HttpPlugin
 from discord.ext import commands
-from utils.helpers import paginate, tagged_response
+from utils.helpers import tagged_response, task_paginate, with_typing
 
 
 def setup(bot):
@@ -20,6 +20,7 @@ class Giphy(HttpPlugin):
         index = url.find("?cid=")
         return url[:index]
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="giphy",
@@ -52,4 +53,4 @@ class Giphy(HttpPlugin):
             url = self.parse_url(url)
             embeds.append(url)
 
-        await paginate(ctx, embeds, restrict=True)
+        task_paginate(ctx, embeds, restrict=True)

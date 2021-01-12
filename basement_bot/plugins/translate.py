@@ -1,19 +1,21 @@
 from cogs import HttpPlugin
 from discord.ext import commands
-from utils.helpers import tagged_response
+from utils.helpers import tagged_response, with_typing
 
 
 def setup(bot):
-    bot.add_cog(GoogleTranslate(bot))
+    bot.add_cog(Translator(bot))
 
 
-class GoogleTranslate(HttpPlugin):
+class Translator(HttpPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
     API_URL = "https://api.mymemory.translated.net/get?q={}&langpair={}|{}"
 
+    @with_typing
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Translates a message",
         description="Translates a given input message to another language",
@@ -27,7 +29,7 @@ class GoogleTranslate(HttpPlugin):
         translated = response.get("responseData", {}).get("translatedText")
 
         if not translated:
-            await tagged_response("I could not translate your message")
+            await tagged_response(ctx, "I could not translate your message")
             return
 
         await tagged_response(ctx, translated)

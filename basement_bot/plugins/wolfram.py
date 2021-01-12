@@ -1,6 +1,6 @@
 from cogs import HttpPlugin
 from discord.ext import commands
-from utils.helpers import tagged_response
+from utils.helpers import tagged_response, with_typing
 
 
 def setup(bot):
@@ -12,6 +12,7 @@ class Wolfram(HttpPlugin):
     PLUGIN_NAME = __name__
     API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="wa",

@@ -40,6 +40,7 @@ class Grabber(DatabasePlugin):
 
         return True
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="grab",
@@ -108,6 +109,7 @@ class Grabber(DatabasePlugin):
 
         await tagged_response(ctx, f"Successfully saved: '*{grab_message}*'")
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="grabs",
@@ -176,8 +178,9 @@ class Grabber(DatabasePlugin):
 
         db.close()
 
-        await paginate(ctx, embeds=embeds, restrict=True)
+        task_paginate(ctx, embeds=embeds, restrict=True)
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="grabr",

@@ -66,6 +66,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 f"Command prefix '{command_prefix}' cannot equal Factoid prefix"
             )
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="remember",
@@ -123,6 +124,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         db.close()
         await tagged_response(ctx, f"Successfully added factoid trigger: *{arg1}*")
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="forget",
@@ -153,6 +155,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         await tagged_response(ctx, f"Successfully deleted factoid trigger: *{arg}*")
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name=f"lsf",
@@ -204,7 +207,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         db.close()
 
-        await paginate(ctx, embeds=embeds, restrict=True)
+        task_paginate(ctx, embeds=embeds, restrict=True)
 
     async def match(self, ctx, content):
         return content.startswith(self.config.prefix)
@@ -257,6 +260,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
 
         db.close()
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Gets raw factoid data",

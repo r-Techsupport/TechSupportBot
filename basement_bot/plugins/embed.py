@@ -13,6 +13,7 @@ class Embedder(BasicPlugin):
     PLUGIN_NAME = "Embedder"
     HAS_CONFIG = False
 
+    @with_typing
     @commands.has_permissions(manage_messages=True)
     @commands.command(name="embed", brief="", description="", usage="")
     async def embed(self, ctx, *args):

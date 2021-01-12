@@ -5,7 +5,7 @@ from cogs import BasicPlugin
 from discord import Forbidden
 from discord.ext import commands
 from utils.embed import SafeEmbed
-from utils.helpers import paginate, tagged_response
+from utils.helpers import tagged_response, task_paginate
 
 
 class AdminControl(BasicPlugin):
@@ -55,7 +55,7 @@ class AdminControl(BasicPlugin):
             else:
                 field_counter += 1
 
-        await paginate(ctx, embeds)
+        task_paginate(ctx, embeds)
 
     @commands.command(hidden=True)
     async def load_plugin(self, ctx, *args):

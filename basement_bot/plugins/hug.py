@@ -5,7 +5,7 @@ from random import choice
 
 from cogs import BasicPlugin
 from discord.ext import commands
-from utils.helpers import tagged_response
+from utils.helpers import tagged_response, with_typing
 
 
 def setup(bot):
@@ -29,6 +29,7 @@ class Hugger(BasicPlugin):
         "{user_giving_hug} squeezes {user_to_hug} to death",
     ]
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="hug",

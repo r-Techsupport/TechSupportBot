@@ -50,14 +50,17 @@ class BasicPlugin(commands.Cog):
 
 
 class HttpPlugin(BasicPlugin):
-    """Plugin for interfacing via HTTP."""
+    """Plugin for interfacing via HTTP.
+
+    parameters:
+        bot (Bot): the bot object
+    """
 
     PLUGIN_TYPE = "HTTP"
 
-    @staticmethod
-    def _get_client():
-        """Returns an Async HTTP client."""
-        return http3.AsyncClient()
+    def __init__(self, bot):
+        super().__init__(bot)
+        self.client = http3.AsyncClient()
 
     async def http_call(self, method, *args, **kwargs):
         """Makes an HTTP request.
@@ -67,8 +70,7 @@ class HttpPlugin(BasicPlugin):
             *args (...list): the args with which to call the HTTP Python method
             **kwargs (...dict): the keyword args with which to call the HTTP Python method
         """
-        client = self._get_client()
-        method_fn = getattr(client, method.lower(), None)
+        method_fn = getattr(self.client, method.lower(), None)
         if not method_fn:
             raise AttributeError(f"Unable to use HTTP method: {method}")
 

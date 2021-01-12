@@ -28,6 +28,7 @@ class Weather(HttpPlugin):
             f"{url}?q={searches}&units={self.config.units}&appid={self.config.dev_key}"
         )
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="we",

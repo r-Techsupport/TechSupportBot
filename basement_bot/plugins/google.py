@@ -1,7 +1,7 @@
 from cogs import HttpPlugin
 from discord.ext import commands
 from utils.embed import SafeEmbed
-from utils.helpers import paginate, tagged_response
+from utils.helpers import paginate, tagged_response, with_typing
 
 
 def setup(bot):
@@ -18,6 +18,7 @@ class Googler(HttpPlugin):
         response = await self.http_call("get", url, params=data)
         return response.get("items")
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="g",
@@ -87,8 +88,9 @@ class Googler(HttpPlugin):
                     return
                 embeds.append(link)
 
-        await paginate(ctx, embeds=embeds, restrict=True)
+        task_paginate(ctx, embeds=embeds, restrict=True)
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="gis",
@@ -104,6 +106,8 @@ class Googler(HttpPlugin):
         ctx.image_search = True
         await self.google(ctx, *args)
 
+    @with_typing
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="yt",
         brief="Returns top YouTube video result of search terms",
@@ -145,4 +149,4 @@ class Googler(HttpPlugin):
             if link:
                 embeds.append(link)
 
-        await paginate(ctx, embeds, restrict=True)
+        task_paginate(ctx, embeds, restrict=True)

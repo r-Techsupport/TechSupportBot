@@ -173,10 +173,7 @@ class ErrorAPI(BotAPI):
 
         error_message = message_template.get_message(exception)
 
-        try:
-            await context.author.send(error_message)
-        except Forbidden:
-            await context.send(f"{context.author.mention} {error_message}")
+        await context.send(f"{context.author.mention} {error_message}")
 
         context.error_message = error_message
         await self.handle_error("command", exception, context=context)
@@ -220,7 +217,7 @@ class ErrorAPI(BotAPI):
                 inline=False,
             )
             embed.add_field(
-                name="DM",
+                name="Response",
                 value=f'*"{getattr(context, "error_message", "*Unknown*")}"*',
                 inline=True,
             )
