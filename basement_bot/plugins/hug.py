@@ -6,6 +6,7 @@ from random import choice
 from cogs import BasicPlugin
 from discord.ext import commands
 from helper import with_typing
+from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -28,6 +29,9 @@ class Hugger(BasicPlugin):
         "{user_giving_hug} smothers {user_to_hug} with a loving hug",
         "{user_giving_hug} squeezes {user_to_hug} to death",
     ]
+    ICON_URL = (
+        "https://cdn.icon-icons.com/icons2/1648/PNG/512/10022huggingface_110042.png"
+    )
 
     @with_typing
     @commands.has_permissions(send_messages=True)
@@ -64,9 +68,20 @@ class Hugger(BasicPlugin):
             )
             return
 
-        await ctx.send(
-            choice(self.HUGS_SELECTION).format(
-                user_giving_hug=ctx.author.mention,
-                user_to_hug=ctx.message.mentions[0].mention,
-            )
+        embed = self.generate_embed(ctx)
+
+        await self.bot.h.tagged_response(ctx, embed=embed)
+
+    def generate_embed(self, ctx):
+        hug_text = choice(self.HUGS_SELECTION).format(
+            user_giving_hug=ctx.author.mention,
+            user_to_hug=ctx.message.mentions[0].mention,
         )
+
+        embed = SafeEmbed()
+
+        embed.add_field(name="You've been hugged!", value=hug_text)
+
+        embed.set_thumbnail(url=self.ICON_URL)
+
+        return embed
