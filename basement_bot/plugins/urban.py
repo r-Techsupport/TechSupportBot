@@ -3,7 +3,7 @@ import json
 from cogs import HttpPlugin
 from discord.ext import commands
 from utils.embed import SafeEmbed
-from utils.helpers import paginate, tagged_response
+from utils.helpers import tagged_response, task_paginate, with_typing
 
 
 def setup(bot):
@@ -21,6 +21,7 @@ class UrbanDictionary(HttpPlugin):
     async def preconfig(self):
         self.cached = {"last_query": None, "last_url": None, "all_urls": []}
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="urb",
@@ -32,12 +33,12 @@ class UrbanDictionary(HttpPlugin):
         usage="[search-terms]",
         help="\nLimitations: Mentions should not be used.",
     )
-    async def urban(self, ctx, *args):
-        if not args:
+    async def urban(self, ctx, *idk):
+        if not idk:
             await tagged_response(ctx, "I can't search for nothing!")
             return
 
-        args = " ".join(args).lower().strip()
+        args = " ".join(idk).lower().strip()
         response = await self.http_call("get", f"{self.BASE_URL}{args}")
         definitions = response.get("list")
 
@@ -78,4 +79,4 @@ class UrbanDictionary(HttpPlugin):
             else:
                 field_counter += 1
 
-        await paginate(ctx, embeds=embeds, restrict=True)
+        task_paginate(ctx, embeds=embeds, restrict=True)

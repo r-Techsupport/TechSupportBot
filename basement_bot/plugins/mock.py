@@ -29,6 +29,7 @@ class Mocker(BasicPlugin):
                 i = not i
         return mock
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="sb",

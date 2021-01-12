@@ -2,6 +2,7 @@ from random import choice
 
 from cogs import BasicPlugin
 from discord.ext import commands
+from utils.helpers import with_typing
 
 
 def setup(bot):
@@ -37,6 +38,7 @@ class Lenny(BasicPlugin):
         "✺◟( ͡° ͜ʖ ͡°)◞✺",
     ]
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="len",

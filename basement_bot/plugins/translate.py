@@ -1,6 +1,6 @@
 from cogs import HttpPlugin
 from discord.ext import commands
-from utils.helpers import tagged_response
+from utils.helpers import tagged_response, with_typing
 
 
 def setup(bot):
@@ -14,6 +14,8 @@ class Translator(HttpPlugin):
 
     API_URL = "https://api.mymemory.translated.net/get?q={}&langpair={}|{}"
 
+    @with_typing
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Translates a message",
         description="Translates a given input message to another language",

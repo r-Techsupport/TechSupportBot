@@ -41,6 +41,7 @@ class Poller(BasicPlugin):
             for emoji_text in self.OPTION_EMOJIS
         ]
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="poll",

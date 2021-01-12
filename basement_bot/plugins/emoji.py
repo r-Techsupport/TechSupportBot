@@ -2,7 +2,7 @@ from cogs import BasicPlugin
 from discord.ext import commands
 from emoji import EMOJI_UNICODE, emojize
 from inflect import engine as inflect_engine
-from utils.helpers import tagged_response
+from utils.helpers import tagged_response, with_typing
 
 
 def setup(bot):
@@ -62,6 +62,7 @@ class LetterEmojis(BasicPlugin):
             return None
         return emoji_list
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="emsg",

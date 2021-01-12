@@ -1,7 +1,7 @@
 from cogs import HttpPlugin
 from discord.ext import commands
 from utils.embed import SafeEmbed
-from utils.helpers import tagged_response
+from utils.helpers import tagged_response, with_typing
 
 
 def setup(bot):
@@ -15,6 +15,7 @@ class ISSLocator(HttpPlugin):
     GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
     HAS_CONFIG = False
 
+    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="iss",

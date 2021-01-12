@@ -136,6 +136,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         log.debug(f"Serialized data: {as_json}")
         return as_json
 
+    @with_typing
     @commands.command(
         name="irc",
         brief="Commands for IRC relay",

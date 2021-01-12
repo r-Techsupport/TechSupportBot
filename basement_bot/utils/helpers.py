@@ -4,6 +4,7 @@
 import ast
 import datetime
 import re
+from inspect import signature
 
 import munch
 from discord import Forbidden, NotFound
@@ -242,3 +243,47 @@ async def paginate(ctx, embeds, timeout=300, tag_user=False, restrict=False):
         await message.clear_reactions()
     except (Forbidden, NotFound):
         pass
+
+
+def task_paginate(ctx, *args, **kwargs):
+    """Creates a pagination task.
+
+    This is useful if you want your command to finish executing when pagination starts.
+
+    parameters:
+        ctx (Context): the context object for the message
+        *args (...list): the args with which to call the pagination method
+        **kwargs (...dict): the keyword args with which to call the pagination method
+    """
+    ctx.bot.loop.create_task(paginate(ctx, *args, **kwargs))
+
+
+def with_typing(command):
+    """Decorator for commands to utilize "async with" ctx.typing()
+
+    This will show the bot as typing... until the command completes
+
+    parameters:
+        command (discord.ext.commands.Command): the command object to modify
+    """
+    original_callback = command.callback
+    original_signature = signature(original_callback)
+
+    async def typing_wrapper(*args, **kwargs):
+        context = args[1]
+
+        typing_func = getattr(context, "typing", None)
+
+        if not typing_func:
+            await original_callback(*args, **kwargs)
+        else:
+            async with typing_func():
+                await original_callback(*args, **kwargs)
+
+    # this has to be done so invoke will see the original signature
+    typing_wrapper.__signature__ = original_signature
+
+    # calls the internal setter
+    command.callback = typing_wrapper
+
+    return command
