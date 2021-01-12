@@ -57,7 +57,7 @@ class Grabber(DatabasePlugin):
         ),
     )
     async def grab(self, ctx):
-        if self.invalid_channel(ctx):
+        if await self.invalid_channel(ctx):
             return
 
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
@@ -123,7 +123,7 @@ class Grabber(DatabasePlugin):
         ),
     )
     async def get_grabs(self, ctx):
-        if self.invalid_channel(ctx):
+        if await self.invalid_channel(ctx):
             return
 
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
@@ -193,7 +193,7 @@ class Grabber(DatabasePlugin):
         ),
     )
     async def random_grab(self, ctx):
-        if self.invalid_channel(ctx):
+        if await self.invalid_channel(ctx):
             return
 
         user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
