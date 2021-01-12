@@ -44,42 +44,44 @@ class Weather(HttpPlugin):
             args = args[:3]
 
         response = await self.http_call("get", self.get_url(args))
-        if response.status_code == 404:
+
+        embed = self.generate_embed(munch.munchify(response))
+        if not embed:
             await self.bot.h.tagged_response(
-                ctx, "I could not find a location from your search!"
-            )
-            return
-        elif response.status_code != 200:
-            await self.bot.h.tagged_response(
-                ctx,
-                "I had some trouble looking up the weather for you... try again later!",
+                ctx, "I could not find the weather from your search"
             )
             return
 
-        embed = self.generate_embed(munch.munchify(response.json()))
         await self.bot.h.tagged_response(ctx, embed=embed)
 
     def generate_embed(self, response):
-        embed = SafeEmbed(title=f"Weather for {response.name} ({response.sys.country})")
+        try:
+            embed = SafeEmbed(
+                title=f"Weather for {response.name} ({response.sys.country})"
+            )
 
-        descriptions = ", ".join(weather.description for weather in response.weather)
-        embed.add_field(name="Description", value=descriptions, inline=False)
+            descriptions = ", ".join(
+                weather.description for weather in response.weather
+            )
+            embed.add_field(name="Description", value=descriptions, inline=False)
 
-        embed.add_field(
-            name=f"Temp ({self.temp_unit})",
-            value=f"{int(response.main.temp)} (feels like {int(response.main.feels_like)})",
-            inline=False,
-        )
-        embed.add_field(
-            name=f"Low ({self.temp_unit})", value=int(response.main.temp_min)
-        )
-        embed.add_field(
-            name=f"High ({self.temp_unit})",
-            value=int(response.main.temp_max),
-        )
-        embed.add_field(name="Humidity", value=f"{int(response.main.humidity)} %")
-        embed.set_thumbnail(
-            url="https://cdn.icon-icons.com/icons2/8/PNG/256/cloudyweather_cloud_inpart_day_wind_thunder_sunny_rain_darkness_nublad_1459.png"
-        )
+            embed.add_field(
+                name=f"Temp ({self.temp_unit})",
+                value=f"{int(response.main.temp)} (feels like {int(response.main.feels_like)})",
+                inline=False,
+            )
+            embed.add_field(
+                name=f"Low ({self.temp_unit})", value=int(response.main.temp_min)
+            )
+            embed.add_field(
+                name=f"High ({self.temp_unit})",
+                value=int(response.main.temp_max),
+            )
+            embed.add_field(name="Humidity", value=f"{int(response.main.humidity)} %")
+            embed.set_thumbnail(
+                url="https://cdn.icon-icons.com/icons2/8/PNG/256/cloudyweather_cloud_inpart_day_wind_thunder_sunny_rain_darkness_nublad_1459.png"
+            )
+        except AttributeError:
+            embed = None
 
         return embed
