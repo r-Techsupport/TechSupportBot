@@ -1,8 +1,8 @@
 import munch
 from cogs import HttpPlugin
 from discord.ext import commands
+from helper import with_typing
 from utils.embed import SafeEmbed
-from utils.helpers import *
 
 
 def setup(bot):
@@ -38,24 +38,26 @@ class Weather(HttpPlugin):
     )
     async def we(self, ctx, *args):
         if not args:
-            await tagged_response(ctx, "I can't search for nothing!")
+            await self.bot.h.tagged_response(ctx, "I can't search for nothing!")
             return
         if len(args) > 3:
             args = args[:3]
 
         response = await self.http_call("get", self.get_url(args))
         if response.status_code == 404:
-            await tagged_response(ctx, "I could not find a location from your search!")
+            await self.bot.h.tagged_response(
+                ctx, "I could not find a location from your search!"
+            )
             return
         elif response.status_code != 200:
-            await tagged_response(
+            await self.bot.h.tagged_response(
                 ctx,
                 "I had some trouble looking up the weather for you... try again later!",
             )
             return
 
         embed = self.generate_embed(munch.munchify(response.json()))
-        await tagged_response(ctx, embed=embed)
+        await self.bot.h.tagged_response(ctx, embed=embed)
 
     def generate_embed(self, response):
         embed = SafeEmbed(title=f"Weather for {response.name} ({response.sys.country})")

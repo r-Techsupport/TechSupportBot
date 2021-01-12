@@ -1,6 +1,6 @@
 from cogs import HttpPlugin
 from discord.ext import commands
-from utils.helpers import tagged_response, with_typing
+from helper import with_typing
 
 
 def setup(bot):
@@ -29,7 +29,7 @@ class Translator(HttpPlugin):
         translated = response.get("responseData", {}).get("translatedText")
 
         if not translated:
-            await tagged_response(ctx, "I could not translate your message")
+            await self.bot.h.tagged_response(ctx, "I could not translate your message")
             return
 
-        await tagged_response(ctx, translated)
+        await self.bot.h.tagged_response(ctx, translated)

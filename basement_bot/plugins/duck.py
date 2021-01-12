@@ -6,9 +6,9 @@ from random import choice, choices
 from cogs import DatabasePlugin, LoopPlugin
 from discord import Color as embed_colors
 from discord.ext import commands
+from helper import with_typing
 from sqlalchemy import Column, DateTime, Integer, String
 from utils.embed import SafeEmbed
-from utils.helpers import *
 
 
 class DuckUser(DatabasePlugin.BaseTable):
@@ -751,7 +751,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
             ).seconds < self.config.cooldown_seconds:
                 self.cooldowns[message.author.id] = datetime.datetime.now()
                 self.bot.loop.create_task(
-                    tagged_response(
+                    self.bot.h.tagged_response(
                         None,
                         content=f"I said to wait {self.config.cooldown_seconds} seconds! Resetting cooldown",
                         target=message.author,
@@ -875,7 +875,6 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         brief="Get duck stats",
         description="Gets duck friendships and kills for yourself or another user",
         usage="@user (defaults to yourself)",
-        help="",
     )
     async def stats(self, ctx, *args):
         query_user = (
@@ -883,7 +882,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         )
 
         if query_user.bot:
-            await tagged_response(
+            await self.bot.h.tagged_response(
                 ctx, "If it looks like a duck, quacks like a duck, it's a duck!"
             )
             return
@@ -894,7 +893,9 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         )
 
         if not duck_user:
-            await tagged_response(ctx, "That user has not partcipated in the duck hunt")
+            await self.bot.h.tagged_response(
+                ctx, "That user has not partcipated in the duck hunt"
+            )
             return
 
         embed = SafeEmbed(title="Duck Stats", description=query_user.mention)
@@ -905,7 +906,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
 
         db.close()
 
-        await tagged_response(ctx, embed=embed)
+        await self.bot.h.tagged_response(ctx, embed=embed)
 
     @with_typing
     @commands.has_permissions(send_messages=True)
@@ -913,14 +914,12 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         name="duck_friends",
         brief="Get duck friendship scores",
         description="Gets duck friendship scores for all users",
-        usage="",
-        help="",
     )
     async def friends(self, ctx):
         db = self.db_session()
         duck_users = db.query(DuckUser).order_by(DuckUser.befriend_count.desc()).all()
         if len(list(duck_users)) == 0:
-            await tagged_response(
+            await self.bot.h.tagged_response(
                 ctx, "Nobody appears to be participating in the Duck Hunt"
             )
             return
@@ -946,7 +945,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
 
         db.close()
 
-        task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @with_typing
     @commands.has_permissions(send_messages=True)
@@ -954,14 +953,12 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         name="duck_killers",
         brief="Get duck kill scores",
         description="Gets duck kill scores for all users",
-        usage="",
-        help="",
     )
     async def killers(self, ctx):
         db = self.db_session()
         duck_users = db.query(DuckUser).order_by(DuckUser.kill_count.desc()).all()
         if len(list(duck_users)) == 0:
-            await tagged_response(
+            await self.bot.h.tagged_response(
                 ctx, "Nobody appears to be participating in the Duck Hunt"
             )
             return
@@ -987,7 +984,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
 
         db.close()
 
-        task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
 
     def get_user_text(self, duck_user):
         user = self.bot.get_user(int(duck_user.author_id))

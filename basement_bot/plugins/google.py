@@ -1,7 +1,7 @@
 from cogs import HttpPlugin
 from discord.ext import commands
+from helper import with_typing
 from utils.embed import SafeEmbed
-from utils.helpers import task_paginate, tagged_response, with_typing
 
 
 def setup(bot):
@@ -21,7 +21,7 @@ class Googler(HttpPlugin):
     @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
-        name="g",
+        aliases=["g"],
         brief="Googles that for you",
         description=(
             "Returns the top Google search result of the given search terms."
@@ -32,7 +32,7 @@ class Googler(HttpPlugin):
     )
     async def google(self, ctx, *args):
         if not args:
-            await tagged_response(ctx, "I can't search for nothing!")
+            await self.bot.h.tagged_response(ctx, "I can't search for nothing!")
             return
 
         args = " ".join(args)
@@ -49,7 +49,9 @@ class Googler(HttpPlugin):
 
         if not items:
             args = f"*{args}*"
-            await tagged_response(ctx, f"No search results found for: {args}")
+            await self.bot.h.tagged_response(
+                ctx, f"No search results found for: {args}"
+            )
             return
 
         embed = None
@@ -81,19 +83,18 @@ class Googler(HttpPlugin):
             for item in items:
                 link = item.get("link")
                 if not link:
-                    await tagged_response(
+                    await self.bot.h.tagged_response(
                         ctx,
                         "I had an issue processing Google's response... try again later!",
                     )
                     return
                 embeds.append(link)
 
-        task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
 
-    @with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
-        name="gis",
+        aliases=["gis"],
         brief="Google Image searches that for you",
         description=(
             "Returns the top Google image search result of the given search terms."
@@ -102,9 +103,9 @@ class Googler(HttpPlugin):
         usage="[search-terms]",
         help="\nLimitations: Mentions should not be used.",
     )
-    async def google_image(self, ctx, *args):
+    async def google_images(self, ctx, *args):
         ctx.image_search = True
-        await self.google(ctx, *args)
+        await ctx.invoke(self.bot.get_command("google"), *args)
 
     @with_typing
     @commands.has_permissions(send_messages=True)
@@ -120,7 +121,7 @@ class Googler(HttpPlugin):
     )
     async def youtube(self, ctx, *args):
         if not args:
-            await tagged_response(ctx, "I can't search for nothing!")
+            await self.bot.h.tagged_response(ctx, "I can't search for nothing!")
             return
 
         args = " ".join(args)
@@ -136,7 +137,7 @@ class Googler(HttpPlugin):
         if not items:
             if args:
                 args = f"*{args}*"
-            await tagged_response(ctx, f"No video results found for: {args}")
+            await self.bot.h.tagged_response(ctx, f"No video results found for: {args}")
             return
 
         video_id = items[0].get("id", {}).get("videoId")
@@ -149,4 +150,4 @@ class Googler(HttpPlugin):
             if link:
                 embeds.append(link)
 
-        task_paginate(ctx, embeds, restrict=True)
+        self.bot.h.task_paginate(ctx, embeds, restrict=True)

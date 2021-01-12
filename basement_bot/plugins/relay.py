@@ -8,9 +8,9 @@ import uuid
 from cogs import LoopPlugin, MatchPlugin, MqPlugin
 from discord.ext import commands
 from discord.ext.commands import Context
+from helper import with_typing
 from munch import Munch
 from utils.embed import SafeEmbed
-from utils.helpers import *
 from utils.logger import get_logger
 
 log = get_logger("Relay Plugin")
@@ -32,13 +32,13 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         self.bot.plugin_api.plugins.relay.memory.send_buffer = []
         self.error_message_sent = False
 
-    async def match(self, ctx, content):
+    async def match(self, ctx, _):
         if ctx.channel.id in self.channels:
             return True
         return False
 
     async def response(self, ctx, content):
-        ctx.content = sub_mentions_for_usernames(self.bot, content)
+        ctx.content = self.bot.h.sub_mentions_for_usernames(self.bot, content)
         self.bot.plugin_api.plugins.relay.memory.send_buffer.append(
             self.serialize("message", ctx)
         )
@@ -145,27 +145,31 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
     )
     async def irc_command(self, ctx, *args):
         if not self.config.commands_allowed:
-            await tagged_response(
+            await self.bot.h.tagged_response(
                 ctx, "Relay cross-chat commands are disabled on my end"
             )
             return
 
         if ctx.channel.id not in self.channels:
             log.warning(f"IRC command issued outside of allowed channels")
-            await tagged_response(
+            await self.bot.h.tagged_response(
                 ctx, "That command can only be used from the IRC relay channels"
             )
             return
 
-        permissions = ctx.author.permissions_in(ctx.channel)
+        # permissions = ctx.author.permissions_in(ctx.channel)
 
         if len(args) == 0:
-            await tagged_response(ctx, "No IRC command provided. Try `.help irc`")
+            await self.bot.h.tagged_response(
+                ctx, "No IRC command provided. Try `.help irc`"
+            )
             return
 
         command = args[0]
         if len(args) == 1:
-            await tagged_response(ctx, f"No target provided for IRC command {command}")
+            await self.bot.h.tagged_response(
+                ctx, f"No target provided for IRC command {command}"
+            )
             return
 
         target = " ".join(args[1:])
@@ -173,7 +177,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         ctx.irc_command = command
         ctx.content = target
 
-        await tagged_response(
+        await self.bot.h.tagged_response(
             ctx,
             f"Sending **{command}** command with target `{target}` to IRC bot...",
         )
@@ -244,7 +248,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
                         log.warning("Unable to find channel to send command event")
                         return
 
-                    guild = get_guild_from_channel_id(self.bot, channel.id)
+                    guild = self.bot.h.get_guild_from_channel_id(self.bot, channel.id)
 
                     if guild:
                         new_message = ""
@@ -295,7 +299,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
 
         if response.type == "whois":
             await self._process_whois_response(data)
-            requester = self.bot.get_user(response.request.author)
+            # requester = self.bot.get_user(response.request.author)
 
     async def _process_whois_response(self, data):
         response = data.event.content
@@ -353,7 +357,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             f"Executing IRC **{data.event.command}** command from `{data.author.mask}` on target `{data.event.content}`"
         )
 
-        target_guild = get_guild_from_channel_id(self.bot, channel.id)
+        target_guild = self.bot.h.get_guild_from_channel_id(self.bot, channel.id)
         if not target_guild:
             await channel.send(f"> Critical error! Aborting command")
             log.warning(

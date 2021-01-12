@@ -4,7 +4,6 @@ from threading import Thread
 
 from cogs import BasicPlugin
 from discord.ext import commands
-from utils.helpers import tagged_response
 
 
 def setup(bot):
@@ -17,6 +16,7 @@ class Evaluator(BasicPlugin):
     HAS_CONFIG = False
     THREAD_WAIT_MINUTES = 10
     POLL_WAIT = 1
+    # alcohol made me do this
     UNDEFINED_RESULT = "@UNDEFINED@"
 
     @commands.is_owner()
@@ -61,7 +61,7 @@ class Evaluator(BasicPlugin):
                 raise RuntimeError(f"Thread finished with error: {error_}")
 
             elif datetime.datetime.now() > finish_time:
-                await tagged_response(
+                await self.bot.h.tagged_response(
                     ctx,
                     f"Result not received from eval() after {self.THREAD_WAIT_MINUTES} minutes",
                 )

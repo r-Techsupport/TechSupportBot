@@ -2,8 +2,8 @@ import json
 
 from cogs import HttpPlugin
 from discord.ext import commands
+from helper import with_typing
 from utils.embed import SafeEmbed
-from utils.helpers import tagged_response, task_paginate, with_typing
 
 
 def setup(bot):
@@ -35,7 +35,7 @@ class UrbanDictionary(HttpPlugin):
     )
     async def urban(self, ctx, *idk):
         if not idk:
-            await tagged_response(ctx, "I can't search for nothing!")
+            await self.bot.h.tagged_response(ctx, "I can't search for nothing!")
             return
 
         args = " ".join(idk).lower().strip()
@@ -43,7 +43,7 @@ class UrbanDictionary(HttpPlugin):
         definitions = response.get("list")
 
         if not definitions:
-            await tagged_response(ctx, f"No results found for: *{args}*")
+            await self.bot.h.tagged_response(ctx, f"No results found for: *{args}*")
             return
 
         args_no_spaces = args.replace(" ", "%20")
@@ -79,4 +79,4 @@ class UrbanDictionary(HttpPlugin):
             else:
                 field_counter += 1
 
-        task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)

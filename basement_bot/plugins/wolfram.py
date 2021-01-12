@@ -1,6 +1,6 @@
 from cogs import HttpPlugin
 from discord.ext import commands
-from utils.helpers import tagged_response, with_typing
+from helper import with_typing
 
 
 def setup(bot):
@@ -23,7 +23,7 @@ class Wolfram(HttpPlugin):
     )
     async def simple_search(self, ctx, *args):
         if not args:
-            await tagged_response(ctx, "Please provide a query!")
+            await self.bot.h.tagged_response(ctx, "Please provide a query!")
             return
 
         query = "+".join(args)
@@ -33,7 +33,7 @@ class Wolfram(HttpPlugin):
         response = await self.http_call("get", url)
 
         if not response.text:
-            await tagged_response(ctx, "No results found")
+            await self.bot.h.tagged_response(ctx, "No results found")
             return
 
-        await tagged_response(ctx, response.text)
+        await self.bot.h.tagged_response(ctx, response.text)

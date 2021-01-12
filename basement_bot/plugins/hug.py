@@ -5,7 +5,7 @@ from random import choice
 
 from cogs import BasicPlugin
 from discord.ext import commands
-from utils.helpers import tagged_response, with_typing
+from helper import with_typing
 
 
 def setup(bot):
@@ -45,11 +45,13 @@ class Hugger(BasicPlugin):
             ctx (Context): the context
         """
         if not ctx.message.mentions:
-            await tagged_response(ctx, "You hugging the air?")
+            await self.bot.h.tagged_response(ctx, "You hugging the air?")
             return
 
         if ctx.author in ctx.message.mentions:
-            await tagged_response(ctx, "You tried to hug yourself? You got issues")
+            await self.bot.h.tagged_response(
+                ctx, "You tried to hug yourself? You got issues"
+            )
             return
 
         if len(ctx.message.mentions) > 1:

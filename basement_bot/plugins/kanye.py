@@ -34,7 +34,6 @@ class KanyeQuotes(LoopPlugin, HttpPlugin):
         quote = response.get("quote")
 
         if quote:
-            message = f"'*{quote}*' - Kanye West"
             embed = SafeEmbed(title=f'"{quote}"', description="Kanye Quest")
             embed.set_thumbnail(url=choice(self.KANYE_PICS))
             await self.channel.send(embed=embed)

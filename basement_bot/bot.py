@@ -10,6 +10,7 @@ from discord import Game
 from discord.channel import DMChannel
 from discord.ext import commands
 from error import ErrorAPI
+from helper import HelperAPI
 from plugin import PluginAPI
 from utils.logger import get_logger
 
@@ -32,6 +33,7 @@ class BasementBot(commands.Bot):
         self.plugin_api = PluginAPI(bot=self)
         self.database_api = DatabaseAPI(bot=self)
         self.error_api = ErrorAPI(bot=self)
+        self.helper_api = HelperAPI(bot=self)
 
         super().__init__(self.config.main.required.command_prefix)
 

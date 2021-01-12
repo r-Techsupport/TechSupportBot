@@ -3,7 +3,7 @@ from random import choice
 
 from cogs import BasicPlugin
 from discord.ext import commands
-from utils.helpers import tagged_response, with_typing
+from helper import with_typing
 
 
 def setup(bot):
@@ -529,4 +529,4 @@ class WouldYouRather(BasicPlugin):
                 self.last = question.id
                 break
 
-        await tagged_response(ctx, question.get_question())
+        await self.bot.h.tagged_response(ctx, question.get_question())

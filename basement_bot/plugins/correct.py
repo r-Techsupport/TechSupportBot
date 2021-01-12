@@ -1,6 +1,6 @@
 from cogs import BasicPlugin
 from discord.ext import commands
-from utils.helpers import tagged_response, with_typing
+from helper import with_typing
 
 
 def setup(bot):
@@ -36,8 +36,10 @@ class Corrector(BasicPlugin):
                 break
 
         if new_content:
-            await tagged_response(
+            await self.bot.h.tagged_response(
                 ctx, f"*Correction:* {new_content} :white_check_mark:", target=target
             )
         else:
-            await tagged_response(ctx, "I couldn't find any message to correct")
+            await self.bot.h.tagged_response(
+                ctx, "I couldn't find any message to correct"
+            )
