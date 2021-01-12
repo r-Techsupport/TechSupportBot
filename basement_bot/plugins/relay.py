@@ -248,7 +248,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
                         log.warning("Unable to find channel to send command event")
                         return
 
-                    guild = self.bot.h.get_guild_from_channel_id(self.bot, channel.id)
+                    guild = self.bot.h.get_guild_from_channel_id(channel.id)
 
                     if guild:
                         new_message = ""
@@ -357,7 +357,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             f"Executing IRC **{data.event.command}** command from `{data.author.mask}` on target `{data.event.content}`"
         )
 
-        target_guild = self.bot.h.get_guild_from_channel_id(self.bot, channel.id)
+        target_guild = self.bot.h.get_guild_from_channel_id(channel.id)
         if not target_guild:
             await channel.send(f"> Critical error! Aborting command")
             log.warning(
