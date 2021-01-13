@@ -174,14 +174,31 @@ class AdminControl(BasicPlugin):
         """
         game_ = " ".join(args)[:50]
 
-        if not all(char == " " for char in game_):
-            await ctx.bot.set_game(game_)
-            await self.bot.h.tagged_response(
-                ctx, f"Successfully set game to: *{game_}*"
-            )
+        if not self.valid_input(game_):
+            await self.bot.h.tagged_response(ctx, "Invalid game!")
 
-        else:
-            await self.bot.h.tagged_response(ctx, "I cannot play a game with no name!")
+        await ctx.bot.set_game(game_)
+
+        await self.bot.h.tagged_response(ctx, f"Successfully set game to: *{game_}*")
+
+    @commands.command(hidden=True)
+    async def set_nick(self, ctx, *args):
+        """Sets the bot's nick by name.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.Ctx): the context object for the message
+            args [list]: the space-or-quote-delimitted args
+        """
+        nick = " ".join(args)[:50]
+
+        if not self.valid_input(nick):
+            await self.bot.h.tagged_response(ctx, "Invalid nick!")
+
+        await ctx.message.guild.me.edit(nick=nick)
+
+        await self.bot.h.tagged_response(ctx, f"Successfully set nick to: *{nick}*")
 
     @with_typing
     @commands.command(hidden=True)
@@ -230,3 +247,12 @@ class AdminControl(BasicPlugin):
             return
 
         await user.send(content=message)
+
+    @staticmethod
+    def valid_input(input_):
+        """Wrapper for validating input for bot parameters.
+
+        parameters:
+            input_ (str): the user input
+        """
+        return not all(char == " " for char in input_)
