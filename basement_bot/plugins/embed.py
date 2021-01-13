@@ -14,7 +14,11 @@ class Embedder(BasicPlugin):
 
     @with_typing
     @commands.has_permissions(manage_messages=True)
-    @commands.command(brief="", description="", usage="")
+    @commands.command(
+        brief="Generates a list of embeds",
+        description="Generates a list of embeds defined by an uploaded JSON file",
+        usage="https://discord.com/developers/docs/resources/channel#embed-object",
+    )
     async def embed(self, ctx, *args):
         if not ctx.message.attachments:
             await self.bot.h.tagged_response(
