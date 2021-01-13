@@ -172,7 +172,8 @@ class AdminControl(BasicPlugin):
             ctx (discord.Ctx): the context object for the message
             args [list]: the space-or-quote-delimitted args
         """
-        game_ = " ".join(args)[:50]
+        # TODO: put this logic in the valid_input method
+        game_ = " ".join(args)[:32]
 
         if not self.valid_input(game_):
             await self.bot.h.tagged_response(ctx, "Invalid game!")
@@ -181,6 +182,7 @@ class AdminControl(BasicPlugin):
 
         await self.bot.h.tagged_response(ctx, f"Successfully set game to: *{game_}*")
 
+    @with_typing
     @commands.command(hidden=True)
     async def set_nick(self, ctx, *args):
         """Sets the bot's nick by name.
@@ -191,7 +193,8 @@ class AdminControl(BasicPlugin):
             ctx (discord.Ctx): the context object for the message
             args [list]: the space-or-quote-delimitted args
         """
-        nick = " ".join(args)[:50]
+        # TODO: put this logic in the valid_input method
+        nick = " ".join(args)[:32]
 
         if not self.valid_input(nick):
             await self.bot.h.tagged_response(ctx, "Invalid nick!")
