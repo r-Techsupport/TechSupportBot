@@ -3,7 +3,6 @@ import logging
 from cogs import BasicPlugin
 from discord.ext import commands
 from helper import with_typing
-from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -72,7 +71,9 @@ class Mocker(BasicPlugin):
 
         filtered_message = self.bot.h.sub_mentions_for_usernames(mock_message)
         mock_string = self.mock_string(filtered_message)
-        embed = SafeEmbed(title=f'"{mock_string}"', description=user_to_mock.name)
+        embed = self.bot.embed_api.Embed(
+            title=f'"{mock_string}"', description=user_to_mock.name
+        )
         embed.set_thumbnail(url=user_to_mock.avatar_url)
 
         await self.bot.h.tagged_response(ctx, embed=embed)

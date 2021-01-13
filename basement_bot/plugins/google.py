@@ -1,7 +1,6 @@
 from cogs import HttpPlugin
 from discord.ext import commands
 from helper import with_typing
-from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -62,7 +61,9 @@ class Googler(HttpPlugin):
                 link = item.get("link")
                 snippet = item.get("snippet", "<Details Unknown>").replace("\n", "")
                 embed = (
-                    SafeEmbed(title=f"Results for {args}", value="https://google.com")
+                    self.bot.embed_api.Embed(
+                        title=f"Results for {args}", value="https://google.com"
+                    )
                     if field_counter == 1
                     else embed
                 )

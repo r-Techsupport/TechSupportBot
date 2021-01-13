@@ -6,7 +6,7 @@ from os.path import basename, dirname, isfile, join
 
 import munch
 from api import BotAPI
-from utils.logger import get_logger
+from logger import get_logger
 
 log = get_logger("Plugin Loader")
 

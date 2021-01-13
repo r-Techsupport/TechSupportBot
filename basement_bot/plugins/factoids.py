@@ -5,9 +5,8 @@ from cogs import DatabasePlugin, MatchPlugin
 from discord import HTTPException
 from discord.ext import commands
 from helper import with_typing
+from logger import get_logger
 from sqlalchemy import Column, DateTime, Integer, String
-from utils.embed import SafeEmbed
-from utils.logger import get_logger
 
 log = get_logger("Factoids")
 
@@ -199,7 +198,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         embeds = []
         for index, factoid in enumerate(factoids):
             embed = (
-                SafeEmbed(
+                self.bot.embed_api.Embed(
                     title="Factoids",
                     description=f"Access factoids with the `{self.config.prefix}` prefix",
                 )
@@ -246,7 +245,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         if entry:
             if entry.embed_config:
                 embed_config = json.loads(entry.embed_config)
-                embed = SafeEmbed.from_dict(embed_config)
+                embed = self.bot.embed_api.Embed.from_dict(embed_config)
                 message = None
             else:
                 embed = None

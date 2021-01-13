@@ -1,6 +1,6 @@
 from cogs import MatchPlugin
+from logger import get_logger
 from munch import Munch
-from utils.logger import get_logger
 
 log = get_logger("Protector")
 

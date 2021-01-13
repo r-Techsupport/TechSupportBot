@@ -1,7 +1,7 @@
 from random import shuffle
 
 from cogs import HttpPlugin, LoopPlugin
-from utils.logger import get_logger
+from logger import get_logger
 
 log = get_logger("News Plugin")
 

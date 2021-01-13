@@ -1,9 +1,6 @@
-import json
-
 from cogs import HttpPlugin
 from discord.ext import commands
 from helper import with_typing
-from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -57,7 +54,7 @@ class UrbanDictionary(HttpPlugin):
                 .replace("\n", "")
             )
             embed = (
-                SafeEmbed(
+                self.bot.embed_api.Embed(
                     title=f"Results for {args}",
                     description=f"{self.SEE_MORE_URL}{args_no_spaces}",
                 )

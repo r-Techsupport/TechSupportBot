@@ -8,7 +8,6 @@ from discord.channel import DMChannel
 from discord.ext import commands
 from emoji import emojize
 from helper import with_typing
-from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -78,7 +77,7 @@ class Poller(BasicPlugin):
         )
         display_timeout_units = "seconds" if request_body.timeout <= 60 else "minutes"
 
-        embed = SafeEmbed(
+        embed = self.bot.embed_api.Embed(
             title=request_body.question,
             description=f"Poll timeout: {display_timeout} {display_timeout_units}",
         )
@@ -116,7 +115,7 @@ class Poller(BasicPlugin):
             )
             return
 
-        embed = SafeEmbed(
+        embed = self.bot.embed_api.Embed(
             title=f"Poll results for `{request_body.question}`",
             description=f"Votes: {total}",
         )

@@ -4,7 +4,6 @@
 from cogs import BasicPlugin
 from discord.ext import commands
 from helper import with_typing
-from utils.embed import SafeEmbed
 
 
 class AdminControl(BasicPlugin):
@@ -47,7 +46,11 @@ class AdminControl(BasicPlugin):
         embeds = []
         field_counter = 1
         for index, key in enumerate(list(status_data.keys())):
-            embed = SafeEmbed(title="Plugin Status") if field_counter == 1 else embed
+            embed = (
+                self.bot.embed_api.Embed(title="Plugin Status")
+                if field_counter == 1
+                else embed
+            )
             embed.add_field(name=key, value=status_data[key], inline=False)
             if field_counter == 5 or index == len(status_data) - 1:
                 embeds.append(embed)
@@ -172,6 +175,7 @@ class AdminControl(BasicPlugin):
             ctx (discord.Ctx): the context object for the message
             args [list]: the space-or-quote-delimitted args
         """
+        # pylint: disable=fixme
         # TODO: put this logic in the valid_input method
         game_ = " ".join(args)[:32]
 
@@ -193,6 +197,7 @@ class AdminControl(BasicPlugin):
             ctx (discord.Ctx): the context object for the message
             args [list]: the space-or-quote-delimitted args
         """
+        # pylint: disable=fixme
         # TODO: put this logic in the valid_input method
         nick = " ".join(args)[:32]
 

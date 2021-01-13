@@ -6,7 +6,6 @@ from random import choice
 from cogs import BasicPlugin
 from discord.ext import commands
 from helper import with_typing
-from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -78,7 +77,7 @@ class Hugger(BasicPlugin):
             user_to_hug=ctx.message.mentions[0].mention,
         )
 
-        embed = SafeEmbed()
+        embed = self.bot.embed_api.Embed()
 
         embed.add_field(name="You've been hugged!", value=hug_text)
 

@@ -6,7 +6,6 @@ from discord import DMChannel
 from discord.ext import commands
 from helper import with_typing
 from sqlalchemy import Column, DateTime, Integer, String, desc
-from utils.embed import SafeEmbed
 
 
 class Grab(DatabasePlugin.BaseTable):
@@ -152,7 +151,7 @@ class Grabber(DatabasePlugin):
             )
             return
 
-        embed = SafeEmbed(
+        embed = self.bot.embed_api.Embed(
             title=f"Grabs for {user_to_grab.name}",
             description=f"Let's take a stroll down memory lane...",
         )
@@ -162,7 +161,7 @@ class Grabber(DatabasePlugin):
         for index, grab_ in enumerate(grabs):
             filtered_message = self.bot.h.sub_mentions_for_usernames(grab_.message)
             embed = (
-                SafeEmbed(
+                self.bot.embed_api.Embed(
                     title=f"Grabs for {user_to_grab.name}",
                     description=f"Let's take a stroll down memory lane...",
                 )
@@ -224,7 +223,7 @@ class Grabber(DatabasePlugin):
             random_index = randint(0, grabs.count() - 1)
             grab = grabs[random_index]
             filtered_message = self.bot.h.sub_mentions_for_usernames(grab.message)
-            embed = SafeEmbed(
+            embed = self.bot.embed_api.Embed(
                 title=f'"{filtered_message}"',
                 description=f"{user_to_grab.name}, {grab.time.date()}",
             )

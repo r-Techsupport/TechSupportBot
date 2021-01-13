@@ -1,7 +1,6 @@
 from cogs import HttpPlugin
 from discord.ext import commands
 from helper import with_typing
-from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -54,7 +53,7 @@ class ISSLocator(HttpPlugin):
         if not location:
             location = "Unknown"
 
-        embed = SafeEmbed(
+        embed = self.bot.embed_api.Embed(
             title="ISS Location", description="Track the International Space Station!"
         )
         embed.add_field(name="Location", value=location)

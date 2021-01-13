@@ -9,9 +9,8 @@ from cogs import LoopPlugin, MatchPlugin, MqPlugin
 from discord.ext import commands
 from discord.ext.commands import Context
 from helper import with_typing
+from logger import get_logger
 from munch import Munch
-from utils.embed import SafeEmbed
-from utils.logger import get_logger
 
 log = get_logger("Relay Plugin")
 
@@ -312,7 +311,9 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             return
         dm_channel = await requester.create_dm()
 
-        embed = SafeEmbed(title=f"WHOIS Response for {response.payload.nick}")
+        embed = self.bot.embed_api.Embed(
+            title=f"WHOIS Response for {response.payload.nick}"
+        )
         embed.add_field(
             name="User", value=response.payload.user or "Not found", inline=False
         )

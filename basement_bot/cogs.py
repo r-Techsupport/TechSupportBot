@@ -9,8 +9,8 @@ import aiocron
 import http3
 import pika
 from discord.ext import commands
+from logger import get_logger
 from sqlalchemy.ext.declarative import declarative_base
-from utils.logger import get_logger
 
 logging.getLogger("pika").setLevel(logging.WARNING)
 log = get_logger("Cogs")

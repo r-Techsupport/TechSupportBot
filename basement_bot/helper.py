@@ -11,7 +11,6 @@ from api import BotAPI
 from discord import Forbidden, NotFound
 from discord.channel import DMChannel
 from discord.errors import HTTPException
-from utils.embed import SafeEmbed
 
 
 class HelperAPI(BotAPI):
@@ -98,7 +97,7 @@ class HelperAPI(BotAPI):
             description (str): the description for the embed
             **kwargs (dict): a set of keyword values to be displayed
         """
-        embed = SafeEmbed(title=title, description=description)
+        embed = self.bot.embed_api.Embed(title=title, description=description)
         for key, value in kwargs.items():
             embed.add_field(name=key, value=value, inline=False)
         return embed
@@ -183,15 +182,17 @@ class HelperAPI(BotAPI):
         embeds = embeds[:10]
 
         for index, embed in enumerate(embeds):
-            if isinstance(embed, SafeEmbed):
+            if isinstance(embed, self.bot.embed_api.Embed):
                 embed.set_footer(text=f"Page {index+1} of {len(embeds)}")
 
         index = 0
         get_args = lambda index: {
             "content": embeds[index]
-            if not isinstance(embeds[index], SafeEmbed)
+            if not isinstance(embeds[index], self.bot.embed_api.Embed)
             else None,
-            "embed": embeds[index] if isinstance(embeds[index], SafeEmbed) else None,
+            "embed": embeds[index]
+            if isinstance(embeds[index], self.bot.embed_api.Embed)
+            else None,
         }
 
         if tag_user:
