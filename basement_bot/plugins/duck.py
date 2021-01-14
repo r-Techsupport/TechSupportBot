@@ -4,9 +4,9 @@ from concurrent.futures._base import TimeoutError as AsyncTimeoutError
 from random import choice, choices
 
 from cogs import DatabasePlugin, LoopPlugin
+from decorate import with_typing
 from discord import Color as embed_colors
 from discord.ext import commands
-from helper import with_typing
 from sqlalchemy import Column, DateTime, Integer, String
 
 

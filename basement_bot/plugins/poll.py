@@ -2,12 +2,12 @@ import asyncio
 import datetime
 
 from cogs import BasicPlugin
+from decorate import with_typing
 from discord import Forbidden, NotFound
 from discord import utils as discord_utils
 from discord.channel import DMChannel
 from discord.ext import commands
 from emoji import emojize
-from helper import with_typing
 
 
 def setup(bot):

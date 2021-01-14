@@ -4,7 +4,6 @@
 import ast
 import datetime
 import re
-from inspect import signature
 
 import munch
 from api import BotAPI
@@ -267,38 +266,3 @@ class HelperAPI(BotAPI):
             **kwargs (...dict): the keyword args with which to call the pagination method
         """
         self.bot.loop.create_task(self.paginate(*args, **kwargs))
-
-
-# decorators
-
-
-def with_typing(command):
-    """Decorator for commands to utilize "async with" ctx.typing()
-
-    This will show the bot as typing... until the command completes
-
-    parameters:
-        command (discord.ext.commands.Command): the command object to modify
-    """
-    original_callback = command.callback
-    original_signature = signature(original_callback)
-
-    async def typing_wrapper(*args, **kwargs):
-        context = args[1]
-
-        typing_func = getattr(context, "typing", None)
-
-        if not typing_func:
-            await original_callback(*args, **kwargs)
-        else:
-            async with typing_func():
-                await original_callback(*args, **kwargs)
-
-    # this has to be done so invoke will see the original signature
-    typing_wrapper.__signature__ = original_signature
-    typing_wrapper.__name__ = command.name
-
-    # calls the internal setter
-    command.callback = typing_wrapper
-
-    return command

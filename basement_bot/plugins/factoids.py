@@ -2,9 +2,9 @@ import datetime
 import json
 
 from cogs import DatabasePlugin, MatchPlugin
+from decorate import with_typing
 from discord import HTTPException
 from discord.ext import commands
-from helper import with_typing
 from logger import get_logger
 from sqlalchemy import Column, DateTime, Integer, String
 

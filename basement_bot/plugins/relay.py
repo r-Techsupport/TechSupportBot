@@ -6,9 +6,9 @@ import re
 import uuid
 
 from cogs import LoopPlugin, MatchPlugin, MqPlugin
+from decorate import with_typing
 from discord.ext import commands
 from discord.ext.commands import Context
-from helper import with_typing
 from logger import get_logger
 from munch import Munch
 

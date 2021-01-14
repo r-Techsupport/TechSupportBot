@@ -2,9 +2,9 @@ import datetime
 from random import randint
 
 from cogs import DatabasePlugin
+from decorate import with_typing
 from discord import DMChannel
 from discord.ext import commands
-from helper import with_typing
 from sqlalchemy import Column, DateTime, Integer, String, desc
 
 

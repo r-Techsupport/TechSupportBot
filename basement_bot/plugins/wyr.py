@@ -2,8 +2,8 @@ import uuid
 from random import choice
 
 from cogs import BasicPlugin
+from decorate import with_typing
 from discord.ext import commands
-from helper import with_typing
 
 
 def setup(bot):
