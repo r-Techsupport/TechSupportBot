@@ -43,7 +43,9 @@ class Logger(MatchPlugin):
         )
 
         embed.add_field(
-            name="Display Name", value=ctx.author.display_name or "Unknown", inline=False
+            name="Display Name",
+            value=ctx.author.display_name or "Unknown",
+            inline=False,
         )
 
         embed.add_field(name="Name", value=ctx.author.name or "Unknown", inline=False)
