@@ -11,7 +11,7 @@ class Logger(MatchPlugin):
     PLUGIN_NAME = __name__
 
     async def match(self, ctx, _):
-        if not ctx.channel.id in self.config.channel_map.keys():
+        if not ctx.channel.id in self.config.channel_map:
             return False
         return True
 
