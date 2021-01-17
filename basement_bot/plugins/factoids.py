@@ -406,7 +406,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
         )
 
     @with_typing
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Removes a factoid's loop config",
         description="De-loops a pre-existing factoid",
@@ -434,7 +434,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
         await self.bot.h.tagged_response(ctx, "Loop config deleted")
 
     @with_typing
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Displays the loop config",
         description="Retrieves and displays the loop config for a specific factoid",
