@@ -74,8 +74,7 @@ plugins:
                 sensitive: true
         length_limit: 500
     logger:
-        input_channels: []
-        output_channel:
+        channel_map: {}
         embed_color: 0xF1C40F
     weather:
         dev_key: 
