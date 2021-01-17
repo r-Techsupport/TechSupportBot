@@ -11,16 +11,16 @@ class Logger(MatchPlugin):
     PLUGIN_NAME = __name__
 
     async def match(self, ctx, _):
-        if not ctx.channel.id in self.config.input_channels:
+        if not ctx.channel.id in self.config.channel_map:
             return False
         return True
 
     async def response(self, ctx, _):
-        channel = self.get_logging_channel()
+        channel = self.get_logging_channel(ctx.channel.id)
         await channel.send(embed=self.generate_embed(ctx))
 
-    def get_logging_channel(self):
-        return self.bot.get_channel(self.config.output_channel)
+    def get_logging_channel(self, id):
+        return self.bot.get_channel(self.config.channel_map[id])
 
     def generate_embed(self, ctx):
         embed = SafeEmbed()
@@ -38,23 +38,25 @@ class Logger(MatchPlugin):
 
         embed.add_field(
             name="Channel",
-            value=f"{ctx.channel.name} ({ctx.channel.mention})",
+            value=(f"{ctx.channel.name} ({ctx.channel.mention})") or "Unknown",
             inline=False,
         )
 
         embed.add_field(
-            name="Display Name", value=ctx.author.display_name, inline=False
+            name="Display Name",
+            value=ctx.author.display_name or "Unknown",
+            inline=False,
         )
 
-        embed.add_field(name="Name", value=ctx.author.name, inline=False)
+        embed.add_field(name="Name", value=ctx.author.name or "Unknown", inline=False)
 
         embed.add_field(
-            name="Discriminator", value=ctx.author.discriminator, inline=False
+            name="Discriminator", value=ctx.author.discriminator or "None", inline=False
         )
 
         embed.add_field(
             name="Roles",
-            value=",".join([role.name for role in ctx.author.roles[1:]]),
+            value=(",".join([role.name for role in ctx.author.roles[1:]])) or "None",
             inline=False,
         )
 
