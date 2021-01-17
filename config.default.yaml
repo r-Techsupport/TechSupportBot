@@ -25,6 +25,7 @@ plugins:
     factoids:
         prefix: "?"
         list_all_max: 5
+        loop_update_minutes: 15
     google:
         cse_id:
         dev_key:

@@ -1,7 +1,6 @@
 from cogs import HttpPlugin
+from decorate import with_typing
 from discord.ext import commands
-from helper import with_typing
-from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -28,7 +27,6 @@ class Googler(HttpPlugin):
             " Returns nothing if one is not found."
         ),
         usage="[search-terms]",
-        help="\nLimitations: Mentions should not be used.",
     )
     async def google(self, ctx, *args):
         if not args:
@@ -62,7 +60,9 @@ class Googler(HttpPlugin):
                 link = item.get("link")
                 snippet = item.get("snippet", "<Details Unknown>").replace("\n", "")
                 embed = (
-                    SafeEmbed(title=f"Results for {args}", value="https://google.com")
+                    self.bot.embed_api.Embed(
+                        title=f"Results for {args}", value="https://google.com"
+                    )
                     if field_counter == 1
                     else embed
                 )
@@ -101,7 +101,6 @@ class Googler(HttpPlugin):
             " Returns nothing if one is not found."
         ),
         usage="[search-terms]",
-        help="\nLimitations: Mentions should not be used.",
     )
     async def google_images(self, ctx, *args):
         ctx.image_search = True
@@ -117,7 +116,6 @@ class Googler(HttpPlugin):
             " Returns nothing if one is not found."
         ),
         usage="[search-terms]",
-        help="\nLimitations: Mentions should not be used.",
     )
     async def youtube(self, ctx, *args):
         if not args:

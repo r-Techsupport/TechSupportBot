@@ -2,8 +2,8 @@ import uuid
 from random import choice
 
 from cogs import BasicPlugin
+from decorate import with_typing
 from discord.ext import commands
-from helper import with_typing
 
 
 def setup(bot):
@@ -520,7 +520,6 @@ class WouldYouRather(BasicPlugin):
         name="wyr",
         brief="Gets a Would You Rather... question",
         description="Creates a random Would You Rather question",
-        limitations="60 sec cooldown per guild",
     )
     async def wyr(self, ctx):
         while True:

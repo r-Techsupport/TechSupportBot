@@ -8,8 +8,7 @@ import munch
 from api import BotAPI
 from discord import Forbidden
 from discord.ext.commands import Cog
-from utils.embed import SafeEmbed
-from utils.logger import get_logger
+from logger import get_logger
 
 log = get_logger("Error")
 
@@ -77,7 +76,7 @@ class ErrorAPI(BotAPI):
 
     CUSTOM_TEMPLATES = {
         error_enum.MissingRequiredArgument: ErrorMessageTemplate(
-            "You did not provide the command argument: `%s`", "param"
+            "You did not provide the command argument: `%s`", {"key": "param"}
         ),
         error_enum.TooManyArguments: ErrorMessageTemplate(
             "You provided too many arguments to that command"
@@ -133,6 +132,8 @@ class ErrorAPI(BotAPI):
         )
         log.error(exception_string)
 
+        exception_string = exception_string[:1994]
+
         embed = self.generate_error_embed(event_method, context)
 
         try:
@@ -186,7 +187,7 @@ class ErrorAPI(BotAPI):
             context (discord.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
-        embed = SafeEmbed(title="Error! :confounded:")
+        embed = self.bot.embed_api.Embed(title="Error! :confounded:")
         embed.add_field(name="Event", value=event_method, inline=False)
 
         # inject context data if relevant

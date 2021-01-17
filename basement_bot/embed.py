@@ -1,9 +1,11 @@
-"""Helper class for making safer embeds."""
-from discord import Embed
+"""Provides an interface for complex embed generation.
+"""
+from api import BotAPI
+from discord import Embed as DiscordEmbed
 
 
-class SafeEmbed(Embed):
-    """Wraps embed creation to avoid 400 errors when sending."""
+class Embed(DiscordEmbed):
+    """Custom BasementBot embed."""
 
     def add_field(self, *, name, value, inline=True):
         """Wraps the default add_field method with argument length checks.
@@ -26,3 +28,14 @@ class SafeEmbed(Embed):
             value = value[:256]
 
         return super().add_field(name=name, value=value, inline=inline)
+
+
+# pylint: disable=too-few-public-methods
+class EmbedAPI(BotAPI):
+    """API for generating embeds.
+
+    parameters:
+        bot (BasementBot): the bot object
+    """
+
+    Embed = Embed

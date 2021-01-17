@@ -1,8 +1,8 @@
 from random import choice
 
 from cogs import BasicPlugin
+from decorate import with_typing
 from discord.ext import commands
-from helper import with_typing
 
 
 def setup(bot):
@@ -45,7 +45,6 @@ class Lenny(BasicPlugin):
         brief="( ͡° ͜ʖ ͡°)",
         description="Returns a randomly chosen Lenny face.",
         usage="",
-        help="\nLimitations: Ignores any plain text or mentions after the command.",
     )
     async def lenny(self, ctx):
         await ctx.send(choice(self.LENNYS_SELECTION))

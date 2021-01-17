@@ -2,9 +2,8 @@
 """
 
 from cogs import BasicPlugin
+from decorate import with_typing
 from discord.ext import commands
-from helper import with_typing
-from utils.embed import SafeEmbed
 
 
 class AdminControl(BasicPlugin):
@@ -47,7 +46,11 @@ class AdminControl(BasicPlugin):
         embeds = []
         field_counter = 1
         for index, key in enumerate(list(status_data.keys())):
-            embed = SafeEmbed(title="Plugin Status") if field_counter == 1 else embed
+            embed = (
+                self.bot.embed_api.Embed(title="Plugin Status")
+                if field_counter == 1
+                else embed
+            )
             embed.add_field(name=key, value=status_data[key], inline=False)
             if field_counter == 5 or index == len(status_data) - 1:
                 embeds.append(embed)
@@ -172,7 +175,9 @@ class AdminControl(BasicPlugin):
             ctx (discord.Ctx): the context object for the message
             args [list]: the space-or-quote-delimitted args
         """
-        game_ = " ".join(args)[:50]
+        # pylint: disable=fixme
+        # TODO: put this logic in the valid_input method
+        game_ = " ".join(args)[:32]
 
         if not self.valid_input(game_):
             await self.bot.h.tagged_response(ctx, "Invalid game!")
@@ -181,6 +186,7 @@ class AdminControl(BasicPlugin):
 
         await self.bot.h.tagged_response(ctx, f"Successfully set game to: *{game_}*")
 
+    @with_typing
     @commands.command(hidden=True)
     async def set_nick(self, ctx, *args):
         """Sets the bot's nick by name.
@@ -191,7 +197,9 @@ class AdminControl(BasicPlugin):
             ctx (discord.Ctx): the context object for the message
             args [list]: the space-or-quote-delimitted args
         """
-        nick = " ".join(args)[:50]
+        # pylint: disable=fixme
+        # TODO: put this logic in the valid_input method
+        nick = " ".join(args)[:32]
 
         if not self.valid_input(nick):
             await self.bot.h.tagged_response(ctx, "Invalid nick!")

@@ -4,9 +4,8 @@
 from random import choice
 
 from cogs import BasicPlugin
+from decorate import with_typing
 from discord.ext import commands
-from helper import with_typing
-from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -40,7 +39,6 @@ class Hugger(BasicPlugin):
         brief="Hugs mentioned user(s)",
         description="Hugs the user(s) mentioned after the command.",
         usage="[mentioned-users]",
-        help="\nLimitations: Ignores plain text, @everyone, or @here.",
     )
     async def hug(self, ctx):
         """Executes the hug command. Returns bot's response
@@ -78,7 +76,7 @@ class Hugger(BasicPlugin):
             user_to_hug=ctx.message.mentions[0].mention,
         )
 
-        embed = SafeEmbed()
+        embed = self.bot.embed_api.Embed()
 
         embed.add_field(name="You've been hugged!", value=hug_text)
 

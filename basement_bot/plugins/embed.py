@@ -1,7 +1,6 @@
 from cogs import BasicPlugin
+from decorate import with_typing
 from discord.ext import commands
-from helper import with_typing
-from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -15,11 +14,15 @@ class Embedder(BasicPlugin):
 
     @with_typing
     @commands.has_permissions(manage_messages=True)
-    @commands.command(name="embed", brief="", description="", usage="")
+    @commands.command(
+        brief="Generates a list of embeds",
+        description="Generates a list of embeds defined by an uploaded JSON file",
+        usage="https://discord.com/developers/docs/resources/channel#embed-object",
+    )
     async def embed(self, ctx, *args):
         if not ctx.message.attachments:
             await self.bot.h.tagged_response(
-                ctx, "Please provide a JSON file for your embed(s)"
+                ctx, "Please provide a JSON file for your self.bot.embed_api.Embed(s)"
             )
             return
 
@@ -63,7 +66,7 @@ class Embedder(BasicPlugin):
         embeds = []
         try:
             for embed_request in request_body.get("embeds", []):
-                embeds.append(SafeEmbed.from_dict(embed_request))
+                embeds.append(Embed.from_dict(embed_request))
         except Exception:
             pass
 

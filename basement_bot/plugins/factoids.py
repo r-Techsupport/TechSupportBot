@@ -1,13 +1,13 @@
+import asyncio
 import datetime
 import json
 
-from cogs import DatabasePlugin, MatchPlugin
+from cogs import DatabasePlugin, LoopPlugin, MatchPlugin
+from decorate import with_typing
 from discord import HTTPException
 from discord.ext import commands
-from helper import with_typing
+from logger import get_logger
 from sqlalchemy import Column, DateTime, Integer, String
-from utils.embed import SafeEmbed
-from utils.logger import get_logger
 
 log = get_logger("Factoids")
 
@@ -21,13 +21,14 @@ class Factoid(DatabasePlugin.BaseTable):
     message = Column(String)
     time = Column(DateTime, default=datetime.datetime.utcnow)
     embed_config = Column(String, default=None)
+    loop_config = Column(String, default=None)
 
 
 def setup(bot):
     bot.add_cog(FactoidManager(bot))
 
 
-class FactoidManager(DatabasePlugin, MatchPlugin):
+class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
 
     PLUGIN_NAME = __name__
     MODEL = Factoid
@@ -54,6 +55,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         ]
     }"""
     MATCH_PERMISSIONS = ["send_messages"]
+    CACHE_UPDATE_MINUTES = 10
 
     async def db_preconfig(self):
         factoid_prefix = self.config.prefix
@@ -66,162 +68,87 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
                 f"Command prefix '{command_prefix}' cannot equal Factoid prefix"
             )
 
-    @with_typing
-    @commands.has_permissions(send_messages=True)
-    @commands.command(
-        name="remember",
-        brief="Creates custom trigger with a specified output",
-        description=(
-            "Creates a custom trigger with a specified name that outputs any specified text,"
-            " including mentions. All triggers are used by sending a message with a '?'"
-            " appended in front of the trigger name."
-        ),
-        usage="[trigger-name] [trigger-output]",
-        help="Trigger Usage: ?[trigger-name]\n\nLimitations: Mentions should not be used as triggers.",
-    )
-    async def add_factoid(self, ctx, *args):
-        if ctx.message.mentions:
-            await self.bot.h.tagged_response(
-                ctx, "Sorry, factoids don't work well with mentions"
-            )
-            return
-
-        embed_config = await self.bot.h.get_json_from_attachment(
-            ctx, ctx.message, send_msg_on_none=False, send_msg_on_failure=False
+    async def loop_preconfig(self):
+        self.loop_jobs = {}
+        self.load_jobs()
+        self.cache_update_time = datetime.datetime.utcnow() + datetime.timedelta(
+            minutes=self.config.loop_update_minutes
         )
-        if embed_config:
-            embed_config = json.dumps(embed_config)
-        elif embed_config == {}:
-            return
 
-        if len(args) >= 2:
-            arg1 = args[0]
-            args = args[1:]
-        else:
-            await self.bot.h.tagged_response(ctx, "Invalid input!")
-            return
+    def get_all_factoids(self):
+        db = self.db_session()
 
-        channel = getattr(ctx.message, "channel", None)
-        channel = str(channel.id) if channel else None
+        factoids = db.query(Factoid).order_by(Factoid.text).all()
 
+        for factoid in factoids:
+            db.expunge(factoid)
+        db.close()
+
+        return factoids or []
+
+    def get_factoid_from_query(self, query, db=None):
+        db = self.db_session()
+
+        factoid = db.query(Factoid).filter(Factoid.text == query).first()
+
+        if factoid:
+            db.expunge(factoid)
+        db.close()
+
+        return factoid
+
+    def get_embed_from_factoid(self, factoid):
+        if not factoid.embed_config:
+            return None
+
+        embed_config = json.loads(factoid.embed_config)
+
+        return self.bot.embed_api.Embed.from_dict(embed_config)
+
+    async def add_factoid(self, ctx, **kwargs):
         db = self.db_session()
 
         # first check if key already exists
-        entry = db.query(Factoid).filter(Factoid.text == arg1).first()
-        if entry:
+        factoid = (
+            db.query(Factoid).filter(Factoid.text == kwargs.get("trigger")).first()
+        )
+        if factoid:
             # delete old one
-            db.delete(entry)
+            db.delete(factoid)
             await self.bot.h.tagged_response(
-                ctx, "Deleting previous entry of factoid trigger..."
+                ctx, "Deleting previous entry of factoid..."
             )
 
+        trigger = kwargs.get("trigger")
         # finally, add new entry
         db.add(
             Factoid(
-                text=arg1.lower(),
-                channel=channel,
-                message=" ".join(args),
-                embed_config=embed_config,
+                text=trigger,
+                channel=kwargs.get("channel"),
+                message=kwargs.get("message"),
+                embed_config=kwargs.get("embed_config"),
             )
         )
         db.commit()
         db.close()
-        await self.bot.h.tagged_response(
-            ctx, f"Successfully added factoid trigger: *{arg1}*"
-        )
 
-    @with_typing
-    @commands.has_permissions(send_messages=True)
-    @commands.command(
-        name="forget",
-        brief="Deletes an existing custom trigger",
-        description="Deletes an existing custom trigger.",
-        usage="[trigger-name]",
-        help="\nLimitations: Mentions should not be used as triggers.",
-    )
-    async def delete_factoid(self, ctx, *args):
-        if ctx.message.mentions:
-            await self.bot.h.tagged_response(
-                ctx, "Sorry, factoids don't work well with mentions"
-            )
-            return
+        await self.bot.h.tagged_response(ctx, f"Successfully added factoid *{trigger}*")
 
-        if not args:
-            await self.bot.h.tagged_response(
-                ctx, "You must specify a factoid to delete!"
-            )
-            return
-        else:
-            arg = args[0]
-
+    async def delete_factoid(self, ctx, trigger):
         db = self.db_session()
 
-        entry = db.query(Factoid).filter(Factoid.text == arg).first()
-        if entry:
+        entry = db.query(Factoid).filter(Factoid.text == trigger).first()
+        if not entry:
+            await self.bot.h.tagged_response(ctx, "I couldn't find that factoid")
+        else:
             db.delete(entry)
             db.commit()
 
         db.close()
 
         await self.bot.h.tagged_response(
-            ctx, f"Successfully deleted factoid trigger: *{arg}*"
+            ctx, f"Successfully deleted factoid factoid: *{trigger}*"
         )
-
-    @with_typing
-    @commands.has_permissions(send_messages=True)
-    @commands.command(
-        name="lsf",
-        brief="List all factoids",
-        description="Shows an embed with all the factoids",
-        usage="",
-        help="\nLimitations: Currently only shows up to 20",
-    )
-    async def list_all_factoids(self, ctx):
-        if ctx.message.mentions:
-            await self.bot.h.tagged_response(
-                ctx, "Sorry, factoids don't work well with mentions"
-            )
-            return
-
-        db = self.db_session()
-
-        factoids = (
-            db.query(Factoid)
-            .filter(bool(Factoid.message) == True)
-            .order_by(Factoid.text)
-            .all()
-        )
-        if len(list(factoids)) == 0:
-            await self.bot.h.tagged_response(ctx, "No factoids found!")
-            return
-
-        field_counter = 1
-        embeds = []
-        for index, factoid in enumerate(factoids):
-            embed = (
-                SafeEmbed(
-                    title="Factoids",
-                    description=f"Access factoids with the `{self.config.prefix}` prefix",
-                )
-                if field_counter == 1
-                else embed
-            )
-            embed.add_field(
-                name=f"{factoid.text} (embed)"
-                if factoid.embed_config
-                else factoid.text,
-                value=factoid.message,
-                inline=False,
-            )
-            if field_counter == self.config.list_all_max or index == len(factoids) - 1:
-                embeds.append(embed)
-                field_counter = 1
-            else:
-                field_counter += 1
-
-        db.close()
-
-        self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
 
     async def match(self, _, content):
         return content.startswith(self.config.prefix)
@@ -239,42 +166,386 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
             )
             return
 
-        db = self.db_session()
+        factoid = self.get_factoid_from_query(query)
 
-        entry = db.query(Factoid).filter(Factoid.text == query).first()
+        if not factoid:
+            return
 
-        if entry:
-            if entry.embed_config:
-                embed_config = json.loads(entry.embed_config)
-                embed = SafeEmbed.from_dict(embed_config)
-                message = None
-            else:
-                embed = None
-                message = entry.message
+        embed = self.get_embed_from_factoid(factoid)
 
-            message = await self.bot.h.tagged_response(
-                ctx, content=message, embed=embed, target=user_mentioned
+        content = factoid.message if not embed else None
+
+        message = await self.bot.h.tagged_response(
+            ctx, content=content, embed=embed, target=user_mentioned
+        )
+
+        if not message:
+            await self.bot.h.tagged_response(ctx, "I was unable to render that factoid")
+
+        if not self.bot.plugin_api.plugins.get("relay"):
+            return
+
+        # add to the relay plugin queue if it's loaded
+        if ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.channels:
+            ctx.content = content
+            self.bot.plugin_api.plugins.factoids.memory.factoid_events.append(ctx)
+            while len(self.bot.plugin_api.plugins.factoids.memory.factoid_events) > 10:
+                del self.bot.plugin_api.plugins.factoids.memory.factoid_events[0]
+
+    def load_jobs(self):
+        factoids = self.get_all_factoids()
+
+        if not factoids:
+            return
+
+        factoid_set = set()
+        for factoid in factoids:
+            factoid_set.add(factoid.text)
+            self.configure_job(factoid)
+
+        # remove jobs for deleted factoids
+        for looped_factoid_key in self.loop_jobs.keys():
+            if not looped_factoid_key in factoid_set:
+                del self.loop_jobs[looped_factoid_key]
+
+    def configure_job(self, factoid):
+        old_loop_config = self.loop_jobs.get(factoid.text, {})
+
+        if not factoid.loop_config:
+            # delete stale job
+            if old_loop_config:
+                del self.loop_jobs[factoid.text]
+            return
+
+        loop_config = {}
+        sleep_duration = None
+        try:
+            loop_config = json.loads(factoid.loop_config)
+            sleep_duration = int(loop_config.get("sleep_duration"))
+        except Exception:
+            return
+
+        new_finish_time = datetime.datetime.utcnow() + datetime.timedelta(
+            minutes=sleep_duration
+        )
+        if not old_loop_config or sleep_duration != int(
+            old_loop_config.get("sleep_duration", -1)
+        ):
+            # there is no previous loop config
+            # OR
+            # the new sleep duration is different than the old one in the job
+            # therefore restart the waiting
+            loop_config["finish_time"] = new_finish_time
+        else:
+            loop_config["finish_time"] = old_loop_config.get(
+                "finish_time", new_finish_time
             )
 
-            if not message:
-                await self.bot.h.tagged_response(
-                    ctx, "I was unable to render that factoid"
-                )
-                return
+        self.loop_jobs[factoid.text] = loop_config
 
-            if not self.bot.plugin_api.plugins.get("relay"):
-                return
+    async def execute(self):
+        compare_time = datetime.datetime.utcnow()
 
-            # add to the relay plugin queue if it's loaded
-            if ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.channels:
-                ctx.content = entry.message
-                self.bot.plugin_api.plugins.factoids.memory.factoid_events.append(ctx)
-                while (
-                    len(self.bot.plugin_api.plugins.factoids.memory.factoid_events) > 10
-                ):
-                    del self.bot.plugin_api.plugins.factoids.memory.factoid_events[0]
+        if compare_time > self.cache_update_time:
+            self.load_jobs()
+            self.cache_update_time = datetime.datetime.utcnow() + datetime.timedelta(
+                minutes=self.config.loop_update_minutes
+            )
 
+        for factoid_key, loop_config in self.loop_jobs.items():
+            finish_time = loop_config.get("finish_time")
+            if not finish_time or compare_time < finish_time:
+                continue
+
+            channel = None
+            sleep_duration = None
+            factoid = self.get_factoid_from_query(factoid_key)
+
+            embed = self.get_embed_from_factoid(factoid)
+            content = factoid.message if not embed else None
+
+            try:
+                sleep_duration = int(loop_config.get("sleep_duration"))
+            except Exception:
+                continue
+
+            for channel_id in loop_config.get("channel_ids", []):
+                try:
+                    channel = self.bot.get_channel(int(channel_id))
+                    # update time of next message
+                    loop_config[
+                        "finish_time"
+                    ] = datetime.datetime.utcnow() + datetime.timedelta(
+                        minutes=sleep_duration
+                    )
+                    await channel.send(content=content, embed=embed)
+                except Exception:
+                    continue
+
+    # main clock for looping
+    async def wait(self):
+        await asyncio.sleep(60)
+
+    @with_typing
+    @commands.has_permissions(send_messages=True)
+    @commands.command(
+        brief="Creates a factoid",
+        description=(
+            "Creates a custom factoid with a specified name that outputs any specified text,"
+            " including mentions. All factoids are used by sending a message with a '?'"
+            " appended in front of the factoid name."
+        ),
+        usage="[factoid-name] [factoid-output] <optional-embed-json-upload>",
+    )
+    async def remember(self, ctx, *args):
+        if ctx.message.mentions:
+            await self.bot.h.tagged_response(
+                ctx, "Sorry, factoids don't work well with mentions"
+            )
+            return
+
+        embed_config = await self.bot.h.get_json_from_attachment(
+            ctx, ctx.message, send_msg_on_none=False, send_msg_on_failure=False
+        )
+        if embed_config:
+            embed_config = json.dumps(embed_config)
+        elif embed_config == {}:
+            return
+
+        if len(args) < 2:
+            await self.bot.h.tagged_response(
+                ctx, "Provide a trigger and a default message"
+            )
+            return
+
+        trigger = args[0].lower()
+        message = " ".join(args[1:])
+
+        if not trigger or not message:
+            await self.bot.h.tagged_response(ctx, "Invalid trigger/message")
+            return
+
+        channel = getattr(ctx.message, "channel", None)
+        channel = str(channel.id) if channel else None
+
+        await self.add_factoid(
+            ctx,
+            trigger=trigger,
+            channel=channel,
+            message=message,
+            embed_config=embed_config,
+        )
+
+    @with_typing
+    @commands.has_permissions(send_messages=True)
+    @commands.command(
+        brief="Deletes a factoid",
+        description="Deletes a factoid permanently",
+        usage="[factoid-name]",
+    )
+    async def forget(self, ctx, *args):
+        if ctx.message.mentions:
+            await self.bot.h.tagged_response(
+                ctx, "Sorry, factoids don't work well with mentions"
+            )
+            return
+
+        if not args:
+            await self.bot.h.tagged_response(
+                ctx, "You must specify a factoid to delete!"
+            )
+            return
+
+        await self.delete_factoid(ctx, args[0])
+
+    @with_typing
+    @commands.has_permissions(send_messages=True)
+    @commands.command(
+        brief="Loops a factoid",
+        description="Loops a pre-existing factoid",
+        usage="[factoid-name] [sleep_duration (minutes)] [channel_id] [channel_id_2] ...",
+    )
+    async def setup_loop(self, ctx, factoid_name, sleep_duration, *channel_ids):
+        if not channel_ids:
+            await self.bot.h.tagged_response(
+                ctx, "Please provide at least one valid channel ID"
+            )
+            return
+
+        # I really need to start using converters
+        if any(
+            self.bot.get_channel(int(id)) is None if id.isnumeric() else True
+            for id in channel_ids
+        ):
+            await self.bot.h.tagged_response(
+                ctx, "One or more of those channel ID's is not valid"
+            )
+            return
+
+        db = self.db_session()
+
+        entry = db.query(Factoid).filter(Factoid.text == factoid_name).first()
+        if not entry:
+            await self.bot.h.tagged_response(ctx, "I couldn't find that factoid")
+            return db.close()
+
+        if entry.loop_config:
+            await self.bot.h.tagged_response(
+                ctx, "Deleting previous loop configuration..."
+            )
+
+        entry.loop_config = json.dumps(
+            {"sleep_duration": sleep_duration, "channel_ids": channel_ids}
+        )
+
+        db.commit()
         db.close()
+
+        await self.bot.h.tagged_response(
+            ctx, f"Successfully saved loop config for {factoid_name}"
+        )
+
+    @with_typing
+    @commands.has_permissions(manage_messages=True)
+    @commands.command(
+        brief="Removes a factoid's loop config",
+        description="De-loops a pre-existing factoid",
+        usage="[factoid-name]",
+    )
+    async def delete_loop(self, ctx, factoid_name):
+        db = self.db_session()
+
+        entry = db.query(Factoid).filter(Factoid.text == factoid_name).first()
+        if not entry:
+            await self.bot.h.tagged_response(ctx, "I couldn't find that factoid")
+            return db.close()
+
+        if not entry.loop_config:
+            await self.bot.h.tagged_response(
+                ctx, "There is no loop config for that factoid"
+            )
+            return db.close()
+
+        entry.loop_config = None
+
+        db.commit()
+        db.close()
+
+        await self.bot.h.tagged_response(ctx, "Loop config deleted")
+
+    @with_typing
+    @commands.has_permissions(manage_messages=True)
+    @commands.command(
+        brief="Displays the loop config",
+        description="Retrieves and displays the loop config for a specific factoid",
+        usage="[factoid-name]",
+    )
+    async def loop_config(self, ctx, factoid_name):
+        db = self.db_session()
+
+        entry = db.query(Factoid).filter(Factoid.text == factoid_name).first()
+        if entry:
+            db.expunge(entry)
+        db.close()
+
+        if not entry:
+            await self.bot.h.tagged_response(ctx, "I couldn't find that factoid")
+            return
+
+        if not entry.loop_config:
+            await self.bot.h.tagged_response(
+                ctx, "There is no loop config for that factoid"
+            )
+            return
+
+        try:
+            loop_config = json.loads(entry.loop_config)
+        except Exception:
+            await self.bot.h.tagged_response(
+                ctx, "I couldn't process the JSON for that loop config"
+            )
+            return
+
+        embed_label = ""
+        if entry.embed_config:
+            embed_label = "(embed)"
+
+        embed = self.bot.embed_api.Embed(
+            title=f"Loop config for {factoid_name} {embed_label}",
+            description=f'"{entry.message}"',
+        )
+
+        sleep_duration = loop_config.get("sleep_duration", "???")
+        embed.add_field(
+            name="Sleep duration", value=f"{sleep_duration} minute(s)", inline=False
+        )
+
+        channel_ids = loop_config.get("channel_ids", [])
+        # check this shit out
+        channels = [
+            "#" + getattr(self.bot.get_channel(int(channel_id)), "name", "???")
+            for channel_id in channel_ids
+        ]
+        embed.add_field(name="Channels", value=", ".join(channels), inline=False)
+
+        embed.add_field(
+            name="Next execution (UTC)",
+            value=self.loop_jobs.get(factoid_name, {}).get("finish_time", "???"),
+        )
+
+        await self.bot.h.tagged_response(ctx, embed=embed)
+
+    @with_typing
+    @commands.has_permissions(send_messages=True)
+    @commands.command(
+        name="lsf",
+        brief="List all factoids",
+        description="Shows an embed with all the factoids",
+    )
+    async def list_all_factoids(self, ctx):
+        if ctx.message.mentions:
+            await self.bot.h.tagged_response(
+                ctx, "Sorry, factoids don't work well with mentions"
+            )
+            return
+
+        factoids = self.get_all_factoids()
+        if not factoids:
+            await self.bot.h.tagged_response(ctx, "No factoids found!")
+            return
+
+        field_counter = 1
+        embeds = []
+        for index, factoid in enumerate(factoids):
+            embed = (
+                self.bot.embed_api.Embed(
+                    title="Factoids",
+                    description=f"Access factoids with the `{self.config.prefix}` prefix",
+                )
+                if field_counter == 1
+                else embed
+            )
+
+            label_addon = []
+            if factoid.embed_config:
+                label_addon.append("(embed)")
+            if factoid.loop_config:
+                label_addon.append("(loop)")
+
+            label = " ".join(label_addon)
+
+            embed.add_field(
+                name=f"{factoid.text} {label}",
+                value=factoid.message,
+                inline=False,
+            )
+            if field_counter == self.config.list_all_max or index == len(factoids) - 1:
+                embeds.append(embed)
+                field_counter = 1
+            else:
+                field_counter += 1
+
+        self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @with_typing
     @commands.has_permissions(send_messages=True)
@@ -282,32 +553,54 @@ class FactoidManager(DatabasePlugin, MatchPlugin):
         brief="Gets raw factoid data",
         description="Gets (cats) the raw data of a factoid object",
         usage="[factoid-name]",
-        help="\nLimitations: None",
     )
-    async def cat(self, ctx, *args):
+    async def embed_config(self, ctx, *args):
         if not args:
             await self.bot.h.tagged_response(
                 ctx, f"(Example) ```{self.EXAMPLE_JSON}```"
             )
             return
 
-        arg = args[0]
+        factoid = self.get_factoid_from_query(args[0])
 
-        db = self.db_session()
-
-        entry = db.query(Factoid).filter(Factoid.text == arg).first()
-
-        if not entry:
-            await self.bot.h.tagged_response(ctx, "I couldn't find that factoid!")
+        if not factoid:
+            await self.bot.h.tagged_response(ctx, "I couldn't find that factoid")
             return
 
-        # hashtag python
-        formatted = (
-            json.dumps(json.loads(entry.embed_config), indent=4)
-            if entry.embed_config
-            else entry.message
-        )
+        if not factoid.embed_config:
+            await self.bot.h.tagged_response(
+                ctx, "There is no embed config for that factoid"
+            )
+            return
 
-        db.close()
+        formatted = json.dumps(factoid.embed_config, indent=4)
 
         await self.bot.h.tagged_response(ctx, f"```{formatted}```")
+
+    @with_typing
+    @commands.has_permissions(send_messages=True)
+    @commands.command(
+        name="loop_jobs",
+        brief="Lists loop jobs",
+        description="Lists all the currently cached loop jobs",
+    )
+    async def get_loop_jobs(self, ctx):
+        if not self.loop_jobs:
+            await self.bot.h.tagged_response(
+                ctx,
+                f"There are no currently running factoid loops (next cache update: {self.cache_update_time} UTC)",
+            )
+            return
+
+        embed_kwargs = {}
+        for factoid_name, loop_config in self.loop_jobs.items():
+            finish_time = loop_config.get("finish_time", "???")
+            embed_kwargs[factoid_name] = f"Next execution: {finish_time} UTC"
+
+        embed = self.bot.h.embed_from_kwargs(
+            title="Running factoid loops",
+            description=f"Next cache update: {self.cache_update_time} UTC",
+            **embed_kwargs,
+        )
+
+        await self.bot.h.tagged_response(ctx, embed=embed)

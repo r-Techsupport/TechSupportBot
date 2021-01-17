@@ -9,14 +9,15 @@ from database import DatabaseAPI
 from discord import Game
 from discord.channel import DMChannel
 from discord.ext import commands
+from embed import EmbedAPI
 from error import ErrorAPI
 from helper import HelperAPI
+from logger import get_logger
 from plugin import PluginAPI
-from utils.logger import get_logger
 
 log = get_logger("Basement Bot")
 
-
+# pylint: disable=too-many-instance-attributes
 class BasementBot(commands.Bot):
     """The main bot object.
 
@@ -34,6 +35,7 @@ class BasementBot(commands.Bot):
         self.database_api = DatabaseAPI(bot=self)
         self.error_api = ErrorAPI(bot=self)
         self.helper_api = HelperAPI(bot=self)
+        self.embed_api = EmbedAPI(bot=self)
 
         super().__init__(self.config.main.required.command_prefix)
 

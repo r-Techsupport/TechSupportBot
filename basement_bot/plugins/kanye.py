@@ -2,7 +2,6 @@ import asyncio
 from random import choice, randint
 
 from cogs import HttpPlugin, LoopPlugin
-from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -33,10 +32,12 @@ class KanyeQuotes(LoopPlugin, HttpPlugin):
         response = await self.http_call("get", self.API_URL)
         quote = response.get("quote")
 
-        if quote:
-            embed = SafeEmbed(title=f'"{quote}"', description="Kanye Quest")
-            embed.set_thumbnail(url=choice(self.KANYE_PICS))
-            await self.channel.send(embed=embed)
+        if not quote:
+            return
+
+        embed = self.bot.embed_api.Embed(title=f'"{quote}"', description="Kanye Quest")
+        embed.set_thumbnail(url=choice(self.KANYE_PICS))
+        await self.channel.send(embed=embed)
 
     async def wait(self):
         await asyncio.sleep(

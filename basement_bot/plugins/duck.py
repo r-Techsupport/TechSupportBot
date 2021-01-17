@@ -4,11 +4,10 @@ from concurrent.futures._base import TimeoutError as AsyncTimeoutError
 from random import choice, choices
 
 from cogs import DatabasePlugin, LoopPlugin
+from decorate import with_typing
 from discord import Color as embed_colors
 from discord.ext import commands
-from helper import with_typing
 from sqlalchemy import Column, DateTime, Integer, String
-from utils.embed import SafeEmbed
 
 
 class DuckUser(DatabasePlugin.BaseTable):
@@ -796,7 +795,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         self.cooldowns = {}
 
         start_time = datetime.datetime.now()
-        embed = SafeEmbed(
+        embed = self.bot.embed_api.Embed(
             title="*Quack Quack*",
             description="Befriend the duck with `bef` or shoot with `bang`",
         )
@@ -851,7 +850,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
 
         db.commit()
 
-        embed = SafeEmbed(
+        embed = self.bot.embed_api.Embed(
             title=f"Duck {action}!",
             description=f"{winner.mention} {action} the duck in {duration} seconds!",
         )
@@ -898,7 +897,9 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
             )
             return
 
-        embed = SafeEmbed(title="Duck Stats", description=query_user.mention)
+        embed = self.bot.embed_api.Embed(
+            title="Duck Stats", description=query_user.mention
+        )
         embed.color = embed_colors.green()
         embed.add_field(name="Friends", value=duck_user.befriend_count)
         embed.add_field(name="Kills", value=duck_user.kill_count)
@@ -932,7 +933,11 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         field_counter = 1
         embeds = []
         for index, duck_user in enumerate(duck_users):
-            embed = SafeEmbed(title="Duck Friendships") if field_counter == 1 else embed
+            embed = (
+                self.bot.embed_api.Embed(title="Duck Friendships")
+                if field_counter == 1
+                else embed
+            )
 
             embed.set_thumbnail(url=self.DUCK_PIC_URL)
             embed.color = embed_colors.green()
@@ -976,7 +981,11 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         field_counter = 1
         embeds = []
         for index, duck_user in enumerate(duck_users):
-            embed = SafeEmbed(title="Duck Kills") if field_counter == 1 else embed
+            embed = (
+                self.bot.embed_api.Embed(title="Duck Kills")
+                if field_counter == 1
+                else embed
+            )
 
             embed.set_thumbnail(url=self.DUCK_PIC_URL)
             embed.color = embed_colors.green()

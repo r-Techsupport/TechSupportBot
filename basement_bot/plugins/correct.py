@@ -1,6 +1,6 @@
 from cogs import BasicPlugin
+from decorate import with_typing
 from discord.ext import commands
-from helper import with_typing
 
 
 def setup(bot):
@@ -20,7 +20,6 @@ class Corrector(BasicPlugin):
         brief="Corrects a message",
         description="Replaces the most recent text with your text",
         usage="[to_replace] [replacement]",
-        help="\nLimitations: max search limit",
     )
     async def correct(self, ctx, to_replace, replacement):
         new_content = None

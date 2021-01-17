@@ -1,8 +1,7 @@
 import munch
 from cogs import HttpPlugin
+from decorate import with_typing
 from discord.ext import commands
-from helper import with_typing
-from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -56,7 +55,7 @@ class Weather(HttpPlugin):
 
     def generate_embed(self, response):
         try:
-            embed = SafeEmbed(
+            embed = self.bot.embed_api.Embed(
                 title=f"Weather for {response.name} ({response.sys.country})"
             )
 

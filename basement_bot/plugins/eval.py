@@ -23,7 +23,7 @@ class Evaluator(BasicPlugin):
     @commands.command(
         name="eval",
         brief="Evalulates Python code",
-        description="Evaluates a Python expression",
+        description="Evaluates a Python expression (bot-owner only)",
         usage='"<Python expression>',
     )
     async def evalulate(self, ctx, *, expression):

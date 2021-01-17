@@ -1,7 +1,6 @@
 from cogs import HttpPlugin
+from decorate import with_typing
 from discord.ext import commands
-from helper import with_typing
-from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -21,7 +20,6 @@ class ISSLocator(HttpPlugin):
         name="iss",
         brief="Finds the International Space Station",
         description=("Returns the location of the International Space Station (ISS)."),
-        help="\nLimitations: Sometimes the API may be down.",
     )
     async def iss(self, ctx):
         # get ISS coordinates
@@ -54,7 +52,7 @@ class ISSLocator(HttpPlugin):
         if not location:
             location = "Unknown"
 
-        embed = SafeEmbed(
+        embed = self.bot.embed_api.Embed(
             title="ISS Location", description="Track the International Space Station!"
         )
         embed.add_field(name="Location", value=location)

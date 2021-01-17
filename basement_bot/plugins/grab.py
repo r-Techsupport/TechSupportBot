@@ -2,11 +2,10 @@ import datetime
 from random import randint
 
 from cogs import DatabasePlugin
+from decorate import with_typing
 from discord import DMChannel
 from discord.ext import commands
-from helper import with_typing
 from sqlalchemy import Column, DateTime, Integer, String, desc
-from utils.embed import SafeEmbed
 
 
 class Grab(DatabasePlugin.BaseTable):
@@ -51,11 +50,6 @@ class Grabber(DatabasePlugin):
             " in the database for later retrieval."
         ),
         usage="[mentioned-user]",
-        help=(
-            "\nLimitations: The command will only look for a mentioned user."
-            " Any additional plain text, other mentioned users, or @here/@everyone"
-            " will be ignored."
-        ),
     )
     async def grab(self, ctx):
         if await self.invalid_channel(ctx):
@@ -117,11 +111,6 @@ class Grabber(DatabasePlugin):
         brief="Returns all grabbed messages of mentioned person",
         description="Returns all grabbed messages of mentioned person from the database.",
         usage="[mentioned-user]",
-        help=(
-            "\nLimitations: The command will only look for a mentioned user."
-            " Any additional plain text, other mentioned users, or @here/@everyone"
-            " will be ignored."
-        ),
     )
     async def get_grabs(self, ctx):
         if await self.invalid_channel(ctx):
@@ -152,7 +141,7 @@ class Grabber(DatabasePlugin):
             )
             return
 
-        embed = SafeEmbed(
+        embed = self.bot.embed_api.Embed(
             title=f"Grabs for {user_to_grab.name}",
             description=f"Let's take a stroll down memory lane...",
         )
@@ -162,7 +151,7 @@ class Grabber(DatabasePlugin):
         for index, grab_ in enumerate(grabs):
             filtered_message = self.bot.h.sub_mentions_for_usernames(grab_.message)
             embed = (
-                SafeEmbed(
+                self.bot.embed_api.Embed(
                     title=f"Grabs for {user_to_grab.name}",
                     description=f"Let's take a stroll down memory lane...",
                 )
@@ -192,10 +181,6 @@ class Grabber(DatabasePlugin):
         brief="Returns a random grabbed message",
         description="Returns a random grabbed message of a random user or of a mentioned user from the database.",
         usage="[mentioned-user/blank]",
-        help=(
-            "\nLimitations: Any additional plain text, mentioned users, or @here/@everyone"
-            " will be ignored."
-        ),
     )
     async def random_grab(self, ctx):
         if await self.invalid_channel(ctx):
@@ -224,7 +209,7 @@ class Grabber(DatabasePlugin):
             random_index = randint(0, grabs.count() - 1)
             grab = grabs[random_index]
             filtered_message = self.bot.h.sub_mentions_for_usernames(grab.message)
-            embed = SafeEmbed(
+            embed = self.bot.embed_api.Embed(
                 title=f'"{filtered_message}"',
                 description=f"{user_to_grab.name}, {grab.time.date()}",
             )

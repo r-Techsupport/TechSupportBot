@@ -1,9 +1,6 @@
-import json
-
 from cogs import HttpPlugin
+from decorate import with_typing
 from discord.ext import commands
-from helper import with_typing
-from utils.embed import SafeEmbed
 
 
 def setup(bot):
@@ -31,7 +28,6 @@ class UrbanDictionary(HttpPlugin):
             " Returns nothing if one is not found."
         ),
         usage="[search-terms]",
-        help="\nLimitations: Mentions should not be used.",
     )
     async def urban(self, ctx, *idk):
         if not idk:
@@ -57,7 +53,7 @@ class UrbanDictionary(HttpPlugin):
                 .replace("\n", "")
             )
             embed = (
-                SafeEmbed(
+                self.bot.embed_api.Embed(
                     title=f"Results for {args}",
                     description=f"{self.SEE_MORE_URL}{args_no_spaces}",
                 )
