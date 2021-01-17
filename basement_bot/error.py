@@ -76,7 +76,7 @@ class ErrorAPI(BotAPI):
 
     CUSTOM_TEMPLATES = {
         error_enum.MissingRequiredArgument: ErrorMessageTemplate(
-            "You did not provide the command argument: `%s`", "param"
+            "You did not provide the command argument: `%s`", {"key": "param"}
         ),
         error_enum.TooManyArguments: ErrorMessageTemplate(
             "You provided too many arguments to that command"
@@ -131,6 +131,8 @@ class ErrorAPI(BotAPI):
             )
         )
         log.error(exception_string)
+
+        exception_string = exception_string[:1994]
 
         embed = self.generate_error_embed(event_method, context)
 

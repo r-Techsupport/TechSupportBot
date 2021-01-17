@@ -45,7 +45,6 @@ class Lenny(BasicPlugin):
         brief="( ͡° ͜ʖ ͡°)",
         description="Returns a randomly chosen Lenny face.",
         usage="",
-        help="\nLimitations: Ignores any plain text or mentions after the command.",
     )
     async def lenny(self, ctx):
         await ctx.send(choice(self.LENNYS_SELECTION))

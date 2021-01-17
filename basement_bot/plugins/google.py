@@ -27,7 +27,6 @@ class Googler(HttpPlugin):
             " Returns nothing if one is not found."
         ),
         usage="[search-terms]",
-        help="\nLimitations: Mentions should not be used.",
     )
     async def google(self, ctx, *args):
         if not args:
@@ -102,7 +101,6 @@ class Googler(HttpPlugin):
             " Returns nothing if one is not found."
         ),
         usage="[search-terms]",
-        help="\nLimitations: Mentions should not be used.",
     )
     async def google_images(self, ctx, *args):
         ctx.image_search = True
@@ -118,7 +116,6 @@ class Googler(HttpPlugin):
             " Returns nothing if one is not found."
         ),
         usage="[search-terms]",
-        help="\nLimitations: Mentions should not be used.",
     )
     async def youtube(self, ctx, *args):
         if not args:

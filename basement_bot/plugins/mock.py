@@ -38,10 +38,6 @@ class Mocker(BasicPlugin):
             " random characters to capital or lowercase."
         ),
         usage="[mentioned-user]",
-        help=(
-            "\nLimitations: Ignores any additional mentions after the command"
-            " and first mentioned user."
-        ),
     )
     async def mock(self, ctx):
         user_to_mock = ctx.message.mentions[0] if ctx.message.mentions else None

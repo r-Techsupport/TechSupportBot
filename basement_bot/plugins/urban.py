@@ -28,7 +28,6 @@ class UrbanDictionary(HttpPlugin):
             " Returns nothing if one is not found."
         ),
         usage="[search-terms]",
-        help="\nLimitations: Mentions should not be used.",
     )
     async def urban(self, ctx, *idk):
         if not idk:

@@ -520,7 +520,6 @@ class WouldYouRather(BasicPlugin):
         name="wyr",
         brief="Gets a Would You Rather... question",
         description="Creates a random Would You Rather question",
-        limitations="60 sec cooldown per guild",
     )
     async def wyr(self, ctx):
         while True:

@@ -27,7 +27,6 @@ class Giphy(HttpPlugin):
         brief="Grabs a random Giphy image",
         description=("Grabs a random Giphy image based on your search."),
         usage="[search-terms]",
-        help="\nLimitations: Mentions should not be used.",
     )
     async def giphy(self, ctx, *args):
         if not args:

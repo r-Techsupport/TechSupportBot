@@ -50,11 +50,6 @@ class Grabber(DatabasePlugin):
             " in the database for later retrieval."
         ),
         usage="[mentioned-user]",
-        help=(
-            "\nLimitations: The command will only look for a mentioned user."
-            " Any additional plain text, other mentioned users, or @here/@everyone"
-            " will be ignored."
-        ),
     )
     async def grab(self, ctx):
         if await self.invalid_channel(ctx):
@@ -116,11 +111,6 @@ class Grabber(DatabasePlugin):
         brief="Returns all grabbed messages of mentioned person",
         description="Returns all grabbed messages of mentioned person from the database.",
         usage="[mentioned-user]",
-        help=(
-            "\nLimitations: The command will only look for a mentioned user."
-            " Any additional plain text, other mentioned users, or @here/@everyone"
-            " will be ignored."
-        ),
     )
     async def get_grabs(self, ctx):
         if await self.invalid_channel(ctx):
@@ -191,10 +181,6 @@ class Grabber(DatabasePlugin):
         brief="Returns a random grabbed message",
         description="Returns a random grabbed message of a random user or of a mentioned user from the database.",
         usage="[mentioned-user/blank]",
-        help=(
-            "\nLimitations: Any additional plain text, mentioned users, or @here/@everyone"
-            " will be ignored."
-        ),
     )
     async def random_grab(self, ctx):
         if await self.invalid_channel(ctx):

@@ -20,7 +20,6 @@ class ISSLocator(HttpPlugin):
         name="iss",
         brief="Finds the International Space Station",
         description=("Returns the location of the International Space Station (ISS)."),
-        help="\nLimitations: Sometimes the API may be down.",
     )
     async def iss(self, ctx):
         # get ISS coordinates
