@@ -52,7 +52,7 @@ class Evaluator(BasicPlugin):
 
         while True:
             if result != self.UNDEFINED_RESULT:
-                await tagged_response(
+                await self.bot.h.tagged_response(
                     ctx, f"`{result}`" if result is not None else "`None`"
                 )
                 return
