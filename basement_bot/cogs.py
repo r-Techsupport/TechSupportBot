@@ -93,7 +93,6 @@ class MatchPlugin(BasicPlugin):
     """Plugin for matching a specific criteria and responding."""
 
     PLUGIN_TYPE = "MATCH"
-    MATCH_PERMISSIONS = []
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -107,21 +106,11 @@ class MatchPlugin(BasicPlugin):
 
         ctx = await self.bot.get_context(message)
 
-        try:
-            result = await self.match(ctx, message.content)
-            if result:
-                # permissions check
-                has_permission = await commands.has_permissions(
-                    **{permission: True for permission in self.MATCH_PERMISSIONS}
-                ).predicate(ctx)
-                if has_permission:
-                    await self.response(ctx, message.content)
-                else:
-                    raise commands.MissingPermissions(self.MATCH_PERMISSIONS)
+        result = await self.match(ctx, message.content)
+        if not result:
+            return
 
-        except Exception as e:
-            # this isn't technically a command error, so we have to pretend it is
-            await self.bot.error_api.handle_command_error(ctx, e)
+        await self.response(ctx, message.content)
 
     async def match(self, ctx, content):
         """Runs a boolean check on message content.
