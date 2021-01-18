@@ -17,12 +17,12 @@ class Embedder(BasicPlugin):
     @commands.command(
         brief="Generates a list of embeds",
         description="Generates a list of embeds defined by an uploaded JSON file",
-        usage="https://discord.com/developers/docs/resources/channel#embed-object",
+        usage="(see: https://discord.com/developers/docs/resources/channel#embed-object)",
     )
     async def embed(self, ctx, *args):
         if not ctx.message.attachments:
             await self.bot.h.tagged_response(
-                ctx, "Please provide a JSON file for your self.bot.embed_api.Embed(s)"
+                ctx, "Please provide a JSON file for your embeds"
             )
             return
 

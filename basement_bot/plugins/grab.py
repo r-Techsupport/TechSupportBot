@@ -81,10 +81,14 @@ class Grabber(DatabasePlugin):
 
         db = self.db_session()
 
-        grab = db.query(Grab).filter(
-            Grab.author_id == str(user_to_grab.id),
-            Grab.message == grab_message,
-        ).first()
+        grab = (
+            db.query(Grab)
+            .filter(
+                Grab.author_id == str(user_to_grab.id),
+                Grab.message == grab_message,
+            )
+            .first()
+        )
 
         if grab:
             await self.bot.h.tagged_response(ctx, "That grab already exists!")

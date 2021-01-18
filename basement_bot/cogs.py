@@ -77,13 +77,14 @@ class HttpPlugin(BasicPlugin):
         log.debug(f"Making {method} HTTP call on URL: {args}")
 
         try:
-            response = await method_fn(*args, **kwargs)
-            response = response.json()
+            response_object = await method_fn(*args, **kwargs)
+            response = response_object.json() if response_object else {}
+            response["status_code"] = getattr(response_object, "status_code", None)
         except Exception as e:
             await self.bot.error_api.handle_error("http_cog", e)
-            response = {}
+            response = {"status_code": None}
 
-        log.debug(f"Received HTTP response: {response}")
+        log.debug(f"HTTP response: {response}")
 
         return response
 
