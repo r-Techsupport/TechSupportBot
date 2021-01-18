@@ -89,3 +89,6 @@ plugins:
         success_percent: 80
     wolfram:
         api_key:
+    spotify:
+        client_id:
+        client_secret:
