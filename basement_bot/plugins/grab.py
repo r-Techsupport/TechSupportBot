@@ -31,7 +31,7 @@ class Grabber(DatabasePlugin):
 
     async def invalid_channel(self, ctx):
         if isinstance(ctx.channel, DMChannel):
-            await self.bot.h.priv_response(ctx, "I can't grab a message in a DM!")
+            await self.bot.h.priv_response(ctx, "Grabs are disabled in DM's")
             return True
 
         if ctx.channel.id in self.config.invalid_channels:
@@ -81,28 +81,31 @@ class Grabber(DatabasePlugin):
 
         db = self.db_session()
 
-        if (
+        grab = (
             db.query(Grab)
             .filter(
                 Grab.author_id == str(user_to_grab.id),
                 Grab.message == grab_message,
             )
-            .count()
-            != 0
-        ):
-            await self.bot.h.tagged_response(ctx, "That grab already exists!")
-            return
-        db.add(
-            Grab(
-                author_id=str(user_to_grab.id),
-                channel=str(ctx.channel.id),
-                message=grab_message,
-            )
+            .first()
         )
-        db.commit()
-        db.close()
 
-        await self.bot.h.tagged_response(ctx, f"Successfully saved: '*{grab_message}*'")
+        if grab:
+            await self.bot.h.tagged_response(ctx, "That grab already exists!")
+        else:
+            db.add(
+                Grab(
+                    author_id=str(user_to_grab.id),
+                    channel=str(ctx.channel.id),
+                    message=grab_message,
+                )
+            )
+            db.commit()
+            await self.bot.h.tagged_response(
+                ctx, f"Successfully saved: '*{grab_message}*'"
+            )
+
+        db.close()
 
     @with_typing
     @commands.has_permissions(send_messages=True)
@@ -134,8 +137,12 @@ class Grabber(DatabasePlugin):
             db.query(Grab)
             .order_by(desc(Grab.time))
             .filter(Grab.author_id == str(user_to_grab.id))
-        )
-        if len(list(grabs)) == 0:
+        ).all()
+        for grab in grabs:
+            db.expunge(grab)
+        db.close()
+
+        if not grabs:
             await self.bot.h.tagged_response(
                 ctx, f"No grabs found for {user_to_grab.name}"
             )
@@ -170,8 +177,6 @@ class Grabber(DatabasePlugin):
             else:
                 field_counter += 1
 
-        db.close()
-
         self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @with_typing
@@ -200,26 +205,32 @@ class Grabber(DatabasePlugin):
 
         db = self.db_session()
 
-        if user_to_grab:
-            grabs = db.query(Grab).filter(Grab.author_id == str(user_to_grab.id))
-        else:
-            grabs = db.query(Grab)
+        grabs = db.query(Grab)
 
-        if grabs:
-            random_index = randint(0, grabs.count() - 1)
-            grab = grabs[random_index]
-            filtered_message = self.bot.h.sub_mentions_for_usernames(grab.message)
-            embed = self.bot.embed_api.Embed(
-                title=f'"{filtered_message}"',
-                description=f"{user_to_grab.name}, {grab.time.date()}",
-            )
-            embed.set_thumbnail(url=user_to_grab.avatar_url)
-        else:
+        if user_to_grab:
+            grabs = grabs.filter(Grab.author_id == str(user_to_grab.id))
+
+        grabs = grabs.all()
+        for grab in grabs:
+            db.expunge(grab)
+        db.close()
+
+        if not grabs:
             await self.bot.h.tagged_response(
                 f"No messages found for {user_to_grab or 'this channel'}"
             )
             return
 
-        db.close()
+        random_index = randint(0, len(grabs) - 1)
+        grab = grabs[random_index]
+
+        filtered_message = self.bot.h.sub_mentions_for_usernames(grab.message)
+
+        embed = self.bot.embed_api.Embed(
+            title=f'"{filtered_message}"',
+            description=f"{user_to_grab.name}, {grab.time.date()}",
+        )
+
+        embed.set_thumbnail(url=user_to_grab.avatar_url)
 
         await self.bot.h.tagged_response(ctx, embed=embed)

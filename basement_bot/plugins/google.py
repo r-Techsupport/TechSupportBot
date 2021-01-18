@@ -141,11 +141,11 @@ class Googler(HttpPlugin):
         video_id = items[0].get("id", {}).get("videoId")
         link = f"http://youtu.be/{video_id}"
 
-        embeds = []
+        links = []
         for item in items:
             video_id = item.get("id", {}).get("videoId")
             link = f"http://youtu.be/{video_id}" if video_id else None
             if link:
-                embeds.append(link)
+                links.append(link)
 
-        self.bot.h.task_paginate(ctx, embeds, restrict=True)
+        self.bot.h.task_paginate(ctx, links, restrict=True)

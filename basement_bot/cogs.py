@@ -77,13 +77,14 @@ class HttpPlugin(BasicPlugin):
         log.debug(f"Making {method} HTTP call on URL: {args}")
 
         try:
-            response = await method_fn(*args, **kwargs)
-            response = response.json()
+            response_object = await method_fn(*args, **kwargs)
+            response = response_object.json() if response_object else {}
+            response["status_code"] = getattr(response_object, "status_code", None)
         except Exception as e:
             await self.bot.error_api.handle_error("http_cog", e)
-            response = {}
+            response = {"status_code": None}
 
-        log.debug(f"Received HTTP response: {response}")
+        log.debug(f"HTTP response: {response}")
 
         return response
 
@@ -92,7 +93,6 @@ class MatchPlugin(BasicPlugin):
     """Plugin for matching a specific criteria and responding."""
 
     PLUGIN_TYPE = "MATCH"
-    MATCH_PERMISSIONS = []
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -106,21 +106,11 @@ class MatchPlugin(BasicPlugin):
 
         ctx = await self.bot.get_context(message)
 
-        try:
-            result = await self.match(ctx, message.content)
-            if result:
-                # permissions check
-                has_permission = await commands.has_permissions(
-                    **{permission: True for permission in self.MATCH_PERMISSIONS}
-                ).predicate(ctx)
-                if has_permission:
-                    await self.response(ctx, message.content)
-                else:
-                    raise commands.MissingPermissions(self.MATCH_PERMISSIONS)
+        result = await self.match(ctx, message.content)
+        if not result:
+            return
 
-        except Exception as e:
-            # this isn't technically a command error, so we have to pretend it is
-            await self.bot.error_api.handle_command_error(ctx, e)
+        await self.response(ctx, message.content)
 
     async def match(self, ctx, content):
         """Runs a boolean check on message content.

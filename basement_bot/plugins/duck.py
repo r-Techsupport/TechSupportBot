@@ -832,7 +832,9 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         duck_user = (
             db.query(DuckUser).filter(DuckUser.author_id == str(winner.id)).first()
         )
-        if not duck_user:
+        if duck_user:
+            db.expunge(duck_user)
+        else:
             new_user = True
             duck_user = DuckUser(
                 author_id=str(winner.id), befriend_count=0, kill_count=0
@@ -849,6 +851,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
             db.add(duck_user)
 
         db.commit()
+        db.close()
 
         embed = self.bot.embed_api.Embed(
             title=f"Duck {action}!",
@@ -862,8 +865,6 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         embed.set_thumbnail(
             url=self.BEFRIEND_URL if action == "befriended" else self.KILL_URL
         )
-
-        db.close()
 
         await self.channel.send(embed=embed)
 
@@ -890,8 +891,10 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         duck_user = (
             db.query(DuckUser).filter(DuckUser.author_id == str(query_user.id)).first()
         )
-
-        if not duck_user:
+        if duck_user:
+            db.expunge(duck_user)
+            db.close()
+        else:
             await self.bot.h.tagged_response(
                 ctx, "That user has not partcipated in the duck hunt"
             )
@@ -904,8 +907,6 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         embed.add_field(name="Friends", value=duck_user.befriend_count)
         embed.add_field(name="Kills", value=duck_user.kill_count)
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
-
-        db.close()
 
         await self.bot.h.tagged_response(ctx, embed=embed)
 
@@ -924,9 +925,14 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
             .order_by(DuckUser.befriend_count.desc())
             .all()
         )
-        if len(list(duck_users)) == 0:
+
+        for duck_user in duck_users:
+            db.expunge(duck_user)
+        db.close()
+
+        if not duck_users:
             await self.bot.h.tagged_response(
-                ctx, "Nobody appears to be participating in the Duck Hunt"
+                ctx, "It appears nobody has befriended any ducks"
             )
             return
 
@@ -953,8 +959,6 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
             else:
                 field_counter += 1
 
-        db.close()
-
         self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @with_typing
@@ -972,9 +976,14 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
             .order_by(DuckUser.kill_count.desc())
             .all()
         )
-        if len(list(duck_users)) == 0:
+
+        for duck_user in duck_users:
+            db.expunge(duck_user)
+        db.close()
+
+        if not duck_users:
             await self.bot.h.tagged_response(
-                ctx, "Nobody appears to be participating in the Duck Hunt"
+                ctx, "It appears nobody has killed any ducks"
             )
             return
 
@@ -1000,8 +1009,6 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
                 field_counter = 1
             else:
                 field_counter += 1
-
-        db.close()
 
         self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
 

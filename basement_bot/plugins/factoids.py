@@ -187,7 +187,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
 
         # add to the relay plugin queue if it's loaded
         if ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.channels:
-            ctx.content = content
+            ctx.content = factoid.message
             self.bot.plugin_api.plugins.factoids.memory.factoid_events.append(ctx)
             while len(self.bot.plugin_api.plugins.factoids.memory.factoid_events) > 10:
                 del self.bot.plugin_api.plugins.factoids.memory.factoid_events[0]

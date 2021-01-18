@@ -163,7 +163,7 @@ class HelperAPI(BotAPI):
         # this could probably be more specific
         except Exception as e:
             if send_msg_on_failure:
-                await self.priv_response(ctx, f"I was unable to parse your JSON: {e}")
+                await self.priv_response(ctx, f"I was unable to parse your JSON: `{e}`")
             return {}
 
     # pylint: disable=too-many-branches, too-many-arguments

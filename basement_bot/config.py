@@ -20,7 +20,7 @@ class ConfigAPI(BotAPI):
 
     def __init__(self, bot, validate):
         super().__init__(bot)
-        self.bot.config = self.load_config(validate)
+        self.load_config(validate)
 
     def load_config(self, validate):
         """Loads the config yaml file into a bot object.
@@ -30,20 +30,20 @@ class ConfigAPI(BotAPI):
         """
         with open(self.CONFIG_PATH) as iostream:
             config = yaml.safe_load(iostream)
-        self.config = munch.munchify(config)
+        self.bot.config = munch.munchify(config)
 
-        self.config.main.disabled_plugins = self.config.main.disabled_plugins or []
+        self.bot.config.main.disabled_plugins = (
+            self.bot.config.main.disabled_plugins or []
+        )
 
         if validate:
             self.validate_config()
-
-        return self.config
 
     def validate_config(self):
         """Validates several config subsections."""
         for subsection in ["required", "database"]:
             self.validate_config_subsection("main", subsection)
-        for subsection in list(self.config.plugins.keys()):
+        for subsection in list(self.bot.config.plugins.keys()):
             self.validate_config_subsection("plugins", subsection)
 
     def validate_config_subsection(self, section, subsection):
@@ -53,7 +53,7 @@ class ConfigAPI(BotAPI):
             section (str): the section name containing the subsection
             subsection (str): the subsection name
         """
-        for key, value in self.config.get(section, {}).get(subsection, {}).items():
+        for key, value in self.bot.config.get(section, {}).get(subsection, {}).items():
             error_key = None
             if value is None:
                 error_key = key
@@ -63,13 +63,13 @@ class ConfigAPI(BotAPI):
                         error_key = k
             if error_key:
                 if section == "plugins":
-                    if not subsection in self.config.main.disabled_plugins:
+                    if not subsection in self.bot.config.main.disabled_plugins:
                         # pylint: disable=line-too-long
                         log.warning(
                             f"Disabling loading of plugin {subsection} due to missing config key {error_key}"
                         )
                         # disable the plugin if we can't get its config
-                        self.config.main.disabled_plugins.append(subsection)
+                        self.bot.config.main.disabled_plugins.append(subsection)
                 else:
                     raise ValueError(
                         f"Config key {error_key} from {section}.{subsection} not supplied"
