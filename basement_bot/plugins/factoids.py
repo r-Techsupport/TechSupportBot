@@ -185,12 +185,19 @@ class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
         if not self.bot.plugin_api.plugins.get("relay"):
             return
 
+        self.dispatch_relay_factoid(ctx, factoid.message)
+
+    def dispatch_relay_factoid(self, ctx, message):
         # add to the relay plugin queue if it's loaded
-        if ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.channels:
-            ctx.content = factoid.message
-            self.bot.plugin_api.plugins.factoids.memory.factoid_events.append(ctx)
-            while len(self.bot.plugin_api.plugins.factoids.memory.factoid_events) > 10:
-                del self.bot.plugin_api.plugins.factoids.memory.factoid_events[0]
+        if not ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.channels:
+            return
+
+        ctx.content = message
+
+        self.bot.plugin_api.plugins.factoids.memory.factoid_events.append(ctx)
+
+        while len(self.bot.plugin_api.plugins.factoids.memory.factoid_events) > 10:
+            del self.bot.plugin_api.plugins.factoids.memory.factoid_events[0]
 
     def load_jobs(self):
         factoids = self.get_all_factoids()
@@ -278,7 +285,11 @@ class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
                     ] = datetime.datetime.utcnow() + datetime.timedelta(
                         minutes=sleep_duration
                     )
-                    await channel.send(content=content, embed=embed)
+                    message = await channel.send(content=content, embed=embed)
+
+                    context = await self.bot.get_context(message)
+
+                    self.dispatch_relay_factoid(context, factoid.message)
                 except Exception:
                     continue
 
