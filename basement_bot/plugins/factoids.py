@@ -608,7 +608,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
             finish_time = loop_config.get("finish_time", "???")
             embed_kwargs[factoid_name] = f"Next execution: {finish_time} UTC"
 
-        embed = self.bot.h.embed_from_kwargs(
+        embed = self.bot.embed_api.Embed.embed_from_kwargs(
             title="Running factoid loops",
             description=f"Next cache update: {self.cache_update_time} UTC",
             **embed_kwargs,
