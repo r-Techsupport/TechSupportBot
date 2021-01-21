@@ -41,24 +41,6 @@ class HelperAPI(BotAPI):
             message = None
         return message
 
-    async def priv_response(self, ctx, content=None, embed=None, target=None):
-        """Sends a context private message to the original author.
-
-        parameters:
-            ctx (Context): the context object
-            message (str): the message to send
-            embed (discord.Embed): the discord embed object to send
-        """
-        who_to_dm = target or ctx.author
-        try:
-            if content:
-                message = await who_to_dm.send(content, embed=embed)
-            else:
-                message = await who_to_dm.send(embed=embed)
-        except (Forbidden, HTTPException):
-            message = None
-        return message
-
     async def emoji_reaction(self, ctx, emojis):
         """Adds an emoji reaction to the given context message.
 
@@ -150,9 +132,7 @@ class HelperAPI(BotAPI):
         """
         if not message.attachments:
             if send_msg_on_none:
-                await self.priv_response(
-                    ctx, "I couldn't find any message attachments!"
-                )
+                await ctx.author.send("I couldn't find any message attachments!")
             return None
 
         try:
@@ -163,7 +143,7 @@ class HelperAPI(BotAPI):
         # this could probably be more specific
         except Exception as e:
             if send_msg_on_failure:
-                await self.priv_response(ctx, f"I was unable to parse your JSON: `{e}`")
+                await ctx.author.send(f"I was unable to parse your JSON: `{e}`")
             return {}
 
     # pylint: disable=too-many-branches, too-many-arguments

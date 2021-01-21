@@ -49,16 +49,13 @@ class Embedder(BasicPlugin):
 
         if delete:
             if args and args[0] == "keep":
-                await self.bot.h.priv_response(
-                    ctx, "I couldn't generate all of your embeds"
-                )
+                await ctx.author.send("I couldn't generate all of your embeds")
                 return
 
             for message in sent_messages:
                 await message.delete()
 
-            await self.bot.h.priv_response(
-                ctx,
+            await ctx.author.send(
                 "I couldn't generate all of your embeds, so I gave you a blank slate. Use `keep` if you want to keep them next time",
             )
 

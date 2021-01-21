@@ -31,7 +31,7 @@ class Grabber(DatabasePlugin):
 
     async def invalid_channel(self, ctx):
         if isinstance(ctx.channel, DMChannel):
-            await self.bot.h.priv_response(ctx, "Grabs are disabled in DM's")
+            await ctx.author.send("Grabs are disabled in DM's")
             return True
 
         if ctx.channel.id in self.config.invalid_channels:

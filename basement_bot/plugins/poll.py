@@ -56,7 +56,7 @@ class Poller(BasicPlugin):
             return
 
         if isinstance(ctx.channel, DMChannel):
-            await self.bot.h.priv_response(ctx, "I cannot create a poll in a DM")
+            await ctx.author.send("I cannot create a poll in a DM")
             return
 
         request_body = await self.bot.h.get_json_from_attachment(ctx, ctx.message)
