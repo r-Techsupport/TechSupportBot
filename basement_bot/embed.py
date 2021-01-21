@@ -7,6 +7,20 @@ from discord import Embed as DiscordEmbed
 class Embed(DiscordEmbed):
     """Custom BasementBot embed."""
 
+    @classmethod
+    def embed_from_kwargs(cls, title=None, description=None, **kwargs):
+        """Wrapper for generating an embed from a set of key, values.
+
+        parameters:
+            title (str): the title for the embed
+            description (str): the description for the embed
+            **kwargs (dict): a set of keyword values to be displayed
+        """
+        embed = cls(title=title, description=description)
+        for key, value in kwargs.items():
+            embed.add_field(name=key, value=value, inline=False)
+        return embed
+
     def add_field(self, *, name, value, inline=True):
         """Wraps the default add_field method with argument length checks.
 

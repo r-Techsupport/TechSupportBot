@@ -70,19 +70,6 @@ class HelperAPI(BotAPI):
                     return guild
         return None
 
-    def embed_from_kwargs(self, title=None, description=None, **kwargs):
-        """Wrapper for generating an embed from a set of key, values.
-
-        parameters:
-            title (str): the title for the embed
-            description (str): the description for the embed
-            **kwargs (dict): a set of keyword values to be displayed
-        """
-        embed = self.bot.embed_api.Embed(title=title, description=description)
-        for key, value in kwargs.items():
-            embed.add_field(name=key, value=value, inline=False)
-        return embed
-
     def sub_mentions_for_usernames(self, content):
         """Subs a string of Discord mentions with the corresponding usernames.
 
