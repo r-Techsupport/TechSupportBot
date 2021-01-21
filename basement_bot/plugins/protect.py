@@ -1,6 +1,6 @@
 from cogs import MatchPlugin
 from logger import get_logger
-from munch import Munch
+from munch import Munch, munchify
 
 log = get_logger("Protector")
 
@@ -12,57 +12,91 @@ def setup(bot):
 class Protector(MatchPlugin):
 
     PLUGIN_NAME = __name__
+    ALERT_ICON_URL = "https://cdn.icon-icons.com/icons2/2063/PNG/512/alert_danger_warning_notification_icon_124692.png"
+
+    async def preconfig(self):
+        self.string_map = {
+            keyword: munchify(filter_config)
+            for keyword, filter_config in self.config.string_map.items()
+        }
 
     async def match(self, ctx, content):
         if not ctx.channel.id in self.config.included_channels:
             return False
 
-        ctx.actions = Munch()
-        ctx.actions.stringAlert = None
-        ctx.actions.lengthAlert = None
-
-        for keyString in list(self.config.stringMap.keys()):
-            filterObject = self.config.stringMap[keyString]
-            if filterObject.get("sensitive") is None:
-                filterObject.sensitive = True
-            keyString = keyString if filterObject.sensitive else keyString.lower()
-            search = content if filterObject.sensitive else content.lower()
-            if keyString in search:
-                ctx.actions.stringAlert = self.config.stringMap[keyString]
-                break
-
-        if len(content) > self.config.length_limit:
-            ctx.actions.lengthAlert = True
-
-        return True
-
-    async def response(self, ctx, content):
         admin = await self.bot.is_bot_admin(ctx)
         if admin:
-            return
+            return False
 
-        if ctx.actions.stringAlert:
+        # extend alerts here
+        ctx.protect_actions = Munch()
+        ctx.protect_actions.string_alert = None
+        ctx.protect_actions.length_alert = None
+
+        if len(content) > self.config.length_limit:
+            ctx.protect_actions.length_alert = True
+            return True
+
+        for keyword, filter_config in self.string_map.items():
+            # make a copy because we might modify it
+            search_keyword = keyword
+            search_content = content
+            if filter_config.sensitive:
+                search_keyword = search_keyword.lower()
+                search_content = search_content.lower()
+
+            if search_keyword in search_content:
+                filter_config["trigger"] = keyword
+                ctx.protect_actions.string_alert = filter_config
+                return True
+
+    async def response(self, ctx, content):
+        if ctx.protect_actions.length_alert:
+            await self.handle_length_alert(ctx, content)
+        elif ctx.protect_actions.string_alert:
             await self.handle_string_alert(ctx, content)
 
-        if ctx.actions.lengthAlert:
-            await self.handle_length_alert(ctx, content)
+    async def handle_string_alert(self, ctx, content):
+        if ctx.protect_actions.string_alert.delete:
+            alert_message = f"I deleted your message because: {ctx.protect_actions.string_alert.message}. Check your DM's for the original message"
+            await ctx.message.delete()
+            await self.send_original_message(ctx, content)
+        else:
+            alert_message = ctx.protect_actions.string_alert.message
 
-    async def handle_string_alert(self, ctx, _):
-        if ctx.actions.stringAlert.delete:
-            await self.bot.h.delete_message_with_reason(
-                ctx.message,
-                ctx.actions.stringAlert.message,
-                ctx.actions.stringAlert.private,
-            )
+        await self.bot.h.tagged_response(ctx, alert_message)
+        await self.send_admin_alert(
+            ctx,
+            f"Message contained trigger: `{ctx.protect_actions.string_alert.trigger}`",
+        )
+
+    async def handle_length_alert(self, ctx, content):
+        alert_message = f"I deleted your message because it was longer than {self.config.length_limit} characters. Check your DM's for the original message"
+        await ctx.message.delete()
+        await self.bot.h.tagged_response(ctx, alert_message)
+        await self.send_original_message(ctx, content)
+        await self.send_admin_alert(
+            ctx, f"Message over length limit: `{self.config.length_limit}`"
+        )
+
+    async def send_original_message(self, ctx, content):
+        await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
+
+    async def send_admin_alert(self, ctx, message):
+        alert_channel = self.bot.get_channel(self.config.alert_channel)
+        if not alert_channel:
             return
 
-        if ctx.actions.stringAlert.private:
-            await self.bot.h.priv_response(ctx, ctx.actions.stringAlert.message)
-        else:
-            await self.bot.h.tagged_response(ctx, ctx.actions.stringAlert.message)
-
-    async def handle_length_alert(self, ctx, _):
-        await self.bot.h.delete_message_with_reason(
-            ctx.message,
-            f"Message greater than {self.config.length_limit} characters",
+        embed = self.bot.embed_api.Embed(
+            title="Protect Plugin Alert", description=f"{message}"
         )
+
+        embed.add_field(name="User", value=ctx.author.mention)
+
+        embed.add_field(name="Channel", value=f"#{ctx.channel.name}")
+
+        embed.add_field(name="Message", value=ctx.message.content, inline=False)
+
+        embed.set_thumbnail(url=self.ALERT_ICON_URL)
+
+        await alert_channel.send(embed=embed)
