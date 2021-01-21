@@ -71,7 +71,7 @@ class Protector(MatchPlugin):
         )
 
     async def handle_length_alert(self, ctx, content):
-        alert_message = f"I deleted your message because it was longer than {self.config.length_limit} characters. Check your DM's for the original message"
+        alert_message = f"I deleted your message because it was longer than {self.config.length_limit} characters; Please read our #rules. Check your DM's for the original message"
         await ctx.message.delete()
         await self.bot.h.tagged_response(ctx, alert_message)
         await self.send_original_message(ctx, content)
