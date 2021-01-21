@@ -66,13 +66,13 @@ plugins:
         notice_errors: True
     protect:
         included_channels: []
-        stringMap:
+        string_map:
             "bad word/sentence here":
                 message: That is a bad word/sentence!
                 delete: true
-                private: false
                 sensitive: true
         length_limit: 500
+        alert_channel:
     logger:
         channel_map: {}
         embed_color: 0xF1C40F
