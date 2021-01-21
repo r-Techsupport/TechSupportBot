@@ -19,7 +19,7 @@ class Translator(HttpPlugin):
     @commands.command(
         brief="Translates a message",
         description="Translates a given input message to another language",
-        usage='"<message (in quotes)>" <src language code (en)> <dest language code (es)>',
+        usage='"[message (in quotes)]" [src language code (en)] [dest language code (es)]',
     )
     async def translate(self, ctx, message, src, dest):
         response = await self.http_call(
