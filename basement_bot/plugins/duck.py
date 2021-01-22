@@ -828,14 +828,12 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
     async def handle_winner(self, winner, action, duration):
         db = self.db_session()
 
-        new_user = False
         duck_user = (
             db.query(DuckUser).filter(DuckUser.author_id == str(winner.id)).first()
         )
         if duck_user:
             db.expunge(duck_user)
         else:
-            new_user = True
             duck_user = DuckUser(
                 author_id=str(winner.id), befriend_count=0, kill_count=0
             )
@@ -847,9 +845,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
 
         duck_user.updated = datetime.datetime.now()
 
-        if new_user:
-            db.add(duck_user)
-
+        db.add(duck_user)
         db.commit()
         db.close()
 
