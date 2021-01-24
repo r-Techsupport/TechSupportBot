@@ -57,6 +57,8 @@ class HttpPlugin(BasicPlugin):
 
     @staticmethod
     def get_client():
+        """Gets a HTTP client object.
+        """
         return http3.AsyncClient()
 
     async def http_call(self, method, *args, **kwargs):
