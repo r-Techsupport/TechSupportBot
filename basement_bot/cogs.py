@@ -3,17 +3,18 @@
 
 import asyncio
 import logging
-from random import randint
+import random
 
 import aiocron
 import http3
+import logger
 import pika
+import sqlalchemy
 from discord.ext import commands
-from logger import get_logger
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext import declarative
 
 logging.getLogger("pika").setLevel(logging.WARNING)
-log = get_logger("Cogs")
+log = logger.get_logger("Cogs")
 
 
 class BasicPlugin(commands.Cog):
@@ -50,15 +51,13 @@ class BasicPlugin(commands.Cog):
 
 
 class HttpPlugin(BasicPlugin):
-    """Plugin for interfacing via HTTP.
-    """
+    """Plugin for interfacing via HTTP."""
 
     PLUGIN_TYPE = "HTTP"
 
     @staticmethod
     def get_client():
-        """Gets a HTTP client object.
-        """
+        """Gets a HTTP client object."""
         return http3.AsyncClient()
 
     async def http_call(self, method, *args, **kwargs):
@@ -135,7 +134,7 @@ class DatabasePlugin(BasicPlugin):
     """Plugin for accessing the database."""
 
     PLUGIN_TYPE = "DATABASE"
-    BaseTable = declarative_base()
+    BaseTable = declarative.declarative_base()
     MODEL = None
 
     def __init__(self, bot):
@@ -245,7 +244,7 @@ class LoopPlugin(BasicPlugin):
         # pylint: disable=method-hidden
         async def random_wait():
             await asyncio.sleep(
-                randint(
+                random.randint(
                     min_wait * self.conversion_factor, max_wait * self.conversion_factor
                 )
             )

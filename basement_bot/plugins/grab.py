@@ -135,7 +135,7 @@ class Grabber(cogs.DatabasePlugin):
 
         grabs = (
             db.query(Grab)
-            .order_by(desc(Grab.time))
+            .order_by(Grab.time.desc())
             .filter(Grab.author_id == str(user_to_grab.id))
         ).all()
         for grab in grabs:

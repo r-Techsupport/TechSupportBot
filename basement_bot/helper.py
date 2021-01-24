@@ -5,14 +5,12 @@ import ast
 import datetime
 import re
 
+import api
+import discord
 import munch
-from api import BotAPI
-from discord import Forbidden, NotFound
-from discord.channel import DMChannel
-from discord.errors import HTTPException
 
 
-class HelperAPI(BotAPI):
+class HelperAPI(api.BotAPI):
     """API for helper functions.
 
     parameters:
@@ -37,7 +35,7 @@ class HelperAPI(BotAPI):
         content = f"{who_to_tag} {content}" if content else who_to_tag
         try:
             message = await ctx.send(content, embed=embed)
-        except HTTPException:
+        except discord.errors.HTTPException:
             message = None
         return message
 
@@ -54,7 +52,7 @@ class HelperAPI(BotAPI):
         for emoji in emojis:
             try:
                 await ctx.message.add_reaction(emoji)
-            except Forbidden:
+            except discord.Forbidden:
                 pass
 
     def get_guild_from_channel_id(self, channel_id):
@@ -166,7 +164,7 @@ class HelperAPI(BotAPI):
         else:
             message = await ctx.send(**get_args(index))
 
-        if isinstance(ctx.channel, DMChannel):
+        if isinstance(ctx.channel, discord.DMChannel):
             return
 
         start_time = datetime.datetime.now()
@@ -214,12 +212,12 @@ class HelperAPI(BotAPI):
 
             try:
                 await reaction.remove(user)
-            except Forbidden:
+            except discord.Forbidden:
                 pass
 
         try:
             await message.clear_reactions()
-        except (Forbidden, NotFound):
+        except (discord.Forbidden, discord.NotFound):
             pass
 
     def task_paginate(self, *args, **kwargs):

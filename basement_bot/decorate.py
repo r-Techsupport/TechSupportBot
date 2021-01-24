@@ -1,7 +1,7 @@
 """Misc decorators (not attached to the bot object)
 """
 
-from inspect import signature
+import inspect
 
 
 def with_typing(command):
@@ -13,7 +13,7 @@ def with_typing(command):
         command (discord.ext.commands.Command): the command object to modify
     """
     original_callback = command.callback
-    original_signature = signature(original_callback)
+    original_signature = inspect.signature(original_callback)
 
     async def typing_wrapper(*args, **kwargs):
         context = args[1]
