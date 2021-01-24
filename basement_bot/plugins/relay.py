@@ -5,14 +5,13 @@ import logging
 import re
 import uuid
 
-from cogs import LoopPlugin, MatchPlugin, MqPlugin
-from decorate import with_typing
+import cogs
+import decorate
+import logger
+import munch
 from discord.ext import commands
-from discord.ext.commands import Context
-from logger import get_logger
-from munch import Munch
 
-log = get_logger("Relay Plugin")
+log = logger.get_logger("Relay Plugin")
 
 
 def setup(bot):
@@ -20,7 +19,7 @@ def setup(bot):
     bot.add_cog(IRCReceiver(bot))
 
 
-class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
+class DiscordRelay(cogs.LoopPlugin, cogs.MatchPlugin, cogs.MqPlugin):
 
     PLUGIN_NAME = __name__
     WAIT_KEY = "publish_seconds"
@@ -89,10 +88,10 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
 
     @staticmethod
     def serialize(type_, ctx):
-        data = Munch()
+        data = munch.Munch()
 
         # event data
-        data.event = Munch()
+        data.event = munch.Munch()
         data.event.id = str(uuid.uuid4())
         data.event.type = type_
         data.event.time = datetime.datetime.now(datetime.timezone.utc).strftime(
@@ -105,7 +104,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         ]
 
         # author data
-        data.author = Munch()
+        data.author = munch.Munch()
         data.author.username = ctx.author.name
         data.author.id = ctx.author.id
         data.author.nickname = ctx.author.display_name
@@ -113,7 +112,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         data.author.is_bot = ctx.author.bot
         data.author.top_role = str(ctx.author.top_role)
         # permissions data
-        data.author.permissions = Munch()
+        data.author.permissions = munch.Munch()
         discord_permissions = ctx.author.permissions_in(ctx.channel)
         data.author.permissions.kick = discord_permissions.kick_members
         data.author.permissions.ban = discord_permissions.ban_members
@@ -121,12 +120,12 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         data.author.permissions.admin = discord_permissions.administrator
 
         # server data
-        data.server = Munch()
+        data.server = munch.Munch()
         data.server.name = ctx.author.guild.name
         data.server.id = ctx.author.guild.id
 
         # channel data
-        data.channel = Munch()
+        data.channel = munch.Munch()
         data.channel.name = ctx.channel.name
         data.channel.id = ctx.channel.id
 
@@ -135,7 +134,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         log.debug(f"Serialized data: {as_json}")
         return as_json
 
-    @with_typing
+    @decorate.with_typing
     @commands.command(
         name="irc",
         brief="Commands for IRC relay",
@@ -185,7 +184,7 @@ class DiscordRelay(LoopPlugin, MatchPlugin, MqPlugin):
         )
 
 
-class IRCReceiver(LoopPlugin, MqPlugin):
+class IRCReceiver(cogs.LoopPlugin, cogs.MqPlugin):
 
     PLUGIN_NAME = __name__
     WAIT_KEY = "consume_seconds"
@@ -382,7 +381,7 @@ class IRCReceiver(LoopPlugin, MqPlugin):
             await target_guild.unban(target_user)
 
     def deserialize(self, body):
-        deserialized = Munch.fromJSON(body)
+        deserialized = munch.Munch.fromJSON(body)
 
         time = deserialized.event.time
         if not time:

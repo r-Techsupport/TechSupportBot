@@ -1,5 +1,5 @@
-from cogs import HttpPlugin
-from decorate import with_typing
+import cogs
+import decorate
 from discord.ext import commands
 
 
@@ -7,7 +7,7 @@ def setup(bot):
     bot.add_cog(UrbanDictionary(bot))
 
 
-class UrbanDictionary(HttpPlugin):
+class UrbanDictionary(cogs.HttpPlugin):
 
     PLUGIN_NAME = __name__
     BASE_URL = "http://api.urbandictionary.com/v0/define?term="
@@ -18,7 +18,7 @@ class UrbanDictionary(HttpPlugin):
     async def preconfig(self):
         self.cached = {"last_query": None, "last_url": None, "all_urls": []}
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="urb",

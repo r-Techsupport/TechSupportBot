@@ -1,5 +1,5 @@
-from cogs import HttpPlugin
-from decorate import with_typing
+import cogs
+import decorate
 from discord.ext import commands
 
 
@@ -7,7 +7,7 @@ def setup(bot):
     bot.add_cog(Googler(bot))
 
 
-class Googler(HttpPlugin):
+class Googler(cogs.HttpPlugin):
 
     PLUGIN_NAME = __name__
     GOOGLE_URL = "https://www.googleapis.com/customsearch/v1"
@@ -17,7 +17,7 @@ class Googler(HttpPlugin):
         response = await self.http_call("get", url, params=data)
         return response.get("items")
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         aliases=["g"],
@@ -106,7 +106,7 @@ class Googler(HttpPlugin):
         ctx.image_search = True
         await ctx.invoke(self.bot.get_command("google"), *args)
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="yt",

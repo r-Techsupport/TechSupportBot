@@ -1,5 +1,5 @@
-from cogs import BasicPlugin
-from discord import Forbidden
+import cogs
+import discord
 from discord.ext import commands
 
 
@@ -7,7 +7,7 @@ def setup(bot):
     bot.add_cog(Moderator(bot))
 
 
-class Moderator(BasicPlugin):
+class Moderator(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
@@ -45,5 +45,5 @@ class Moderator(BasicPlugin):
                 ctx,
                 f"I finished deleting {amount} messages",
             )
-        except Forbidden:
+        except discord.Forbidden:
             await self.bot.h.tagged_response(ctx, "I am not allowed to delete messages")

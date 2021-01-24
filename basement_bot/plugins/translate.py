@@ -1,5 +1,5 @@
-from cogs import HttpPlugin
-from decorate import with_typing
+import cogs
+import decorate
 from discord.ext import commands
 
 
@@ -7,14 +7,14 @@ def setup(bot):
     bot.add_cog(Translator(bot))
 
 
-class Translator(HttpPlugin):
+class Translator(cogs.HttpPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
     API_URL = "https://api.mymemory.translated.net/get?q={}&langpair={}|{}"
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Translates a message",

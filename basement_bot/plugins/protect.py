@@ -1,22 +1,19 @@
-from cogs import MatchPlugin
-from logger import get_logger
-from munch import Munch, munchify
-
-log = get_logger("Protector")
+import cogs
+import munch
 
 
 def setup(bot):
     bot.add_cog(Protector(bot))
 
 
-class Protector(MatchPlugin):
+class Protector(cogs.MatchPlugin):
 
     PLUGIN_NAME = __name__
     ALERT_ICON_URL = "https://cdn.icon-icons.com/icons2/2063/PNG/512/alert_danger_warning_notification_icon_124692.png"
 
     async def preconfig(self):
         self.string_map = {
-            keyword: munchify(filter_config)
+            keyword: munch.munchify(filter_config)
             for keyword, filter_config in self.config.string_map.items()
         }
 
@@ -29,7 +26,7 @@ class Protector(MatchPlugin):
             return False
 
         # extend alerts here
-        ctx.protect_actions = Munch()
+        ctx.protect_actions = munch.Munch()
         ctx.protect_actions.string_alert = None
         ctx.protect_actions.length_alert = None
 

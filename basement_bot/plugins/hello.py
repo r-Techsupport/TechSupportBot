@@ -1,4 +1,4 @@
-from cogs import BasicPlugin
+import cogs
 from discord.ext import commands
 
 
@@ -6,7 +6,7 @@ def setup(bot):
     bot.add_cog(Greeter(bot))
 
 
-class Greeter(BasicPlugin):
+class Greeter(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False

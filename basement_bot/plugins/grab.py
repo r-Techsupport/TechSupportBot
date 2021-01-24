@@ -1,28 +1,28 @@
 import datetime
-from random import randint
+import random
 
-from cogs import DatabasePlugin
-from decorate import with_typing
-from discord import DMChannel
+import cogs
+import decorate
+import discord
+import sqlalchemy
 from discord.ext import commands
-from sqlalchemy import Column, DateTime, Integer, String, desc
 
 
-class Grab(DatabasePlugin.BaseTable):
+class Grab(cogs.DatabasePlugin.BaseTable):
     __tablename__ = "grabs"
 
-    pk = Column(Integer, primary_key=True)
-    author_id = Column(String)
-    channel = Column(String)
-    message = Column(String)
-    time = Column(DateTime, default=datetime.datetime.utcnow)
+    pk = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    author_id = sqlalchemy.Column(sqlalchemy.String)
+    channel = sqlalchemy.Column(sqlalchemy.String)
+    message = sqlalchemy.Column(sqlalchemy.String)
+    time = sqlalchemy.Column(sqlalchemy.DateTime, default=datetime.datetime.utcnow)
 
 
 def setup(bot):
     bot.add_cog(Grabber(bot))
 
 
-class Grabber(DatabasePlugin):
+class Grabber(cogs.DatabasePlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
@@ -30,7 +30,7 @@ class Grabber(DatabasePlugin):
     MODEL = Grab
 
     async def invalid_channel(self, ctx):
-        if isinstance(ctx.channel, DMChannel):
+        if isinstance(ctx.channel, discord.DMChannel):
             await ctx.author.send("Grabs are disabled in DM's")
             return True
 
@@ -40,7 +40,7 @@ class Grabber(DatabasePlugin):
 
         return False
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="grab",
@@ -107,7 +107,7 @@ class Grabber(DatabasePlugin):
 
         db.close()
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="grabs",
@@ -179,7 +179,7 @@ class Grabber(DatabasePlugin):
 
         self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="grabr",
@@ -221,7 +221,7 @@ class Grabber(DatabasePlugin):
             )
             return
 
-        random_index = randint(0, len(grabs) - 1)
+        random_index = random.randint(0, len(grabs) - 1)
         grab = grabs[random_index]
 
         filtered_message = self.bot.h.sub_mentions_for_usernames(grab.message)

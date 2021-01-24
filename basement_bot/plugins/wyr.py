@@ -1,8 +1,8 @@
 import uuid
 from random import choice
 
-from cogs import BasicPlugin
-from decorate import with_typing
+import cogs
+import decorate
 from discord.ext import commands
 
 
@@ -20,7 +20,7 @@ class Question:
         return f"Would you rather: {self.a} **OR** {self.b}?"
 
 
-class WouldYouRather(BasicPlugin):
+class WouldYouRather(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
@@ -513,7 +513,7 @@ class WouldYouRather(BasicPlugin):
         Question("watch a two-hour movie", "watch two hours of shows"),
     ]
 
-    @with_typing
+    @decorate.with_typing
     @commands.cooldown(1, 30, commands.BucketType.guild)
     @commands.has_permissions(send_messages=True)
     @commands.command(

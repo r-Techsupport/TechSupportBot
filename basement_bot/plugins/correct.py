@@ -1,5 +1,5 @@
-from cogs import BasicPlugin
-from decorate import with_typing
+import cogs
+import decorate
 from discord.ext import commands
 
 
@@ -7,13 +7,13 @@ def setup(bot):
     bot.add_cog(Corrector(bot))
 
 
-class Corrector(BasicPlugin):
+class Corrector(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
     SEARCH_LIMIT = 50
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         aliases=["c"],

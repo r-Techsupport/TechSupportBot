@@ -1,20 +1,18 @@
 import asyncio
 import datetime
 
-from cogs import BasicPlugin
-from decorate import with_typing
-from discord import Forbidden, NotFound
-from discord import utils as discord_utils
-from discord.channel import DMChannel
+import cogs
+import decorate
+import discord
+import emoji
 from discord.ext import commands
-from emoji import emojize
 
 
 def setup(bot):
     bot.add_cog(Poller(bot))
 
 
-class Poller(BasicPlugin):
+class Poller(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
@@ -36,11 +34,11 @@ class Poller(BasicPlugin):
 
     async def preconfig(self):
         self.option_emojis = [
-            emojize(f":{emoji_text}:", use_aliases=True)
+            emoji.emojize(f":{emoji_text}:", use_aliases=True)
             for emoji_text in self.OPTION_EMOJIS
         ]
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="poll",
@@ -55,7 +53,7 @@ class Poller(BasicPlugin):
             )
             return
 
-        if isinstance(ctx.channel, DMChannel):
+        if isinstance(ctx.channel, discord.DMChannel):
             await ctx.author.send("I cannot create a poll in a DM")
             return
 
@@ -99,12 +97,12 @@ class Poller(BasicPlugin):
             try:
                 await message.edit(content="*Poll aborted!*", embed=None)
                 await message.clear_reactions()
-            except NotFound:
+            except discord.NotFound:
                 await self.bot.h.tagged_response(
                     ctx,
                     "I could not find the poll message. It might have been deleted?",
                 )
-            except Forbidden:
+            except discord.Forbidden:
                 pass
             return
 
@@ -134,7 +132,7 @@ class Poller(BasicPlugin):
         # count the votes after the poll finishes
         voted = {}
         excluded = set()
-        cached_message = discord_utils.get(ctx.bot.cached_messages, id=message.id)
+        cached_message = discord.utils.get(ctx.bot.cached_messages, id=message.id)
         if not cached_message:
             return None
 

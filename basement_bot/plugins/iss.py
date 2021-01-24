@@ -1,5 +1,5 @@
-from cogs import HttpPlugin
-from decorate import with_typing
+import cogs
+import decorate
 from discord.ext import commands
 
 
@@ -7,14 +7,14 @@ def setup(bot):
     bot.add_cog(ISSLocator(bot))
 
 
-class ISSLocator(HttpPlugin):
+class ISSLocator(cogs.HttpPlugin):
 
     PLUGIN_NAME = __name__
     ISS_URL = "http://api.open-notify.org/iss-now.json"
     GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
     HAS_CONFIG = False
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="iss",

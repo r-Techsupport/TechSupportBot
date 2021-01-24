@@ -1,16 +1,15 @@
-from cogs import BasicPlugin
-from decorate import with_typing
-from discord import Forbidden
+import cogs
+import decorate
+import emoji
+import inflect
 from discord.ext import commands
-from emoji import emojize
-from inflect import engine as inflect_engine
 
 
 def setup(bot):
     bot.add_cog(LetterEmojis(bot))
 
 
-class LetterEmojis(BasicPlugin):
+class LetterEmojis(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
@@ -20,14 +19,14 @@ class LetterEmojis(BasicPlugin):
     @classmethod
     def emoji_from_char(cls, char):
         if char.isalpha():
-            return emojize(
+            return emoji.emojize(
                 f":regional_indicator_symbol_letter_{char.lower()}:", use_aliases=True
             )
         if char.isnumeric():
-            char = inflect_engine().number_to_words(char)
-            return emojize(f":{char}:", use_aliases=True)
+            char = inflect.engine().number_to_words(char)
+            return emoji.emojize(f":{char}:", use_aliases=True)
         if cls.KEY_MAP.get(char):
-            return emojize(f":{cls.KEY_MAP[char]}:", use_aliases=True)
+            return emoji.emojize(f":{cls.KEY_MAP[char]}:", use_aliases=True)
 
     @classmethod
     def emoji_message_from_string(cls, string):
@@ -63,7 +62,7 @@ class LetterEmojis(BasicPlugin):
             return None
         return emoji_list
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="emsg",

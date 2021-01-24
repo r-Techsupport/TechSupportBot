@@ -2,33 +2,32 @@ import asyncio
 import datetime
 import json
 
-from cogs import DatabasePlugin, LoopPlugin, MatchPlugin
-from decorate import with_typing
-from discord import HTTPException
+import cogs
+import decorate
+import logger
+import sqlalchemy
 from discord.ext import commands
-from logger import get_logger
-from sqlalchemy import Column, DateTime, Integer, String
 
-log = get_logger("Factoids")
+log = logger.get_logger("Factoids")
 
 
-class Factoid(DatabasePlugin.BaseTable):
+class Factoid(cogs.DatabasePlugin.BaseTable):
     __tablename__ = "factoids"
 
-    pk = Column(Integer, primary_key=True)
-    text = Column(String)
-    channel = Column(String)
-    message = Column(String)
-    time = Column(DateTime, default=datetime.datetime.utcnow)
-    embed_config = Column(String, default=None)
-    loop_config = Column(String, default=None)
+    pk = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    text = sqlalchemy.Column(sqlalchemy.String)
+    channel = sqlalchemy.Column(sqlalchemy.String)
+    message = sqlalchemy.Column(sqlalchemy.String)
+    time = sqlalchemy.Column(sqlalchemy.DateTime, default=datetime.datetime.utcnow)
+    embed_config = sqlalchemy.Column(sqlalchemy.String, default=None)
+    loop_config = sqlalchemy.Column(sqlalchemy.String, default=None)
 
 
 def setup(bot):
     bot.add_cog(FactoidManager(bot))
 
 
-class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
+class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
 
     PLUGIN_NAME = __name__
     MODEL = Factoid
@@ -297,7 +296,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
     async def wait(self):
         await asyncio.sleep(60)
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Creates a factoid",
@@ -347,7 +346,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
             embed_config=embed_config,
         )
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Deletes a factoid",
@@ -369,7 +368,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
 
         await self.delete_factoid(ctx, args[0])
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Loops a factoid",
@@ -416,7 +415,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
             ctx, f"Successfully saved loop config for {factoid_name}"
         )
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Removes a factoid's loop config",
@@ -444,7 +443,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
 
         await self.bot.h.tagged_response(ctx, "Loop config deleted")
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Displays the loop config",
@@ -506,7 +505,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
 
         await self.bot.h.tagged_response(ctx, embed=embed)
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="lsf",
@@ -558,7 +557,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
 
         self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Gets raw factoid data",
@@ -588,7 +587,7 @@ class FactoidManager(DatabasePlugin, MatchPlugin, LoopPlugin):
 
         await self.bot.h.tagged_response(ctx, f"```{formatted}```")
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="loop_jobs",

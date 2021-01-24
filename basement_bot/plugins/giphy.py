@@ -1,7 +1,7 @@
 import random
 
-from cogs import HttpPlugin
-from decorate import with_typing
+import cogs
+import decorate
 from discord.ext import commands
 
 
@@ -9,7 +9,7 @@ def setup(bot):
     bot.add_cog(Giphy(bot))
 
 
-class Giphy(HttpPlugin):
+class Giphy(cogs.HttpPlugin):
 
     PLUGIN_NAME = __name__
     GIPHY_URL = "http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"
@@ -20,7 +20,7 @@ class Giphy(HttpPlugin):
         index = url.find("?cid=")
         return url[:index]
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="giphy",

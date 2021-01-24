@@ -1,5 +1,5 @@
-from cogs import HttpPlugin
-from decorate import with_typing
+import cogs
+import decorate
 from discord.ext import commands
 
 
@@ -7,12 +7,12 @@ def setup(bot):
     bot.add_cog(Wolfram(bot))
 
 
-class Wolfram(HttpPlugin):
+class Wolfram(cogs.HttpPlugin):
 
     PLUGIN_NAME = __name__
     API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="wa",

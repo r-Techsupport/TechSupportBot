@@ -1,5 +1,5 @@
-from cogs import HttpPlugin
-from decorate import with_typing
+import cogs
+import decorate
 from discord.ext import commands
 
 
@@ -7,7 +7,7 @@ def setup(bot):
     bot.add_cog(Spotify(bot))
 
 
-class Spotify(HttpPlugin):
+class Spotify(cogs.HttpPlugin):
 
     PLUGIN_NAME = __name__
 
@@ -25,7 +25,7 @@ class Spotify(HttpPlugin):
 
         return response.get("access_token")
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Searches Spotify",
