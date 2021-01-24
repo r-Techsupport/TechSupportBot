@@ -1,11 +1,11 @@
-from cogs import MatchPlugin
+import cogs
 
 
 def setup(bot):
     bot.add_cog(Logger(bot))
 
 
-class Logger(MatchPlugin):
+class Logger(cogs.MatchPlugin):
 
     PLUGIN_NAME = __name__
 
@@ -38,20 +38,13 @@ class Logger(MatchPlugin):
         embed.add_field(
             name="Channel",
             value=(f"{ctx.channel.name} ({ctx.channel.mention})") or "Unknown",
-            inline=False,
         )
 
-        embed.add_field(
-            name="Display Name",
-            value=ctx.author.display_name or "Unknown",
-            inline=False,
-        )
+        embed.add_field(name="Display Name", value=ctx.author.display_name or "Unknown")
 
-        embed.add_field(name="Name", value=ctx.author.name or "Unknown", inline=False)
+        embed.add_field(name="Name", value=ctx.author.name or "Unknown")
 
-        embed.add_field(
-            name="Discriminator", value=ctx.author.discriminator or "None", inline=False
-        )
+        embed.add_field(name="Discriminator", value=ctx.author.discriminator or "None")
 
         embed.add_field(
             name="Roles",

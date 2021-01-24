@@ -3,17 +3,18 @@
 
 import asyncio
 import logging
-from random import randint
+import random
 
 import aiocron
 import http3
+import logger
 import pika
+import sqlalchemy
 from discord.ext import commands
-from logger import get_logger
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext import declarative
 
 logging.getLogger("pika").setLevel(logging.WARNING)
-log = get_logger("Cogs")
+log = logger.get_logger("Cogs")
 
 
 class BasicPlugin(commands.Cog):
@@ -50,17 +51,14 @@ class BasicPlugin(commands.Cog):
 
 
 class HttpPlugin(BasicPlugin):
-    """Plugin for interfacing via HTTP.
-
-    parameters:
-        bot (Bot): the bot object
-    """
+    """Plugin for interfacing via HTTP."""
 
     PLUGIN_TYPE = "HTTP"
 
-    def __init__(self, bot):
-        super().__init__(bot)
-        self.client = http3.AsyncClient()
+    @staticmethod
+    def get_client():
+        """Gets a HTTP client object."""
+        return http3.AsyncClient()
 
     async def http_call(self, method, *args, **kwargs):
         """Makes an HTTP request.
@@ -70,7 +68,8 @@ class HttpPlugin(BasicPlugin):
             *args (...list): the args with which to call the HTTP Python method
             **kwargs (...dict): the keyword args with which to call the HTTP Python method
         """
-        method_fn = getattr(self.client, method.lower(), None)
+        client = self.get_client()
+        method_fn = getattr(client, method.lower(), None)
         if not method_fn:
             raise AttributeError(f"Unable to use HTTP method: {method}")
 
@@ -135,7 +134,7 @@ class DatabasePlugin(BasicPlugin):
     """Plugin for accessing the database."""
 
     PLUGIN_TYPE = "DATABASE"
-    BaseTable = declarative_base()
+    BaseTable = declarative.declarative_base()
     MODEL = None
 
     def __init__(self, bot):
@@ -245,7 +244,7 @@ class LoopPlugin(BasicPlugin):
         # pylint: disable=method-hidden
         async def random_wait():
             await asyncio.sleep(
-                randint(
+                random.randint(
                     min_wait * self.conversion_factor, max_wait * self.conversion_factor
                 )
             )

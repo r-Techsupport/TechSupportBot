@@ -1,10 +1,7 @@
-"""Module for the hug plugin
-"""
+import random
 
-from random import choice
-
-from cogs import BasicPlugin
-from decorate import with_typing
+import cogs
+import decorate
 from discord.ext import commands
 
 
@@ -12,7 +9,7 @@ def setup(bot):
     bot.add_cog(Hugger(bot))
 
 
-class Hugger(BasicPlugin):
+class Hugger(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
@@ -32,7 +29,7 @@ class Hugger(BasicPlugin):
         "https://cdn.icon-icons.com/icons2/1648/PNG/512/10022huggingface_110042.png"
     )
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="hug",
@@ -59,7 +56,7 @@ class Hugger(BasicPlugin):
         if len(ctx.message.mentions) > 1:
             mentions = [m.mention for m in ctx.message.mentions]
             await ctx.send(
-                choice(self.HUGS_SELECTION).format(
+                random.choice(self.HUGS_SELECTION).format(
                     user_giving_hug=ctx.author.mention,
                     user_to_hug=", ".join(mentions[:-1]) + ", and " + mentions[-1],
                 )
@@ -71,7 +68,7 @@ class Hugger(BasicPlugin):
         await self.bot.h.tagged_response(ctx, embed=embed)
 
     def generate_embed(self, ctx):
-        hug_text = choice(self.HUGS_SELECTION).format(
+        hug_text = random.choice(self.HUGS_SELECTION).format(
             user_giving_hug=ctx.author.mention,
             user_to_hug=ctx.message.mentions[0].mention,
         )

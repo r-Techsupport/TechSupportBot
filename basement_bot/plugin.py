@@ -2,19 +2,19 @@
 """
 
 import glob
-from os.path import basename, dirname, isfile, join
+import os
 
+import api
+import logger
 import munch
-from api import BotAPI
-from logger import get_logger
 
-log = get_logger("Plugin Loader")
+log = logger.get_logger("Plugin Loader")
 
 
-class PluginAPI(BotAPI):
+class PluginAPI(api.BotAPI):
     """API for plugin loading."""
 
-    PLUGINS_DIR = f"{join(dirname(__file__))}/plugins"
+    PLUGINS_DIR = f"{os.path.join(os.path.dirname(__file__))}/plugins"
 
     def __init__(self, bot):
         super().__init__(bot)
@@ -23,9 +23,9 @@ class PluginAPI(BotAPI):
     def get_modules(self):
         """Gets the current list of plugin modules."""
         return [
-            basename(f)[:-3]
+            os.path.basename(f)[:-3]
             for f in glob.glob(f"{self.PLUGINS_DIR}/*.py")
-            if isfile(f) and not f.endswith("__init__.py")
+            if os.path.isfile(f) and not f.endswith("__init__.py")
         ]
 
     def get_status(self):

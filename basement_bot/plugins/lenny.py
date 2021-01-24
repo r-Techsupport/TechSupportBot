@@ -1,7 +1,7 @@
-from random import choice
+import random
 
-from cogs import BasicPlugin
-from decorate import with_typing
+import cogs
+import decorate
 from discord.ext import commands
 
 
@@ -9,7 +9,7 @@ def setup(bot):
     bot.add_cog(Lenny(bot))
 
 
-class Lenny(BasicPlugin):
+class Lenny(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
@@ -38,7 +38,7 @@ class Lenny(BasicPlugin):
         "✺◟( ͡° ͜ʖ ͡°)◞✺",
     ]
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="len",
@@ -47,4 +47,4 @@ class Lenny(BasicPlugin):
         usage="",
     )
     async def lenny(self, ctx):
-        await ctx.send(choice(self.LENNYS_SELECTION))
+        await ctx.send(random.choice(self.LENNYS_SELECTION))

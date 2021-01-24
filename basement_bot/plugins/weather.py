@@ -1,6 +1,6 @@
+import cogs
+import decorate
 import munch
-from cogs import HttpPlugin
-from decorate import with_typing
 from discord.ext import commands
 
 
@@ -8,7 +8,7 @@ def setup(bot):
     bot.add_cog(Weather(bot))
 
 
-class Weather(HttpPlugin):
+class Weather(cogs.HttpPlugin):
 
     PLUGIN_NAME = __name__
 
@@ -27,7 +27,7 @@ class Weather(HttpPlugin):
             f"{url}?q={searches}&units={self.config.units}&appid={self.config.dev_key}"
         )
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="we",

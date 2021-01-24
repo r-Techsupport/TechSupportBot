@@ -1,14 +1,14 @@
 import asyncio
-from random import choice, randint
+import random
 
-from cogs import HttpPlugin, LoopPlugin
+import cogs
 
 
 def setup(bot):
     bot.add_cog(KanyeQuotes(bot))
 
 
-class KanyeQuotes(LoopPlugin, HttpPlugin):
+class KanyeQuotes(cogs.LoopPlugin, cogs.HttpPlugin):
 
     PLUGIN_NAME = __name__
     API_URL = "https://api.kanye.rest"
@@ -36,12 +36,12 @@ class KanyeQuotes(LoopPlugin, HttpPlugin):
             return
 
         embed = self.bot.embed_api.Embed(title=f'"{quote}"', description="Kanye Quest")
-        embed.set_thumbnail(url=choice(self.KANYE_PICS))
+        embed.set_thumbnail(url=random.choice(self.KANYE_PICS))
         await self.channel.send(embed=embed)
 
     async def wait(self):
         await asyncio.sleep(
-            randint(
+            random.randint(
                 self.config.min_hours * 3600,
                 self.config.max_hours * 3600,
             )

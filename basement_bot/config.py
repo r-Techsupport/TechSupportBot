@@ -1,14 +1,14 @@
 """Provides an interface for loading, validating, and changing the config.
 """
+import api
+import logger
 import munch
 import yaml
-from api import BotAPI
-from logger import get_logger
 
-log = get_logger("Config")
+log = logger.get_logger("Config")
 
 
-class ConfigAPI(BotAPI):
+class ConfigAPI(api.BotAPI):
     """API for handling errors.
 
     parameters:

@@ -3,14 +3,14 @@
 
 import traceback
 
+import api
+import discord
 import discord.ext.commands as error_enum
+import logger
 import munch
-from api import BotAPI
-from discord import Forbidden
-from discord.ext.commands import Cog
-from logger import get_logger
+from discord.ext import commands
 
-log = get_logger("Error")
+log = logger.get_logger("Error")
 
 # pylint: disable=too-few-public-methods
 class ErrorMessageTemplate:
@@ -67,7 +67,7 @@ class ErrorMessageTemplate:
         return self.message_format % tuple(values)
 
 
-class ErrorAPI(BotAPI):
+class ErrorAPI(api.BotAPI):
     """API for handling errors.
 
     parameters:
@@ -141,7 +141,7 @@ class ErrorAPI(BotAPI):
             if owner:
                 await owner.send(embed=embed)
                 await owner.send(f"```{exception_string}```")
-        except Forbidden:
+        except discord.Forbidden:
             pass
 
     async def handle_command_error(self, context, exception):
@@ -159,7 +159,7 @@ class ErrorAPI(BotAPI):
         cog = context.cog
         if cog:
             # pylint: disable=protected-access
-            if Cog._get_overridden_method(cog.cog_command_error) is not None:
+            if commands.Cog._get_overridden_method(cog.cog_command_error) is not None:
                 return
         # end original Discord.py logic
 

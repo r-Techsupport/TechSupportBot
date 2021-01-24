@@ -1,8 +1,8 @@
 import asyncio
 import datetime
-from threading import Thread
+import threading
 
-from cogs import BasicPlugin
+import cogs
 from discord.ext import commands
 
 
@@ -10,7 +10,7 @@ def setup(bot):
     bot.add_cog(Evaluator(bot))
 
 
-class Evaluator(BasicPlugin):
+class Evaluator(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
@@ -42,7 +42,7 @@ class Evaluator(BasicPlugin):
             except Exception as e:
                 error_ = e
 
-        thread = Thread(target=thread_func, args=(str(expression),))
+        thread = threading.Thread(target=thread_func, args=(str(expression),))
 
         thread.start()
 

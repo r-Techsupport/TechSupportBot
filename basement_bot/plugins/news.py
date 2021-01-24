@@ -1,16 +1,13 @@
-from random import shuffle
+import random
 
-from cogs import HttpPlugin, LoopPlugin
-from logger import get_logger
-
-log = get_logger("News Plugin")
+import cogs
 
 
 def setup(bot):
     bot.add_cog(News(bot))
 
 
-class News(LoopPlugin, HttpPlugin):
+class News(cogs.LoopPlugin, cogs.HttpPlugin):
 
     PLUGIN_NAME = __name__
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
@@ -32,11 +29,10 @@ class News(LoopPlugin, HttpPlugin):
 
         articles = response.get("articles")
         if not articles:
-            log.warning("Unable to retrieve articles from API response")
             return
 
-        shuffle(self.config.prefer)
-        shuffle(articles)
+        random.shuffle(self.config.prefer)
+        random.shuffle(articles)
         for article in articles:
             source = article.get("source", {}).get("name")
             if not source:
@@ -47,8 +43,5 @@ class News(LoopPlugin, HttpPlugin):
                     url = article.get("url")
                     if not url:
                         continue
-                    log.debug(f"Sending News article: {url}")
                     await self.channel.send(url)
                     return
-
-        log.warning("Unable to find article for sending")

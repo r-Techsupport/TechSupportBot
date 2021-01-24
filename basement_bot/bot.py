@@ -3,19 +3,18 @@
 
 import sys
 
-from admin import AdminControl
-from config import ConfigAPI
-from database import DatabaseAPI
-from discord import Game
-from discord.channel import DMChannel
+import admin
+import config
+import database
+import discord
+import embed
+import error
+import helper
+import logger
+import plugin
 from discord.ext import commands
-from embed import EmbedAPI
-from error import ErrorAPI
-from helper import HelperAPI
-from logger import get_logger
-from plugin import PluginAPI
 
-log = get_logger("Basement Bot")
+log = logger.get_logger("Basement Bot")
 
 # pylint: disable=too-many-instance-attributes
 class BasementBot(commands.Bot):
@@ -30,12 +29,12 @@ class BasementBot(commands.Bot):
         # the config API will set this
         self.config = None
 
-        self.config_api = ConfigAPI(bot=self, validate=validate_config)
-        self.plugin_api = PluginAPI(bot=self)
-        self.database_api = DatabaseAPI(bot=self)
-        self.error_api = ErrorAPI(bot=self)
-        self.helper_api = HelperAPI(bot=self)
-        self.embed_api = EmbedAPI(bot=self)
+        self.config_api = config.ConfigAPI(bot=self, validate=validate_config)
+        self.plugin_api = plugin.PluginAPI(bot=self)
+        self.database_api = database.DatabaseAPI(bot=self)
+        self.error_api = error.ErrorAPI(bot=self)
+        self.helper_api = helper.HelperAPI(bot=self)
+        self.embed_api = embed.EmbedAPI(bot=self)
 
         super().__init__(self.config.main.required.command_prefix)
 
@@ -67,7 +66,7 @@ class BasementBot(commands.Bot):
 
         if (
             owner
-            and isinstance(message.channel, DMChannel)
+            and isinstance(message.channel, discord.DMChannel)
             and message.author.id != owner.id
             and not message.author.bot
         ):
@@ -101,7 +100,7 @@ class BasementBot(commands.Bot):
             game (str): the name of the game to display
         """
         self.game = game
-        await self.change_presence(activity=Game(name=self.game))
+        await self.change_presence(activity=discord.Game(name=self.game))
 
     # pylint: disable=invalid-overridden-method
     def start(self, *args, **kwargs):
@@ -111,7 +110,7 @@ class BasementBot(commands.Bot):
         self.plugin_api.load_plugins()
 
         try:
-            self.add_cog(AdminControl(self))
+            self.add_cog(admin.AdminControl(self))
         except (TypeError, commands.CommandError) as e:
             log.warning(f"Could not load AdminControl cog: {e}")
 

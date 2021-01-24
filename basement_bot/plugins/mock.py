@@ -1,7 +1,5 @@
-import logging
-
-from cogs import BasicPlugin
-from decorate import with_typing
+import cogs
+import decorate
 from discord.ext import commands
 
 
@@ -9,7 +7,7 @@ def setup(bot):
     bot.add_cog(Mocker(bot))
 
 
-class Mocker(BasicPlugin):
+class Mocker(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
@@ -28,7 +26,7 @@ class Mocker(BasicPlugin):
                 i = not i
         return mock
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="sb",

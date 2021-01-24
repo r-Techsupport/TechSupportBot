@@ -1,5 +1,5 @@
-from cogs import BasicPlugin
-from decorate import with_typing
+import cogs
+import decorate
 from discord.ext import commands
 
 
@@ -7,12 +7,12 @@ def setup(bot):
     bot.add_cog(Embedder(bot))
 
 
-class Embedder(BasicPlugin):
+class Embedder(cogs.BasicPlugin):
 
     PLUGIN_NAME = "Embedder"
     HAS_CONFIG = False
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(manage_messages=True)
     @commands.command(
         brief="Generates a list of embeds",

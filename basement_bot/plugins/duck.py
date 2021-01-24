@@ -3,20 +3,20 @@ import datetime
 from concurrent.futures._base import TimeoutError as AsyncTimeoutError
 from random import choice, choices
 
-from cogs import DatabasePlugin, LoopPlugin
-from decorate import with_typing
+import cogs
+import decorate
+import sqlalchemy
 from discord import Color as embed_colors
 from discord.ext import commands
-from sqlalchemy import Column, DateTime, Integer, String
 
 
-class DuckUser(DatabasePlugin.BaseTable):
+class DuckUser(cogs.DatabasePlugin.BaseTable):
     __tablename__ = "duckusers"
 
-    author_id = Column(String, primary_key=True)
-    befriend_count = Column(Integer, default=0)
-    kill_count = Column(Integer, default=0)
-    updated = Column(DateTime, default=datetime.datetime.utcnow)
+    author_id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    befriend_count = sqlalchemy.Column(sqlalchemy.Integer, default=0)
+    kill_count = sqlalchemy.Column(sqlalchemy.Integer, default=0)
+    updated = sqlalchemy.Column(sqlalchemy.DateTime, default=datetime.datetime.utcnow)
 
 
 def setup(bot):
@@ -714,7 +714,7 @@ class CodQuotesMixin:
     ]
 
 
-class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
+class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
 
     PLUGIN_NAME = __name__
     MODEL = DuckUser
@@ -759,7 +759,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
                 return False
 
         weights = (self.config.success_percent, 100 - self.config.success_percent)
-        choice_ = choice(choices([True, False], weights=weights, k=1000))
+        choice_ = random.choice(random.choices([True, False], weights=weights, k=1000))
         if not choice_:
             self.cooldowns[message.author.id] = datetime.datetime.now()
 
@@ -783,7 +783,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
         if not getattr(self, "MW2_QUOTES", None):
             return default_message
 
-        failure_quote = choice(self.MW2_QUOTES)
+        failure_quote = random.choice(self.MW2_QUOTES)
         message = failure_quote["message"]
         author = failure_quote["author"]
         if not message or not author:
@@ -866,7 +866,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
 
         db.close()
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="duck_stats",
@@ -908,7 +908,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
 
         await self.bot.h.tagged_response(ctx, embed=embed)
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="duck_friends",
@@ -959,7 +959,7 @@ class DuckHunt(DatabasePlugin, LoopPlugin, CodQuotesMixin):
 
         self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
 
-    @with_typing
+    @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="duck_killers",
