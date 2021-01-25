@@ -1,7 +1,7 @@
 import asyncio
 import datetime
+import random
 from concurrent.futures._base import TimeoutError as AsyncTimeoutError
-from random import choice, choices
 
 import cogs
 import decorate
