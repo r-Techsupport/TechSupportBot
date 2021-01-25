@@ -18,7 +18,7 @@ class Moderator(cogs.BasicPlugin):
         description="Purges the current channel's messages based on author criteria",
         usage="@user @another-user ... <number-to-purge (50 by default)>",
     )
-    async def purge(self, ctx, *args):
+    async def purge_x(self, ctx, *args):
         # dat constant lookup
         targets = (
             set(user.id for user in ctx.message.mentions)
