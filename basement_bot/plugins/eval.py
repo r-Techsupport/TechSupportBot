@@ -24,7 +24,7 @@ class Evaluator(cogs.BasicPlugin):
         name="eval",
         brief="Evalulates Python code",
         description="Evaluates a Python expression (bot-owner only)",
-        usage="<Python expression>",
+        usage="[Python expression]",
     )
     async def evalulate(self, ctx, *, expression):
         global result

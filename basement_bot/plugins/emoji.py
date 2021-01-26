@@ -2,14 +2,15 @@ import cogs
 import decorate
 import emoji
 import inflect
+import discord
 from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(LetterEmojis(bot))
+    bot.add_cog(Emojis(bot))
 
 
-class LetterEmojis(cogs.BasicPlugin):
+class Emojis(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
@@ -62,24 +63,23 @@ class LetterEmojis(cogs.BasicPlugin):
             return None
         return emoji_list
 
+    @commands.group()
+    async def emoji(self, ctx):
+        pass
+
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
-    @commands.command(
-        name="emsg",
+    @emoji.command(
+        aliases=["msg"],
         brief="H E L L O!",
         description="Creates a regional_indiciator_X emoji message.",
         usage="[message]",
     )
-    async def emsg(self, ctx, *args):
+    async def message(self, ctx, *, message:str):
         if ctx.message.mentions:
             await self.bot.h.tagged_response(
                 ctx, "I can't make an emoji from a mention!"
             )
-            return
-
-        message = " ".join(args) if args else None
-        if not message:
-            await self.bot.h.tagged_response(ctx, "You must specify a message!")
             return
 
         emoji_message = self.emoji_message_from_string(message)
@@ -91,25 +91,12 @@ class LetterEmojis(cogs.BasicPlugin):
             )
 
     @commands.has_permissions(add_reactions=True)
-    @commands.command(
-        name="ermsg",
+    @emoji.command(
         brief="H E L O! but as a reaction...",
         description="Creates a regional_indiciator_X emoji reaction for a user's most recent message.",
         usage="[message] @user",
     )
-    async def ermsg(self, ctx, *args):
-        message = " ".join(args[:-1]) if args else None
-        if not message:
-            await self.bot.h.tagged_response(ctx, "You must specify a message!")
-            return
-
-        if not len(ctx.message.mentions) == 1:
-            await self.bot.h.tagged_response(
-                ctx, "You must mention a specific user to react to!"
-            )
-            return
-        react_user = ctx.message.mentions[0]
-
+    async def reaction(self, ctx, message:str, react_user:discord.Member):
         react_message = None
         async for channel_message in ctx.channel.history(limit=self.SEARCH_LIMIT):
             if (

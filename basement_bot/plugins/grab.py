@@ -43,7 +43,7 @@ class Grabber(cogs.DatabasePlugin):
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
-        name="grab",
+        name="user",
         brief="Grab the last message from the mentioned user",
         description=(
             "Gets the last message of the mentioned user and saves it"
@@ -51,7 +51,7 @@ class Grabber(cogs.DatabasePlugin):
         ),
         usage="[mentioned-user]",
     )
-    async def grab(self, ctx):
+    async def grab_user(self, ctx):
         if await self.invalid_channel(ctx):
             return
 
@@ -107,24 +107,19 @@ class Grabber(cogs.DatabasePlugin):
 
         db.close()
 
+    @commands.group()
+    async def grabs(self, ctx):
+        pass
+
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
-    @commands.command(
-        name="grabs",
+    @grabs.command(
         brief="Returns all grabbed messages of mentioned person",
         description="Returns all grabbed messages of mentioned person from the database.",
         usage="[mentioned-user]",
     )
-    async def get_grabs(self, ctx):
+    async def all(self, ctx, user_to_grab:discord.Member):
         if await self.invalid_channel(ctx):
-            return
-
-        user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
-
-        if not user_to_grab:
-            await self.bot.h.tagged_response(
-                ctx, "You must mention a user to get their grabs!"
-            )
             return
 
         if user_to_grab.bot:
@@ -181,22 +176,14 @@ class Grabber(cogs.DatabasePlugin):
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
-    @commands.command(
-        name="grabr",
+    @grabs.command(
+        name="random",
         brief="Returns a random grabbed message",
-        description="Returns a random grabbed message of a random user or of a mentioned user from the database.",
-        usage="[mentioned-user/blank]",
+        description="Returns a random grabbed message of a mentioned user from the database",
+        usage="@user",
     )
-    async def random_grab(self, ctx):
+    async def random_grab(self, ctx, user_to_grab:discord.Member):
         if await self.invalid_channel(ctx):
-            return
-
-        user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
-
-        if not user_to_grab:
-            await self.bot.h.tagged_response(
-                ctx, "You must mention a user to get a random grab!"
-            )
             return
 
         if user_to_grab.bot:
@@ -205,19 +192,15 @@ class Grabber(cogs.DatabasePlugin):
 
         db = self.db_session()
 
-        grabs = db.query(Grab)
+        grabs = db.query(Grab).filter(Grab.author_id == str(user_to_grab.id)).all()
 
-        if user_to_grab:
-            grabs = grabs.filter(Grab.author_id == str(user_to_grab.id))
-
-        grabs = grabs.all()
         for grab in grabs:
             db.expunge(grab)
         db.close()
 
         if not grabs:
             await self.bot.h.tagged_response(
-                f"No messages found for {user_to_grab or 'this channel'}"
+                f"No grabs found for {user_to_grab}"
             )
             return
 

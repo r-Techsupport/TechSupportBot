@@ -5,6 +5,7 @@ from concurrent.futures._base import TimeoutError as AsyncTimeoutError
 
 import cogs
 import decorate
+import discord
 import sqlalchemy
 from discord import Color as embed_colors
 from discord.ext import commands
@@ -752,7 +753,7 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
                 self.bot.loop.create_task(
                     self.bot.h.tagged_response(
                         None,
-                        content=f"I said to wait {self.config.cooldown_seconds} seconds! Resetting cooldown",
+                        content=f"I said to wait {self.config.cooldown_seconds} seconds!",
                         target=message.author,
                     )
                 )
@@ -866,20 +867,22 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
 
         db.close()
 
+    @commands.group()
+    async def duck(self, ctx):
+        pass
+
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
-    @commands.command(
-        name="duck_stats",
+    @duck.command(
         brief="Get duck stats",
         description="Gets duck friendships and kills for yourself or another user",
         usage="@user (defaults to yourself)",
     )
-    async def stats(self, ctx, *args):
-        query_user = (
-            ctx.message.mentions[0] if ctx.message.mentions else ctx.message.author
-        )
+    async def stats(self, ctx, *, member:discord.Member=None):
+        if not member:
+            member = ctx.message.author
 
-        if query_user.bot:
+        if member.bot:
             await self.bot.h.tagged_response(
                 ctx, "If it looks like a duck, quacks like a duck, it's a duck!"
             )
@@ -887,7 +890,7 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
 
         db = self.db_session()
         duck_user = (
-            db.query(DuckUser).filter(DuckUser.author_id == str(query_user.id)).first()
+            db.query(DuckUser).filter(DuckUser.author_id == str(member.id)).first()
         )
         if duck_user:
             db.expunge(duck_user)
@@ -899,7 +902,7 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
             return
 
         embed = self.bot.embed_api.Embed(
-            title="Duck Stats", description=query_user.mention
+            title="Duck Stats", description=member.mention
         )
         embed.color = embed_colors.green()
         embed.add_field(name="Friends", value=duck_user.befriend_count)
@@ -910,8 +913,7 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
-    @commands.command(
-        name="duck_friends",
+    @duck.command(
         brief="Get duck friendship scores",
         description="Gets duck friendship scores for all users",
     )
@@ -961,8 +963,7 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
-    @commands.command(
-        name="duck_killers",
+    @duck.command(
         brief="Get duck kill scores",
         description="Gets duck kill scores for all users",
     )

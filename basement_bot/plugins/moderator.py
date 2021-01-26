@@ -12,13 +12,18 @@ class Moderator(cogs.BasicPlugin):
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
+    @commands.group()
+    async def purge(self, ctx):
+        pass
+
     @commands.has_permissions(manage_messages=True)
-    @commands.command(
+    @purge.command(
+        name="x",
         brief="Purges a channel's messages",
         description="Purges the current channel's messages based on author criteria",
-        usage="@user @another-user ... <number-to-purge (50 by default)>",
+        usage="@user @another-user ... [number-to-purge (50 by default)]",
     )
-    async def purge_x(self, ctx, *args):
+    async def purge_x(self, ctx, targets:commands.Greedy[discord.Member], amount:int=50):
         # dat constant lookup
         targets = (
             set(user.id for user in ctx.message.mentions)
