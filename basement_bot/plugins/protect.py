@@ -22,9 +22,9 @@ class Protector(cogs.MatchPlugin, cogs.HttpPlugin):
         if not ctx.channel.id in self.config.included_channels:
             return False
 
-        # admin = await self.bot.is_bot_admin(ctx)
-        # if admin:
-        #     return False
+        admin = await self.bot.is_bot_admin(ctx)
+        if admin:
+            return False
 
         # extend alerts here
         ctx.protect_actions = munch.Munch()
