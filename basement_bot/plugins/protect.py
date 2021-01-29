@@ -6,10 +6,11 @@ def setup(bot):
     bot.add_cog(Protector(bot))
 
 
-class Protector(cogs.MatchPlugin):
+class Protector(cogs.MatchPlugin, cogs.HttpPlugin):
 
     PLUGIN_NAME = __name__
     ALERT_ICON_URL = "https://cdn.icon-icons.com/icons2/2063/PNG/512/alert_danger_warning_notification_icon_124692.png"
+    PASTEBIN_URL = "https://pastebin.com/api/api_post.php"
 
     async def preconfig(self):
         self.string_map = {
@@ -21,9 +22,9 @@ class Protector(cogs.MatchPlugin):
         if not ctx.channel.id in self.config.included_channels:
             return False
 
-        admin = await self.bot.is_bot_admin(ctx)
-        if admin:
-            return False
+        # admin = await self.bot.is_bot_admin(ctx)
+        # if admin:
+        #     return False
 
         # extend alerts here
         ctx.protect_actions = munch.Munch()
@@ -68,16 +69,22 @@ class Protector(cogs.MatchPlugin):
         )
 
     async def handle_length_alert(self, ctx, content):
-        alert_message = f"I deleted your message because it was longer than {self.config.length_limit} characters; Please read our #rules. Check your DM's for the original message"
         await ctx.message.delete()
-        await self.bot.h.tagged_response(ctx, alert_message)
-        await self.send_original_message(ctx, content)
-        await self.send_admin_alert(
-            ctx, f"Message over length limit: `{self.config.length_limit}`"
-        )
 
-    async def send_original_message(self, ctx, content):
-        await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
+        pastebin_link = await self.create_pastebin_link(
+            f"Paste by {ctx.message.author.display_name}", content
+        )
+        if pastebin_link:
+            await self.bot.h.tagged_response(
+                ctx,
+                f"I put your message on Pastebin because it was longer than {self.config.length_limit} characters: {pastebin_link}",
+            )
+        else:
+            await self.bot.h.tagged_response(
+                ctx,
+                f"I deleted your message because it was longer than {self.config.length_limit} characters; please read our #rules. Check your DM's for the original message",
+            )
+            await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
 
     async def send_admin_alert(self, ctx, message):
         alert_channel = self.bot.get_channel(self.config.alert_channel)
@@ -97,3 +104,19 @@ class Protector(cogs.MatchPlugin):
         embed.set_thumbnail(url=self.ALERT_ICON_URL)
 
         await alert_channel.send(embed=embed)
+
+    async def create_pastebin_link(self, title, content):
+        if not self.config.pastebin_api_key or not content:
+            return None
+
+        data = {
+            "api_dev_key": self.config.pastebin_api_key,
+            "api_option": "paste",
+            "api_paste_name": title,
+            "api_paste_code": content,
+        }
+
+        response = await self.http_call(
+            "post", self.PASTEBIN_URL, data=data, get_raw_response=True
+        )
+        return response.text
