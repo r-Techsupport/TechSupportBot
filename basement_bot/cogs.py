@@ -73,17 +73,19 @@ class HttpPlugin(BasicPlugin):
         if not method_fn:
             raise AttributeError(f"Unable to use HTTP method: {method}")
 
-        log.debug(f"Making {method} HTTP call on URL: {args}")
+        get_raw_response = kwargs.pop("get_raw_response", None)
 
         try:
             response_object = await method_fn(*args, **kwargs)
+
+            if get_raw_response:
+                return response_object
+
             response = response_object.json() if response_object else {}
             response["status_code"] = getattr(response_object, "status_code", None)
         except Exception as e:
             await self.bot.error_api.handle_error("http_cog", e)
             response = {"status_code": None}
-
-        log.debug(f"HTTP response: {response}")
 
         return response
 
