@@ -54,4 +54,5 @@ class Logger(cogs.MatchPlugin):
 
         embed.color = self.config.embed_color
         embed.set_thumbnail(url=ctx.author.avatar_url)
+
         return embed

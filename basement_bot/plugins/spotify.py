@@ -32,7 +32,7 @@ class Spotify(cogs.HttpPlugin):
         description="Searches Spotify for tracks",
         usage="[search-terms]",
     )
-    async def spotify(self, ctx, *, query):
+    async def spotify(self, ctx, *, query: str):
         oauth_token = await self.get_oauth_token()
         if not oauth_token:
             await self.bot.h.tagged_response(

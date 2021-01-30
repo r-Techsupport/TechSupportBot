@@ -1,8 +1,8 @@
 import cogs
 import decorate
+import discord
 import emoji
 import inflect
-import discord
 from discord.ext import commands
 
 
@@ -75,7 +75,7 @@ class Emojis(cogs.BasicPlugin):
         description="Creates a regional_indiciator_X emoji message.",
         usage="[message]",
     )
-    async def message(self, ctx, *, message:str):
+    async def message(self, ctx, *, message: str):
         if ctx.message.mentions:
             await self.bot.h.tagged_response(
                 ctx, "I can't make an emoji from a mention!"
@@ -96,7 +96,7 @@ class Emojis(cogs.BasicPlugin):
         description="Creates a regional_indiciator_X emoji reaction for a user's most recent message.",
         usage="[message] @user",
     )
-    async def reaction(self, ctx, message:str, react_user:discord.Member):
+    async def reaction(self, ctx, message: str, react_user: discord.Member):
         react_message = None
         async for channel_message in ctx.channel.history(limit=self.SEARCH_LIMIT):
             if (

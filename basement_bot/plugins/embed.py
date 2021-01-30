@@ -17,9 +17,9 @@ class Embedder(cogs.BasicPlugin):
     @commands.command(
         brief="Generates a list of embeds",
         description="Generates a list of embeds defined by an uploaded JSON file (see: https://discord.com/developers/docs/resources/channel#embed-object)",
-        usage="|embed-list-json-upload|"
+        usage="|embed-list-json-upload|",
     )
-    async def embed(self, ctx, *, keep_option:str=None):
+    async def embed(self, ctx, *, keep_option: str = None):
         if not ctx.message.attachments:
             await self.bot.h.tagged_response(
                 ctx, "Please provide a JSON file for your embeds"

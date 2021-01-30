@@ -23,18 +23,15 @@ class Moderator(cogs.BasicPlugin):
         description="Purges the current channel's messages based on author criteria",
         usage="@user @another-user ... [number-to-purge (50 by default)]",
     )
-    async def purge_x(self, ctx, targets:commands.Greedy[discord.Member], amount:int=50):
+    async def purge_x(
+        self, ctx, targets: commands.Greedy[discord.Member], amount: int = 50
+    ):
         # dat constant lookup
         targets = (
             set(user.id for user in ctx.message.mentions)
             if ctx.message.mentions
             else None
         )
-
-        try:
-            amount = int(args[-1])
-        except (IndexError, ValueError):
-            amount = 0
 
         if amount <= 0 or amount > 50:
             amount = 50

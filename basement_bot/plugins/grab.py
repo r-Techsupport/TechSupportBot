@@ -118,7 +118,7 @@ class Grabber(cogs.DatabasePlugin):
         description="Returns all grabbed messages of mentioned person from the database.",
         usage="[mentioned-user]",
     )
-    async def all(self, ctx, user_to_grab:discord.Member):
+    async def all(self, ctx, user_to_grab: discord.Member):
         if await self.invalid_channel(ctx):
             return
 
@@ -182,7 +182,7 @@ class Grabber(cogs.DatabasePlugin):
         description="Returns a random grabbed message of a mentioned user from the database",
         usage="@user",
     )
-    async def random_grab(self, ctx, user_to_grab:discord.Member):
+    async def random_grab(self, ctx, user_to_grab: discord.Member):
         if await self.invalid_channel(ctx):
             return
 
@@ -199,9 +199,7 @@ class Grabber(cogs.DatabasePlugin):
         db.close()
 
         if not grabs:
-            await self.bot.h.tagged_response(
-                f"No grabs found for {user_to_grab}"
-            )
+            await self.bot.h.tagged_response(f"No grabs found for {user_to_grab}")
             return
 
         random_index = random.randint(0, len(grabs) - 1)

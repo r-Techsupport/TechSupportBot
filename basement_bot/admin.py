@@ -1,12 +1,12 @@
 """Cog for controlling the bot.
 """
 
-from cogs import BasicPlugin
-from decorate import with_typing
+import cogs
+import decorate
 from discord.ext import commands
 
 
-class AdminControl(BasicPlugin):
+class AdminControl(cogs.BasicPlugin):
     """Cog object for admin-only bot control"""
 
     ADMIN_ONLY = True
@@ -14,19 +14,25 @@ class AdminControl(BasicPlugin):
     HAS_CONFIG = False
     PLUGIN_NAME = __name__
 
-    @with_typing
-    @commands.command(hidden=True)
-    async def plugin_status(self, ctx, *args):
+    @commands.group()
+    async def plugin(self, ctx):
+        """Grouper for plugin commands.
+
+        parameters:
+            ctx (discord.Context): the context object for the message
+        """
+
+    @decorate.with_typing
+    @plugin.command(name="status", hidden=True)
+    async def plugin_status(self, ctx, *, plugin_name:str=None):
         """Gets the status of the bot plugins.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Ctx): the context object for the message
-            args [list]: the space-or-quote-delimitted args
+            ctx (discord.Context): the context object for the message
+            plugin_name (str): the name of the plugin
         """
-        plugin_name = args[0].lower() if args else None
-
         status_data = ctx.bot.plugin_api.get_status()
 
         error = status_data.get("error")
@@ -60,62 +66,53 @@ class AdminControl(BasicPlugin):
 
         self.bot.h.task_paginate(ctx, embeds)
 
-    @with_typing
-    @commands.command(hidden=True)
-    async def load_plugin(self, ctx, *args):
+    @decorate.with_typing
+    @plugin.command(name="load", hidden=True)
+    async def load_plugin(self, ctx, *, plugin_name: str):
         """Loads a plugin by filename.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Ctx): the context object for the message
-            args [list]: the space-or-quote-delimitted args
+            ctx (discord.Context): the context object for the message
+            plugin_name (str): the name of the plugin
         """
-        plugin_name = args[0].lower() if args else None
-
-        if not plugin_name:
-            await self.bot.h.tagged_response(ctx, "Invalid input")
-            return
-
         response = ctx.bot.plugin_api.load_plugin(plugin_name)
         await self.bot.h.tagged_response(ctx, response.message)
 
-    @with_typing
-    @commands.command(hidden=True)
-    async def unload_plugin(self, ctx, *args):
+    @decorate.with_typing
+    @plugin.command(name="unload", hidden=True)
+    async def unload_plugin(self, ctx, *, plugin_name: str):
         """Unloads a plugin by filename.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Ctx): the context object for the message
-            args [list]: the space-or-quote-delimitted args
+            ctx (discord.Context): the context object for the message
+            plugin_name (str): the name of the plugin
         """
-        plugin_name = args[0].lower() if args else None
-
-        if not plugin_name:
-            await self.bot.h.tagged_response(ctx, "Invalid input")
-            return
-
         response = ctx.bot.plugin_api.unload_plugin(plugin_name)
         await self.bot.h.tagged_response(ctx, response.message)
 
-    @with_typing
-    @commands.command(hidden=True)
-    async def enable_command(self, ctx, *args):
+    @commands.group(name="command")
+    async def command_group(self, ctx):
+        """Grouper for command commands.
+
+        parameters:
+            ctx (discord.Context): the context object for the message
+        """
+
+    @decorate.with_typing
+    @command_group.command(name="enable", hidden=True)
+    async def enable_command(self, ctx, *, command_name: str):
         """Enables a command by name.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Ctx): the context object for the message
-            args [list]: the space-or-quote-delimitted args
+            ctx (discord.Context): the context object for the message
+            command_name (str): the name of the command
         """
-        command_name = args[0].lower() if args else None
-        if not command_name:
-            await self.bot.h.tagged_response(ctx, "Invalid input")
-            return
-
         command_ = ctx.bot.get_command(command_name)
         if not command_:
             await self.bot.h.tagged_response(ctx, f"No such command: `{command_name}`")
@@ -132,22 +129,17 @@ class AdminControl(BasicPlugin):
             ctx, f"Successfully enabled command: `{command_name}`"
         )
 
-    @with_typing
-    @commands.command(hidden=True)
-    async def disable_command(self, ctx, *args):
+    @decorate.with_typing
+    @command_group.command(name="disable", hidden=True)
+    async def disable_command(self, ctx, *, command_name: str):
         """Disables a command by name.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Ctx): the context object for the message
-            args [list]: the space-or-quote-delimitted args
+            ctx (discord.Context): the context object for the message
+            command_name (str): the name of the command
         """
-        command_name = args[0].lower() if args else None
-        if not command_name:
-            await self.bot.h.tagged_response(ctx, "Invalid input")
-            return
-
         command_ = ctx.bot.get_command(command_name)
         if not command_:
             await self.bot.h.tagged_response(ctx, f"No such command: `{command_name}`")
@@ -164,103 +156,86 @@ class AdminControl(BasicPlugin):
             ctx, f"Successfully disabled command: `{command_name}`"
         )
 
-    @with_typing
-    @commands.command(hidden=True)
-    async def set_game(self, ctx, *args):
+    @commands.group(name="set")
+    async def set_group(self, ctx):
+        """Grouper for set commands.
+
+        parameters:
+            ctx (discord.Context): the context object for the message
+        """
+
+    @decorate.with_typing
+    @set_group.command(name="game", hidden=True)
+    async def set_game(self, ctx, *, game_name: str):
         """Sets the bot's game (activity) by name.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Ctx): the context object for the message
-            args [list]: the space-or-quote-delimitted args
+            ctx (discord.Context): the context object for the message
+            game_name (str): the name of the game
         """
-        # pylint: disable=fixme
-        # TODO: put this logic in the valid_input method
-        game_ = " ".join(args)[:32]
+        await ctx.bot.set_game(game_name)
+        await self.bot.h.tagged_response(
+            ctx, f"Successfully set game to: *{game_name}*"
+        )
 
-        if not self.valid_input(game_):
-            await self.bot.h.tagged_response(ctx, "Invalid game!")
-
-        await ctx.bot.set_game(game_)
-
-        await self.bot.h.tagged_response(ctx, f"Successfully set game to: *{game_}*")
-
-    @with_typing
-    @commands.command(hidden=True)
-    async def set_nick(self, ctx, *args):
+    @decorate.with_typing
+    @set_group.command(name="nick", hidden=True)
+    async def set_nick(self, ctx, *, nick: str):
         """Sets the bot's nick by name.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Ctx): the context object for the message
-            args [list]: the space-or-quote-delimitted args
+            ctx (discord.Context): the context object for the message
+            nick (str): the bot nickname
         """
-        # pylint: disable=fixme
-        # TODO: put this logic in the valid_input method
-        nick = " ".join(args)[:32]
-
-        if not self.valid_input(nick):
-            await self.bot.h.tagged_response(ctx, "Invalid nick!")
-
         await ctx.message.guild.me.edit(nick=nick)
-
         await self.bot.h.tagged_response(ctx, f"Successfully set nick to: *{nick}*")
 
-    @with_typing
-    @commands.command(hidden=True)
-    async def echo_channel(self, ctx, channel_id, *args):
+    @commands.group()
+    async def echo(self, ctx):
+        """Grouper for echo commands.
+
+        parameters:
+            ctx (discord.Context): the context object for the message
+        """
+
+    @decorate.with_typing
+    @echo.command(name="channel", hidden=True)
+    async def echo_channel(self, ctx, channel_id: int, *, message: str):
         """Sends a message to a specified channel.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Ctx): the context object for the calling message
-            channel_id (str): the ID of the channel to send the echoed message
-            args [list]: the space-or-quote-delimitted args
+            ctx (discord.Context): the context object for the calling message
+            channel_id (int): the ID of the channel to send the echoed message
+            message (str): the message to echo
         """
-        channel = self.bot.get_channel(int(channel_id))
+        channel = self.bot.get_channel(channel_id)
         if not channel:
             await self.bot.h.tagged_response(ctx, "I couldn't find that channel")
             return
 
-        message = " ".join(args)
-        if not message:
-            await self.bot.h.tagged_response(ctx, "I need a message to echo")
-            return
-
         await channel.send(content=message)
 
-    @with_typing
-    @commands.command(hidden=True)
-    async def echo_user(self, ctx, user_id, *args):
+    @decorate.with_typing
+    @echo.command(name="user", hidden=True)
+    async def echo_user(self, ctx, user_id: int, *, message: str):
         """Sends a message to a specified user.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Ctx): the context object for the calling message
-            user_id (str): the ID of the user to send the echoed message
-            args [list]: the space-or-quote-delimitted args
+            ctx (discord.Context): the context object for the calling message
+            user_id (int): the ID of the user to send the echoed message
+            message (str): the message to echo
         """
         user = await self.bot.fetch_user(int(user_id))
         if not user:
             await self.bot.h.tagged_response(ctx, "I couldn't find that user")
             return
 
-        message = " ".join(args)
-        if not message:
-            await self.bot.h.tagged_response(ctx, "I need a message to echo")
-            return
-
         await user.send(content=message)
-
-    @staticmethod
-    def valid_input(input_):
-        """Wrapper for validating input for bot parameters.
-
-        parameters:
-            input_ (str): the user input
-        """
-        return not all(char == " " for char in input_)

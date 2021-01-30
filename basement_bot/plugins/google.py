@@ -29,7 +29,7 @@ class Googler(cogs.HttpPlugin):
         description="Returns the top Google search result of the given search terms",
         usage="[search-terms]",
     )
-    async def search(self, ctx, *, query:str):
+    async def search(self, ctx, *, query: str):
         data = {
             "cx": self.config.cse_id,
             "q": query,
@@ -81,12 +81,12 @@ class Googler(cogs.HttpPlugin):
         description="Returns the top Google search result of the given search terms",
         usage="[search-terms]",
     )
-    async def images(self, ctx, query:str):
+    async def images(self, ctx, query: str):
         data = {
             "cx": self.config.cse_id,
             "q": query,
             "key": self.config.dev_key,
-            "searchType": "image"
+            "searchType": "image",
         }
         items = await self.get_items(self.GOOGLE_URL, data)
 
@@ -120,25 +120,20 @@ class Googler(cogs.HttpPlugin):
         ),
         usage="[search-terms]",
     )
-    async def youtube(self, ctx, *args):
-        if not args:
-            await self.bot.h.tagged_response(ctx, "I can't search for nothing!")
-            return
-
-        args = " ".join(args)
+    async def youtube(self, ctx, *, query: str):
         items = await self.get_items(
             self.YOUTUBE_URL,
             data={
-                "q": args,
+                "q": query,
                 "key": self.config.dev_key,
                 "type": "video",
             },
         )
 
         if not items:
-            if args:
-                args = f"*{args}*"
-            await self.bot.h.tagged_response(ctx, f"No video results found for: {args}")
+            await self.bot.h.tagged_response(
+                ctx, f"No video results found for: *{query}*"
+            )
             return
 
         video_id = items[0].get("id", {}).get("videoId")

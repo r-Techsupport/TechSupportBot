@@ -878,7 +878,7 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
         description="Gets duck friendships and kills for yourself or another user",
         usage="@user (defaults to yourself)",
     )
-    async def stats(self, ctx, *, member:discord.Member=None):
+    async def stats(self, ctx, *, member: discord.Member = None):
         if not member:
             member = ctx.message.author
 
@@ -901,9 +901,7 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
             )
             return
 
-        embed = self.bot.embed_api.Embed(
-            title="Duck Stats", description=member.mention
-        )
+        embed = self.bot.embed_api.Embed(title="Duck Stats", description=member.mention)
         embed.color = embed_colors.green()
         embed.add_field(name="Friends", value=duck_user.befriend_count)
         embed.add_field(name="Kills", value=duck_user.kill_count)

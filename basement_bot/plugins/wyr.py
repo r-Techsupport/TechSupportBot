@@ -514,7 +514,6 @@ class WouldYouRather(cogs.BasicPlugin):
     ]
 
     @decorate.with_typing
-    @commands.cooldown(1, 30, commands.BucketType.guild)
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="wyr",

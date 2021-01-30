@@ -1,14 +1,14 @@
 import asyncio
 import datetime
 import json
+import typing
 
 import cogs
 import decorate
+import discord
 import logger
 import sqlalchemy
 from discord.ext import commands
-import discord
-import typing
 
 log = logger.get_logger("Factoids")
 
@@ -286,7 +286,7 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
         description="Creates a custom factoid with a specified name",
         usage="[factoid-name] [factoid-output] |optional-embed-json-upload|",
     )
-    async def remember(self, ctx, factoid_name:str, *, message:str):
+    async def remember(self, ctx, factoid_name: str, *, message: str):
         if ctx.message.mentions:
             await self.bot.h.tagged_response(
                 ctx, "Sorry, factoids don't work well with mentions"
@@ -316,7 +316,7 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
         description="Deletes a factoid permanently",
         usage="[factoid-name]",
     )
-    async def forget(self, ctx, factoid_name:str):
+    async def forget(self, ctx, factoid_name: str):
         if ctx.message.mentions:
             await self.bot.h.tagged_response(
                 ctx, "Sorry, factoids don't work well with mentions"
@@ -333,10 +333,11 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
         usage="[factoid-name] [sleep_duration (minutes)] [channel_id] [channel_id_2] ...",
     )
     async def loop(
-        self, ctx, 
-        factoid_name:str, 
-        sleep_duration:int, 
-        *channel_ids: commands.Greedy[int]
+        self,
+        ctx,
+        factoid_name: str,
+        sleep_duration: int,
+        *channel_ids: commands.Greedy[int],
     ):
         db = self.db_session()
 
@@ -368,7 +369,7 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
         description="De-loops a pre-existing factoid",
         usage="[factoid-name]",
     )
-    async def deloop(self, ctx, factoid_name):
+    async def deloop(self, ctx, factoid_name: str):
         db = self.db_session()
 
         entry = db.query(Factoid).filter(Factoid.text == factoid_name).first()
@@ -396,7 +397,7 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
         description="Retrieves and displays the loop config for a specific factoid",
         usage="[factoid-name]",
     )
-    async def job(self, ctx, factoid_name):
+    async def job(self, ctx, factoid_name: str):
         db = self.db_session()
 
         entry = db.query(Factoid).filter(Factoid.text == factoid_name).first()
@@ -459,7 +460,7 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
         description="Gets embed JSON for a factoid",
         usage="[factoid-name]",
     )
-    async def _json(self, ctx, factoid_name:str):
+    async def _json(self, ctx, factoid_name: str):
         factoid = self.get_factoid_from_query(factoid_name)
 
         if not factoid:

@@ -26,7 +26,7 @@ class Evaluator(cogs.BasicPlugin):
         description="Evaluates a Python expression (bot-owner only)",
         usage="[Python expression]",
     )
-    async def evalulate(self, ctx, *, expression):
+    async def evalulate(self, ctx, *, expression: str):
         global result
         global error_
         result = self.UNDEFINED_RESULT
