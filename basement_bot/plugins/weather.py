@@ -32,11 +32,12 @@ class Weather(cogs.HttpPlugin):
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="we",
-        brief="Gives the weather",
-        description="Returns the weather for a given area",
+        aliases=["weather", "wea"],
+        brief="Searches for the weather",
+        description="Returns the weather for a given area (this API sucks; I'm sorry in advance)",
         usage="[city/town] [state-code] [country-code]",
     )
-    async def we(
+    async def weather(
         self, ctx, city_name: str, state_code: str = None, country_code: str = None
     ):
         response = await self.http_call(

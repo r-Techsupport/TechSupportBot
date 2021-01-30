@@ -22,12 +22,10 @@ class UrbanDictionary(cogs.HttpPlugin):
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="urb",
-        brief="Returns the top Urban Dictionary result of search terms",
-        description=(
-            "Returns the top Urban Dictionary result of the given search terms."
-            " Returns nothing if one is not found."
-        ),
-        usage="[search-terms]",
+        aliases=["urbandictionary", "urban"],
+        brief="Searches Urban Dictionary",
+        description=("Returns the top Urban Dictionary search result"),
+        usage="[query]",
     )
     async def urban(self, ctx, *, query: str):
         response = await self.http_call("get", f"{self.BASE_URL}{query}")

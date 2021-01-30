@@ -134,7 +134,10 @@ class DiscordRelay(cogs.LoopPlugin, cogs.MatchPlugin, cogs.MqPlugin):
         log.debug(f"Serialized data: {as_json}")
         return as_json
 
-    @commands.group()
+    @commands.group(
+        brief="Executes an IRC (bridge) command",
+        description="Executes an IRC (bridge) command",
+    )
     async def irc(self, ctx):
         pass
 
@@ -155,7 +158,11 @@ class DiscordRelay(cogs.LoopPlugin, cogs.MatchPlugin, cogs.MqPlugin):
 
     @commands.check(can_run_irc_command)
     @decorate.with_typing
-    @irc.command(name="kick")
+    @irc.command(
+        name="kick",
+        brief="Sends an IRC kick",
+        description="Sends a kick command to the bridged IRC bot",
+    )
     async def irc_kick(self, ctx, target: str):
         ctx.irc_command = "kick"
         ctx.content = target
@@ -172,6 +179,8 @@ class DiscordRelay(cogs.LoopPlugin, cogs.MatchPlugin, cogs.MqPlugin):
     @decorate.with_typing
     @irc.command(
         name="ban",
+        brief="Sends an IRC ban",
+        description="Sends a ban command to the bridged IRC bot",
     )
     async def irc_ban(self, ctx, target: str):
         ctx.irc_command = "ban"

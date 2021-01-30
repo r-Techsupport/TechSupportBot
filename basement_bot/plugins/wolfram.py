@@ -16,8 +16,8 @@ class Wolfram(cogs.HttpPlugin):
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="wa",
-        aliases=["math"],
-        brief="Search Wolfram Alpha",
+        aliases=["math", "wolframalpha"],
+        brief="Searches Wolfram Alpha",
         description="Searches the simple answer Wolfram Alpha API",
         usage="[query]",
     )

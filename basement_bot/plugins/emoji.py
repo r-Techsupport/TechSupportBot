@@ -63,7 +63,10 @@ class Emojis(cogs.BasicPlugin):
             return None
         return emoji_list
 
-    @commands.group()
+    @commands.group(
+        brief="Executes an emoji command",
+        description="Executes a emoji command",
+    )
     async def emoji(self, ctx):
         pass
 
@@ -71,8 +74,8 @@ class Emojis(cogs.BasicPlugin):
     @commands.has_permissions(send_messages=True)
     @emoji.command(
         aliases=["msg"],
-        brief="H E L L O!",
-        description="Creates a regional_indiciator_X emoji message.",
+        brief="Generates an emoji message",
+        description="Creates a regional_indiciator_X emoji message",
         usage="[message]",
     )
     async def message(self, ctx, *, message: str):
@@ -92,8 +95,8 @@ class Emojis(cogs.BasicPlugin):
 
     @commands.has_permissions(add_reactions=True)
     @emoji.command(
-        brief="H E L O! but as a reaction...",
-        description="Creates a regional_indiciator_X emoji reaction for a user's most recent message.",
+        brief="Reacts with emojis",
+        description="Creates a regional_indiciator_X emoji reaction for a user's most recent message",
         usage="[message] @user",
     )
     async def reaction(self, ctx, message: str, react_user: discord.Member):

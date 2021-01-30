@@ -29,13 +29,10 @@ class Mocker(cogs.BasicPlugin):
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
-        name="sb",
-        brief="MOcKS last MeSSAgE Of MeNtIONeD uSEr",
-        description=(
-            "Returns last message of mentioned user following command changing"
-            " random characters to capital or lowercase."
-        ),
-        usage="[mentioned-user]",
+        aliases=["sb"],
+        brief="Mocks a user",
+        description=("Mocks the most recent message by a user"),
+        usage="@user",
     )
     async def mock(self, ctx):
         user_to_mock = ctx.message.mentions[0] if ctx.message.mentions else None

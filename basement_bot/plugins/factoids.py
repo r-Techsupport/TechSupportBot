@@ -275,7 +275,10 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
     async def wait(self):
         await asyncio.sleep(60)
 
-    @commands.group()
+    @commands.group(
+        brief="Executes a factoid command",
+        description="Executes a factoid command",
+    )
     async def factoid(self, ctx):
         pass
 
@@ -313,7 +316,7 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
     @commands.has_permissions(send_messages=True)
     @factoid.command(
         brief="Deletes a factoid",
-        description="Deletes a factoid permanently",
+        description="Deletes a factoid permanently, including extra config",
         usage="[factoid-name]",
     )
     async def forget(self, ctx, factoid_name: str):

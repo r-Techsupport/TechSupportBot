@@ -21,7 +21,7 @@ class Corrector(cogs.BasicPlugin):
         description="Replaces the most recent text with your text",
         usage="[to_replace] [replacement]",
     )
-    async def correct(self, ctx, to_replace, replacement):
+    async def correct(self, ctx, to_replace: str, replacement: str):
         new_content = None
         async for message in ctx.channel.history(limit=self.SEARCH_LIMIT):
             if message.author.bot or message.content.startswith(

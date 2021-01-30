@@ -29,8 +29,8 @@ class Spotify(cogs.HttpPlugin):
     @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Searches Spotify",
-        description="Searches Spotify for tracks",
-        usage="[search-terms]",
+        description="Returns Spotify track results",
+        usage="[query]",
     )
     async def spotify(self, ctx, *, query: str):
         oauth_token = await self.get_oauth_token()

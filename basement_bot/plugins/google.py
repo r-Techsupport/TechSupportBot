@@ -17,7 +17,11 @@ class Googler(cogs.HttpPlugin):
         response = await self.http_call("get", url, params=data)
         return response.get("items")
 
-    @commands.group(aliases=["g"])
+    @commands.group(
+        aliases=["g"],
+        brief="Executes a Google command",
+        description="Executes a Google command",
+    )
     async def google(self, ctx):
         pass
 
@@ -25,9 +29,9 @@ class Googler(cogs.HttpPlugin):
     @commands.has_permissions(send_messages=True)
     @google.command(
         aliases=["s"],
-        brief="Googles that for you",
-        description="Returns the top Google search result of the given search terms",
-        usage="[search-terms]",
+        brief="Searches Google",
+        description="Returns the top Google search result",
+        usage="[query]",
     )
     async def search(self, ctx, *, query: str):
         data = {
@@ -77,9 +81,9 @@ class Googler(cogs.HttpPlugin):
     @commands.has_permissions(send_messages=True)
     @google.command(
         aliases=["i", "is"],
-        brief="Googles that for you",
-        description="Returns the top Google search result of the given search terms",
-        usage="[search-terms]",
+        brief="Searches Google Images",
+        description="Returns the top Google Images search result",
+        usage="[query]",
     )
     async def images(self, ctx, query: str):
         data = {
@@ -113,12 +117,9 @@ class Googler(cogs.HttpPlugin):
     @commands.has_permissions(send_messages=True)
     @commands.command(
         aliases=["yt"],
-        brief="Returns top YouTube video result of search terms",
-        description=(
-            "Returns the top YouTube video result of the given search terms."
-            " Returns nothing if one is not found."
-        ),
-        usage="[search-terms]",
+        brief="Searches YouTube",
+        description=("Returns the top YouTube search result"),
+        usage="[query]",
     )
     async def youtube(self, ctx, *, query: str):
         items = await self.get_items(

@@ -12,14 +12,17 @@ class Moderator(cogs.BasicPlugin):
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
-    @commands.group()
+    @commands.group(
+        brief="Executes a purge command",
+        description="Executes a purge command",
+    )
     async def purge(self, ctx):
         pass
 
     @commands.has_permissions(manage_messages=True)
     @purge.command(
         name="x",
-        brief="Purges a channel's messages",
+        brief="Purges messages",
         description="Purges the current channel's messages based on author criteria",
         usage="@user @another-user ... [number-to-purge (50 by default)]",
     )

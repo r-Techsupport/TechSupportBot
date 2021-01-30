@@ -867,7 +867,10 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
 
         db.close()
 
-    @commands.group()
+    @commands.group(
+        brief="Executes a duck command",
+        description="Executes a duck command",
+    )
     async def duck(self, ctx):
         pass
 

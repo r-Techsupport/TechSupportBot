@@ -517,7 +517,7 @@ class WouldYouRather(cogs.BasicPlugin):
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="wyr",
-        brief="Gets a Would You Rather... question",
+        brief="Gets Would You Rather questions",
         description="Creates a random Would You Rather question",
     )
     async def wyr(self, ctx):

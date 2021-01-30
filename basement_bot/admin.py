@@ -14,17 +14,17 @@ class AdminControl(cogs.BasicPlugin):
     HAS_CONFIG = False
     PLUGIN_NAME = __name__
 
-    @commands.group()
+    @commands.group(
+        brief="Executes a plugin bot command",
+        description="Executes a plugin bot command",
+    )
     async def plugin(self, ctx):
-        """Grouper for plugin commands.
-
-        parameters:
-            ctx (discord.Context): the context object for the message
-        """
+        # pylint: disable=missing-function-docstring
+        pass
 
     @decorate.with_typing
-    @plugin.command(name="status", hidden=True)
-    async def plugin_status(self, ctx, *, plugin_name:str=None):
+    @plugin.command(name="status")
+    async def plugin_status(self, ctx, *, plugin_name: str = None):
         """Gets the status of the bot plugins.
 
         This is a command and should be accessed via Discord.
@@ -67,7 +67,7 @@ class AdminControl(cogs.BasicPlugin):
         self.bot.h.task_paginate(ctx, embeds)
 
     @decorate.with_typing
-    @plugin.command(name="load", hidden=True)
+    @plugin.command(name="load")
     async def load_plugin(self, ctx, *, plugin_name: str):
         """Loads a plugin by filename.
 
@@ -81,7 +81,7 @@ class AdminControl(cogs.BasicPlugin):
         await self.bot.h.tagged_response(ctx, response.message)
 
     @decorate.with_typing
-    @plugin.command(name="unload", hidden=True)
+    @plugin.command(name="unload")
     async def unload_plugin(self, ctx, *, plugin_name: str):
         """Unloads a plugin by filename.
 
@@ -94,16 +94,17 @@ class AdminControl(cogs.BasicPlugin):
         response = ctx.bot.plugin_api.unload_plugin(plugin_name)
         await self.bot.h.tagged_response(ctx, response.message)
 
-    @commands.group(name="command")
+    @commands.group(
+        name="command",
+        brief="Executes a commands bot command",
+        description="Executes a commands bot command",
+    )
     async def command_group(self, ctx):
-        """Grouper for command commands.
-
-        parameters:
-            ctx (discord.Context): the context object for the message
-        """
+        # pylint: disable=missing-function-docstring
+        pass
 
     @decorate.with_typing
-    @command_group.command(name="enable", hidden=True)
+    @command_group.command(name="enable")
     async def enable_command(self, ctx, *, command_name: str):
         """Enables a command by name.
 
@@ -130,7 +131,7 @@ class AdminControl(cogs.BasicPlugin):
         )
 
     @decorate.with_typing
-    @command_group.command(name="disable", hidden=True)
+    @command_group.command(name="disable")
     async def disable_command(self, ctx, *, command_name: str):
         """Disables a command by name.
 
@@ -156,16 +157,17 @@ class AdminControl(cogs.BasicPlugin):
             ctx, f"Successfully disabled command: `{command_name}`"
         )
 
-    @commands.group(name="set")
+    @commands.group(
+        name="set",
+        brief="Executes a `set X` bot command",
+        description="Executes a `set X` bot command",
+    )
     async def set_group(self, ctx):
-        """Grouper for set commands.
-
-        parameters:
-            ctx (discord.Context): the context object for the message
-        """
+        # pylint: disable=missing-function-docstring
+        pass
 
     @decorate.with_typing
-    @set_group.command(name="game", hidden=True)
+    @set_group.command(name="game")
     async def set_game(self, ctx, *, game_name: str):
         """Sets the bot's game (activity) by name.
 
@@ -181,7 +183,7 @@ class AdminControl(cogs.BasicPlugin):
         )
 
     @decorate.with_typing
-    @set_group.command(name="nick", hidden=True)
+    @set_group.command(name="nick")
     async def set_nick(self, ctx, *, nick: str):
         """Sets the bot's nick by name.
 
@@ -194,16 +196,15 @@ class AdminControl(cogs.BasicPlugin):
         await ctx.message.guild.me.edit(nick=nick)
         await self.bot.h.tagged_response(ctx, f"Successfully set nick to: *{nick}*")
 
-    @commands.group()
+    @commands.group(
+        brief="Executes an echo bot command", description="Executes an echo bot command"
+    )
     async def echo(self, ctx):
-        """Grouper for echo commands.
-
-        parameters:
-            ctx (discord.Context): the context object for the message
-        """
+        # pylint: disable=missing-function-docstring
+        pass
 
     @decorate.with_typing
-    @echo.command(name="channel", hidden=True)
+    @echo.command(name="channel")
     async def echo_channel(self, ctx, channel_id: int, *, message: str):
         """Sends a message to a specified channel.
 
@@ -222,7 +223,7 @@ class AdminControl(cogs.BasicPlugin):
         await channel.send(content=message)
 
     @decorate.with_typing
-    @echo.command(name="user", hidden=True)
+    @echo.command(name="user")
     async def echo_user(self, ctx, user_id: int, *, message: str):
         """Sends a message to a specified user.
 

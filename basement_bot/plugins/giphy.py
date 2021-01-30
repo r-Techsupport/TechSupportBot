@@ -26,7 +26,7 @@ class Giphy(cogs.HttpPlugin):
         name="giphy",
         brief="Grabs a random Giphy image",
         description="Grabs a random Giphy image based on your search",
-        usage="[search-terms]",
+        usage="[query]",
     )
     async def giphy(self, ctx, *, query: str):
         response = await self.http_call(

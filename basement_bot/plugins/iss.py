@@ -18,8 +18,8 @@ class ISSLocator(cogs.HttpPlugin):
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="iss",
-        brief="Finds the International Space Station",
-        description=("Returns the location of the International Space Station (ISS)."),
+        brief="Finds the ISS",
+        description="Returns the location of the International Space Station (ISS)",
     )
     async def iss(self, ctx):
         # get ISS coordinates

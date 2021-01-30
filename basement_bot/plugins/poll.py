@@ -38,13 +38,19 @@ class Poller(cogs.BasicPlugin):
             for emoji_text in self.OPTION_EMOJIS
         ]
 
-    @commands.group()
+    @commands.group(
+        brief="Executes a poll command",
+        description="Executes a poll command",
+    )
     async def poll(self, ctx):
         pass
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
-    @poll.command(brief="Shows example poll JSON")
+    @poll.command(
+        brief="Shows example poll JSON",
+        description="Shows what JSON to upload to generate a poll",
+    )
     async def example(self, ctx):
         await self.bot.h.tagged_response(
             ctx, f"Upload a JSON like this: ```{self.EXAMPLE_JSON}```"
@@ -53,7 +59,8 @@ class Poller(cogs.BasicPlugin):
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
     @poll.command(
-        brief="Poll generator",
+        aliases=["create"],
+        brief="Generates a poll",
         description="Creates a poll for everyone to vote in (only admins can make polls)",
     )
     async def generate(self, ctx):
