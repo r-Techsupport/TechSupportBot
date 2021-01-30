@@ -16,10 +16,10 @@ class Embedder(cogs.BasicPlugin):
     @commands.has_permissions(manage_messages=True)
     @commands.command(
         brief="Generates a list of embeds",
-        description="Generates a list of embeds defined by an uploaded JSON file",
-        usage="(see: https://discord.com/developers/docs/resources/channel#embed-object)",
+        description="Generates a list of embeds defined by an uploaded JSON file (see: https://discord.com/developers/docs/resources/channel#embed-object)",
+        usage="|embed-list-json-upload|",
     )
-    async def embed(self, ctx, *args):
+    async def embed(self, ctx, *, keep_option: str = None):
         if not ctx.message.attachments:
             await self.bot.h.tagged_response(
                 ctx, "Please provide a JSON file for your embeds"
@@ -48,7 +48,7 @@ class Embedder(cogs.BasicPlugin):
                 delete = True
 
         if delete:
-            if args and args[0] == "keep":
+            if keep_option == "keep":
                 await ctx.author.send("I couldn't generate all of your embeds")
                 return
 
@@ -56,7 +56,7 @@ class Embedder(cogs.BasicPlugin):
                 await message.delete()
 
             await ctx.author.send(
-                "I couldn't generate all of your embeds, so I gave you a blank slate. Use `keep` if you want to keep them next time",
+                "I couldn't generate all of your embeds, so I gave you a blank slate",
             )
 
     async def process_request(self, ctx, request_body):

@@ -42,9 +42,8 @@ class Lenny(cogs.BasicPlugin):
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="len",
-        brief="( ͡° ͜ʖ ͡°)",
-        description="Returns a randomly chosen Lenny face.",
-        usage="",
+        brief="Returns a Lenny face",
+        description="Returns a randomly chosen Lenny face ( ͡° ͜ʖ ͡°)",
     )
     async def lenny(self, ctx):
         await ctx.send(random.choice(self.LENNYS_SELECTION))

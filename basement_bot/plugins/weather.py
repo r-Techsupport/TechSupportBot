@@ -21,7 +21,8 @@ class Weather(cogs.HttpPlugin):
             self.temp_unit = "K"
 
     def get_url(self, args):
-        searches = ",".join(map(str, args))
+        filtered_args = filter(bool, args)
+        searches = ",".join(map(str, filtered_args))
         url = "http://api.openweathermap.org/data/2.5/weather"
         return (
             f"{url}?q={searches}&units={self.config.units}&appid={self.config.dev_key}"
@@ -31,18 +32,17 @@ class Weather(cogs.HttpPlugin):
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="we",
-        brief="Gives the weather",
-        description="Returns the weather for a given area",
+        aliases=["weather", "wea"],
+        brief="Searches for the weather",
+        description="Returns the weather for a given area (this API sucks; I'm sorry in advance)",
         usage="[city/town] [state-code] [country-code]",
     )
-    async def we(self, ctx, *args):
-        if not args:
-            await self.bot.h.tagged_response(ctx, "I can't search for nothing!")
-            return
-        if len(args) > 3:
-            args = args[:3]
-
-        response = await self.http_call("get", self.get_url(args))
+    async def weather(
+        self, ctx, city_name: str, state_code: str = None, country_code: str = None
+    ):
+        response = await self.http_call(
+            "get", self.get_url([city_name, state_code, country_code])
+        )
 
         embed = self.generate_embed(munch.munchify(response))
         if not embed:

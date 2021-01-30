@@ -16,24 +16,16 @@ class Wolfram(cogs.HttpPlugin):
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="wa",
-        aliases=["math"],
-        brief="Search Wolfram Alpha",
+        aliases=["math", "wolframalpha"],
+        brief="Searches Wolfram Alpha",
         description="Searches the simple answer Wolfram Alpha API",
         usage="[query]",
     )
-    async def simple_search(self, ctx, *args):
-        if not args:
-            await self.bot.h.tagged_response(ctx, "Please provide a query!")
-            return
-
-        query = "+".join(args)
+    async def simple_search(self, ctx, *, query: str):
+        query = query.replace(" ", "+")
 
         url = self.API_URL.format(self.config.api_key, query)
 
-        response = await self.http_call("get", url)
-
-        if not response.text:
-            await self.bot.h.tagged_response(ctx, "No results found")
-            return
+        response = await self.http_call("get", url, get_raw_response=True)
 
         await self.bot.h.tagged_response(ctx, response.text)

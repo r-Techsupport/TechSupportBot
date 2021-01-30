@@ -2,6 +2,7 @@ import random
 
 import cogs
 import decorate
+import discord
 from discord.ext import commands
 
 
@@ -33,44 +34,28 @@ class Hugger(cogs.BasicPlugin):
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="hug",
-        brief="Hugs mentioned user(s)",
-        description="Hugs the user(s) mentioned after the command.",
-        usage="[mentioned-users]",
+        brief="Hugs a user",
+        description="Hugs a mentioned user using an embed",
+        usage="@user",
     )
-    async def hug(self, ctx):
+    async def hug(self, ctx, user_to_hug: discord.Member):
         """Executes the hug command. Returns bot's response
 
         parameters:
             ctx (Context): the context
         """
-        if not ctx.message.mentions:
-            await self.bot.h.tagged_response(ctx, "You hugging the air?")
+        if user_to_hug.id == ctx.author.id:
+            await self.bot.h.tagged_response(ctx, "Let's be serious")
             return
 
-        if ctx.author in ctx.message.mentions:
-            await self.bot.h.tagged_response(
-                ctx, "You tried to hug yourself? You got issues"
-            )
-            return
+        embed = self.generate_embed(ctx, user_to_hug)
 
-        if len(ctx.message.mentions) > 1:
-            mentions = [m.mention for m in ctx.message.mentions]
-            await ctx.send(
-                random.choice(self.HUGS_SELECTION).format(
-                    user_giving_hug=ctx.author.mention,
-                    user_to_hug=", ".join(mentions[:-1]) + ", and " + mentions[-1],
-                )
-            )
-            return
+        await self.bot.h.tagged_response(ctx, embed=embed, target=user_to_hug)
 
-        embed = self.generate_embed(ctx)
-
-        await self.bot.h.tagged_response(ctx, embed=embed)
-
-    def generate_embed(self, ctx):
+    def generate_embed(self, ctx, user_to_hug):
         hug_text = random.choice(self.HUGS_SELECTION).format(
             user_giving_hug=ctx.author.mention,
-            user_to_hug=ctx.message.mentions[0].mention,
+            user_to_hug=user_to_hug,
         )
 
         embed = self.bot.embed_api.Embed()

@@ -9,7 +9,6 @@ import aiocron
 import http3
 import logger
 import pika
-import sqlalchemy
 from discord.ext import commands
 from sqlalchemy.ext import declarative
 

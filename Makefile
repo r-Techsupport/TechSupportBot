@@ -1,7 +1,7 @@
 image = effprime/basement-bot
 dev-image = $(image):dev
 prod-image = $(image):prod
-drun = docker run -v $(shell pwd):/var/BasementBot -t $(dev-image) python3 -m
+drun = docker run --rm -v $(shell pwd):/var/BasementBot -t $(dev-image) python3 -m
 main_dir = basement_bot
 
 make sync:

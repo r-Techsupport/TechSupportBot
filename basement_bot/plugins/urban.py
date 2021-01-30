@@ -22,27 +22,20 @@ class UrbanDictionary(cogs.HttpPlugin):
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="urb",
-        brief="Returns the top Urban Dictionary result of search terms",
-        description=(
-            "Returns the top Urban Dictionary result of the given search terms."
-            " Returns nothing if one is not found."
-        ),
-        usage="[search-terms]",
+        aliases=["urbandictionary", "urban"],
+        brief="Searches Urban Dictionary",
+        description=("Returns the top Urban Dictionary search result"),
+        usage="[query]",
     )
-    async def urban(self, ctx, *idk):
-        if not idk:
-            await self.bot.h.tagged_response(ctx, "I can't search for nothing!")
-            return
-
-        args = " ".join(idk).lower().strip()
-        response = await self.http_call("get", f"{self.BASE_URL}{args}")
+    async def urban(self, ctx, *, query: str):
+        response = await self.http_call("get", f"{self.BASE_URL}{query}")
         definitions = response.get("list")
 
         if not definitions:
-            await self.bot.h.tagged_response(ctx, f"No results found for: *{args}*")
+            await self.bot.h.tagged_response(ctx, f"No results found for: *{query}*")
             return
 
-        args_no_spaces = args.replace(" ", "%20")
+        query_no_spaces = query.replace(" ", "%20")
         embeds = []
         field_counter = 1
         for index, definition in enumerate(definitions):
@@ -54,8 +47,8 @@ class UrbanDictionary(cogs.HttpPlugin):
             )
             embed = (
                 self.bot.embed_api.Embed(
-                    title=f"Results for {args}",
-                    description=f"{self.SEE_MORE_URL}{args_no_spaces}",
+                    title=f"Results for {query}",
+                    description=f"{self.SEE_MORE_URL}{query_no_spaces}",
                 )
                 if field_counter == 1
                 else embed

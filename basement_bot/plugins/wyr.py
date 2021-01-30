@@ -514,11 +514,10 @@ class WouldYouRather(cogs.BasicPlugin):
     ]
 
     @decorate.with_typing
-    @commands.cooldown(1, 30, commands.BucketType.guild)
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="wyr",
-        brief="Gets a Would You Rather... question",
+        brief="Gets Would You Rather questions",
         description="Creates a random Would You Rather question",
     )
     async def wyr(self, ctx):

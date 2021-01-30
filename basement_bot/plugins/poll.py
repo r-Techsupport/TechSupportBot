@@ -38,21 +38,32 @@ class Poller(cogs.BasicPlugin):
             for emoji_text in self.OPTION_EMOJIS
         ]
 
+    @commands.group(
+        brief="Executes a poll command",
+        description="Executes a poll command",
+    )
+    async def poll(self, ctx):
+        pass
+
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
-    @commands.command(
-        name="poll",
-        brief="Poll generator",
-        description="Creates a poll for everyone to vote in (only admins can make polls)",
-        usage="help",
+    @poll.command(
+        brief="Shows example poll JSON",
+        description="Shows what JSON to upload to generate a poll",
     )
-    async def generate_poll(self, ctx, *args):
-        if len(args) != 0 and args[0] == "help":
-            await self.bot.h.tagged_response(
-                ctx, f"Upload a JSON like this: ```{self.EXAMPLE_JSON}```"
-            )
-            return
+    async def example(self, ctx):
+        await self.bot.h.tagged_response(
+            ctx, f"Upload a JSON like this: ```{self.EXAMPLE_JSON}```"
+        )
 
+    @decorate.with_typing
+    @commands.has_permissions(send_messages=True)
+    @poll.command(
+        aliases=["create"],
+        brief="Generates a poll",
+        description="Creates a poll for everyone to vote in (only admins can make polls)",
+    )
+    async def generate(self, ctx):
         if isinstance(ctx.channel, discord.DMChannel):
             await ctx.author.send("I cannot create a poll in a DM")
             return

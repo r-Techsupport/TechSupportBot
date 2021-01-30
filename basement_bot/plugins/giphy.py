@@ -25,26 +25,21 @@ class Giphy(cogs.HttpPlugin):
     @commands.command(
         name="giphy",
         brief="Grabs a random Giphy image",
-        description=("Grabs a random Giphy image based on your search."),
-        usage="[search-terms]",
+        description="Grabs a random Giphy image based on your search",
+        usage="[query]",
     )
-    async def giphy(self, ctx, *args):
-        if not args:
-            await self.bot.h.tagged_response(ctx, "I can't search for nothing!")
-            return
-
-        args_ = " ".join(args)
-        args_q = "+".join(args)
+    async def giphy(self, ctx, *, query: str):
         response = await self.http_call(
             "get",
-            self.GIPHY_URL.format(args_q, self.config.dev_key, self.SEARCH_LIMIT),
+            self.GIPHY_URL.format(
+                query.replace(" ", "+"), self.config.dev_key, self.SEARCH_LIMIT
+            ),
         )
-        data = response.get("data")
 
+        data = response.get("data")
         if not data:
-            args_f = f"*{args_}*"
             await self.bot.h.tagged_response(
-                ctx, f"No search results found for: {args_f}"
+                ctx, f"No search results found for: *{query}*"
             )
             return
 

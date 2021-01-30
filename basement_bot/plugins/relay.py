@@ -134,50 +134,61 @@ class DiscordRelay(cogs.LoopPlugin, cogs.MatchPlugin, cogs.MqPlugin):
         log.debug(f"Serialized data: {as_json}")
         return as_json
 
-    @decorate.with_typing
-    @commands.command(
-        name="irc",
-        brief="Commands for IRC relay",
-        descrption="Run a command (eg. kick/ban) on the relayed IRC",
-        usage="<command> <arg>",
+    @commands.group(
+        brief="Executes an IRC (bridge) command",
+        description="Executes an IRC (bridge) command",
     )
-    async def irc_command(self, ctx, *args):
+    async def irc(self, ctx):
+        pass
+
+    async def can_run_irc_command(self, ctx):
         if not self.config.commands_allowed:
             await self.bot.h.tagged_response(
                 ctx, "Relay cross-chat commands are disabled on my end"
             )
-            return
+            return False
 
         if ctx.channel.id not in self.channels:
-            log.warning(f"IRC command issued outside of allowed channels")
             await self.bot.h.tagged_response(
                 ctx, "That command can only be used from the IRC relay channels"
             )
-            return
+            return False
 
-        # permissions = ctx.author.permissions_in(ctx.channel)
+        return True
 
-        if len(args) == 0:
-            await self.bot.h.tagged_response(
-                ctx, "No IRC command provided. Try `.help irc`"
-            )
-            return
-
-        command = args[0]
-        if len(args) == 1:
-            await self.bot.h.tagged_response(
-                ctx, f"No target provided for IRC command {command}"
-            )
-            return
-
-        target = " ".join(args[1:])
-
-        ctx.irc_command = command
+    @commands.check(can_run_irc_command)
+    @decorate.with_typing
+    @irc.command(
+        name="kick",
+        brief="Sends an IRC kick",
+        description="Sends a kick command to the bridged IRC bot",
+    )
+    async def irc_kick(self, ctx, target: str):
+        ctx.irc_command = "kick"
         ctx.content = target
 
         await self.bot.h.tagged_response(
             ctx,
-            f"Sending **{command}** command with target `{target}` to IRC bot...",
+            f"Sending kick command with target `{target}` to IRC bot...",
+        )
+        self.bot.plugin_api.plugins.relay.memory.send_buffer.append(
+            self.serialize("command", ctx)
+        )
+
+    @commands.check(can_run_irc_command)
+    @decorate.with_typing
+    @irc.command(
+        name="ban",
+        brief="Sends an IRC ban",
+        description="Sends a ban command to the bridged IRC bot",
+    )
+    async def irc_ban(self, ctx, target: str):
+        ctx.irc_command = "ban"
+        ctx.content = target
+
+        await self.bot.h.tagged_response(
+            ctx,
+            f"Sending ban command with target `{target}` to IRC bot...",
         )
         self.bot.plugin_api.plugins.relay.memory.send_buffer.append(
             self.serialize("command", ctx)

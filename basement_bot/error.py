@@ -5,7 +5,6 @@ import traceback
 
 import api
 import discord
-import discord.ext.commands as error_enum
 import logger
 import munch
 from discord.ext import commands
@@ -75,44 +74,44 @@ class ErrorAPI(api.BotAPI):
     """
 
     CUSTOM_TEMPLATES = {
-        error_enum.MissingRequiredArgument: ErrorMessageTemplate(
+        commands.MissingRequiredArgument: ErrorMessageTemplate(
             "You did not provide the command argument: `%s`", {"key": "param"}
         ),
-        error_enum.TooManyArguments: ErrorMessageTemplate(
+        commands.TooManyArguments: ErrorMessageTemplate(
             "You provided too many arguments to that command"
         ),
-        error_enum.MissingPermissions: ErrorMessageTemplate(
+        commands.MissingPermissions: ErrorMessageTemplate(
             "I am unable to do that because you lack the permission(s): `%s`",
             {"key": "missing_perms"},
         ),
-        error_enum.BotMissingAnyRole: ErrorMessageTemplate(
+        commands.BotMissingAnyRole: ErrorMessageTemplate(
             "I am unable to do that because I lack the permission(s): `%s`",
             {"key": "missing_perms"},
         ),
-        error_enum.UnexpectedQuoteError: ErrorMessageTemplate(
+        commands.UnexpectedQuoteError: ErrorMessageTemplate(
             "I wasn't able to understand your command because of an unexpected quote (%s)",
             {"key": "quote"},
         ),
-        error_enum.InvalidEndOfQuotedStringError: ErrorMessageTemplate(
+        commands.InvalidEndOfQuotedStringError: ErrorMessageTemplate(
             "You provided an unreadable char after your quote: `%s`",
             {"key": "char"},
         ),
-        error_enum.ExpectedClosingQuoteError: ErrorMessageTemplate(
+        commands.ExpectedClosingQuoteError: ErrorMessageTemplate(
             "You did not close your quote with a `%s`",
             {"key": "close_quotes"},
         ),
-        error_enum.CheckFailure: ErrorMessageTemplate(
+        commands.CheckFailure: ErrorMessageTemplate(
             "You are not allowed to use that command"
         ),
-        error_enum.DisabledCommand: ErrorMessageTemplate("That command is disabled"),
-        error_enum.CommandOnCooldown: ErrorMessageTemplate(
+        commands.DisabledCommand: ErrorMessageTemplate("That command is disabled"),
+        commands.CommandOnCooldown: ErrorMessageTemplate(
             "That command is on cooldown for you. Try again in %s seconds",
             {"key": "retry_after", "wrapper": int},
         ),
-        error_enum.NotOwner: ErrorMessageTemplate("Only the bot owner can do that"),
+        commands.NotOwner: ErrorMessageTemplate("Only the bot owner can do that"),
     }
 
-    IGNORE_ERRORS = set([error_enum.CommandNotFound])
+    IGNORE_ERRORS = set([commands.CommandNotFound])
 
     async def handle_error(self, event_method, exception, context=None):
         """Handles all errors.

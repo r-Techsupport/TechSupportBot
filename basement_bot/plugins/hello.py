@@ -13,8 +13,8 @@ class Greeter(cogs.BasicPlugin):
 
     @commands.command(
         name="hello",
-        brief="Hello!",
-        description="Returns the greeting 'HEY' as a reaction to the original command message.",
+        brief="Says hello to the bot",
+        description="Says hello to the bot (because they are doing such a great job!)",
         usage="",
     )
     async def hello(self, ctx):
