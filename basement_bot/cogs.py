@@ -6,7 +6,7 @@ import logging
 import random
 
 import aiocron
-import http3
+import aiohttp
 import logger
 import pika
 from discord.ext import commands
@@ -57,7 +57,7 @@ class HttpPlugin(BasicPlugin):
     @staticmethod
     def get_client():
         """Gets a HTTP client object."""
-        return http3.AsyncClient()
+        return aiohttp.ClientSession()
 
     async def http_call(self, method, *args, **kwargs):
         """Makes an HTTP request.
@@ -80,7 +80,7 @@ class HttpPlugin(BasicPlugin):
             if get_raw_response:
                 return response_object
 
-            response = response_object.json() if response_object else {}
+            response = await response_object.json() if response_object else {}
             response["status_code"] = getattr(response_object, "status_code", None)
         except Exception as e:
             await self.bot.error_api.handle_error("http_cog", e)
