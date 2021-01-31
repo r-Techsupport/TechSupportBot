@@ -73,7 +73,7 @@ plugins:
                 sensitive: true
         length_limit: 500
         alert_channel:
-        pastebin_api_key: null
+        linx_url: null
     logger:
         channel_map: {}
         embed_color: 0xF1C40F
