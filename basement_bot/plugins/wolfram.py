@@ -27,5 +27,6 @@ class Wolfram(cogs.HttpPlugin):
         url = self.API_URL.format(self.config.api_key, query)
 
         response = await self.http_call("get", url, get_raw_response=True)
+        answer = await response.text()
 
-        await self.bot.h.tagged_response(ctx, response.text)
+        await self.bot.h.tagged_response(ctx, answer)

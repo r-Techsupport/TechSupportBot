@@ -1,3 +1,5 @@
+import io
+
 import cogs
 import munch
 
@@ -10,7 +12,9 @@ class Protector(cogs.MatchPlugin, cogs.HttpPlugin):
 
     PLUGIN_NAME = __name__
     ALERT_ICON_URL = "https://cdn.icon-icons.com/icons2/2063/PNG/512/alert_danger_warning_notification_icon_124692.png"
-    PASTEBIN_URL = "https://pastebin.com/api/api_post.php"
+    CLIPBOARD_ICON_URL = (
+        "https://icon-icons.com/icons2/203/PNG/128/diagram-30_24487.png"
+    )
 
     async def preconfig(self):
         self.string_map = {
@@ -71,20 +75,19 @@ class Protector(cogs.MatchPlugin, cogs.HttpPlugin):
     async def handle_length_alert(self, ctx, content):
         await ctx.message.delete()
 
-        pastebin_link = await self.create_pastebin_link(
-            f"Paste by {ctx.message.author.display_name}", content
-        )
-        if pastebin_link:
+        linx_embed = await self.create_linx_embed(ctx, content)
+        if not linx_embed:
             await self.bot.h.tagged_response(
                 ctx,
-                f"I put your message on Pastebin because it was longer than {self.config.length_limit} characters: {pastebin_link}",
-            )
-        else:
-            await self.bot.h.tagged_response(
-                ctx,
-                f"I deleted your message because it was longer than {self.config.length_limit} characters; please read our #rules. Check your DM's for the original message",
+                f"I deleted your message because it was longer than {self.config.length_limit} characters; please read Rule 1. Check your DM's for the original message",
             )
             await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
+            await self.send_admin_alert(
+                ctx, "Warning: could not convert message to Linx paste"
+            )
+            return
+
+        await self.bot.h.tagged_response(ctx, embed=linx_embed)
 
     async def send_admin_alert(self, ctx, message):
         alert_channel = self.bot.get_channel(self.config.alert_channel)
@@ -105,18 +108,28 @@ class Protector(cogs.MatchPlugin, cogs.HttpPlugin):
 
         await alert_channel.send(embed=embed)
 
-    async def create_pastebin_link(self, title, content):
-        if not self.config.pastebin_api_key or not content:
+    async def create_linx_embed(self, ctx, content):
+        if not self.config.linx_url or not content:
             return None
 
-        data = {
-            "api_dev_key": self.config.pastebin_api_key,
-            "api_option": "paste",
-            "api_paste_name": title,
-            "api_paste_code": content,
+        headers = {
+            "Linx-Expiry": "1800",
+            "Linx-Randomize": "yes",
+            "Accept": "application/json",
         }
-
+        file = {"file": io.StringIO(content)}
         response = await self.http_call(
-            "post", self.PASTEBIN_URL, data=data, get_raw_response=True
+            "post", self.config.linx_url, headers=headers, data=file
         )
-        return response.text
+
+        url = response.get("url")
+        if not url:
+            return None
+
+        embed = self.bot.embed_api.Embed(
+            title=f"Paste by {ctx.author}", description=url
+        )
+
+        embed.set_thumbnail(url=self.CLIPBOARD_ICON_URL)
+
+        return embed
