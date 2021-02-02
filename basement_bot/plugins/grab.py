@@ -48,14 +48,8 @@ class Grabber(cogs.DatabasePlugin):
         description="Gets the last message of the mentioned user and saves it",
         usage="@user",
     )
-    async def grab_user(self, ctx):
+    async def grab_user(self, ctx, user_to_grab: discord.Member):
         if await self.invalid_channel(ctx):
-            return
-
-        user_to_grab = ctx.message.mentions[0] if ctx.message.mentions else None
-
-        if not user_to_grab:
-            await self.bot.h.tagged_response(ctx, "You must tag a user to grab!")
             return
 
         if user_to_grab.bot:
