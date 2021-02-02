@@ -121,12 +121,11 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
         else:
             db.delete(entry)
             db.commit()
+            await self.bot.h.tagged_response(
+                ctx, f"Successfully deleted factoid factoid: *{trigger}*"
+            )
 
         db.close()
-
-        await self.bot.h.tagged_response(
-            ctx, f"Successfully deleted factoid factoid: *{trigger}*"
-        )
 
     async def match(self, _, content):
         return content.startswith(self.config.prefix)
