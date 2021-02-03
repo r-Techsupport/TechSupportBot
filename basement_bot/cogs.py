@@ -140,15 +140,17 @@ class DatabasePlugin(BasicPlugin):
     """Plugin for accessing the database."""
 
     PLUGIN_TYPE = "DATABASE"
-    BaseTable = declarative.declarative_base()
     MODEL = None
 
     def __init__(self, bot):
         super().__init__(bot)
+
+        self.db_session = self.bot.database_api.get_session
+
         if self.MODEL:
             self.bot.database_api.create_table(self.MODEL)
+
         self.bot.loop.create_task(self.db_preconfig())
-        self.db_session = self.bot.database_api.get_session
 
     async def _db_preconfig(self):
         """Blocks the db_preconfig until the bot is ready."""
@@ -157,6 +159,11 @@ class DatabasePlugin(BasicPlugin):
 
     async def db_preconfig(self):
         """Preconfigures the environment before starting the plugin."""
+
+    @staticmethod
+    def get_base():
+        """Provides a unique base for each plugin."""
+        return declarative.declarative_base()
 
 
 class LoopPlugin(BasicPlugin):

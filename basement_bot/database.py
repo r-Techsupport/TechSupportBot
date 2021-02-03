@@ -18,7 +18,9 @@ class DatabaseAPI(api.BotAPI):
 
     def __init__(self, bot, echo=False):
         super().__init__(bot)
+
         self.db_string = self._get_db_string()
+
         log.debug(f"Connecting to DB: {self.db_string}")
         self.engine = sqlalchemy.create_engine(self.db_string, echo=echo)
 
@@ -30,7 +32,7 @@ class DatabaseAPI(api.BotAPI):
         """Wraps table creation.
 
         parameters:
-            table (self.Table): the table class
+            table (sqlalchemy.BaseTable): the table class
         """
         try:
             log.debug(f"Attempting to create table {table.__name__}")

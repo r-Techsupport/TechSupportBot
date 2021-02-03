@@ -13,7 +13,7 @@ from discord.ext import commands
 log = logger.get_logger("Factoids")
 
 
-class Factoid(cogs.DatabasePlugin.BaseTable):
+class Factoid(cogs.DatabasePlugin.get_base()):
     __tablename__ = "factoids"
 
     pk = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)

@@ -3,7 +3,7 @@ import sqlalchemy
 from discord.ext import commands
 
 
-class Rule(cogs.DatabasePlugin.BaseTable):
+class Rule(cogs.DatabasePlugin.get_base()):
     __tablename__ = "guildrules"
 
     pk = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
