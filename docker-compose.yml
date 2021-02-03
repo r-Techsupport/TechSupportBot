@@ -5,7 +5,5 @@ services:
     bot:
         image: effprime/basement-bot:prod
         container_name: basement_bot
-        stop_signal: SIGINT
-        restart: unless-stopped
         environment:
             - DEBUG=0
