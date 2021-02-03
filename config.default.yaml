@@ -93,3 +93,8 @@ plugins:
     spotify:
         client_id:
         client_secret:
+    gate:
+        channel:
+        roles: []
+        welcome_message: "Welcome to the server!"
+        delete_wait_seconds: 30
