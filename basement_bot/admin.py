@@ -1,6 +1,8 @@
 """Cog for controlling the bot.
 """
 
+import sys
+
 import cogs
 import decorate
 from discord.ext import commands
@@ -240,3 +242,15 @@ class AdminControl(cogs.BasicPlugin):
             return
 
         await user.send(content=message)
+
+    @commands.command(name="shutdown")
+    async def shutdown(self, ctx):
+        """Shuts down the bot.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.Context): the context object for the calling message
+        """
+        await self.bot.h.tagged_response(ctx, "Shutting down! Cya later!")
+        sys.exit()

@@ -116,7 +116,7 @@ class BasementBot(commands.Bot):
 
         try:
             self.loop.run_until_complete(super().start(*args, **kwargs))
-        except KeyboardInterrupt:
+        except (SystemExit, KeyboardInterrupt):
             self.loop.run_until_complete(self.logout())
         finally:
             self.loop.close()
