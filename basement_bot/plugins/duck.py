@@ -11,7 +11,7 @@ from discord import Color as embed_colors
 from discord.ext import commands
 
 
-class DuckUser(cogs.DatabasePlugin.BaseTable):
+class DuckUser(cogs.DatabasePlugin.get_base()):
     __tablename__ = "duckusers"
 
     author_id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)

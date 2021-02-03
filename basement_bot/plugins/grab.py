@@ -8,7 +8,7 @@ import sqlalchemy
 from discord.ext import commands
 
 
-class Grab(cogs.DatabasePlugin.BaseTable):
+class Grab(cogs.DatabasePlugin.get_base()):
     __tablename__ = "grabs"
 
     pk = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)

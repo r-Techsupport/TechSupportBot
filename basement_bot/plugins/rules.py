@@ -3,7 +3,7 @@ import sqlalchemy
 from discord.ext import commands
 
 
-class Rule(cogs.DatabasePlugin.BaseTable):
+class Rule(cogs.DatabasePlugin.get_base()):
     __tablename__ = "guildrules"
 
     pk = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
@@ -36,6 +36,7 @@ class Rules(cogs.DatabasePlugin):
         usage="[number] [description]",
     )
     async def add_rule(self, ctx, number: int, *, description: str):
+
         # first check if a rule with this number/guild-id exists
         db = self.db_session()
 
@@ -125,7 +126,7 @@ class Rules(cogs.DatabasePlugin):
         brief="Gets all rules",
         description="Gets all the rules for the current server",
     )
-    async def get_all_rules(self, ctx, pm: str = None):
+    async def get_all_rules(self, ctx):
         db = self.db_session()
 
         rules = (
@@ -159,4 +160,4 @@ class Rules(cogs.DatabasePlugin):
 
         embed.set_thumbnail(url=self.RULE_ICON_URL)
 
-        await self.bot.h.tagged_response(ctx, embed=embed)
+        await ctx.send(embed=embed)

@@ -74,7 +74,7 @@ class PluginAPI(api.BotAPI):
 
         except Exception as e:  # pylint: disable=broad-except
             if allow_failure:
-                message = f"Failed to load `{plugin_name}`: {str(e)}"
+                message = f"Failed to load `{plugin_name}`: `{str(e)}`"
                 log.warning(message)
                 return self._make_response(False, message)
             raise RuntimeError from e

@@ -43,7 +43,12 @@ class BasicPlugin(commands.Cog):
                 f"No valid configuration found for plugin {self.PLUGIN_NAME}"
             )
 
-        self.bot.loop.create_task(self.preconfig())
+        self.bot.loop.create_task(self._preconfig())
+
+    async def _preconfig(self):
+        """Blocks the preconfig until the bot is ready."""
+        await self.bot.wait_until_ready()
+        await self.preconfig()
 
     async def preconfig(self):
         """Preconfigures the environment before starting the plugin."""
@@ -135,18 +140,30 @@ class DatabasePlugin(BasicPlugin):
     """Plugin for accessing the database."""
 
     PLUGIN_TYPE = "DATABASE"
-    BaseTable = declarative.declarative_base()
     MODEL = None
 
     def __init__(self, bot):
         super().__init__(bot)
+
+        self.db_session = self.bot.database_api.get_session
+
         if self.MODEL:
             self.bot.database_api.create_table(self.MODEL)
+
         self.bot.loop.create_task(self.db_preconfig())
-        self.db_session = self.bot.database_api.get_session
+
+    async def _db_preconfig(self):
+        """Blocks the db_preconfig until the bot is ready."""
+        await self.bot.wait_until_ready()
+        await self.db_preconfig()
 
     async def db_preconfig(self):
         """Preconfigures the environment before starting the plugin."""
+
+    @staticmethod
+    def get_base():
+        """Provides a unique base for each plugin."""
+        return declarative.declarative_base()
 
 
 class LoopPlugin(BasicPlugin):
@@ -178,8 +195,7 @@ class LoopPlugin(BasicPlugin):
 
     async def _loop_execute(self):
         """Loops through the execution method."""
-        await self.bot.wait_until_ready()
-        await self.loop_preconfig()
+        await self._loop_preconfig()
 
         if not self.config.get("on_start"):
             await self.wait()
@@ -251,6 +267,11 @@ class LoopPlugin(BasicPlugin):
             )
 
         self.wait = random_wait
+
+    async def _loop_preconfig(self):
+        """Blocks the loop_preconfig until the bot is ready."""
+        await self.bot.wait_until_ready()
+        await self.loop_preconfig()
 
     async def loop_preconfig(self):
         """Preconfigures the environment before starting the loop."""
