@@ -1,8 +1,8 @@
 import random
 
 import cogs
-from discord.ext import commands
 import discord
+from discord.ext import commands
 
 
 def setup(bot):
@@ -28,7 +28,7 @@ class Burn(cogs.BasicPlugin):
         description="Declares the user's last message as a BURN!",
         usage="@user",
     )
-    async def burn(self, ctx, user_to_match:discord.Member):
+    async def burn(self, ctx, user_to_match: discord.Member):
         matched_message = None
         async for message in ctx.channel.history(limit=self.SEARCH_LIMIT):
             if message.author == user_to_match and not message.content.startswith(
@@ -41,4 +41,6 @@ class Burn(cogs.BasicPlugin):
             await matched_message.add_reaction(emoji)
 
         message = random.choice(self.PHRASES)
-        await self.bot.h.tagged_response(ctx, f"🔥🔥🔥 {message} 🔥🔥🔥", target=user_to_match)
+        await self.bot.h.tagged_response(
+            ctx, f"🔥🔥🔥 {message} 🔥🔥🔥", target=user_to_match
+        )

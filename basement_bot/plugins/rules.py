@@ -37,7 +37,6 @@ class Rules(cogs.DatabasePlugin):
     )
     async def add_rule(self, ctx, number: int, *, description: str):
 
-
         # first check if a rule with this number/guild-id exists
         db = self.db_session()
 
