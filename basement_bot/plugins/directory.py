@@ -38,6 +38,7 @@ class ChannelDirectory(cogs.DatabasePlugin):
         "twelve",
     ]
     MODEL = DirectoryExistence
+    DIR_ICON_URL = "https://cdn.icon-icons.com/icons2/1585/PNG/512/3709735-application-contact-directory-phonebook-storage_108083.png"
 
     async def preconfig(self):
         self.message_ids = set()
@@ -114,6 +115,8 @@ class ChannelDirectory(cogs.DatabasePlugin):
             title="Channel Directory",
             description="Once selecting a channel, you will be given the role to access it. You can come back here to remove the role or add more roles at any time",
         )
+
+        embed.set_thumbnail(url=self.DIR_ICON_URL)
 
         message = await directory_channel.send("Loading channel directory...")
 
