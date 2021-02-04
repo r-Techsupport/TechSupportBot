@@ -62,6 +62,7 @@ class Poller(cogs.BasicPlugin):
         aliases=["create"],
         brief="Generates a poll",
         description="Creates a poll for everyone to vote in (only admins can make polls)",
+        usage="|json-upload|",
     )
     async def generate(self, ctx):
         if isinstance(ctx.channel, discord.DMChannel):

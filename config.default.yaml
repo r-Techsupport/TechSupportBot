@@ -56,7 +56,6 @@ plugins:
         channel_map: {}
         mq_send_queue:  DiscordToIRC
         mq_recv_queue: IRCToDiscord
-        discord_ban_days: 14
         stale_seconds: 600
         publish_seconds: 2
         consume_seconds: 2
@@ -98,3 +97,5 @@ plugins:
         roles: []
         welcome_message: "Welcome to the server!"
         delete_wait_seconds: 30
+    moderator:
+        ban_delete_days: 7

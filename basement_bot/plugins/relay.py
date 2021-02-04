@@ -387,7 +387,7 @@ class IRCReceiver(cogs.LoopPlugin, cogs.MqPlugin):
         if data.event.command == "kick":
             await target_guild.kick(target_user)
         elif data.event.command == "ban":
-            await target_guild.ban(target_user, self.config.discord_ban_days)
+            await target_guild.ban(target_user)
         elif data.event.command == "unban":
             await target_guild.unban(target_user)
 
