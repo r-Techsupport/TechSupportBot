@@ -22,6 +22,7 @@ class ChannelDirectory(cogs.DatabasePlugin):
 
     PLUGIN_NAME = __name__
 
+    # I refuse to install num2word
     OPTION_EMOJIS = [
         "one",
         "two",
@@ -39,9 +40,8 @@ class ChannelDirectory(cogs.DatabasePlugin):
     MODEL = DirectoryExistence
 
     async def preconfig(self):
-        debug_channel = self.bot.get_channel(804822748106457099)
-
         self.message_ids = set()
+        self.option_map = {}
 
         db = self.db_session()
         self.option_emojis = [
@@ -111,7 +111,8 @@ class ChannelDirectory(cogs.DatabasePlugin):
 
     async def send_embed(self, channel_map, guild, directory_channel):
         embed = self.bot.embed_api.Embed(
-            title="Channel Directory", description="Select from the following channels"
+            title="Channel Directory",
+            description="Once selecting a channel, you will be given the role to access it. You can come back here to remove the role or add more roles at any time",
         )
 
         message = await directory_channel.send("Loading channel directory...")
@@ -125,6 +126,8 @@ class ChannelDirectory(cogs.DatabasePlugin):
             role = discord.utils.get(guild.roles, name=role_name)
             if not role:
                 continue
+
+            self.option_map[self.option_emojis[index]] = role
 
             embed.add_field(
                 name=f"{self.option_emojis[index]} #{channel.name}",
@@ -140,10 +143,32 @@ class ChannelDirectory(cogs.DatabasePlugin):
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
-        if not reaction.message.id in self.message_ids:
+        debug_channel = self.bot.get_channel(804804731889254444)
+
+        if user.bot:
             return
+
+        if not reaction.message.id in self.message_ids:
+            await debug_channel.send("Skipping message ID")
+            return
+
+        role = self.option_map.get(reaction.emoji)
+        if not role:
+            await debug_channel.send(f"Role not found")
+            return
+
+        await user.add_roles(role)
 
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, user):
+        if user.bot:
+            return
+
         if not reaction.message.id in self.message_ids:
             return
+
+        role = self.option_map.get(reaction.emoji)
+        if not role:
+            return
+
+        await user.remove_roles(role)

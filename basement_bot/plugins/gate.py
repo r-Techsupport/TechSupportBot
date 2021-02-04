@@ -33,7 +33,7 @@ class ServerGate(cogs.MatchPlugin):
 
         await ctx.message.delete()
 
-        if content.lower() == "agree":
+        if content.lower() == guild_config.get("passing_text", "agree"):
             roles = await self.get_roles(ctx)
             if not roles:
                 return
