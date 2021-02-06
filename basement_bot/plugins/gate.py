@@ -45,7 +45,7 @@ class ServerGate(cogs.MatchPlugin):
             )
             delete_wait = guild_config.get("delete_wait_seconds", 30)
 
-            bot_message = await self.bot.h.tagged_response(
+            bot_message = await self.tagged_response(
                 ctx,
                 f"{welcome_message} (this message will delete in {delete_wait} seconds)",
             )

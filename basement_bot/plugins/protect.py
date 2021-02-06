@@ -8,7 +8,7 @@ def setup(bot):
     bot.add_cog(Protector(bot))
 
 
-class Protector(cogs.MatchPlugin, cogs.HttpPlugin):
+class Protector(cogs.MatchPlugin):
 
     PLUGIN_NAME = __name__
     ALERT_ICON_URL = "https://cdn.icon-icons.com/icons2/2063/PNG/512/alert_danger_warning_notification_icon_124692.png"
@@ -66,7 +66,7 @@ class Protector(cogs.MatchPlugin, cogs.HttpPlugin):
         else:
             alert_message = ctx.protect_actions.string_alert.message
 
-        await self.bot.h.tagged_response(ctx, alert_message)
+        await self.tagged_response(ctx, alert_message)
         await self.send_admin_alert(
             ctx,
             f"Message contained trigger: `{ctx.protect_actions.string_alert.trigger}`",
@@ -77,7 +77,7 @@ class Protector(cogs.MatchPlugin, cogs.HttpPlugin):
 
         linx_embed = await self.create_linx_embed(ctx, content)
         if not linx_embed:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx,
                 f"I deleted your message because it was longer than {self.config.length_limit} characters; please read Rule 1. Check your DM's for the original message",
             )
@@ -87,7 +87,7 @@ class Protector(cogs.MatchPlugin, cogs.HttpPlugin):
             )
             return
 
-        await self.bot.h.tagged_response(ctx, embed=linx_embed)
+        await self.tagged_response(ctx, embed=linx_embed)
 
     async def send_admin_alert(self, ctx, message):
         alert_channel = self.bot.get_channel(self.config.alert_channel)

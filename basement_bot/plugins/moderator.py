@@ -14,7 +14,6 @@ class Moderator(cogs.BasicPlugin):
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
-    @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
     @commands.group(
@@ -50,7 +49,7 @@ class Moderator(cogs.BasicPlugin):
             return False
 
         await ctx.channel.purge(limit=amount, check=check)
-        await self.bot.h.tagged_response(
+        await self.tagged_response(
             ctx,
             f"I finished deleting {amount} messages",
         )
@@ -68,12 +67,11 @@ class Moderator(cogs.BasicPlugin):
         )
 
         await ctx.channel.purge(after=timestamp)
-        await self.bot.h.tagged_response(
+        await self.tagged_response(
             ctx,
             f"I finished deleting messages up to `{timestamp}` UTC",
         )
 
-    @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
     @commands.command(
@@ -89,9 +87,8 @@ class Moderator(cogs.BasicPlugin):
 
         embed = await self.generate_user_modified_embed(user, "ban", reason)
 
-        await self.bot.h.tagged_response(ctx, embed=embed)
+        await self.tagged_response(ctx, embed=embed)
 
-    @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
     @commands.command(
@@ -105,9 +102,8 @@ class Moderator(cogs.BasicPlugin):
 
         embed = await self.generate_user_modified_embed(user, "unban", reason)
 
-        await self.bot.h.tagged_response(ctx, embed=embed)
+        await self.tagged_response(ctx, embed=embed)
 
-    @commands.guild_only()
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
     @commands.command(
@@ -121,7 +117,7 @@ class Moderator(cogs.BasicPlugin):
 
         embed = await self.generate_user_modified_embed(user, "kick", reason)
 
-        await self.bot.h.tagged_response(ctx, embed=embed)
+        await self.tagged_response(ctx, embed=embed)
 
     async def generate_user_modified_embed(self, user, action, reason):
         embed = self.bot.embed_api.Embed(

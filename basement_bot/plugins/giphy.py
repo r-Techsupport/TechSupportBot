@@ -9,7 +9,7 @@ def setup(bot):
     bot.add_cog(Giphy(bot))
 
 
-class Giphy(cogs.HttpPlugin):
+class Giphy(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
     GIPHY_URL = "http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"
@@ -22,6 +22,7 @@ class Giphy(cogs.HttpPlugin):
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @commands.command(
         name="giphy",
         brief="Grabs a random Giphy image",
@@ -38,7 +39,7 @@ class Giphy(cogs.HttpPlugin):
 
         data = response.get("data")
         if not data:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, f"No search results found for: *{query}*"
             )
             return
@@ -49,4 +50,4 @@ class Giphy(cogs.HttpPlugin):
             url = self.parse_url(url)
             embeds.append(url)
 
-        self.bot.h.task_paginate(ctx, embeds, restrict=True)
+        self.task_paginate(ctx, embeds, restrict=True)

@@ -7,7 +7,7 @@ def setup(bot):
     bot.add_cog(Wolfram(bot))
 
 
-class Wolfram(cogs.HttpPlugin):
+class Wolfram(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
     API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
@@ -29,4 +29,4 @@ class Wolfram(cogs.HttpPlugin):
         response = await self.http_call("get", url, get_raw_response=True)
         answer = await response.text()
 
-        await self.bot.h.tagged_response(ctx, answer)
+        await self.tagged_response(ctx, answer)

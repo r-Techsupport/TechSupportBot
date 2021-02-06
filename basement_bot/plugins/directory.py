@@ -146,18 +146,14 @@ class ChannelDirectory(cogs.DatabasePlugin):
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
-        debug_channel = self.bot.get_channel(804804731889254444)
-
         if user.bot:
             return
 
         if not reaction.message.id in self.message_ids:
-            await debug_channel.send("Skipping message ID")
             return
 
         role = self.option_map.get(reaction.emoji)
         if not role:
-            await debug_channel.send(f"Role not found")
             return
 
         await user.add_roles(role)

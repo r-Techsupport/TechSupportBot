@@ -80,20 +80,21 @@ class Emojis(cogs.BasicPlugin):
     )
     async def message(self, ctx, *, message: str):
         if ctx.message.mentions:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "I can't make an emoji from a mention!"
             )
             return
 
         emoji_message = self.emoji_message_from_string(message)
         if emoji_message:
-            await self.bot.h.tagged_response(ctx, emoji_message)
+            await self.tagged_response(ctx, emoji_message)
         else:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "I can't get any emoji letters from your message!"
             )
 
     @commands.has_permissions(add_reactions=True)
+    @commands.guild_only()
     @emoji.command(
         brief="Reacts with emojis",
         description="Creates a regional_indiciator_X emoji reaction for a user's most recent message",
@@ -111,14 +112,14 @@ class Emojis(cogs.BasicPlugin):
                 react_message = channel_message
                 break
         if not react_message:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "No valid messages found to react to!"
             )
             return
 
         emoji_list = self.emoji_reaction_from_string(message)
         if not emoji_list:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "Invalid message! Make sure there are no repeat characters!"
             )
             return

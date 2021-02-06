@@ -1,6 +1,7 @@
 import random
 
 import cogs
+import decorate
 import discord
 from discord.ext import commands
 
@@ -23,6 +24,9 @@ class Burn(cogs.BasicPlugin):
         "Was that message a hot pan? BECAUSE IT BURNS!",
     ]
 
+    @decorate.with_typing
+    @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @commands.command(
         brief="Declares a BURN!",
         description="Declares the user's last message as a BURN!",
@@ -41,6 +45,6 @@ class Burn(cogs.BasicPlugin):
             await matched_message.add_reaction(emoji)
 
         message = random.choice(self.PHRASES)
-        await self.bot.h.tagged_response(
+        await self.tagged_response(
             ctx, f"🔥🔥🔥 {message} 🔥🔥🔥", target=user_to_match
         )

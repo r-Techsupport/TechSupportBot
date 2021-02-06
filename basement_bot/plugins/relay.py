@@ -36,7 +36,7 @@ class DiscordRelay(cogs.LoopPlugin, cogs.MatchPlugin, cogs.MqPlugin):
         return False
 
     async def response(self, ctx, content):
-        ctx.content = self.bot.h.sub_mentions_for_usernames(content)
+        ctx.content = self.sub_mentions_for_usernames(content)
         self.bot.plugin_api.plugins.relay.memory.send_buffer.append(
             self.serialize("message", ctx)
         )
@@ -134,6 +134,7 @@ class DiscordRelay(cogs.LoopPlugin, cogs.MatchPlugin, cogs.MqPlugin):
         log.debug(f"Serialized data: {as_json}")
         return as_json
 
+    @commands.guild_only()
     @commands.group(
         brief="Executes an IRC (bridge) command",
         description="Executes an IRC (bridge) command",
@@ -143,31 +144,35 @@ class DiscordRelay(cogs.LoopPlugin, cogs.MatchPlugin, cogs.MqPlugin):
 
     async def can_run_irc_command(self, ctx):
         if not self.config.commands_allowed:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "Relay cross-chat commands are disabled on my end"
             )
             return False
 
         if ctx.channel.id not in self.channels:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "That command can only be used from the IRC relay channels"
             )
             return False
 
         return True
 
-    @commands.check(can_run_irc_command)
     @decorate.with_typing
+    @commands.has_permissions(kick_members=True)
     @irc.command(
         name="kick",
         brief="Sends an IRC kick",
         description="Sends a kick command to the bridged IRC bot",
     )
     async def irc_kick(self, ctx, target: str):
+        can_run = await self.can_run_irc_command(ctx)
+        if not can_run:
+            return
+
         ctx.irc_command = "kick"
         ctx.content = target
 
-        await self.bot.h.tagged_response(
+        await self.tagged_response(
             ctx,
             f"Sending kick command with target `{target}` to IRC bot...",
         )
@@ -175,18 +180,22 @@ class DiscordRelay(cogs.LoopPlugin, cogs.MatchPlugin, cogs.MqPlugin):
             self.serialize("command", ctx)
         )
 
-    @commands.check(can_run_irc_command)
     @decorate.with_typing
+    @commands.has_permissions(ban_members=True)
     @irc.command(
         name="ban",
         brief="Sends an IRC ban",
         description="Sends a ban command to the bridged IRC bot",
     )
     async def irc_ban(self, ctx, target: str):
+        can_run = await self.can_run_irc_command(ctx)
+        if not can_run:
+            return
+
         ctx.irc_command = "ban"
         ctx.content = target
 
-        await self.bot.h.tagged_response(
+        await self.tagged_response(
             ctx,
             f"Sending ban command with target `{target}` to IRC bot...",
         )
@@ -257,7 +266,7 @@ class IRCReceiver(cogs.LoopPlugin, cogs.MqPlugin):
                         log.warning("Unable to find channel to send command event")
                         return
 
-                    guild = self.bot.h.get_guild_from_channel_id(channel.id)
+                    guild = self.get_guild_from_channel_id(channel.id)
 
                     if guild:
                         new_message = ""
@@ -368,7 +377,7 @@ class IRCReceiver(cogs.LoopPlugin, cogs.MqPlugin):
             f"Executing IRC **{data.event.command}** command from `{data.author.mask}` on target `{data.event.content}`"
         )
 
-        target_guild = self.bot.h.get_guild_from_channel_id(channel.id)
+        target_guild = self.get_guild_from_channel_id(channel.id)
         if not target_guild:
             await channel.send(f"> Critical error! Aborting command")
             log.warning(

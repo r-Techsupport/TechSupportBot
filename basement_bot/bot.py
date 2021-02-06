@@ -9,7 +9,6 @@ import database
 import discord
 import embed
 import error
-import helper
 import logger
 import plugin
 from discord.ext import commands
@@ -33,16 +32,9 @@ class BasementBot(commands.Bot):
         self.plugin_api = plugin.PluginAPI(bot=self)
         self.database_api = database.DatabaseAPI(bot=self)
         self.error_api = error.ErrorAPI(bot=self)
-        self.helper_api = helper.HelperAPI(bot=self)
         self.embed_api = embed.EmbedAPI(bot=self)
 
         super().__init__(self.config.main.required.command_prefix)
-
-        self.game = (
-            self.config.main.optional.game
-            if self.config.main.optional.get("game")
-            else None
-        )
 
         if run:
             log.debug("Bot starting upon init")
@@ -52,8 +44,10 @@ class BasementBot(commands.Bot):
 
     async def on_ready(self):
         """Callback for when the bot is finished starting up."""
-        if self.game:
-            await self.set_game(self.game)
+        game = self.config.main.optional.get("game")
+        if game:
+            await self.change_presence(activity=discord.Game(name=game))
+
         log.info(f"Commands available with the `{self.command_prefix}` prefix")
 
     async def on_message(self, message):
@@ -92,15 +86,6 @@ class BasementBot(commands.Bot):
             exception (Exception): the exception object associated with the error
         """
         await self.error_api.handle_command_error(context, exception)
-
-    async def set_game(self, game):
-        """Sets the Discord activity to a given game.
-
-        parameters:
-            game (str): the name of the game to display
-        """
-        self.game = game
-        await self.change_presence(activity=discord.Game(name=self.game))
 
     # pylint: disable=invalid-overridden-method
     def start(self, *args, **kwargs):

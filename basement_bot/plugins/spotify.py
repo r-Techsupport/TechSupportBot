@@ -7,7 +7,7 @@ def setup(bot):
     bot.add_cog(Spotify(bot))
 
 
-class Spotify(cogs.HttpPlugin):
+class Spotify(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
 
@@ -35,7 +35,7 @@ class Spotify(cogs.HttpPlugin):
     async def spotify(self, ctx, *, query: str):
         oauth_token = await self.get_oauth_token()
         if not oauth_token:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "I couldn't authenticate with Spotify"
             )
             return
@@ -49,7 +49,7 @@ class Spotify(cogs.HttpPlugin):
         items = response.get("tracks", {}).get("items", [])
 
         if not items:
-            await self.bot.h.tagged_response(ctx, "I couldn't find any results")
+            await self.tagged_response(ctx, "I couldn't find any results")
             return
 
         links = []
@@ -60,7 +60,7 @@ class Spotify(cogs.HttpPlugin):
             links.append(song_url)
 
         if not links:
-            await self.bot.h.tagged_response("I had trouble parsing the search results")
+            await self.tagged_response("I had trouble parsing the search results")
             return
 
-        self.bot.h.task_paginate(ctx, links, restrict=True)
+        self.task_paginate(ctx, links, restrict=True)

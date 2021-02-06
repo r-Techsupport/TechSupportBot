@@ -12,7 +12,7 @@ from discord.ext import commands
 log = logger.get_logger("Error")
 
 # pylint: disable=too-few-public-methods
-class ErrorMessageTemplate:
+class Template:
     """Object for generating a custom error message from a variable exception.
 
     parameters:
@@ -74,41 +74,103 @@ class ErrorAPI(api.BotAPI):
     """
 
     CUSTOM_TEMPLATES = {
-        commands.MissingRequiredArgument: ErrorMessageTemplate(
+        # ConversionError
+        commands.ConversionError: Template(
+            "Could not convert argument to: `%s`", {"key": "converter"}
+        ),
+        # UserInputError
+        # These are mostly raised by conversion failure
+        commands.MissingRequiredArgument: Template(
             "You did not provide the command argument: `%s`", {"key": "param"}
         ),
-        commands.TooManyArguments: ErrorMessageTemplate(
+        commands.TooManyArguments: Template(
             "You provided too many arguments to that command"
         ),
-        commands.MissingPermissions: ErrorMessageTemplate(
-            "I am unable to do that because you lack the permission(s): `%s`",
-            {"key": "missing_perms"},
+        commands.MessageNotFound: Template(
+            'I couldn\'t find the message: "%s"', {"key": "argument"}
         ),
-        commands.BotMissingAnyRole: ErrorMessageTemplate(
-            "I am unable to do that because I lack the permission(s): `%s`",
-            {"key": "missing_perms"},
+        commands.MemberNotFound: Template(
+            'I coudn\'t find the server member: "%s"', {"key": "argument"}
         ),
-        commands.UnexpectedQuoteError: ErrorMessageTemplate(
+        commands.UserNotFound: Template(
+            'I coudn\'t find the user: "%s"', {"key": "argument"}
+        ),
+        commands.ChannelNotFound: Template(
+            'I couldn\'t find the channel: "%s"', {"key": "argument"}
+        ),
+        commands.ChannelNotReadable: Template(
+            'I can\'t read the channel: "%s"', {"key": "argument"}
+        ),
+        commands.ChannelNotReadable: Template(
+            'I can\'t use the color: "%s"', {"key": "argument"}
+        ),
+        commands.RoleNotFound: Template(
+            'I couldn\'t find the role: "%s"', {"key": "argument"}
+        ),
+        commands.BadInviteArgument: Template("I can't use that invite"),
+        commands.EmojiNotFound: Template(
+            'I couldn\'t find the emoji: "%s"', {"key": "argument"}
+        ),
+        commands.PartialEmojiConversionFailure: Template(
+            'I couldn\'t use the emoji: "%s"', {"key": "argument"}
+        ),
+        commands.BadBoolArgument: Template(
+            'I couldn\'t process the boolean: "%s"', {"key": "argument"}
+        ),
+        commands.UnexpectedQuoteError: Template(
             "I wasn't able to understand your command because of an unexpected quote (%s)",
             {"key": "quote"},
         ),
-        commands.InvalidEndOfQuotedStringError: ErrorMessageTemplate(
+        commands.InvalidEndOfQuotedStringError: Template(
             "You provided an unreadable char after your quote: `%s`",
             {"key": "char"},
         ),
-        commands.ExpectedClosingQuoteError: ErrorMessageTemplate(
+        commands.ExpectedClosingQuoteError: Template(
             "You did not close your quote with a `%s`",
             {"key": "close_quotes"},
         ),
-        commands.CheckFailure: ErrorMessageTemplate(
-            "You are not allowed to use that command"
+        # CheckFailure
+        commands.CheckFailure: Template("That command can't be ran in this context"),
+        commands.CheckAnyFailure: Template("That command can't be ran in this context"),
+        commands.PrivateMessageOnly: Template(
+            "That's only allowed in private messages"
         ),
-        commands.DisabledCommand: ErrorMessageTemplate("That command is disabled"),
-        commands.CommandOnCooldown: ErrorMessageTemplate(
+        commands.NoPrivateMessage: Template("That's only allowed in server channels"),
+        commands.NotOwner: Template("Only the bot owner can do that"),
+        commands.MissingPermissions: Template(
+            "I am unable to do that because you lack the permission(s): `%s`",
+            {"key": "missing_perms"},
+        ),
+        commands.BotMissingPermissions: Template(
+            "I am unable to do that because I lack the permission(s): `%s`",
+            {"key": "missing_perms"},
+        ),
+        commands.MissingRole: Template(
+            "I am unable to do that because you lack the role: `%s`",
+            {"key": "missing_role"},
+        ),
+        commands.BotMissingRole: Template(
+            "I am unable to do that because I lack the role: `%s`",
+            {"key": "missing_role"},
+        ),
+        commands.MissingAnyRole: Template(
+            "I am unable to do that because you lack the role(s): `%s`",
+            {"key": "missing_roles"},
+        ),
+        commands.BotMissingAnyRole: Template(
+            "I am unable to do that because I lack the role(s): `%s`",
+            {"key": "missing_roles"},
+        ),
+        commands.NSFWChannelRequired: Template(
+            "I can't do that because the target channel is not marked NSFW"
+        ),
+        # DisabledCommand
+        commands.DisabledCommand: Template("That command is disabled"),
+        # CommandOnCooldown
+        commands.CommandOnCooldown: Template(
             "That command is on cooldown for you. Try again in %s seconds",
             {"key": "retry_after", "wrapper": int},
         ),
-        commands.NotOwner: ErrorMessageTemplate("Only the bot owner can do that"),
     }
 
     IGNORE_ERRORS = set([commands.CommandNotFound])
@@ -169,7 +231,7 @@ class ErrorAPI(api.BotAPI):
             return
         # otherwise set it a default error message
         if message_template == "":
-            message_template = ErrorMessageTemplate()
+            message_template = Template()
 
         error_message = message_template.get_message(exception)
 

@@ -21,18 +21,18 @@ class Embedder(cogs.BasicPlugin):
     )
     async def embed(self, ctx, *, keep_option: str = None):
         if not ctx.message.attachments:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "Please provide a JSON file for your embeds"
             )
             return
 
-        request_body = await self.bot.h.get_json_from_attachment(ctx, ctx.message)
+        request_body = await self.get_json_from_attachment(ctx, ctx.message)
         if not request_body:
             return
 
         embeds = await self.process_request(ctx, request_body)
         if not embeds:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "I was unable to generate any embeds from your request"
             )
             return

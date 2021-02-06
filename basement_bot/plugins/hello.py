@@ -20,4 +20,5 @@ class Greeter(cogs.BasicPlugin):
     async def hello(self, ctx):
         # H, E, Y
         emojis = ["🇭", "🇪", "🇾"]
-        await self.bot.h.emoji_reaction(ctx, emojis)
+        for emoji in emojis:
+            await ctx.message.add_reaction(emoji)

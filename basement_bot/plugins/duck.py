@@ -751,7 +751,7 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
             ).seconds < self.config.cooldown_seconds:
                 self.cooldowns[message.author.id] = datetime.datetime.now()
                 self.bot.loop.create_task(
-                    self.bot.h.tagged_response(
+                    self.tagged_response(
                         None,
                         content=f"I said to wait {self.config.cooldown_seconds} seconds!",
                         target=message.author,
@@ -876,6 +876,7 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @duck.command(
         brief="Get duck stats",
         description="Gets duck friendships and kills for yourself or another user",
@@ -886,7 +887,7 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
             member = ctx.message.author
 
         if member.bot:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "If it looks like a duck, quacks like a duck, it's a duck!"
             )
             return
@@ -899,7 +900,7 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
             db.expunge(duck_user)
             db.close()
         else:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "That user has not partcipated in the duck hunt"
             )
             return
@@ -910,10 +911,11 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
         embed.add_field(name="Kills", value=duck_user.kill_count)
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
-        await self.bot.h.tagged_response(ctx, embed=embed)
+        await self.tagged_response(ctx, embed=embed)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @duck.command(
         brief="Get duck friendship scores",
         description="Gets duck friendship scores for all users",
@@ -932,7 +934,7 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
         db.close()
 
         if not duck_users:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "It appears nobody has befriended any ducks"
             )
             return
@@ -960,10 +962,11 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
             else:
                 field_counter += 1
 
-        self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @duck.command(
         brief="Get duck kill scores",
         description="Gets duck kill scores for all users",
@@ -982,7 +985,7 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
         db.close()
 
         if not duck_users:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "It appears nobody has killed any ducks"
             )
             return
@@ -1010,7 +1013,7 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
             else:
                 field_counter += 1
 
-        self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.task_paginate(ctx, embeds=embeds, restrict=True)
 
     def get_user_text(self, duck_user):
         user = self.bot.get_user(int(duck_user.author_id))

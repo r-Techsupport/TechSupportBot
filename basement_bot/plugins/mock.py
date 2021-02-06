@@ -28,6 +28,7 @@ class Mocker(cogs.BasicPlugin):
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @commands.command(
         aliases=["sb"],
         brief="Mocks a user",
@@ -38,7 +39,7 @@ class Mocker(cogs.BasicPlugin):
         user_to_mock = ctx.message.mentions[0] if ctx.message.mentions else None
 
         if not user_to_mock:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "You must tag a user if you want to mock them!"
             )
             return
@@ -55,16 +56,16 @@ class Mocker(cogs.BasicPlugin):
                 break
 
         if not mock_message:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, f"No message found for user {user_to_mock}"
             )
             return
 
-        filtered_message = self.bot.h.sub_mentions_for_usernames(mock_message)
+        filtered_message = self.sub_mentions_for_usernames(mock_message)
         mock_string = self.mock_string(filtered_message)
         embed = self.bot.embed_api.Embed(
             title=f'"{mock_string}"', description=user_to_mock.name
         )
         embed.set_thumbnail(url=user_to_mock.avatar_url)
 
-        await self.bot.h.tagged_response(ctx, embed=embed)
+        await self.tagged_response(ctx, embed=embed)
