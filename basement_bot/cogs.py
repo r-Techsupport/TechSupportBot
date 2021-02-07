@@ -260,6 +260,8 @@ class BasicPlugin(commands.Cog):
         except Exception as e:
             await self.bot.error_api.handle_error("http_cog", e)
             response = {"status_code": None}
+    
+        await client.close()
 
         return response
 
