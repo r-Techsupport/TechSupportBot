@@ -985,9 +985,7 @@ class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
         db.close()
 
         if not duck_users:
-            await self.tagged_response(
-                ctx, "It appears nobody has killed any ducks"
-            )
+            await self.tagged_response(ctx, "It appears nobody has killed any ducks")
             return
 
         field_counter = 1

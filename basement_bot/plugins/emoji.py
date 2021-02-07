@@ -80,9 +80,7 @@ class Emojis(cogs.BasicPlugin):
     )
     async def message(self, ctx, *, message: str):
         if ctx.message.mentions:
-            await self.tagged_response(
-                ctx, "I can't make an emoji from a mention!"
-            )
+            await self.tagged_response(ctx, "I can't make an emoji from a mention!")
             return
 
         emoji_message = self.emoji_message_from_string(message)
@@ -112,9 +110,7 @@ class Emojis(cogs.BasicPlugin):
                 react_message = channel_message
                 break
         if not react_message:
-            await self.tagged_response(
-                ctx, "No valid messages found to react to!"
-            )
+            await self.tagged_response(ctx, "No valid messages found to react to!")
             return
 
         emoji_list = self.emoji_reaction_from_string(message)

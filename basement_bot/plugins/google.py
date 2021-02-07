@@ -44,9 +44,7 @@ class Googler(cogs.BasicPlugin):
         items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
-            await self.tagged_response(
-                ctx, f"No search results found for: *{query}*"
-            )
+            await self.tagged_response(ctx, f"No search results found for: *{query}*")
             return
 
         embed = None
@@ -135,9 +133,7 @@ class Googler(cogs.BasicPlugin):
         )
 
         if not items:
-            await self.tagged_response(
-                ctx, f"No video results found for: *{query}*"
-            )
+            await self.tagged_response(ctx, f"No video results found for: *{query}*")
             return
 
         video_id = items[0].get("id", {}).get("videoId")

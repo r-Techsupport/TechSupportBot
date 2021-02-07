@@ -39,9 +39,7 @@ class Giphy(cogs.BasicPlugin):
 
         data = response.get("data")
         if not data:
-            await self.tagged_response(
-                ctx, f"No search results found for: *{query}*"
-            )
+            await self.tagged_response(ctx, f"No search results found for: *{query}*")
             return
 
         embeds = []

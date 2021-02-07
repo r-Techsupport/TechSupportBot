@@ -56,9 +56,7 @@ class Mocker(cogs.BasicPlugin):
                 break
 
         if not mock_message:
-            await self.tagged_response(
-                ctx, f"No message found for user {user_to_mock}"
-            )
+            await self.tagged_response(ctx, f"No message found for user {user_to_mock}")
             return
 
         filtered_message = self.sub_mentions_for_usernames(mock_message)

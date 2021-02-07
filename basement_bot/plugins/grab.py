@@ -91,9 +91,7 @@ class Grabber(cogs.DatabasePlugin):
                 )
             )
             db.commit()
-            await self.tagged_response(
-                ctx, f"Successfully saved: '*{grab_message}*'"
-            )
+            await self.tagged_response(ctx, f"Successfully saved: '*{grab_message}*'")
 
         db.close()
 
@@ -132,9 +130,7 @@ class Grabber(cogs.DatabasePlugin):
         db.close()
 
         if not grabs:
-            await self.tagged_response(
-                ctx, f"No grabs found for {user_to_grab.name}"
-            )
+            await self.tagged_response(ctx, f"No grabs found for {user_to_grab.name}")
             return
 
         embed = self.bot.embed_api.Embed(

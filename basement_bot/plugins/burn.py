@@ -45,6 +45,4 @@ class Burn(cogs.BasicPlugin):
             await matched_message.add_reaction(emoji)
 
         message = random.choice(self.PHRASES)
-        await self.tagged_response(
-            ctx, f"🔥🔥🔥 {message} 🔥🔥🔥", target=user_to_match
-        )
+        await self.tagged_response(ctx, f"🔥🔥🔥 {message} 🔥🔥🔥", target=user_to_match)

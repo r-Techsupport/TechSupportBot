@@ -35,9 +35,7 @@ class Spotify(cogs.BasicPlugin):
     async def spotify(self, ctx, *, query: str):
         oauth_token = await self.get_oauth_token()
         if not oauth_token:
-            await self.tagged_response(
-                ctx, "I couldn't authenticate with Spotify"
-            )
+            await self.tagged_response(ctx, "I couldn't authenticate with Spotify")
             return
 
         headers = {"Authorization": f"Bearer {oauth_token}"}

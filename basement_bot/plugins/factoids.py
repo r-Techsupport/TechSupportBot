@@ -93,9 +93,7 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
         if factoid:
             # delete old one
             db.delete(factoid)
-            await self.tagged_response(
-                ctx, "Deleting previous entry of factoid..."
-            )
+            await self.tagged_response(ctx, "Deleting previous entry of factoid...")
 
         trigger = kwargs.get("trigger")
         # finally, add new entry
@@ -352,9 +350,7 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
             return db.close()
 
         if entry.loop_config:
-            await self.tagged_response(
-                ctx, "Deleting previous loop configuration..."
-            )
+            await self.tagged_response(ctx, "Deleting previous loop configuration...")
 
         entry.loop_config = json.dumps(
             {"sleep_duration": sleep_duration, "channel_ids": channel_ids}
@@ -384,9 +380,7 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
             return db.close()
 
         if not entry.loop_config:
-            await self.tagged_response(
-                ctx, "There is no loop config for that factoid"
-            )
+            await self.tagged_response(ctx, "There is no loop config for that factoid")
             return db.close()
 
         entry.loop_config = None
@@ -417,9 +411,7 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
             return
 
         if not entry.loop_config:
-            await self.tagged_response(
-                ctx, "There is no loop config for that factoid"
-            )
+            await self.tagged_response(ctx, "There is no loop config for that factoid")
             return
 
         try:
@@ -476,9 +468,7 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
             return
 
         if not factoid.embed_config:
-            await self.tagged_response(
-                ctx, "There is no embed config for that factoid"
-            )
+            await self.tagged_response(ctx, "There is no embed config for that factoid")
             return
 
         formatted = json.dumps(json.loads(factoid.embed_config), indent=4)

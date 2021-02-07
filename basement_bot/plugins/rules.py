@@ -84,9 +84,7 @@ class Rules(cogs.DatabasePlugin):
             description = rule.description
             db.delete(rule)
             db.commit()
-            await self.tagged_response(
-                ctx, f"Rule {number} deleted: {description}"
-            )
+            await self.tagged_response(ctx, f"Rule {number} deleted: {description}")
 
         db.close()
 
@@ -147,9 +145,7 @@ class Rules(cogs.DatabasePlugin):
         db.close()
 
         if not rules:
-            await self.tagged_response(
-                ctx, "I couldn't find any rules for this server"
-            )
+            await self.tagged_response(ctx, "I couldn't find any rules for this server")
             return
 
         embed = self.bot.embed_api.Embed(

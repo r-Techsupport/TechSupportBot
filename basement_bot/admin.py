@@ -180,9 +180,7 @@ class AdminControl(cogs.BasicPlugin):
             game_name (str): the name of the game
         """
         await ctx.bot.set_game(game_name)
-        await self.tagged_response(
-            ctx, f"Successfully set game to: *{game_name}*"
-        )
+        await self.tagged_response(ctx, f"Successfully set game to: *{game_name}*")
 
     @decorate.with_typing
     @set_group.command(name="nick")

@@ -40,6 +40,4 @@ class Corrector(cogs.BasicPlugin):
                 ctx, f"*Correction:* {new_content} :white_check_mark:", target=target
             )
         else:
-            await self.tagged_response(
-                ctx, "I couldn't find any message to correct"
-            )
+            await self.tagged_response(ctx, "I couldn't find any message to correct")
