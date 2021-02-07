@@ -56,7 +56,7 @@ class Hugger(cogs.BasicPlugin):
     def generate_embed(self, ctx, user_to_hug):
         hug_text = random.choice(self.HUGS_SELECTION).format(
             user_giving_hug=ctx.author.mention,
-            user_to_hug=user_to_hug,
+            user_to_hug=user_to_hug.mention,
         )
 
         embed = self.bot.embed_api.Embed()
