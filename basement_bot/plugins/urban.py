@@ -7,7 +7,7 @@ def setup(bot):
     bot.add_cog(UrbanDictionary(bot))
 
 
-class UrbanDictionary(cogs.HttpPlugin):
+class UrbanDictionary(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
     BASE_URL = "http://api.urbandictionary.com/v0/define?term="
@@ -32,7 +32,7 @@ class UrbanDictionary(cogs.HttpPlugin):
         definitions = response.get("list")
 
         if not definitions:
-            await self.bot.h.tagged_response(ctx, f"No results found for: *{query}*")
+            await self.tagged_response(ctx, f"No results found for: *{query}*")
             return
 
         query_no_spaces = query.replace(" ", "%20")
@@ -68,4 +68,4 @@ class UrbanDictionary(cogs.HttpPlugin):
             else:
                 field_counter += 1
 
-        self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.task_paginate(ctx, embeds=embeds, restrict=True)

@@ -7,7 +7,7 @@ def setup(bot):
     bot.add_cog(News(bot))
 
 
-class News(cogs.LoopPlugin, cogs.HttpPlugin):
+class News(cogs.LoopPlugin):
 
     PLUGIN_NAME = __name__
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"

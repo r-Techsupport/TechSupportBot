@@ -29,6 +29,7 @@ class Rules(cogs.DatabasePlugin):
         pass
 
     @commands.has_permissions(administrator=True)
+    @commands.guild_only()
     @rule_group.command(
         name="add",
         brief="Adds a rule",
@@ -47,7 +48,7 @@ class Rules(cogs.DatabasePlugin):
         )
 
         if existing_rule:
-            await self.bot.h.tagged_response(ctx, f"Rule {number} already exists")
+            await self.tagged_response(ctx, f"Rule {number} already exists")
         else:
             rule = Rule(
                 guild_id=str(ctx.guild.id), number=number, description=description
@@ -56,11 +57,12 @@ class Rules(cogs.DatabasePlugin):
             db.add(rule)
             db.commit()
 
-            await self.bot.h.tagged_response(ctx, f"Rule {number} added: {description}")
+            await self.tagged_response(ctx, f"Rule {number} added: {description}")
 
         db.close()
 
     @commands.has_permissions(administrator=True)
+    @commands.guild_only()
     @rule_group.command(
         name="delete",
         brief="Deletes a rule",
@@ -77,18 +79,17 @@ class Rules(cogs.DatabasePlugin):
         )
 
         if not rule:
-            await self.bot.h.tagged_response(ctx, "I couldn't find that rule")
+            await self.tagged_response(ctx, "I couldn't find that rule")
         else:
             description = rule.description
             db.delete(rule)
             db.commit()
-            await self.bot.h.tagged_response(
-                ctx, f"Rule {number} deleted: {description}"
-            )
+            await self.tagged_response(ctx, f"Rule {number} deleted: {description}")
 
         db.close()
 
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @rule_group.command(
         name="get",
         brief="Gets a rule",
@@ -109,7 +110,7 @@ class Rules(cogs.DatabasePlugin):
         db.close()
 
         if not rule:
-            await self.bot.h.tagged_response(ctx, "I couldn't find that rule")
+            await self.tagged_response(ctx, "I couldn't find that rule")
             return
 
         embed = self.bot.embed_api.Embed(
@@ -118,9 +119,10 @@ class Rules(cogs.DatabasePlugin):
 
         embed.set_thumbnail(url=self.RULE_ICON_URL)
 
-        await self.bot.h.tagged_response(ctx, embed=embed)
+        await self.tagged_response(ctx, embed=embed)
 
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @rule_group.command(
         name="all",
         brief="Gets all rules",
@@ -143,9 +145,7 @@ class Rules(cogs.DatabasePlugin):
         db.close()
 
         if not rules:
-            await self.bot.h.tagged_response(
-                ctx, "I couldn't find any rules for this server"
-            )
+            await self.tagged_response(ctx, "I couldn't find any rules for this server")
             return
 
         embed = self.bot.embed_api.Embed(

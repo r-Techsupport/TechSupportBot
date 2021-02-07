@@ -39,16 +39,16 @@ class AdminControl(cogs.BasicPlugin):
 
         error = status_data.get("error")
         if error:
-            await self.bot.h.tagged_response(ctx, f"Error: {error}")
+            await self.tagged_response(ctx, f"Error: {error}")
             return
 
         if plugin_name:
             status = status_data.get(plugin_name)
             if not status:
-                await self.bot.h.tagged_response(ctx, "Plugin not found!")
+                await self.tagged_response(ctx, "Plugin not found!")
                 return
 
-            await self.bot.h.tagged_response(ctx, f"Plugin is {status}")
+            await self.tagged_response(ctx, f"Plugin is {status}")
             return
 
         embeds = []
@@ -66,7 +66,7 @@ class AdminControl(cogs.BasicPlugin):
             else:
                 field_counter += 1
 
-        self.bot.h.task_paginate(ctx, embeds)
+        self.task_paginate(ctx, embeds)
 
     @decorate.with_typing
     @plugin.command(name="load")
@@ -80,7 +80,7 @@ class AdminControl(cogs.BasicPlugin):
             plugin_name (str): the name of the plugin
         """
         response = ctx.bot.plugin_api.load_plugin(plugin_name)
-        await self.bot.h.tagged_response(ctx, response.message)
+        await self.tagged_response(ctx, response.message)
 
     @decorate.with_typing
     @plugin.command(name="unload")
@@ -94,7 +94,7 @@ class AdminControl(cogs.BasicPlugin):
             plugin_name (str): the name of the plugin
         """
         response = ctx.bot.plugin_api.unload_plugin(plugin_name)
-        await self.bot.h.tagged_response(ctx, response.message)
+        await self.tagged_response(ctx, response.message)
 
     @commands.group(
         name="command",
@@ -118,17 +118,17 @@ class AdminControl(cogs.BasicPlugin):
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await self.bot.h.tagged_response(ctx, f"No such command: `{command_name}`")
+            await self.tagged_response(ctx, f"No such command: `{command_name}`")
             return
 
         if command_.enabled:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, f"Command `{command_name}` is already enabled!"
             )
             return
 
         command_.enabled = True
-        await self.bot.h.tagged_response(
+        await self.tagged_response(
             ctx, f"Successfully enabled command: `{command_name}`"
         )
 
@@ -145,17 +145,17 @@ class AdminControl(cogs.BasicPlugin):
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await self.bot.h.tagged_response(ctx, f"No such command: `{command_name}`")
+            await self.tagged_response(ctx, f"No such command: `{command_name}`")
             return
 
         if not command_.enabled:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, f"Command `{command_name}` is already disabled!"
             )
             return
 
         command_.enabled = False
-        await self.bot.h.tagged_response(
+        await self.tagged_response(
             ctx, f"Successfully disabled command: `{command_name}`"
         )
 
@@ -180,9 +180,7 @@ class AdminControl(cogs.BasicPlugin):
             game_name (str): the name of the game
         """
         await ctx.bot.set_game(game_name)
-        await self.bot.h.tagged_response(
-            ctx, f"Successfully set game to: *{game_name}*"
-        )
+        await self.tagged_response(ctx, f"Successfully set game to: *{game_name}*")
 
     @decorate.with_typing
     @set_group.command(name="nick")
@@ -196,7 +194,7 @@ class AdminControl(cogs.BasicPlugin):
             nick (str): the bot nickname
         """
         await ctx.message.guild.me.edit(nick=nick)
-        await self.bot.h.tagged_response(ctx, f"Successfully set nick to: *{nick}*")
+        await self.tagged_response(ctx, f"Successfully set nick to: *{nick}*")
 
     @commands.group(
         brief="Executes an echo bot command", description="Executes an echo bot command"
@@ -219,7 +217,7 @@ class AdminControl(cogs.BasicPlugin):
         """
         channel = self.bot.get_channel(channel_id)
         if not channel:
-            await self.bot.h.tagged_response(ctx, "I couldn't find that channel")
+            await self.tagged_response(ctx, "I couldn't find that channel")
             return
 
         await channel.send(content=message)
@@ -238,7 +236,7 @@ class AdminControl(cogs.BasicPlugin):
         """
         user = await self.bot.fetch_user(int(user_id))
         if not user:
-            await self.bot.h.tagged_response(ctx, "I couldn't find that user")
+            await self.tagged_response(ctx, "I couldn't find that user")
             return
 
         await user.send(content=message)
@@ -252,5 +250,5 @@ class AdminControl(cogs.BasicPlugin):
         parameters:
             ctx (discord.Context): the context object for the calling message
         """
-        await self.bot.h.tagged_response(ctx, "Shutting down! Cya later!")
+        await self.tagged_response(ctx, "Shutting down! Cya later!")
         sys.exit()

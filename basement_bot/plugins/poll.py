@@ -52,23 +52,21 @@ class Poller(cogs.BasicPlugin):
         description="Shows what JSON to upload to generate a poll",
     )
     async def example(self, ctx):
-        await self.bot.h.tagged_response(
+        await self.tagged_response(
             ctx, f"Upload a JSON like this: ```{self.EXAMPLE_JSON}```"
         )
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @poll.command(
         aliases=["create"],
         brief="Generates a poll",
         description="Creates a poll for everyone to vote in (only admins can make polls)",
+        usage="|json-upload|",
     )
     async def generate(self, ctx):
-        if isinstance(ctx.channel, discord.DMChannel):
-            await ctx.author.send("I cannot create a poll in a DM")
-            return
-
-        request_body = await self.bot.h.get_json_from_attachment(ctx, ctx.message)
+        request_body = await self.get_json_from_attachment(ctx, ctx.message)
         if not request_body:
             return
 
@@ -76,7 +74,7 @@ class Poller(cogs.BasicPlugin):
         if not request_body:
             return
 
-        message = await self.bot.h.tagged_response(ctx, "Poll loading...")
+        message = await self.tagged_response(ctx, "Poll loading...")
 
         # TODO: actually not be lazy and write float formatting for the time left
         display_timeout = (
@@ -102,14 +100,14 @@ class Poller(cogs.BasicPlugin):
             ctx, message, request_body.timeout, request_body.options
         )
         if results is None:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "I ran into an issue grabbing the poll results..."
             )
             try:
                 await message.edit(content="*Poll aborted!*", embed=None)
                 await message.clear_reactions()
             except discord.NotFound:
-                await self.bot.h.tagged_response(
+                await self.tagged_response(
                     ctx,
                     "I could not find the poll message. It might have been deleted?",
                 )
@@ -119,7 +117,7 @@ class Poller(cogs.BasicPlugin):
 
         total = sum(count for count in results.values())
         if total == 0:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "Nobody voted in the poll, so I won't bother showing any results"
             )
             return
@@ -134,7 +132,7 @@ class Poller(cogs.BasicPlugin):
             percentage = str((count * 100) // total)
             embed.add_field(name=option, value=f"{percentage}%", inline=False)
 
-        await self.bot.h.tagged_response(ctx, embed=embed)
+        await self.tagged_response(ctx, embed=embed)
 
     async def wait_for_results(self, ctx, message, timeout, options):
         option_emojis = self.option_emojis[: len(options)]
@@ -186,23 +184,23 @@ class Poller(cogs.BasicPlugin):
         timeout = request_body.get("timeout")
 
         if not question:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "I did not find a poll question (`question` key)"
             )
             return None
         elif not isinstance(question, str):
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "I need the poll question to be a string (`question` key)"
             )
             return None
 
         if not isinstance(options, list):
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "I need the poll options to be a list (`question` key)"
             )
             return None
         elif len(options) < 2 or len(options) > max_options:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, f"I need between 2 and {max_options} options! (`options` key)"
             )
             return None

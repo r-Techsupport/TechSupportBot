@@ -52,7 +52,7 @@ class Evaluator(cogs.BasicPlugin):
 
         while True:
             if result != self.UNDEFINED_RESULT:
-                await self.bot.h.tagged_response(
+                await self.tagged_response(
                     ctx, f"`{result}`" if result is not None else "`None`"
                 )
                 return
@@ -61,7 +61,7 @@ class Evaluator(cogs.BasicPlugin):
                 raise RuntimeError(f"Thread finished with error: {error_}")
 
             elif datetime.datetime.now() > finish_time:
-                await self.bot.h.tagged_response(
+                await self.tagged_response(
                     ctx,
                     f"Result not received from eval() after {self.THREAD_WAIT_MINUTES} minutes",
                 )

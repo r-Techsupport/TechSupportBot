@@ -29,19 +29,18 @@ class Grabber(cogs.DatabasePlugin):
     SEARCH_LIMIT = 20
     MODEL = Grab
 
+    # this could probably be a check decorator
+    # but oh well
     async def invalid_channel(self, ctx):
-        if isinstance(ctx.channel, discord.DMChannel):
-            await ctx.author.send("Grabs are disabled in DM's")
-            return True
-
         if ctx.channel.id in self.config.invalid_channels:
-            await self.bot.h.tagged_response(ctx, "Grabs are disabled for this channel")
+            await self.tagged_response(ctx, "Grabs are disabled for this channel")
             return True
 
         return False
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @commands.command(
         name="grab",
         brief="Grabs a user's last message",
@@ -53,7 +52,7 @@ class Grabber(cogs.DatabasePlugin):
             return
 
         if user_to_grab.bot:
-            await self.bot.h.tagged_response(ctx, "Ain't gonna catch me slipping!")
+            await self.tagged_response(ctx, "Ain't gonna catch me slipping!")
             return
 
         grab_message = None
@@ -65,7 +64,7 @@ class Grabber(cogs.DatabasePlugin):
                 break
 
         if not grab_message:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, f"Could not find a recent essage from user {user_to_grab}"
             )
             return
@@ -82,7 +81,7 @@ class Grabber(cogs.DatabasePlugin):
         )
 
         if grab:
-            await self.bot.h.tagged_response(ctx, "That grab already exists!")
+            await self.tagged_response(ctx, "That grab already exists!")
         else:
             db.add(
                 Grab(
@@ -92,9 +91,7 @@ class Grabber(cogs.DatabasePlugin):
                 )
             )
             db.commit()
-            await self.bot.h.tagged_response(
-                ctx, f"Successfully saved: '*{grab_message}*'"
-            )
+            await self.tagged_response(ctx, f"Successfully saved: '*{grab_message}*'")
 
         db.close()
 
@@ -107,6 +104,7 @@ class Grabber(cogs.DatabasePlugin):
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @grabs.command(
         brief="Returns grabs for a user",
         description="Returns all grabbed messages for a user",
@@ -117,7 +115,7 @@ class Grabber(cogs.DatabasePlugin):
             return
 
         if user_to_grab.bot:
-            await self.bot.h.tagged_response(ctx, "Ain't gonna catch me slipping!")
+            await self.tagged_response(ctx, "Ain't gonna catch me slipping!")
             return
 
         db = self.db_session()
@@ -132,9 +130,7 @@ class Grabber(cogs.DatabasePlugin):
         db.close()
 
         if not grabs:
-            await self.bot.h.tagged_response(
-                ctx, f"No grabs found for {user_to_grab.name}"
-            )
+            await self.tagged_response(ctx, f"No grabs found for {user_to_grab.name}")
             return
 
         embed = self.bot.embed_api.Embed(
@@ -145,7 +141,7 @@ class Grabber(cogs.DatabasePlugin):
         embeds = []
         field_counter = 1
         for index, grab_ in enumerate(grabs):
-            filtered_message = self.bot.h.sub_mentions_for_usernames(grab_.message)
+            filtered_message = self.sub_mentions_for_usernames(grab_.message)
             embed = (
                 self.bot.embed_api.Embed(
                     title=f"Grabs for {user_to_grab.name}",
@@ -166,10 +162,11 @@ class Grabber(cogs.DatabasePlugin):
             else:
                 field_counter += 1
 
-        self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @grabs.command(
         name="random",
         brief="Returns a random grab",
@@ -181,7 +178,7 @@ class Grabber(cogs.DatabasePlugin):
             return
 
         if user_to_grab.bot:
-            await self.bot.h.tagged_response(ctx, "Ain't gonna catch me slipping!")
+            await self.tagged_response(ctx, "Ain't gonna catch me slipping!")
             return
 
         db = self.db_session()
@@ -193,13 +190,13 @@ class Grabber(cogs.DatabasePlugin):
         db.close()
 
         if not grabs:
-            await self.bot.h.tagged_response(f"No grabs found for {user_to_grab}")
+            await self.tagged_response(f"No grabs found for {user_to_grab}")
             return
 
         random_index = random.randint(0, len(grabs) - 1)
         grab = grabs[random_index]
 
-        filtered_message = self.bot.h.sub_mentions_for_usernames(grab.message)
+        filtered_message = self.sub_mentions_for_usernames(grab.message)
 
         embed = self.bot.embed_api.Embed(
             title=f'"{filtered_message}"',
@@ -208,4 +205,4 @@ class Grabber(cogs.DatabasePlugin):
 
         embed.set_thumbnail(url=user_to_grab.avatar_url)
 
-        await self.bot.h.tagged_response(ctx, embed=embed)
+        await self.tagged_response(ctx, embed=embed)

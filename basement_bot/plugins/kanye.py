@@ -8,7 +8,7 @@ def setup(bot):
     bot.add_cog(KanyeQuotes(bot))
 
 
-class KanyeQuotes(cogs.LoopPlugin, cogs.HttpPlugin):
+class KanyeQuotes(cogs.LoopPlugin):
 
     PLUGIN_NAME = __name__
     API_URL = "https://api.kanye.rest"

@@ -32,6 +32,7 @@ class Hugger(cogs.BasicPlugin):
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @commands.command(
         name="hug",
         brief="Hugs a user",
@@ -45,12 +46,12 @@ class Hugger(cogs.BasicPlugin):
             ctx (Context): the context
         """
         if user_to_hug.id == ctx.author.id:
-            await self.bot.h.tagged_response(ctx, "Let's be serious")
+            await self.tagged_response(ctx, "Let's be serious")
             return
 
         embed = self.generate_embed(ctx, user_to_hug)
 
-        await self.bot.h.tagged_response(ctx, embed=embed, target=user_to_hug)
+        await self.tagged_response(ctx, embed=embed, target=user_to_hug)
 
     def generate_embed(self, ctx, user_to_hug):
         hug_text = random.choice(self.HUGS_SELECTION).format(

@@ -7,7 +7,7 @@ def setup(bot):
     bot.add_cog(Googler(bot))
 
 
-class Googler(cogs.HttpPlugin):
+class Googler(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
     GOOGLE_URL = "https://www.googleapis.com/customsearch/v1"
@@ -27,6 +27,7 @@ class Googler(cogs.HttpPlugin):
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @google.command(
         aliases=["s"],
         brief="Searches Google",
@@ -43,9 +44,7 @@ class Googler(cogs.HttpPlugin):
         items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
-            await self.bot.h.tagged_response(
-                ctx, f"No search results found for: *{query}*"
-            )
+            await self.tagged_response(ctx, f"No search results found for: *{query}*")
             return
 
         embed = None
@@ -75,10 +74,11 @@ class Googler(cogs.HttpPlugin):
                 else:
                     field_counter += 1
 
-        self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @google.command(
         aliases=["i", "is"],
         brief="Searches Google Images",
@@ -95,7 +95,7 @@ class Googler(cogs.HttpPlugin):
         items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, f"No image search results found for: *{query}*"
             )
             return
@@ -104,17 +104,18 @@ class Googler(cogs.HttpPlugin):
         for item in items:
             link = item.get("link")
             if not link:
-                await self.bot.h.tagged_response(
+                await self.tagged_response(
                     ctx,
                     "I had an issue processing Google's response... try again later!",
                 )
                 return
             embeds.append(link)
 
-        self.bot.h.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @commands.command(
         aliases=["yt"],
         brief="Searches YouTube",
@@ -132,9 +133,7 @@ class Googler(cogs.HttpPlugin):
         )
 
         if not items:
-            await self.bot.h.tagged_response(
-                ctx, f"No video results found for: *{query}*"
-            )
+            await self.tagged_response(ctx, f"No video results found for: *{query}*")
             return
 
         video_id = items[0].get("id", {}).get("videoId")
@@ -147,4 +146,4 @@ class Googler(cogs.HttpPlugin):
             if link:
                 links.append(link)
 
-        self.bot.h.task_paginate(ctx, links, restrict=True)
+        self.task_paginate(ctx, links, restrict=True)

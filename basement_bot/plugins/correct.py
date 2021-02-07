@@ -15,6 +15,7 @@ class Corrector(cogs.BasicPlugin):
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
     @commands.command(
         aliases=["c"],
         brief="Corrects a message",
@@ -35,10 +36,8 @@ class Corrector(cogs.BasicPlugin):
                 break
 
         if new_content:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, f"*Correction:* {new_content} :white_check_mark:", target=target
             )
         else:
-            await self.bot.h.tagged_response(
-                ctx, "I couldn't find any message to correct"
-            )
+            await self.tagged_response(ctx, "I couldn't find any message to correct")

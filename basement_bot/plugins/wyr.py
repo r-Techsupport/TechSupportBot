@@ -527,4 +527,4 @@ class WouldYouRather(cogs.BasicPlugin):
                 self.last = question.id
                 break
 
-        await self.bot.h.tagged_response(ctx, question.get_question())
+        await self.tagged_response(ctx, question.get_question())

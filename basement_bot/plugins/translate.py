@@ -7,8 +7,7 @@ def setup(bot):
     bot.add_cog(Translator(bot))
 
 
-class Translator(cogs.HttpPlugin):
-
+class Translator(cogs.BasicPlugin):
     PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
@@ -29,7 +28,7 @@ class Translator(cogs.HttpPlugin):
         translated = response.get("responseData", {}).get("translatedText")
 
         if not translated:
-            await self.bot.h.tagged_response(ctx, "I could not translate your message")
+            await self.tagged_response(ctx, "I could not translate your message")
             return
 
-        await self.bot.h.tagged_response(ctx, translated)
+        await self.tagged_response(ctx, translated)

@@ -8,7 +8,7 @@ def setup(bot):
     bot.add_cog(Weather(bot))
 
 
-class Weather(cogs.HttpPlugin):
+class Weather(cogs.BasicPlugin):
 
     PLUGIN_NAME = __name__
 
@@ -46,12 +46,12 @@ class Weather(cogs.HttpPlugin):
 
         embed = self.generate_embed(munch.munchify(response))
         if not embed:
-            await self.bot.h.tagged_response(
+            await self.tagged_response(
                 ctx, "I could not find the weather from your search"
             )
             return
 
-        await self.bot.h.tagged_response(ctx, embed=embed)
+        await self.tagged_response(ctx, embed=embed)
 
     def generate_embed(self, response):
         try:
