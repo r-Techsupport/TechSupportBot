@@ -8,7 +8,7 @@ def setup(bot):
 
 
 class Translator(cogs.BasicPlugin):
-    PLUGIN_NAME = __name__
+    
     HAS_CONFIG = False
 
     API_URL = "https://api.mymemory.translated.net/get?q={}&langpair={}|{}"

@@ -10,7 +10,6 @@ def setup(bot):
 
 class KanyeQuotes(cogs.LoopPlugin):
 
-    PLUGIN_NAME = __name__
     API_URL = "https://api.kanye.rest"
     KANYE_PICS = [
         "https://i.imgur.com/ITmTXGz.jpg",

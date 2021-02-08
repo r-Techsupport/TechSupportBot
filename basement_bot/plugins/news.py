@@ -9,7 +9,6 @@ def setup(bot):
 
 class News(cogs.LoopPlugin):
 
-    PLUGIN_NAME = __name__
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
 
     async def loop_preconfig(self):

@@ -11,7 +11,6 @@ def setup(bot):
 
 class Moderator(cogs.BasicPlugin):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
     @commands.has_permissions(manage_messages=True)

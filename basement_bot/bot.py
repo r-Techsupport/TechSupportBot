@@ -4,13 +4,14 @@
 import sys
 
 import admin
-import config
 import database
 import discord
 import embed
 import error
 import logger
+import munch
 import plugin
+import yaml
 from discord.ext import commands
 
 log = logger.get_logger("Basement Bot")
@@ -24,11 +25,13 @@ class BasementBot(commands.Bot):
         validate_config (bool): True if the bot's config should be validated
     """
 
+    CONFIG_PATH = "./config.yaml"
+
     def __init__(self, run=True, validate_config=True):
         # the config API will set this
         self.config = None
+        self.load_config(validate=validate_config)
 
-        self.config_api = config.ConfigAPI(bot=self, validate=validate_config)
         self.plugin_api = plugin.PluginAPI(bot=self)
         self.database_api = database.DatabaseAPI(bot=self)
         self.error_api = error.ErrorAPI(bot=self)
@@ -108,8 +111,11 @@ class BasementBot(commands.Bot):
 
     async def get_owner(self):
         """Gets the owner object for the bot application."""
-        app_info = await self.application_info()
-        return app_info.owner if app_info else None
+        try:
+            app_info = await self.application_info()
+            return app_info.owner
+        except discord.errors.HTTPException:
+            return None
 
     async def can_run(self, ctx, *, call_once=False):
         """Wraps the default can_run check to evaluate if a check call is necessary.
@@ -160,3 +166,73 @@ class BasementBot(commands.Bot):
             return True
 
         return False
+
+    def load_config(self, validate):
+        """Loads the config yaml file into a bot object.
+
+        parameters:
+            validate (bool): True if validations should be ran on the file
+        """
+        with open(self.CONFIG_PATH) as iostream:
+            config = yaml.safe_load(iostream)
+        self.config = munch.munchify(config)
+
+        self.config.main.disabled_plugins = self.config.main.disabled_plugins or []
+
+        if validate:
+            self.validate_config()
+
+    def validate_config(self):
+        """Validates several config subsections."""
+        for subsection in ["required", "database"]:
+            self.validate_config_subsection("main", subsection)
+        for subsection in list(self.config.plugins.keys()):
+            self.validate_config_subsection("plugins", subsection)
+
+    def validate_config_subsection(self, section, subsection):
+        """Loops through a config subsection to check for missing values.
+
+        parameters:
+            section (str): the section name containing the subsection
+            subsection (str): the subsection name
+        """
+        for key, value in self.config.get(section, {}).get(subsection, {}).items():
+            error_key = None
+            if value is None:
+                error_key = key
+            elif isinstance(value, dict):
+                for k, v in value.items():
+                    if v is None:
+                        error_key = k
+            if error_key:
+                if section == "plugins":
+                    if not subsection in self.config.main.disabled_plugins:
+                        # pylint: disable=line-too-long
+                        log.warning(
+                            f"Disabling loading of plugin {subsection} due to missing config key {error_key}"
+                        )
+                        # disable the plugin if we can't get its config
+                        self.config.main.disabled_plugins.append(subsection)
+                else:
+                    raise ValueError(
+                        f"Config key {error_key} from {section}.{subsection} not supplied"
+                    )
+
+    def generate_amqp_url(self):
+        """Dynamically converts config to an AMQP URL.
+        """
+        host = self.config.main.rabbitmq.host
+        port = self.config.main.rabbitmq.port
+        vhost = self.config.main.rabbitmq.vhost
+        user = self.config.main.rabbitmq.user
+        password = self.config.main.rabbitmq.password
+
+        return f"amqp://{user}:{password}@{host}:{port}{vhost}"
+
+    def get_modules(self):
+        """Gets the current list of plugin modules."""
+        return [
+            os.path.basename(f)[:-3]
+            for f in glob.glob(f"{self.PLUGINS_DIR}/*.py")
+            if os.path.isfile(f) and not f.endswith("__init__.py")
+        ]

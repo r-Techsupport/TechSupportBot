@@ -14,7 +14,6 @@ def setup(bot):
 
 class Poller(cogs.BasicPlugin):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
     OPTION_EMOJIS = ["one", "two", "three", "four", "five"]

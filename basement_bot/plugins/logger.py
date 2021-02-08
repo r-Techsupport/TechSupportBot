@@ -7,8 +7,6 @@ def setup(bot):
 
 class Logger(cogs.MatchPlugin):
 
-    PLUGIN_NAME = __name__
-
     async def match(self, ctx, _):
         if not ctx.channel.id in self.config.channel_map:
             return False

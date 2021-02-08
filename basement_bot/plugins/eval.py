@@ -12,7 +12,6 @@ def setup(bot):
 
 class Evaluator(cogs.BasicPlugin):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
     THREAD_WAIT_MINUTES = 10
     POLL_WAIT = 1

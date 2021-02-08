@@ -8,7 +8,7 @@ class Embed(DiscordEmbed):
     """Custom BasementBot embed."""
 
     @classmethod
-    def embed_from_kwargs(cls, title=None, description=None, **kwargs):
+    def from_kwargs(cls, title=None, description=None, **kwargs):
         """Wrapper for generating an embed from a set of key, values.
 
         parameters:

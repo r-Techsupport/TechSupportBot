@@ -11,8 +11,6 @@ def setup(bot):
 
 class ServerGate(cogs.MatchPlugin):
 
-    PLUGIN_NAME = __name__
-
     async def preconfig(self):
         self.channels = set()
         for channel_config in self.config.values():

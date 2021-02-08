@@ -9,7 +9,6 @@ def setup(bot):
 
 class Embedder(cogs.BasicPlugin):
 
-    PLUGIN_NAME = "Embedder"
     HAS_CONFIG = False
 
     @decorate.with_typing

@@ -4,20 +4,20 @@
 import ast
 import asyncio
 import datetime
-import logging
 import random
 import re
+import os
 
 import aiocron
 import aiohttp
 import discord
 import logger
 import munch
-import pika
 from discord.ext import commands
 from sqlalchemy.ext import declarative
 
-logging.getLogger("pika").setLevel(logging.WARNING)
+import inspect
+
 log = logger.get_logger("Cogs")
 
 
@@ -30,32 +30,32 @@ class BasicPlugin(commands.Cog):
         bot (Bot): the bot object
     """
 
-    PLUGIN_TYPE = "BASIC"
-    PLUGIN_NAME = None
     HAS_CONFIG = True
     ADMIN_ONLY = False
 
     def __init__(self, bot):
         self.bot = bot
+        self.extension_name = inspect.getmodule(self).__name__.split(".")[-1]
+        self.config = self.bot.config.plugins.get(self.extension_name)
 
-        if self.PLUGIN_NAME and "." in self.PLUGIN_NAME:
-            self.PLUGIN_NAME = self.PLUGIN_NAME.split(".")[1]
-        self.config = self.bot.config.plugins.get(f"{self.PLUGIN_NAME}")
         if not self.config and self.HAS_CONFIG:
-            if not self.PLUGIN_NAME:
-                raise ValueError(
-                    f"PLUGIN_NAME not provided for plugin {self.__class__.__name__}"
-                )
             raise ValueError(
-                f"No valid configuration found for plugin {self.PLUGIN_NAME}"
+                f"No valid configuration found for plugin {self.extension_name}"
             )
 
         self.bot.loop.create_task(self._preconfig())
+        
+    async def _handle_preconfig(self, coroutine):
+        try:
+            await coroutine()
+        except Exception as e:
+            await self.bot.error_api.handle_error(coroutine.__name__, e)
+            self.bot.plugin_api.unload_plugin(self.extension_name)
 
     async def _preconfig(self):
         """Blocks the preconfig until the bot is ready."""
         await self.bot.wait_until_ready()
-        await self.preconfig()
+        await self._handle_preconfig(self.preconfig)
 
     async def preconfig(self):
         """Preconfigures the environment before starting the plugin."""
@@ -73,10 +73,8 @@ class BasicPlugin(commands.Cog):
         """
         who_to_tag = target.mention if target else ctx.message.author.mention
         content = f"{who_to_tag} {content}" if content else who_to_tag
-        try:
-            message = await ctx.send(content, embed=embed)
-        except discord.errors.HTTPException:
-            message = None
+
+        message = await ctx.send(content, embed=embed)
         return message
 
     def get_guild_from_channel_id(self, channel_id):
@@ -257,6 +255,7 @@ class BasicPlugin(commands.Cog):
 
             response = await response_object.json() if response_object else {}
             response["status_code"] = getattr(response_object, "status_code", None)
+
         except Exception as e:
             await self.bot.error_api.handle_error("http_cog", e)
             response = {"status_code": None}
@@ -272,8 +271,6 @@ class MatchPlugin(BasicPlugin):
 
     This makes the process of handling events simpler for development.
     """
-
-    PLUGIN_TYPE = "MATCH"
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -315,7 +312,6 @@ class MatchPlugin(BasicPlugin):
 class DatabasePlugin(BasicPlugin):
     """Plugin for accessing the database."""
 
-    PLUGIN_TYPE = "DATABASE"
     MODEL = None
 
     def __init__(self, bot):
@@ -331,7 +327,7 @@ class DatabasePlugin(BasicPlugin):
     async def _db_preconfig(self):
         """Blocks the db_preconfig until the bot is ready."""
         await self.bot.wait_until_ready()
-        await self.db_preconfig()
+        await self._handle_preconfig(self.db_preconfig)
 
     async def db_preconfig(self):
         """Preconfigures the environment before starting the plugin."""
@@ -351,25 +347,21 @@ class LoopPlugin(BasicPlugin):
         bot (Bot): the bot object
     """
 
-    PLUGIN_TYPE = "LOOP"
     DEFAULT_WAIT = 30
     WAIT_KEY = None
     UNITS = "seconds"
+    CONVERSIONS = {
+        "seconds": 1,
+        "minutes": 60,
+        "hours": 3600
+    }
 
     def __init__(self, bot):
         super().__init__(bot)
+        self.conversion_factor = self.CONVERSIONS.get(self.UNITS, 1)
         self.state = True
         self.bot.loop.create_task(self._loop_execute())
         self.execution_locked = False
-
-        if self.UNITS == "seconds":
-            conversion_factor = 1
-        elif self.UNITS == "minutes":
-            conversion_factor = 60
-        elif self.UNITS == "hours":
-            conversion_factor = 3600
-
-        self.conversion_factor = conversion_factor
 
     async def _loop_execute(self):
         """Loops through the execution method."""
@@ -427,6 +419,7 @@ class LoopPlugin(BasicPlugin):
         """
         min_wait = self.config.get(min_key)
         max_wait = self.config.get(max_key)
+
         if not min_wait or not max_wait:
             raise RuntimeError(
                 f"Min and/or max wait times not found from keys {min_key}, {max_key}"
@@ -449,7 +442,7 @@ class LoopPlugin(BasicPlugin):
     async def _loop_preconfig(self):
         """Blocks the loop_preconfig until the bot is ready."""
         await self.bot.wait_until_ready()
-        await self.loop_preconfig()
+        await self._handle_preconfig(self.loop_preconfig)
 
     async def loop_preconfig(self):
         """Preconfigures the environment before starting the loop."""
@@ -457,94 +450,3 @@ class LoopPlugin(BasicPlugin):
     async def execute(self):
         """Runs sequentially after each wait method."""
         raise RuntimeError("Execute function must be defined in sub-class")
-
-
-class MqPlugin(BasicPlugin):
-    """Plugin for sending and receiving queue events.
-
-    This was added quickly without async for now. This will change in the future.
-
-    parameters:
-        bot (Bot): the bot object
-    """
-
-    PLUGIN_TYPE = "MQ"
-
-    connection = None
-
-    # pylint: disable=attribute-defined-outside-init
-    def connect(self):
-        """Sets the connection attribute to an active connection."""
-
-        self.parameters = pika.ConnectionParameters(
-            self.config.mq_host,
-            self.config.mq_port,
-            self.config.mq_vhost,
-            pika.PlainCredentials(self.config.mq_user, self.config.mq_pass),
-        )
-        try:
-            self.connection = pika.BlockingConnection(self.parameters)
-        except Exception as e:
-            e = str(e) or "No route to host"  # dumb correction to a blank error
-            log.warning(f"Unable to connect to MQ: {e}")
-
-    def _close(self):
-        """Attempts to close the connection."""
-        try:
-            self.connection.close()
-        except Exception:
-            pass
-
-    def publish(self, bodies):
-        """Sends a list of events to the event queue.
-
-        parameters:
-            bodies (list): the list of events
-        """
-        try:
-            self.connect()
-            mq_channel = self.connection.channel()
-            mq_channel.queue_declare(queue=self.config.mq_send_queue, durable=True)
-            for body in bodies:
-                mq_channel.basic_publish(
-                    exchange="", routing_key=self.config.mq_send_queue, body=body
-                )
-            return True
-        except Exception as e:
-            log.debug(f"Unable to publish: {e}")
-            return False
-
-        self._close()
-
-    def consume(self):
-        """Retrieves a list of events from the event queue."""
-        bodies = []
-
-        try:
-            self.connect()
-            mq_channel = self.connection.channel()
-            mq_channel.queue_declare(queue=self.config.mq_recv_queue, durable=True)
-            checks = 0
-            while checks < self.config.response_limit:
-                body = self._get_ack(mq_channel)
-                checks += 1
-                if not body:
-                    break
-                bodies.append(body)
-            return bodies, True
-        except Exception as e:
-            log.debug(f"Unable to consume: {e}")
-            return [], False
-
-        self._close()
-
-    def _get_ack(self, channel):
-        """Gets a body and acknowledges its consumption.
-
-        parameters:
-            channel (PikaChannel): the channel on which to consume
-        """
-        method, _, body = channel.basic_get(queue=self.config.mq_recv_queue)
-        if method:
-            channel.basic_ack(method.delivery_tag)
-        return body

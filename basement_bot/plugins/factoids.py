@@ -31,15 +31,12 @@ def setup(bot):
 
 class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
 
-    PLUGIN_NAME = __name__
     MODEL = Factoid
     CACHE_UPDATE_MINUTES = 10
 
     async def db_preconfig(self):
         factoid_prefix = self.config.prefix
         command_prefix = self.bot.config.main.required.command_prefix
-
-        self.bot.plugin_api.plugins.factoids.memory.factoid_events = []
 
         if factoid_prefix == command_prefix:
             raise RuntimeError(
@@ -157,22 +154,20 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
         if not message:
             await self.tagged_response(ctx, "I was unable to render that factoid")
 
-        if not self.bot.plugin_api.plugins.get("relay"):
+        await self.dispatch_relay_factoid(ctx, factoid.message)
+
+    async def dispatch_relay_factoid(self, ctx, message):
+        relay_cog = self.bot.cogs.get("DiscordRelay")
+        if not relay_cog:
             return
 
-        self.dispatch_relay_factoid(ctx, factoid.message)
-
-    def dispatch_relay_factoid(self, ctx, message):
         # add to the relay plugin queue if it's loaded
         if not ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.channels:
             return
 
-        ctx.content = message
+        ctx.message.content = message
 
-        self.bot.plugin_api.plugins.factoids.memory.factoid_events.append(ctx)
-
-        while len(self.bot.plugin_api.plugins.factoids.memory.factoid_events) > 10:
-            del self.bot.plugin_api.plugins.factoids.memory.factoid_events[0]
+        await relay_cog.response(ctx, message)
 
     def load_jobs(self):
         factoids = self.get_all_factoids()
@@ -495,7 +490,7 @@ class FactoidManager(cogs.DatabasePlugin, cogs.MatchPlugin, cogs.LoopPlugin):
             finish_time = loop_config.get("finish_time", "???")
             embed_kwargs[factoid_name] = f"Next execution: {finish_time} UTC"
 
-        embed = self.bot.embed_api.Embed.embed_from_kwargs(
+        embed = self.bot.embed_api.Embed.from_kwargs(
             title="Running factoid loops",
             description=f"Next cache update: {self.cache_update_time} UTC",
             **embed_kwargs,

@@ -10,8 +10,6 @@ def setup(bot):
 
 class Weather(cogs.BasicPlugin):
 
-    PLUGIN_NAME = __name__
-
     async def preconfig(self):
         if self.config.units == "imperial":
             self.temp_unit = "F"

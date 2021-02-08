@@ -24,7 +24,6 @@ def setup(bot):
 
 class Grabber(cogs.DatabasePlugin):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
     SEARCH_LIMIT = 20
     MODEL = Grab

@@ -717,7 +717,6 @@ class CodQuotesMixin:
 
 class DuckHunt(cogs.DatabasePlugin, cogs.LoopPlugin, CodQuotesMixin):
 
-    PLUGIN_NAME = __name__
     MODEL = DuckUser
     DUCK_PIC_URL = "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
     BEFRIEND_URL = "https://cdn.icon-icons.com/icons2/603/PNG/512/heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"

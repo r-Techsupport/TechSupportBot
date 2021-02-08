@@ -9,7 +9,6 @@ def setup(bot):
 
 class Mocker(cogs.BasicPlugin):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
     SEARCH_LIMIT = 20
 

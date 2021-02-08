@@ -12,7 +12,6 @@ def setup(bot):
 
 class Hugger(cogs.BasicPlugin):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
     HUGS_SELECTION = [

@@ -9,7 +9,6 @@ def setup(bot):
 
 class Googler(cogs.BasicPlugin):
 
-    PLUGIN_NAME = __name__
     GOOGLE_URL = "https://www.googleapis.com/customsearch/v1"
     YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=1"
 

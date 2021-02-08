@@ -9,7 +9,6 @@ def setup(bot):
 
 class Wolfram(cogs.BasicPlugin):
 
-    PLUGIN_NAME = __name__
     API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
 
     @decorate.with_typing

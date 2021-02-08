@@ -9,8 +9,6 @@ def setup(bot):
 
 class Spotify(cogs.BasicPlugin):
 
-    PLUGIN_NAME = __name__
-
     AUTH_URL = "https://accounts.spotify.com/api/token"
     API_URL = "https://api.spotify.com/v1/search"
 

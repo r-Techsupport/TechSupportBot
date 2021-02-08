@@ -22,7 +22,6 @@ class Question:
 
 class WouldYouRather(cogs.BasicPlugin):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
     async def preconfig(self):

@@ -18,7 +18,6 @@ def setup(bot):
 
 class Rules(cogs.DatabasePlugin):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
     MODEL = Rule
 

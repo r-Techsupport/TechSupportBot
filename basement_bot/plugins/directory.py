@@ -20,8 +20,6 @@ class DirectoryExistence(cogs.DatabasePlugin.get_base()):
 
 class ChannelDirectory(cogs.DatabasePlugin):
 
-    PLUGIN_NAME = __name__
-
     # I refuse to install num2word
     OPTION_EMOJIS = [
         "one",

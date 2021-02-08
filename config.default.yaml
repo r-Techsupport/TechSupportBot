@@ -14,6 +14,12 @@ main:
         host: db
         prefix: postgres
         port: 5432
+    rabbitmq:
+        user: admin
+        password: admin
+        host: rabbitmq
+        vhost: "/"
+        port: 5672
     disabled_plugins: []
 
 plugins:
@@ -48,14 +54,9 @@ plugins:
             "FOX"
         ]
     relay:
-        mq_host:
-        mq_vhost:
-        mq_port:
-        mq_user:
-        mq_pass:
         channel_map: {}
-        mq_send_queue:  DiscordToIRC
-        mq_recv_queue: IRCToDiscord
+        send_queue:  DiscordToIRC
+        recv_queue: IRCToDiscord
         stale_seconds: 600
         publish_seconds: 2
         consume_seconds: 2

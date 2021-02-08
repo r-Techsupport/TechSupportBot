@@ -12,7 +12,6 @@ def setup(bot):
 
 class Emojis(cogs.BasicPlugin):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
     SEARCH_LIMIT = 20
     KEY_MAP = {"?": "question", "!": "exclamation"}

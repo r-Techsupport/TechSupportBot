@@ -11,7 +11,6 @@ def setup(bot):
 
 class Giphy(cogs.BasicPlugin):
 
-    PLUGIN_NAME = __name__
     GIPHY_URL = "http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"
     SEARCH_LIMIT = 5
 

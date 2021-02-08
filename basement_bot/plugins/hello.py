@@ -8,7 +8,6 @@ def setup(bot):
 
 class Greeter(cogs.BasicPlugin):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
     @commands.command(

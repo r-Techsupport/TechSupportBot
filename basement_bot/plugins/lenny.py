@@ -11,7 +11,6 @@ def setup(bot):
 
 class Lenny(cogs.BasicPlugin):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
     LENNYS_SELECTION = [

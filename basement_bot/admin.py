@@ -12,15 +12,14 @@ class AdminControl(cogs.BasicPlugin):
     """Cog object for admin-only bot control"""
 
     ADMIN_ONLY = True
-
     HAS_CONFIG = False
-    PLUGIN_NAME = __name__
 
     @commands.group(
+        name="plugin",
         brief="Executes a plugin bot command",
         description="Executes a plugin bot command",
     )
-    async def plugin(self, ctx):
+    async def plugin_group(self, ctx):
         # pylint: disable=missing-function-docstring
         pass
 

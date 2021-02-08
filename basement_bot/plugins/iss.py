@@ -9,7 +9,6 @@ def setup(bot):
 
 class ISSLocator(cogs.BasicPlugin):
 
-    PLUGIN_NAME = __name__
     ISS_URL = "http://api.open-notify.org/iss-now.json"
     GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
     HAS_CONFIG = False
