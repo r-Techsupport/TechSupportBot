@@ -7,7 +7,7 @@ def setup(bot):
     bot.add_cog(Embedder(bot))
 
 
-class Embedder(cogs.BasicPlugin):
+class Embedder(cogs.BaseCog):
 
     HAS_CONFIG = False
 

@@ -8,7 +8,7 @@ import decorate
 from discord.ext import commands
 
 
-class AdminControl(cogs.BasicPlugin):
+class AdminControl(cogs.BaseCog):
     """Cog object for admin-only bot control"""
 
     ADMIN_ONLY = True
@@ -24,7 +24,7 @@ class AdminControl(cogs.BasicPlugin):
         pass
 
     @decorate.with_typing
-    @plugin.command(name="status")
+    @plugin_group.command(name="status")
     async def plugin_status(self, ctx, *, plugin_name: str = None):
         """Gets the status of the bot plugins.
 
@@ -68,7 +68,7 @@ class AdminControl(cogs.BasicPlugin):
         self.task_paginate(ctx, embeds)
 
     @decorate.with_typing
-    @plugin.command(name="load")
+    @plugin_group.command(name="load")
     async def load_plugin(self, ctx, *, plugin_name: str):
         """Loads a plugin by filename.
 
@@ -82,7 +82,7 @@ class AdminControl(cogs.BasicPlugin):
         await self.tagged_response(ctx, response.message)
 
     @decorate.with_typing
-    @plugin.command(name="unload")
+    @plugin_group.command(name="unload")
     async def unload_plugin(self, ctx, *, plugin_name: str):
         """Unloads a plugin by filename.
 

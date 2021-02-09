@@ -4,24 +4,20 @@
 import ast
 import asyncio
 import datetime
+import inspect
 import random
 import re
-import os
 
 import aiocron
-import aiohttp
 import discord
 import logger
 import munch
 from discord.ext import commands
-from sqlalchemy.ext import declarative
-
-import inspect
 
 log = logger.get_logger("Cogs")
 
 
-class BasicPlugin(commands.Cog):
+class BaseCog(commands.Cog):
     """The base plugin.
 
     Complex helper methods are also based here.
@@ -32,29 +28,55 @@ class BasicPlugin(commands.Cog):
 
     HAS_CONFIG = True
     ADMIN_ONLY = False
+    KEEP_COG_ON_FAILURE = False
+    KEEP_PLUGIN_ON_FAILURE = False
+    KEEP_PLUGIN_ON_UNLOAD = False
 
-    def __init__(self, bot):
+    def __init__(self, bot, models=None):
         self.bot = bot
-        self.extension_name = inspect.getmodule(self).__name__.split(".")[-1]
-        self.config = self.bot.config.plugins.get(self.extension_name)
 
+        # this is sure to throw a bug at some point
+        self.extension_name = inspect.getmodule(self).__name__.split(".")[-1]
+
+        self.config = self.bot.config.plugins.get(self.extension_name)
         if not self.config and self.HAS_CONFIG:
             raise ValueError(
                 f"No valid configuration found for plugin {self.extension_name}"
             )
 
+        if models is None:
+            models = []
+        self.models = munch.Munch()
+        for model in models:
+            self.models[model.__name__] = model
+
         self.bot.loop.create_task(self._preconfig())
-        
-    async def _handle_preconfig(self, coroutine):
-        try:
-            await coroutine()
-        except Exception as e:
-            await self.bot.error_api.handle_error(coroutine.__name__, e)
+
+    def cog_unload(self):
+        """Allows the state to exit after unloading."""
+        if not self.KEEP_PLUGIN_ON_UNLOAD:
             self.bot.plugin_api.unload_plugin(self.extension_name)
+
+    async def _handle_preconfig(self, handler):
+        """Wrapper for performing preconfig on a plugin.
+
+        This makes the plugin unload when there is an error.
+
+        parameters:
+            handler (asyncio.coroutine): the preconfig handler
+        """
+        await self.bot.wait_until_ready()
+        try:
+            await handler()
+        except Exception as e:
+            await self.bot.error_api.handle_error(handler.__name__, e)
+            if not self.KEEP_COG_ON_FAILURE:
+                self.bot.remove_cog(self)
+            if not self.KEEP_PLUGIN_ON_FAILURE:
+                self.bot.plugin_api.unload_plugin(self.extension_name)
 
     async def _preconfig(self):
         """Blocks the preconfig until the bot is ready."""
-        await self.bot.wait_until_ready()
         await self._handle_preconfig(self.preconfig)
 
     async def preconfig(self):
@@ -232,40 +254,8 @@ class BasicPlugin(commands.Cog):
         """
         self.bot.loop.create_task(self.paginate(*args, **kwargs))
 
-    async def http_call(self, method, *args, **kwargs):
-        """Makes an HTTP request.
 
-        parameters:
-            method (string): the HTTP method to use
-            *args (...list): the args with which to call the HTTP Python method
-            **kwargs (...dict): the keyword args with which to call the HTTP Python method
-        """
-        client = aiohttp.ClientSession()
-        method_fn = getattr(client, method.lower(), None)
-        if not method_fn:
-            raise AttributeError(f"Unable to use HTTP method: {method}")
-
-        get_raw_response = kwargs.pop("get_raw_response", None)
-
-        try:
-            response_object = await method_fn(*args, **kwargs)
-
-            if get_raw_response:
-                return response_object
-
-            response = await response_object.json() if response_object else {}
-            response["status_code"] = getattr(response_object, "status_code", None)
-
-        except Exception as e:
-            await self.bot.error_api.handle_error("http_cog", e)
-            response = {"status_code": None}
-
-        await client.close()
-
-        return response
-
-
-class MatchPlugin(BasicPlugin):
+class MatchCog(BaseCog):
     """
     Plugin for matching a specific context criteria and responding.
 
@@ -290,14 +280,14 @@ class MatchPlugin(BasicPlugin):
 
         await self.response(ctx, message.content)
 
-    async def match(self, ctx, content):
+    async def match(self, _ctx, _content):
         """Runs a boolean check on message content.
 
         parameters:
             ctx (context): the context object
             content (str): the message content
         """
-        raise RuntimeError("Match function must be defined in sub-class")
+        return True
 
     async def response(self, ctx, content):
         """Performs a response if the match is valid.
@@ -306,39 +296,9 @@ class MatchPlugin(BasicPlugin):
             ctx (context): the context object
             content (str): the message content
         """
-        raise RuntimeError("Response function must be defined in sub-class")
 
 
-class DatabasePlugin(BasicPlugin):
-    """Plugin for accessing the database."""
-
-    MODEL = None
-
-    def __init__(self, bot):
-        super().__init__(bot)
-
-        self.db_session = self.bot.database_api.get_session
-
-        if self.MODEL:
-            self.bot.database_api.create_table(self.MODEL)
-
-        self.bot.loop.create_task(self.db_preconfig())
-
-    async def _db_preconfig(self):
-        """Blocks the db_preconfig until the bot is ready."""
-        await self.bot.wait_until_ready()
-        await self._handle_preconfig(self.db_preconfig)
-
-    async def db_preconfig(self):
-        """Preconfigures the environment before starting the plugin."""
-
-    @staticmethod
-    def get_base():
-        """Provides a unique base for each plugin."""
-        return declarative.declarative_base()
-
-
-class LoopPlugin(BasicPlugin):
+class LoopCog(BaseCog):
     """Plugin for various types of looping including cron-config.
 
     This currently doesn't utilize the tasks library.
@@ -350,14 +310,11 @@ class LoopPlugin(BasicPlugin):
     DEFAULT_WAIT = 30
     WAIT_KEY = None
     UNITS = "seconds"
-    CONVERSIONS = {
-        "seconds": 1,
-        "minutes": 60,
-        "hours": 3600
-    }
+    CONVERSIONS = {"seconds": 1, "minutes": 60, "hours": 3600}
+    UNLOAD_AFTER_LOOP = True
 
-    def __init__(self, bot):
-        super().__init__(bot)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.conversion_factor = self.CONVERSIONS.get(self.UNITS, 1)
         self.state = True
         self.bot.loop.create_task(self._loop_execute())
@@ -379,6 +336,9 @@ class LoopPlugin(BasicPlugin):
             else:
                 await asyncio.sleep(1)
 
+        if self.UNLOAD_AFTER_LOOP:
+            self.bot.plugin_api.unload_plugin(self.extension_name)
+
     async def _execute(self):
         """Private method for performing the main execution method."""
         self.execution_locked = True
@@ -393,8 +353,9 @@ class LoopPlugin(BasicPlugin):
         self.execution_locked = False
 
     def cog_unload(self):
-        """Allows the state to exit after unloading."""
+        """Allows the loop to exit after unloading."""
         self.state = False
+        super().cog_unload()
 
     # pylint: disable=method-hidden
     async def wait(self):
@@ -441,7 +402,6 @@ class LoopPlugin(BasicPlugin):
 
     async def _loop_preconfig(self):
         """Blocks the loop_preconfig until the bot is ready."""
-        await self.bot.wait_until_ready()
         await self._handle_preconfig(self.loop_preconfig)
 
     async def loop_preconfig(self):

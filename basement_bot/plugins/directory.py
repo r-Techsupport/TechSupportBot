@@ -8,17 +8,15 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(ChannelDirectory(bot))
+    class DirectoryExistence(bot.db.Model):
+        __tablename__ = "directoryexistence"
+        guild_id = bot.db.Column(bot.db.String, primary_key=True)
+        last_message = bot.db.Column(bot.db.String, default=None)
+
+    bot.add_cog(ChannelDirectory(bot, models=[DirectoryExistence]))
 
 
-# can you think of a better name?
-class DirectoryExistence(cogs.DatabasePlugin.get_base()):
-    __tablename__ = "directoryexistence"
-    guild_id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
-    last_message = sqlalchemy.Column(sqlalchemy.String, default=None)
-
-
-class ChannelDirectory(cogs.DatabasePlugin):
+class ChannelDirectory(cogs.BaseCog):
 
     # I refuse to install num2word
     OPTION_EMOJIS = [
@@ -35,14 +33,12 @@ class ChannelDirectory(cogs.DatabasePlugin):
         "eleven",
         "twelve",
     ]
-    MODEL = DirectoryExistence
     DIR_ICON_URL = "https://cdn.icon-icons.com/icons2/1585/PNG/512/3709735-application-contact-directory-phonebook-storage_108083.png"
 
     async def preconfig(self):
         self.message_ids = set()
         self.option_map = {}
 
-        db = self.db_session()
         self.option_emojis = [
             emoji.emojize(f":{emoji_text}:", use_aliases=True)
             for emoji_text in self.OPTION_EMOJIS
@@ -61,19 +57,15 @@ class ChannelDirectory(cogs.DatabasePlugin):
             if not channel:
                 continue
 
-            exists = True
-            existence = (
-                db.query(DirectoryExistence)
-                .filter(
-                    DirectoryExistence.guild_id == str(guild_id),
-                )
-                .first()
-            )
+            existence = await self.models.DirectoryExistence.query.where(
+                self.models.DirectoryExistence.guild_id == str(guild_id)
+            ).gino.first()
             if not existence:
                 # no record in table
                 # create new object
-                exists = False
-                existence = DirectoryExistence(guild_id=str(guild_id))
+                existence = await self.models.DirectoryExistence(
+                    guild_id=str(guild_id)
+                ).create()
                 message_id = None
             else:
                 # there is a record
@@ -95,18 +87,12 @@ class ChannelDirectory(cogs.DatabasePlugin):
                 await message.delete()
 
             new_message = await self.send_embed(
-                self.config.get(guild_id, {}).get("channel_map"), guild, channel
+                self.config.get(guild_id, {}).get("channel_map", {}), guild, channel
             )
 
-            existence.last_message = str(new_message.id)
+            await existence.update(last_message=str(new_message.id)).apply()
+
             self.message_ids.add(new_message.id)
-
-            if not exists:
-                db.add(existence)
-
-            db.commit()
-
-        db.close()
 
     async def send_embed(self, channel_map, guild, directory_channel):
         embed = self.bot.embed_api.Embed(

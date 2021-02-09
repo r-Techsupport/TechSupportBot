@@ -6,7 +6,7 @@ def setup(bot):
     bot.add_cog(Greeter(bot))
 
 
-class Greeter(cogs.BasicPlugin):
+class Greeter(cogs.BaseCog):
 
     HAS_CONFIG = False
 

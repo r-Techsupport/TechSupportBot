@@ -20,7 +20,7 @@ class Question:
         return f"Would you rather: {self.a} **OR** {self.b}?"
 
 
-class WouldYouRather(cogs.BasicPlugin):
+class WouldYouRather(cogs.BaseCog):
 
     HAS_CONFIG = False
 

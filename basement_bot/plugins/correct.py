@@ -7,7 +7,7 @@ def setup(bot):
     bot.add_cog(Corrector(bot))
 
 
-class Corrector(cogs.BasicPlugin):
+class Corrector(cogs.BaseCog):
 
     HAS_CONFIG = False
     SEARCH_LIMIT = 50

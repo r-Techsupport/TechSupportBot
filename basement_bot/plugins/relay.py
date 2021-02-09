@@ -1,3 +1,4 @@
+import copy
 import datetime
 import functools
 import json
@@ -5,7 +6,6 @@ import logging
 import re
 import uuid
 
-import aio_pika
 import cogs
 import decorate
 import logger
@@ -20,15 +20,10 @@ def setup(bot):
     bot.add_cog(IRCReceiver(bot))
 
 
-class DiscordRelay(cogs.MatchPlugin):
-
+class DiscordRelay(cogs.MatchCog):
     async def preconfig(self):
         self.channels = list(self.config.channel_map.values())
         self.bot.plugin_api.plugins.relay.memory.channels = self.channels
-
-        self.connection = await aio_pika.connect_robust(
-            self.bot.generate_amqp_url(), loop=self.bot.loop
-        )
 
     async def match(self, ctx, _):
         if ctx.channel.id in self.channels:
@@ -36,20 +31,19 @@ class DiscordRelay(cogs.MatchPlugin):
         return False
 
     async def response(self, ctx, _):
-        ctx.message.content = self.sub_mentions_for_usernames(ctx.message.content)
+        ctx_data = munch.Munch()
 
-        payload = self.serialize("message", ctx)
+        ctx_data.message = copy.copy(ctx.message)
+        ctx_data.author = ctx.author
+        ctx_data.channel = ctx.channel
 
-        await self.publish(payload)
-
-    async def publish(self, payload):
-        channel = await self.connection.channel()
-
-        await channel.default_exchange.publish(
-            aio_pika.Message(body=payload.encode()), routing_key=self.config.send_queue
+        ctx_data.message.content = self.sub_mentions_for_usernames(
+            ctx_data.message.content
         )
 
-        await channel.close()
+        payload = self.serialize("message", ctx_data)
+
+        await self.bot.rabbit_publish(payload, self.config.send_queue)
 
     @staticmethod
     def serialize(type_, ctx):
@@ -63,7 +57,7 @@ class DiscordRelay(cogs.MatchPlugin):
             "%Y-%m-%d %H:%M:%S.%f"
         )
         data.event.content = ctx.message.content
-        data.event.command = getattr(ctx, "irc_command", None)
+        data.event.command = None
         data.event.attachments = [
             attachment.url for attachment in ctx.message.attachments
         ]
@@ -101,26 +95,20 @@ class DiscordRelay(cogs.MatchPlugin):
         return as_json
 
 
-class IRCReceiver(cogs.BasicPlugin):
+class IRCReceiver(cogs.BaseCog):
 
     IRC_LOGO = "📨"
 
     async def preconfig(self):
         self.channels = list(self.config.channel_map.values())
         self.error_count = 0
-        self.connection = await aio_pika.connect_robust(self.bot.generate_amqp_url())
 
         await self.run()
 
     async def run(self):
-        async with self.connection:
-            channel = await self.connection.channel()
-            queue = await channel.declare_queue(self.config.recv_queue, durable=True)
-
-            async with queue.iterator() as queue_iter:
-                async for message in queue_iter:
-                    async with message.process():
-                        await self.handle_event(message.body.decode())
+        await self.bot.rabbit_consume(
+            self.config.recv_queue, self.handle_event, poll_wait=1, durable=True
+        )
 
     async def handle_event(self, response):
         data = self.deserialize(response)

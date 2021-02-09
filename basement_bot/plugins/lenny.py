@@ -9,7 +9,7 @@ def setup(bot):
     bot.add_cog(Lenny(bot))
 
 
-class Lenny(cogs.BasicPlugin):
+class Lenny(cogs.BaseCog):
 
     HAS_CONFIG = False
 

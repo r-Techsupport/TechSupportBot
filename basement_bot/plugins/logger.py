@@ -5,8 +5,7 @@ def setup(bot):
     bot.add_cog(Logger(bot))
 
 
-class Logger(cogs.MatchPlugin):
-
+class Logger(cogs.MatchCog):
     async def match(self, ctx, _):
         if not ctx.channel.id in self.config.channel_map:
             return False

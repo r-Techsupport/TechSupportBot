@@ -8,7 +8,7 @@ def setup(bot):
     bot.add_cog(KanyeQuotes(bot))
 
 
-class KanyeQuotes(cogs.LoopPlugin):
+class KanyeQuotes(cogs.LoopCog):
 
     API_URL = "https://api.kanye.rest"
     KANYE_PICS = [
@@ -28,7 +28,7 @@ class KanyeQuotes(cogs.LoopPlugin):
         self.setup_random_waiting("min_hours", "max_hours")
 
     async def execute(self):
-        response = await self.http_call("get", self.API_URL)
+        response = await self.bot.http_call("get", self.API_URL)
         quote = response.get("quote")
 
         if not quote:

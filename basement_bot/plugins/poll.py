@@ -12,7 +12,7 @@ def setup(bot):
     bot.add_cog(Poller(bot))
 
 
-class Poller(cogs.BasicPlugin):
+class Poller(cogs.BaseCog):
 
     HAS_CONFIG = False
 

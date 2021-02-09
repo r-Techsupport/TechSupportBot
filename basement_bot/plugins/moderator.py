@@ -9,7 +9,7 @@ def setup(bot):
     bot.add_cog(Moderator(bot))
 
 
-class Moderator(cogs.BasicPlugin):
+class Moderator(cogs.BaseCog):
 
     HAS_CONFIG = False
 

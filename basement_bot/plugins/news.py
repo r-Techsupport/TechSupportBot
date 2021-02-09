@@ -7,7 +7,7 @@ def setup(bot):
     bot.add_cog(News(bot))
 
 
-class News(cogs.LoopPlugin):
+class News(cogs.LoopCog):
 
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
 
@@ -22,7 +22,7 @@ class News(cogs.LoopPlugin):
         await self.wait()
 
     async def execute(self):
-        response = await self.http_call(
+        response = await self.bot.http_call(
             "get", self.API_URL.format(self.config.api_key, self.config.country)
         )
 

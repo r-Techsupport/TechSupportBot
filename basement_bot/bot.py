@@ -1,13 +1,16 @@
 """The main bot functions.
 """
 
+import asyncio
 import sys
 
 import admin
-import database
+import aio_pika
+import aiohttp
 import discord
 import embed
 import error
+import gino
 import logger
 import munch
 import plugin
@@ -16,32 +19,34 @@ from discord.ext import commands
 
 log = logger.get_logger("Basement Bot")
 
-# pylint: disable=too-many-instance-attributes
+#pylint: disable=too-many-public-methods
 class BasementBot(commands.Bot):
     """The main bot object.
 
     parameters:
-        run (bool): True if the bot should run on instantiation
+        run_on_init (bool): True if the bot should run on instantiation
         validate_config (bool): True if the bot's config should be validated
     """
 
     CONFIG_PATH = "./config.yaml"
 
-    def __init__(self, run=True, validate_config=True):
-        # the config API will set this
+    def __init__(self, run_on_init=True, validate_config=True):
+
         self.config = None
         self.load_config(validate=validate_config)
 
+        self.db = None
+        self.rabbit = None
+
         self.plugin_api = plugin.PluginAPI(bot=self)
-        self.database_api = database.DatabaseAPI(bot=self)
         self.error_api = error.ErrorAPI(bot=self)
         self.embed_api = embed.EmbedAPI(bot=self)
 
         super().__init__(self.config.main.required.command_prefix)
 
-        if run:
+        if run_on_init:
             log.debug("Bot starting upon init")
-            self.start(self.config.main.required.auth_token)
+            self.run(self.config.main.required.auth_token)
         else:
             log.debug("Bot created but not started")
 
@@ -67,7 +72,7 @@ class BasementBot(commands.Bot):
             and message.author.id != owner.id
             and not message.author.bot
         ):
-            await owner.send(f'PM from {message.author.mention}: "{message.content}"')
+            await owner.send(f'PM from `{message.author}`: "{message.content}"')
 
         ctx = await self.get_context(message)
         await self.invoke(ctx)
@@ -76,7 +81,7 @@ class BasementBot(commands.Bot):
         """Catches non-command errors and sends them to the error API for processing.
 
         parameters:
-            event_method (str): the event method associated with the error (eg. message)
+            event_method (str): the event method name associated with the error (eg. on_message)
         """
         _, exception, _ = sys.exc_info()
         await self.error_api.handle_error(event_method, exception)
@@ -90,27 +95,48 @@ class BasementBot(commands.Bot):
         """
         await self.error_api.handle_command_error(context, exception)
 
-    # pylint: disable=invalid-overridden-method
-    def start(self, *args, **kwargs):
-        """Loads initial plugins (blocking) and starts the connection."""
+    def run(self, *args, **kwargs):
+        """Starts the event loop and blocks until interrupted."""
         log.debug("Starting bot...")
+        try:
+            self.loop.run_until_complete(self.start(*args, **kwargs))
+        except (SystemExit, KeyboardInterrupt):
+            self.loop.run_until_complete(self.cleanup())
+        finally:
+            self.loop.close()
+
+    async def start(self, *args, **kwargs):
+        """Configures connections and then starts the actual bot."""
+        try:
+            self.db = await self.get_db_ref()
+        except Exception as e:
+            log.warning("Could not connect to Postgres - ignoring")
+
+        try:
+            self.rabbit = await self.get_rabbit_connection()
+        except Exception as e:
+            log.warning("Could not connect to RabbitMQ - ignoring")
 
         self.plugin_api.load_plugins()
+
+        if self.db:
+            await self.db.gino.create_all()
 
         try:
             self.add_cog(admin.AdminControl(self))
         except (TypeError, commands.CommandError) as e:
             log.warning(f"Could not load AdminControl cog: {e}")
 
-        try:
-            self.loop.run_until_complete(super().start(*args, **kwargs))
-        except (SystemExit, KeyboardInterrupt):
-            self.loop.run_until_complete(self.logout())
-        finally:
-            self.loop.close()
+        await super().start(*args, **kwargs)
+
+    async def cleanup(self):
+        """Cleans up after the event loop is interupted."""
+        await super().logout()
+        await self.db.close()
+        await self.rabbit.close()
 
     async def get_owner(self):
-        """Gets the owner object for the bot application."""
+        """Gets the owner object from the bot application."""
         try:
             app_info = await self.application_info()
             return app_info.owner
@@ -119,8 +145,6 @@ class BasementBot(commands.Bot):
 
     async def can_run(self, ctx, *, call_once=False):
         """Wraps the default can_run check to evaluate if a check call is necessary.
-
-        This method wraps the GroupMixin method.
 
         parameters:
             ctx (discord.Context): the context associated with the command
@@ -184,8 +208,9 @@ class BasementBot(commands.Bot):
 
     def validate_config(self):
         """Validates several config subsections."""
-        for subsection in ["required", "database"]:
+        for subsection in ["required"]:
             self.validate_config_subsection("main", subsection)
+
         for subsection in list(self.config.plugins.keys()):
             self.validate_config_subsection("plugins", subsection)
 
@@ -218,9 +243,32 @@ class BasementBot(commands.Bot):
                         f"Config key {error_key} from {section}.{subsection} not supplied"
                     )
 
-    def generate_amqp_url(self):
-        """Dynamically converts config to an AMQP URL.
+    def generate_db_url(self):
+        """Dynamically converts config to a Postgres URL."""
+        try:
+            user = self.config.main.database.user
+            password = self.config.main.database.password
+            name = self.config.main.database.name
+            host = self.config.main.database.host
+            port = self.config.main.database.port
+        except AttributeError:
+            return None
+
+        return f"postgres://{user}:{password}@{host}:{port}/{name}"
+
+    async def get_db_ref(self):
+        """Grabs the main DB reference.
+
+        This doesn't follow a singleton pattern (use bot.db instead).
         """
+        db_ref = gino.Gino()
+        db_url = self.generate_db_url()
+        await db_ref.set_bind(db_url)
+
+        return db_ref
+
+    def generate_rabbit_url(self):
+        """Dynamically converts config to an AMQP URL."""
         host = self.config.main.rabbitmq.host
         port = self.config.main.rabbitmq.port
         vhost = self.config.main.rabbitmq.vhost
@@ -229,10 +277,99 @@ class BasementBot(commands.Bot):
 
         return f"amqp://{user}:{password}@{host}:{port}{vhost}"
 
-    def get_modules(self):
-        """Gets the current list of plugin modules."""
-        return [
-            os.path.basename(f)[:-3]
-            for f in glob.glob(f"{self.PLUGINS_DIR}/*.py")
-            if os.path.isfile(f) and not f.endswith("__init__.py")
-        ]
+    async def get_rabbit_connection(self):
+        """Grabs the main RabbitMQ connection.
+
+        This doesn't follow a singleton pattern (use bot.rabbit instead).
+        """
+        connection = await aio_pika.connect_robust(
+            self.generate_rabbit_url(), loop=self.loop
+        )
+        return connection
+
+    async def rabbit_publish(self, body, routing_key):
+        """Publishes a body to the message queue.
+
+        parameters:
+            body (str): the body to send
+            routing_key (str): the queue name to publish to
+        """
+        channel = await self.rabbit.channel()
+
+        await channel.default_exchange.publish(
+            aio_pika.Message(body=body.encode()), routing_key=routing_key
+        )
+
+        await channel.close()
+
+    async def rabbit_consume(self, queue_name, handler, *args, **kwargs):
+        """Consumes from a queue indefinitely.
+
+        parameters:
+            queue_name (str): the name of the queue
+            handler (asyncio.coroutine): a handler for processing each message
+            state_func (asyncio.coroutine): a state provider for exiting the consumation
+            poll_wait (int): the time to wait inbetween each consumation
+        """
+        state_func = kwargs.pop("state_func", None)
+
+        poll_wait = kwargs.pop("poll_wait", None)
+
+        channel = await self.rabbit.channel()
+
+        queue = await channel.declare_queue(queue_name, *args, **kwargs)
+
+        state = True
+        async with queue.iterator() as queue_iter:
+            async for message in queue_iter:
+
+                if state_func:
+                    state = await state_func()
+                    if not state:
+                        break
+
+                if poll_wait:
+                    await asyncio.sleep(poll_wait)
+
+                async with message.process():
+                    await handler(message.body.decode())
+
+        await channel.close()
+
+    def get_http_session(self):
+        """Returns an async HTTP session."""
+        return aiohttp.ClientSession()
+
+    async def http_call(self, method, *args, **kwargs):
+        """Makes an HTTP request.
+
+        By default this returns JSON/dict with the status code injected.
+
+        parameters:
+            method (string): the HTTP method to use
+            get_raw_response (bool): True if the actual response object should be returned
+        """
+        client = self.get_http_session()
+
+        method_fn = getattr(client, method.lower(), None)
+        if not method_fn:
+            raise AttributeError(f"Unable to use HTTP method: {method}")
+
+        get_raw_response = kwargs.pop("get_raw_response", False)
+
+        try:
+            response_object = await method_fn(*args, **kwargs)
+
+            if get_raw_response:
+                return response_object
+
+            response = await response_object.json() if response_object else {}
+            response["status_code"] = getattr(response_object, "status_code", None)
+
+        except Exception as e:
+            await self.error_api.handle_error("http_call", e)
+            response = {"status_code": None}
+
+        await client.close()
+
+        return response

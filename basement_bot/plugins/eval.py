@@ -10,7 +10,7 @@ def setup(bot):
     bot.add_cog(Evaluator(bot))
 
 
-class Evaluator(cogs.BasicPlugin):
+class Evaluator(cogs.BaseCog):
 
     HAS_CONFIG = False
     THREAD_WAIT_MINUTES = 10

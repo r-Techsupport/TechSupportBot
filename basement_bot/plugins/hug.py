@@ -10,7 +10,7 @@ def setup(bot):
     bot.add_cog(Hugger(bot))
 
 
-class Hugger(cogs.BasicPlugin):
+class Hugger(cogs.BaseCog):
 
     HAS_CONFIG = False
 
