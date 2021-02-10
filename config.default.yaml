@@ -12,7 +12,6 @@ main:
         password: admin
         name: basement_bot
         host: db
-        prefix: postgres
         port: 5432
     rabbitmq:
         user: admin
