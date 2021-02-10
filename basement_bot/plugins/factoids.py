@@ -194,7 +194,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
         compare_time = datetime.datetime.utcnow()
 
         if compare_time > self.cache_update_time:
-            self.load_jobs()
+            await self.load_jobs()
             self.cache_update_time = datetime.datetime.utcnow() + datetime.timedelta(
                 minutes=self.config.loop_update_minutes
             )
