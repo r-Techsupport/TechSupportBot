@@ -7,14 +7,13 @@ def setup(bot):
     bot.add_cog(Googler(bot))
 
 
-class Googler(cogs.BasicPlugin):
+class Googler(cogs.BaseCog):
 
-    PLUGIN_NAME = __name__
     GOOGLE_URL = "https://www.googleapis.com/customsearch/v1"
     YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=1"
 
     async def get_items(self, url, data):
-        response = await self.http_call("get", url, params=data)
+        response = await self.bot.http_call("get", url, params=data)
         return response.get("items")
 
     @commands.group(

@@ -4,30 +4,26 @@ import random
 import cogs
 import decorate
 import discord
-import sqlalchemy
 from discord.ext import commands
 
 
-class Grab(cogs.DatabasePlugin.get_base()):
-    __tablename__ = "grabs"
-
-    pk = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    author_id = sqlalchemy.Column(sqlalchemy.String)
-    channel = sqlalchemy.Column(sqlalchemy.String)
-    message = sqlalchemy.Column(sqlalchemy.String)
-    time = sqlalchemy.Column(sqlalchemy.DateTime, default=datetime.datetime.utcnow)
-
-
 def setup(bot):
-    bot.add_cog(Grabber(bot))
+    class Grab(bot.db.Model):
+        __tablename__ = "grabs"
+
+        pk = bot.db.Column(bot.db.Integer, primary_key=True)
+        author_id = bot.db.Column(bot.db.String)
+        channel = bot.db.Column(bot.db.String)
+        message = bot.db.Column(bot.db.String)
+        time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+
+    bot.add_cog(Grabber(bot, models=[Grab]))
 
 
-class Grabber(cogs.DatabasePlugin):
+class Grabber(cogs.BaseCog):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
     SEARCH_LIMIT = 20
-    MODEL = Grab
 
     # this could probably be a check decorator
     # but oh well
@@ -47,7 +43,7 @@ class Grabber(cogs.DatabasePlugin):
         description="Gets the last message of the mentioned user and saves it",
         usage="@user",
     )
-    async def grab_user(self, ctx, user_to_grab: discord.Member):
+    async def grab_user(self, ctx, *, user_to_grab: discord.Member):
         if await self.invalid_channel(ctx):
             return
 
@@ -69,31 +65,26 @@ class Grabber(cogs.DatabasePlugin):
             )
             return
 
-        db = self.db_session()
-
         grab = (
-            db.query(Grab)
-            .filter(
-                Grab.author_id == str(user_to_grab.id),
-                Grab.message == grab_message,
+            await self.models.Grab.query.where(
+                self.models.Grab.author_id == str(user_to_grab.id),
             )
-            .first()
+            .where(self.models.Grab.message == grab_message)
+            .gino.first()
         )
 
         if grab:
             await self.tagged_response(ctx, "That grab already exists!")
-        else:
-            db.add(
-                Grab(
-                    author_id=str(user_to_grab.id),
-                    channel=str(ctx.channel.id),
-                    message=grab_message,
-                )
-            )
-            db.commit()
-            await self.tagged_response(ctx, f"Successfully saved: '*{grab_message}*'")
+            return
 
-        db.close()
+        grab = self.models.Grab(
+            author_id=str(user_to_grab.id),
+            channel=str(ctx.channel.id),
+            message=grab_message,
+        )
+        await grab.create()
+
+        await self.tagged_response(ctx, f"Successfully saved: '*{grab_message}*'")
 
     @commands.group(
         brief="Executes a grabs command",
@@ -106,11 +97,12 @@ class Grabber(cogs.DatabasePlugin):
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @grabs.command(
+        name="all",
         brief="Returns grabs for a user",
         description="Returns all grabbed messages for a user",
         usage="@user",
     )
-    async def all(self, ctx, user_to_grab: discord.Member):
+    async def all_grabs(self, ctx, user_to_grab: discord.Member):
         if await self.invalid_channel(ctx):
             return
 
@@ -118,16 +110,9 @@ class Grabber(cogs.DatabasePlugin):
             await self.tagged_response(ctx, "Ain't gonna catch me slipping!")
             return
 
-        db = self.db_session()
-
-        grabs = (
-            db.query(Grab)
-            .order_by(Grab.time.desc())
-            .filter(Grab.author_id == str(user_to_grab.id))
-        ).all()
-        for grab in grabs:
-            db.expunge(grab)
-        db.close()
+        grabs = await self.models.Grab.query.where(
+            self.models.Grab.author_id == str(user_to_grab.id)
+        ).gino.all()
 
         if not grabs:
             await self.tagged_response(ctx, f"No grabs found for {user_to_grab.name}")
@@ -181,13 +166,9 @@ class Grabber(cogs.DatabasePlugin):
             await self.tagged_response(ctx, "Ain't gonna catch me slipping!")
             return
 
-        db = self.db_session()
-
-        grabs = db.query(Grab).filter(Grab.author_id == str(user_to_grab.id)).all()
-
-        for grab in grabs:
-            db.expunge(grab)
-        db.close()
+        grabs = await self.models.Grab.query.where(
+            self.models.Grab.author_id == str(user_to_grab.id)
+        ).gino.all()
 
         if not grabs:
             await self.tagged_response(f"No grabs found for {user_to_grab}")

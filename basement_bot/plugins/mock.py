@@ -1,5 +1,6 @@
 import cogs
 import decorate
+import discord
 from discord.ext import commands
 
 
@@ -7,9 +8,8 @@ def setup(bot):
     bot.add_cog(Mocker(bot))
 
 
-class Mocker(cogs.BasicPlugin):
+class Mocker(cogs.BaseCog):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
     SEARCH_LIMIT = 20
 
@@ -35,9 +35,7 @@ class Mocker(cogs.BasicPlugin):
         description=("Mocks the most recent message by a user"),
         usage="@user",
     )
-    async def mock(self, ctx):
-        user_to_mock = ctx.message.mentions[0] if ctx.message.mentions else None
-
+    async def mock(self, ctx, user_to_mock: discord.Member):
         if not user_to_mock:
             await self.tagged_response(
                 ctx, "You must tag a user if you want to mock them!"

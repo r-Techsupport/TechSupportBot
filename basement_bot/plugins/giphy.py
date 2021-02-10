@@ -9,9 +9,8 @@ def setup(bot):
     bot.add_cog(Giphy(bot))
 
 
-class Giphy(cogs.BasicPlugin):
+class Giphy(cogs.BaseCog):
 
-    PLUGIN_NAME = __name__
     GIPHY_URL = "http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"
     SEARCH_LIMIT = 5
 
@@ -30,7 +29,7 @@ class Giphy(cogs.BasicPlugin):
         usage="[query]",
     )
     async def giphy(self, ctx, *, query: str):
-        response = await self.http_call(
+        response = await self.bot.http_call(
             "get",
             self.GIPHY_URL.format(
                 query.replace(" ", "+"), self.config.dev_key, self.SEARCH_LIMIT

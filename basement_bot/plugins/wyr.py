@@ -20,9 +20,8 @@ class Question:
         return f"Would you rather: {self.a} **OR** {self.b}?"
 
 
-class WouldYouRather(cogs.BasicPlugin):
+class WouldYouRather(cogs.BaseCog):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
     async def preconfig(self):

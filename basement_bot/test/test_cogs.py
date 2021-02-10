@@ -6,16 +6,16 @@
 # from utils.test import *
 
 
-# class TestBasicPlugin(aiounittest.AsyncTestCase):
+# class TestBaseCog(aiounittest.AsyncTestCase):
 #     def test_type(self):
-#         self.assertEqual(cogs.BasicPlugin.PLUGIN_TYPE, "BASIC")
+#         self.assertEqual(cogs.BaseCog.PLUGIN_TYPE, "BASIC")
 
-#     @mock.patch("cogs.BasicPlugin.preconfig", return_value=None)
+#     @mock.patch("cogs.BaseCog.preconfig", return_value=None)
 #     def test_init(self, mock_preconfig):
 #         mock_bot = mock.MagicMock()
 #         mock_bot.config = get_mock_config()
 
-#         class test_plugin(cogs.BasicPlugin):
+#         class test_plugin(cogs.BaseCog):
 #             PLUGIN_NAME = "plugin.foo"
 #             HAS_CONFIG = False
 
@@ -35,16 +35,16 @@
 #             plugin = test_plugin(mock_bot)
 
 
-# class TestMatchPlugin(aiounittest.AsyncTestCase):
+# class TestMatchCog(aiounittest.AsyncTestCase):
 #     def test_type(self):
-#         self.assertEqual(cogs.MatchPlugin.PLUGIN_TYPE, "MATCH")
+#         self.assertEqual(cogs.MatchCog.PLUGIN_TYPE, "MATCH")
 
-#     @mock.patch("cogs.MatchPlugin.response", return_value=None)
-#     @mock.patch("cogs.MatchPlugin.match", return_value=True)
+#     @mock.patch("cogs.MatchCog.response", return_value=None)
+#     @mock.patch("cogs.MatchCog.match", return_value=True)
 #     async def test_on_message(self, mock_match, mock_response):
 #         mock_bot = mock.AsyncMock()
 #         mock_bot.user = 1
-#         plugin = cogs.MatchPlugin(mock_bot)
+#         plugin = cogs.MatchCog(mock_bot)
 
 #         # test just returns
 #         message = mock.AsyncMock()
@@ -76,13 +76,13 @@
 
 #     async def test_match(self):
 #         mock_bot = mock.AsyncMock()
-#         plugin = cogs.MatchPlugin(mock_bot)
+#         plugin = cogs.MatchCog(mock_bot)
 #         with self.assertRaises(RuntimeError):
 #             await plugin.match("foo", "bar")
 
 #     async def test_response(self):
 #         mock_bot = mock.AsyncMock()
-#         plugin = cogs.MatchPlugin(mock_bot)
+#         plugin = cogs.MatchCog(mock_bot)
 #         with self.assertRaises(RuntimeError):
 #             await plugin.response(object(), "foo")
 
@@ -108,28 +108,28 @@
 #         self.assertEqual(plugin.db_session, mock_bot.database_api.get_session)
 
 
-# class TestLoopPlugin(aiounittest.AsyncTestCase):
+# class TestLoopCog(aiounittest.AsyncTestCase):
 #     def test_type(self):
-#         self.assertEqual(cogs.LoopPlugin.PLUGIN_TYPE, "LOOP")
+#         self.assertEqual(cogs.LoopCog.PLUGIN_TYPE, "LOOP")
 
 #     def test_default_wait(self):
-#         self.assertTrue(isinstance(cogs.LoopPlugin.DEFAULT_WAIT, int))
+#         self.assertTrue(isinstance(cogs.LoopCog.DEFAULT_WAIT, int))
 
 #     def test_init(self):
 #         mock_bot = mock.AsyncMock()
-#         plugin = cogs.LoopPlugin(mock_bot)
+#         plugin = cogs.LoopCog(mock_bot)
 #         self.assertEqual(plugin.bot, mock_bot)
 #         self.assertEqual(plugin.state, True)
 #         self.assertTrue(mock_bot.loop.create_task.called)
 
-#     @mock.patch("cogs.LoopPlugin.execute")
-#     @mock.patch("cogs.LoopPlugin.loop_preconfig")
+#     @mock.patch("cogs.LoopCog.execute")
+#     @mock.patch("cogs.LoopCog.loop_preconfig")
 #     async def test_loop_execute(self, mock_loop_preconfig, mock_execute):
 #         mock_bot = mock.AsyncMock()
 #         mock_bot.config = get_mock_config()
-#         cogs.LoopPlugin.PLUGIN_NAME = "foo"
-#         cogs.LoopPlugin.HAS_CONFIG = False
-#         plugin = cogs.LoopPlugin(mock_bot)
+#         cogs.LoopCog.PLUGIN_NAME = "foo"
+#         cogs.LoopCog.HAS_CONFIG = False
+#         plugin = cogs.LoopCog(mock_bot)
 #         wait_type = type(plugin.wait)
 
 #         async def wait_override(self):
@@ -145,7 +145,7 @@
 
 #     def test_cog_unload(self):
 #         mock_bot = mock.AsyncMock()
-#         plugin = cogs.LoopPlugin(mock_bot)
+#         plugin = cogs.LoopCog(mock_bot)
 #         plugin.cog_unload()
 #         self.assertEqual(plugin.state, False)
 
@@ -154,7 +154,7 @@
 #     async def test_wait(self, mock_sleep, mock_next):
 #         mock_bot = mock.MagicMock()
 
-#         class test_plugin(cogs.LoopPlugin):
+#         class test_plugin(cogs.LoopCog):
 #             PLUGIN_NAME = "plugin.foo"
 #             HAS_CONFIG = False
 
@@ -169,6 +169,6 @@
 
 #     async def test_execute(self):
 #         mock_bot = mock.AsyncMock()
-#         plugin = cogs.LoopPlugin(mock_bot)
+#         plugin = cogs.LoopCog(mock_bot)
 #         with self.assertRaises(RuntimeError):
 #             await plugin.execute()

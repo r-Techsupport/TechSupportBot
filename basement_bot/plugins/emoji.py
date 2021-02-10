@@ -10,9 +10,8 @@ def setup(bot):
     bot.add_cog(Emojis(bot))
 
 
-class Emojis(cogs.BasicPlugin):
+class Emojis(cogs.BaseCog):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
     SEARCH_LIMIT = 20
     KEY_MAP = {"?": "question", "!": "exclamation"}

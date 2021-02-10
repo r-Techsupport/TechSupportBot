@@ -9,9 +9,8 @@ def setup(bot):
     bot.add_cog(Moderator(bot))
 
 
-class Moderator(cogs.BasicPlugin):
+class Moderator(cogs.BaseCog):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
     @commands.has_permissions(manage_messages=True)

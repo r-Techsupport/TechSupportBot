@@ -1,3 +1,4 @@
+import aiohttp
 import cogs
 import decorate
 from discord.ext import commands
@@ -7,20 +8,18 @@ def setup(bot):
     bot.add_cog(Spotify(bot))
 
 
-class Spotify(cogs.BasicPlugin):
-
-    PLUGIN_NAME = __name__
+class Spotify(cogs.BaseCog):
 
     AUTH_URL = "https://accounts.spotify.com/api/token"
     API_URL = "https://api.spotify.com/v1/search"
 
     async def get_oauth_token(self):
         data = {"grant_type": "client_credentials"}
-        response = await self.http_call(
+        response = await self.bot.http_call(
             "post",
             self.AUTH_URL,
             data=data,
-            auth=(self.config.client_id, self.config.client_secret),
+            auth=aiohttp.BasicAuth(self.config.client_id, self.config.client_secret),
         )
 
         return response.get("access_token")
@@ -40,7 +39,7 @@ class Spotify(cogs.BasicPlugin):
 
         headers = {"Authorization": f"Bearer {oauth_token}"}
         params = {"q": query, "type": "track", "market": "US", "limit": 3}
-        response = await self.http_call(
+        response = await self.bot.http_call(
             "get", self.API_URL, headers=headers, params=params
         )
 

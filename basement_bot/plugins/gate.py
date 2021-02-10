@@ -9,10 +9,7 @@ def setup(bot):
     bot.add_cog(ServerGate(bot))
 
 
-class ServerGate(cogs.MatchPlugin):
-
-    PLUGIN_NAME = __name__
-
+class ServerGate(cogs.MatchCog):
     async def preconfig(self):
         self.channels = set()
         for channel_config in self.config.values():

@@ -8,10 +8,7 @@ def setup(bot):
     bot.add_cog(Weather(bot))
 
 
-class Weather(cogs.BasicPlugin):
-
-    PLUGIN_NAME = __name__
-
+class Weather(cogs.BaseCog):
     async def preconfig(self):
         if self.config.units == "imperial":
             self.temp_unit = "F"
@@ -40,7 +37,7 @@ class Weather(cogs.BasicPlugin):
     async def weather(
         self, ctx, city_name: str, state_code: str = None, country_code: str = None
     ):
-        response = await self.http_call(
+        response = await self.bot.http_call(
             "get", self.get_url([city_name, state_code, country_code])
         )
 

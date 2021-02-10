@@ -7,9 +7,8 @@ def setup(bot):
     bot.add_cog(ISSLocator(bot))
 
 
-class ISSLocator(cogs.BasicPlugin):
+class ISSLocator(cogs.BaseCog):
 
-    PLUGIN_NAME = __name__
     ISS_URL = "http://api.open-notify.org/iss-now.json"
     GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
     HAS_CONFIG = False
@@ -23,7 +22,7 @@ class ISSLocator(cogs.BasicPlugin):
     )
     async def iss(self, ctx):
         # get ISS coordinates
-        response = await self.http_call("get", self.ISS_URL)
+        response = await self.bot.http_call("get", self.ISS_URL)
         if not response:
             await self.tagged_response(
                 ctx, "I had trouble calling the ISS API. Maybe it's down?"
@@ -39,7 +38,9 @@ class ISSLocator(cogs.BasicPlugin):
 
         # get location information from coordinates
         location = None
-        response = await self.http_call("get", self.GEO_URL.format(latitude, longitude))
+        response = await self.bot.http_call(
+            "get", self.GEO_URL.format(latitude, longitude)
+        )
         if not response:
             await self.tagged_response(
                 ctx, "I had trouble calling the GEO API. Maybe it's down?"

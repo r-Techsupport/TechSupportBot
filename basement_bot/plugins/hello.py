@@ -6,9 +6,8 @@ def setup(bot):
     bot.add_cog(Greeter(bot))
 
 
-class Greeter(cogs.BasicPlugin):
+class Greeter(cogs.BaseCog):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
     @commands.command(

@@ -9,9 +9,8 @@ def setup(bot):
     bot.add_cog(Lenny(bot))
 
 
-class Lenny(cogs.BasicPlugin):
+class Lenny(cogs.BaseCog):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
 
     LENNYS_SELECTION = [

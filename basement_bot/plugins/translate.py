@@ -7,8 +7,8 @@ def setup(bot):
     bot.add_cog(Translator(bot))
 
 
-class Translator(cogs.BasicPlugin):
-    PLUGIN_NAME = __name__
+class Translator(cogs.BaseCog):
+
     HAS_CONFIG = False
 
     API_URL = "https://api.mymemory.translated.net/get?q={}&langpair={}|{}"
@@ -21,7 +21,7 @@ class Translator(cogs.BasicPlugin):
         usage='"[message (in quotes)]" [src language code (en)] [dest language code (es)]',
     )
     async def translate(self, ctx, message, src: str, dest: str):
-        response = await self.http_call(
+        response = await self.bot.http_call(
             "get",
             self.API_URL.format(message, src, dest),
         )

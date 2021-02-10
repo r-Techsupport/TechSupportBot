@@ -4,24 +4,23 @@
 import glob
 import os
 
-import api
-import logger
 import munch
 
-log = logger.get_logger("Plugin Loader")
 
-
-class PluginAPI(api.BotAPI):
+class PluginAPI:
     """API for plugin loading."""
 
     PLUGINS_DIR = f"{os.path.join(os.path.dirname(__file__))}/plugins"
 
     def __init__(self, bot):
-        super().__init__(bot)
+        self.bot = bot
         self.plugins = munch.Munch()
+        self.logger = self.bot.get_logger(self.__class__.__name__)
 
     def get_modules(self):
         """Gets the current list of plugin modules."""
+        self.logger.console.info(f"Searching {self.PLUGINS_DIR} for plugins")
+
         return [
             os.path.basename(f)[:-3]
             for f in glob.glob(f"{self.PLUGINS_DIR}/*.py")
@@ -33,6 +32,8 @@ class PluginAPI(api.BotAPI):
 
         returns (dict): the set of loaded and available to load plugins
         """
+        self.logger.console.info("Getting plugin status")
+
         statuses = {}
         try:
             for plugin_name in self.get_modules():
@@ -55,14 +56,14 @@ class PluginAPI(api.BotAPI):
             bot (BasementBot): the bot object to which the plugin is loaded
             allow_failure (bool): True if loader does not raise an exception
         """
+        self.logger.console.info(f"Loading plugin: {plugin_name}")
+
         if self.plugins.get(plugin_name):
             message = f"Plugin `{plugin_name}` already loaded - ignoring"
-            log.warning(message)
             return self._make_response(False, message)
 
         if plugin_name in self.bot.config.main.disabled_plugins:
             message = f"Plugin `{plugin_name}` is disabled in bot config - ignoring"
-            log.warning(message)
             return self._make_response(False, message)
 
         try:
@@ -73,10 +74,11 @@ class PluginAPI(api.BotAPI):
             return self._make_response(True, f"Successfully loaded `{plugin_name}`")
 
         except Exception as e:  # pylint: disable=broad-except
+            message = f"Unable to load plugin {plugin_name}: {e}"
+            self.logger.console.error(message)
             if allow_failure:
-                message = f"Failed to load `{plugin_name}`: `{str(e)}`"
-                log.warning(message)
                 return self._make_response(False, message)
+
             raise RuntimeError from e
 
     def unload_plugin(self, plugin_name, allow_failure=True):
@@ -87,9 +89,10 @@ class PluginAPI(api.BotAPI):
             bot (BasementBot): the bot object to which the plugin is loaded
             allow_failure (bool): True if loader does not raise an exception
         """
+        self.logger.console.info(f"Unloading plugin: {plugin_name}")
+
         if not self.plugins.get(plugin_name):
             message = f"Plugin `{plugin_name}` not loaded - ignoring"
-            log.debug(message)
             return self._make_response(False, message)
 
         try:
@@ -98,9 +101,10 @@ class PluginAPI(api.BotAPI):
             return self._make_response(True, f"Successfully unloaded `{plugin_name}`")
 
         except Exception as e:  # pylint: disable=broad-except
+            message = f"Unable to unload plugin {plugin_name}: {e}"
+            self.logger.console.error(message)
+
             if allow_failure:
-                message = f"Failed to unload `{plugin_name}`: {str(e)}"
-                log.warning(message)
                 return self._make_response(False, message)
 
             raise RuntimeError from e
@@ -112,8 +116,8 @@ class PluginAPI(api.BotAPI):
             bot (BasementBot): the bot object to which the plugin is loaded
             allow_failure (bool): True if loader does not raise an exception
         """
+        self.logger.console.debug("Retrieving plugin modules")
         for plugin_name in self.get_modules():
-            log.info(f"Attempting to load plugin module `{plugin_name}`")
             self.load_plugin(plugin_name, allow_failure)
 
     @staticmethod

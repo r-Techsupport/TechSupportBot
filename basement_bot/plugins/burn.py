@@ -10,9 +10,8 @@ def setup(bot):
     bot.add_cog(Burn(bot))
 
 
-class Burn(cogs.BasicPlugin):
+class Burn(cogs.BaseCog):
 
-    PLUGIN_NAME = __name__
     HAS_CONFIG = False
     SEARCH_LIMIT = 50
     PHRASES = [

@@ -7,9 +7,8 @@ def setup(bot):
     bot.add_cog(UrbanDictionary(bot))
 
 
-class UrbanDictionary(cogs.BasicPlugin):
+class UrbanDictionary(cogs.BaseCog):
 
-    PLUGIN_NAME = __name__
     BASE_URL = "http://api.urbandictionary.com/v0/define?term="
     SEE_MORE_URL = "https://www.urbandictionary.com/define.php?term="
     HAS_CONFIG = False
@@ -28,7 +27,7 @@ class UrbanDictionary(cogs.BasicPlugin):
         usage="[query]",
     )
     async def urban(self, ctx, *, query: str):
-        response = await self.http_call("get", f"{self.BASE_URL}{query}")
+        response = await self.bot.http_call("get", f"{self.BASE_URL}{query}")
         definitions = response.get("list")
 
         if not definitions:
