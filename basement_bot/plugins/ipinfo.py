@@ -29,7 +29,7 @@ class IPInfo(cogs.BaseCog):
         response.pop("status_code", None)
 
         embed = self.bot.embed_api.Embed.from_kwargs(
-            title=f"IP info for {ip_address}", **response
+            title=f"IP info for {ip_address}", all_inline=True, **response
         )
 
         embed.set_thumbnail(url=self.IP_ICON_URL)
