@@ -58,12 +58,6 @@ plugins:
         send_queue:  DiscordToIRC
         recv_queue: IRCToDiscord
         stale_seconds: 600
-        publish_seconds: 2
-        consume_seconds: 2
-        commands_allowed: True
-        response_limit: 3
-        send_limit: 3
-        notice_errors: True
     protect:
         included_channels: []
         string_map:
