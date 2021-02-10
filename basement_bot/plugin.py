@@ -35,7 +35,7 @@ class PluginAPI:
         self.logger.console.info("Getting plugin status")
 
         statuses = {}
-        
+
         try:
             for plugin_name in self.get_modules():
                 status = "loaded" if self.plugins.get(plugin_name) else "unloaded"
@@ -78,7 +78,7 @@ class PluginAPI:
                 {"status": "loaded", "memory": {}}
             )
 
-            message =  f"Successfully loaded plugin: {plugin_name}"
+            message = f"Successfully loaded plugin: {plugin_name}"
             self.logger.console.info(message)
             return self._make_response(True, message)
 
@@ -107,7 +107,9 @@ class PluginAPI:
         try:
             self.bot.unload_extension(f"plugins.{plugin_name}")
             del self.plugins[plugin_name]
-            return self._make_response(True, f"Successfully unloaded plugin: {plugin_name}")
+            return self._make_response(
+                True, f"Successfully unloaded plugin: {plugin_name}"
+            )
 
         except Exception as e:  # pylint: disable=broad-except
             message = f"Unable to unload plugin: {plugin_name} (reason: {e})"
