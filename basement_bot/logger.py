@@ -9,6 +9,14 @@ import discord
 import munch
 from discord.ext import commands
 
+OVERRIDDEN_MODULES_MAP = {
+    "discord": logging.INFO,
+    "gino": logging.WARNING,
+    "aio_pika": logging.INFO,
+}
+
+for module_name, level in OVERRIDDEN_MODULES_MAP.items():
+    logging.getLogger(module_name).setLevel(level)
 
 # pylint: disable=too-few-public-methods
 class ErrorResponse:
@@ -194,9 +202,9 @@ class BotLogger:
             self.debug_mode = False
 
         # pylint: disable=using-constant-test
-        logging.basicConfig(level=logging.DEBUG if self.debug else logging.INFO)
+        logging.basicConfig(level=logging.DEBUG if self.debug_mode else logging.INFO)
 
-        self.console_logger = logging.getLogger(name)
+        self.console = logging.getLogger(name)
 
     async def info(self, message, *args, **kwargs):
         """Logs at the INFO level.
@@ -207,7 +215,7 @@ class BotLogger:
             send (bool): The reverse of the above (overrides console_only)
         """
         await self.handle_generic_log(
-            message, "info", self.console_logger.info, *args, **kwargs
+            message, "info", self.console.info, *args, **kwargs
         )
 
     async def debug(self, message, *args, **kwargs):
@@ -222,7 +230,7 @@ class BotLogger:
             return
 
         await self.handle_generic_log(
-            message, "debug", self.console_logger.debug, *args, **kwargs
+            message, "debug", self.console.debug, *args, **kwargs
         )
 
     async def warning(self, message, *args, **kwargs):
@@ -235,11 +243,11 @@ class BotLogger:
         """
 
         await self.handle_generic_log(
-            message, "warning", self.console_logger.warning, *args, **kwargs
+            message, "warning", self.console.warning, *args, **kwargs
         )
 
     async def error(self, message, *args, **kwargs):
-        """Logs at the INFO level.
+        """Logs at the ERROR level.
 
         parameters:
             message (str): the message to log
@@ -251,7 +259,7 @@ class BotLogger:
         exception = kwargs.pop("exception", None)
         console_only = self._is_console_only(kwargs, is_error=True)
 
-        self.console_logger.error(message, *args, **kwargs)
+        self.console.error(message, *args, **kwargs)
 
         if console_only:
             return
@@ -264,7 +272,7 @@ class BotLogger:
         # bot error
         await self.handle_error_log(message, exception)
 
-    async def handle_generic_log(self, message, level, console, *args, **kwargs):
+    async def handle_generic_log(self, message, level_, console, *args, **kwargs):
         """Handles most logging contexts.
 
         parameters:
@@ -285,7 +293,7 @@ class BotLogger:
         if not owner:
             return
 
-        embed = self.generate_log_embed(message, level)
+        embed = self.generate_log_embed(message, level_)
 
         await owner.send(embed=embed)
 
@@ -386,7 +394,7 @@ class BotLogger:
         context.error_message = error_message
         await self.handle_error_log(message, exception, context=context)
 
-    def generate_log_embed(self, message, level):
+    def generate_log_embed(self, message, level_):
         """Wrapper for generated the log embed.
 
         parameters:
@@ -394,7 +402,7 @@ class BotLogger:
             level (str): the logging level
         """
         embed = self.bot.embed_api.Embed(
-            title=f"Logging.{level.upper()}", description=message
+            title=f"Logging.{level_.upper()}", description=message
         )
 
         embed.set_thumbnail(url=self.bot.user.avatar_url)

@@ -1,6 +1,5 @@
 """Provides an interface for complex embed generation.
 """
-import api
 from discord import Embed as DiscordEmbed
 
 
@@ -45,11 +44,14 @@ class Embed(DiscordEmbed):
 
 
 # pylint: disable=too-few-public-methods
-class EmbedAPI(api.BotAPI):
+class EmbedAPI:
     """API for generating embeds.
 
     parameters:
         bot (BasementBot): the bot object
     """
+
+    def __init__(self, bot):
+        self.bot = bot
 
     Embed = Embed

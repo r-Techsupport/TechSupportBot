@@ -97,11 +97,12 @@ class Grabber(cogs.BaseCog):
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @grabs.command(
+        name="all",
         brief="Returns grabs for a user",
         description="Returns all grabbed messages for a user",
         usage="@user",
     )
-    async def all(self, ctx, user_to_grab: discord.Member):
+    async def all_grabs(self, ctx, user_to_grab: discord.Member):
         if await self.invalid_channel(ctx):
             return
 

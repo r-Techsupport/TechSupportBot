@@ -63,6 +63,10 @@ class BasementBot(commands.Bot):
         if game:
             await self.change_presence(activity=discord.Game(name=game))
 
+        await self.logger.debug(
+            f"Online! Command prefix: {self.command_prefix}", send=True
+        )
+
     async def on_message(self, message):
         """Catches messages and acts appropriately.
 
@@ -151,6 +155,7 @@ class BasementBot(commands.Bot):
 
         if not self.owner:
             try:
+                await self.logger.debug("Looking up bot owner")
                 app_info = await self.application_info()
                 self.owner = app_info.owner
             except discord.errors.HTTPException:
@@ -165,6 +170,8 @@ class BasementBot(commands.Bot):
             ctx (discord.Context): the context associated with the command
             call_once (bool): True if the check should be retrieved from the call_once attribute
         """
+        await self.logger.debug("Checking if command can run")
+
         is_bot_admin = await self.is_bot_admin(ctx)
 
         if is_bot_admin:
@@ -189,6 +196,8 @@ class BasementBot(commands.Bot):
         parameters:
             ctx (discord.Context): the context associated with the command
         """
+        await self.logger.debug("Checking context against bot admins")
+
         owner = await self.get_owner()
         if getattr(owner, "id", None) == ctx.author.id:
             return True
@@ -273,6 +282,8 @@ class BasementBot(commands.Bot):
 
         This doesn't follow a singleton pattern (use bot.db instead).
         """
+        await self.logger.debug("Obtaining and binding to Gino instance")
+
         db_ref = gino.Gino()
         db_url = self.generate_db_url()
         await db_ref.set_bind(db_url)
@@ -294,9 +305,12 @@ class BasementBot(commands.Bot):
 
         This doesn't follow a singleton pattern (use bot.rabbit instead).
         """
+        await self.logger.debug("Obtaining RabbitMQ robust instance")
+
         connection = await aio_pika.connect_robust(
             self.generate_rabbit_url(), loop=self.loop
         )
+
         return connection
 
     async def rabbit_publish(self, body, routing_key):
@@ -306,6 +320,8 @@ class BasementBot(commands.Bot):
             body (str): the body to send
             routing_key (str): the queue name to publish to
         """
+        await self.logger.debug(f"RabbitMQ publish event to queue: {routing_key}")
+
         channel = await self.rabbit.channel()
 
         await channel.default_exchange.publish(
@@ -344,6 +360,9 @@ class BasementBot(commands.Bot):
                     await asyncio.sleep(poll_wait)
 
                 async with message.process():
+                    await self.logger.debug(
+                        f"RabbitMQ consume event from queue: {queue_name}"
+                    )
                     await handler(message.body.decode())
 
         await channel.close()
@@ -352,13 +371,14 @@ class BasementBot(commands.Bot):
         """Returns an async HTTP session."""
         return aiohttp.ClientSession()
 
-    async def http_call(self, method, *args, **kwargs):
+    async def http_call(self, method, url, *args, **kwargs):
         """Makes an HTTP request.
 
         By default this returns JSON/dict with the status code injected.
 
         parameters:
-            method (string): the HTTP method to use
+            method (str): the HTTP method to use
+            url (str): the URL to call
             get_raw_response (bool): True if the actual response object should be returned
         """
         client = self.get_http_session()
@@ -369,8 +389,10 @@ class BasementBot(commands.Bot):
 
         get_raw_response = kwargs.pop("get_raw_response", False)
 
+        await self.logger.debug(f"Making HTTP {method.upper()} request to {url}")
+
         try:
-            response_object = await method_fn(*args, **kwargs)
+            response_object = await method_fn(url, *args, **kwargs)
 
             if get_raw_response:
                 response = response_object
