@@ -35,6 +35,7 @@ class PluginAPI:
         self.logger.console.info("Getting plugin status")
 
         statuses = {}
+        
         try:
             for plugin_name in self.get_modules():
                 status = "loaded" if self.plugins.get(plugin_name) else "unloaded"
@@ -44,7 +45,9 @@ class PluginAPI:
                 ):
                     status = "disabled"
                 statuses[plugin_name] = status
+
             return statuses
+
         except Exception as e:
             return {"error": str(e)}
 
@@ -59,22 +62,28 @@ class PluginAPI:
         self.logger.console.info(f"Loading plugin: {plugin_name}")
 
         if self.plugins.get(plugin_name):
-            message = f"Plugin `{plugin_name}` already loaded - ignoring"
+            message = f"Plugin {plugin_name} already loaded - ignoring load request"
+            self.logger.console.warning(message)
             return self._make_response(False, message)
 
         if plugin_name in self.bot.config.main.disabled_plugins:
-            message = f"Plugin `{plugin_name}` is disabled in bot config - ignoring"
+            message = f"Plugin {plugin_name} is disabled in bot config - ignoring load request"
+            self.logger.console.warning(message)
             return self._make_response(False, message)
 
         try:
             self.bot.load_extension(f"plugins.{plugin_name}")
+
             self.plugins[plugin_name] = munch.munchify(
                 {"status": "loaded", "memory": {}}
             )
-            return self._make_response(True, f"Successfully loaded `{plugin_name}`")
+
+            message =  f"Successfully loaded plugin: {plugin_name}"
+            self.logger.console.info(message)
+            return self._make_response(True, message)
 
         except Exception as e:  # pylint: disable=broad-except
-            message = f"Unable to load plugin {plugin_name}: {e}"
+            message = f"Unable to load plugin: {plugin_name} (reason: {e})"
             self.logger.console.error(message)
             if allow_failure:
                 return self._make_response(False, message)
@@ -92,21 +101,19 @@ class PluginAPI:
         self.logger.console.info(f"Unloading plugin: {plugin_name}")
 
         if not self.plugins.get(plugin_name):
-            message = f"Plugin `{plugin_name}` not loaded - ignoring"
+            message = f"Plugin {plugin_name} not loaded - ignoring unload request"
             return self._make_response(False, message)
 
         try:
             self.bot.unload_extension(f"plugins.{plugin_name}")
             del self.plugins[plugin_name]
-            return self._make_response(True, f"Successfully unloaded `{plugin_name}`")
+            return self._make_response(True, f"Successfully unloaded plugin: {plugin_name}")
 
         except Exception as e:  # pylint: disable=broad-except
-            message = f"Unable to unload plugin {plugin_name}: {e}"
+            message = f"Unable to unload plugin: {plugin_name} (reason: {e})"
             self.logger.console.error(message)
-
             if allow_failure:
                 return self._make_response(False, message)
-
             raise RuntimeError from e
 
     def load_plugins(self, allow_failure=True):
