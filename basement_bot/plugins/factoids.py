@@ -4,10 +4,7 @@ import json
 
 import cogs
 import decorate
-import logger
 from discord.ext import commands
-
-log = logger.get_logger("Factoids")
 
 
 def setup(bot):

@@ -8,11 +8,8 @@ import uuid
 
 import cogs
 import decorate
-import logger
 import munch
 from discord.ext import commands
-
-log = logger.get_logger("Relay Plugin")
 
 
 def setup(bot):
@@ -91,7 +88,6 @@ class DiscordRelay(cogs.MatchCog):
 
         # non-lossy
         as_json = data.toJSON()
-        log.debug(f"Serialized data: {as_json}")
         return as_json
 
 
@@ -113,23 +109,19 @@ class IRCReceiver(cogs.BaseCog):
     async def handle_event(self, response):
         data = self.deserialize(response)
         if not data:
-            log.warning("Unable to deserialize data! Aborting!")
             return
 
         if not data.event.type in ["message", "join", "part", "quit", "kick", "action"]:
-            log.warning(f"Unable to handle event: {response}")
             return
 
         message = self.process_message(data)
         if not message:
-            log.warning(f"Unable to format message for event: {response}")
             return
 
         if data.event.type == "quit":
             for channel_id in self.channels:
                 channel = self.bot.get_channel(channel_id)
                 if not channel:
-                    log.warning("Unable to find channel to send quit event")
                     continue
                 await channel.send(message)
 
@@ -137,7 +129,6 @@ class IRCReceiver(cogs.BaseCog):
 
         channel = self._get_channel(data)
         if not channel:
-            log.warning("Unable to find channel to send command event")
             return
 
         guild = self.get_guild_from_channel_id(channel.id)
@@ -168,15 +159,10 @@ class IRCReceiver(cogs.BaseCog):
 
         time = deserialized.event.time
         if not time:
-            log.warning(f"Unable to retrieve time object from incoming data")
             return
         if self._time_stale(time):
-            log.warning(
-                f"Incoming data failed stale check ({self.config.stale_seconds} seconds)"
-            )
             return
 
-        log.debug(f"Deserialized data: {body})")
         return deserialized
 
     def _time_stale(self, time):

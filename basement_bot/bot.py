@@ -9,7 +9,6 @@ import aio_pika
 import aiohttp
 import discord
 import embed
-import error
 import gino
 import logger
 import munch
@@ -17,46 +16,52 @@ import plugin
 import yaml
 from discord.ext import commands
 
-log = logger.get_logger("Basement Bot")
 
-#pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods
 class BasementBot(commands.Bot):
     """The main bot object.
 
     parameters:
         run_on_init (bool): True if the bot should run on instantiation
-        validate_config (bool): True if the bot's config should be validated
     """
 
     CONFIG_PATH = "./config.yaml"
 
-    def __init__(self, run_on_init=True, validate_config=True):
-
+    def __init__(self, run_on_init=True):
+        self.owner = None
         self.config = None
-        self.load_config(validate=validate_config)
-
         self.db = None
         self.rabbit = None
 
+        self.load_config(validate=True)
+
         self.plugin_api = plugin.PluginAPI(bot=self)
-        self.error_api = error.ErrorAPI(bot=self)
         self.embed_api = embed.EmbedAPI(bot=self)
+
+        self.logger = self.get_logger(self.__class__.__name__)
 
         super().__init__(self.config.main.required.command_prefix)
 
-        if run_on_init:
-            log.debug("Bot starting upon init")
-            self.run(self.config.main.required.auth_token)
-        else:
-            log.debug("Bot created but not started")
+        if not run_on_init:
+            return
+
+        self.run(self.config.main.required.auth_token)
+
+    def get_logger(self, name):
+        """Wraps getting a new logging channel.
+
+        parameters:
+            name (str): the name of the channel
+        """
+        return logger.BotLogger(self, name=name)
 
     async def on_ready(self):
         """Callback for when the bot is finished starting up."""
+        await self.get_owner()
+
         game = self.config.main.optional.get("game")
         if game:
             await self.change_presence(activity=discord.Game(name=game))
-
-        log.info(f"Commands available with the `{self.command_prefix}` prefix")
 
     async def on_message(self, message):
         """Catches messages and acts appropriately.
@@ -78,26 +83,25 @@ class BasementBot(commands.Bot):
         await self.invoke(ctx)
 
     async def on_error(self, event_method, *args, **kwargs):
-        """Catches non-command errors and sends them to the error API for processing.
+        """Catches non-command errors and sends them to the error logger for processing.
 
         parameters:
             event_method (str): the event method name associated with the error (eg. on_message)
         """
         _, exception, _ = sys.exc_info()
-        await self.error_api.handle_error(event_method, exception)
+        await self.logger.error(f"Bot error in {event_method}!", exception=exception)
 
     async def on_command_error(self, context, exception):
-        """Catches command errors and sends them to the error API for processing.
+        """Catches command errors and sends them to the error logger for processing.
 
         parameters:
             context (discord.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
-        await self.error_api.handle_command_error(context, exception)
+        await self.logger.error("Command error!", context=context, exception=exception)
 
     def run(self, *args, **kwargs):
         """Starts the event loop and blocks until interrupted."""
-        log.debug("Starting bot...")
         try:
             self.loop.run_until_complete(self.start(*args, **kwargs))
         except (SystemExit, KeyboardInterrupt):
@@ -106,42 +110,53 @@ class BasementBot(commands.Bot):
             self.loop.close()
 
     async def start(self, *args, **kwargs):
-        """Configures connections and then starts the actual bot."""
+        """Sets up config and connections then starts the actual bot."""
+        await self.logger.debug("Connecting to Postgres...")
         try:
             self.db = await self.get_db_ref()
-        except Exception as e:
-            log.warning("Could not connect to Postgres - ignoring")
+        except Exception:
+            await self.logger.warning("Could not connect to Postgres!")
 
+        await self.logger.debug("Connecting to RabbitMQ...")
         try:
             self.rabbit = await self.get_rabbit_connection()
-        except Exception as e:
-            log.warning("Could not connect to RabbitMQ - ignoring")
+        except Exception:
+            await self.logger.warning("Could not connect to RabbitMQ!")
 
+        await self.logger.debug("Loading plugins...")
         self.plugin_api.load_plugins()
 
         if self.db:
+            await self.logger.debug("Syncing Postgres tables...")
             await self.db.gino.create_all()
 
+        await self.logger.debug("Loading Admin extension...")
         try:
             self.add_cog(admin.AdminControl(self))
         except (TypeError, commands.CommandError) as e:
-            log.warning(f"Could not load AdminControl cog: {e}")
+            await self.logger.warning(f"Could not load Admin extension! Error: {e}")
 
+        await self.logger.debug("Logging into Discord...")
         await super().start(*args, **kwargs)
 
     async def cleanup(self):
         """Cleans up after the event loop is interupted."""
+        await self.logger.debug("Cleaning up...", send=True)
         await super().logout()
         await self.db.close()
         await self.rabbit.close()
 
     async def get_owner(self):
         """Gets the owner object from the bot application."""
-        try:
-            app_info = await self.application_info()
-            return app_info.owner
-        except discord.errors.HTTPException:
-            return None
+
+        if not self.owner:
+            try:
+                app_info = await self.application_info()
+                self.owner = app_info.owner
+            except discord.errors.HTTPException:
+                self.owner = None
+
+        return self.owner
 
     async def can_run(self, ctx, *, call_once=False):
         """Wraps the default can_run check to evaluate if a check call is necessary.
@@ -233,9 +248,6 @@ class BasementBot(commands.Bot):
                 if section == "plugins":
                     if not subsection in self.config.main.disabled_plugins:
                         # pylint: disable=line-too-long
-                        log.warning(
-                            f"Disabling loading of plugin {subsection} due to missing config key {error_key}"
-                        )
                         # disable the plugin if we can't get its config
                         self.config.main.disabled_plugins.append(subsection)
                 else:
@@ -361,13 +373,13 @@ class BasementBot(commands.Bot):
             response_object = await method_fn(*args, **kwargs)
 
             if get_raw_response:
-                return response_object
-
-            response = await response_object.json() if response_object else {}
-            response["status_code"] = getattr(response_object, "status_code", None)
+                response = response_object
+            else:
+                response = await response_object.json() if response_object else {}
+                response["status_code"] = getattr(response_object, "status_code", None)
 
         except Exception as e:
-            await self.error_api.handle_error("http_call", e)
+            await self.logger.error(f"HTTP {method} call", exception=e)
             response = {"status_code": None}
 
         await client.close()

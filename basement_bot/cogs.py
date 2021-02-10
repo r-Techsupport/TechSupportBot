@@ -10,11 +10,8 @@ import re
 
 import aiocron
 import discord
-import logger
 import munch
 from discord.ext import commands
-
-log = logger.get_logger("Cogs")
 
 
 class BaseCog(commands.Cog):
@@ -50,6 +47,8 @@ class BaseCog(commands.Cog):
         for model in models:
             self.models[model.__name__] = model
 
+        self.logger = self.bot.get_logger(self.__class__.__name__)
+
         self.bot.loop.create_task(self._preconfig())
 
     def cog_unload(self):
@@ -69,7 +68,9 @@ class BaseCog(commands.Cog):
         try:
             await handler()
         except Exception as e:
-            await self.bot.error_api.handle_error(handler.__name__, e)
+            await self.logger.error(
+                f"Cog preconfig error: {handler.__name__}!", exception=e
+            )
             if not self.KEEP_COG_ON_FAILURE:
                 self.bot.remove_cog(self)
             if not self.KEEP_PLUGIN_ON_FAILURE:
@@ -348,7 +349,9 @@ class LoopCog(BaseCog):
         except Exception as e:
             # exceptions here aren't caught by the bot's on_error,
             # so catch them manually
-            await self.bot.error_api.handle_error("loop_cog", e)
+            await self.logger.error(
+                f"Loop cog error: {self.__class__.__name__}!", exception=e
+            )
 
         self.execution_locked = False
 

@@ -5,10 +5,7 @@ import glob
 import os
 
 import api
-import logger
 import munch
-
-log = logger.get_logger("Plugin Loader")
 
 
 class PluginAPI(api.BotAPI):
@@ -57,12 +54,10 @@ class PluginAPI(api.BotAPI):
         """
         if self.plugins.get(plugin_name):
             message = f"Plugin `{plugin_name}` already loaded - ignoring"
-            log.warning(message)
             return self._make_response(False, message)
 
         if plugin_name in self.bot.config.main.disabled_plugins:
             message = f"Plugin `{plugin_name}` is disabled in bot config - ignoring"
-            log.warning(message)
             return self._make_response(False, message)
 
         try:
@@ -75,7 +70,6 @@ class PluginAPI(api.BotAPI):
         except Exception as e:  # pylint: disable=broad-except
             if allow_failure:
                 message = f"Failed to load `{plugin_name}`: `{str(e)}`"
-                log.warning(message)
                 return self._make_response(False, message)
             raise RuntimeError from e
 
@@ -89,7 +83,6 @@ class PluginAPI(api.BotAPI):
         """
         if not self.plugins.get(plugin_name):
             message = f"Plugin `{plugin_name}` not loaded - ignoring"
-            log.debug(message)
             return self._make_response(False, message)
 
         try:
@@ -100,7 +93,6 @@ class PluginAPI(api.BotAPI):
         except Exception as e:  # pylint: disable=broad-except
             if allow_failure:
                 message = f"Failed to unload `{plugin_name}`: {str(e)}"
-                log.warning(message)
                 return self._make_response(False, message)
 
             raise RuntimeError from e
@@ -113,7 +105,6 @@ class PluginAPI(api.BotAPI):
             allow_failure (bool): True if loader does not raise an exception
         """
         for plugin_name in self.get_modules():
-            log.info(f"Attempting to load plugin module `{plugin_name}`")
             self.load_plugin(plugin_name, allow_failure)
 
     @staticmethod
