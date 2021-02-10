@@ -406,7 +406,11 @@ class BasementBot(commands.Bot):
             if get_raw_response:
                 response = response_object
             else:
-                response = await response_object.json() if response_object else {}
+                response = (
+                    await munch.munchify(response_object.json())
+                    if response_object
+                    else munch.Munch()
+                )
                 response["status_code"] = getattr(response_object, "status_code", None)
 
         except Exception as e:
