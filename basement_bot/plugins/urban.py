@@ -2,10 +2,16 @@ import cogs
 import decorate
 from discord.ext import commands
 
-
 def setup(bot):
-    bot.add_cog(UrbanDictionary(bot))
+    config = bot.PluginConfig()
+    config.add(
+        key="max_responses",
+        datatype=int,
+        title="Max Responses",
+        description="The max amount of responses per embed page"
+    )
 
+    return bot.process_plugin_setup(cogs=UrbanDictionary, config=config)
 
 class UrbanDictionary(cogs.BaseCog):
 
@@ -13,9 +19,6 @@ class UrbanDictionary(cogs.BaseCog):
     SEE_MORE_URL = "https://www.urbandictionary.com/define.php?term="
     HAS_CONFIG = False
     ICON_URL = "https://cdn.icon-icons.com/icons2/114/PNG/512/dictionary_19159.png"
-
-    async def preconfig(self):
-        self.cached = {"last_query": None, "last_url": None, "all_urls": []}
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)

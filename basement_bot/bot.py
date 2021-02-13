@@ -11,6 +11,7 @@ import aiohttp
 import discord
 import embed
 import gino
+from motor import motor_asyncio
 import logger
 import munch
 import plugin
@@ -27,20 +28,26 @@ class BasementBot(commands.Bot):
     """
 
     CONFIG_PATH = "./config.yaml"
+    GUILD_CONFIG_COLLECTION = "guild_config"
+
+    PluginConfig = plugin.PluginConfig
 
     def __init__(self, run_on_init=True):
         self.owner = None
         self.config = None
+        self.mongo = None
         self.db = None
         self.rabbit = None
         self._startup_time = None
+
+        self.logger = self.get_logger(self.__class__.__name__)
+
+        self.logger.console.debug("Connecting to MongoDB...")
 
         self.load_config(validate=True)
 
         self.plugin_api = plugin.PluginAPI(bot=self)
         self.embed_api = embed.EmbedAPI(bot=self)
-
-        self.logger = self.get_logger(self.__class__.__name__)
 
         super().__init__(self.config.main.required.command_prefix)
 
@@ -124,9 +131,13 @@ class BasementBot(commands.Bot):
 
     async def start(self, *args, **kwargs):
         """Sets up config and connections then starts the actual bot."""
+        # this is required for the bot
+        self.mongo = self.get_mongo_ref()
+        self.load_guild_config()
+
         await self.logger.debug("Connecting to Postgres...")
         try:
-            self.db = await self.get_db_ref()
+            self.db = await self.get_postgres_ref()
         except Exception:
             await self.logger.warning("Could not connect to Postgres!")
 
@@ -239,6 +250,27 @@ class BasementBot(commands.Bot):
         if validate:
             self.validate_config()
 
+    async def load_guild_config(self):
+        guild_config_collection = self.mongo[self.GUILD_CONFIG_COLLECTION]
+
+        plugins_config = {}
+        
+        for guild in self.guilds:
+            config = await guild_config_collection.find_one({"guild_id": {"$eq": guild.id}})
+            if not config:
+                if not plugins_config:
+                    for plugin_name, plugin_data in self.plugin_api.plugins.items():
+                        plugins_config[plugin_name] = getattr(plugin_data, "config", {})
+
+                guild_config = munch.Munch()
+
+                guild_config.guild_id = guild.id
+                guild_config.command_prefix = self.config.default_prefix
+                guild_config.plugins = plugins_config
+
+                await guild_config_collection.insert_one(guild_config)
+            
+
     def validate_config(self):
         """Validates several config subsections."""
         for subsection in ["required"]:
@@ -273,20 +305,41 @@ class BasementBot(commands.Bot):
                         f"Config key {error_key} from {section}.{subsection} not supplied"
                     )
 
-    def generate_db_url(self):
-        """Dynamically converts config to a Postgres URL."""
+    def generate_db_url(self, postgres=True):
+        """Dynamically converts config to a Postgres/MongoDB url.
+        
+        parameters:
+            postgres (bool): True if the URL for Postgres should be retrieved
+        """
+        db_type = "postgres" if postgres else "mongodb"
+
         try:
-            user = self.config.main.database.user
-            password = self.config.main.database.password
-            name = self.config.main.database.name
-            host = self.config.main.database.host
-            port = self.config.main.database.port
-        except AttributeError:
+            config_child = getattr(self.config.main, db_type)
+        
+            user = config_child.user
+            password = config_child.password
+
+            name = getattr(config_child, "name") if postgres else None
+
+            host = config_child.host
+            port = config_child.port
+
+        except AttributeError as e:
+            self.logger.console.warning(f"Could not generate DB URL for {db_type.upper()}: {e}")
             return None
 
-        return f"postgres://{user}:{password}@{host}:{port}/{name}"
+        url = f"{db_type}://{user}:{password}@{host}:{port}"
+        url_filtered = f"{db_type}://{user}:********@{host}:{port}"
 
-    async def get_db_ref(self):
+        if name:
+            url = f"{url}/{name}"
+
+        # don't log the password
+        self.logger.console.debug(f"Generated DB URL: {url_filtered}")
+
+        return url
+
+    async def get_postgres_ref(self):
         """Grabs the main DB reference.
 
         This doesn't follow a singleton pattern (use bot.db instead).
@@ -298,6 +351,13 @@ class BasementBot(commands.Bot):
         await db_ref.set_bind(db_url)
 
         return db_ref
+
+    def get_mongo_ref(self):
+        self.logger.console.debug("Obtaining MongoDB client")
+
+        mongo_client = motor_asyncio.AsyncIOMotorClient(self.generate_db_url(postgres=False))
+
+        return mongo_client[self.config.main.mongodb.name]
 
     def generate_rabbit_url(self):
         """Dynamically converts config to an AMQP URL."""
@@ -420,3 +480,18 @@ class BasementBot(commands.Bot):
         await client.close()
 
         return response
+
+    def process_plugin_setup(self, *args, **kwargs):
+        self.plugin_api.process_plugin_setup(*args, **kwargs)
+
+class GuildConfig:
+
+    def __init__(self, guild_id, command_prefix, plugin_data):
+        self.guild_id = guild_id
+        self.command_prefix = command_prefix
+        self.plugins = {}
+
+        for plugin_name, data in plugin_data.items():
+            self.plugins[plugin_name] = getattr(data, "config", {})
+
+    

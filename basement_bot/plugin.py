@@ -3,8 +3,11 @@
 
 import glob
 import os
+import importlib
+from discord.ext import commands
 
 import munch
+import sys
 
 
 class PluginAPI:
@@ -72,11 +75,7 @@ class PluginAPI:
             return self._make_response(False, message)
 
         try:
-            self.bot.load_extension(f"plugins.{plugin_name}")
-
-            self.plugins[plugin_name] = munch.munchify(
-                {"status": "loaded", "memory": {}}
-            )
+            self.plugins[plugin_name] = self.load_extension(f"plugins.{plugin_name}")
 
             message = f"Successfully loaded plugin: {plugin_name}"
             self.logger.console.info(message)
@@ -129,6 +128,69 @@ class PluginAPI:
         for plugin_name in self.get_modules():
             self.load_plugin(plugin_name, allow_failure)
 
+    def process_plugin_setup(self, cogs, config=None, models=None):
+        for cog in cogs:
+            self.bot.add_cog(cog(self.bot), models=models)
+
+        return munch.munchify({
+            "status": "loaded",
+            "config": config.as_dict,
+            "memory": munch.Munch()
+        })
+
+    def load_extension(self, name):
+        if name in self.bot.__extensions:
+            raise commands.errors.ExtensionAlreadyLoaded(name)
+
+        spec = importlib.util.find_spec(name)
+        if spec is None:
+            raise commands.errors.ExtensionNotFound(name)
+
+        # precondition: key not in self.__extensions
+        lib = importlib.util.module_from_spec(spec)
+        sys.modules[name] = lib
+        try:
+            spec.loader.exec_module(lib)
+        except Exception as e:
+            del sys.modules[name]
+            raise commands.errors.ExtensionFailed(name, e) from e
+
+        try:
+            setup = getattr(lib, 'setup')
+        except AttributeError:
+            del sys.modules[name]
+            raise commands.errors.NoEntryPointError(name)
+
+        try:
+            return setup(self.bot)
+
+        except Exception as e:
+            del sys.modules[name]
+            self.bot._remove_module_references(lib.__name__)
+            self.bot._call_module_finalizers(lib, name)
+            raise commands.errors.ExtensionFailed(name, e) from e
+        else:
+            self.bot.__extensions[name] = lib
+
+
     @staticmethod
     def _make_response(status, message):
         return munch.munchify({"status": status, "message": message})
+
+class PluginConfig:
+
+    def __init__(self):
+        self.config = munch.Munch()
+
+    def add(self, key, datatype, title, description, default):
+        self.config[key] = {
+            "datatype": datatype,
+            "title": title,
+            "description": description,
+            "default": default,
+            "value": default
+        }
+
+    @property
+    def to_dict(self):
+        return self.config

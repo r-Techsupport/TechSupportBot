@@ -171,7 +171,7 @@ class Grabber(cogs.BaseCog):
         ).gino.all()
 
         if not grabs:
-            await self.tagged_response(f"No grabs found for {user_to_grab}")
+            await self.tagged_response(ctx, f"No grabs found for {user_to_grab}")
             return
 
         random_index = random.randint(0, len(grabs) - 1)
