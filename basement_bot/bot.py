@@ -2,6 +2,7 @@
 """
 
 import asyncio
+import datetime
 import sys
 
 import admin
@@ -17,7 +18,7 @@ import yaml
 from discord.ext import commands
 
 
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, too-many-instance-attributes
 class BasementBot(commands.Bot):
     """The main bot object.
 
@@ -32,6 +33,7 @@ class BasementBot(commands.Bot):
         self.config = None
         self.db = None
         self.rabbit = None
+        self._startup_time = None
 
         self.load_config(validate=True)
 
@@ -55,8 +57,15 @@ class BasementBot(commands.Bot):
         """
         return logger.BotLogger(self, name=name)
 
+    @property
+    def startup_time(self):
+        """Gets the startup timestamp of the bot."""
+        return self._startup_time
+
     async def on_ready(self):
         """Callback for when the bot is finished starting up."""
+        self._startup_time = datetime.datetime.utcnow()
+
         await self.get_owner()
 
         game = self.config.main.optional.get("game")
@@ -397,7 +406,11 @@ class BasementBot(commands.Bot):
             if get_raw_response:
                 response = response_object
             else:
-                response = await response_object.json() if response_object else {}
+                response = (
+                    await munch.munchify(response_object.json())
+                    if response_object
+                    else munch.Munch()
+                )
                 response["status_code"] = getattr(response_object, "status_code", None)
 
         except Exception as e:

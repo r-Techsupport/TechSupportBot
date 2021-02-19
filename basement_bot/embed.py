@@ -7,17 +7,18 @@ class Embed(DiscordEmbed):
     """Custom BasementBot embed."""
 
     @classmethod
-    def from_kwargs(cls, title=None, description=None, **kwargs):
+    def from_kwargs(cls, title=None, description=None, all_inline=False, **kwargs):
         """Wrapper for generating an embed from a set of key, values.
 
         parameters:
             title (str): the title for the embed
             description (str): the description for the embed
+            all_inline (bool): True if all fields should be added with inline=True
             **kwargs (dict): a set of keyword values to be displayed
         """
         embed = cls(title=title, description=description)
         for key, value in kwargs.items():
-            embed.add_field(name=key, value=value, inline=False)
+            embed.add_field(name=key, value=value, inline=all_inline)
         return embed
 
     def add_field(self, *, name, value, inline=True):

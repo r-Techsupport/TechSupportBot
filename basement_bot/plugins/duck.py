@@ -823,7 +823,7 @@ class DuckHunt(cogs.LoopCog):
         duck_user = await self.get_duck_user(winner.id)
         if not duck_user:
             new_user = True
-            duck_user = DuckUser(
+            duck_user = self.models.DuckUser(
                 author_id=str(winner.id), befriend_count=0, kill_count=0
             )
             await duck_user.create()
