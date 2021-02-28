@@ -7,12 +7,10 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Hugger(bot))
+    return bot.process_plugin_setup(cogs=[Hugger])
 
 
 class Hugger(cogs.BaseCog):
-
-    HAS_CONFIG = False
 
     HUGS_SELECTION = [
         "{user_giving_hug} hugs {user_to_hug} forever and ever and ever",

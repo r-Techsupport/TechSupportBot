@@ -342,6 +342,7 @@ class BotLogger:
             )
         )
 
+        print(exception_string)
         exception_string = exception_string[:1994]
 
         embed = self.generate_error_embed(message, context)

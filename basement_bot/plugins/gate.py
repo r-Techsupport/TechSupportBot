@@ -6,7 +6,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(ServerGate(bot))
+    return bot.process_plugin_setup(cogs=[ServerGate])
 
 
 class ServerGate(cogs.MatchCog):

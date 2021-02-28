@@ -6,12 +6,10 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Moderator(bot))
+    return bot.process_plugin_setup(cogs=[Moderator])
 
 
 class Moderator(cogs.BaseCog):
-
-    HAS_CONFIG = False
 
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)

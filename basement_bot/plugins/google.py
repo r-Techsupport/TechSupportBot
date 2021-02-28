@@ -4,7 +4,16 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Googler(bot))
+    config = bot.PluginConfig
+    config.add(
+        key="max_responses",
+        datatype="int",
+        title="Max Responses",
+        description="The max amount of responses per embed page",
+        default=1,
+    )
+
+    return bot.process_plugin_setup(cogs=[Googler], config=config)
 
 
 class Googler(cogs.BaseCog):
@@ -35,9 +44,9 @@ class Googler(cogs.BaseCog):
     )
     async def search(self, ctx, *, query: str):
         data = {
-            "cx": self.config.cse_id,
+            "cx": self.bot.config.api_keys.google_cse,
             "q": query,
-            "key": self.config.dev_key,
+            "key": self.bot.config.api_keys.google,
         }
 
         items = await self.get_items(self.GOOGLE_URL, data)
@@ -45,6 +54,8 @@ class Googler(cogs.BaseCog):
         if not items:
             await self.tagged_response(ctx, f"No search results found for: *{query}*")
             return
+
+        config = await self.bot.get_context_config(ctx=None, guild=ctx.guild)
 
         embed = None
         embeds = []
@@ -62,7 +73,7 @@ class Googler(cogs.BaseCog):
                 )
                 embed.add_field(name=link, value=snippet, inline=False)
                 if (
-                    field_counter == self.config.responses_max
+                    field_counter == config.max_responses.value
                     or index == len(items) - 1
                 ):
                     embed.set_thumbnail(
@@ -86,9 +97,9 @@ class Googler(cogs.BaseCog):
     )
     async def images(self, ctx, query: str):
         data = {
-            "cx": self.config.cse_id,
+            "cx": self.bot.config.api_keys.google_cse,
             "q": query,
-            "key": self.config.dev_key,
+            "key": self.bot.config.api_keys.google,
             "searchType": "image",
         }
         items = await self.get_items(self.GOOGLE_URL, data)
@@ -126,7 +137,7 @@ class Googler(cogs.BaseCog):
             self.YOUTUBE_URL,
             data={
                 "q": query,
-                "key": self.config.dev_key,
+                "key": self.bot.config.api_keys.google,
                 "type": "video",
             },
         )

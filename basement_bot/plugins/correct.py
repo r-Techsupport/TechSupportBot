@@ -4,12 +4,11 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Corrector(bot))
+    return bot.process_plugin_setup(cogs=[Corrector])
 
 
 class Corrector(cogs.BaseCog):
 
-    HAS_CONFIG = False
     SEARCH_LIMIT = 50
 
     @decorate.with_typing

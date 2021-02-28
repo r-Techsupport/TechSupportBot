@@ -5,8 +5,30 @@ import cogs
 
 
 def setup(bot):
-    bot.add_cog(KanyeQuotes(bot))
+    config = bot.PluginConfig()
+    config.add(
+        key="channel",
+        datatype="int",
+        title="DuckHunt Channel ID",
+        description="The ID of the channel the Kanye West quote should appear in",
+        default=None,
+    )
+    config.add(
+        key="min_wait",
+        datatype="int",
+        title="Min wait (hours)",
+        description="The minimum number of hours to wait between Kanye events",
+        default=24,
+    )
+    config.add(
+        key="max_wait",
+        datatype="int",
+        title="Max wait (hours)",
+        description="The minimum number of hours to wait between Kanye events",
+        default=48,
+    )
 
+    return bot.process_plugin_setup(cogs=[KanyeQuotes], config=config)
 
 class KanyeQuotes(cogs.LoopCog):
 
@@ -18,30 +40,28 @@ class KanyeQuotes(cogs.LoopCog):
         "https://i.imgur.com/1fX29Y3.jpg",
         "https://i.imgur.com/g1o2Gro.jpg",
     ]
-    UNITS = "hours"
 
-    async def loop_preconfig(self):
-        self.channel = self.bot.get_channel(self.config.channel)
-        if not self.channel:
-            raise RuntimeError("Unable to get channel for Kanye Quotes plugin")
-
-        self.setup_random_waiting("min_hours", "max_hours")
-
-    async def execute(self):
+    async def execute(self, config, _):
         response = await self.bot.http_call("get", self.API_URL)
-        quote = response.get("quote")
 
+        quote = response.get("quote")
         if not quote:
             return
 
         embed = self.bot.embed_api.Embed(title=f'"{quote}"', description="Kanye Quest")
-        embed.set_thumbnail(url=random.choice(self.KANYE_PICS))
-        await self.channel.send(embed=embed)
 
-    async def wait(self):
+        embed.set_thumbnail(url=random.choice(self.KANYE_PICS))
+
+        channel = self.bot.get_channel(int(config.channel.value))
+        if not channel:
+            return
+
+        await channel.send(embed=embed)
+
+    async def wait(self, config, _):
         await asyncio.sleep(
             random.randint(
-                self.config.min_hours * 3600,
-                self.config.max_hours * 3600,
+                config.min_hours * 3600,
+                config.max_hours * 3600,
             )
         )

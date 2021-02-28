@@ -11,12 +11,12 @@ import aiohttp
 import discord
 import embed
 import gino
-from motor import motor_asyncio
 import logger
 import munch
 import plugin
 import yaml
 from discord.ext import commands
+from motor import motor_asyncio
 
 
 # pylint: disable=too-many-public-methods, too-many-instance-attributes
@@ -42,32 +42,123 @@ class BasementBot(commands.Bot):
 
         self.logger = self.get_logger(self.__class__.__name__)
 
-        self.logger.console.debug("Connecting to MongoDB...")
-
-        self.load_config(validate=True)
+        self.load_bot_config(validate=True)
 
         self.plugin_api = plugin.PluginAPI(bot=self)
         self.embed_api = embed.EmbedAPI(bot=self)
 
-        super().__init__(self.config.main.required.command_prefix)
+        super().__init__(command_prefix=self.get_prefix)
 
         if not run_on_init:
             return
 
         self.run(self.config.main.required.auth_token)
 
-    def get_logger(self, name):
-        """Wraps getting a new logging channel.
+    def load_bot_config(self, validate):
+        """Loads the config yaml file into a bot object.
 
         parameters:
-            name (str): the name of the channel
+            validate (bool): True if validations should be ran on the file
         """
-        return logger.BotLogger(self, name=name)
+        with open(self.CONFIG_PATH) as iostream:
+            config = yaml.safe_load(iostream)
+        self.config = munch.munchify(config)
 
-    @property
-    def startup_time(self):
-        """Gets the startup timestamp of the bot."""
-        return self._startup_time
+        self.config.main.disabled_plugins = self.config.main.disabled_plugins or []
+
+        if not validate:
+            return
+
+        for subsection in ["required"]:
+            self.validate_bot_config_subsection("main", subsection)
+
+    def validate_bot_config_subsection(self, section, subsection):
+        """Loops through a config subsection to check for missing values.
+
+        parameters:
+            section (str): the section name containing the subsection
+            subsection (str): the subsection name
+        """
+        for key, value in self.config.get(section, {}).get(subsection, {}).items():
+            error_key = None
+            if value is None:
+                error_key = key
+            elif isinstance(value, dict):
+                for k, v in value.items():
+                    if v is None:
+                        error_key = k
+            if error_key:
+                if section == "plugins":
+                    if not subsection in self.config.main.disabled_plugins:
+                        # pylint: disable=line-too-long
+                        # disable the plugin if we can't get its config
+                        self.config.main.disabled_plugins.append(subsection)
+                else:
+                    raise ValueError(
+                        f"Config key {error_key} from {section}.{subsection} not supplied"
+                    )
+
+    async def get_prefix(self, message):
+        guild_config = await self.get_context_config(ctx=None, guild=message.guild)
+        return getattr(guild_config, "command_prefix", self.config.main.default_prefix)
+
+    def run(self, *args, **kwargs):
+        """Starts the event loop and blocks until interrupted."""
+        try:
+            self.loop.run_until_complete(self.start(*args, **kwargs))
+        except (SystemExit, KeyboardInterrupt):
+            self.loop.run_until_complete(self.cleanup())
+        finally:
+            self.loop.close()
+
+    async def start(self, *args, **kwargs):
+        """Sets up config and connections then starts the actual bot."""
+        # this is required for the bot
+        await self.logger.debug("Connecting to MongoDB...")
+        self.mongo = self.get_mongo_ref()
+
+        if not self.GUILD_CONFIG_COLLECTION in await self.mongo.list_collection_names():
+            await self.logger.debug("Creating new MongoDB guild config collection...")
+            await self.mongo.create_collection(self.GUILD_CONFIG_COLLECTION)
+
+        self.guild_config_collection = self.mongo[self.GUILD_CONFIG_COLLECTION]
+
+        await self.logger.debug("Connecting to Postgres...")
+        try:
+            self.db = await self.get_postgres_ref()
+        except Exception as exception:
+            await self.logger.warning(f"Could not connect to Postgres: {exception}")
+
+        await self.logger.debug("Connecting to RabbitMQ...")
+        try:
+            self.rabbit = await self.get_rabbit_connection()
+        except Exception as exception:
+            await self.logger.warning(f"Could not connect to RabbitMQ: {exception}")
+
+        await self.logger.debug("Loading plugins...")
+        self.plugin_api.load_plugins()
+
+        if self.db:
+            await self.logger.debug("Syncing Postgres tables...")
+            await self.db.gino.create_all()
+
+        await self.logger.debug("Loading Admin extension...")
+        try:
+            self.add_cog(admin.AdminControl(self))
+        except (TypeError, commands.CommandError) as exception:
+            await self.logger.warning(
+                f"Could not load Admin extension! Error: {exception}"
+            )
+
+        await self.logger.debug("Logging into Discord...")
+        await super().start(*args, **kwargs)
+
+    async def cleanup(self):
+        """Cleans up after the event loop is interupted."""
+        await self.logger.debug("Cleaning up...", send=True)
+        await super().logout()
+        await self.db.close()
+        await self.rabbit.close()
 
     async def on_ready(self):
         """Callback for when the bot is finished starting up."""
@@ -79,9 +170,7 @@ class BasementBot(commands.Bot):
         if game:
             await self.change_presence(activity=discord.Game(name=game))
 
-        await self.logger.debug(
-            f"Online! Command prefix: {self.command_prefix}", send=True
-        )
+        await self.logger.debug(f"Online!", send=True)
 
     async def on_message(self, message):
         """Catches messages and acts appropriately.
@@ -109,7 +198,9 @@ class BasementBot(commands.Bot):
             event_method (str): the event method name associated with the error (eg. on_message)
         """
         _, exception, _ = sys.exc_info()
-        await self.logger.error(f"Bot error in {event_method}!", exception=exception)
+        await self.logger.error(
+            f"Bot error in {event_method}: {exception}", exception=exception
+        )
 
     async def on_command_error(self, context, exception):
         """Catches command errors and sends them to the error logger for processing.
@@ -118,57 +209,9 @@ class BasementBot(commands.Bot):
             context (discord.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
-        await self.logger.error("Command error!", context=context, exception=exception)
-
-    def run(self, *args, **kwargs):
-        """Starts the event loop and blocks until interrupted."""
-        try:
-            self.loop.run_until_complete(self.start(*args, **kwargs))
-        except (SystemExit, KeyboardInterrupt):
-            self.loop.run_until_complete(self.cleanup())
-        finally:
-            self.loop.close()
-
-    async def start(self, *args, **kwargs):
-        """Sets up config and connections then starts the actual bot."""
-        # this is required for the bot
-        self.mongo = self.get_mongo_ref()
-        self.load_guild_config()
-
-        await self.logger.debug("Connecting to Postgres...")
-        try:
-            self.db = await self.get_postgres_ref()
-        except Exception:
-            await self.logger.warning("Could not connect to Postgres!")
-
-        await self.logger.debug("Connecting to RabbitMQ...")
-        try:
-            self.rabbit = await self.get_rabbit_connection()
-        except Exception:
-            await self.logger.warning("Could not connect to RabbitMQ!")
-
-        await self.logger.debug("Loading plugins...")
-        self.plugin_api.load_plugins()
-
-        if self.db:
-            await self.logger.debug("Syncing Postgres tables...")
-            await self.db.gino.create_all()
-
-        await self.logger.debug("Loading Admin extension...")
-        try:
-            self.add_cog(admin.AdminControl(self))
-        except (TypeError, commands.CommandError) as e:
-            await self.logger.warning(f"Could not load Admin extension! Error: {e}")
-
-        await self.logger.debug("Logging into Discord...")
-        await super().start(*args, **kwargs)
-
-    async def cleanup(self):
-        """Cleans up after the event loop is interupted."""
-        await self.logger.debug("Cleaning up...", send=True)
-        await super().logout()
-        await self.db.close()
-        await self.rabbit.close()
+        await self.logger.error(
+            f"Command error: {exception}", context=context, exception=exception
+        )
 
     async def get_owner(self):
         """Gets the owner object from the bot application."""
@@ -235,79 +278,39 @@ class BasementBot(commands.Bot):
 
         return False
 
-    def load_config(self, validate):
-        """Loads the config yaml file into a bot object.
+    async def get_context_config(self, ctx, guild=None, create_if_none=True):
+        guild = guild or ctx.guild
 
-        parameters:
-            validate (bool): True if validations should be ran on the file
-        """
-        with open(self.CONFIG_PATH) as iostream:
-            config = yaml.safe_load(iostream)
-        self.config = munch.munchify(config)
+        lookup = guild.id if guild else "dmcontext"
 
-        self.config.main.disabled_plugins = self.config.main.disabled_plugins or []
+        config = await self.guild_config_collection.find_one(
+            {"guild_id": {"$eq": lookup}}
+        )
 
-        if validate:
-            self.validate_config()
+        if not config and create_if_none:
+            config = await self.create_new_context_config(lookup)
 
-    async def load_guild_config(self):
-        guild_config_collection = self.mongo[self.GUILD_CONFIG_COLLECTION]
+        return munch.munchify(config)
 
+    async def create_new_context_config(self, lookup):
         plugins_config = {}
-        
-        for guild in self.guilds:
-            config = await guild_config_collection.find_one({"guild_id": {"$eq": guild.id}})
-            if not config:
-                if not plugins_config:
-                    for plugin_name, plugin_data in self.plugin_api.plugins.items():
-                        plugins_config[plugin_name] = getattr(plugin_data, "config", {})
 
-                guild_config = munch.Munch()
+        for plugin_name, plugin_data in self.plugin_api.plugins.items():
+            plugins_config[plugin_name] = getattr(plugin_data, "config", {})
 
-                guild_config.guild_id = guild.id
-                guild_config.command_prefix = self.config.default_prefix
-                guild_config.plugins = plugins_config
+        guild_config = munch.Munch()
 
-                await guild_config_collection.insert_one(guild_config)
-            
+        guild_config.guild_id = lookup
+        guild_config.command_prefix = self.config.main.default_prefix
+        guild_config.plugins = plugins_config
 
-    def validate_config(self):
-        """Validates several config subsections."""
-        for subsection in ["required"]:
-            self.validate_config_subsection("main", subsection)
+        await self.guild_config_collection.insert_one(guild_config)
 
-        for subsection in list(self.config.plugins.keys()):
-            self.validate_config_subsection("plugins", subsection)
-
-    def validate_config_subsection(self, section, subsection):
-        """Loops through a config subsection to check for missing values.
-
-        parameters:
-            section (str): the section name containing the subsection
-            subsection (str): the subsection name
-        """
-        for key, value in self.config.get(section, {}).get(subsection, {}).items():
-            error_key = None
-            if value is None:
-                error_key = key
-            elif isinstance(value, dict):
-                for k, v in value.items():
-                    if v is None:
-                        error_key = k
-            if error_key:
-                if section == "plugins":
-                    if not subsection in self.config.main.disabled_plugins:
-                        # pylint: disable=line-too-long
-                        # disable the plugin if we can't get its config
-                        self.config.main.disabled_plugins.append(subsection)
-                else:
-                    raise ValueError(
-                        f"Config key {error_key} from {section}.{subsection} not supplied"
-                    )
+        return guild_config
 
     def generate_db_url(self, postgres=True):
         """Dynamically converts config to a Postgres/MongoDB url.
-        
+
         parameters:
             postgres (bool): True if the URL for Postgres should be retrieved
         """
@@ -315,7 +318,7 @@ class BasementBot(commands.Bot):
 
         try:
             config_child = getattr(self.config.main, db_type)
-        
+
             user = config_child.user
             password = config_child.password
 
@@ -324,8 +327,10 @@ class BasementBot(commands.Bot):
             host = config_child.host
             port = config_child.port
 
-        except AttributeError as e:
-            self.logger.console.warning(f"Could not generate DB URL for {db_type.upper()}: {e}")
+        except AttributeError as exception:
+            self.logger.console.warning(
+                f"Could not generate DB URL for {db_type.upper()}: {exception}"
+            )
             return None
 
         url = f"{db_type}://{user}:{password}@{host}:{port}"
@@ -355,7 +360,9 @@ class BasementBot(commands.Bot):
     def get_mongo_ref(self):
         self.logger.console.debug("Obtaining MongoDB client")
 
-        mongo_client = motor_asyncio.AsyncIOMotorClient(self.generate_db_url(postgres=False))
+        mongo_client = motor_asyncio.AsyncIOMotorClient(
+            self.generate_db_url(postgres=False)
+        )
 
         return mongo_client[self.config.main.mongodb.name]
 
@@ -473,8 +480,8 @@ class BasementBot(commands.Bot):
                 )
                 response["status_code"] = getattr(response_object, "status_code", None)
 
-        except Exception as e:
-            await self.logger.error(f"HTTP {method} call", exception=e)
+        except Exception as exception:
+            await self.logger.error(f"HTTP {method} call", exception=exception)
             response = {"status_code": None}
 
         await client.close()
@@ -482,16 +489,17 @@ class BasementBot(commands.Bot):
         return response
 
     def process_plugin_setup(self, *args, **kwargs):
-        self.plugin_api.process_plugin_setup(*args, **kwargs)
+        return self.plugin_api.process_plugin_setup(*args, **kwargs)
 
-class GuildConfig:
+    def get_logger(self, name):
+        """Wraps getting a new logging channel.
 
-    def __init__(self, guild_id, command_prefix, plugin_data):
-        self.guild_id = guild_id
-        self.command_prefix = command_prefix
-        self.plugins = {}
+        parameters:
+            name (str): the name of the channel
+        """
+        return logger.BotLogger(self, name=name)
 
-        for plugin_name, data in plugin_data.items():
-            self.plugins[plugin_name] = getattr(data, "config", {})
-
-    
+    @property
+    def startup_time(self):
+        """Gets the startup timestamp of the bot."""
+        return self._startup_time

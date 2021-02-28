@@ -7,12 +7,11 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Emojis(bot))
+    return bot.process_plugin_setup(cogs=[Emojis])
 
 
 class Emojis(cogs.BaseCog):
 
-    HAS_CONFIG = False
     SEARCH_LIMIT = 20
     KEY_MAP = {"?": "question", "!": "exclamation"}
 

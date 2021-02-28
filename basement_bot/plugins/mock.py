@@ -5,12 +5,11 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Mocker(bot))
+    return bot.process_plugin_setup(cogs=[Mocker])
 
 
 class Mocker(cogs.BaseCog):
 
-    HAS_CONFIG = False
     SEARCH_LIMIT = 20
 
     @staticmethod

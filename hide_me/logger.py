@@ -6,6 +6,7 @@ def setup(bot):
 
 
 class Logger(cogs.MatchCog):
+
     async def match(self, ctx, _):
         if not ctx.channel.id in self.config.channel_map:
             return False

@@ -7,12 +7,11 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Burn(bot))
+    return bot.process_plugin_setup(cogs=[Burn])
 
 
 class Burn(cogs.BaseCog):
 
-    HAS_CONFIG = False
     SEARCH_LIMIT = 50
     PHRASES = [
         "Sick BURN!",

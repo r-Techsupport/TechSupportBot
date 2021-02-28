@@ -2,12 +2,12 @@
 """
 
 import glob
-import os
 import importlib
-from discord.ext import commands
+import os
+import sys
 
 import munch
-import sys
+from discord.ext import commands
 
 
 class PluginAPI:
@@ -126,20 +126,21 @@ class PluginAPI:
         """
         self.logger.console.debug("Retrieving plugin modules")
         for plugin_name in self.get_modules():
-            self.load_plugin(plugin_name, allow_failure)
+            self.load_plugin(plugin_name, allow_failure=False)
 
     def process_plugin_setup(self, cogs, config=None, models=None):
         for cog in cogs:
-            self.bot.add_cog(cog(self.bot), models=models)
+            self.bot.add_cog(cog(self.bot, models=models))
 
-        return munch.munchify({
-            "status": "loaded",
-            "config": config.as_dict,
-            "memory": munch.Munch()
-        })
+        config = config.to_dict if config else {}
+
+        return munch.munchify(
+            {"status": "loaded", "config": config, "memory": munch.Munch()}
+        )
 
     def load_extension(self, name):
-        if name in self.bot.__extensions:
+        # don't try this at home
+        if name in self.bot._BotBase__extensions:
             raise commands.errors.ExtensionAlreadyLoaded(name)
 
         spec = importlib.util.find_spec(name)
@@ -156,7 +157,7 @@ class PluginAPI:
             raise commands.errors.ExtensionFailed(name, e) from e
 
         try:
-            setup = getattr(lib, 'setup')
+            setup = getattr(lib, "setup")
         except AttributeError:
             del sys.modules[name]
             raise commands.errors.NoEntryPointError(name)
@@ -172,13 +173,12 @@ class PluginAPI:
         else:
             self.bot.__extensions[name] = lib
 
-
     @staticmethod
     def _make_response(status, message):
         return munch.munchify({"status": status, "message": message})
 
-class PluginConfig:
 
+class PluginConfig:
     def __init__(self):
         self.config = munch.Munch()
 
@@ -188,7 +188,7 @@ class PluginConfig:
             "title": title,
             "description": description,
             "default": default,
-            "value": default
+            "value": default,
         }
 
     @property

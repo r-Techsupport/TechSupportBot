@@ -13,7 +13,25 @@ def setup(bot):
         guild_id = bot.db.Column(bot.db.String, primary_key=True)
         last_message = bot.db.Column(bot.db.String, default=None)
 
-    bot.add_cog(ChannelDirectory(bot, models=[DirectoryExistence]))
+    config = bot.PluginConfig()
+    config.add(
+        key="channel",
+        datatype="int",
+        title="Directory Channel ID",
+        description="The ID of the channel to run the directory in",
+        default=None,
+    )
+    config.add(
+        key="channel_role_map",
+        datatype="dict",
+        title="Channel ID to Role mapping",
+        description="A mapping of channel ID's to role names",
+        default={},
+    )
+
+    return bot.process_plugin_setup(
+        cogs=[ChannelDirectory], models=[DirectoryExistence], config=config
+    )
 
 
 class ChannelDirectory(cogs.BaseCog):
@@ -44,27 +62,29 @@ class ChannelDirectory(cogs.BaseCog):
             for emoji_text in self.OPTION_EMOJIS
         ]
 
-        for guild_id in self.config.keys():
-            guild = self.bot.get_guild(guild_id)
-            if not guild:
-                continue
+        for guild in self.bot.guilds:
+            config = await self.bot.get_context_config(ctx=None, guild=guild)
 
-            channel_id = self.config.get(guild_id, {}).get("directory_channel")
+            channel_id = config.plugins.directory.channel.value
             if not channel_id:
                 continue
 
-            channel = self.bot.get_channel(channel_id)
+            channel = self.bot.get_channel(int(channel_id))
             if not channel:
                 continue
 
+            channel_map = config.plugins.directory.channel_role_map.value
+            if not channel_map:
+                continue
+
             existence = await self.models.DirectoryExistence.query.where(
-                self.models.DirectoryExistence.guild_id == str(guild_id)
+                self.models.DirectoryExistence.guild_id == str(guild.id)
             ).gino.first()
             if not existence:
                 # no record in table
                 # create new object
                 existence = await self.models.DirectoryExistence(
-                    guild_id=str(guild_id)
+                    guild_id=str(guild.id)
                 ).create()
                 message_id = None
             else:
@@ -86,9 +106,7 @@ class ChannelDirectory(cogs.BaseCog):
             if message:
                 await message.delete()
 
-            new_message = await self.send_embed(
-                self.config.get(guild_id, {}).get("channel_map", {}), guild, channel
-            )
+            new_message = await self.send_embed(channel_map, guild, channel)
 
             await existence.update(last_message=str(new_message.id)).apply()
 
@@ -104,8 +122,10 @@ class ChannelDirectory(cogs.BaseCog):
 
         message = await directory_channel.send("Loading channel directory...")
 
+        self.option_map[guild.id] = {}
+
         for index, channel_id in enumerate(channel_map):
-            channel = self.bot.get_channel(channel_id)
+            channel = self.bot.get_channel(int(channel_id))
             if not channel or not channel.topic:
                 continue
 
@@ -114,7 +134,7 @@ class ChannelDirectory(cogs.BaseCog):
             if not role:
                 continue
 
-            self.option_map[self.option_emojis[index]] = role
+            self.option_map[guild.id][self.option_emojis[index]] = role
 
             embed.add_field(
                 name=f"{self.option_emojis[index]} #{channel.name}",
@@ -136,7 +156,7 @@ class ChannelDirectory(cogs.BaseCog):
         if not reaction.message.id in self.message_ids:
             return
 
-        role = self.option_map.get(reaction.emoji)
+        role = self.option_map.get(reaction.message.guild.id, {}).get(reaction.emoji)
         if not role:
             return
 
@@ -150,7 +170,7 @@ class ChannelDirectory(cogs.BaseCog):
         if not reaction.message.id in self.message_ids:
             return
 
-        role = self.option_map.get(reaction.emoji)
+        role = self.option_map.get(reaction.message.guild.id, {}).get(reaction.emoji)
         if not role:
             return
 

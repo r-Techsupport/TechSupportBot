@@ -9,12 +9,10 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Poller(bot))
+    return bot.process_plugin_setup(cogs=[Poller])
 
 
 class Poller(cogs.BaseCog):
-
-    HAS_CONFIG = False
 
     OPTION_EMOJIS = ["one", "two", "three", "four", "five"]
     STOP_EMOJI = "\u26D4"

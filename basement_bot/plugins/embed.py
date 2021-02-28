@@ -4,12 +4,10 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Embedder(bot))
+    return bot.process_plugin_setup(cogs=[Embedder])
 
 
 class Embedder(cogs.BaseCog):
-
-    HAS_CONFIG = False
 
     @decorate.with_typing
     @commands.has_permissions(manage_messages=True)

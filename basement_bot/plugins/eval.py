@@ -7,12 +7,11 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Evaluator(bot))
+    return bot.process_plugin_setup(cogs=[Evaluator])
 
 
 class Evaluator(cogs.BaseCog):
 
-    HAS_CONFIG = False
     THREAD_WAIT_MINUTES = 10
     POLL_WAIT = 1
     # alcohol made me do this
