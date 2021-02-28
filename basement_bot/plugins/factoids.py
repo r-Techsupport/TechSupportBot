@@ -82,7 +82,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
         await self.tagged_response(ctx, f"Successfully added factoid *{trigger}*")
 
     async def delete_factoid(self, ctx, trigger):
-        factoid = await self.get_factoid_from_query(kwargs.get("trigger"))
+        factoid = await self.get_factoid_from_query(trigger)
         if not factoid:
             await self.tagged_response(ctx, "I couldn't find that factoid")
             return
