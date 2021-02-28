@@ -6,4 +6,4 @@ import discord
 intents = discord.Intents.default()
 intents.members = True
 
-bot_ = bot.BasementBot()
+bot_ = bot.BasementBot(intents=intents)

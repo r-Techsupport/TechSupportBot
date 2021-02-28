@@ -28,7 +28,7 @@ class BasementBot(commands.Bot):
 
     CONFIG_PATH = "./config.yaml"
 
-    def __init__(self, run_on_init=True):
+    def __init__(self, run_on_init=True, intents=None):
         self.owner = None
         self.config = None
         self.db = None
@@ -42,7 +42,7 @@ class BasementBot(commands.Bot):
 
         self.logger = self.get_logger(self.__class__.__name__)
 
-        super().__init__(self.config.main.required.command_prefix)
+        super().__init__(self.config.main.required.command_prefix, intents=intents)
 
         if not run_on_init:
             return
