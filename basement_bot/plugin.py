@@ -163,15 +163,15 @@ class PluginAPI:
             raise commands.errors.NoEntryPointError(name)
 
         try:
-            return setup(self.bot)
+            plugin_data = setup(self.bot)
+            self.bot._BotBase__extensions[name] = lib
+            return plugin_data
 
         except Exception as e:
             del sys.modules[name]
             self.bot._remove_module_references(lib.__name__)
             self.bot._call_module_finalizers(lib, name)
             raise commands.errors.ExtensionFailed(name, e) from e
-        else:
-            self.bot.__extensions[name] = lib
 
     @staticmethod
     def _make_response(status, message):

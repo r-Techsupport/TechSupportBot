@@ -30,6 +30,7 @@ def setup(bot):
 
     return bot.process_plugin_setup(cogs=[KanyeQuotes], config=config)
 
+
 class KanyeQuotes(cogs.LoopCog):
 
     API_URL = "https://api.kanye.rest"
@@ -41,7 +42,7 @@ class KanyeQuotes(cogs.LoopCog):
         "https://i.imgur.com/g1o2Gro.jpg",
     ]
 
-    async def execute(self, config, _):
+    async def execute(self, config, guild):
         response = await self.bot.http_call("get", self.API_URL)
 
         quote = response.get("quote")
@@ -52,7 +53,7 @@ class KanyeQuotes(cogs.LoopCog):
 
         embed.set_thumbnail(url=random.choice(self.KANYE_PICS))
 
-        channel = self.bot.get_channel(int(config.channel.value))
+        channel = guild.get_channel(int(config.plugins.kanye.channel.value))
         if not channel:
             return
 
@@ -61,7 +62,7 @@ class KanyeQuotes(cogs.LoopCog):
     async def wait(self, config, _):
         await asyncio.sleep(
             random.randint(
-                config.min_hours * 3600,
-                config.max_hours * 3600,
+                config.plugins.kanye.min_hours.value * 3600,
+                config.plugins.kanye.max_hours.value * 3600,
             )
         )

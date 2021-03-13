@@ -32,9 +32,12 @@ class Burn(cogs.BaseCog):
     )
     async def burn(self, ctx, user_to_match: discord.Member):
         matched_message = None
+
+        prefix = await self.bot.get_prefix(ctx.message)
+
         async for message in ctx.channel.history(limit=self.SEARCH_LIMIT):
             if message.author == user_to_match and not message.content.startswith(
-                self.bot.config.main.required.command_prefix
+                prefix
             ):
                 matched_message = message
                 break

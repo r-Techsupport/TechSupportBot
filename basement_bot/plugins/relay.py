@@ -13,21 +13,20 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(DiscordRelay(bot))
-    bot.add_cog(IRCReceiver(bot))
+    return bot.process_plugin_setup(cogs=[DiscordRelay, IRCReceiver])
 
 
 class DiscordRelay(cogs.MatchCog):
     async def preconfig(self):
-        self.channels = list(self.config.channel_map.values())
+        self.channels = list(self.bot.config.special.relay.channel_map.values())
         self.bot.plugin_api.plugins.relay.memory.channels = self.channels
 
-    async def match(self, ctx, _):
+    async def match(self, _, ctx, __):
         if ctx.channel.id in self.channels:
             return True
         return False
 
-    async def response(self, ctx, _):
+    async def response(self, _, ctx, __):
         ctx_data = munch.Munch()
 
         ctx_data.message = copy.copy(ctx.message)
@@ -40,7 +39,7 @@ class DiscordRelay(cogs.MatchCog):
 
         payload = self.serialize("message", ctx_data)
 
-        await self.bot.rabbit_publish(payload, self.config.send_queue)
+        await self.bot.rabbit_publish(payload, self.bot.config.special.relay.send_queue)
 
     @staticmethod
     def serialize(type_, ctx):
@@ -96,14 +95,17 @@ class IRCReceiver(cogs.BaseCog):
     IRC_LOGO = "📨"
 
     async def preconfig(self):
-        self.channels = list(self.config.channel_map.values())
+        self.channels = list(self.bot.config.special.relay.channel_map.values())
         self.error_count = 0
 
         await self.run()
 
     async def run(self):
         await self.bot.rabbit_consume(
-            self.config.recv_queue, self.handle_event, poll_wait=1, durable=True
+            self.bot.config.special.relay.recv_queue,
+            self.handle_event,
+            poll_wait=1,
+            durable=True,
         )
 
     async def handle_event(self, response):
@@ -151,7 +153,9 @@ class IRCReceiver(cogs.BaseCog):
 
     def _get_channel(self, data):
         for channel_id in self.channels:
-            if channel_id == self.config.channel_map.get(data.channel.name):
+            if channel_id == self.bot.config.special.relay.channel_map.get(
+                data.channel.name
+            ):
                 return self.bot.get_channel(channel_id)
 
     def deserialize(self, body):
@@ -169,7 +173,7 @@ class IRCReceiver(cogs.BaseCog):
         time = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f")
         now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
-        if (now - time).total_seconds() > self.config.stale_seconds:
+        if (now - time).total_seconds() > self.bot.config.special.relay.stale_seconds:
             return True
 
         return False

@@ -11,12 +11,11 @@ def setup(bot):
         number = bot.db.Column(bot.db.Integer)
         description = bot.db.Column(bot.db.String)
 
-    bot.add_cog(Rules(bot, models=[Rule]))
+    return bot.process_plugin_setup(cogs=[Rules], models=[Rule])
 
 
 class Rules(cogs.BaseCog):
 
-    HAS_CONFIG = False
     RULE_ICON_URL = "https://cdn.icon-icons.com/icons2/907/PNG/512/balance-scale-of-justice_icon-icons.com_70554.png"
 
     @commands.group(name="rule")

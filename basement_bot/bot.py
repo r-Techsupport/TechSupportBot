@@ -2,6 +2,7 @@
 """
 
 import asyncio
+import collections
 import datetime
 import sys
 
@@ -39,6 +40,7 @@ class BasementBot(commands.Bot):
         self.db = None
         self.rabbit = None
         self._startup_time = None
+        self.config_cache = collections.defaultdict(dict)
 
         self.logger = self.get_logger(self.__class__.__name__)
 
@@ -52,7 +54,7 @@ class BasementBot(commands.Bot):
         if not run_on_init:
             return
 
-        self.run(self.config.main.required.auth_token)
+        self.run(self.config.main.auth_token)
 
     def load_bot_config(self, validate):
         """Loads the config yaml file into a bot object.
@@ -88,15 +90,9 @@ class BasementBot(commands.Bot):
                     if v is None:
                         error_key = k
             if error_key:
-                if section == "plugins":
-                    if not subsection in self.config.main.disabled_plugins:
-                        # pylint: disable=line-too-long
-                        # disable the plugin if we can't get its config
-                        self.config.main.disabled_plugins.append(subsection)
-                else:
-                    raise ValueError(
-                        f"Config key {error_key} from {section}.{subsection} not supplied"
-                    )
+                raise ValueError(
+                    f"Config key {error_key} from {section}.{subsection} not supplied"
+                )
 
     async def get_prefix(self, message):
         guild_config = await self.get_context_config(ctx=None, guild=message.guild)
@@ -122,6 +118,7 @@ class BasementBot(commands.Bot):
             await self.mongo.create_collection(self.GUILD_CONFIG_COLLECTION)
 
         self.guild_config_collection = self.mongo[self.GUILD_CONFIG_COLLECTION]
+        self.loop.create_task(self.reset_config_cache())
 
         await self.logger.debug("Connecting to Postgres...")
         try:
@@ -165,10 +162,6 @@ class BasementBot(commands.Bot):
         self._startup_time = datetime.datetime.utcnow()
 
         await self.get_owner()
-
-        game = self.config.main.optional.get("game")
-        if game:
-            await self.change_presence(activity=discord.Game(name=game))
 
         await self.logger.debug(f"Online!", send=True)
 
@@ -278,8 +271,22 @@ class BasementBot(commands.Bot):
 
         return False
 
-    async def get_context_config(self, ctx, guild=None, create_if_none=True):
+    async def reset_config_cache(self):
+        while True:
+            for key in self.config_cache.keys():
+                del self.config_cache[key]
+
+            await asyncio.sleep(self.config.main.config_cache_reset)
+
+    async def get_context_config(
+        self, ctx, guild=None, create_if_none=True, get_from_cache=True
+    ):
         guild = guild or ctx.guild
+
+        if get_from_cache:
+            config = self.config_cache[guild.id]
+            if config:
+                return config
 
         lookup = guild.id if guild else "dmcontext"
 
@@ -289,8 +296,10 @@ class BasementBot(commands.Bot):
 
         if not config and create_if_none:
             config = await self.create_new_context_config(lookup)
+        else:
+            config = await self.sync_config(config)
 
-        return munch.munchify(config)
+        return config
 
     async def create_new_context_config(self, lookup):
         plugins_config = {}
@@ -298,15 +307,28 @@ class BasementBot(commands.Bot):
         for plugin_name, plugin_data in self.plugin_api.plugins.items():
             plugins_config[plugin_name] = getattr(plugin_data, "config", {})
 
-        guild_config = munch.Munch()
+        config = munch.Munch()
 
-        guild_config.guild_id = lookup
-        guild_config.command_prefix = self.config.main.default_prefix
-        guild_config.plugins = plugins_config
+        config.guild_id = lookup
+        config.command_prefix = self.config.main.default_prefix
+        config.plugins = plugins_config
 
-        await self.guild_config_collection.insert_one(guild_config)
+        await self.guild_config_collection.insert_one(config)
 
-        return guild_config
+        return config
+
+    async def sync_config(self, config):
+        config = munch.munchify(config)
+
+        for plugin_name, plugin_data in self.plugin_api.plugins.items():
+            if not config.plugins.get(plugin_name):
+                config.plugins[plugin_name] = getattr(plugin_data, "config", {})
+
+        await self.guild_config_collection.replace_one(
+            {"_id": config.get("_id")}, config
+        )
+
+        return config
 
     def generate_db_url(self, postgres=True):
         """Dynamically converts config to a Postgres/MongoDB url.

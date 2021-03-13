@@ -32,7 +32,9 @@ class Giphy(cogs.BaseCog):
         response = await self.bot.http_call(
             "get",
             self.GIPHY_URL.format(
-                query.replace(" ", "+"), self.bot.config.api_keys.giphy, self.SEARCH_LIMIT
+                query.replace(" ", "+"),
+                self.bot.config.main.api_keys.giphy,
+                self.SEARCH_LIMIT,
             ),
         )
 

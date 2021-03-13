@@ -14,10 +14,27 @@ def setup(bot):
         pk = bot.db.Column(bot.db.Integer, primary_key=True)
         author_id = bot.db.Column(bot.db.String)
         channel = bot.db.Column(bot.db.String)
+        guild = bot.db.Column(bot.db.String)
         message = bot.db.Column(bot.db.String)
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
 
-    bot.add_cog(Grabber(bot, models=[Grab]))
+    config = bot.PluginConfig()
+    config.add(
+        key="per_page",
+        datatype="int",
+        title="Grabs per page",
+        description="The number of grabs per page when retrieving all grabs",
+        default=3,
+    )
+    config.add(
+        key="blocked_channels",
+        datatype="list",
+        title="List of blocked channels",
+        description="The list of channels to disable the grabs plugin",
+        default=[],
+    )
+
+    return bot.process_plugin_setup(cogs=[Grabber], models=[Grab], config=config)
 
 
 class Grabber(cogs.BaseCog):
@@ -27,8 +44,8 @@ class Grabber(cogs.BaseCog):
 
     # this could probably be a check decorator
     # but oh well
-    async def invalid_channel(self, ctx):
-        if ctx.channel.id in self.config.invalid_channels:
+    async def invalid_channel(self, config, ctx):
+        if ctx.channel.id in config.plugins.grab.blocked_channels.value:
             await self.tagged_response(ctx, "Grabs are disabled for this channel")
             return True
 
@@ -44,7 +61,9 @@ class Grabber(cogs.BaseCog):
         usage="@user",
     )
     async def grab_user(self, ctx, *, user_to_grab: discord.Member):
-        if await self.invalid_channel(ctx):
+        config = await self.bot.get_context_config(ctx)
+
+        if await self.invalid_channel(config, ctx):
             return
 
         if user_to_grab.bot:
@@ -53,9 +72,7 @@ class Grabber(cogs.BaseCog):
 
         grab_message = None
         async for message in ctx.channel.history(limit=self.SEARCH_LIMIT):
-            if message.author == user_to_grab and not message.content.startswith(
-                f"{self.bot.config.main.required.command_prefix}grab"
-            ):
+            if message.author == user_to_grab:
                 grab_message = message.content
                 break
 
@@ -80,6 +97,7 @@ class Grabber(cogs.BaseCog):
         grab = self.models.Grab(
             author_id=str(user_to_grab.id),
             channel=str(ctx.channel.id),
+            guild=str(ctx.guild.id),
             message=grab_message,
         )
         await grab.create()
@@ -103,16 +121,22 @@ class Grabber(cogs.BaseCog):
         usage="@user",
     )
     async def all_grabs(self, ctx, user_to_grab: discord.Member):
-        if await self.invalid_channel(ctx):
+        config = await self.bot.get_context_config(ctx)
+
+        if await self.invalid_channel(config, ctx):
             return
 
         if user_to_grab.bot:
             await self.tagged_response(ctx, "Ain't gonna catch me slipping!")
             return
 
-        grabs = await self.models.Grab.query.where(
-            self.models.Grab.author_id == str(user_to_grab.id)
-        ).gino.all()
+        grabs = (
+            await self.models.Grab.query.where(
+                self.models.Grab.author_id == str(user_to_grab.id)
+            )
+            .where(self.models.Grab.guild == str(ctx.guild.id))
+            .gino.all()
+        )
 
         if not grabs:
             await self.tagged_response(ctx, f"No grabs found for {user_to_grab.name}")
@@ -120,7 +144,7 @@ class Grabber(cogs.BaseCog):
 
         embed = self.bot.embed_api.Embed(
             title=f"Grabs for {user_to_grab.name}",
-            description=f"Let's take a stroll down memory lane...",
+            description="Let's take a stroll down memory lane...",
         )
         embed.set_thumbnail(url=user_to_grab.avatar_url)
         embeds = []
@@ -140,7 +164,10 @@ class Grabber(cogs.BaseCog):
                 value=grab_.time.date(),
                 inline=False,
             )
-            if field_counter == self.config.grabs_max or index == len(list(grabs)) - 1:
+            if (
+                field_counter == config.plugins.grab.per_page.value
+                or index == len(list(grabs)) - 1
+            ):
                 embed.set_thumbnail(url=user_to_grab.avatar_url)
                 embeds.append(embed)
                 field_counter = 1
@@ -159,16 +186,22 @@ class Grabber(cogs.BaseCog):
         usage="@user",
     )
     async def random_grab(self, ctx, user_to_grab: discord.Member):
-        if await self.invalid_channel(ctx):
+        config = await self.bot.get_context_config(ctx)
+
+        if await self.invalid_channel(config, ctx):
             return
 
         if user_to_grab.bot:
             await self.tagged_response(ctx, "Ain't gonna catch me slipping!")
             return
 
-        grabs = await self.models.Grab.query.where(
-            self.models.Grab.author_id == str(user_to_grab.id)
-        ).gino.all()
+        grabs = (
+            await self.models.Grab.query.where(
+                self.models.Grab.author_id == str(user_to_grab.id)
+            )
+            .where(self.models.Grab.guild == str(ctx.guild.id))
+            .gino.all()
+        )
 
         if not grabs:
             await self.tagged_response(ctx, f"No grabs found for {user_to_grab}")

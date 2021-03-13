@@ -7,7 +7,6 @@ import datetime
 import inspect
 import re
 
-
 import discord
 import munch
 from discord.ext import commands
@@ -267,25 +266,31 @@ class MatchCog(BaseCog):
 
         ctx = await self.bot.get_context(message)
 
-        result = await self.match(ctx, message.content)
+        config = await self.bot.get_context_config(ctx)
+        if not config:
+            return
+
+        result = await self.match(config, ctx, message.content)
         if not result:
             return
 
-        await self.response(ctx, message.content)
+        await self.response(config, ctx, message.content)
 
-    async def match(self, _ctx, _content):
+    async def match(self, _config, _ctx, _content):
         """Runs a boolean check on message content.
 
         parameters:
+            config (dict): the config associated with the context
             ctx (context): the context object
             content (str): the message content
         """
         return True
 
-    async def response(self, ctx, content):
+    async def response(self, _config, _ctx, _content):
         """Performs a response if the match is valid.
 
         parameters:
+            config (dict): the config associated with the context
             ctx (context): the context object
             content (str): the message content
         """
@@ -306,13 +311,14 @@ class LoopCog(BaseCog):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.state = True
-
-        for guild in self.bot.guilds:
-            self.bot.loop.create_task(self._loop_execute(guild))
+        self.bot.loop.create_task(self._loop_preconfig())
 
     async def _loop_preconfig(self):
         """Blocks the loop_preconfig until the bot is ready."""
         await self._handle_preconfig(self.loop_preconfig)
+
+        for guild in self.bot.guilds:
+            self.bot.loop.create_task(self._loop_execute(guild))
 
     async def loop_preconfig(self):
         """Preconfigures the environment before starting the loop."""
@@ -323,36 +329,25 @@ class LoopCog(BaseCog):
         parameters:
             guild (discord.Guild): the guild associated with the execution
         """
-        await self._loop_preconfig()
-
         config = await self.bot.get_context_config(ctx=None, guild=guild)
 
-        if not config.get("on_start").value and not self.ON_START:
+        if not self.ON_START:
             await self.wait(config, guild)
 
         while self.state:
             # refresh the config on every loop step
             config = await self.bot.get_context_config(ctx=None, guild=guild)
-            await self._execute(config, guild)
-
-    async def _execute(self, config, guild):
-        """Wraps the user-defined execution with error handling.
-
-        parameters:
-            config (munch.Munch): the config object for the guild
-            guild (discord.Guild): the guild associated with the execution
-        """
-        try:
-            await self.execute(config, guild)
-            await self.wait(config, guild)
-        except Exception as e:
-            # exceptions here aren't caught by the bot's on_error,
-            # so catch them manually
-            await self.logger.error(
-                f"Loop cog error: {self.__class__.__name__}!", exception=e
-            )
-            # avoid spamming
-            await self._default_wait()
+            try:
+                await self.execute(config, guild)
+                await self.wait(config, guild)
+            except Exception as e:
+                # exceptions here aren't caught by the bot's on_error,
+                # so catch them manually
+                await self.logger.error(
+                    f"Loop cog error: {self.__class__.__name__}!", exception=e
+                )
+                # avoid spamming
+                await self._default_wait()
 
     async def execute(self, _config, _guild):
         """Runs sequentially after each wait method.

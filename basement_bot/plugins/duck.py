@@ -15,7 +15,7 @@ def setup(bot):
     class DuckUser(bot.db.Model):
         __tablename__ = "duckusers"
 
-        pk = bot.db.Column(bot.db.Integer, primary_key=True)
+        pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
         author_id = bot.db.Column(bot.db.String)
         guild_id = bot.db.Column(bot.db.String)
         befriend_count = bot.db.Column(bot.db.Integer, default=0)
@@ -56,21 +56,14 @@ def setup(bot):
         datatype="int",
         title="Duck cooldown (seconds)",
         description="The amount of time to wait between bef/bang messages",
-        default=10,
+        default=5,
     )
     config.add(
         key="success_rate",
         datatype="int",
         title="Success rate (percent %)",
         description="The success rate of bef/bang messages",
-        default=False,
-    )
-    config.add(
-        key="on_start",
-        datatype="bool",
-        title="Run on start",
-        description="True if the duck event should happen on plugin start",
-        default=False,
+        default=50,
     )
 
     return bot.process_plugin_setup(cogs=[DuckHunt], models=[DuckUser], config=config)
@@ -771,15 +764,25 @@ class DuckHunt(cogs.LoopCog):
     BEFRIEND_URL = "https://cdn.icon-icons.com/icons2/603/PNG/512/heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
     KILL_URL = "https://cdn.icon-icons.com/icons2/1919/PNG/512/huntingtarget_122049.png"
     MW2_QUOTES = MW2_QUOTES
+    ON_START = False
 
     async def loop_preconfig(self):
         self.cooldowns = {}
 
     async def wait(self, config, _):
-        await asyncio.sleep(random.randint(config.min_wait.value, config.max_wait.value))
+        await asyncio.sleep(
+            3600
+            * random.randint(
+                config.plugins.duck.min_wait.value, config.plugins.duck.max_wait.value
+            )
+        )
 
     async def execute(self, config, guild):
         self.cooldowns[guild.id] = {}
+
+        channel = guild.get_channel(int(config.plugins.duck.channel.value))
+        if not channel:
+            return
 
         start_time = datetime.datetime.now()
         embed = self.bot.embed_api.Embed(
@@ -787,19 +790,19 @@ class DuckHunt(cogs.LoopCog):
             description="Befriend the duck with `bef` or shoot with `bang`",
         )
         embed.set_image(url=self.DUCK_PIC_URL)
-        message = await self.channel.send(embed=embed)
+
+        message = await channel.send(embed=embed)
 
         response_message = None
-        while True:
-            try:
-                response_message = await self.bot.wait_for(
-                    "message",
-                    timeout=config.timeout_seconds.value,
-                    # can't pull the config in a non-coroutine
-                    check=functools.partial(self.message_check, config),
-                )
-            except AsyncTimeoutError:
-                pass
+        try:
+            response_message = await self.bot.wait_for(
+                "message",
+                timeout=config.plugins.duck.timeout.value,
+                # can't pull the config in a non-coroutine
+                check=functools.partial(self.message_check, config),
+            )
+        except AsyncTimeoutError:
+            pass
 
         await message.delete()
 
@@ -812,13 +815,18 @@ class DuckHunt(cogs.LoopCog):
             action = (
                 "befriended" if response_message.content.lower() == "bef" else "killed"
             )
-            await self.handle_winner(response_message.author, guild, action, duration)
+            await self.handle_winner(
+                response_message.author, guild, action, duration, channel
+            )
 
-    async def handle_winner(self, winner, guild, action, duration):
+    async def handle_winner(self, winner, guild, action, duration, channel):
         duck_user = await self.get_duck_user(winner.id, guild.id)
         if not duck_user:
             duck_user = self.models.DuckUser(
-                author_id=str(winner.id), guild_id=str(guild.id), befriend_count=0, kill_count=0
+                author_id=str(winner.id),
+                guild_id=str(guild.id),
+                befriend_count=0,
+                kill_count=0,
             )
             await duck_user.create()
 
@@ -842,11 +850,11 @@ class DuckHunt(cogs.LoopCog):
             url=self.BEFRIEND_URL if action == "befriended" else self.KILL_URL
         )
 
-        await self.channel.send(embed=embed)
+        await channel.send(embed=embed)
 
     def message_check(self, config, message):
         # ignore other channels
-        if message.channel.id != int(config.channel):
+        if message.channel.id != int(config.plugins.duck.channel.value):
             return False
 
         if not message.content.lower() in ["bef", "bang"]:
@@ -857,16 +865,19 @@ class DuckHunt(cogs.LoopCog):
         if (
             datetime.datetime.now()
             - cooldowns.get(message.author.id, datetime.datetime.now())
-        ).seconds < config.cooldown_seconds.value:
+        ).seconds < config.plugins.duck.cooldown.value:
             cooldowns[message.author.id] = datetime.datetime.now()
             self.bot.loop.create_task(
                 message.author.send(
-                    f"I said to wait {config.cooldown_seconds.value} seconds!"
+                    f"I said to wait {config.plugins.duck.cooldown.value} seconds!"
                 )
             )
             return False
 
-        weights = (config.success_percent.value, 100 - config.success_percent.value)
+        weights = (
+            config.plugins.duck.success_rate.value,
+            100 - config.plugins.duck.success_rate.value,
+        )
         choice_ = random.choice(random.choices([True, False], weights=weights, k=1000))
         if not choice_:
             cooldowns[message.author.id] = datetime.datetime.now()
@@ -874,8 +885,8 @@ class DuckHunt(cogs.LoopCog):
             failure_message = self.generate_failure_message(message)
 
             self.bot.loop.create_task(
-                self.channel.send(
-                    f"{message.author.mention} {failure_message} ... Try again in {config.cooldown_seconds.value} seconds"
+                message.channel.send(
+                    f"{message.author.mention} {failure_message} ... Try again in {config.plugins.duck.cooldown.value} seconds"
                 )
             )
 
@@ -900,9 +911,13 @@ class DuckHunt(cogs.LoopCog):
         return f'"{message}" -*{author}*'
 
     async def get_duck_user(self, user_id, guild_id):
-        duck_user = await self.models.DuckUser.query.where(
-            self.models.DuckUser.author_id == str(user_id)
-        ).where(self.models.DuckUser.guild_id == str(guild_id)).gino.first()
+        duck_user = (
+            await self.models.DuckUser.query.where(
+                self.models.DuckUser.author_id == str(user_id)
+            )
+            .where(self.models.DuckUser.guild_id == str(guild_id))
+            .gino.first()
+        )
 
         return duck_user
 

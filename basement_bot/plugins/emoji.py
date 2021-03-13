@@ -97,13 +97,13 @@ class Emojis(cogs.BaseCog):
         usage="[message] @user",
     )
     async def reaction(self, ctx, message: str, react_user: discord.Member):
+        prefix = await self.bot.get_prefix(ctx.message)
+
         react_message = None
         async for channel_message in ctx.channel.history(limit=self.SEARCH_LIMIT):
             if (
                 channel_message.author == react_user
-                and not channel_message.content.startswith(
-                    f"{self.bot.config.main.required.command_prefix}"
-                )
+                and not channel_message.content.startswith(prefix)
             ):
                 react_message = channel_message
                 break

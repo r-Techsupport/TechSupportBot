@@ -1,7 +1,7 @@
 import random
 
-import cogs
 import aiocron
+import cogs
 
 
 def setup(bot):
@@ -18,29 +18,33 @@ def setup(bot):
         datatype="string",
         title="Cronjob config for news",
         description="Crontab syntax for executing news events (example: 0 17 * * *)",
-        default="0 17 * * *"
+        default="0 17 * * *",
     )
     config.add(
-        key="cron_config",
+        key="Country",
         datatype="string",
-        title="Cronjob config for news",
-        description="Crontab syntax for executing news events (example: 0 17 * * *)",
-        default="0 17 * * *"
+        title="Country code",
+        description="Country code to receive news for (example: US)",
+        default="US",
     )
 
     return bot.process_plugin_setup(cogs=[News], config=config)
+
 
 class News(cogs.LoopCog):
 
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
 
     async def execute(self, config, _):
-        channel = self.bot.get_channel(int(config.channel.value))
+        channel = self.bot.get_channel(int(config.plugins.news.channel.value))
         if not channel:
             return
-        
+
         response = await self.bot.http_call(
-            "get", self.API_URL.format(self.config.api_key, self.config.country)
+            "get",
+            self.API_URL.format(
+                self.bot.config.main.api_keys.news, config.plugins.news.country.value
+            ),
         )
 
         articles = response.get("articles")
@@ -62,4 +66,4 @@ class News(cogs.LoopCog):
             return
 
     async def wait(self, config, _):
-        await aiocron.crontab(config.cron_config).next()
+        await aiocron.crontab(config.plugins.news.cron_config.value).next()

@@ -4,7 +4,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    config = bot.PluginConfig
+    config = bot.PluginConfig()
     config.add(
         key="max_responses",
         datatype="int",
@@ -44,9 +44,9 @@ class Googler(cogs.BaseCog):
     )
     async def search(self, ctx, *, query: str):
         data = {
-            "cx": self.bot.config.api_keys.google_cse,
+            "cx": self.bot.config.main.api_keys.google_cse,
             "q": query,
-            "key": self.bot.config.api_keys.google,
+            "key": self.bot.config.main.api_keys.google,
         }
 
         items = await self.get_items(self.GOOGLE_URL, data)
@@ -73,7 +73,7 @@ class Googler(cogs.BaseCog):
                 )
                 embed.add_field(name=link, value=snippet, inline=False)
                 if (
-                    field_counter == config.max_responses.value
+                    field_counter == config.plugins.google.max_responses.value
                     or index == len(items) - 1
                 ):
                     embed.set_thumbnail(
@@ -97,9 +97,9 @@ class Googler(cogs.BaseCog):
     )
     async def images(self, ctx, query: str):
         data = {
-            "cx": self.bot.config.api_keys.google_cse,
+            "cx": self.bot.config.main.api_keys.google_cse,
             "q": query,
-            "key": self.bot.config.api_keys.google,
+            "key": self.bot.config.main.api_keys.google,
             "searchType": "image",
         }
         items = await self.get_items(self.GOOGLE_URL, data)
@@ -137,7 +137,7 @@ class Googler(cogs.BaseCog):
             self.YOUTUBE_URL,
             data={
                 "q": query,
-                "key": self.bot.config.api_keys.google,
+                "key": self.bot.config.main.api_keys.google,
                 "type": "video",
             },
         )

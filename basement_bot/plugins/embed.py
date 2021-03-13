@@ -8,7 +8,6 @@ def setup(bot):
 
 
 class Embedder(cogs.BaseCog):
-
     @decorate.with_typing
     @commands.has_permissions(manage_messages=True)
     @commands.command(

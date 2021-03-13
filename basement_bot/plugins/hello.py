@@ -7,7 +7,6 @@ def setup(bot):
 
 
 class Greeter(cogs.BaseCog):
-
     @commands.command(
         name="hello",
         brief="Says hello to the bot",
