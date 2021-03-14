@@ -9,7 +9,7 @@ def setup(bot):
     config.add(
         key="channel",
         datatype="int",
-        title="DuckHunt Channel ID",
+        title="Kanye Channel ID",
         description="The ID of the channel the Kanye West quote should appear in",
         default=None,
     )

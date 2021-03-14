@@ -331,7 +331,10 @@ class BasementBot(commands.Bot):
         config.command_prefix = self.config.main.default_prefix
         config.plugins = plugins_config
 
-        await self.guild_config_collection.insert_one(config)
+        try:
+            await self.guild_config_collection.insert_one(config)
+        except Exception:
+            pass
 
         return config
 

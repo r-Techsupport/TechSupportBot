@@ -268,6 +268,6 @@ class AdminControl(cogs.BaseCog):
             await self.tagged_response(ctx, "I don't appear to be in that guild")
             return
 
-        await self.bot.leave_guild(guild)
+        await guild.leave()
 
         await ctx.send(f"I have left the guild: {guild.name} ({guild.id})")
