@@ -253,7 +253,7 @@ class AdminControl(cogs.BaseCog):
         await self.tagged_response(ctx, "Shutting down! Cya later!")
         sys.exit()
 
-    @commands.command(name="shutdown")
+    @commands.command(name="leave")
     async def leave(self, ctx, *, guild_id: int):
         """Leaves a guild by ID.
 
