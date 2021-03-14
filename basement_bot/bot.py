@@ -148,9 +148,9 @@ class BasementBot(commands.Bot):
         await self.logger.debug("Loading Admin extension...")
         try:
             self.add_cog(admin.AdminControl(self))
-        except (TypeError, commands.CommandError) as exception:
+        except Exception as exception:
             await self.logger.warning(
-                f"Could not load Admin extension! Error: {exception}"
+                f"Could not load Admin extension: {exception}"
             )
 
         await self.logger.debug("Logging into Discord...")
