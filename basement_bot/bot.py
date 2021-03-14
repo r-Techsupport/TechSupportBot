@@ -33,7 +33,7 @@ class BasementBot(commands.Bot):
 
     PluginConfig = plugin.PluginConfig
 
-    def __init__(self, run_on_init=True):
+    def __init__(self, run_on_init=True, intents=None):
         self.owner = None
         self.config = None
         self.mongo = None
@@ -50,7 +50,7 @@ class BasementBot(commands.Bot):
         self.plugin_api = plugin.PluginAPI(bot=self)
         self.embed_api = embed.EmbedAPI(bot=self)
 
-        super().__init__(command_prefix=self.get_prefix)
+        super().__init__(command_prefix=self.get_prefix, intents=intents)
 
         if not run_on_init:
             return

@@ -7,3 +7,4 @@ services:
         container_name: basement_bot
         environment:
             - DEBUG=0
+        restart: always
