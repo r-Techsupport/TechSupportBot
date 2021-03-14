@@ -337,14 +337,20 @@ class LoopCog(BaseCog):
         while self.state:
             # refresh the config on every loop step
             config = await self.bot.get_context_config(ctx=None, guild=guild)
+
             try:
                 await self.execute(config, guild)
+            except Exception as e:
+                # always try to wait even when execute fails
+                await self.logger.error(
+                    f"Loop cog execute error: {self.__class__.__name__}!", exception=e
+                )
+
+            try:
                 await self.wait(config, guild)
             except Exception as e:
-                # exceptions here aren't caught by the bot's on_error,
-                # so catch them manually
                 await self.logger.error(
-                    f"Loop cog error: {self.__class__.__name__}!", exception=e
+                    f"Loop wait cog error: {self.__class__.__name__}!", exception=e
                 )
                 # avoid spamming
                 await self._default_wait()
