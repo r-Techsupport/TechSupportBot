@@ -1,4 +1,4 @@
-import cogs
+import base
 import decorate
 import munch
 from discord.ext import commands
@@ -8,7 +8,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[Weather])
 
 
-class Weather(cogs.BaseCog):
+class Weather(base.BaseCog):
     def get_url(self, args):
         filtered_args = filter(bool, args)
         searches = ",".join(map(str, filtered_args))
@@ -33,12 +33,12 @@ class Weather(cogs.BaseCog):
 
         embed = self.generate_embed(munch.munchify(response))
         if not embed:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "I could not find the weather from your search"
             )
             return
 
-        await self.tagged_response(ctx, embed=embed)
+        await self.bot.tagged_response(ctx, embed=embed)
 
     def generate_embed(self, response):
         try:

@@ -1,4 +1,4 @@
-import cogs
+import base
 import decorate
 import discord
 import emoji
@@ -10,7 +10,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[Emojis])
 
 
-class Emojis(cogs.BaseCog):
+class Emojis(base.BaseCog):
 
     SEARCH_LIMIT = 20
     KEY_MAP = {"?": "question", "!": "exclamation"}
@@ -78,14 +78,14 @@ class Emojis(cogs.BaseCog):
     )
     async def message(self, ctx, *, message: str):
         if ctx.message.mentions:
-            await self.tagged_response(ctx, "I can't make an emoji from a mention!")
+            await self.bot.tagged_response(ctx, "I can't make an emoji from a mention!")
             return
 
         emoji_message = self.emoji_message_from_string(message)
         if emoji_message:
-            await self.tagged_response(ctx, emoji_message)
+            await self.bot.tagged_response(ctx, emoji_message)
         else:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "I can't get any emoji letters from your message!"
             )
 
@@ -108,12 +108,12 @@ class Emojis(cogs.BaseCog):
                 react_message = channel_message
                 break
         if not react_message:
-            await self.tagged_response(ctx, "No valid messages found to react to!")
+            await self.bot.tagged_response(ctx, "No valid messages found to react to!")
             return
 
         emoji_list = self.emoji_reaction_from_string(message)
         if not emoji_list:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "Invalid message! Make sure there are no repeat characters!"
             )
             return

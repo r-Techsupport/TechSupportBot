@@ -1,5 +1,5 @@
 import aiohttp
-import cogs
+import base
 import decorate
 from discord.ext import commands
 
@@ -8,7 +8,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[Spotify])
 
 
-class Spotify(cogs.BaseCog):
+class Spotify(base.BaseCog):
 
     AUTH_URL = "https://accounts.spotify.com/api/token"
     API_URL = "https://api.spotify.com/v1/search"
@@ -37,7 +37,7 @@ class Spotify(cogs.BaseCog):
     async def spotify(self, ctx, *, query: str):
         oauth_token = await self.get_oauth_token()
         if not oauth_token:
-            await self.tagged_response(ctx, "I couldn't authenticate with Spotify")
+            await self.bot.tagged_response(ctx, "I couldn't authenticate with Spotify")
             return
 
         headers = {"Authorization": f"Bearer {oauth_token}"}
@@ -49,7 +49,7 @@ class Spotify(cogs.BaseCog):
         items = response.get("tracks", {}).get("items", [])
 
         if not items:
-            await self.tagged_response(ctx, "I couldn't find any results")
+            await self.bot.tagged_response(ctx, "I couldn't find any results")
             return
 
         links = []
@@ -60,7 +60,7 @@ class Spotify(cogs.BaseCog):
             links.append(song_url)
 
         if not links:
-            await self.tagged_response("I had trouble parsing the search results")
+            await self.bot.tagged_response("I had trouble parsing the search results")
             return
 
-        self.task_paginate(ctx, links, restrict=True)
+        self.bot.task_paginate(ctx, links, restrict=True)

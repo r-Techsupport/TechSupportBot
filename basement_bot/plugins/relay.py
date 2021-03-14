@@ -6,7 +6,7 @@ import logging
 import re
 import uuid
 
-import cogs
+import base
 import decorate
 import munch
 from discord.ext import commands
@@ -16,7 +16,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[DiscordRelay, IRCReceiver])
 
 
-class DiscordRelay(cogs.MatchCog):
+class DiscordRelay(base.MatchCog):
     async def preconfig(self):
         self.channels = list(self.bot.config.special.relay.channel_map.values())
         self.bot.plugin_api.plugins.relay.memory.channels = self.channels
@@ -33,7 +33,7 @@ class DiscordRelay(cogs.MatchCog):
         ctx_data.author = ctx.author
         ctx_data.channel = ctx.channel
 
-        ctx_data.message.content = self.sub_mentions_for_usernames(
+        ctx_data.message.content = self.bot.sub_mentions_for_usernames(
             ctx_data.message.content
         )
 
@@ -90,7 +90,7 @@ class DiscordRelay(cogs.MatchCog):
         return as_json
 
 
-class IRCReceiver(cogs.BaseCog):
+class IRCReceiver(base.BaseCog):
 
     IRC_LOGO = "📨"
 
@@ -133,7 +133,7 @@ class IRCReceiver(cogs.BaseCog):
         if not channel:
             return
 
-        guild = self.get_guild_from_channel_id(channel.id)
+        guild = self.bot.get_guild_from_channel_id(channel.id)
 
         message = self._add_mentions(message, guild)
 

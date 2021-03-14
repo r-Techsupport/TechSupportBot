@@ -1,7 +1,7 @@
 import datetime
 import random
 
-import cogs
+import base
 import decorate
 import discord
 from discord.ext import commands
@@ -37,7 +37,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[Grabber], models=[Grab], config=config)
 
 
-class Grabber(cogs.BaseCog):
+class Grabber(base.BaseCog):
 
     HAS_CONFIG = False
     SEARCH_LIMIT = 20
@@ -46,7 +46,7 @@ class Grabber(cogs.BaseCog):
     # but oh well
     async def invalid_channel(self, config, ctx):
         if ctx.channel.id in config.plugins.grab.blocked_channels.value:
-            await self.tagged_response(ctx, "Grabs are disabled for this channel")
+            await self.bot.tagged_response(ctx, "Grabs are disabled for this channel")
             return True
 
         return False
@@ -67,7 +67,7 @@ class Grabber(cogs.BaseCog):
             return
 
         if user_to_grab.bot:
-            await self.tagged_response(ctx, "Ain't gonna catch me slipping!")
+            await self.bot.tagged_response(ctx, "Ain't gonna catch me slipping!")
             return
 
         grab_message = None
@@ -77,7 +77,7 @@ class Grabber(cogs.BaseCog):
                 break
 
         if not grab_message:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, f"Could not find a recent essage from user {user_to_grab}"
             )
             return
@@ -91,7 +91,7 @@ class Grabber(cogs.BaseCog):
         )
 
         if grab:
-            await self.tagged_response(ctx, "That grab already exists!")
+            await self.bot.tagged_response(ctx, "That grab already exists!")
             return
 
         grab = self.models.Grab(
@@ -102,7 +102,7 @@ class Grabber(cogs.BaseCog):
         )
         await grab.create()
 
-        await self.tagged_response(ctx, f"Successfully saved: '*{grab_message}*'")
+        await self.bot.tagged_response(ctx, f"Successfully saved: '*{grab_message}*'")
 
     @commands.group(
         brief="Executes a grabs command",
@@ -127,7 +127,7 @@ class Grabber(cogs.BaseCog):
             return
 
         if user_to_grab.bot:
-            await self.tagged_response(ctx, "Ain't gonna catch me slipping!")
+            await self.bot.tagged_response(ctx, "Ain't gonna catch me slipping!")
             return
 
         grabs = (
@@ -139,7 +139,9 @@ class Grabber(cogs.BaseCog):
         )
 
         if not grabs:
-            await self.tagged_response(ctx, f"No grabs found for {user_to_grab.name}")
+            await self.bot.tagged_response(
+                ctx, f"No grabs found for {user_to_grab.name}"
+            )
             return
 
         embed = self.bot.embed_api.Embed(
@@ -150,7 +152,7 @@ class Grabber(cogs.BaseCog):
         embeds = []
         field_counter = 1
         for index, grab_ in enumerate(grabs):
-            filtered_message = self.sub_mentions_for_usernames(grab_.message)
+            filtered_message = self.bot.sub_mentions_for_usernames(grab_.message)
             embed = (
                 self.bot.embed_api.Embed(
                     title=f"Grabs for {user_to_grab.name}",
@@ -174,7 +176,7 @@ class Grabber(cogs.BaseCog):
             else:
                 field_counter += 1
 
-        self.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
@@ -192,7 +194,7 @@ class Grabber(cogs.BaseCog):
             return
 
         if user_to_grab.bot:
-            await self.tagged_response(ctx, "Ain't gonna catch me slipping!")
+            await self.bot.tagged_response(ctx, "Ain't gonna catch me slipping!")
             return
 
         grabs = (
@@ -204,13 +206,13 @@ class Grabber(cogs.BaseCog):
         )
 
         if not grabs:
-            await self.tagged_response(ctx, f"No grabs found for {user_to_grab}")
+            await self.bot.tagged_response(ctx, f"No grabs found for {user_to_grab}")
             return
 
         random_index = random.randint(0, len(grabs) - 1)
         grab = grabs[random_index]
 
-        filtered_message = self.sub_mentions_for_usernames(grab.message)
+        filtered_message = self.bot.sub_mentions_for_usernames(grab.message)
 
         embed = self.bot.embed_api.Embed(
             title=f'"{filtered_message}"',
@@ -219,4 +221,4 @@ class Grabber(cogs.BaseCog):
 
         embed.set_thumbnail(url=user_to_grab.avatar_url)
 
-        await self.tagged_response(ctx, embed=embed)
+        await self.bot.tagged_response(ctx, embed=embed)

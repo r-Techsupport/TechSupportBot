@@ -1,4 +1,4 @@
-import cogs
+import base
 import decorate
 import discord
 from discord.ext import commands
@@ -8,7 +8,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[Mocker])
 
 
-class Mocker(cogs.BaseCog):
+class Mocker(base.BaseCog):
 
     SEARCH_LIMIT = 20
 
@@ -36,7 +36,7 @@ class Mocker(cogs.BaseCog):
     )
     async def mock(self, ctx, user_to_mock: discord.Member):
         if not user_to_mock:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "You must tag a user if you want to mock them!"
             )
             return
@@ -55,14 +55,16 @@ class Mocker(cogs.BaseCog):
                 break
 
         if not mock_message:
-            await self.tagged_response(ctx, f"No message found for user {user_to_mock}")
+            await self.bot.tagged_response(
+                ctx, f"No message found for user {user_to_mock}"
+            )
             return
 
-        filtered_message = self.sub_mentions_for_usernames(mock_message)
+        filtered_message = self.bot.sub_mentions_for_usernames(mock_message)
         mock_string = self.mock_string(filtered_message)
         embed = self.bot.embed_api.Embed(
             title=f'"{mock_string}"', description=user_to_mock.name
         )
         embed.set_thumbnail(url=user_to_mock.avatar_url)
 
-        await self.tagged_response(ctx, embed=embed)
+        await self.bot.tagged_response(ctx, embed=embed)

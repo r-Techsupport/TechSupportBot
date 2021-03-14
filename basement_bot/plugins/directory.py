@@ -1,6 +1,6 @@
 import datetime
 
-import cogs
+import base
 import decorate
 import discord
 import emoji
@@ -35,7 +35,7 @@ def setup(bot):
     )
 
 
-class ChannelDirectory(cogs.BaseCog):
+class ChannelDirectory(base.BaseCog):
 
     # I refuse to install num2word
     OPTION_EMOJIS = [

@@ -1,4 +1,4 @@
-import cogs
+import base
 import decorate
 from discord.ext import commands
 
@@ -7,7 +7,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[Corrector])
 
 
-class Corrector(cogs.BaseCog):
+class Corrector(base.BaseCog):
 
     SEARCH_LIMIT = 50
 
@@ -35,8 +35,10 @@ class Corrector(cogs.BaseCog):
                 break
 
         if new_content:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, f"*Correction:* {new_content} :white_check_mark:", target=target
             )
         else:
-            await self.tagged_response(ctx, "I couldn't find any message to correct")
+            await self.bot.tagged_response(
+                ctx, "I couldn't find any message to correct"
+            )

@@ -1,6 +1,6 @@
 import random
 
-import cogs
+import base
 import decorate
 import discord
 from discord.ext import commands
@@ -10,7 +10,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[Burn])
 
 
-class Burn(cogs.BaseCog):
+class Burn(base.BaseCog):
 
     SEARCH_LIMIT = 50
     PHRASES = [
@@ -46,4 +46,4 @@ class Burn(cogs.BaseCog):
             await matched_message.add_reaction(emoji)
 
         message = random.choice(self.PHRASES)
-        await self.tagged_response(ctx, f"🔥🔥🔥 {message} 🔥🔥🔥", target=user_to_match)
+        await self.bot.tagged_response(ctx, f"🔥🔥🔥 {message} 🔥🔥🔥", target=user_to_match)

@@ -1,6 +1,6 @@
 import random
 
-import cogs
+import base
 from discord.ext import commands
 
 
@@ -8,7 +8,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[MagicConch])
 
 
-class MagicConch(cogs.BaseCog):
+class MagicConch(base.BaseCog):
 
     RESPONSES = [
         "As I see it, yes.",
@@ -50,4 +50,4 @@ class MagicConch(cogs.BaseCog):
 
         embed.set_thumbnail(url=self.PIC_URL)
 
-        await self.tagged_response(ctx, embed=embed)
+        await self.bot.tagged_response(ctx, embed=embed)

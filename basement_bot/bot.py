@@ -1,16 +1,19 @@
 """The main bot functions.
 """
 
+import ast
 import asyncio
 import collections
 import datetime
+import re
 import sys
 
 import admin
 import aio_pika
 import aiohttp
+import config
 import discord
-import embed
+import embeds as embed_package
 import gino
 import logger
 import munch
@@ -48,7 +51,7 @@ class BasementBot(commands.Bot):
         self.load_bot_config(validate=True)
 
         self.plugin_api = plugin.PluginAPI(bot=self)
-        self.embed_api = embed.EmbedAPI(bot=self)
+        self.embed_api = embed_package.EmbedAPI(bot=self)
 
         super().__init__(command_prefix=self.get_prefix, intents=intents)
 
@@ -64,8 +67,9 @@ class BasementBot(commands.Bot):
             validate (bool): True if validations should be ran on the file
         """
         with open(self.CONFIG_PATH) as iostream:
-            config = yaml.safe_load(iostream)
-        self.config = munch.munchify(config)
+            config_ = yaml.safe_load(iostream)
+
+        self.config = munch.munchify(config_)
 
         self.config.main.disabled_plugins = self.config.main.disabled_plugins or []
 
@@ -145,11 +149,17 @@ class BasementBot(commands.Bot):
             await self.logger.debug("Syncing Postgres tables...")
             await self.db.gino.create_all()
 
-        await self.logger.debug("Loading Admin extension...")
+        await self.logger.debug("Loading Admin commands...")
         try:
             self.add_cog(admin.AdminControl(self))
         except Exception as exception:
-            await self.logger.warning(f"Could not load Admin extension: {exception}")
+            await self.logger.warning(f"Could not add Admin commands: {exception}")
+
+        await self.logger.debug("Loading Config commands...")
+        try:
+            self.add_cog(config.ConfigControl(self))
+        except Exception as exception:
+            await self.logger.warning(f"Could not load Config commands: {exception}")
 
         await self.logger.debug("Logging into Discord...")
         await super().start(*args, **kwargs)
@@ -297,20 +307,20 @@ class BasementBot(commands.Bot):
         lookup = guild.id if guild else "dmcontext"
 
         if get_from_cache:
-            config = self.config_cache[lookup]
-            if config:
-                return config
+            config_ = self.config_cache[lookup]
+            if config_:
+                return config_
 
-        config = await self.guild_config_collection.find_one(
+        config_ = await self.guild_config_collection.find_one(
             {"guild_id": {"$eq": lookup}}
         )
 
-        if not config and create_if_none:
-            config = await self.create_new_context_config(lookup)
-        else:
-            config = await self.sync_config(config)
+        if not config_ and create_if_none:
+            config_ = await self.create_new_context_config(lookup)
+        elif config_:
+            config_ = await self.sync_config(config_)
 
-        return config
+        return config_
 
     async def create_new_context_config(self, lookup):
         """Creates a new guild config based on a lookup key (usually a guild ID).
@@ -323,38 +333,38 @@ class BasementBot(commands.Bot):
         for plugin_name, plugin_data in self.plugin_api.plugins.items():
             plugins_config[plugin_name] = getattr(plugin_data, "config", {})
 
-        config = munch.Munch()
+        config_ = munch.Munch()
 
         # pylint: disable=protected-access
-        config._id = lookup
-        config.guild_id = lookup
-        config.command_prefix = self.config.main.default_prefix
-        config.plugins = plugins_config
+        config_._id = lookup
+        config_.guild_id = lookup
+        config_.command_prefix = self.config.main.default_prefix
+        config_.plugins = plugins_config
 
         try:
-            await self.guild_config_collection.insert_one(config)
+            await self.guild_config_collection.insert_one(config_)
         except Exception:
             pass
 
-        return config
+        return config_
 
-    async def sync_config(self, config):
+    async def sync_config(self, config_object):
         """Syncs the given config with the currently loaded plugins.
 
         parameters:
             config (dict): the guild config object
         """
-        config = munch.munchify(config)
+        config_object = munch.munchify(config_object)
 
         for plugin_name, plugin_data in self.plugin_api.plugins.items():
-            if not config.plugins.get(plugin_name):
-                config.plugins[plugin_name] = getattr(plugin_data, "config", {})
+            if not config_object.plugins.get(plugin_name):
+                config_object.plugins[plugin_name] = getattr(plugin_data, "config", {})
 
         await self.guild_config_collection.replace_one(
-            {"_id": config.get("_id")}, config
+            {"_id": config_object.get("_id")}, config_object
         )
 
-        return config
+        return config_object
 
     def generate_db_url(self, postgres=True):
         """Dynamically converts config to a Postgres/MongoDB url.
@@ -551,6 +561,176 @@ class BasementBot(commands.Bot):
             name (str): the name of the channel
         """
         return logger.BotLogger(self, name=name)
+
+    async def tagged_response(self, ctx, content=None, embed=None, target=None):
+        """Sends a context response with the original author tagged.
+
+        parameters:
+            ctx (Context): the context object
+            message (str): the message to send
+            embed (discord.Embed): the discord embed object to send
+            target (discord.Member): the Discord user to tag
+        """
+        who_to_tag = target.mention if target else ctx.message.author.mention
+        content = f"{who_to_tag} {content}" if content else who_to_tag
+
+        message = await ctx.send(content, embed=embed)
+        return message
+
+    def get_guild_from_channel_id(self, channel_id):
+        """Helper for getting the guild associated with a channel.
+
+        parameters:
+            bot (BasementBot): the bot object
+            channel_id (Union[string, int]): the unique ID of the channel
+        """
+        for guild in self.guilds:
+            for channel in guild.channels:
+                if channel.id == int(channel_id):
+                    return guild
+        return None
+
+    def sub_mentions_for_usernames(self, content):
+        """Subs a string of Discord mentions with the corresponding usernames.
+
+        parameters:
+            bot (BasementBot): the bot object
+            content (str): the content to parse
+        """
+
+        def get_nick_from_id_match(match):
+            id_ = int(match.group(1))
+            user = self.get_user(id_)
+            return f"@{user.name}" if user else "@user"
+
+        return re.sub(r"<@?!?(\d+)>", get_nick_from_id_match, content)
+
+    async def get_json_from_attachment(
+        self, ctx, message, send_msg_on_none=True, send_msg_on_failure=True
+    ):
+        """Returns a JSON object parsed from a message's attachment.
+
+        parameters:
+            message (Message): the message object
+            send_msg_on_none (bool): True if a message should be DM'd when no attachments are found
+            send_msg_on_failure (bool): True if a message should be DM'd when JSON is invalid
+        """
+        if not message.attachments:
+            if send_msg_on_none:
+                await ctx.author.send("I couldn't find any message attachments!")
+            return None
+
+        try:
+            json_bytes = await message.attachments[0].read()
+            json_str = json_bytes.decode("UTF-8")
+            # hehehe munch ~~O< oooo
+            return munch.munchify(ast.literal_eval(json_str))
+        # this could probably be more specific
+        except Exception as e:
+            if send_msg_on_failure:
+                await ctx.author.send(f"I was unable to parse your JSON: `{e}`")
+            return {}
+
+    # pylint: disable=too-many-branches, too-many-arguments
+    async def paginate(self, ctx, embeds, timeout=300, tag_user=False, restrict=False):
+        """Paginates a set of embed objects for users to sort through
+
+        parameters:
+            ctx (Context): the context object for the message
+            embeds (Union[discord.Embed, str][]): the embeds (or URLs to render them) to paginate
+            timeout (int) (seconds): the time to wait before exiting the reaction listener
+            tag_user (bool): True if the context user should be mentioned in the response
+            restrict (bool): True if only the caller and admins can navigate the pages
+        """
+        # limit large outputs
+        embeds = embeds[:10]
+
+        for index, embed in enumerate(embeds):
+            if isinstance(embed, self.embed_api.Embed):
+                embed.set_footer(text=f"Page {index+1} of {len(embeds)}")
+
+        index = 0
+        get_args = lambda index: {
+            "content": embeds[index]
+            if not isinstance(embeds[index], self.embed_api.Embed)
+            else None,
+            "embed": embeds[index]
+            if isinstance(embeds[index], self.embed_api.Embed)
+            else None,
+        }
+
+        if tag_user:
+            message = await self.tagged_response(ctx, **get_args(index))
+        else:
+            message = await ctx.send(**get_args(index))
+
+        if isinstance(ctx.channel, discord.DMChannel):
+            return
+
+        start_time = datetime.datetime.now()
+
+        for unicode_reaction in ["\u25C0", "\u25B6", "\u26D4", "\U0001F5D1"]:
+            await message.add_reaction(unicode_reaction)
+
+        while True:
+            if (datetime.datetime.now() - start_time).seconds > timeout:
+                break
+
+            try:
+                reaction, user = await ctx.bot.wait_for(
+                    "reaction_add", timeout=timeout, check=lambda r, u: not bool(u.bot)
+                )
+            # this seems to raise an odd timeout error, for now just catch-all
+            except Exception:
+                break
+
+            # check if the reaction should be processed
+            if (reaction.message.id != message.id) or (
+                restrict and user.id != ctx.author.id
+            ):
+                # this is checked first so it can pass to the deletion
+                pass
+
+            # move forward
+            elif str(reaction) == "\u25B6" and index < len(embeds) - 1:
+                index += 1
+                await message.edit(**get_args(index))
+
+            # move backward
+            elif str(reaction) == "\u25C0" and index > 0:
+                index -= 1
+                await message.edit(**get_args(index))
+
+            # stop pagination
+            elif str(reaction) == "\u26D4" and user.id == ctx.author.id:
+                break
+
+            # delete embed
+            elif str(reaction) == "\U0001F5D1" and user.id == ctx.author.id:
+                await message.delete()
+                break
+
+            try:
+                await reaction.remove(user)
+            except discord.Forbidden:
+                pass
+
+        try:
+            await message.clear_reactions()
+        except (discord.Forbidden, discord.NotFound):
+            pass
+
+    def task_paginate(self, *args, **kwargs):
+        """Creates a pagination task.
+
+        This is useful if you want your command to finish executing when pagination starts.
+
+        parameters:
+            ctx (Context): the context object for the message
+            *args (...list): the args with which to call the pagination method
+            **kwargs (...dict): the keyword args with which to call the pagination method
+        """
+        self.loop.create_task(self.paginate(*args, **kwargs))
 
     @property
     def startup_time(self):

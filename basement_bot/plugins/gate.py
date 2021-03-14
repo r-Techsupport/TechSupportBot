@@ -1,6 +1,6 @@
 import asyncio
 
-import cogs
+import base
 import discord
 from discord.ext import commands
 
@@ -46,7 +46,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[ServerGate], config=config)
 
 
-class ServerGate(cogs.MatchCog):
+class ServerGate(base.MatchCog):
     async def match(self, config, ctx, _):
         if not config.plugins.gate.channel.value:
             return False
@@ -71,7 +71,7 @@ class ServerGate(cogs.MatchCog):
             welcome_message = config.plugins.gate.welcome_message.value
             delete_wait = config.plugins.gate.delete_wait.value
 
-            bot_message = await self.tagged_response(
+            bot_message = await self.bot.tagged_response(
                 ctx,
                 f"{welcome_message} (this message will delete in {delete_wait} seconds)",
             )
