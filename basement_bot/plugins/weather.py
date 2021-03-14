@@ -13,7 +13,7 @@ class Weather(cogs.BaseCog):
         filtered_args = filter(bool, args)
         searches = ",".join(map(str, filtered_args))
         url = "http://api.openweathermap.org/data/2.5/weather"
-        return f"{url}?q={searches}&units=imperial&appid={self.bot.config.api_keys.open_weather}"
+        return f"{url}?q={searches}&units=imperial&appid={self.bot.config.main.api_keys.open_weather}"
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)

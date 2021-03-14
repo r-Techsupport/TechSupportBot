@@ -40,6 +40,7 @@ class BasementBot(commands.Bot):
         self.db = None
         self.rabbit = None
         self._startup_time = None
+        self.guild_config_collection = None
         self.config_cache = collections.defaultdict(dict)
 
         self.logger = self.get_logger(self.__class__.__name__)
@@ -95,6 +96,11 @@ class BasementBot(commands.Bot):
                 )
 
     async def get_prefix(self, message):
+        """Gets the appropriate prefix for a command.
+
+        parameters:
+            message (discord.Message): the message to check against
+        """
         guild_config = await self.get_context_config(ctx=None, guild=message.guild)
         return getattr(guild_config, "command_prefix", self.config.main.default_prefix)
 
@@ -163,7 +169,7 @@ class BasementBot(commands.Bot):
 
         await self.get_owner()
 
-        await self.logger.debug(f"Online!", send=True)
+        await self.logger.debug("Online!", send=True)
 
     async def on_message(self, message):
         """Catches messages and acts appropriately.
@@ -199,7 +205,7 @@ class BasementBot(commands.Bot):
         """Catches command errors and sends them to the error logger for processing.
 
         parameters:
-            context (discord.Context): the context associated with the exception
+            context (discord.ext.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
         await self.logger.error(
@@ -223,7 +229,7 @@ class BasementBot(commands.Bot):
         """Wraps the default can_run check to evaluate if a check call is necessary.
 
         parameters:
-            ctx (discord.Context): the context associated with the command
+            ctx (discord.ext.Context): the context associated with the command
             call_once (bool): True if the check should be retrieved from the call_once attribute
         """
         await self.logger.debug("Checking if command can run")
@@ -250,7 +256,7 @@ class BasementBot(commands.Bot):
         They are also ignored if the author is bot admin in the config.
 
         parameters:
-            ctx (discord.Context): the context associated with the command
+            ctx (discord.ext.Context): the context associated with the command
         """
         await self.logger.debug("Checking context against bot admins")
 
@@ -272,15 +278,22 @@ class BasementBot(commands.Bot):
         return False
 
     async def reset_config_cache(self):
+        """Deletes the guild config cache on a peridodic basis."""
         while True:
-            for key in self.config_cache.keys():
-                del self.config_cache[key]
-
+            self.config_cache = collections.defaultdict(dict)
             await asyncio.sleep(self.config.main.config_cache_reset)
 
     async def get_context_config(
         self, ctx, guild=None, create_if_none=True, get_from_cache=True
     ):
+        """Gets the appropriate config for the context.
+
+        parameters:
+            ctx (discord.ext.Context): the context of the config
+            guild (discord.Guild): the guild associated with the config
+            create_if_none (bool): True if the config should be created if not found
+            get_from_cache (bool): True if the config should be fetched from the cache
+        """
         guild = guild or ctx.guild
 
         if get_from_cache:
@@ -302,6 +315,11 @@ class BasementBot(commands.Bot):
         return config
 
     async def create_new_context_config(self, lookup):
+        """Creates a new guild config based on a lookup key (usually a guild ID).
+
+        parameters:
+            lookup (str): the primary key for the guild config document object
+        """
         plugins_config = {}
 
         for plugin_name, plugin_data in self.plugin_api.plugins.items():
@@ -309,6 +327,8 @@ class BasementBot(commands.Bot):
 
         config = munch.Munch()
 
+        # pylint: disable=protected-access
+        config._id = lookup
         config.guild_id = lookup
         config.command_prefix = self.config.main.default_prefix
         config.plugins = plugins_config
@@ -318,6 +338,11 @@ class BasementBot(commands.Bot):
         return config
 
     async def sync_config(self, config):
+        """Syncs the given config with the currently loaded plugins.
+
+        parameters:
+            config (dict): the guild config object
+        """
         config = munch.munchify(config)
 
         for plugin_name, plugin_data in self.plugin_api.plugins.items():
@@ -380,6 +405,7 @@ class BasementBot(commands.Bot):
         return db_ref
 
     def get_mongo_ref(self):
+        """Grabs the MongoDB ref to the bot's configured table."""
         self.logger.console.debug("Obtaining MongoDB client")
 
         mongo_client = motor_asyncio.AsyncIOMotorClient(
@@ -511,6 +537,10 @@ class BasementBot(commands.Bot):
         return response
 
     def process_plugin_setup(self, *args, **kwargs):
+        """Provides a bot-level interface to loading a plugin.
+
+        It is recommended to use this when setting up plugins.
+        """
         return self.plugin_api.process_plugin_setup(*args, **kwargs)
 
     def get_logger(self, name):

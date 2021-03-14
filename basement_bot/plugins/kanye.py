@@ -62,7 +62,7 @@ class KanyeQuotes(cogs.LoopCog):
     async def wait(self, config, _):
         await asyncio.sleep(
             random.randint(
-                config.plugins.kanye.min_hours.value * 3600,
-                config.plugins.kanye.max_hours.value * 3600,
+                config.plugins.kanye.min_wait.value * 3600,
+                config.plugins.kanye.max_wait.value * 3600,
             )
         )

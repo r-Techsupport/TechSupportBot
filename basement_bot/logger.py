@@ -331,7 +331,7 @@ class BotLogger:
         parameters:
             message (str): the message associated with the error (eg. on_message)
             exception (Exception): the exception object associated with the error
-            context (discord.Context): the context associated with the exception
+            context (discord.ext.Context): the context associated with the exception
         """
         if type(exception) in self.IGNORED_ERRORS:
             return
@@ -362,7 +362,7 @@ class BotLogger:
 
         parameters:
             message (str): the message associated with the error (eg. on_message)
-            context (discord.Context): the context associated with the exception
+            context (discord.ext.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
         #  begin original Discord.py logic
@@ -415,7 +415,7 @@ class BotLogger:
 
         parameters:
             message (str): the message associated with the error (eg. message)
-            context (discord.Context): the context associated with the exception
+            context (discord.ext.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
         embed = self.bot.embed_api.Embed(title="Logging.ERROR", description=message)

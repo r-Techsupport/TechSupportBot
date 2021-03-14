@@ -56,9 +56,9 @@ class Protector(cogs.MatchCog):
         if not ctx.channel.id in config.plugins.protect.channels.value:
             return False
 
-        # admin = await self.bot.is_bot_admin(ctx)
-        # if admin:
-        #     return False
+        admin = await self.bot.is_bot_admin(ctx)
+        if admin:
+            return False
 
         # extend alerts here
         ctx.protect_actions = munch.Munch()
@@ -70,6 +70,7 @@ class Protector(cogs.MatchCog):
             return True
 
         for keyword, filter_config in config.plugins.protect.string_map.value.items():
+            filter_config = munch.munchify(filter_config)
             # make a copy because we might modify it
             search_keyword = keyword
             search_content = content

@@ -35,14 +35,14 @@ def setup(bot):
         datatype="int",
         title="Min wait (hours)",
         description="The minimum number of hours to wait between duck events",
-        default=30,
+        default=2,
     )
     config.add(
         key="max_wait",
         datatype="int",
         title="Max wait (hours)",
         description="The minimum number of hours to wait between duck events",
-        default=60,
+        default=4,
     )
     config.add(
         key="timeout",
@@ -771,9 +771,9 @@ class DuckHunt(cogs.LoopCog):
 
     async def wait(self, config, _):
         await asyncio.sleep(
-            3600
-            * random.randint(
-                config.plugins.duck.min_wait.value, config.plugins.duck.max_wait.value
+            random.randint(
+                config.plugins.duck.min_wait.value * 3600,
+                config.plugins.duck.max_wait.value * 3600,
             )
         )
 
