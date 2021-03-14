@@ -5,8 +5,8 @@ import sys
 
 import cogs
 import decorate
-from discord.ext import commands
 import discord
+from discord.ext import commands
 
 
 class AdminControl(cogs.BaseCog):

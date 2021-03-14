@@ -149,9 +149,7 @@ class BasementBot(commands.Bot):
         try:
             self.add_cog(admin.AdminControl(self))
         except Exception as exception:
-            await self.logger.warning(
-                f"Could not load Admin extension: {exception}"
-            )
+            await self.logger.warning(f"Could not load Admin extension: {exception}")
 
         await self.logger.debug("Logging into Discord...")
         await super().start(*args, **kwargs)
@@ -294,14 +292,14 @@ class BasementBot(commands.Bot):
             create_if_none (bool): True if the config should be created if not found
             get_from_cache (bool): True if the config should be fetched from the cache
         """
-        guild = guild or ctx.guild
-
-        if get_from_cache:
-            config = self.config_cache[guild.id]
-            if config:
-                return config
+        guild = guild or getattr(ctx, "guild", None)
 
         lookup = guild.id if guild else "dmcontext"
+
+        if get_from_cache:
+            config = self.config_cache[lookup]
+            if config:
+                return config
 
         config = await self.guild_config_collection.find_one(
             {"guild_id": {"$eq": lookup}}

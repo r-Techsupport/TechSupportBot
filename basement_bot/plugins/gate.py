@@ -48,6 +48,9 @@ def setup(bot):
 
 class ServerGate(cogs.MatchCog):
     async def match(self, config, ctx, _):
+        if not config.plugins.gate.channel.value:
+            return False
+
         return ctx.channel.id == int(config.plugins.gate.channel.value)
 
     async def response(self, config, ctx, content):

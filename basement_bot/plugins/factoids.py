@@ -86,6 +86,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
         factoid = self.models.Factoid(
             text=trigger,
             channel=kwargs.get("channel"),
+            guild=kwargs.get("guild"),
             message=kwargs.get("message"),
             embed_config=kwargs.get("embed_config"),
         )
@@ -245,7 +246,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
 
                     context = await self.bot.get_context(message)
 
-                    self.dispatch_relay_factoid(context, factoid.message)
+                    await self.dispatch_relay_factoid(context, factoid.message)
                 except Exception:
                     continue
 
@@ -287,6 +288,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
             ctx,
             trigger=factoid_name,
             channel=str(ctx.message.channel.id),
+            guild=str(ctx.guild.id),
             message=message,
             embed_config=embed_config,
         )
