@@ -6,13 +6,10 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Moderator(bot))
+    return bot.process_plugin_setup(cogs=[Moderator])
 
 
 class Moderator(cogs.BaseCog):
-
-    HAS_CONFIG = False
-
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
     @commands.group(
@@ -80,9 +77,7 @@ class Moderator(cogs.BaseCog):
         usage="@user [reason]",
     )
     async def ban_user(self, ctx, user: discord.Member, *, reason: str = None):
-        await ctx.guild.ban(
-            user, reason=reason, delete_message_days=self.config.ban_delete_days
-        )
+        await ctx.guild.ban(user, reason=reason, delete_message_days=7)
 
         embed = await self.generate_user_modified_embed(user, "ban", reason)
 

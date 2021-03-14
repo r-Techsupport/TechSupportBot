@@ -2,21 +2,33 @@ import cogs
 
 
 def setup(bot):
-    bot.add_cog(Logger(bot))
+    config = bot.PluginConfig()
+    config.add(
+        key="channel_map",
+        datatype="dict",
+        title="Mapping of channel ID's",
+        description="Input Channel ID to Logging Channel ID mapping",
+        default={},
+    )
+
+    return bot.process_plugin_setup(cogs=[Logger], config=config)
 
 
 class Logger(cogs.MatchCog):
-    async def match(self, ctx, _):
-        if not ctx.channel.id in self.config.channel_map:
+    async def match(self, config, ctx, _):
+        if not str(ctx.channel.id) in config.plugins.logger.channel_map.value:
             return False
+
         return True
 
-    async def response(self, ctx, _):
-        channel = self.get_logging_channel(ctx.channel.id)
-        await channel.send(embed=self.generate_embed(ctx))
+    async def response(self, config, ctx, _):
+        channel = ctx.guild.get_channel(
+            config.plugins.logger.channel_map.value.get(str(ctx.channel.id))
+        )
+        if not channel:
+            return
 
-    def get_logging_channel(self, id):
-        return self.bot.get_channel(self.config.channel_map[id])
+        await channel.send(embed=self.generate_embed(ctx))
 
     def generate_embed(self, ctx):
         embed = self.bot.embed_api.Embed()
@@ -49,7 +61,6 @@ class Logger(cogs.MatchCog):
             inline=False,
         )
 
-        embed.color = self.config.embed_color
         embed.set_thumbnail(url=ctx.author.avatar_url)
 
         return embed

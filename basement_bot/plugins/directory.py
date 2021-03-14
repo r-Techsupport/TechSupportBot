@@ -1,6 +1,7 @@
 import datetime
 
 import cogs
+import decorate
 import discord
 import emoji
 import sqlalchemy
@@ -13,7 +14,25 @@ def setup(bot):
         guild_id = bot.db.Column(bot.db.String, primary_key=True)
         last_message = bot.db.Column(bot.db.String, default=None)
 
-    bot.add_cog(ChannelDirectory(bot, models=[DirectoryExistence]))
+    config = bot.PluginConfig()
+    config.add(
+        key="channel",
+        datatype="int",
+        title="Directory Channel ID",
+        description="The ID of the channel to run the directory in",
+        default=None,
+    )
+    config.add(
+        key="channel_role_map",
+        datatype="dict",
+        title="Channel ID to Role mapping",
+        description="A mapping of channel ID's to role names",
+        default={},
+    )
+
+    return bot.process_plugin_setup(
+        cogs=[ChannelDirectory], models=[DirectoryExistence], config=config
+    )
 
 
 class ChannelDirectory(cogs.BaseCog):
@@ -44,55 +63,56 @@ class ChannelDirectory(cogs.BaseCog):
             for emoji_text in self.OPTION_EMOJIS
         ]
 
-        for guild_id in self.config.keys():
-            guild = self.bot.get_guild(guild_id)
-            if not guild:
-                continue
+        for guild in self.bot.guilds:
+            await self.run_setup(guild)
 
-            channel_id = self.config.get(guild_id, {}).get("directory_channel")
-            if not channel_id:
-                continue
+    async def run_setup(self, guild):
+        config = await self.bot.get_context_config(ctx=None, guild=guild)
 
-            channel = self.bot.get_channel(channel_id)
-            if not channel:
-                continue
+        channel_id = config.plugins.directory.channel.value
+        if not channel_id:
+            return
 
-            existence = await self.models.DirectoryExistence.query.where(
-                self.models.DirectoryExistence.guild_id == str(guild_id)
-            ).gino.first()
-            if not existence:
-                # no record in table
-                # create new object
-                existence = await self.models.DirectoryExistence(
-                    guild_id=str(guild_id)
-                ).create()
-                message_id = None
-            else:
-                # there is a record
-                # try to get its message ID keeping in mind it's stored as str
-                try:
-                    message_id = int(existence.last_message)
-                except ValueError:
-                    # nothing we can do, move on
-                    continue
+        channel = self.bot.get_channel(int(channel_id))
+        if not channel:
+            return
 
-            message = (
-                discord.utils.get(
-                    await channel.history(limit=100).flatten(), id=message_id
-                )
-                if message_id
-                else None
-            )
-            if message:
-                await message.delete()
+        channel_map = config.plugins.directory.channel_role_map.value
+        if not channel_map:
+            return
 
-            new_message = await self.send_embed(
-                self.config.get(guild_id, {}).get("channel_map", {}), guild, channel
-            )
+        existence = await self.models.DirectoryExistence.query.where(
+            self.models.DirectoryExistence.guild_id == str(guild.id)
+        ).gino.first()
+        if not existence:
+            # no record in table
+            # create new object
+            existence = await self.models.DirectoryExistence(
+                guild_id=str(guild.id)
+            ).create()
+            message_id = None
+        else:
+            # there is a record
+            # try to get its message ID keeping in mind it's stored as str
+            try:
+                message_id = int(existence.last_message)
+            except ValueError:
+                # nothing we can do, move on
+                return
 
-            await existence.update(last_message=str(new_message.id)).apply()
+        message = (
+            discord.utils.get(await channel.history(limit=100).flatten(), id=message_id)
+            if message_id
+            else None
+        )
+        if message:
+            await message.delete()
 
-            self.message_ids.add(new_message.id)
+        new_message = await self.send_embed(channel_map, guild, channel)
+
+        await existence.update(last_message=str(new_message.id)).apply()
+
+        self.message_ids.add(new_message.id)
 
     async def send_embed(self, channel_map, guild, directory_channel):
         embed = self.bot.embed_api.Embed(
@@ -104,8 +124,10 @@ class ChannelDirectory(cogs.BaseCog):
 
         message = await directory_channel.send("Loading channel directory...")
 
+        self.option_map[guild.id] = {}
+
         for index, channel_id in enumerate(channel_map):
-            channel = self.bot.get_channel(channel_id)
+            channel = self.bot.get_channel(int(channel_id))
             if not channel or not channel.topic:
                 continue
 
@@ -114,7 +136,7 @@ class ChannelDirectory(cogs.BaseCog):
             if not role:
                 continue
 
-            self.option_map[self.option_emojis[index]] = role
+            self.option_map[guild.id][self.option_emojis[index]] = role
 
             embed.add_field(
                 name=f"{self.option_emojis[index]} #{channel.name}",
@@ -136,7 +158,7 @@ class ChannelDirectory(cogs.BaseCog):
         if not reaction.message.id in self.message_ids:
             return
 
-        role = self.option_map.get(reaction.emoji)
+        role = self.option_map.get(reaction.message.guild.id, {}).get(reaction.emoji)
         if not role:
             return
 
@@ -150,8 +172,25 @@ class ChannelDirectory(cogs.BaseCog):
         if not reaction.message.id in self.message_ids:
             return
 
-        role = self.option_map.get(reaction.emoji)
+        role = self.option_map.get(reaction.message.guild.id, {}).get(reaction.emoji)
         if not role:
             return
 
         await user.remove_roles(role)
+
+    @commands.group(
+        brief="Executes a directory command",
+        description="Executes a directory command",
+    )
+    async def directory(self, ctx):
+        pass
+
+    @decorate.with_typing
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    @directory.command(
+        brief="Rerun directory setup",
+        description="Reruns the directory setup for the current guild",
+    )
+    async def rerun(self, ctx):
+        await self.run_setup(ctx.guild)

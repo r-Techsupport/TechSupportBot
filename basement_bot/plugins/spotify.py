@@ -5,7 +5,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Spotify(bot))
+    return bot.process_plugin_setup(cogs=[Spotify])
 
 
 class Spotify(cogs.BaseCog):
@@ -19,7 +19,10 @@ class Spotify(cogs.BaseCog):
             "post",
             self.AUTH_URL,
             data=data,
-            auth=aiohttp.BasicAuth(self.config.client_id, self.config.client_secret),
+            auth=aiohttp.BasicAuth(
+                self.bot.config.main.api_keys.spotify_client,
+                self.bot.config.main.api_keys.spotify_key,
+            ),
         )
 
         return response.get("access_token")

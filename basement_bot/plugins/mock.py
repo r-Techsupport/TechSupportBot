@@ -5,12 +5,11 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Mocker(bot))
+    return bot.process_plugin_setup(cogs=[Mocker])
 
 
 class Mocker(cogs.BaseCog):
 
-    HAS_CONFIG = False
     SEARCH_LIMIT = 20
 
     @staticmethod
@@ -45,10 +44,12 @@ class Mocker(cogs.BaseCog):
         if user_to_mock.bot:
             user_to_mock = ctx.author
 
+        prefix = await self.bot.get_prefix(ctx.message)
+
         mock_message = None
         async for message in ctx.channel.history(limit=self.SEARCH_LIMIT):
             if message.author == user_to_mock and not message.content.startswith(
-                self.bot.config.main.required.command_prefix
+                prefix
             ):
                 mock_message = message.content
                 break

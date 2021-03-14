@@ -4,12 +4,11 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Corrector(bot))
+    return bot.process_plugin_setup(cogs=[Corrector])
 
 
 class Corrector(cogs.BaseCog):
 
-    HAS_CONFIG = False
     SEARCH_LIMIT = 50
 
     @decorate.with_typing
@@ -23,10 +22,11 @@ class Corrector(cogs.BaseCog):
     )
     async def correct(self, ctx, to_replace: str, replacement: str):
         new_content = None
+
+        prefix = await self.bot.get_prefix(ctx.message)
+
         async for message in ctx.channel.history(limit=self.SEARCH_LIMIT):
-            if message.author.bot or message.content.startswith(
-                self.bot.config.main.required.command_prefix
-            ):
+            if message.author.bot or message.content.startswith(prefix):
                 continue
 
             if to_replace in message.content:

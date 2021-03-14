@@ -3,13 +3,10 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Greeter(bot))
+    return bot.process_plugin_setup(cogs=[Greeter])
 
 
 class Greeter(cogs.BaseCog):
-
-    HAS_CONFIG = False
-
     @commands.command(
         name="hello",
         brief="Says hello to the bot",

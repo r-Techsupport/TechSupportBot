@@ -5,25 +5,15 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Weather(bot))
+    return bot.process_plugin_setup(cogs=[Weather])
 
 
 class Weather(cogs.BaseCog):
-    async def preconfig(self):
-        if self.config.units == "imperial":
-            self.temp_unit = "F"
-        elif self.config.units == "metric":
-            self.temp_unit = "C"
-        else:
-            self.temp_unit = "K"
-
     def get_url(self, args):
         filtered_args = filter(bool, args)
         searches = ",".join(map(str, filtered_args))
         url = "http://api.openweathermap.org/data/2.5/weather"
-        return (
-            f"{url}?q={searches}&units={self.config.units}&appid={self.config.dev_key}"
-        )
+        return f"{url}?q={searches}&units=imperial&appid={self.bot.config.main.api_keys.open_weather}"
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
@@ -62,15 +52,13 @@ class Weather(cogs.BaseCog):
             embed.add_field(name="Description", value=descriptions, inline=False)
 
             embed.add_field(
-                name=f"Temp ({self.temp_unit})",
+                name=f"Temp (F)",
                 value=f"{int(response.main.temp)} (feels like {int(response.main.feels_like)})",
                 inline=False,
             )
+            embed.add_field(name=f"Low (F)", value=int(response.main.temp_min))
             embed.add_field(
-                name=f"Low ({self.temp_unit})", value=int(response.main.temp_min)
-            )
-            embed.add_field(
-                name=f"High ({self.temp_unit})",
+                name=f"High (F)",
                 value=int(response.main.temp_max),
             )
             embed.add_field(name="Humidity", value=f"{int(response.main.humidity)} %")

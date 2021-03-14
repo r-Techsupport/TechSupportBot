@@ -5,10 +5,8 @@ import ast
 import asyncio
 import datetime
 import inspect
-import random
 import re
 
-import aiocron
 import discord
 import munch
 from discord.ext import commands
@@ -23,7 +21,6 @@ class BaseCog(commands.Cog):
         bot (Bot): the bot object
     """
 
-    HAS_CONFIG = True
     ADMIN_ONLY = False
     KEEP_COG_ON_FAILURE = False
     KEEP_PLUGIN_ON_FAILURE = False
@@ -34,12 +31,6 @@ class BaseCog(commands.Cog):
 
         # this is sure to throw a bug at some point
         self.extension_name = inspect.getmodule(self).__name__.split(".")[-1]
-
-        self.config = self.bot.config.plugins.get(self.extension_name)
-        if not self.config and self.HAS_CONFIG:
-            raise ValueError(
-                f"No valid configuration found for plugin {self.extension_name}"
-            )
 
         if models is None:
             models = []
@@ -275,25 +266,31 @@ class MatchCog(BaseCog):
 
         ctx = await self.bot.get_context(message)
 
-        result = await self.match(ctx, message.content)
+        config = await self.bot.get_context_config(ctx)
+        if not config:
+            return
+
+        result = await self.match(config, ctx, message.content)
         if not result:
             return
 
-        await self.response(ctx, message.content)
+        await self.response(config, ctx, message.content)
 
-    async def match(self, _ctx, _content):
+    async def match(self, _config, _ctx, _content):
         """Runs a boolean check on message content.
 
         parameters:
+            config (dict): the config associated with the context
             ctx (context): the context object
             content (str): the message content
         """
         return True
 
-    async def response(self, ctx, content):
+    async def response(self, _config, _ctx, _content):
         """Performs a response if the match is valid.
 
         parameters:
+            config (dict): the config associated with the context
             ctx (context): the context object
             content (str): the message content
         """
@@ -308,108 +305,71 @@ class LoopCog(BaseCog):
         bot (Bot): the bot object
     """
 
-    DEFAULT_WAIT = 30
-    WAIT_KEY = None
-    UNITS = "seconds"
-    CONVERSIONS = {"seconds": 1, "minutes": 60, "hours": 3600}
-    UNLOAD_AFTER_LOOP = True
+    DEFAULT_WAIT = 300
+    ON_START = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.conversion_factor = self.CONVERSIONS.get(self.UNITS, 1)
         self.state = True
-        self.bot.loop.create_task(self._loop_execute())
-        self.execution_locked = False
-
-    async def _loop_execute(self):
-        """Loops through the execution method."""
-        await self._loop_preconfig()
-
-        if not self.config.get("on_start"):
-            await self.wait()
-
-        while self.state:
-            if not self.execution_locked:
-                await self.bot.loop.create_task(
-                    self._execute()
-                )  # pylint: disable=not-callable
-                await self.wait()
-            else:
-                await asyncio.sleep(1)
-
-        if self.UNLOAD_AFTER_LOOP:
-            self.bot.plugin_api.unload_plugin(self.extension_name)
-
-    async def _execute(self):
-        """Private method for performing the main execution method."""
-        self.execution_locked = True
-
-        try:
-            await self.execute()
-        except Exception as e:
-            # exceptions here aren't caught by the bot's on_error,
-            # so catch them manually
-            await self.logger.error(
-                f"Loop cog error: {self.__class__.__name__}!", exception=e
-            )
-
-        self.execution_locked = False
-
-    def cog_unload(self):
-        """Allows the loop to exit after unloading."""
-        self.state = False
-        super().cog_unload()
-
-    # pylint: disable=method-hidden
-    async def wait(self):
-        """The default wait method."""
-        if self.config.get("cron_config"):
-            await aiocron.crontab(self.config.cron_config).next()
-        else:
-            if self.config.get(self.WAIT_KEY):
-                sleep_time = self.config.get(self.WAIT_KEY) * self.conversion_factor
-            else:
-                sleep_time = self.DEFAULT_WAIT
-
-            await asyncio.sleep(sleep_time)
-
-    def setup_random_waiting(self, min_key, max_key):
-        """Validates min and max wait times from config and sets the wait method to be random.
-
-        parameters:
-            min_key (str): the key to lookup the min wait config value
-            max_key (str): the key to lookup the max wait config value
-            units (str): the units that the wait times are in
-        """
-        min_wait = self.config.get(min_key)
-        max_wait = self.config.get(max_key)
-
-        if not min_wait or not max_wait:
-            raise RuntimeError(
-                f"Min and/or max wait times not found from keys {min_key}, {max_key}"
-            )
-        if min_wait < 0 or max_wait < 0:
-            raise RuntimeError("Min and max times must both be greater than 0")
-        if max_wait - min_wait <= 0:
-            raise RuntimeError("Max time must be greater than min time")
-
-        # pylint: disable=method-hidden
-        async def random_wait():
-            await asyncio.sleep(
-                random.randint(
-                    min_wait * self.conversion_factor, max_wait * self.conversion_factor
-                )
-            )
-
-        self.wait = random_wait
+        self.bot.loop.create_task(self._loop_preconfig())
 
     async def _loop_preconfig(self):
         """Blocks the loop_preconfig until the bot is ready."""
         await self._handle_preconfig(self.loop_preconfig)
 
+        for guild in self.bot.guilds:
+            self.bot.loop.create_task(self._loop_execute(guild))
+
     async def loop_preconfig(self):
         """Preconfigures the environment before starting the loop."""
 
-    async def execute(self):
-        """Runs sequentially after each wait method."""
-        raise RuntimeError("Execute function must be defined in sub-class")
+    async def _loop_execute(self, guild):
+        """Loops through the execution method.
+
+        parameters:
+            guild (discord.Guild): the guild associated with the execution
+        """
+        config = await self.bot.get_context_config(ctx=None, guild=guild)
+
+        if not self.ON_START:
+            await self.wait(config, guild)
+
+        while self.state:
+            # refresh the config on every loop step
+            config = await self.bot.get_context_config(ctx=None, guild=guild)
+            try:
+                await self.execute(config, guild)
+                await self.wait(config, guild)
+            except Exception as e:
+                # exceptions here aren't caught by the bot's on_error,
+                # so catch them manually
+                await self.logger.error(
+                    f"Loop cog error: {self.__class__.__name__}!", exception=e
+                )
+                # avoid spamming
+                await self._default_wait()
+
+    async def execute(self, _config, _guild):
+        """Runs sequentially after each wait method.
+
+        parameters:
+            config (munch.Munch): the config object for the guild
+            guild (discord.Guild): the guild associated with the execution
+        """
+
+    async def _default_wait(self):
+        await asyncio.sleep(self.DEFAULT_WAIT)
+
+    async def wait(self, _config, _guild):
+        """The default wait method.
+
+        parameters:
+            config (munch.Munch): the config object for the guild
+            guild (discord.Guild): the guild associated with the execution
+        """
+        await self._default_wait()
+
+    def cog_unload(self):
+        """Allows the loop to exit after unloading."""
+        self.state = False
+        super().cog_unload()

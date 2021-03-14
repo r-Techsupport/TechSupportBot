@@ -6,6 +6,7 @@ import sys
 import cogs
 import decorate
 from discord.ext import commands
+import discord
 
 
 class AdminControl(cogs.BaseCog):
@@ -31,7 +32,7 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             plugin_name (str): the name of the plugin
         """
         status_data = ctx.bot.plugin_api.get_status()
@@ -75,7 +76,7 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             plugin_name (str): the name of the plugin
         """
         response = ctx.bot.plugin_api.load_plugin(plugin_name)
@@ -89,7 +90,7 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             plugin_name (str): the name of the plugin
         """
         response = ctx.bot.plugin_api.unload_plugin(plugin_name)
@@ -112,7 +113,7 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             command_name (str): the name of the command
         """
         command_ = ctx.bot.get_command(command_name)
@@ -139,7 +140,7 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             command_name (str): the name of the command
         """
         command_ = ctx.bot.get_command(command_name)
@@ -175,7 +176,7 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             game_name (str): the name of the game
         """
         await ctx.bot.set_game(game_name)
@@ -189,7 +190,7 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             nick (str): the bot nickname
         """
         await ctx.message.guild.me.edit(nick=nick)
@@ -210,7 +211,7 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the calling message
+            ctx (discord.ext.Context): the context object for the calling message
             channel_id (int): the ID of the channel to send the echoed message
             message (str): the message to echo
         """
@@ -229,7 +230,7 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the calling message
+            ctx (discord.ext.Context): the context object for the calling message
             user_id (int): the ID of the user to send the echoed message
             message (str): the message to echo
         """
@@ -247,7 +248,26 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the calling message
+            ctx (discord.ext.Context): the context object for the calling message
         """
         await self.tagged_response(ctx, "Shutting down! Cya later!")
         sys.exit()
+
+    @commands.command(name="shutdown")
+    async def leave(self, ctx, *, guild_id: int):
+        """Leaves a guild by ID.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.ext.Context): the context object for the calling message
+            guild_id (int): the ID of the guild to leave
+        """
+        guild = discord.utils.get(self.bot.guilds, id=guild_id)
+        if not guild:
+            await self.tagged_response(ctx, "I don't appear to be in that guild")
+            return
+
+        await self.bot.leave_guild(guild)
+
+        await ctx.send(f"I have left the guild: {guild.name} ({guild.id})")

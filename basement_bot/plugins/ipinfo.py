@@ -3,12 +3,11 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(IPInfo(bot))
+    return bot.process_plugin_setup(cogs=[IPInfo])
 
 
 class IPInfo(cogs.BaseCog):
 
-    HAS_CONFIG = False
     API_URL = "https://ipinfo.io"
     IP_ICON_URL = "https://cdn.icon-icons.com/icons2/1858/PNG/512/iconfinder-dedicatedipaddress-4263513_117864.png"
 

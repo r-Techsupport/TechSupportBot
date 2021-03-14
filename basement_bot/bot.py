@@ -2,6 +2,7 @@
 """
 
 import asyncio
+import collections
 import datetime
 import sys
 
@@ -16,6 +17,7 @@ import munch
 import plugin
 import yaml
 from discord.ext import commands
+from motor import motor_asyncio
 
 
 # pylint: disable=too-many-public-methods, too-many-instance-attributes
@@ -27,40 +29,139 @@ class BasementBot(commands.Bot):
     """
 
     CONFIG_PATH = "./config.yaml"
+    GUILD_CONFIG_COLLECTION = "guild_config"
+
+    PluginConfig = plugin.PluginConfig
 
     def __init__(self, run_on_init=True, intents=None):
         self.owner = None
         self.config = None
+        self.mongo = None
         self.db = None
         self.rabbit = None
         self._startup_time = None
+        self.guild_config_collection = None
+        self.config_cache = collections.defaultdict(dict)
 
-        self.load_config(validate=True)
+        self.logger = self.get_logger(self.__class__.__name__)
+
+        self.load_bot_config(validate=True)
 
         self.plugin_api = plugin.PluginAPI(bot=self)
         self.embed_api = embed.EmbedAPI(bot=self)
 
-        self.logger = self.get_logger(self.__class__.__name__)
-
-        super().__init__(self.config.main.required.command_prefix, intents=intents)
+        super().__init__(command_prefix=self.get_prefix, intents=intents)
 
         if not run_on_init:
             return
 
-        self.run(self.config.main.required.auth_token)
+        self.run(self.config.main.auth_token)
 
-    def get_logger(self, name):
-        """Wraps getting a new logging channel.
+    def load_bot_config(self, validate):
+        """Loads the config yaml file into a bot object.
 
         parameters:
-            name (str): the name of the channel
+            validate (bool): True if validations should be ran on the file
         """
-        return logger.BotLogger(self, name=name)
+        with open(self.CONFIG_PATH) as iostream:
+            config = yaml.safe_load(iostream)
+        self.config = munch.munchify(config)
 
-    @property
-    def startup_time(self):
-        """Gets the startup timestamp of the bot."""
-        return self._startup_time
+        self.config.main.disabled_plugins = self.config.main.disabled_plugins or []
+
+        if not validate:
+            return
+
+        for subsection in ["required"]:
+            self.validate_bot_config_subsection("main", subsection)
+
+    def validate_bot_config_subsection(self, section, subsection):
+        """Loops through a config subsection to check for missing values.
+
+        parameters:
+            section (str): the section name containing the subsection
+            subsection (str): the subsection name
+        """
+        for key, value in self.config.get(section, {}).get(subsection, {}).items():
+            error_key = None
+            if value is None:
+                error_key = key
+            elif isinstance(value, dict):
+                for k, v in value.items():
+                    if v is None:
+                        error_key = k
+            if error_key:
+                raise ValueError(
+                    f"Config key {error_key} from {section}.{subsection} not supplied"
+                )
+
+    async def get_prefix(self, message):
+        """Gets the appropriate prefix for a command.
+
+        parameters:
+            message (discord.Message): the message to check against
+        """
+        guild_config = await self.get_context_config(ctx=None, guild=message.guild)
+        return getattr(guild_config, "command_prefix", self.config.main.default_prefix)
+
+    def run(self, *args, **kwargs):
+        """Starts the event loop and blocks until interrupted."""
+        try:
+            self.loop.run_until_complete(self.start(*args, **kwargs))
+        except (SystemExit, KeyboardInterrupt):
+            self.loop.run_until_complete(self.cleanup())
+        finally:
+            self.loop.close()
+
+    async def start(self, *args, **kwargs):
+        """Sets up config and connections then starts the actual bot."""
+        # this is required for the bot
+        await self.logger.debug("Connecting to MongoDB...")
+        self.mongo = self.get_mongo_ref()
+
+        if not self.GUILD_CONFIG_COLLECTION in await self.mongo.list_collection_names():
+            await self.logger.debug("Creating new MongoDB guild config collection...")
+            await self.mongo.create_collection(self.GUILD_CONFIG_COLLECTION)
+
+        self.guild_config_collection = self.mongo[self.GUILD_CONFIG_COLLECTION]
+        self.loop.create_task(self.reset_config_cache())
+
+        await self.logger.debug("Connecting to Postgres...")
+        try:
+            self.db = await self.get_postgres_ref()
+        except Exception as exception:
+            await self.logger.warning(f"Could not connect to Postgres: {exception}")
+
+        await self.logger.debug("Connecting to RabbitMQ...")
+        try:
+            self.rabbit = await self.get_rabbit_connection()
+        except Exception as exception:
+            await self.logger.warning(f"Could not connect to RabbitMQ: {exception}")
+
+        await self.logger.debug("Loading plugins...")
+        self.plugin_api.load_plugins()
+
+        if self.db:
+            await self.logger.debug("Syncing Postgres tables...")
+            await self.db.gino.create_all()
+
+        await self.logger.debug("Loading Admin extension...")
+        try:
+            self.add_cog(admin.AdminControl(self))
+        except (TypeError, commands.CommandError) as exception:
+            await self.logger.warning(
+                f"Could not load Admin extension! Error: {exception}"
+            )
+
+        await self.logger.debug("Logging into Discord...")
+        await super().start(*args, **kwargs)
+
+    async def cleanup(self):
+        """Cleans up after the event loop is interupted."""
+        await self.logger.debug("Cleaning up...", send=True)
+        await super().logout()
+        await self.db.close()
+        await self.rabbit.close()
 
     async def on_ready(self):
         """Callback for when the bot is finished starting up."""
@@ -68,13 +169,7 @@ class BasementBot(commands.Bot):
 
         await self.get_owner()
 
-        game = self.config.main.optional.get("game")
-        if game:
-            await self.change_presence(activity=discord.Game(name=game))
-
-        await self.logger.debug(
-            f"Online! Command prefix: {self.command_prefix}", send=True
-        )
+        await self.logger.debug("Online!", send=True)
 
     async def on_message(self, message):
         """Catches messages and acts appropriately.
@@ -102,62 +197,20 @@ class BasementBot(commands.Bot):
             event_method (str): the event method name associated with the error (eg. on_message)
         """
         _, exception, _ = sys.exc_info()
-        await self.logger.error(f"Bot error in {event_method}!", exception=exception)
+        await self.logger.error(
+            f"Bot error in {event_method}: {exception}", exception=exception
+        )
 
     async def on_command_error(self, context, exception):
         """Catches command errors and sends them to the error logger for processing.
 
         parameters:
-            context (discord.Context): the context associated with the exception
+            context (discord.ext.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
-        await self.logger.error("Command error!", context=context, exception=exception)
-
-    def run(self, *args, **kwargs):
-        """Starts the event loop and blocks until interrupted."""
-        try:
-            self.loop.run_until_complete(self.start(*args, **kwargs))
-        except (SystemExit, KeyboardInterrupt):
-            self.loop.run_until_complete(self.cleanup())
-        finally:
-            self.loop.close()
-
-    async def start(self, *args, **kwargs):
-        """Sets up config and connections then starts the actual bot."""
-        await self.logger.debug("Connecting to Postgres...")
-        try:
-            self.db = await self.get_db_ref()
-        except Exception:
-            await self.logger.warning("Could not connect to Postgres!")
-
-        await self.logger.debug("Connecting to RabbitMQ...")
-        try:
-            self.rabbit = await self.get_rabbit_connection()
-        except Exception:
-            await self.logger.warning("Could not connect to RabbitMQ!")
-
-        await self.logger.debug("Loading plugins...")
-        self.plugin_api.load_plugins()
-
-        if self.db:
-            await self.logger.debug("Syncing Postgres tables...")
-            await self.db.gino.create_all()
-
-        await self.logger.debug("Loading Admin extension...")
-        try:
-            self.add_cog(admin.AdminControl(self))
-        except (TypeError, commands.CommandError) as e:
-            await self.logger.warning(f"Could not load Admin extension! Error: {e}")
-
-        await self.logger.debug("Logging into Discord...")
-        await super().start(*args, **kwargs)
-
-    async def cleanup(self):
-        """Cleans up after the event loop is interupted."""
-        await self.logger.debug("Cleaning up...", send=True)
-        await super().logout()
-        await self.db.close()
-        await self.rabbit.close()
+        await self.logger.error(
+            f"Command error: {exception}", context=context, exception=exception
+        )
 
     async def get_owner(self):
         """Gets the owner object from the bot application."""
@@ -176,7 +229,7 @@ class BasementBot(commands.Bot):
         """Wraps the default can_run check to evaluate if a check call is necessary.
 
         parameters:
-            ctx (discord.Context): the context associated with the command
+            ctx (discord.ext.Context): the context associated with the command
             call_once (bool): True if the check should be retrieved from the call_once attribute
         """
         await self.logger.debug("Checking if command can run")
@@ -203,7 +256,7 @@ class BasementBot(commands.Bot):
         They are also ignored if the author is bot admin in the config.
 
         parameters:
-            ctx (discord.Context): the context associated with the command
+            ctx (discord.ext.Context): the context associated with the command
         """
         await self.logger.debug("Checking context against bot admins")
 
@@ -224,69 +277,121 @@ class BasementBot(commands.Bot):
 
         return False
 
-    def load_config(self, validate):
-        """Loads the config yaml file into a bot object.
+    async def reset_config_cache(self):
+        """Deletes the guild config cache on a peridodic basis."""
+        while True:
+            self.config_cache = collections.defaultdict(dict)
+            await asyncio.sleep(self.config.main.config_cache_reset)
+
+    async def get_context_config(
+        self, ctx, guild=None, create_if_none=True, get_from_cache=True
+    ):
+        """Gets the appropriate config for the context.
 
         parameters:
-            validate (bool): True if validations should be ran on the file
+            ctx (discord.ext.Context): the context of the config
+            guild (discord.Guild): the guild associated with the config
+            create_if_none (bool): True if the config should be created if not found
+            get_from_cache (bool): True if the config should be fetched from the cache
         """
-        with open(self.CONFIG_PATH) as iostream:
-            config = yaml.safe_load(iostream)
-        self.config = munch.munchify(config)
+        guild = guild or ctx.guild
 
-        self.config.main.disabled_plugins = self.config.main.disabled_plugins or []
+        if get_from_cache:
+            config = self.config_cache[guild.id]
+            if config:
+                return config
 
-        if validate:
-            self.validate_config()
+        lookup = guild.id if guild else "dmcontext"
 
-    def validate_config(self):
-        """Validates several config subsections."""
-        for subsection in ["required"]:
-            self.validate_config_subsection("main", subsection)
+        config = await self.guild_config_collection.find_one(
+            {"guild_id": {"$eq": lookup}}
+        )
 
-        for subsection in list(self.config.plugins.keys()):
-            self.validate_config_subsection("plugins", subsection)
+        if not config and create_if_none:
+            config = await self.create_new_context_config(lookup)
+        else:
+            config = await self.sync_config(config)
 
-    def validate_config_subsection(self, section, subsection):
-        """Loops through a config subsection to check for missing values.
+        return config
+
+    async def create_new_context_config(self, lookup):
+        """Creates a new guild config based on a lookup key (usually a guild ID).
 
         parameters:
-            section (str): the section name containing the subsection
-            subsection (str): the subsection name
+            lookup (str): the primary key for the guild config document object
         """
-        for key, value in self.config.get(section, {}).get(subsection, {}).items():
-            error_key = None
-            if value is None:
-                error_key = key
-            elif isinstance(value, dict):
-                for k, v in value.items():
-                    if v is None:
-                        error_key = k
-            if error_key:
-                if section == "plugins":
-                    if not subsection in self.config.main.disabled_plugins:
-                        # pylint: disable=line-too-long
-                        # disable the plugin if we can't get its config
-                        self.config.main.disabled_plugins.append(subsection)
-                else:
-                    raise ValueError(
-                        f"Config key {error_key} from {section}.{subsection} not supplied"
-                    )
+        plugins_config = {}
 
-    def generate_db_url(self):
-        """Dynamically converts config to a Postgres URL."""
+        for plugin_name, plugin_data in self.plugin_api.plugins.items():
+            plugins_config[plugin_name] = getattr(plugin_data, "config", {})
+
+        config = munch.Munch()
+
+        # pylint: disable=protected-access
+        config._id = lookup
+        config.guild_id = lookup
+        config.command_prefix = self.config.main.default_prefix
+        config.plugins = plugins_config
+
+        await self.guild_config_collection.insert_one(config)
+
+        return config
+
+    async def sync_config(self, config):
+        """Syncs the given config with the currently loaded plugins.
+
+        parameters:
+            config (dict): the guild config object
+        """
+        config = munch.munchify(config)
+
+        for plugin_name, plugin_data in self.plugin_api.plugins.items():
+            if not config.plugins.get(plugin_name):
+                config.plugins[plugin_name] = getattr(plugin_data, "config", {})
+
+        await self.guild_config_collection.replace_one(
+            {"_id": config.get("_id")}, config
+        )
+
+        return config
+
+    def generate_db_url(self, postgres=True):
+        """Dynamically converts config to a Postgres/MongoDB url.
+
+        parameters:
+            postgres (bool): True if the URL for Postgres should be retrieved
+        """
+        db_type = "postgres" if postgres else "mongodb"
+
         try:
-            user = self.config.main.database.user
-            password = self.config.main.database.password
-            name = self.config.main.database.name
-            host = self.config.main.database.host
-            port = self.config.main.database.port
-        except AttributeError:
+            config_child = getattr(self.config.main, db_type)
+
+            user = config_child.user
+            password = config_child.password
+
+            name = getattr(config_child, "name") if postgres else None
+
+            host = config_child.host
+            port = config_child.port
+
+        except AttributeError as exception:
+            self.logger.console.warning(
+                f"Could not generate DB URL for {db_type.upper()}: {exception}"
+            )
             return None
 
-        return f"postgres://{user}:{password}@{host}:{port}/{name}"
+        url = f"{db_type}://{user}:{password}@{host}:{port}"
+        url_filtered = f"{db_type}://{user}:********@{host}:{port}"
 
-    async def get_db_ref(self):
+        if name:
+            url = f"{url}/{name}"
+
+        # don't log the password
+        self.logger.console.debug(f"Generated DB URL: {url_filtered}")
+
+        return url
+
+    async def get_postgres_ref(self):
         """Grabs the main DB reference.
 
         This doesn't follow a singleton pattern (use bot.db instead).
@@ -298,6 +403,16 @@ class BasementBot(commands.Bot):
         await db_ref.set_bind(db_url)
 
         return db_ref
+
+    def get_mongo_ref(self):
+        """Grabs the MongoDB ref to the bot's configured table."""
+        self.logger.console.debug("Obtaining MongoDB client")
+
+        mongo_client = motor_asyncio.AsyncIOMotorClient(
+            self.generate_db_url(postgres=False)
+        )
+
+        return mongo_client[self.config.main.mongodb.name]
 
     def generate_rabbit_url(self):
         """Dynamically converts config to an AMQP URL."""
@@ -413,10 +528,30 @@ class BasementBot(commands.Bot):
                 )
                 response["status_code"] = getattr(response_object, "status_code", None)
 
-        except Exception as e:
-            await self.logger.error(f"HTTP {method} call", exception=e)
+        except Exception as exception:
+            await self.logger.error(f"HTTP {method} call", exception=exception)
             response = {"status_code": None}
 
         await client.close()
 
         return response
+
+    def process_plugin_setup(self, *args, **kwargs):
+        """Provides a bot-level interface to loading a plugin.
+
+        It is recommended to use this when setting up plugins.
+        """
+        return self.plugin_api.process_plugin_setup(*args, **kwargs)
+
+    def get_logger(self, name):
+        """Wraps getting a new logging channel.
+
+        parameters:
+            name (str): the name of the channel
+        """
+        return logger.BotLogger(self, name=name)
+
+    @property
+    def startup_time(self):
+        """Gets the startup timestamp of the bot."""
+        return self._startup_time

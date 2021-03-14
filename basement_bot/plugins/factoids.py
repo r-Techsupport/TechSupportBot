@@ -1,4 +1,5 @@
 import asyncio
+import collections
 import datetime
 import json
 
@@ -14,42 +15,53 @@ def setup(bot):
         pk = bot.db.Column(bot.db.Integer, primary_key=True)
         text = bot.db.Column(bot.db.String)
         channel = bot.db.Column(bot.db.String)
+        guild = bot.db.Column(bot.db.String)
         message = bot.db.Column(bot.db.String)
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
         embed_config = bot.db.Column(bot.db.String, default=None)
         loop_config = bot.db.Column(bot.db.String, default=None)
 
-    bot.add_cog(FactoidManager(bot, models=[Factoid]))
+    config = bot.PluginConfig()
+    config.add(
+        key="per_page",
+        datatype="int",
+        title="Factoids per page",
+        description="The number of factoids per page when retrieving all factoids",
+        default=20,
+    )
+
+    return bot.process_plugin_setup(
+        cogs=[FactoidManager], models=[Factoid], config=config
+    )
 
 
 class FactoidManager(cogs.MatchCog, cogs.LoopCog):
 
-    CACHE_UPDATE_MINUTES = 10
-
-    async def db_preconfig(self):
-        factoid_prefix = self.config.prefix
-        command_prefix = self.bot.config.main.required.command_prefix
-
-        if factoid_prefix == command_prefix:
-            raise RuntimeError(
-                f"Command prefix '{command_prefix}' cannot equal Factoid prefix"
-            )
+    LOOP_UPDATE_MINUTES = 10
 
     async def loop_preconfig(self):
-        self.loop_jobs = {}
+        self.loop_jobs = collections.defaultdict(dict)
         await self.load_jobs()
         self.cache_update_time = datetime.datetime.utcnow() + datetime.timedelta(
-            minutes=self.config.loop_update_minutes
+            minutes=self.LOOP_UPDATE_MINUTES
         )
 
-    async def get_all_factoids(self):
-        factoids = await self.bot.db.all(self.models.Factoid.query)
+    async def get_all_factoids(self, guild=None):
+        if guild:
+            factoids = await self.models.Factoid.query.where(
+                self.models.Factoid.guild == str(guild.id)
+            ).gino.all()
+        else:
+            factoids = await self.bot.db.all(self.models.Factoid.query)
+
         return factoids
 
-    async def get_factoid_from_query(self, query, db=None):
-        factoid = await self.models.Factoid.query.where(
-            self.models.Factoid.text == query
-        ).gino.first()
+    async def get_factoid_from_query(self, query, guild):
+        factoid = (
+            await self.models.Factoid.query.where(self.models.Factoid.text == query)
+            .where(self.models.Factoid.guild == str(guild.id))
+            .gino.first()
+        )
         return factoid
 
     def get_embed_from_factoid(self, factoid):
@@ -64,7 +76,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
         trigger = kwargs.get("trigger")
 
         # first check if key already exists
-        factoid = await self.get_factoid_from_query(trigger)
+        factoid = await self.get_factoid_from_query(trigger, ctx.guild)
         if factoid:
             # delete old one
             await factoid.delete()
@@ -82,7 +94,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
         await self.tagged_response(ctx, f"Successfully added factoid *{trigger}*")
 
     async def delete_factoid(self, ctx, trigger):
-        factoid = await self.get_factoid_from_query(trigger)
+        factoid = await self.get_factoid_from_query(trigger, ctx.guild)
         if not factoid:
             await self.tagged_response(ctx, "I couldn't find that factoid")
             return
@@ -92,10 +104,10 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
             ctx, f"Successfully deleted factoid factoid: *{trigger}*"
         )
 
-    async def match(self, _, content):
-        return content.startswith(self.config.prefix)
+    async def match(self, _, __, content):
+        return content.startswith("?")
 
-    async def response(self, ctx, arg):
+    async def response(self, _, ctx, arg):
         query = arg[1:]
         user_mentioned = None
         if len(ctx.message.mentions) == 1:
@@ -108,7 +120,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
             )
             return
 
-        factoid = await self.get_factoid_from_query(query)
+        factoid = await self.get_factoid_from_query(query, ctx.guild)
 
         if not factoid:
             return
@@ -145,18 +157,22 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
         if not factoids:
             return
 
-        factoid_set = set()
+        factoid_cache = collections.defaultdict(set)
         for factoid in factoids:
+            factoid_set = factoid_cache[int(factoid.guild)]
             factoid_set.add(factoid.text)
             self.configure_job(factoid)
 
         # remove jobs for deleted factoids
-        for looped_factoid_key in self.loop_jobs.keys():
-            if not looped_factoid_key in factoid_set:
-                del self.loop_jobs[looped_factoid_key]
+        for guild_id in factoid_cache.keys():
+            for looped_factoid_key in self.loop_jobs[guild_id].keys():
+                if not looped_factoid_key in factoid_cache[guild_id]:
+                    del self.loop_jobs[guild_id][looped_factoid_key]
 
     def configure_job(self, factoid):
-        old_loop_config = self.loop_jobs.get(factoid.text, {})
+        guild_loop_jobs = self.loop_jobs[int(factoid.guild)]
+
+        old_loop_config = guild_loop_jobs.get(factoid.text, {})
 
         if not factoid.loop_config:
             # delete stale job
@@ -188,25 +204,25 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
                 "finish_time", new_finish_time
             )
 
-        self.loop_jobs[factoid.text] = loop_config
+        guild_loop_jobs[factoid.text] = loop_config
 
-    async def execute(self):
+    async def execute(self, config, guild):
         compare_time = datetime.datetime.utcnow()
 
         if compare_time > self.cache_update_time:
             await self.load_jobs()
             self.cache_update_time = datetime.datetime.utcnow() + datetime.timedelta(
-                minutes=self.config.loop_update_minutes
+                minutes=self.LOOP_UPDATE_MINUTES
             )
 
-        for factoid_key, loop_config in self.loop_jobs.items():
+        for factoid_key, loop_config in self.loop_jobs.get(guild.id, {}).items():
             finish_time = loop_config.get("finish_time")
             if not finish_time or compare_time < finish_time:
                 continue
 
             channel = None
             sleep_duration = None
-            factoid = await self.get_factoid_from_query(factoid_key)
+            factoid = await self.get_factoid_from_query(factoid_key, guild)
 
             embed = self.get_embed_from_factoid(factoid)
             content = factoid.message if not embed else None
@@ -218,7 +234,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
 
             for channel_id in loop_config.get("channel_ids", []):
                 try:
-                    channel = self.bot.get_channel(int(channel_id))
+                    channel = guild.get_channel(int(channel_id))
                     # update time of next message
                     loop_config[
                         "finish_time"
@@ -234,7 +250,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
                     continue
 
     # main clock for looping
-    async def wait(self):
+    async def wait(self, _, __):
         await asyncio.sleep(60)
 
     @commands.group(
@@ -307,7 +323,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
         sleep_duration: int,
         *channel_ids: commands.Greedy[int],
     ):
-        factoid = await self.get_factoid_from_query(factoid_name)
+        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         if not factoid:
             await self.tagged_response(ctx, "I couldn't find that factoid")
             return
@@ -333,7 +349,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
         usage="[factoid-name]",
     )
     async def deloop(self, ctx, factoid_name: str):
-        factoid = await self.get_factoid_from_query(factoid_name)
+        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         if not factoid:
             await self.tagged_response(ctx, "I couldn't find that factoid")
             return
@@ -355,7 +371,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
         usage="[factoid-name]",
     )
     async def job(self, ctx, factoid_name: str):
-        factoid = await self.get_factoid_from_query(factoid_name)
+        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
 
         if not factoid:
             await self.tagged_response(ctx, "I couldn't find that factoid")
@@ -390,14 +406,16 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
         channel_ids = loop_config.get("channel_ids", [])
         # check this shit out
         channels = [
-            "#" + getattr(self.bot.get_channel(int(channel_id)), "name", "???")
+            "#" + getattr(ctx.guild.get_channel(int(channel_id)), "name", "???")
             for channel_id in channel_ids
         ]
         embed.add_field(name="Channels", value=", ".join(channels), inline=False)
 
         embed.add_field(
             name="Next execution (UTC)",
-            value=self.loop_jobs.get(factoid_name, {}).get("finish_time", "???"),
+            value=self.loop_jobs.get(ctx.guild.id, {})
+            .get(factoid_name, {})
+            .get("finish_time", "???"),  # get-er-done
         )
 
         await self.tagged_response(ctx, embed=embed)
@@ -412,7 +430,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
         usage="[factoid-name]",
     )
     async def _json(self, ctx, factoid_name: str):
-        factoid = await self.get_factoid_from_query(factoid_name)
+        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
 
         if not factoid:
             await self.tagged_response(ctx, "I couldn't find that factoid")
@@ -434,7 +452,9 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
         description="Lists all the currently cached loop jobs",
     )
     async def jobs(self, ctx):
-        if not self.loop_jobs:
+        all_jobs = self.loop_jobs.get(ctx.guild.id, {})
+
+        if not all_jobs:
             await self.tagged_response(
                 ctx,
                 f"There are no currently running factoid loops (next cache update: {self.cache_update_time} UTC)",
@@ -442,7 +462,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
             return
 
         embed_kwargs = {}
-        for factoid_name, loop_config in self.loop_jobs.items():
+        for factoid_name, loop_config in all_jobs.items():
             finish_time = loop_config.get("finish_time", "???")
             embed_kwargs[factoid_name] = f"Next execution: {finish_time} UTC"
 
@@ -458,21 +478,24 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @factoid.command(
+        name="all",
         aliases=["lsf"],
         brief="List all factoids",
         description="Shows an embed with all the factoids",
     )
-    async def all(self, ctx):
+    async def all_(self, ctx):
         if ctx.message.mentions:
             await self.tagged_response(
                 ctx, "Sorry, factoids don't work well with mentions"
             )
             return
 
-        factoids = await self.get_all_factoids()
+        factoids = await self.get_all_factoids(ctx.guild)
         if not factoids:
             await self.tagged_response(ctx, "No factoids found!")
             return
+
+        config = await self.bot.get_context_config(ctx)
 
         field_counter = 1
         embeds = []
@@ -480,7 +503,7 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
             embed = (
                 self.bot.embed_api.Embed(
                     title="Factoids",
-                    description=f"Access factoids with the `{self.config.prefix}` prefix",
+                    description=f"Access factoids with the `?` prefix",
                 )
                 if field_counter == 1
                 else embed
@@ -499,7 +522,10 @@ class FactoidManager(cogs.MatchCog, cogs.LoopCog):
                 value=factoid.message,
                 inline=False,
             )
-            if field_counter == self.config.list_all_max or index == len(factoids) - 1:
+            if (
+                field_counter == config.plugins.factoids.per_page.value
+                or index == len(factoids) - 1
+            ):
                 embeds.append(embed)
                 field_counter = 1
             else:

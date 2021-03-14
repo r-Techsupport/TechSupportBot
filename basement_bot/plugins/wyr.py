@@ -7,7 +7,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(WouldYouRather(bot))
+    return bot.process_plugin_setup(cogs=[WouldYouRather])
 
 
 class Question:

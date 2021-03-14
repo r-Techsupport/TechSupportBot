@@ -6,13 +6,13 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Giphy(bot))
+    return bot.process_plugin_setup(cogs=[Giphy])
 
 
 class Giphy(cogs.BaseCog):
 
     GIPHY_URL = "http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"
-    SEARCH_LIMIT = 5
+    SEARCH_LIMIT = 10
 
     @staticmethod
     def parse_url(url):
@@ -32,7 +32,9 @@ class Giphy(cogs.BaseCog):
         response = await self.bot.http_call(
             "get",
             self.GIPHY_URL.format(
-                query.replace(" ", "+"), self.config.dev_key, self.SEARCH_LIMIT
+                query.replace(" ", "+"),
+                self.bot.config.main.api_keys.giphy,
+                self.SEARCH_LIMIT,
             ),
         )
 

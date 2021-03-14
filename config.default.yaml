@@ -1,95 +1,36 @@
 main:
-    required:
-        command_prefix: "."
-        auth_token: 
-    optional:
-        game: RuneScape
+    auth_token: 
     admins:
         ids: []
         roles: []
-    database:
-        user: admin
-        password: admin
-        name: basement_bot
-        host: db
+    postgres:
+        user:
+        password:
+        name:
+        host:
         port: 5432
+    mongodb:
+        user:
+        password:
+        name:
+        host:
+        port: 27017
     rabbitmq:
-        user: admin
-        password: admin
-        host: rabbitmq
+        user:
+        password:
+        host:
         vhost: "/"
         port: 5672
-    disabled_plugins: []
+    api_keys:
+        google_cse:
+        google:
+        giphy:
+        news:
+        wolfram:
+        open_weather:
+    disabled_plugins: ["kanye"]
+    default_prefix: "."
+    config_cache_reset: 30
 
-plugins:
-    urban:
-        responses_max: 3
-    grab:
-        grabs_max: 3
-        invalid_channels: []
-    factoids:
-        prefix: "?"
-        list_all_max: 5
-        loop_update_minutes: 15
-    google:
-        cse_id:
-        dev_key:
-    giphy:
-        dev_key:
-    kanye:
-        channel:
-        min_hours:
-        max_hours:
-        on_start: True
-    news:
-        channel:
-        api_key:
-        cron_config: "0 17 * * *"
-        country: US
-        prefer: [
-            "CNN",
-            "CBS",
-            "NBC",
-            "FOX"
-        ]
-    relay:
-        channel_map: {}
-        send_queue:  DiscordToIRC
-        recv_queue: IRCToDiscord
-        stale_seconds: 600
-    protect:
-        included_channels: []
-        string_map:
-            "bad word/sentence here":
-                message: That is a bad word/sentence!
-                delete: true
-                sensitive: true
-        length_limit: 500
-        alert_channel:
-        linx_url: null
-    logger:
-        channel_map: {}
-        embed_color: 0xF1C40F
-    weather:
-        dev_key: 
-        units: imperial
-    duck:
-        channel: 
-        min_hours: 1
-        max_hours: 2
-        on_start: False
-        timeout_seconds: 30
-        cooldown_seconds: 10
-        success_percent: 80
-    wolfram:
-        api_key:
-    spotify:
-        client_id:
-        client_secret:
-    gate:
-        channel:
-        roles: []
-        welcome_message: "Welcome to the server!"
-        delete_wait_seconds: 30
-    moderator:
-        ban_delete_days: 7
+# Special things
+special:

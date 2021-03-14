@@ -4,14 +4,13 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(ISSLocator(bot))
+    return bot.process_plugin_setup(cogs=[ISSLocator])
 
 
 class ISSLocator(cogs.BaseCog):
 
     ISS_URL = "http://api.open-notify.org/iss-now.json"
     GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
-    HAS_CONFIG = False
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)

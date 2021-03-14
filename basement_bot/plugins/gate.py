@@ -6,41 +6,67 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(ServerGate(bot))
+    config = bot.PluginConfig()
+    config.add(
+        key="channel",
+        datatype="int",
+        title="Server Gate Channel ID",
+        description="The ID of the channel the gate is in",
+        default=None,
+    )
+    config.add(
+        key="roles",
+        datatype="list",
+        title="Roles to add",
+        description="The list of roles to add after user is verified",
+        default=[],
+    )
+    config.add(
+        key="welcome_message",
+        datatype="str",
+        title="Server Gate welcome message",
+        description="The message to send to the user after they are verified",
+        default="You are now verified! Welcome to the server!",
+    )
+    config.add(
+        key="delete_wait",
+        datatype="int",
+        title="Welcome message delete time",
+        description="The amount of time to wait (in seconds) before deleting the welcome message",
+        default=60,
+    )
+    config.add(
+        key="verify_text",
+        datatype="str",
+        title="Verification text",
+        description="The case-insensitive text the user should type to verify themselves",
+        default="agree",
+    )
+
+    return bot.process_plugin_setup(cogs=[ServerGate], config=config)
 
 
 class ServerGate(cogs.MatchCog):
-    async def preconfig(self):
-        self.channels = set()
-        for channel_config in self.config.values():
-            self.channels.add(channel_config.channel)
+    async def match(self, config, ctx, _):
+        return ctx.channel.id == int(config.plugins.gate.channel.value)
 
-    async def match(self, ctx, _):
-        if not ctx.channel.id in self.channels:
-            return False
-        return True
+    async def response(self, config, ctx, content):
+        prefix = await self.bot.get_prefix(ctx.message)
 
-    async def response(self, ctx, content):
-        if content.startswith(self.bot.command_prefix):
-            return
-
-        guild_config = self.config.get(ctx.guild.id)
-        if not guild_config:
+        if content.startswith(prefix):
             return
 
         await ctx.message.delete()
 
-        if content.lower() == guild_config.get("passing_text", "agree"):
-            roles = await self.get_roles(ctx)
+        if content.lower() == config.plugins.gate.verify_text.value:
+            roles = await self.get_roles(config, ctx)
             if not roles:
                 return
 
             await ctx.author.add_roles(*roles)
 
-            welcome_message = guild_config.get(
-                "welcome_message", "Welcome to the server!"
-            )
-            delete_wait = guild_config.get("delete_wait_seconds", 30)
+            welcome_message = config.plugins.gate.welcome_message.value
+            delete_wait = config.plugins.gate.delete_wait.value
 
             bot_message = await self.tagged_response(
                 ctx,
@@ -50,10 +76,9 @@ class ServerGate(cogs.MatchCog):
             await asyncio.sleep(delete_wait)
             await bot_message.delete()
 
-    async def get_roles(self, ctx):
+    async def get_roles(self, config, ctx):
         roles = []
-        config_roles = self.config.get(ctx.guild.id, {}).get("roles", [])
-        for role_name in config_roles:
+        for role_name in config.plugins.gate.roles.value:
             role = discord.utils.get(ctx.guild.roles, name=role_name)
 
             if role in ctx.author.roles:

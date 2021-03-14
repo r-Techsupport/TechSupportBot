@@ -4,7 +4,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Translator(bot))
+    return bot.process_plugin_setup(cogs=[Translator])
 
 
 class Translator(cogs.BaseCog):

@@ -5,12 +5,10 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(MagicConch(bot))
+    return bot.process_plugin_setup(cogs=[MagicConch])
 
 
 class MagicConch(cogs.BaseCog):
-
-    HAS_CONFIG = False
 
     RESPONSES = [
         "As I see it, yes.",
