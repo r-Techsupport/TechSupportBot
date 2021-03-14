@@ -6,6 +6,7 @@ import sys
 import cogs
 import decorate
 from discord.ext import commands
+import discord
 
 
 class AdminControl(cogs.BaseCog):
@@ -251,3 +252,22 @@ class AdminControl(cogs.BaseCog):
         """
         await self.tagged_response(ctx, "Shutting down! Cya later!")
         sys.exit()
+
+    @commands.command(name="shutdown")
+    async def leave(self, ctx, *, guild_id: int):
+        """Leaves a guild by ID.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.ext.Context): the context object for the calling message
+            guild_id (int): the ID of the guild to leave
+        """
+        guild = discord.utils.get(self.bot.guilds, id=guild_id)
+        if not guild:
+            await self.tagged_response(ctx, "I don't appear to be in that guild")
+            return
+
+        await self.bot.leave_guild(guild)
+
+        await ctx.send(f"I have left the guild: {guild.name} ({guild.id})")
