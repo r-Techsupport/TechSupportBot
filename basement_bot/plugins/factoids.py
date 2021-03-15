@@ -121,6 +121,9 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             )
             return
 
+        if not ctx.guild:
+            return
+
         factoid = await self.get_factoid_from_query(query, ctx.guild)
 
         if not factoid:
