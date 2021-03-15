@@ -270,3 +270,21 @@ class AdminControl(base.BaseCog):
         await guild.leave()
 
         await ctx.send(f"I have left the guild: {guild.name} ({guild.id})")
+
+    @commands.command(name="guilds")
+    async def guilds(self, ctx):
+        """Gets all the guilds the bot is in.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.ext.Context): the context object for the calling message
+        """
+        embed = self.bot.embed_api.Embed(title="Joined Servers")
+
+        for guild in self.bot.guilds:
+            embed.add_field(name=guild.name, value=f"ID: {guild.id}", inline=False)
+
+        embed.set_thumbnail(url=self.bot.user.avatar_url)
+
+        await self.bot.tagged_response(ctx, embed=embed)
