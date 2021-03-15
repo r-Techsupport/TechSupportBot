@@ -617,7 +617,8 @@ class BasementBot(commands.Bot):
                 json_bytes = await message.attachments[0].read()
                 json_str = json_bytes.decode("UTF-8")
                 # hehehe munch ~~O< oooo
-                data = munch.munchify(ast.literal_eval(json_str))
+                # data = munch.munchify(ast.literal_eval(json_str))
+                data = munch.munchify(json.loads(json_str))
                 if as_string:
                     data = json.dumps(data)
             # this could probably be more specific
