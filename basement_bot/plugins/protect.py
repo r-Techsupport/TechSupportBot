@@ -9,8 +9,22 @@ def setup(bot):
     config.add(
         key="channels",
         datatype="list",
-        title="",
-        description="",
+        title="Protected channels",
+        description="The list of channel ID's associated with the channels to protect",
+        default=[],
+    )
+    config.add(
+        key="bypass_roles",
+        datatype="list",
+        title="Bypassed role names",
+        description="The list of role names associated with bypassed roles",
+        default=[],
+    )
+    config.add(
+        key="bypass_ids",
+        datatype="list",
+        title="Bypassed member ID's",
+        description="The list of member ID's associated with bypassed members",
         default=[],
     )
     config.add(
@@ -58,6 +72,12 @@ class Protector(base.MatchCog):
 
         admin = await self.bot.is_bot_admin(ctx)
         if admin:
+            return False
+
+        if ctx.member.role.name in config.plugins.protect.bypass_roles.value:
+            return False
+
+        if ctx.member.id in config.plugins.protect.bypass_ids.value:
             return False
 
         # extend alerts here
