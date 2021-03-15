@@ -74,10 +74,10 @@ class Protector(base.MatchCog):
         if admin:
             return False
 
-        if ctx.member.role.name in config.plugins.protect.bypass_roles.value:
+        if ctx.author.role.name in config.plugins.protect.bypass_roles.value:
             return False
 
-        if ctx.member.id in config.plugins.protect.bypass_ids.value:
+        if ctx.author.id in config.plugins.protect.bypass_ids.value:
             return False
 
         # extend alerts here
