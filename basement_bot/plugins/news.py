@@ -21,7 +21,7 @@ def setup(bot):
         default="0 17 * * *",
     )
     config.add(
-        key="Country",
+        key="country",
         datatype="string",
         title="Country code",
         description="Country code to receive news for (example: US)",
