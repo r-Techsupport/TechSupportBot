@@ -108,7 +108,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     async def match(self, _, __, content):
         return content.startswith("?")
 
-    async def response(self, _, ctx, arg):
+    async def response(self, config, ctx, arg):
         query = arg[1:]
         user_mentioned = None
         if len(ctx.message.mentions) == 1:
@@ -140,20 +140,20 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         if not message:
             await self.bot.tagged_response(ctx, "I was unable to render that factoid")
 
-        await self.dispatch_relay_factoid(ctx, factoid.message)
+        await self.dispatch_relay_factoid(config, ctx, factoid.message)
 
-    async def dispatch_relay_factoid(self, ctx, message):
+    async def dispatch_relay_factoid(self, config, ctx, message):
         relay_cog = self.bot.cogs.get("DiscordRelay")
         if not relay_cog:
             return
 
         # add to the relay plugin queue if it's loaded
-        if not ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.channels:
+        if not ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.get("channels", []):
             return
 
         ctx.message.content = message
 
-        await relay_cog.response(ctx, message)
+        await relay_cog.response(config, ctx, message)
 
     async def load_jobs(self):
         factoids = await self.get_all_factoids()
