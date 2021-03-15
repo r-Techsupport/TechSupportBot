@@ -271,19 +271,35 @@ class AdminControl(base.BaseCog):
 
         await ctx.send(f"I have left the guild: {guild.name} ({guild.id})")
 
-    @commands.command(name="guilds")
-    async def guilds(self, ctx):
-        """Gets all the guilds the bot is in.
+    @commands.command(name="bot")
+    async def _bot_data(self, ctx):
+        """Gets various data about the bot.
 
         This is a command and should be accessed via Discord.
 
         parameters:
             ctx (discord.ext.Context): the context object for the calling message
         """
-        embed = self.bot.embed_api.Embed(title="Joined Servers")
+        embed = self.bot.embed_api.Embed(title=self.bot.user.name)
 
-        for guild in self.bot.guilds:
-            embed.add_field(name=guild.name, value=f"ID: {guild.id}", inline=False)
+        embed.add_field(
+            name="Started",
+            value=f"{self.bot.startup_time} UTC" if self.bot.startup_time else "None",
+            inline=False,
+        )
+        embed.add_field(
+            name="Latency",
+            value=f"{self.bot.latency*1000} ms" if self.bot.latency else "None",
+            inline=False,
+        )
+        embed.add_field(
+            name="Description", value=self.bot.description or "None", inline=False
+        )
+        embed.add_field(
+            name="Servers",
+            value=", ".join(f"{guild.name} ({guild.id})" for guild in self.bot.guilds),
+            inline=False,
+        )
 
         embed.set_thumbnail(url=self.bot.user.avatar_url)
 
