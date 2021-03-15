@@ -5,6 +5,7 @@ import ast
 import asyncio
 import collections
 import datetime
+import json
 import re
 import sys
 
@@ -234,7 +235,7 @@ class BasementBot(commands.Bot):
         return self.owner
 
     async def can_run(self, ctx, *, call_once=False):
-        """Wraps the default can_run check to evaluate if a check call is necessary.
+        """Wraps the default can_run check to evaluate bot-admin permission.
 
         parameters:
             ctx (discord.ext.Context): the context associated with the command
@@ -244,12 +245,8 @@ class BasementBot(commands.Bot):
 
         is_bot_admin = await self.is_bot_admin(ctx)
 
-        if is_bot_admin:
-            return True
-
-        # the user is not a bot admin, so they can't do this
         cog = getattr(ctx.command, "cog", None)
-        if getattr(cog, "ADMIN_ONLY", False):
+        if getattr(cog, "ADMIN_ONLY", False) and not is_bot_admin:
             # treat this as a command error to be caught by the dispatcher
             raise commands.MissingPermissions(["bot_admin"])
 
@@ -562,19 +559,18 @@ class BasementBot(commands.Bot):
         """
         return logger.BotLogger(self, name=name)
 
-    async def tagged_response(self, ctx, content=None, embed=None, target=None):
+    async def tagged_response(self, ctx, content=None, target=None, **kwargs):
         """Sends a context response with the original author tagged.
 
         parameters:
-            ctx (Context): the context object
-            message (str): the message to send
-            embed (discord.Embed): the discord embed object to send
+            ctx (discord.ext.Context): the context object
+            content (str): the message to send
             target (discord.Member): the Discord user to tag
         """
-        who_to_tag = target.mention if target else ctx.message.author.mention
-        content = f"{who_to_tag} {content}" if content else who_to_tag
+        user_mention = target.mention if target else ctx.message.author.mention
+        content = f"{user_mention} {content}" if content else user_mention
 
-        message = await ctx.send(content, embed=embed)
+        message = await ctx.send(content=content, **kwargs)
         return message
 
     def get_guild_from_channel_id(self, channel_id):
@@ -606,37 +602,37 @@ class BasementBot(commands.Bot):
         return re.sub(r"<@?!?(\d+)>", get_nick_from_id_match, content)
 
     async def get_json_from_attachment(
-        self, ctx, message, send_msg_on_none=True, send_msg_on_failure=True
+        self, message, as_string=False, allow_failure=True
     ):
         """Returns a JSON object parsed from a message's attachment.
 
         parameters:
+            ctx (discord.ext.Context): the context object for the message
             message (Message): the message object
-            send_msg_on_none (bool): True if a message should be DM'd when no attachments are found
-            send_msg_on_failure (bool): True if a message should be DM'd when JSON is invalid
         """
-        if not message.attachments:
-            if send_msg_on_none:
-                await ctx.author.send("I couldn't find any message attachments!")
-            return None
+        data = None
 
-        try:
-            json_bytes = await message.attachments[0].read()
-            json_str = json_bytes.decode("UTF-8")
-            # hehehe munch ~~O< oooo
-            return munch.munchify(ast.literal_eval(json_str))
-        # this could probably be more specific
-        except Exception as e:
-            if send_msg_on_failure:
-                await ctx.author.send(f"I was unable to parse your JSON: `{e}`")
-            return {}
+        if message.attachments:
+            try:
+                json_bytes = await message.attachments[0].read()
+                json_str = json_bytes.decode("UTF-8")
+                # hehehe munch ~~O< oooo
+                data = munch.munchify(ast.literal_eval(json_str))
+                if as_string:
+                    data = json.dumps(data)
+            # this could probably be more specific
+            except Exception as exception:
+                if not allow_failure:
+                    raise exception
+
+        return data
 
     # pylint: disable=too-many-branches, too-many-arguments
     async def paginate(self, ctx, embeds, timeout=300, tag_user=False, restrict=False):
         """Paginates a set of embed objects for users to sort through
 
         parameters:
-            ctx (Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             embeds (Union[discord.Embed, str][]): the embeds (or URLs to render them) to paginate
             timeout (int) (seconds): the time to wait before exiting the reaction listener
             tag_user (bool): True if the context user should be mentioned in the response
@@ -726,7 +722,7 @@ class BasementBot(commands.Bot):
         This is useful if you want your command to finish executing when pagination starts.
 
         parameters:
-            ctx (Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             *args (...list): the args with which to call the pagination method
             **kwargs (...dict): the keyword args with which to call the pagination method
         """

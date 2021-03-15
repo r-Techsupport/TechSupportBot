@@ -63,8 +63,11 @@ class Poller(base.BaseCog):
         usage="|json-upload|",
     )
     async def generate(self, ctx):
-        request_body = await self.bot.get_json_from_attachment(ctx, ctx.message)
+        request_body = await self.bot.get_json_from_attachment(ctx.message)
         if not request_body:
+            await self.bot.tagged_response(
+                ctx, "I couldn't find any data in your upload"
+            )
             return
 
         request_body = await self.validate_data(ctx, request_body)
@@ -73,7 +76,6 @@ class Poller(base.BaseCog):
 
         message = await self.bot.tagged_response(ctx, "Poll loading...")
 
-        # TODO: actually not be lazy and write float formatting for the time left
         display_timeout = (
             request_body.timeout
             if request_body.timeout <= 60

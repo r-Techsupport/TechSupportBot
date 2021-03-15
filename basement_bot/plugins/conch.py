@@ -46,6 +46,8 @@ class MagicConch(base.BaseCog):
         if not question.endswith("?"):
             question += "?"
 
+        question = self.bot.sub_mentions_for_usernames(question)
+
         embed = self.bot.embed_api.Embed(title=question, description=response)
 
         embed.set_thumbnail(url=self.PIC_URL)

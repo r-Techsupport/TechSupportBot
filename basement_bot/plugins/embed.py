@@ -22,8 +22,11 @@ class Embedder(base.BaseCog):
             )
             return
 
-        request_body = await self.bot.get_json_from_attachment(ctx, ctx.message)
+        request_body = await self.bot.get_json_from_attachment(ctx.message)
         if not request_body:
+            await self.bot.tagged_response(
+                ctx, "I couldn't find any data in your upload"
+            )
             return
 
         embeds = await self.process_request(ctx, request_body)

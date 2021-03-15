@@ -277,12 +277,8 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             return
 
         embed_config = await self.bot.get_json_from_attachment(
-            ctx, ctx.message, send_msg_on_none=False, send_msg_on_failure=False
+            ctx.message, as_string=True, allow_failure=False
         )
-        if embed_config:
-            embed_config = json.dumps(embed_config)
-        elif embed_config == {}:
-            return
 
         await self.add_factoid(
             ctx,
