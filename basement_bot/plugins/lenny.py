@@ -1,6 +1,6 @@
 import random
 
-import cogs
+import base
 import decorate
 from discord.ext import commands
 
@@ -9,7 +9,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[Lenny])
 
 
-class Lenny(cogs.BaseCog):
+class Lenny(base.BaseCog):
 
     LENNYS_SELECTION = [
         "( ͡° ͜ʖ ͡°)",

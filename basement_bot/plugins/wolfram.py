@@ -1,4 +1,4 @@
-import cogs
+import base
 import decorate
 from discord.ext import commands
 
@@ -7,7 +7,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[Wolfram])
 
 
-class Wolfram(cogs.BaseCog):
+class Wolfram(base.BaseCog):
 
     API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
 
@@ -28,4 +28,4 @@ class Wolfram(cogs.BaseCog):
         response = await self.bot.http_call("get", url, get_raw_response=True)
         answer = await response.text()
 
-        await self.tagged_response(ctx, answer)
+        await self.bot.tagged_response(ctx, answer)

@@ -1,7 +1,7 @@
 import random
 
 import aiocron
-import cogs
+import base
 
 
 def setup(bot):
@@ -31,7 +31,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[News], config=config)
 
 
-class News(cogs.LoopCog):
+class News(base.LoopCog):
 
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
 

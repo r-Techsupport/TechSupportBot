@@ -1,4 +1,4 @@
-import cogs
+import base
 import decorate
 from discord.ext import commands
 
@@ -16,7 +16,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[Googler], config=config)
 
 
-class Googler(cogs.BaseCog):
+class Googler(base.BaseCog):
 
     GOOGLE_URL = "https://www.googleapis.com/customsearch/v1"
     YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=1"
@@ -52,7 +52,9 @@ class Googler(cogs.BaseCog):
         items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
-            await self.tagged_response(ctx, f"No search results found for: *{query}*")
+            await self.bot.tagged_response(
+                ctx, f"No search results found for: *{query}*"
+            )
             return
 
         config = await self.bot.get_context_config(ctx=None, guild=ctx.guild)
@@ -84,7 +86,7 @@ class Googler(cogs.BaseCog):
                 else:
                     field_counter += 1
 
-        self.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
@@ -105,7 +107,7 @@ class Googler(cogs.BaseCog):
         items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, f"No image search results found for: *{query}*"
             )
             return
@@ -114,14 +116,14 @@ class Googler(cogs.BaseCog):
         for item in items:
             link = item.get("link")
             if not link:
-                await self.tagged_response(
+                await self.bot.tagged_response(
                     ctx,
                     "I had an issue processing Google's response... try again later!",
                 )
                 return
             embeds.append(link)
 
-        self.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
@@ -143,7 +145,9 @@ class Googler(cogs.BaseCog):
         )
 
         if not items:
-            await self.tagged_response(ctx, f"No video results found for: *{query}*")
+            await self.bot.tagged_response(
+                ctx, f"No video results found for: *{query}*"
+            )
             return
 
         video_id = items[0].get("id", {}).get("videoId")
@@ -156,4 +160,4 @@ class Googler(cogs.BaseCog):
             if link:
                 links.append(link)
 
-        self.task_paginate(ctx, links, restrict=True)
+        self.bot.task_paginate(ctx, links, restrict=True)

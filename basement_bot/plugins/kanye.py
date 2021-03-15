@@ -1,7 +1,7 @@
 import asyncio
 import random
 
-import cogs
+import base
 
 
 def setup(bot):
@@ -31,7 +31,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[KanyeQuotes], config=config)
 
 
-class KanyeQuotes(cogs.LoopCog):
+class KanyeQuotes(base.LoopCog):
 
     API_URL = "https://api.kanye.rest"
     KANYE_PICS = [

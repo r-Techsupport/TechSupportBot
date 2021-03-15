@@ -4,7 +4,7 @@ import functools
 import random
 from concurrent.futures._base import TimeoutError as AsyncTimeoutError
 
-import cogs
+import base
 import decorate
 import discord
 from discord import Color as embed_colors
@@ -758,7 +758,7 @@ MW2_QUOTES = [
 ]
 
 
-class DuckHunt(cogs.LoopCog):
+class DuckHunt(base.LoopCog):
 
     DUCK_PIC_URL = "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
     BEFRIEND_URL = "https://cdn.icon-icons.com/icons2/603/PNG/512/heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
@@ -941,14 +941,14 @@ class DuckHunt(cogs.LoopCog):
             user = ctx.message.author
 
         if user.bot:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "If it looks like a duck, quacks like a duck, it's a duck!"
             )
             return
 
         duck_user = await self.get_duck_user(user.id, ctx.guild.id)
         if not duck_user:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "That user has not partcipated in the duck hunt"
             )
             return
@@ -959,7 +959,7 @@ class DuckHunt(cogs.LoopCog):
         embed.add_field(name="Kills", value=duck_user.kill_count)
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
-        await self.tagged_response(ctx, embed=embed)
+        await self.bot.tagged_response(ctx, embed=embed)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
@@ -979,7 +979,7 @@ class DuckHunt(cogs.LoopCog):
         )
 
         if not duck_users:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "It appears nobody has befriended any ducks"
             )
             return
@@ -1007,7 +1007,7 @@ class DuckHunt(cogs.LoopCog):
             else:
                 field_counter += 1
 
-        self.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
@@ -1025,7 +1025,9 @@ class DuckHunt(cogs.LoopCog):
         )
 
         if not duck_users:
-            await self.tagged_response(ctx, "It appears nobody has killed any ducks")
+            await self.bot.tagged_response(
+                ctx, "It appears nobody has killed any ducks"
+            )
             return
 
         field_counter = 1
@@ -1051,7 +1053,7 @@ class DuckHunt(cogs.LoopCog):
             else:
                 field_counter += 1
 
-        self.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
     def get_user_text(self, duck_user):
         user = self.bot.get_user(int(duck_user.author_id))

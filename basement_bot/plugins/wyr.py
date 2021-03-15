@@ -1,7 +1,7 @@
 import uuid
 from random import choice
 
-import cogs
+import base
 import decorate
 from discord.ext import commands
 
@@ -20,7 +20,7 @@ class Question:
         return f"Would you rather: {self.a} **OR** {self.b}?"
 
 
-class WouldYouRather(cogs.BaseCog):
+class WouldYouRather(base.BaseCog):
 
     HAS_CONFIG = False
 
@@ -526,4 +526,4 @@ class WouldYouRather(cogs.BaseCog):
                 self.last = question.id
                 break
 
-        await self.tagged_response(ctx, question.get_question())
+        await self.bot.tagged_response(ctx, question.get_question())

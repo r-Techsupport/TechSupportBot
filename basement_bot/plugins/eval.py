@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import threading
 
-import cogs
+import base
 from discord.ext import commands
 
 
@@ -10,7 +10,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[Evaluator])
 
 
-class Evaluator(cogs.BaseCog):
+class Evaluator(base.BaseCog):
 
     THREAD_WAIT_MINUTES = 10
     POLL_WAIT = 1
@@ -50,7 +50,7 @@ class Evaluator(cogs.BaseCog):
 
         while True:
             if result != self.UNDEFINED_RESULT:
-                await self.tagged_response(
+                await self.bot.tagged_response(
                     ctx, f"`{result}`" if result is not None else "`None`"
                 )
                 return
@@ -59,7 +59,7 @@ class Evaluator(cogs.BaseCog):
                 raise RuntimeError(f"Thread finished with error: {error_}")
 
             elif datetime.datetime.now() > finish_time:
-                await self.tagged_response(
+                await self.bot.tagged_response(
                     ctx,
                     f"Result not received from eval() after {self.THREAD_WAIT_MINUTES} minutes",
                 )

@@ -1,4 +1,4 @@
-import cogs
+import base
 
 
 def setup(bot):
@@ -14,7 +14,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[Logger], config=config)
 
 
-class Logger(cogs.MatchCog):
+class Logger(base.MatchCog):
     async def match(self, config, ctx, _):
         if not str(ctx.channel.id) in config.plugins.logger.channel_map.value:
             return False

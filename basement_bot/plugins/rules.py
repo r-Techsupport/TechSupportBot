@@ -1,4 +1,4 @@
-import cogs
+import base
 from discord.ext import commands
 
 
@@ -14,7 +14,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[Rules], models=[Rule])
 
 
-class Rules(cogs.BaseCog):
+class Rules(base.BaseCog):
 
     RULE_ICON_URL = "https://cdn.icon-icons.com/icons2/907/PNG/512/balance-scale-of-justice_icon-icons.com_70554.png"
 
@@ -35,14 +35,14 @@ class Rules(cogs.BaseCog):
         existing_rule = await self.get_rule_by_number(ctx, number)
 
         if existing_rule:
-            await self.tagged_response(ctx, f"Rule {number} already exists")
+            await self.bot.tagged_response(ctx, f"Rule {number} already exists")
             return
 
         rule = await self.models.Rule(
             guild_id=str(ctx.guild.id), number=number, description=description
         ).create()
 
-        await self.tagged_response(ctx, f"Rule {number} added: {description}")
+        await self.bot.tagged_response(ctx, f"Rule {number} added: {description}")
 
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
@@ -56,14 +56,14 @@ class Rules(cogs.BaseCog):
         rule = await self.get_rule_by_number(ctx, number)
 
         if not rule:
-            await self.tagged_response(ctx, "I couldn't find that rule")
+            await self.bot.tagged_response(ctx, "I couldn't find that rule")
             return
 
         description = rule.description
 
         await rule.delete()
 
-        await self.tagged_response(ctx, f"Rule {number} deleted: {description}")
+        await self.bot.tagged_response(ctx, f"Rule {number} deleted: {description}")
 
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
@@ -77,7 +77,7 @@ class Rules(cogs.BaseCog):
         rule = await self.get_rule_by_number(ctx, number)
 
         if not rule:
-            await self.tagged_response(ctx, "I couldn't find that rule")
+            await self.bot.tagged_response(ctx, "I couldn't find that rule")
             return
 
         embed = self.bot.embed_api.Embed(
@@ -86,7 +86,7 @@ class Rules(cogs.BaseCog):
 
         embed.set_thumbnail(url=self.RULE_ICON_URL)
 
-        await self.tagged_response(ctx, embed=embed)
+        await self.bot.tagged_response(ctx, embed=embed)
 
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
@@ -101,7 +101,9 @@ class Rules(cogs.BaseCog):
         ).gino.all()
 
         if not rules:
-            await self.tagged_response(ctx, "I couldn't find any rules for this server")
+            await self.bot.tagged_response(
+                ctx, "I couldn't find any rules for this server"
+            )
             return
 
         embed = self.bot.embed_api.Embed(

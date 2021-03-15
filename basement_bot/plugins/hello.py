@@ -1,4 +1,4 @@
-import cogs
+import base
 from discord.ext import commands
 
 
@@ -6,7 +6,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[Greeter])
 
 
-class Greeter(cogs.BaseCog):
+class Greeter(base.BaseCog):
     @commands.command(
         name="hello",
         brief="Says hello to the bot",

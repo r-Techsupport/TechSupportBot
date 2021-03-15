@@ -1,6 +1,6 @@
 import random
 
-import cogs
+import base
 import decorate
 from discord.ext import commands
 
@@ -9,7 +9,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[Giphy])
 
 
-class Giphy(cogs.BaseCog):
+class Giphy(base.BaseCog):
 
     GIPHY_URL = "http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"
     SEARCH_LIMIT = 10
@@ -40,7 +40,9 @@ class Giphy(cogs.BaseCog):
 
         data = response.get("data")
         if not data:
-            await self.tagged_response(ctx, f"No search results found for: *{query}*")
+            await self.bot.tagged_response(
+                ctx, f"No search results found for: *{query}*"
+            )
             return
 
         embeds = []
@@ -49,4 +51,4 @@ class Giphy(cogs.BaseCog):
             url = self.parse_url(url)
             embeds.append(url)
 
-        self.task_paginate(ctx, embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds, restrict=True)

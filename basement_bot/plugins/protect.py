@@ -1,6 +1,6 @@
 import io
 
-import cogs
+import base
 import munch
 
 
@@ -16,36 +16,36 @@ def setup(bot):
     config.add(
         key="length_limit",
         datatype="int",
-        title="",
-        description="",
+        title="Max length limit",
+        description="The max char limit on messages before they trigger an action",
         default=500,
     )
     config.add(
         key="string_map",
         datatype="dict",
-        title="",
-        description="",
+        title="Keyword string map",
+        description="The mapping of keyword strings to data defining the action to take",
         default={},
     )
     config.add(
         key="alert_channel",
         datatype="int",
-        title="",
-        description="",
+        title="Alert channel ID",
+        description="The ID of the channel to send protect alerts to",
         default=None,
     )
     config.add(
         key="linx_url",
         datatype="str",
-        title="",
-        description="",
+        title="Linx API URL",
+        description="The URL to an optional Linx API for pastebinning long messages",
         default=None,
     )
 
     return bot.process_plugin_setup(cogs=[Protector], config=config)
 
 
-class Protector(cogs.MatchCog):
+class Protector(base.MatchCog):
 
     ALERT_ICON_URL = "https://cdn.icon-icons.com/icons2/2063/PNG/512/alert_danger_warning_notification_icon_124692.png"
     CLIPBOARD_ICON_URL = (
@@ -97,7 +97,7 @@ class Protector(cogs.MatchCog):
         else:
             alert_message = ctx.protect_actions.string_alert.message
 
-        await self.tagged_response(ctx, alert_message)
+        await self.bot.tagged_response(ctx, alert_message)
         await self.send_admin_alert(
             config,
             ctx,
@@ -109,7 +109,7 @@ class Protector(cogs.MatchCog):
 
         linx_embed = await self.create_linx_embed(config, ctx, content)
         if not linx_embed:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx,
                 f"I deleted your message because it was longer than {config.plugins.protect.length_limit.value} characters; please read Rule 1. Check your DM's for the original message",
             )
@@ -119,7 +119,7 @@ class Protector(cogs.MatchCog):
             )
             return
 
-        await self.tagged_response(ctx, embed=linx_embed)
+        await self.bot.tagged_response(ctx, embed=linx_embed)
 
     async def send_admin_alert(self, config, ctx, message):
         alert_channel = ctx.guild.get_channel(

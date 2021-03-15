@@ -1,4 +1,4 @@
-import cogs
+import base
 import decorate
 from discord.ext import commands
 
@@ -16,7 +16,7 @@ def setup(bot):
     return bot.process_plugin_setup(cogs=[UrbanDictionary], config=config)
 
 
-class UrbanDictionary(cogs.BaseCog):
+class UrbanDictionary(base.BaseCog):
 
     BASE_URL = "http://api.urbandictionary.com/v0/define?term="
     SEE_MORE_URL = "https://www.urbandictionary.com/define.php?term="
@@ -38,7 +38,7 @@ class UrbanDictionary(cogs.BaseCog):
         config = await self.bot.get_context_config(ctx)
 
         if not definitions:
-            await self.tagged_response(ctx, f"No results found for: *{query}*")
+            await self.bot.tagged_response(ctx, f"No results found for: *{query}*")
             return
 
         query_no_spaces = query.replace(" ", "%20")
@@ -74,4 +74,4 @@ class UrbanDictionary(cogs.BaseCog):
             else:
                 field_counter += 1
 
-        self.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
