@@ -1,46 +1,69 @@
 import random
 
-import cogs
+import aiocron
+import base
 
 
 def setup(bot):
-    bot.add_cog(News(bot))
+    config = bot.PluginConfig()
+    config.add(
+        key="channel",
+        datatype="int",
+        title="Daily News Channel ID",
+        description="The ID of the channel the news should appear in",
+        default=None,
+    )
+    config.add(
+        key="cron_config",
+        datatype="string",
+        title="Cronjob config for news",
+        description="Crontab syntax for executing news events (example: 0 17 * * *)",
+        default="0 17 * * *",
+    )
+    config.add(
+        key="Country",
+        datatype="string",
+        title="Country code",
+        description="Country code to receive news for (example: US)",
+        default="US",
+    )
+
+    return bot.process_plugin_setup(cogs=[News], config=config)
 
 
-class News(cogs.LoopCog):
+class News(base.LoopCog):
 
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
 
-    async def loop_preconfig(self):
-        if not self.config.prefer:
-            raise RuntimeError("No news sources were provided")
+    async def execute(self, config, _):
+        channel = self.bot.get_channel(int(config.plugins.news.channel.value))
+        if not channel:
+            return
 
-        self.channel = self.bot.get_channel(self.config.channel)
-        if not self.channel:
-            raise RuntimeError("Unable to get channel for News plugin")
-
-        await self.wait()
-
-    async def execute(self):
         response = await self.bot.http_call(
-            "get", self.API_URL.format(self.config.api_key, self.config.country)
+            "get",
+            self.API_URL.format(
+                self.bot.config.main.api_keys.news, config.plugins.news.country.value
+            ),
         )
 
         articles = response.get("articles")
         if not articles:
             return
 
-        random.shuffle(self.config.prefer)
         random.shuffle(articles)
+
         for article in articles:
             source = article.get("source", {}).get("name")
             if not source:
                 continue
 
-            for preference in self.config.prefer:
-                if preference.lower() in source.lower():
-                    url = article.get("url")
-                    if not url:
-                        continue
-                    await self.channel.send(url)
-                    return
+            url = article.get("url")
+            if not url:
+                continue
+
+            await channel.send(url)
+            return
+
+    async def wait(self, config, _):
+        await aiocron.crontab(config.plugins.news.cron_config.value).next()

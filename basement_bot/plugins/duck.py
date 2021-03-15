@@ -1,9 +1,10 @@
 import asyncio
 import datetime
+import functools
 import random
 from concurrent.futures._base import TimeoutError as AsyncTimeoutError
 
-import cogs
+import base
 import decorate
 import discord
 from discord import Color as embed_colors
@@ -14,12 +15,58 @@ def setup(bot):
     class DuckUser(bot.db.Model):
         __tablename__ = "duckusers"
 
-        author_id = bot.db.Column(bot.db.String, primary_key=True)
+        pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
+        author_id = bot.db.Column(bot.db.String)
+        guild_id = bot.db.Column(bot.db.String)
         befriend_count = bot.db.Column(bot.db.Integer, default=0)
         kill_count = bot.db.Column(bot.db.Integer, default=0)
         updated = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
 
-    bot.add_cog(DuckHunt(bot, models=[DuckUser]))
+    config = bot.PluginConfig()
+    config.add(
+        key="channel",
+        datatype="int",
+        title="DuckHunt Channel ID",
+        description="The ID of the channel the duck should appear in",
+        default=None,
+    )
+    config.add(
+        key="min_wait",
+        datatype="int",
+        title="Min wait (hours)",
+        description="The minimum number of hours to wait between duck events",
+        default=2,
+    )
+    config.add(
+        key="max_wait",
+        datatype="int",
+        title="Max wait (hours)",
+        description="The minimum number of hours to wait between duck events",
+        default=4,
+    )
+    config.add(
+        key="timeout",
+        datatype="int",
+        title="Duck timeout (seconds)",
+        description="The amount of time before the duck disappears",
+        default=60,
+    )
+    config.add(
+        key="cooldown",
+        datatype="int",
+        title="Duck cooldown (seconds)",
+        description="The amount of time to wait between bef/bang messages",
+        default=5,
+    )
+    config.add(
+        key="success_rate",
+        datatype="int",
+        title="Success rate (percent %)",
+        description="The success rate of bef/bang messages",
+        default=50,
+    )
+
+    return bot.process_plugin_setup(cogs=[DuckHunt], models=[DuckUser], config=config)
 
 
 # I don't know why I did this
@@ -711,82 +758,31 @@ MW2_QUOTES = [
 ]
 
 
-class DuckHunt(cogs.LoopCog):
+class DuckHunt(base.LoopCog):
 
     DUCK_PIC_URL = "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
     BEFRIEND_URL = "https://cdn.icon-icons.com/icons2/603/PNG/512/heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
     KILL_URL = "https://cdn.icon-icons.com/icons2/1919/PNG/512/huntingtarget_122049.png"
-    UNITS = "hours"
     MW2_QUOTES = MW2_QUOTES
+    ON_START = False
 
     async def loop_preconfig(self):
         self.cooldowns = {}
-        self.success_percent = int(self.config.success_percent)
 
-        if self.success_percent > 100 or self.success_percent < 0:
-            self.success_percent = 80
-
-        self.channel = self.bot.get_channel(self.config.channel)
-        if not self.channel:
-            raise RuntimeError("Unable to get channel for DuckHunt plugin")
-
-        self.setup_random_waiting("min_hours", "max_hours")
-
-    def message_check(self, message):
-        # ignore other channels
-        if message.channel.id != self.channel.id:
-            return False
-
-        if not message.content.lower() in ["bef", "bang"]:
-            return False
-
-        if self.cooldowns.get(message.author.id):
-            if (
-                datetime.datetime.now() - self.cooldowns.get(message.author.id)
-            ).seconds < self.config.cooldown_seconds:
-                self.cooldowns[message.author.id] = datetime.datetime.now()
-                self.bot.loop.create_task(
-                    message.author.send(
-                        f"I said to wait {self.config.cooldown_seconds} seconds!"
-                    )
-                )
-                return False
-
-        weights = (self.config.success_percent, 100 - self.config.success_percent)
-        choice_ = random.choice(random.choices([True, False], weights=weights, k=1000))
-        if not choice_:
-            self.cooldowns[message.author.id] = datetime.datetime.now()
-
-            failure_message = self.generate_failure_message(message)
-
-            self.bot.loop.create_task(
-                self.channel.send(
-                    f"{message.author.mention} {failure_message} ... Try again in {self.config.cooldown_seconds} seconds"
-                )
+    async def wait(self, config, _):
+        await asyncio.sleep(
+            random.randint(
+                config.plugins.duck.min_wait.value * 3600,
+                config.plugins.duck.max_wait.value * 3600,
             )
-
-        return choice_
-
-    def generate_failure_message(self, original_message):
-        default_message = (
-            "You failed to befriend the duck!"
-            if original_message.content == "bef"
-            else "You failed to kill the duck!"
         )
 
-        if not self.MW2_QUOTES:
-            return default_message
+    async def execute(self, config, guild):
+        self.cooldowns[guild.id] = {}
 
-        failure_quote = random.choice(self.MW2_QUOTES)
-        message = failure_quote["message"]
-        author = failure_quote["author"]
-        if not message or not author:
-            return default_message
-
-        return f'"{message}" -*{author}*'
-
-    async def execute(self):
-        self.cooldowns = {}
+        channel = guild.get_channel(int(config.plugins.duck.channel.value))
+        if not channel:
+            return
 
         start_time = datetime.datetime.now()
         embed = self.bot.embed_api.Embed(
@@ -794,14 +790,16 @@ class DuckHunt(cogs.LoopCog):
             description="Befriend the duck with `bef` or shoot with `bang`",
         )
         embed.set_image(url=self.DUCK_PIC_URL)
-        message = await self.channel.send(embed=embed)
+
+        message = await channel.send(embed=embed)
 
         response_message = None
         try:
             response_message = await self.bot.wait_for(
                 "message",
-                timeout=self.config.timeout_seconds,
-                check=self.message_check,
+                timeout=config.plugins.duck.timeout.value,
+                # can't pull the config in a non-coroutine
+                check=functools.partial(self.message_check, config),
             )
         except AsyncTimeoutError:
             pass
@@ -817,14 +815,18 @@ class DuckHunt(cogs.LoopCog):
             action = (
                 "befriended" if response_message.content.lower() == "bef" else "killed"
             )
-            await self.handle_winner(response_message.author, action, duration)
+            await self.handle_winner(
+                response_message.author, guild, action, duration, channel
+            )
 
-    async def handle_winner(self, winner, action, duration):
-        duck_user = await self.get_duck_user(winner.id)
+    async def handle_winner(self, winner, guild, action, duration, channel):
+        duck_user = await self.get_duck_user(winner.id, guild.id)
         if not duck_user:
-            new_user = True
             duck_user = self.models.DuckUser(
-                author_id=str(winner.id), befriend_count=0, kill_count=0
+                author_id=str(winner.id),
+                guild_id=str(guild.id),
+                befriend_count=0,
+                kill_count=0,
             )
             await duck_user.create()
 
@@ -848,12 +850,75 @@ class DuckHunt(cogs.LoopCog):
             url=self.BEFRIEND_URL if action == "befriended" else self.KILL_URL
         )
 
-        await self.channel.send(embed=embed)
+        await channel.send(embed=embed)
 
-    async def get_duck_user(self, user_id):
-        duck_user = await self.models.DuckUser.query.where(
-            self.models.DuckUser.author_id == str(user_id)
-        ).gino.first()
+    def message_check(self, config, message):
+        # ignore other channels
+        if message.channel.id != int(config.plugins.duck.channel.value):
+            return False
+
+        if not message.content.lower() in ["bef", "bang"]:
+            return False
+
+        cooldowns = self.cooldowns.get(message.guild.id, {})
+
+        if (
+            datetime.datetime.now()
+            - cooldowns.get(message.author.id, datetime.datetime.now())
+        ).seconds < config.plugins.duck.cooldown.value:
+            cooldowns[message.author.id] = datetime.datetime.now()
+            self.bot.loop.create_task(
+                message.author.send(
+                    f"I said to wait {config.plugins.duck.cooldown.value} seconds!"
+                )
+            )
+            return False
+
+        weights = (
+            config.plugins.duck.success_rate.value,
+            100 - config.plugins.duck.success_rate.value,
+        )
+        choice_ = random.choice(random.choices([True, False], weights=weights, k=1000))
+        if not choice_:
+            cooldowns[message.author.id] = datetime.datetime.now()
+
+            failure_message = self.generate_failure_message(message)
+
+            self.bot.loop.create_task(
+                message.channel.send(
+                    f"{message.author.mention} {failure_message} ... Try again in {config.plugins.duck.cooldown.value} seconds"
+                )
+            )
+
+        return choice_
+
+    def generate_failure_message(self, original_message):
+        default_message = (
+            "You failed to befriend the duck!"
+            if original_message.content == "bef"
+            else "You failed to kill the duck!"
+        )
+
+        if not self.MW2_QUOTES:
+            return default_message
+
+        failure_quote = random.choice(self.MW2_QUOTES)
+        message = failure_quote["message"]
+        author = failure_quote["author"]
+        if not message or not author:
+            return default_message
+
+        return f'"{message}" -*{author}*'
+
+    async def get_duck_user(self, user_id, guild_id):
+        duck_user = (
+            await self.models.DuckUser.query.where(
+                self.models.DuckUser.author_id == str(user_id)
+            )
+            .where(self.models.DuckUser.guild_id == str(guild_id))
+            .gino.first()
+        )
+
         return duck_user
 
     @commands.group(
@@ -876,14 +941,14 @@ class DuckHunt(cogs.LoopCog):
             user = ctx.message.author
 
         if user.bot:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "If it looks like a duck, quacks like a duck, it's a duck!"
             )
             return
 
-        duck_user = await self.get_duck_user(user.id)
+        duck_user = await self.get_duck_user(user.id, ctx.guild.id)
         if not duck_user:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "That user has not partcipated in the duck hunt"
             )
             return
@@ -894,7 +959,7 @@ class DuckHunt(cogs.LoopCog):
         embed.add_field(name="Kills", value=duck_user.kill_count)
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
-        await self.tagged_response(ctx, embed=embed)
+        await self.bot.tagged_response(ctx, embed=embed)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
@@ -909,11 +974,12 @@ class DuckHunt(cogs.LoopCog):
                 -self.models.DuckUser.befriend_count
             )
             .where(self.models.DuckUser.befriend_count > 0)
+            .where(self.models.DuckUser.guild_id == str(ctx.guild.id))
             .gino.all()
         )
 
         if not duck_users:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "It appears nobody has befriended any ducks"
             )
             return
@@ -941,7 +1007,7 @@ class DuckHunt(cogs.LoopCog):
             else:
                 field_counter += 1
 
-        self.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
@@ -954,11 +1020,14 @@ class DuckHunt(cogs.LoopCog):
         duck_users = (
             await self.models.DuckUser.query.order_by(-self.models.DuckUser.kill_count)
             .where(self.models.DuckUser.kill_count > 0)
+            .where(self.models.DuckUser.guild_id == str(ctx.guild.id))
             .gino.all()
         )
 
         if not duck_users:
-            await self.tagged_response(ctx, "It appears nobody has killed any ducks")
+            await self.bot.tagged_response(
+                ctx, "It appears nobody has killed any ducks"
+            )
             return
 
         field_counter = 1
@@ -984,7 +1053,7 @@ class DuckHunt(cogs.LoopCog):
             else:
                 field_counter += 1
 
-        self.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
     def get_user_text(self, duck_user):
         user = self.bot.get_user(int(duck_user.author_id))

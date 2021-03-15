@@ -8,3 +8,4 @@ services:
         environment:
             - DEBUG=0
         restart: always
+        stop_signal: SIGINT

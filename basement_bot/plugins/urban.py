@@ -1,21 +1,26 @@
-import cogs
+import base
 import decorate
 from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(UrbanDictionary(bot))
+    config = bot.PluginConfig()
+    config.add(
+        key="max_responses",
+        datatype="int",
+        title="Max Responses",
+        description="The max amount of responses per embed page",
+        default=1,
+    )
+
+    return bot.process_plugin_setup(cogs=[UrbanDictionary], config=config)
 
 
-class UrbanDictionary(cogs.BaseCog):
+class UrbanDictionary(base.BaseCog):
 
     BASE_URL = "http://api.urbandictionary.com/v0/define?term="
     SEE_MORE_URL = "https://www.urbandictionary.com/define.php?term="
-    HAS_CONFIG = False
     ICON_URL = "https://cdn.icon-icons.com/icons2/114/PNG/512/dictionary_19159.png"
-
-    async def preconfig(self):
-        self.cached = {"last_query": None, "last_url": None, "all_urls": []}
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
@@ -30,8 +35,10 @@ class UrbanDictionary(cogs.BaseCog):
         response = await self.bot.http_call("get", f"{self.BASE_URL}{query}")
         definitions = response.get("list")
 
+        config = await self.bot.get_context_config(ctx)
+
         if not definitions:
-            await self.tagged_response(ctx, f"No results found for: *{query}*")
+            await self.bot.tagged_response(ctx, f"No results found for: *{query}*")
             return
 
         query_no_spaces = query.replace(" ", "%20")
@@ -58,7 +65,7 @@ class UrbanDictionary(cogs.BaseCog):
                 inline=False,
             )
             if (
-                field_counter == self.config.responses_max
+                field_counter == config.plugins.urban.max_responses.value
                 or index == len(definitions) - 1
             ):
                 embed.set_thumbnail(url=self.ICON_URL)
@@ -67,4 +74,4 @@ class UrbanDictionary(cogs.BaseCog):
             else:
                 field_counter += 1
 
-        self.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)

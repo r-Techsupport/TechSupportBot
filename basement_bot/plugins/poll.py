@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 
-import cogs
+import base
 import decorate
 import discord
 import emoji
@@ -9,12 +9,10 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Poller(bot))
+    return bot.process_plugin_setup(cogs=[Poller])
 
 
-class Poller(cogs.BaseCog):
-
-    HAS_CONFIG = False
+class Poller(base.BaseCog):
 
     OPTION_EMOJIS = ["one", "two", "three", "four", "five"]
     STOP_EMOJI = "\u26D4"
@@ -51,7 +49,7 @@ class Poller(cogs.BaseCog):
         description="Shows what JSON to upload to generate a poll",
     )
     async def example(self, ctx):
-        await self.tagged_response(
+        await self.bot.tagged_response(
             ctx, f"Upload a JSON like this: ```{self.EXAMPLE_JSON}```"
         )
 
@@ -65,17 +63,19 @@ class Poller(cogs.BaseCog):
         usage="|json-upload|",
     )
     async def generate(self, ctx):
-        request_body = await self.get_json_from_attachment(ctx, ctx.message)
+        request_body = await self.bot.get_json_from_attachment(ctx.message)
         if not request_body:
+            await self.bot.tagged_response(
+                ctx, "I couldn't find any data in your upload"
+            )
             return
 
         request_body = await self.validate_data(ctx, request_body)
         if not request_body:
             return
 
-        message = await self.tagged_response(ctx, "Poll loading...")
+        message = await self.bot.tagged_response(ctx, "Poll loading...")
 
-        # TODO: actually not be lazy and write float formatting for the time left
         display_timeout = (
             request_body.timeout
             if request_body.timeout <= 60
@@ -99,14 +99,14 @@ class Poller(cogs.BaseCog):
             ctx, message, request_body.timeout, request_body.options
         )
         if results is None:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "I ran into an issue grabbing the poll results..."
             )
             try:
                 await message.edit(content="*Poll aborted!*", embed=None)
                 await message.clear_reactions()
             except discord.NotFound:
-                await self.tagged_response(
+                await self.bot.tagged_response(
                     ctx,
                     "I could not find the poll message. It might have been deleted?",
                 )
@@ -116,7 +116,7 @@ class Poller(cogs.BaseCog):
 
         total = sum(count for count in results.values())
         if total == 0:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "Nobody voted in the poll, so I won't bother showing any results"
             )
             return
@@ -131,7 +131,7 @@ class Poller(cogs.BaseCog):
             percentage = str((count * 100) // total)
             embed.add_field(name=option, value=f"{percentage}%", inline=False)
 
-        await self.tagged_response(ctx, embed=embed)
+        await self.bot.tagged_response(ctx, embed=embed)
 
     async def wait_for_results(self, ctx, message, timeout, options):
         option_emojis = self.option_emojis[: len(options)]
@@ -183,23 +183,23 @@ class Poller(cogs.BaseCog):
         timeout = request_body.get("timeout")
 
         if not question:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "I did not find a poll question (`question` key)"
             )
             return None
         elif not isinstance(question, str):
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "I need the poll question to be a string (`question` key)"
             )
             return None
 
         if not isinstance(options, list):
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "I need the poll options to be a list (`question` key)"
             )
             return None
         elif len(options) < 2 or len(options) > max_options:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, f"I need between 2 and {max_options} options! (`options` key)"
             )
             return None

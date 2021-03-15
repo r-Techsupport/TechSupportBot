@@ -1,14 +1,13 @@
-import cogs
+import base
 from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(IPInfo(bot))
+    return bot.process_plugin_setup(cogs=[IPInfo])
 
 
-class IPInfo(cogs.BaseCog):
+class IPInfo(base.BaseCog):
 
-    HAS_CONFIG = False
     API_URL = "https://ipinfo.io"
     IP_ICON_URL = "https://cdn.icon-icons.com/icons2/1858/PNG/512/iconfinder-dedicatedipaddress-4263513_117864.png"
 
@@ -22,7 +21,7 @@ class IPInfo(cogs.BaseCog):
         response = await self.bot.http_call("get", f"{self.API_URL}/{ip_address}/json")
 
         if not response.get("ip"):
-            await self.tagged_response(ctx, "I couldn't find that IP")
+            await self.bot.tagged_response(ctx, "I couldn't find that IP")
             return
 
         response.pop("readme", None)
@@ -34,4 +33,4 @@ class IPInfo(cogs.BaseCog):
 
         embed.set_thumbnail(url=self.IP_ICON_URL)
 
-        await self.tagged_response(ctx, embed=embed)
+        await self.bot.tagged_response(ctx, embed=embed)

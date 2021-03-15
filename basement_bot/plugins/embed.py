@@ -1,16 +1,13 @@
-import cogs
+import base
 import decorate
 from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Embedder(bot))
+    return bot.process_plugin_setup(cogs=[Embedder])
 
 
-class Embedder(cogs.BaseCog):
-
-    HAS_CONFIG = False
-
+class Embedder(base.BaseCog):
     @decorate.with_typing
     @commands.has_permissions(manage_messages=True)
     @commands.command(
@@ -20,18 +17,21 @@ class Embedder(cogs.BaseCog):
     )
     async def embed(self, ctx, *, keep_option: str = None):
         if not ctx.message.attachments:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "Please provide a JSON file for your embeds"
             )
             return
 
-        request_body = await self.get_json_from_attachment(ctx, ctx.message)
+        request_body = await self.bot.get_json_from_attachment(ctx.message)
         if not request_body:
+            await self.bot.tagged_response(
+                ctx, "I couldn't find any data in your upload"
+            )
             return
 
         embeds = await self.process_request(ctx, request_body)
         if not embeds:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "I was unable to generate any embeds from your request"
             )
             return

@@ -3,16 +3,16 @@
 
 import sys
 
-import cogs
+import base
 import decorate
+import discord
 from discord.ext import commands
 
 
-class AdminControl(cogs.BaseCog):
+class AdminControl(base.BaseCog):
     """Cog object for admin-only bot control"""
 
     ADMIN_ONLY = True
-    HAS_CONFIG = False
 
     @commands.group(
         name="plugin",
@@ -31,23 +31,23 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             plugin_name (str): the name of the plugin
         """
         status_data = ctx.bot.plugin_api.get_status()
 
         error = status_data.get("error")
         if error:
-            await self.tagged_response(ctx, f"Error: {error}")
+            await self.bot.tagged_response(ctx, f"Error: {error}")
             return
 
         if plugin_name:
             status = status_data.get(plugin_name)
             if not status:
-                await self.tagged_response(ctx, "Plugin not found!")
+                await self.bot.tagged_response(ctx, "Plugin not found!")
                 return
 
-            await self.tagged_response(ctx, f"Plugin is {status}")
+            await self.bot.tagged_response(ctx, f"Plugin is {status}")
             return
 
         embeds = []
@@ -65,7 +65,7 @@ class AdminControl(cogs.BaseCog):
             else:
                 field_counter += 1
 
-        self.task_paginate(ctx, embeds)
+        self.bot.task_paginate(ctx, embeds)
 
     @decorate.with_typing
     @plugin_group.command(name="load")
@@ -75,11 +75,11 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             plugin_name (str): the name of the plugin
         """
         response = ctx.bot.plugin_api.load_plugin(plugin_name)
-        await self.tagged_response(ctx, response.message)
+        await self.bot.tagged_response(ctx, response.message)
 
     @decorate.with_typing
     @plugin_group.command(name="unload")
@@ -89,11 +89,11 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             plugin_name (str): the name of the plugin
         """
         response = ctx.bot.plugin_api.unload_plugin(plugin_name)
-        await self.tagged_response(ctx, response.message)
+        await self.bot.tagged_response(ctx, response.message)
 
     @commands.group(
         name="command",
@@ -112,22 +112,22 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             command_name (str): the name of the command
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await self.tagged_response(ctx, f"No such command: `{command_name}`")
+            await self.bot.tagged_response(ctx, f"No such command: `{command_name}`")
             return
 
         if command_.enabled:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, f"Command `{command_name}` is already enabled!"
             )
             return
 
         command_.enabled = True
-        await self.tagged_response(
+        await self.bot.tagged_response(
             ctx, f"Successfully enabled command: `{command_name}`"
         )
 
@@ -139,22 +139,22 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             command_name (str): the name of the command
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await self.tagged_response(ctx, f"No such command: `{command_name}`")
+            await self.bot.tagged_response(ctx, f"No such command: `{command_name}`")
             return
 
         if not command_.enabled:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, f"Command `{command_name}` is already disabled!"
             )
             return
 
         command_.enabled = False
-        await self.tagged_response(
+        await self.bot.tagged_response(
             ctx, f"Successfully disabled command: `{command_name}`"
         )
 
@@ -175,11 +175,11 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             game_name (str): the name of the game
         """
         await ctx.bot.set_game(game_name)
-        await self.tagged_response(ctx, f"Successfully set game to: *{game_name}*")
+        await self.bot.tagged_response(ctx, f"Successfully set game to: *{game_name}*")
 
     @decorate.with_typing
     @set_group.command(name="nick")
@@ -189,11 +189,11 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the message
+            ctx (discord.ext.Context): the context object for the message
             nick (str): the bot nickname
         """
         await ctx.message.guild.me.edit(nick=nick)
-        await self.tagged_response(ctx, f"Successfully set nick to: *{nick}*")
+        await self.bot.tagged_response(ctx, f"Successfully set nick to: *{nick}*")
 
     @commands.group(
         brief="Executes an echo bot command", description="Executes an echo bot command"
@@ -210,13 +210,13 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the calling message
+            ctx (discord.ext.Context): the context object for the calling message
             channel_id (int): the ID of the channel to send the echoed message
             message (str): the message to echo
         """
         channel = self.bot.get_channel(channel_id)
         if not channel:
-            await self.tagged_response(ctx, "I couldn't find that channel")
+            await self.bot.tagged_response(ctx, "I couldn't find that channel")
             return
 
         await channel.send(content=message)
@@ -229,13 +229,13 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the calling message
+            ctx (discord.ext.Context): the context object for the calling message
             user_id (int): the ID of the user to send the echoed message
             message (str): the message to echo
         """
         user = await self.bot.fetch_user(int(user_id))
         if not user:
-            await self.tagged_response(ctx, "I couldn't find that user")
+            await self.bot.tagged_response(ctx, "I couldn't find that user")
             return
 
         await user.send(content=message)
@@ -247,7 +247,26 @@ class AdminControl(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.Context): the context object for the calling message
+            ctx (discord.ext.Context): the context object for the calling message
         """
-        await self.tagged_response(ctx, "Shutting down! Cya later!")
+        await self.bot.tagged_response(ctx, "Shutting down! Cya later!")
         sys.exit()
+
+    @commands.command(name="leave")
+    async def leave(self, ctx, *, guild_id: int):
+        """Leaves a guild by ID.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.ext.Context): the context object for the calling message
+            guild_id (int): the ID of the guild to leave
+        """
+        guild = discord.utils.get(self.bot.guilds, id=guild_id)
+        if not guild:
+            await self.bot.tagged_response(ctx, "I don't appear to be in that guild")
+            return
+
+        await guild.leave()
+
+        await ctx.send(f"I have left the guild: {guild.name} ({guild.id})")

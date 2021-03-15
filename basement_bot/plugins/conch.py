@@ -1,16 +1,14 @@
 import random
 
-import cogs
+import base
 from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(MagicConch(bot))
+    return bot.process_plugin_setup(cogs=[MagicConch])
 
 
-class MagicConch(cogs.BaseCog):
-
-    HAS_CONFIG = False
+class MagicConch(base.BaseCog):
 
     RESPONSES = [
         "As I see it, yes.",
@@ -48,8 +46,10 @@ class MagicConch(cogs.BaseCog):
         if not question.endswith("?"):
             question += "?"
 
+        question = self.bot.sub_mentions_for_usernames(question)
+
         embed = self.bot.embed_api.Embed(title=question, description=response)
 
         embed.set_thumbnail(url=self.PIC_URL)
 
-        await self.tagged_response(ctx, embed=embed)
+        await self.bot.tagged_response(ctx, embed=embed)

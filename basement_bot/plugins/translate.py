@@ -1,13 +1,13 @@
-import cogs
+import base
 import decorate
 from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Translator(bot))
+    return bot.process_plugin_setup(cogs=[Translator])
 
 
-class Translator(cogs.BaseCog):
+class Translator(base.BaseCog):
 
     HAS_CONFIG = False
 
@@ -28,7 +28,7 @@ class Translator(cogs.BaseCog):
         translated = response.get("responseData", {}).get("translatedText")
 
         if not translated:
-            await self.tagged_response(ctx, "I could not translate your message")
+            await self.bot.tagged_response(ctx, "I could not translate your message")
             return
 
-        await self.tagged_response(ctx, translated)
+        await self.bot.tagged_response(ctx, translated)

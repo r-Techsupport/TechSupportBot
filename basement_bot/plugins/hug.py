@@ -1,18 +1,16 @@
 import random
 
-import cogs
+import base
 import decorate
 import discord
 from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Hugger(bot))
+    return bot.process_plugin_setup(cogs=[Hugger])
 
 
-class Hugger(cogs.BaseCog):
-
-    HAS_CONFIG = False
+class Hugger(base.BaseCog):
 
     HUGS_SELECTION = [
         "{user_giving_hug} hugs {user_to_hug} forever and ever and ever",
@@ -45,12 +43,12 @@ class Hugger(cogs.BaseCog):
             ctx (Context): the context
         """
         if user_to_hug.id == ctx.author.id:
-            await self.tagged_response(ctx, "Let's be serious")
+            await self.bot.tagged_response(ctx, "Let's be serious")
             return
 
         embed = self.generate_embed(ctx, user_to_hug)
 
-        await self.tagged_response(ctx, embed=embed, target=user_to_hug)
+        await self.bot.tagged_response(ctx, embed=embed, target=user_to_hug)
 
     def generate_embed(self, ctx, user_to_hug):
         hug_text = random.choice(self.HUGS_SELECTION).format(

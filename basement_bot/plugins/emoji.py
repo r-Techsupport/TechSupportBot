@@ -1,4 +1,4 @@
-import cogs
+import base
 import decorate
 import discord
 import emoji
@@ -7,12 +7,11 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Emojis(bot))
+    return bot.process_plugin_setup(cogs=[Emojis])
 
 
-class Emojis(cogs.BaseCog):
+class Emojis(base.BaseCog):
 
-    HAS_CONFIG = False
     SEARCH_LIMIT = 20
     KEY_MAP = {"?": "question", "!": "exclamation"}
 
@@ -79,14 +78,14 @@ class Emojis(cogs.BaseCog):
     )
     async def message(self, ctx, *, message: str):
         if ctx.message.mentions:
-            await self.tagged_response(ctx, "I can't make an emoji from a mention!")
+            await self.bot.tagged_response(ctx, "I can't make an emoji from a mention!")
             return
 
         emoji_message = self.emoji_message_from_string(message)
         if emoji_message:
-            await self.tagged_response(ctx, emoji_message)
+            await self.bot.tagged_response(ctx, emoji_message)
         else:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "I can't get any emoji letters from your message!"
             )
 
@@ -98,23 +97,23 @@ class Emojis(cogs.BaseCog):
         usage="[message] @user",
     )
     async def reaction(self, ctx, message: str, react_user: discord.Member):
+        prefix = await self.bot.get_prefix(ctx.message)
+
         react_message = None
         async for channel_message in ctx.channel.history(limit=self.SEARCH_LIMIT):
             if (
                 channel_message.author == react_user
-                and not channel_message.content.startswith(
-                    f"{self.bot.config.main.required.command_prefix}"
-                )
+                and not channel_message.content.startswith(prefix)
             ):
                 react_message = channel_message
                 break
         if not react_message:
-            await self.tagged_response(ctx, "No valid messages found to react to!")
+            await self.bot.tagged_response(ctx, "No valid messages found to react to!")
             return
 
         emoji_list = self.emoji_reaction_from_string(message)
         if not emoji_list:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "Invalid message! Make sure there are no repeat characters!"
             )
             return

@@ -1,17 +1,16 @@
-import cogs
+import base
 import decorate
 from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(ISSLocator(bot))
+    return bot.process_plugin_setup(cogs=[ISSLocator])
 
 
-class ISSLocator(cogs.BaseCog):
+class ISSLocator(base.BaseCog):
 
     ISS_URL = "http://api.open-notify.org/iss-now.json"
     GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
-    HAS_CONFIG = False
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
@@ -24,14 +23,14 @@ class ISSLocator(cogs.BaseCog):
         # get ISS coordinates
         response = await self.bot.http_call("get", self.ISS_URL)
         if not response:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "I had trouble calling the ISS API. Maybe it's down?"
             )
             return
         coordinates = response.get("iss_position", {})
         longitude, latitude = coordinates.get("longitude"), coordinates.get("latitude")
         if not longitude or not latitude:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "I couldn't find the ISS coordinates from the API response"
             )
             return
@@ -42,7 +41,7 @@ class ISSLocator(cogs.BaseCog):
             "get", self.GEO_URL.format(latitude, longitude)
         )
         if not response:
-            await self.tagged_response(
+            await self.bot.tagged_response(
                 ctx, "I had trouble calling the GEO API. Maybe it's down?"
             )
             return
