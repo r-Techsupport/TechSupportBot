@@ -78,7 +78,7 @@ class AdminControl(base.BaseCog):
             ctx (discord.ext.Context): the context object for the message
             plugin_name (str): the name of the plugin
         """
-        response = ctx.bot.plugin_api.load_plugin(plugin_name, allow_failure=False)
+        response = ctx.bot.plugin_api.load_plugin(plugin_name)
         await self.bot.tagged_response(ctx, response.message)
 
     @decorate.with_typing
@@ -92,7 +92,7 @@ class AdminControl(base.BaseCog):
             ctx (discord.ext.Context): the context object for the message
             plugin_name (str): the name of the plugin
         """
-        response = ctx.bot.plugin_api.unload_plugin(plugin_name, allow_failure=False)
+        response = ctx.bot.plugin_api.unload_plugin(plugin_name)
         await self.bot.tagged_response(ctx, response.message)
 
     @commands.group(
