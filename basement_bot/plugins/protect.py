@@ -74,7 +74,12 @@ class Protector(base.MatchCog):
         if admin:
             return False
 
-        if ctx.author.role.name in config.plugins.protect.bypass_roles.value:
+        role_names = [role.name.lower() for role in getattr(ctx.author, "roles", [])]
+
+        if any(
+            role_name in role_names
+            for role_name in config.plugins.protect.bypass_roles.value
+        ):
             return False
 
         if ctx.author.id in config.plugins.protect.bypass_ids.value:
