@@ -140,7 +140,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         await self.dispatch_relay_factoid(ctx, factoid.message)
 
     async def dispatch_relay_factoid(self, ctx, message):
-        relay_cog = self.bot.base.get("DiscordRelay")
+        relay_cog = self.bot.cogs.get("DiscordRelay")
         if not relay_cog:
             return
 
