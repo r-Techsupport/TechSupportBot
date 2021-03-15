@@ -19,7 +19,6 @@ class BaseCog(commands.Cog):
     ADMIN_ONLY = False
     KEEP_COG_ON_FAILURE = False
     KEEP_PLUGIN_ON_FAILURE = False
-    KEEP_PLUGIN_ON_UNLOAD = False
 
     def __init__(self, bot, models=None):
         self.bot = bot
@@ -36,11 +35,6 @@ class BaseCog(commands.Cog):
         self.logger = self.bot.get_logger(self.__class__.__name__)
 
         self.bot.loop.create_task(self._preconfig())
-
-    def cog_unload(self):
-        """Allows the state to exit after unloading."""
-        if not self.KEEP_PLUGIN_ON_UNLOAD:
-            self.bot.plugin_api.unload_plugin(self.extension_name)
 
     async def _handle_preconfig(self, handler):
         """Wrapper for performing preconfig on a plugin.

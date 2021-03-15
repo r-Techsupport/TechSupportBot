@@ -78,7 +78,7 @@ class ConfigControl(base.BaseCog):
 
         embed.set_thumbnail(url=ctx.guild.icon_url)
 
-        json_file = self.convert_config_to_json_file(ctx, config, plugin=False)
+        json_file = self.convert_config_to_json_file(ctx, config)
 
         await self.bot.tagged_response(ctx, embed=embed)
 
@@ -143,7 +143,9 @@ class ConfigControl(base.BaseCog):
 
         embed.set_thumbnail(url=ctx.guild.icon_url)
 
-        json_file = self.convert_config_to_json_file(ctx, plugin_config)
+        json_file = self.convert_config_to_json_file(
+            ctx, plugin_config, plugin_name=plugin_name
+        )
 
         self.bot.task_paginate(ctx, embeds)
 
@@ -177,22 +179,22 @@ class ConfigControl(base.BaseCog):
             ctx, f"I am now using the command prefix: `{config.command_prefix}`"
         )
 
-    def convert_config_to_json_file(self, ctx, config_object, plugin=True):
+    def convert_config_to_json_file(self, ctx, config_object, plugin_name=None):
         """Gets a JSON file object from a config object.
 
         parameters:
             ctx (discord.ext.Context): the context object for the message
             config_object (dict): the config object to serialize
-            plugin (bool): True if the config is for a plugin
+            plugin_name (string): the name of the plugin for the config (if applicable)
         """
         json_config = config_object.copy()
 
-        if not plugin:
+        if not plugin_name:
             json_config.pop("plugins", None)
 
         json_file = discord.File(
             io.StringIO(json.dumps(json_config, indent=4)),
-            filename=f"{ctx.guild.name}-config-{datetime.datetime.utcnow()}.json",
+            filename=f"{plugin_name or ctx.guild.name}-config-{datetime.datetime.utcnow()}.json",
         )
 
         return json_file

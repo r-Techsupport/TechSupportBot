@@ -64,7 +64,7 @@ class ChannelDirectory(base.BaseCog):
         ]
 
         for guild in self.bot.guilds:
-            await self.run_setup(guild)
+            self.bot.loop.create_task(self.run_setup(guild))
 
     async def run_setup(self, guild):
         config = await self.bot.get_context_config(ctx=None, guild=guild)
