@@ -56,7 +56,7 @@ def setup(bot):
         default=None,
     )
 
-    return bot.process_plugin_setup(cogs=[Protector], config=config)
+    bot.process_plugin_setup(cogs=[Protector], config=config)
 
 
 class Protector(base.MatchCog):

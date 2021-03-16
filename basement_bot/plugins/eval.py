@@ -7,7 +7,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    return bot.process_plugin_setup(cogs=[Evaluator])
+    bot.process_plugin_setup(cogs=[Evaluator])
 
 
 class Evaluator(base.BaseCog):

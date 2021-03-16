@@ -34,7 +34,7 @@ def setup(bot):
         default=[],
     )
 
-    return bot.process_plugin_setup(cogs=[Grabber], models=[Grab], config=config)
+    bot.process_plugin_setup(cogs=[Grabber], models=[Grab], config=config)
 
 
 class Grabber(base.BaseCog):

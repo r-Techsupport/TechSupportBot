@@ -9,7 +9,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    return bot.process_plugin_setup(cogs=[Poller])
+    bot.process_plugin_setup(cogs=[Poller])
 
 
 class Poller(base.BaseCog):

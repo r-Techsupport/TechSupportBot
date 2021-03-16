@@ -13,7 +13,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    return bot.process_plugin_setup(cogs=[DiscordRelay, IRCReceiver])
+    bot.process_plugin_setup(cogs=[DiscordRelay, IRCReceiver])
 
 
 class DiscordRelay(base.MatchCog):

@@ -21,14 +21,14 @@ def setup(bot):
         default="0 17 * * *",
     )
     config.add(
-        key="Country",
+        key="country",
         datatype="string",
         title="Country code",
         description="Country code to receive news for (example: US)",
         default="US",
     )
 
-    return bot.process_plugin_setup(cogs=[News], config=config)
+    bot.process_plugin_setup(cogs=[News], config=config)
 
 
 class News(base.LoopCog):

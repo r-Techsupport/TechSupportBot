@@ -11,7 +11,7 @@ def setup(bot):
         default={},
     )
 
-    return bot.process_plugin_setup(cogs=[Logger], config=config)
+    bot.process_plugin_setup(cogs=[Logger], config=config)
 
 
 class Logger(base.MatchCog):

@@ -253,11 +253,14 @@ class BotLogger:
             message (str): the message to log
             console_only (bool): True if only the console should be logged to
             send (bool): The reverse of the above (overrides console_only)
+            channel (int): the ID of the channel to send the log to
         """
 
         ctx = kwargs.pop("context", None)
         exception = kwargs.pop("exception", None)
         console_only = self._is_console_only(kwargs, is_error=True)
+
+        channel = kwargs.pop("channel", None)
 
         self.console.error(message, *args, **kwargs)
 
@@ -266,11 +269,13 @@ class BotLogger:
 
         # command error
         if ctx and exception:
-            await self.handle_command_error_log(message, ctx, exception)
+            await self.handle_command_error_log(
+                message, ctx, exception, channel=channel
+            )
             return
 
         # bot error
-        await self.handle_error_log(message, exception)
+        await self.handle_error_log(message, exception, channel=channel)
 
     async def handle_generic_log(self, message, level_, console, *args, **kwargs):
         """Handles most logging contexts.
@@ -281,21 +286,31 @@ class BotLogger:
             console (func): logging level method
             console_only (bool): True if only the console should be logged to
             send (bool): The reverse of the above (overrides console_only)
+            channel (int): the ID of the channel to send the log to
         """
         console_only = self._is_console_only(kwargs, is_error=False)
+
+        channel = kwargs.pop("channel", None)
 
         console(message, *args, **kwargs)
 
         if console_only:
             return
 
-        owner = await self.bot.get_owner()
-        if not owner:
+        if channel:
+            target = self.bot.get_channel(int(channel))
+        else:
+            target = await self.bot.get_owner()
+
+        if not target:
             return
 
         embed = self.generate_log_embed(message, level_)
 
-        await owner.send(embed=embed)
+        try:
+            await target.send(embed=embed)
+        except discord.Forbidden:
+            pass
 
     def _is_console_only(self, kwargs, is_error):
         """Determines from a kwargs dict if console_only is absolutely True.
@@ -325,13 +340,14 @@ class BotLogger:
 
         return console_only
 
-    async def handle_error_log(self, message, exception, context=None):
+    async def handle_error_log(self, message, exception, context=None, channel=None):
         """Handles all error log events.
 
         parameters:
             message (str): the message associated with the error (eg. on_message)
             exception (Exception): the exception object associated with the error
             context (discord.ext.Context): the context associated with the exception
+            channel (int): the ID of the channel to send the log to
         """
         if type(exception) in self.IGNORED_ERRORS:
             return
@@ -347,15 +363,22 @@ class BotLogger:
 
         embed = self.generate_error_embed(message, context)
 
+        if channel:
+            print("hello world")
+            target = self.bot.get_channel(int(channel))
+        else:
+            target = await self.bot.get_owner()
+
+        if not target:
+            return
+
         try:
-            owner = await self.bot.get_owner()
-            if owner:
-                await owner.send(embed=embed)
-                await owner.send(f"```{exception_string}```")
+            await target.send(embed=embed)
+            await target.send(f"```{exception_string}```")
         except discord.Forbidden:
             pass
 
-    async def handle_command_error_log(self, message, context, exception):
+    async def handle_command_error_log(self, message, context, exception, channel=None):
         """Handles command error log events.
 
         This wraps passing events to the main error handler.
@@ -364,6 +387,7 @@ class BotLogger:
             message (str): the message associated with the error (eg. on_message)
             context (discord.ext.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
+            channel (int): the ID of the channel to send the log to
         """
         #  begin original Discord.py logic
         if self.bot.extra_events.get("on_command_error", None):
@@ -393,7 +417,9 @@ class BotLogger:
         await context.send(f"{context.author.mention} {error_message}")
 
         context.error_message = error_message
-        await self.handle_error_log(message, exception, context=context)
+        await self.handle_error_log(
+            message, exception, context=context, channel=channel
+        )
 
     def generate_log_embed(self, message, level_):
         """Wrapper for generated the log embed.

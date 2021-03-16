@@ -3,7 +3,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    return bot.process_plugin_setup(cogs=[IPInfo])
+    bot.process_plugin_setup(cogs=[IPInfo])
 
 
 class IPInfo(base.BaseCog):

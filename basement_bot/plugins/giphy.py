@@ -6,7 +6,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    return bot.process_plugin_setup(cogs=[Giphy])
+    bot.process_plugin_setup(cogs=[Giphy])
 
 
 class Giphy(base.BaseCog):

@@ -28,7 +28,7 @@ def setup(bot):
         default=48,
     )
 
-    return bot.process_plugin_setup(cogs=[KanyeQuotes], config=config)
+    bot.process_plugin_setup(cogs=[KanyeQuotes], config=config)
 
 
 class KanyeQuotes(base.LoopCog):

@@ -30,9 +30,7 @@ def setup(bot):
         default=20,
     )
 
-    return bot.process_plugin_setup(
-        cogs=[FactoidManager], models=[Factoid], config=config
-    )
+    bot.process_plugin_setup(cogs=[FactoidManager], models=[Factoid], config=config)
 
 
 class FactoidManager(base.MatchCog, base.LoopCog):
@@ -148,7 +146,9 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             return
 
         # add to the relay plugin queue if it's loaded
-        if not ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.get("channels", []):
+        if not ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.get(
+            "channels", []
+        ):
             return
 
         ctx.message.content = message

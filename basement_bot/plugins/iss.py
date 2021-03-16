@@ -4,7 +4,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    return bot.process_plugin_setup(cogs=[ISSLocator])
+    bot.process_plugin_setup(cogs=[ISSLocator])
 
 
 class ISSLocator(base.BaseCog):

@@ -159,8 +159,14 @@ class LoopCog(BaseCog):
                 await self.execute(config, guild)
             except Exception as e:
                 # always try to wait even when execute fails
+
+                await self.logger.debug("Checking config for log channel")
+                channel = config.get("log_channel")
+
                 await self.logger.error(
-                    f"Loop cog execute error: {self.__class__.__name__}!", exception=e
+                    f"Loop cog execute error: {self.__class__.__name__}!",
+                    exception=e,
+                    channel=channel,
                 )
 
             try:

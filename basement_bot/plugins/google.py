@@ -13,7 +13,7 @@ def setup(bot):
         default=1,
     )
 
-    return bot.process_plugin_setup(cogs=[Googler], config=config)
+    bot.process_plugin_setup(cogs=[Googler], config=config)
 
 
 class Googler(base.BaseCog):
