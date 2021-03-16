@@ -364,7 +364,6 @@ class BotLogger:
         embed = self.generate_error_embed(message, context)
 
         if channel:
-            print("hello world")
             target = self.bot.get_channel(int(channel))
         else:
             target = await self.bot.get_owner()
