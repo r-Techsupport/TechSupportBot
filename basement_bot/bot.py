@@ -207,7 +207,8 @@ class BasementBot(commands.Bot):
         """
         _, exception, _ = sys.exc_info()
         await self.logger.error(
-            f"Bot error in {event_method}: {exception}", exception=exception
+            f"Bot error in {event_method}: {exception}",
+            exception=exception,
         )
 
     async def on_command_error(self, context, exception):
@@ -217,8 +218,16 @@ class BasementBot(commands.Bot):
             context (discord.ext.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
+        config_ = await self.get_context_config(context)
+
+        await self.logger.debug("Checking config for log channel")
+        channel = config_.get("log_channel")
+
         await self.logger.error(
-            f"Command error: {exception}", context=context, exception=exception
+            f"Command error: {exception}",
+            context=context,
+            exception=exception,
+            channel=channel,
         )
 
     async def get_owner(self):
@@ -343,6 +352,7 @@ class BasementBot(commands.Bot):
         config_.guild_id = lookup
         config_.command_prefix = self.config.main.default_prefix
         config_.plugins = plugins_config
+        config_.log_channel = None
 
         try:
             await self.logger.debug(f"Inserting new config for lookup key: {lookup}")

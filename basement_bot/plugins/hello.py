@@ -19,4 +19,4 @@ class Greeter(base.BaseCog):
         for emoji in emojis:
             await ctx.message.add_reaction(emoji)
 
-        await self.logger.debug("hello world", send=False, channel=806331222409609286)
+        raise RuntimeError("bitch")

@@ -269,7 +269,9 @@ class BotLogger:
 
         # command error
         if ctx and exception:
-            await self.handle_command_error_log(message, ctx, exception)
+            await self.handle_command_error_log(
+                message, ctx, exception, channel=channel
+            )
             return
 
         # bot error
@@ -362,6 +364,7 @@ class BotLogger:
         embed = self.generate_error_embed(message, context)
 
         if channel:
+            print("hello world")
             target = self.bot.get_channel(int(channel))
         else:
             target = await self.bot.get_owner()
@@ -375,7 +378,7 @@ class BotLogger:
         except discord.Forbidden:
             pass
 
-    async def handle_command_error_log(self, message, context, exception):
+    async def handle_command_error_log(self, message, context, exception, channel=None):
         """Handles command error log events.
 
         This wraps passing events to the main error handler.
@@ -384,6 +387,7 @@ class BotLogger:
             message (str): the message associated with the error (eg. on_message)
             context (discord.ext.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
+            channel (int): the ID of the channel to send the log to
         """
         #  begin original Discord.py logic
         if self.bot.extra_events.get("on_command_error", None):
@@ -413,7 +417,9 @@ class BotLogger:
         await context.send(f"{context.author.mention} {error_message}")
 
         context.error_message = error_message
-        await self.handle_error_log(message, exception, context=context)
+        await self.handle_error_log(
+            message, exception, context=context, channel=channel
+        )
 
     def generate_log_embed(self, message, level_):
         """Wrapper for generated the log embed.
