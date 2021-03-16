@@ -30,9 +30,7 @@ def setup(bot):
         default=20,
     )
 
-    return bot.process_plugin_setup(
-        cogs=[FactoidManager], models=[Factoid], config=config
-    )
+    bot.process_plugin_setup(cogs=[FactoidManager], models=[Factoid], config=config)
 
 
 class FactoidManager(base.MatchCog, base.LoopCog):

@@ -253,11 +253,14 @@ class BotLogger:
             message (str): the message to log
             console_only (bool): True if only the console should be logged to
             send (bool): The reverse of the above (overrides console_only)
+            channel (int): the ID of the channel to send the log to
         """
 
         ctx = kwargs.pop("context", None)
         exception = kwargs.pop("exception", None)
         console_only = self._is_console_only(kwargs, is_error=True)
+
+        channel = kwargs.pop("channel", None)
 
         self.console.error(message, *args, **kwargs)
 
@@ -270,7 +273,7 @@ class BotLogger:
             return
 
         # bot error
-        await self.handle_error_log(message, exception)
+        await self.handle_error_log(message, exception, channel=channel)
 
     async def handle_generic_log(self, message, level_, console, *args, **kwargs):
         """Handles most logging contexts.
@@ -281,21 +284,31 @@ class BotLogger:
             console (func): logging level method
             console_only (bool): True if only the console should be logged to
             send (bool): The reverse of the above (overrides console_only)
+            channel (int): the ID of the channel to send the log to
         """
         console_only = self._is_console_only(kwargs, is_error=False)
+
+        channel = kwargs.pop("channel", None)
 
         console(message, *args, **kwargs)
 
         if console_only:
             return
 
-        owner = await self.bot.get_owner()
-        if not owner:
+        if channel:
+            target = self.bot.get_channel(int(channel))
+        else:
+            target = await self.bot.get_owner()
+
+        if not target:
             return
 
         embed = self.generate_log_embed(message, level_)
 
-        await owner.send(embed=embed)
+        try:
+            await target.send(embed=embed)
+        except discord.Forbidden:
+            pass
 
     def _is_console_only(self, kwargs, is_error):
         """Determines from a kwargs dict if console_only is absolutely True.
@@ -325,13 +338,14 @@ class BotLogger:
 
         return console_only
 
-    async def handle_error_log(self, message, exception, context=None):
+    async def handle_error_log(self, message, exception, context=None, channel=None):
         """Handles all error log events.
 
         parameters:
             message (str): the message associated with the error (eg. on_message)
             exception (Exception): the exception object associated with the error
             context (discord.ext.Context): the context associated with the exception
+            channel (int): the ID of the channel to send the log to
         """
         if type(exception) in self.IGNORED_ERRORS:
             return
@@ -347,11 +361,17 @@ class BotLogger:
 
         embed = self.generate_error_embed(message, context)
 
+        if channel:
+            target = self.bot.get_channel(int(channel))
+        else:
+            target = await self.bot.get_owner()
+
+        if not target:
+            return
+
         try:
-            owner = await self.bot.get_owner()
-            if owner:
-                await owner.send(embed=embed)
-                await owner.send(f"```{exception_string}```")
+            await target.send(embed=embed)
+            await target.send(f"```{exception_string}```")
         except discord.Forbidden:
             pass
 

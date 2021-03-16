@@ -7,7 +7,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    return bot.process_plugin_setup(cogs=[Hugger])
+    bot.process_plugin_setup(cogs=[Hugger])
 
 
 class Hugger(base.BaseCog):

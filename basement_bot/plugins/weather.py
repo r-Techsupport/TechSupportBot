@@ -5,7 +5,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    return bot.process_plugin_setup(cogs=[Weather])
+    bot.process_plugin_setup(cogs=[Weather])
 
 
 class Weather(base.BaseCog):

@@ -5,7 +5,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    return bot.process_plugin_setup(cogs=[Mocker])
+    bot.process_plugin_setup(cogs=[Mocker])
 
 
 class Mocker(base.BaseCog):

@@ -285,6 +285,7 @@ class BasementBot(commands.Bot):
     async def reset_config_cache(self):
         """Deletes the guild config cache on a peridodic basis."""
         while True:
+            await self.logger.debug("Resetting guild config cache")
             self.config_cache = collections.defaultdict(dict)
             await asyncio.sleep(self.config.main.config_cache_reset)
 
@@ -303,6 +304,8 @@ class BasementBot(commands.Bot):
 
         lookup = guild.id if guild else "dmcontext"
 
+        await self.logger.debug(f"Getting config for lookup key: {lookup}")
+
         if get_from_cache:
             config_ = self.config_cache[lookup]
             if config_:
@@ -313,6 +316,7 @@ class BasementBot(commands.Bot):
         )
 
         if not config_ and create_if_none:
+            await self.logger.debug("No config found in MongoDB")
             config_ = await self.create_new_context_config(lookup)
         elif config_:
             config_ = await self.sync_config(config_)
@@ -325,8 +329,10 @@ class BasementBot(commands.Bot):
         parameters:
             lookup (str): the primary key for the guild config document object
         """
+
         plugins_config = {}
 
+        await self.logger.debug("Evaluating plugin data")
         for plugin_name, plugin_data in self.plugin_api.plugins.items():
             plugins_config[plugin_name] = getattr(plugin_data, "config", {})
 
@@ -339,9 +345,14 @@ class BasementBot(commands.Bot):
         config_.plugins = plugins_config
 
         try:
+            await self.logger.debug(f"Inserting new config for lookup key: {lookup}")
             await self.guild_config_collection.insert_one(config_)
-        except Exception:
-            pass
+        except Exception as exception:
+            await self.logger.error(
+                "Could not insert guild config into MongoDB",
+                exception=exception,
+                send=False,
+            )
 
         return config_
 
@@ -353,13 +364,28 @@ class BasementBot(commands.Bot):
         """
         config_object = munch.munchify(config_object)
 
-        for plugin_name, plugin_data in self.plugin_api.plugins.items():
-            if not config_object.plugins.get(plugin_name):
-                config_object.plugins[plugin_name] = getattr(plugin_data, "config", {})
+        should_update = False
 
-        await self.guild_config_collection.replace_one(
-            {"_id": config_object.get("_id")}, config_object
-        )
+        await self.logger.debug("Evaluating plugin data")
+        for plugin_name, plugin_data in self.plugin_api.plugins.items():
+            plugin_config = config_object.plugins.get(plugin_name)
+            plugin_config_from_data = getattr(plugin_data, "config", {})
+
+            if not plugin_config and plugin_config_from_data:
+                should_update = True
+
+                await self.logger.debug(
+                    f"Found plugin {plugin_name} not in config with ID {config_object.guild_id}"
+                )
+                config_object.plugins[plugin_name] = plugin_config_from_data
+
+        if should_update:
+            await self.logger.debug(
+                f"Updating guild config for lookup key: {config_object.guild_id}"
+            )
+            await self.guild_config_collection.replace_one(
+                {"_id": config_object.get("_id")}, config_object
+            )
 
         return config_object
 
@@ -430,7 +456,12 @@ class BasementBot(commands.Bot):
         user = self.config.main.rabbitmq.user
         password = self.config.main.rabbitmq.password
 
-        return f"amqp://{user}:{password}@{host}:{port}{vhost}"
+        rabbit_url = f"amqp://{user}:{password}@{host}:{port}{vhost}"
+        rabbit_url_filtered = f"amqp://{user}:********@{host}:{port}{vhost}"
+
+        self.logger.console.debug(f"Generated RabbitMQ URL: {rabbit_url_filtered}")
+
+        return rabbit_url
 
     async def get_rabbit_connection(self):
         """Grabs the main RabbitMQ connection.
@@ -501,6 +532,7 @@ class BasementBot(commands.Bot):
 
     def get_http_session(self):
         """Returns an async HTTP session."""
+        self.logger.console.debug("Generating HTTP Client object")
         return aiohttp.ClientSession()
 
     async def http_call(self, method, url, *args, **kwargs):
@@ -580,10 +612,18 @@ class BasementBot(commands.Bot):
             bot (BasementBot): the bot object
             channel_id (Union[string, int]): the unique ID of the channel
         """
+        self.logger.console.debug(f"Getting guild from channel ID: {channel_id}")
         for guild in self.guilds:
             for channel in guild.channels:
                 if channel.id == int(channel_id):
+                    self.logger.console.debug(
+                        f"Found guild ID {guild.id} associated with channel ID: {channel_id}"
+                    )
                     return guild
+
+        self.logger.console.debug(
+            f"Could not find guild ID associated with channel ID: {channel_id}"
+        )
         return None
 
     def sub_mentions_for_usernames(self, content):
@@ -599,6 +639,8 @@ class BasementBot(commands.Bot):
             user = self.get_user(id_)
             return f"@{user.name}" if user else "@user"
 
+        self.logger.console.debug("Subbing mention texts with usernames")
+
         return re.sub(r"<@?!?(\d+)>", get_nick_from_id_match, content)
 
     async def get_json_from_attachment(
@@ -612,7 +654,11 @@ class BasementBot(commands.Bot):
         """
         data = None
 
+        await self.logger.debug(f"Checking message ID: {message.id} for attachments")
         if message.attachments:
+            await self.logger.debug(
+                f"Parsing JSON from upload associated with message ID: {message.id}"
+            )
             try:
                 json_bytes = await message.attachments[0].read()
                 json_str = json_bytes.decode("UTF-8")
@@ -623,6 +669,9 @@ class BasementBot(commands.Bot):
                     data = json.dumps(data)
             # this could probably be more specific
             except Exception as exception:
+                await self.logger.error(
+                    f"Could not parse JSON from file: {exception}", send=False
+                )
                 if not allow_failure:
                     raise exception
 
@@ -640,7 +689,7 @@ class BasementBot(commands.Bot):
             restrict (bool): True if only the caller and admins can navigate the pages
         """
         # limit large outputs
-        embeds = embeds[:10]
+        embeds = embeds[:20]
 
         for index, embed in enumerate(embeds):
             if isinstance(embed, self.embed_api.Embed):
@@ -669,6 +718,7 @@ class BasementBot(commands.Bot):
         for unicode_reaction in ["\u25C0", "\u25B6", "\u26D4", "\U0001F5D1"]:
             await message.add_reaction(unicode_reaction)
 
+        await self.logger.debug(f"Starting pagination loop with {len(embeds)} pages")
         while True:
             if (datetime.datetime.now() - start_time).seconds > timeout:
                 break
@@ -700,22 +750,28 @@ class BasementBot(commands.Bot):
 
             # stop pagination
             elif str(reaction) == "\u26D4" and user.id == ctx.author.id:
+                await self.logger.debug("Stopping pagination message at user request")
                 break
 
             # delete embed
             elif str(reaction) == "\U0001F5D1" and user.id == ctx.author.id:
+                await self.logger.debug("Deleting pagination message at user request")
                 await message.delete()
                 break
 
             try:
                 await reaction.remove(user)
             except discord.Forbidden:
-                pass
+                await self.logger.error(
+                    "Could not delete user reaction on pagination message", send=False
+                )
 
         try:
             await message.clear_reactions()
         except (discord.Forbidden, discord.NotFound):
-            pass
+            await self.logger.error(
+                "Could not delete all reactions on pagination message", send=False
+            )
 
     def task_paginate(self, *args, **kwargs):
         """Creates a pagination task.

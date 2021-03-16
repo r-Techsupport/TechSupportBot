@@ -6,7 +6,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    return bot.process_plugin_setup(cogs=[Moderator])
+    bot.process_plugin_setup(cogs=[Moderator])
 
 
 class Moderator(base.BaseCog):

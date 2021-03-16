@@ -11,7 +11,7 @@ def setup(bot):
         number = bot.db.Column(bot.db.Integer)
         description = bot.db.Column(bot.db.String)
 
-    return bot.process_plugin_setup(cogs=[Rules], models=[Rule])
+    bot.process_plugin_setup(cogs=[Rules], models=[Rule])
 
 
 class Rules(base.BaseCog):

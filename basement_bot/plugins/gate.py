@@ -43,7 +43,7 @@ def setup(bot):
         default="agree",
     )
 
-    return bot.process_plugin_setup(cogs=[ServerGate], config=config)
+    bot.process_plugin_setup(cogs=[ServerGate], config=config)
 
 
 class ServerGate(base.MatchCog):

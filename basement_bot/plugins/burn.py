@@ -7,7 +7,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    return bot.process_plugin_setup(cogs=[Burn])
+    bot.process_plugin_setup(cogs=[Burn])
 
 
 class Burn(base.BaseCog):

@@ -13,7 +13,7 @@ def setup(bot):
         default=1,
     )
 
-    return bot.process_plugin_setup(cogs=[UrbanDictionary], config=config)
+    bot.process_plugin_setup(cogs=[UrbanDictionary], config=config)
 
 
 class UrbanDictionary(base.BaseCog):

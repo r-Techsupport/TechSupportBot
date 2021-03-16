@@ -5,7 +5,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    return bot.process_plugin_setup(cogs=[MagicConch])
+    bot.process_plugin_setup(cogs=[MagicConch])
 
 
 class MagicConch(base.BaseCog):

@@ -3,7 +3,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    return bot.process_plugin_setup(cogs=[Greeter])
+    bot.process_plugin_setup(cogs=[Greeter])
 
 
 class Greeter(base.BaseCog):
@@ -18,3 +18,5 @@ class Greeter(base.BaseCog):
         emojis = ["🇭", "🇪", "🇾"]
         for emoji in emojis:
             await ctx.message.add_reaction(emoji)
+
+        await self.logger.debug("hello world", send=False, channel=806331222409609286)

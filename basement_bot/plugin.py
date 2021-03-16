@@ -2,12 +2,10 @@
 """
 
 import glob
-import importlib
+import inspect
 import os
-import sys
 
 import munch
-from discord.ext import commands
 
 
 class PluginAPI:
@@ -76,8 +74,7 @@ class PluginAPI:
             return self._make_response(False, message)
 
         try:
-            self.plugins[plugin_name] = self.load_extension(f"plugins.{plugin_name}")
-
+            self.bot.load_extension(f"plugins.{plugin_name}")
             message = f"Successfully loaded plugin: {plugin_name}"
             self.logger.console.info(message)
             return self._make_response(True, message)
@@ -137,58 +134,27 @@ class PluginAPI:
             config (PluginConfig): the plugin config
             models (List[gino.Model]): the Postgres models for the plugin
         """
+        plugin_name = None
+        for frame in inspect.stack():
+            module = inspect.getmodule(frame[0])
+            if module.__name__.startswith("plugins."):
+                plugin_name = module.__name__.split(".")[-1]
+                self.logger.console.debug(f"Found plugin module name: {plugin_name}")
+                break
+
+        if not plugin_name:
+            raise RuntimeError("Could not obtain module name for plugin")
+
         for cog in cogs:
+            self.logger.console.debug(f"Adding cog: {cog.__name__}")
             self.bot.add_cog(cog(self.bot, models=models))
 
         config = config.data if config else {}
 
-        return munch.munchify(
+        self.logger.console.debug(f"Registering plugin name: {plugin_name}")
+        self.plugins[plugin_name] = munch.munchify(
             {"status": "loaded", "config": config, "memory": munch.Munch()}
         )
-
-    def load_extension(self, name):
-        """Copies the discord.py load_extension logic.
-
-        This is done so `return ...` can be utilized in the setup function.
-
-        parameters:
-            name (str): the name of the extension to load
-        """
-        # pylint: disable=protected-access
-        if name in self.bot._BotBase__extensions:
-            raise commands.errors.ExtensionAlreadyLoaded(name)
-
-        spec = importlib.util.find_spec(name)
-        if spec is None:
-            raise commands.errors.ExtensionNotFound(name)
-
-        # precondition: key not in self.__extensions
-        lib = importlib.util.module_from_spec(spec)
-        sys.modules[name] = lib
-        try:
-            spec.loader.exec_module(lib)
-        except Exception as e:
-            del sys.modules[name]
-            raise commands.errors.ExtensionFailed(name, e) from e
-
-        try:
-            setup = getattr(lib, "setup")
-        except AttributeError:
-            del sys.modules[name]
-            # pylint: disable=raise-missing-from
-            raise commands.errors.NoEntryPointError(name)
-
-        try:
-            # the only part that's different
-            plugin_data = setup(self.bot)
-            self.bot._BotBase__extensions[name] = lib
-            return plugin_data
-
-        except Exception as e:
-            del sys.modules[name]
-            self.bot._remove_module_references(lib.__name__)
-            self.bot._call_module_finalizers(lib, name)
-            raise commands.errors.ExtensionFailed(name, e) from e
 
     @staticmethod
     def _make_response(status, message):

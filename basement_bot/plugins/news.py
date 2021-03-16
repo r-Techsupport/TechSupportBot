@@ -28,7 +28,7 @@ def setup(bot):
         default="US",
     )
 
-    return bot.process_plugin_setup(cogs=[News], config=config)
+    bot.process_plugin_setup(cogs=[News], config=config)
 
 
 class News(base.LoopCog):

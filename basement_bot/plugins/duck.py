@@ -66,7 +66,7 @@ def setup(bot):
         default=50,
     )
 
-    return bot.process_plugin_setup(cogs=[DuckHunt], models=[DuckUser], config=config)
+    bot.process_plugin_setup(cogs=[DuckHunt], models=[DuckUser], config=config)
 
 
 # I don't know why I did this

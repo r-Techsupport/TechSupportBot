@@ -4,7 +4,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    return bot.process_plugin_setup(cogs=[Wolfram])
+    bot.process_plugin_setup(cogs=[Wolfram])
 
 
 class Wolfram(base.BaseCog):

@@ -4,7 +4,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    return bot.process_plugin_setup(cogs=[Embedder])
+    bot.process_plugin_setup(cogs=[Embedder])
 
 
 class Embedder(base.BaseCog):

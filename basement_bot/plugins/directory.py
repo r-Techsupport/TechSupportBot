@@ -30,7 +30,7 @@ def setup(bot):
         default={},
     )
 
-    return bot.process_plugin_setup(
+    bot.process_plugin_setup(
         cogs=[ChannelDirectory], models=[DirectoryExistence], config=config
     )
 
