@@ -4,6 +4,8 @@
 import logging
 import os
 import traceback
+import datetime
+import asyncio
 
 import discord
 import munch
@@ -79,6 +81,7 @@ class BotLogger:
     parameters:
         bot (bot.BasementBot): the bot object
         name (str): the name of the logging channel
+        queue (bool): True if a queue should be used for writing logs
     """
 
     COMMAND_ERROR_RESPONSE_TEMPLATES = {
@@ -188,12 +191,13 @@ class BotLogger:
     }
 
     IGNORED_ERRORS = set([commands.CommandNotFound])
-    # this defaults to True because most logs shouldn't send out
-    DEFAULT_LOG_CONSOLE_ONLY = True
-    # this defaults to False because most error logs should send out
-    DEFAULT_ERROR_LOG_CONSOLE_ONLY = False
+    # this defaults to False because most logs shouldn't send out
+    DEFAULT_LOG_SEND = False
+    # this defaults to True because most error logs should send out
+    DEFAULT_ERROR_LOG_SEND = True
+    DISCORD_WAIT = 5
 
-    def __init__(self, bot=None, name="root"):
+    def __init__(self, bot=None, name="root", queue=True):
         self.bot = bot
 
         try:
@@ -206,6 +210,56 @@ class BotLogger:
 
         self.console = logging.getLogger(name)
 
+        self.send_queue = asyncio.Queue(maxsize=1000) if queue else None
+        self.queue_enabled = queue
+
+        if self.queue_enabled:
+            self.bot.loop.create_task(self.log_from_queue())
+
+    async def log_from_queue(self):
+        last_send_to_discord = datetime.datetime.now() - datetime.timedelta(seconds=self.DISCORD_WAIT)
+        while True:
+            try:
+                log_data = await self.send_queue.get()
+                if not log_data:
+                    continue
+
+                log_data = munch.munchify(log_data)
+
+                is_error = log_data.level == "error"
+                if not self._is_console_only(log_data.kwargs, is_error=is_error):
+                    # check if we need to sleep before sending to discord again
+                    duration = (datetime.datetime.now() - last_send_to_discord).seconds
+                    if duration < self.DISCORD_WAIT:
+                        await asyncio.sleep(int(self.DISCORD_WAIT-duration))
+                    last_send_to_discord = datetime.datetime.now()
+
+                if log_data.level == "info":
+                    await self.handle_generic_log(
+                        log_data.message, "info", self.console.info, *log_data.args, **log_data.kwargs
+                    )
+                elif log_data.level == "debug":
+                    await self.handle_generic_log(
+                        log_data.message, "debug", self.console.debug, *log_data.args, **log_data.kwargs
+                    )
+                elif log_data.level == "warning":
+                    await self.handle_generic_log(
+                        log_data.message, "debug", self.console.warning, *log_data.args, **log_data.kwargs
+                    )
+                elif log_data.level == "event":
+                    await self.handle_event_log(
+                        log_data.event_type, *log_data.args, **log_data.kwargs
+                    )
+                elif log_data.level == "error":
+                    await self.handle_error_log(
+                        log_data.message, *log_data.args, **log_data.kwargs
+                    )
+                else:
+                    self.console.warning(f"Received unprocessable log level: {log_data.level}")
+
+            except Exception as exception:
+                self.console.error(f"Could not read from log queue: {exception}")
+
     async def info(self, message, *args, **kwargs):
         """Logs at the INFO level.
 
@@ -214,6 +268,16 @@ class BotLogger:
             console_only (bool): True if only the console should be logged to
             send (bool): The reverse of the above (overrides console_only)
         """
+
+        if self.queue_enabled:
+            await self.send_queue.put({
+                "level": "info",
+                "message": message,
+                "args": args,
+                "kwargs": kwargs
+            })
+            return
+
         await self.handle_generic_log(
             message, "info", self.console.info, *args, **kwargs
         )
@@ -229,6 +293,15 @@ class BotLogger:
         if not self.debug_mode:
             return
 
+        if self.queue_enabled:
+            await self.send_queue.put({
+                "level": "debug",
+                "message": message,
+                "args": args,
+                "kwargs": kwargs
+            })
+            return
+
         await self.handle_generic_log(
             message, "debug", self.console.debug, *args, **kwargs
         )
@@ -241,41 +314,18 @@ class BotLogger:
             console_only (bool): True if only the console should be logged to
             send (bool): The reverse of the above (overrides console_only)
         """
+        if self.queue_enabled:
+            await self.send_queue.put({
+                "level": "warning",
+                "message": message,
+                "args": args,
+                "kwargs": kwargs
+            })
+            return
 
         await self.handle_generic_log(
             message, "warning", self.console.warning, *args, **kwargs
         )
-
-    async def error(self, message, *args, **kwargs):
-        """Logs at the ERROR level.
-
-        parameters:
-            message (str): the message to log
-            console_only (bool): True if only the console should be logged to
-            send (bool): The reverse of the above (overrides console_only)
-            channel (int): the ID of the channel to send the log to
-        """
-
-        ctx = kwargs.pop("context", None)
-        exception = kwargs.pop("exception", None)
-        console_only = self._is_console_only(kwargs, is_error=True)
-
-        channel = kwargs.pop("channel", None)
-
-        self.console.error(message, *args, **kwargs)
-
-        if console_only:
-            return
-
-        # command error
-        if ctx and exception:
-            await self.handle_command_error_log(
-                message, ctx, exception, channel=channel
-            )
-            return
-
-        # bot error
-        await self.handle_error_log(message, exception, channel=channel)
 
     async def handle_generic_log(self, message, level_, console, *args, **kwargs):
         """Handles most logging contexts.
@@ -290,9 +340,9 @@ class BotLogger:
         """
         console_only = self._is_console_only(kwargs, is_error=False)
 
-        channel = kwargs.pop("channel", None)
+        channel = kwargs.get("channel", None)
 
-        console(message, *args, **kwargs)
+        console(message)
 
         if console_only:
             return
@@ -302,9 +352,6 @@ class BotLogger:
         else:
             target = await self.bot.get_owner()
 
-        if not target:
-            return
-
         embed = self.generate_log_embed(message, level_)
 
         try:
@@ -312,43 +359,114 @@ class BotLogger:
         except discord.Forbidden:
             pass
 
-    def _is_console_only(self, kwargs, is_error):
-        """Determines from a kwargs dict if console_only is absolutely True.
+    async def event(self, event_type, *args, **kwargs):
+        if self.queue_enabled:
+            await self.send_queue.put({
+                "level": "event",
+                "event_type": event_type,
+                "args": args,
+                "kwargs": kwargs
+            })
+            return
 
-        This is so `send` can be provided as a convenience arg.
+        await self.handle_event_log(event_type, *args, **kwargs)
+
+    async def handle_event_log(self, event_type, *args, **kwargs):
+        console_only = self._is_console_only(kwargs, is_error=False)    
+
+        channel = kwargs.get("channel", None)
+
+        event_data = self.generate_event_data(event_type, *args, **kwargs)
+
+        message = event_data.get("message")
+        if not message:
+            return
+
+        # events are a special case of the INFO level
+        self.console.info(message)
+
+        if console_only:
+            return
+
+        if channel:
+            target = self.bot.get_channel(int(channel))
+        else:
+            target = await self.bot.get_owner()
+
+        embed = event_data.get("embed")
+        if not embed:
+            return
+
+        try:
+            await target.send(embed=embed)
+        except discord.Forbidden:
+            pass
+
+    async def error(self, message, *args, **kwargs):
+        """Logs at the ERROR level.
 
         parameters:
-            kwargs (dict): the kwargs to parse
-            is_error (bool): True if the decision is for an error log
-        """
-        console_only = kwargs.pop(
-            "console_only",
-            self.DEFAULT_ERROR_LOG_CONSOLE_ONLY
-            if is_error
-            else self.DEFAULT_LOG_CONSOLE_ONLY,
-        )
-        send = kwargs.pop(
-            "send",
-            not (
-                self.DEFAULT_ERROR_LOG_CONSOLE_ONLY
-                if is_error
-                else self.DEFAULT_LOG_CONSOLE_ONLY
-            ),
-        )
-
-        console_only = False if send else console_only
-
-        return console_only
-
-    async def handle_error_log(self, message, exception, context=None, channel=None):
-        """Handles all error log events.
-
-        parameters:
-            message (str): the message associated with the error (eg. on_message)
-            exception (Exception): the exception object associated with the error
-            context (discord.ext.Context): the context associated with the exception
+            message (str): the message to log
+            console_only (bool): True if only the console should be logged to
+            send (bool): The reverse of the above (overrides console_only)
             channel (int): the ID of the channel to send the log to
         """
+        if self.queue_enabled:
+            await self.send_queue.put({
+                "level": "error",
+                "args": args,
+                "kwargs": kwargs
+            })
+            return
+
+        await self.handle_error_log(message, *args, **kwargs)
+
+    async def handle_error_log(self, message, *args, **kwargs):
+        ctx = kwargs.get("context", None)
+        exception = kwargs.get("exception", None)
+        console_only = self._is_console_only(kwargs, is_error=True)
+
+        channel = kwargs.get("channel", None)
+
+        self.console.error(message)
+
+        if console_only:
+            return
+
+        # command error
+        if ctx and exception:
+            #  begin original Discord.py logic
+            if self.bot.extra_events.get("on_command_error", None):
+                return
+            if hasattr(ctx.command, "on_error"):
+                return
+            cog = ctx.cog
+            if cog:
+                # pylint: disable=protected-access
+                if (
+                    commands.Cog._get_overridden_method(cog.cog_command_error)
+                    is not None
+                ):
+                    return
+            # end original Discord.py logic
+
+            message_template = self.COMMAND_ERROR_RESPONSE_TEMPLATES.get(
+                exception.__class__, ""
+            )
+            # see if we have mapped this error to no response (None)
+            # or if we have added it to the global ignore list of errors
+            if message_template is None or exception.__class__ in self.IGNORED_ERRORS:
+                return
+            # otherwise set it a default error message
+            if message_template == "":
+                message_template = ErrorResponse()
+
+            error_message = message_template.get_message(exception)
+
+            await ctx.send(f"{ctx.author.mention} {error_message}")
+
+            ctx.error_message = error_message
+
         if type(exception) in self.IGNORED_ERRORS:
             return
 
@@ -361,7 +479,7 @@ class BotLogger:
         print(exception_string)
         exception_string = exception_string[:1994]
 
-        embed = self.generate_error_embed(message, context)
+        embed = self.generate_error_embed(message, ctx)
 
         if channel:
             target = self.bot.get_channel(int(channel))
@@ -377,48 +495,33 @@ class BotLogger:
         except discord.Forbidden:
             pass
 
-    async def handle_command_error_log(self, message, context, exception, channel=None):
-        """Handles command error log events.
+    def _is_console_only(self, kwargs, is_error):
+        """Determines from a kwargs dict if console_only is absolutely True.
 
-        This wraps passing events to the main error handler.
+        This is so `send` can be provided as a convenience arg.
 
         parameters:
-            message (str): the message associated with the error (eg. on_message)
-            context (discord.ext.Context): the context associated with the exception
-            exception (Exception): the exception object associated with the error
-            channel (int): the ID of the channel to send the log to
+            kwargs (dict): the kwargs to parse
+            is_error (bool): True if the decision is for an error log
         """
-        #  begin original Discord.py logic
-        if self.bot.extra_events.get("on_command_error", None):
-            return
-        if hasattr(context.command, "on_error"):
-            return
-        cog = context.cog
-        if cog:
-            # pylint: disable=protected-access
-            if commands.Cog._get_overridden_method(cog.cog_command_error) is not None:
-                return
-        # end original Discord.py logic
+        default_send =  self.DEFAULT_ERROR_LOG_SEND if is_error else self.DEFAULT_LOG_SEND
+        return not kwargs.get("send", default_send)
 
-        message_template = self.COMMAND_ERROR_RESPONSE_TEMPLATES.get(
-            exception.__class__, ""
-        )
-        # see if we have mapped this error to no response (None)
-        # or if we have added it to the global ignore list of errors
-        if message_template is None or exception.__class__ in self.IGNORED_ERRORS:
-            return
-        # otherwise set it a default error message
-        if message_template == "":
-            message_template = ErrorResponse()
+    def generate_event_data(self, event_type, *args, **kwargs):
+        message = None
+        embed = self.bot.embed_api.Embed()
 
-        error_message = message_template.get_message(exception)
+        if event_type == "command":
+            message = "Command detected!"
 
-        await context.send(f"{context.author.mention} {error_message}")
+            ctx = kwargs.get("context", kwargs.get("ctx"))
+            embed.title = message
 
-        context.error_message = error_message
-        await self.handle_error_log(
-            message, exception, context=context, channel=channel
-        )
+        else:
+            message = f"New event: {event_type}"
+            embed.title = message
+
+        return {"message": message, "embed": embed}
 
     def generate_log_embed(self, message, level_):
         """Wrapper for generated the log embed.

@@ -38,6 +38,8 @@ class BasementBot(commands.Bot):
     PluginConfig = plugin.PluginConfig
 
     def __init__(self, run_on_init=True, intents=None):
+        super().__init__(command_prefix=self.get_prefix, intents=intents)
+
         self.owner = None
         self.config = None
         self.mongo = None
@@ -47,14 +49,12 @@ class BasementBot(commands.Bot):
         self.guild_config_collection = None
         self.config_cache = collections.defaultdict(dict)
 
-        self.logger = self.get_logger(self.__class__.__name__)
-
         self.load_bot_config(validate=True)
 
         self.plugin_api = plugin.PluginAPI(bot=self)
         self.embed_api = embed_package.EmbedAPI(bot=self)
 
-        super().__init__(command_prefix=self.get_prefix, intents=intents)
+        self.logger = logger.BotLogger(bot=self, name=self.__class__.__name__)
 
         if not run_on_init:
             return
@@ -176,9 +176,149 @@ class BasementBot(commands.Bot):
         """Callback for when the bot is finished starting up."""
         self._startup_time = datetime.datetime.utcnow()
 
+        await self.logger.event("ready", send=True)
+
         await self.get_owner()
 
         await self.logger.debug("Online!", send=True)
+
+    async def on_command(self, ctx):
+        await self.logger.event("command", context=ctx, send=True)
+
+    async def on_connect(self):
+        await self.logger.event("connected", send=True)
+
+    async def on_resumed(self):
+        await self.logger.event("resumed", send=True)
+
+    async def on_disconnect(self):
+        await self.logger.event("disconnected")
+
+    async def on_typing(self, channel, user, when):
+        await self.logger.event("typing", channel=channel, user=user, when=when)
+
+    async def on_message_delete(self, message):
+        await self.logger.event("message_delete", message=message, send=True)
+
+    async def on_bulk_message_delete(self, messages):
+        await self.logger.event("bulk_message_delete", messages=messages, send=True)
+
+    async def on_message_edit(self, before, after):
+        await self.logger.event("message_edit", before=before, after=after, send=True)
+
+    async def on_reaction_add(self, reaction, user):
+        await self.logger.event("reaction_add", reaction=reaction, user=user, send=True)
+
+    async def on_reaction_remove(self, reaction, user):
+        await self.logger.event(
+            "reaction_remove", reaction=reaction, user=user, send=True
+        )
+
+    async def on_reaction_clear(self, message, reactions):
+        await self.logger.event(
+            "reaction_clear", message=message, reactions=reactions, send=True
+        )
+
+    async def on_reaction_clear_emoji(self, reaction):
+        await self.logger.event("reaction_clear_emoji", reaction=reaction, send=True)
+
+    async def on_guild_channel_delete(self, channel):
+        await self.logger.event("guild_channel_delete", channel=channel, send=True)
+
+    async def on_guild_channel_create(self, channel):
+        await self.logger.event("guild_channel_create", channel=channel, send=True)
+
+    async def on_guild_channel_update(self, before, after):
+        await self.logger.event(
+            "guild_channel_create", before=before, after=after, send=True
+        )
+
+    async def on_guild_channel_pins_update(self, channel, last_pin):
+        await self.logger.event(
+            "guild_channel_pins_update", channel=channel, last_pin=last_pin
+        )
+
+    async def on_guild_integrations_update(self, guild):
+        await self.logger.event("guild_integrations_update", guild=guild, send=True)
+
+    async def on_webhooks_update(self, channel):
+        await self.logger.event("webhooks_update", channel=channel, send=True)
+
+    async def on_member_join(self, member):
+        await self.logger.event("member_join", member=member, send=True)
+
+    async def on_member_remove(self, member):
+        await self.logger.event("member_remove", member=member, send=True)
+
+    async def on_member_update(self, before, after):
+        await self.logger.event("member_update", before=before, after=after, send=True)
+
+    async def on_user_update(self, before, after):
+        await self.logger.event("user_update", before=before, after=after, send=True)
+
+    async def on_guild_join(self, guild):
+        await self.logger.event("guild_join", guild=guild, send=True)
+
+    async def on_guild_remove(self, guild):
+        await self.logger.event("guild_remove", guild=guild, send=True)
+
+    async def on_guild_update(self, before, after):
+        await self.logger.event("guild_update", before=before, after=after, send=True)
+
+    async def on_guild_role_create(self, role):
+        await self.logger.event("guild_role_create", role=role, send=True)
+
+    async def on_guild_role_delete(self, role):
+        await self.logger.event("guild_role_delete", role=role, send=True)
+
+    async def on_guild_role_update(self, before, after):
+        await self.logger.event(
+            "guild_role_update", before=before, after=after, send=True
+        )
+
+    async def on_guild_emojis_update(self, before, after):
+        await self.logger.event(
+            "guild_emojis_update", before=before, after=after, send=True
+        )
+
+    async def on_guild_available(self, guild):
+        await self.logger.event("guild_available", guild=guild, send=True)
+
+    async def on_guild_unavailable(self, guild):
+        await self.logger.event("guild_unavailable", guild=guild, send=True)
+
+    async def on_member_ban(self, guild, user):
+        await self.logger.event("member_ban", guild=guild, user=user, send=True)
+
+    async def on_member_unban(self, guild, user):
+        await self.logger.event("member_unban", guild=guild, user=user, send=True)
+
+    async def on_invite_create(invite):
+        await self.logger.event("invite_create", invite=invite, send=True)
+
+    async def on_invite_delete(invite):
+        await self.logger.event("invite_delete", invite=invite, send=True)
+
+    async def on_group_join(self, channel, user):
+        await self.logger.event("group_join", channel=channel, user=user, send=True)
+
+    async def on_group_remove(self, channel, user):
+        await self.logger.event("group_remove", channel=channel, user=user, send=True)
+
+    async def on_relationship_add(self, relationship):
+        await self.logger.event(
+            "relationship_add", relationship=relationship, send=True
+        )
+
+    async def on_relationship_remove(self, relationship):
+        await self.logger.event(
+            "relationship_remove", relationship=relationship, send=True
+        )
+
+    async def on_relationship_update(self, before, after):
+        await self.logger.event(
+            "relationship_update", before=before, after=after, send=True
+        )
 
     async def on_message(self, message):
         """Catches messages and acts appropriately.
@@ -186,6 +326,8 @@ class BasementBot(commands.Bot):
         parameters:
             message (discord.Message): the message object
         """
+        await self.logger.event("message", message=message)
+
         owner = await self.get_owner()
 
         if (
@@ -194,10 +336,11 @@ class BasementBot(commands.Bot):
             and message.author.id != owner.id
             and not message.author.bot
         ):
-            await owner.send(f'PM from `{message.author}`: "{message.content}"')
+            await self.logger.info(
+                f'PM from `{message.author}`: "{message.content}"', send=True
+            )
 
-        ctx = await self.get_context(message)
-        await self.invoke(ctx)
+        await self.process_commands(message)
 
     async def on_error(self, event_method, *args, **kwargs):
         """Catches non-command errors and sends them to the error logger for processing.
@@ -260,6 +403,7 @@ class BasementBot(commands.Bot):
             raise commands.MissingPermissions(["bot_admin"])
 
         result = await super().can_run(ctx, call_once=call_once)
+
         return result
 
     async def is_bot_admin(self, ctx):
@@ -370,7 +514,7 @@ class BasementBot(commands.Bot):
         """Syncs the given config with the currently loaded plugins.
 
         parameters:
-            config (dict): the guild config object
+            config_object (dict): the guild config object
         """
         config_object = munch.munchify(config_object)
 
@@ -592,14 +736,6 @@ class BasementBot(commands.Bot):
         It is recommended to use this when setting up plugins.
         """
         return self.plugin_api.process_plugin_setup(*args, **kwargs)
-
-    def get_logger(self, name):
-        """Wraps getting a new logging channel.
-
-        parameters:
-            name (str): the name of the channel
-        """
-        return logger.BotLogger(self, name=name)
 
     async def tagged_response(self, ctx, content=None, target=None, **kwargs):
         """Sends a context response with the original author tagged.
