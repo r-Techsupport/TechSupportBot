@@ -195,7 +195,7 @@ class BotLogger:
     DEFAULT_LOG_SEND = False
     # this defaults to True because most error logs should send out
     DEFAULT_ERROR_LOG_SEND = True
-    DISCORD_WAIT = 5
+    DISCORD_WAIT = 2
 
     def __init__(self, bot=None, name="root", queue=True):
         self.bot = bot
@@ -215,50 +215,6 @@ class BotLogger:
 
         if self.queue_enabled:
             self.bot.loop.create_task(self.log_from_queue())
-
-    async def log_from_queue(self):
-        last_send_to_discord = datetime.datetime.now() - datetime.timedelta(seconds=self.DISCORD_WAIT)
-        while True:
-            try:
-                log_data = await self.send_queue.get()
-                if not log_data:
-                    continue
-
-                log_data = munch.munchify(log_data)
-
-                is_error = log_data.level == "error"
-                if not self._is_console_only(log_data.kwargs, is_error=is_error):
-                    # check if we need to sleep before sending to discord again
-                    duration = (datetime.datetime.now() - last_send_to_discord).seconds
-                    if duration < self.DISCORD_WAIT:
-                        await asyncio.sleep(int(self.DISCORD_WAIT-duration))
-                    last_send_to_discord = datetime.datetime.now()
-
-                if log_data.level == "info":
-                    await self.handle_generic_log(
-                        log_data.message, "info", self.console.info, *log_data.args, **log_data.kwargs
-                    )
-                elif log_data.level == "debug":
-                    await self.handle_generic_log(
-                        log_data.message, "debug", self.console.debug, *log_data.args, **log_data.kwargs
-                    )
-                elif log_data.level == "warning":
-                    await self.handle_generic_log(
-                        log_data.message, "debug", self.console.warning, *log_data.args, **log_data.kwargs
-                    )
-                elif log_data.level == "event":
-                    await self.handle_event_log(
-                        log_data.event_type, *log_data.args, **log_data.kwargs
-                    )
-                elif log_data.level == "error":
-                    await self.handle_error_log(
-                        log_data.message, *log_data.args, **log_data.kwargs
-                    )
-                else:
-                    self.console.warning(f"Received unprocessable log level: {log_data.level}")
-
-            except Exception as exception:
-                self.console.error(f"Could not read from log queue: {exception}")
 
     async def info(self, message, *args, **kwargs):
         """Logs at the INFO level.
@@ -510,12 +466,28 @@ class BotLogger:
     def generate_event_data(self, event_type, *args, **kwargs):
         message = None
         embed = self.bot.embed_api.Embed()
+        embed.set_thumbnail(url=self.bot.user.avatar_url)
 
         if event_type == "command":
-            message = "Command detected!"
-
             ctx = kwargs.get("context", kwargs.get("ctx"))
+
+            message = f"Command detected: {ctx.prefix}{ctx.command.name}"
             embed.title = message
+            embed.add_field(name="User", value=ctx.author, inline=False)
+            embed.add_field(name="Channel", value=ctx.channel.name, inline=False)
+            embed.add_field(name="Server", value=f"{ctx.guild.name} ({ctx.guild.id})", inline=False)
+
+        elif event_type == "message_edit":
+            before = kwargs.get("before")
+            after = kwargs.get("after")
+
+            message = f"Message edit detected on message with ID {before.id}"
+            embed.title = message
+
+            embed.add_field(name="Before edit", value=before.content or "None")
+            embed.add_field(name="After edit", value=after.content or "None")
+            embed.add_field(name="Channel", value=before.channel.name)
+            embed.add_field(name="Server", value=f"{before.channel.guild.name} ({before.channel.guild.id})", inline=False)
 
         else:
             message = f"New event: {event_type}"
@@ -584,3 +556,48 @@ class BotLogger:
         embed.set_thumbnail(url=self.bot.user.avatar_url)
 
         return embed
+
+    async def log_from_queue(self):
+        last_send_to_discord = datetime.datetime.now() - datetime.timedelta(seconds=self.DISCORD_WAIT)
+
+        while True:
+            try:
+                log_data = await self.send_queue.get()
+                if not log_data:
+                    continue
+
+                log_data = munch.munchify(log_data)
+
+                is_error = log_data.level == "error"
+                if not self._is_console_only(log_data.kwargs, is_error=is_error):
+                    # check if we need to sleep before sending to discord again
+                    duration = (datetime.datetime.now() - last_send_to_discord).seconds
+                    if duration < self.DISCORD_WAIT:
+                        await asyncio.sleep(int(self.DISCORD_WAIT-duration))
+                    last_send_to_discord = datetime.datetime.now()
+
+                if log_data.level == "info":
+                    await self.handle_generic_log(
+                        log_data.message, "info", self.console.info, *log_data.args, **log_data.kwargs
+                    )
+                elif log_data.level == "debug":
+                    await self.handle_generic_log(
+                        log_data.message, "debug", self.console.debug, *log_data.args, **log_data.kwargs
+                    )
+                elif log_data.level == "warning":
+                    await self.handle_generic_log(
+                        log_data.message, "debug", self.console.warning, *log_data.args, **log_data.kwargs
+                    )
+                elif log_data.level == "event":
+                    await self.handle_event_log(
+                        log_data.event_type, *log_data.args, **log_data.kwargs
+                    )
+                elif log_data.level == "error":
+                    await self.handle_error_log(
+                        log_data.message, *log_data.args, **log_data.kwargs
+                    )
+                else:
+                    self.console.warning(f"Received unprocessable log level: {log_data.level}")
+
+            except Exception as exception:
+                self.console.error(f"Could not read from log queue: {exception}")

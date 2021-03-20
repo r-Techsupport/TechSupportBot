@@ -832,7 +832,7 @@ class BasementBot(commands.Bot):
             embeds (Union[discord.Embed, str][]): the embeds (or URLs to render them) to paginate
             timeout (int) (seconds): the time to wait before exiting the reaction listener
             tag_user (bool): True if the context user should be mentioned in the response
-            restrict (bool): True if only the caller and admins can navigate the pages
+            restrict (bool): True if only the caller can navigate the results
         """
         # limit large outputs
         embeds = embeds[:20]
@@ -878,9 +878,10 @@ class BasementBot(commands.Bot):
                 break
 
             # check if the reaction should be processed
-            if (reaction.message.id != message.id) or (
-                restrict and user.id != ctx.author.id
-            ):
+            if (reaction.message.id != message.id):
+                continue
+
+            if restrict and user.id != ctx.author.id:
                 # this is checked first so it can pass to the deletion
                 pass
 
