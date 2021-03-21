@@ -382,7 +382,7 @@ class BotLogger:
         """
         if self.queue_enabled:
             await self.send_queue.put(
-                {"level": "error", "args": args, "kwargs": kwargs}
+                {"level": "error", "message": message, "args": args, "kwargs": kwargs}
             )
             return
 
@@ -405,9 +405,6 @@ class BotLogger:
         channel = kwargs.get("channel", None)
 
         self.console.error(message)
-
-        if console_only:
-            return
 
         # command error
         if ctx and exception:
@@ -442,6 +439,9 @@ class BotLogger:
             await ctx.send(f"{ctx.author.mention} {error_message}")
 
             ctx.error_message = error_message
+
+        if console_only:
+            return
 
         if type(exception) in self.IGNORED_ERRORS:
             return
@@ -504,18 +504,15 @@ class BotLogger:
         render_func_name = f"render_{event_type}_event"
         render_func = getattr(self, render_func_name, self.render_default_event)
 
-        if render_func.__name__ == "render_default_event":
-            kwargs["event_type"] = event_type
+        kwargs["event_type"] = event_type
 
         try:
             message, embed = render_func(*args, **kwargs)
         except Exception:
-            return
+            message, embed = self.render_default_event(*args, **kwargs)
 
-        if not message or not embed:
-            return
-
-        embed.set_thumbnail(url=self.bot.user.avatar_url)
+        if embed:
+            embed.set_thumbnail(url=self.bot.user.avatar_url)
 
         return {"message": message, "embed": embed}
 
@@ -682,6 +679,8 @@ class BotLogger:
             value=server_text,
             inline=False,
         )
+
+        return message, embed
 
     def render_guild_channel_delete_event(self, *args, **kwargs):
         """Renders the named event."""
@@ -907,6 +906,8 @@ class BotLogger:
 
         embed = self.bot.embed_api.Embed(title=message)
         embed.add_field(name="Server", value=server_text)
+
+        return message, embed
 
     def render_member_ban_event(self, *args, **kwargs):
         """Renders the named event."""
