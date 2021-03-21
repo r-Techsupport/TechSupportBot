@@ -1,6 +1,8 @@
 """Module for logging bot events.
 """
 
+import asyncio
+import datetime
 import logging
 import os
 import traceback
@@ -17,6 +19,8 @@ OVERRIDDEN_MODULES_MAP = {
 
 for module_name, level in OVERRIDDEN_MODULES_MAP.items():
     logging.getLogger(module_name).setLevel(level)
+
+# pylint: disable=unused-argument
 
 # pylint: disable=too-few-public-methods
 class ErrorResponse:
@@ -79,6 +83,7 @@ class BotLogger:
     parameters:
         bot (bot.BasementBot): the bot object
         name (str): the name of the logging channel
+        queue (bool): True if a queue should be used for writing logs
     """
 
     COMMAND_ERROR_RESPONSE_TEMPLATES = {
@@ -188,12 +193,13 @@ class BotLogger:
     }
 
     IGNORED_ERRORS = set([commands.CommandNotFound])
-    # this defaults to True because most logs shouldn't send out
-    DEFAULT_LOG_CONSOLE_ONLY = True
-    # this defaults to False because most error logs should send out
-    DEFAULT_ERROR_LOG_CONSOLE_ONLY = False
+    # this defaults to False because most logs shouldn't send out
+    DEFAULT_LOG_SEND = False
+    # this defaults to True because most error logs should send out
+    DEFAULT_ERROR_LOG_SEND = True
+    DISCORD_WAIT = 2
 
-    def __init__(self, bot=None, name="root"):
+    def __init__(self, bot=None, name="root", queue=True, send=True):
         self.bot = bot
 
         try:
@@ -206,14 +212,28 @@ class BotLogger:
 
         self.console = logging.getLogger(name)
 
+        self.send_queue = asyncio.Queue(maxsize=1000) if queue else None
+        self.queue_enabled = queue
+
+        self.send = send
+
+        if self.queue_enabled:
+            self.bot.loop.create_task(self.log_from_queue())
+
     async def info(self, message, *args, **kwargs):
         """Logs at the INFO level.
 
         parameters:
             message (str): the message to log
-            console_only (bool): True if only the console should be logged to
             send (bool): The reverse of the above (overrides console_only)
+            channel (int): the ID of the channel to send the log to
         """
+        if self.queue_enabled:
+            await self.send_queue.put(
+                {"level": "info", "message": message, "args": args, "kwargs": kwargs}
+            )
+            return
+
         await self.handle_generic_log(
             message, "info", self.console.info, *args, **kwargs
         )
@@ -223,10 +243,16 @@ class BotLogger:
 
         parameters:
             message (str): the message to log
-            console_only (bool): True if only the console should be logged to
             send (bool): The reverse of the above (overrides console_only)
+            channel (int): the ID of the channel to send the log to
         """
         if not self.debug_mode:
+            return
+
+        if self.queue_enabled:
+            await self.send_queue.put(
+                {"level": "debug", "message": message, "args": args, "kwargs": kwargs}
+            )
             return
 
         await self.handle_generic_log(
@@ -238,44 +264,18 @@ class BotLogger:
 
         parameters:
             message (str): the message to log
-            console_only (bool): True if only the console should be logged to
             send (bool): The reverse of the above (overrides console_only)
+            channel (int): the ID of the channel to send the log to
         """
+        if self.queue_enabled:
+            await self.send_queue.put(
+                {"level": "warning", "message": message, "args": args, "kwargs": kwargs}
+            )
+            return
 
         await self.handle_generic_log(
             message, "warning", self.console.warning, *args, **kwargs
         )
-
-    async def error(self, message, *args, **kwargs):
-        """Logs at the ERROR level.
-
-        parameters:
-            message (str): the message to log
-            console_only (bool): True if only the console should be logged to
-            send (bool): The reverse of the above (overrides console_only)
-            channel (int): the ID of the channel to send the log to
-        """
-
-        ctx = kwargs.pop("context", None)
-        exception = kwargs.pop("exception", None)
-        console_only = self._is_console_only(kwargs, is_error=True)
-
-        channel = kwargs.pop("channel", None)
-
-        self.console.error(message, *args, **kwargs)
-
-        if console_only:
-            return
-
-        # command error
-        if ctx and exception:
-            await self.handle_command_error_log(
-                message, ctx, exception, channel=channel
-            )
-            return
-
-        # bot error
-        await self.handle_error_log(message, exception, channel=channel)
 
     async def handle_generic_log(self, message, level_, console, *args, **kwargs):
         """Handles most logging contexts.
@@ -284,15 +284,14 @@ class BotLogger:
             message (str): the message to log
             level (str): the logging level
             console (func): logging level method
-            console_only (bool): True if only the console should be logged to
             send (bool): The reverse of the above (overrides console_only)
             channel (int): the ID of the channel to send the log to
         """
         console_only = self._is_console_only(kwargs, is_error=False)
 
-        channel = kwargs.pop("channel", None)
+        channel = kwargs.get("channel", None)
 
-        console(message, *args, **kwargs)
+        console(message)
 
         if console_only:
             return
@@ -302,9 +301,6 @@ class BotLogger:
         else:
             target = await self.bot.get_owner()
 
-        if not target:
-            return
-
         embed = self.generate_log_embed(message, level_)
 
         try:
@@ -312,43 +308,141 @@ class BotLogger:
         except discord.Forbidden:
             pass
 
-    def _is_console_only(self, kwargs, is_error):
-        """Determines from a kwargs dict if console_only is absolutely True.
+    async def event(self, event_type, *args, **kwargs):
+        """Logs at the EVENT level.
 
-        This is so `send` can be provided as a convenience arg.
-
-        parameters:
-            kwargs (dict): the kwargs to parse
-            is_error (bool): True if the decision is for an error log
-        """
-        console_only = kwargs.pop(
-            "console_only",
-            self.DEFAULT_ERROR_LOG_CONSOLE_ONLY
-            if is_error
-            else self.DEFAULT_LOG_CONSOLE_ONLY,
-        )
-        send = kwargs.pop(
-            "send",
-            not (
-                self.DEFAULT_ERROR_LOG_CONSOLE_ONLY
-                if is_error
-                else self.DEFAULT_LOG_CONSOLE_ONLY
-            ),
-        )
-
-        console_only = False if send else console_only
-
-        return console_only
-
-    async def handle_error_log(self, message, exception, context=None, channel=None):
-        """Handles all error log events.
+        This provides an interface for logging Discord events (eg, on_member_update)
 
         parameters:
-            message (str): the message associated with the error (eg. on_message)
-            exception (Exception): the exception object associated with the error
-            context (discord.ext.Context): the context associated with the exception
+            event_type (str): the event type suffix
+            send (bool): The reverse of the above (overrides console_only)
             channel (int): the ID of the channel to send the log to
         """
+        if self.queue_enabled:
+            await self.send_queue.put(
+                {
+                    "level": "event",
+                    "event_type": event_type,
+                    "args": args,
+                    "kwargs": kwargs,
+                }
+            )
+            return
+
+        await self.handle_event_log(event_type, *args, **kwargs)
+
+    async def handle_event_log(self, event_type, *args, **kwargs):
+        """Handles event logging.
+
+        parameters:
+            event_type (str): the event type suffix
+            send (bool): The reverse of the above (overrides console_only)
+            channel (int): the ID of the channel to send the log to
+        """
+        console_only = self._is_console_only(kwargs, is_error=False)
+
+        channel = kwargs.get("channel", None)
+
+        event_data = self.generate_event_data(event_type, *args, **kwargs)
+        if not event_data:
+            return
+
+        message = event_data.get("message")
+        if not message:
+            return
+
+        # events are a special case of the INFO level
+        self.console.info(message)
+
+        if console_only:
+            return
+
+        if channel:
+            target = self.bot.get_channel(int(channel))
+        else:
+            target = await self.bot.get_owner()
+
+        embed = event_data.get("embed")
+        if not embed:
+            return
+
+        try:
+            await target.send(embed=embed)
+        except discord.Forbidden:
+            pass
+
+    async def error(self, message, *args, **kwargs):
+        """Logs at the ERROR level.
+
+        parameters:
+            message (str): the message to log
+            exception (Exception): the exception object
+            send (bool): The reverse of the above (overrides console_only)
+            channel (int): the ID of the channel to send the log to
+        """
+        if self.queue_enabled:
+            await self.send_queue.put(
+                {"level": "error", "message": message, "args": args, "kwargs": kwargs}
+            )
+            return
+
+        await self.handle_error_log(message, *args, **kwargs)
+
+    # pylint: disable=too-many-return-statements,too-many-branches
+    async def handle_error_log(self, message, *args, **kwargs):
+        """Handles error logging.
+
+        parameters:
+            message (str): the message to log with the error
+            exception (Exception): the exception object
+            send (bool): The reverse of the above (overrides console_only)
+            channel (int): the ID of the channel to send the log to
+        """
+        ctx = kwargs.get("context", None)
+        exception = kwargs.get("exception", None)
+        console_only = self._is_console_only(kwargs, is_error=True)
+
+        channel = kwargs.get("channel", None)
+
+        self.console.error(message)
+
+        # command error
+        if ctx and exception:
+            #  begin original Discord.py logic
+            if self.bot.extra_events.get("on_command_error", None):
+                return
+            if hasattr(ctx.command, "on_error"):
+                return
+            cog = ctx.cog
+            if cog:
+                # pylint: disable=protected-access
+                if (
+                    commands.Cog._get_overridden_method(cog.cog_command_error)
+                    is not None
+                ):
+                    return
+            # end original Discord.py logic
+
+            message_template = self.COMMAND_ERROR_RESPONSE_TEMPLATES.get(
+                exception.__class__, ""
+            )
+            # see if we have mapped this error to no response (None)
+            # or if we have added it to the global ignore list of errors
+            if message_template is None or exception.__class__ in self.IGNORED_ERRORS:
+                return
+            # otherwise set it a default error message
+            if message_template == "":
+                message_template = ErrorResponse()
+
+            error_message = message_template.get_message(exception)
+
+            await ctx.send(f"{ctx.author.mention} {error_message}")
+
+            ctx.error_message = error_message
+
+        if console_only:
+            return
+
         if type(exception) in self.IGNORED_ERRORS:
             return
 
@@ -361,7 +455,7 @@ class BotLogger:
         print(exception_string)
         exception_string = exception_string[:1994]
 
-        embed = self.generate_error_embed(message, context)
+        embed = self.generate_error_embed(message, ctx)
 
         if channel:
             target = self.bot.get_channel(int(channel))
@@ -377,48 +471,482 @@ class BotLogger:
         except discord.Forbidden:
             pass
 
-    async def handle_command_error_log(self, message, context, exception, channel=None):
-        """Handles command error log events.
+    def _is_console_only(self, kwargs, is_error):
+        """Determines from a kwargs dict if console_only is absolutely True.
 
-        This wraps passing events to the main error handler.
+        This is so `send` can be provided as a convenience arg.
 
         parameters:
-            message (str): the message associated with the error (eg. on_message)
-            context (discord.ext.Context): the context associated with the exception
-            exception (Exception): the exception object associated with the error
-            channel (int): the ID of the channel to send the log to
+            kwargs (dict): the kwargs to parse
+            is_error (bool): True if the decision is for an error log
         """
-        #  begin original Discord.py logic
-        if self.bot.extra_events.get("on_command_error", None):
-            return
-        if hasattr(context.command, "on_error"):
-            return
-        cog = context.cog
-        if cog:
-            # pylint: disable=protected-access
-            if commands.Cog._get_overridden_method(cog.cog_command_error) is not None:
-                return
-        # end original Discord.py logic
+        # check if sending is disabled globally
+        if not self.send:
+            return True
 
-        message_template = self.COMMAND_ERROR_RESPONSE_TEMPLATES.get(
-            exception.__class__, ""
+        default_send = (
+            self.DEFAULT_ERROR_LOG_SEND if is_error else self.DEFAULT_LOG_SEND
         )
-        # see if we have mapped this error to no response (None)
-        # or if we have added it to the global ignore list of errors
-        if message_template is None or exception.__class__ in self.IGNORED_ERRORS:
-            return
-        # otherwise set it a default error message
-        if message_template == "":
-            message_template = ErrorResponse()
 
-        error_message = message_template.get_message(exception)
+        return not kwargs.get("send", default_send)
 
-        await context.send(f"{context.author.mention} {error_message}")
+    # pylint: disable=inconsistent-return-statements
+    def generate_event_data(self, event_type, *args, **kwargs):
+        """Generates an event message and embed.
 
-        context.error_message = error_message
-        await self.handle_error_log(
-            message, exception, context=context, channel=channel
+        parameters:
+            event_type (str): the event type suffix
+        """
+        message = None
+        embed = None
+
+        # hacky AF but I love it
+        render_func_name = f"render_{event_type}_event"
+        render_func = getattr(self, render_func_name, self.render_default_event)
+
+        kwargs["event_type"] = event_type
+
+        try:
+            message, embed = render_func(*args, **kwargs)
+        except Exception:
+            message, embed = self.render_default_event(*args, **kwargs)
+
+        if embed:
+            embed.set_thumbnail(url=self.bot.user.avatar_url)
+
+        return {"message": message, "embed": embed}
+
+    def render_default_event(self, *args, **kwargs):
+        """Renders the message and embed for the default case."""
+        event_type = kwargs.get("event_type")
+
+        message = f"New event: {event_type}"
+        embed = self.bot.embed_api.Embed(title=message)
+
+        return message, embed
+
+    def render_command_event(self, *args, **kwargs):
+        """Renders the named event."""
+        ctx = kwargs.get("context", kwargs.get("ctx"))
+        server_text = self.get_server_text(ctx)
+
+        message = f"Command detected: `{ctx.message.content}`"[0:255]
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="User", value=ctx.author, inline=False)
+        embed.add_field(
+            name="Channel", value=getattr(ctx.channel, "name", "DM"), inline=False
         )
+        embed.add_field(name="Server", value=server_text, inline=False)
+
+        return message, embed
+
+    def render_message_delete_event(self, *args, **kwargs):
+        """Renders the named event."""
+        message_object = kwargs.get("message")
+        server_text = self.get_server_text(message_object)
+
+        message = f"Message with ID {message_object.id} deleted"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(
+            name="Content", value=message_object.content or "None", inline=False
+        )
+        embed.add_field(
+            name="Channel",
+            value=getattr(message_object.channel, "name", "DM"),
+            inline=False,
+        )
+        embed.add_field(
+            name="Server",
+            value=server_text,
+            inline=False,
+        )
+
+        return message, embed
+
+    def render_message_edit_event(self, *args, **kwargs):
+        """Renders the named event."""
+        before = kwargs.get("before")
+        after = kwargs.get("after")
+        server_text = self.get_server_text(before.channel)
+
+        message = f"Message edit detected on message with ID {before.id}"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(
+            name="Before edit", value=before.content or "None", inline=False
+        )
+        embed.add_field(name="After edit", value=after.content or "None", inline=False)
+        embed.add_field(
+            name="Channel", value=getattr(before.channel, "name", "DM"), inline=False
+        )
+        embed.add_field(
+            name="Server",
+            value=server_text,
+            inline=False,
+        )
+
+        return message, embed
+
+    def render_bulk_message_delete_event(self, *args, **kwargs):
+        """Renders the named event."""
+        messages = kwargs.get("messages")
+
+        unique_channels = set()
+        unique_servers = set()
+        for message in messages:
+            unique_channels.add(message.channel.name)
+            unique_servers.add(
+                f"{message.channel.guild.name} ({message.channel.guild.id})"
+            )
+
+        message = f"{len(messages)} messages bulk deleted!"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Channels", value=",".join(unique_channels), inline=False)
+        embed.add_field(name="Servers", value=",".join(unique_servers), inline=False)
+
+        return message, embed
+
+    def render_reaction_add_event(self, *args, **kwargs):
+        """Renders the named event."""
+        reaction = kwargs.get("reaction")
+        user = kwargs.get("user")
+        server_text = self.get_server_text(reaction.message.channel)
+
+        message = f"Reaction added to message with ID {reaction.message.id} by user with ID {user.id}"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Emoji", value=reaction.emoji, inline=False)
+        embed.add_field(name="User", value=user, inline=False)
+        embed.add_field(name="Message", value=reaction.message.content or "None")
+        embed.add_field(name="Message Author", value=reaction.message.author)
+        embed.add_field(
+            name="Channel", value=getattr(reaction.message.channel, "name", "DM")
+        )
+        embed.add_field(
+            name="Server",
+            value=server_text,
+            inline=False,
+        )
+
+        return message, embed
+
+    def render_reaction_remove_event(self, *args, **kwargs):
+        """Renders the named event."""
+        reaction = kwargs.get("reaction")
+        user = kwargs.get("user")
+        server_text = self.get_server_text(reaction.message.channel)
+
+        message = f"Reaction removed from message with ID {reaction.message.id} by user with ID {user.id}"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Emoji", value=reaction.emoji, inline=False)
+        embed.add_field(name="User", value=user, inline=False)
+        embed.add_field(name="Message", value=reaction.message.content or "None")
+        embed.add_field(name="Message Author", value=reaction.message.author)
+        embed.add_field(
+            name="Channel", value=getattr(reaction.message.channel, "name", "DM")
+        )
+        embed.add_field(
+            name="Server",
+            value=server_text,
+            inline=False,
+        )
+
+        return message, embed
+
+    def render_reaction_clear_event(self, *args, **kwargs):
+        """Renders the named event."""
+        message = kwargs.get("message")
+        reactions = kwargs.get("reactions")
+        server_text = self.get_server_text(message.channel)
+
+        message = f"{len(reactions)} cleared from message with ID {message.id}"
+
+        unique_emojis = set()
+        for reaction in reactions:
+            unique_emojis.add(reaction.emoji)
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Emojis", value=",".join(unique_emojis))
+        embed.add_field(name="Message", value=message.content or "None")
+        embed.add_field(name="Message Author", value=message.author)
+        embed.add_field(name="Channel", value=getattr(message.channel, "name", "DM"))
+        embed.add_field(
+            name="Server",
+            value=server_text,
+            inline=False,
+        )
+
+        return message, embed
+
+    def render_guild_channel_delete_event(self, *args, **kwargs):
+        """Renders the named event."""
+        channel = kwargs.get("channel_")
+        server_text = self.get_server_text(channel)
+
+        message = (
+            f"Channel with ID {channel.id} deleted in guild with ID {channel.guild.id}"
+        )
+
+        embed = self.bot.embed_api.Embed(title=message)
+
+        embed.add_field(name="Channel Name", value=channel.name)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_guild_channel_create_event(self, *args, **kwargs):
+        """Renders the named event."""
+        channel = kwargs.get("channel_")
+        server_text = self.get_server_text(channel)
+
+        message = (
+            f"Channel with ID {channel.id} created in guild with ID {channel.guild.id}"
+        )
+
+        embed = self.bot.embed_api.Embed(title=message)
+
+        embed.add_field(name="Channel Name", value=channel.name)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_guild_channel_update_event(self, *args, **kwargs):
+        """Renders the named event."""
+        before = kwargs.get("before")
+        # after = kwargs.get("after")
+        server_text = self.get_server_text(before)
+
+        message = (
+            f"Channel with ID {before.id} modified in guild with ID {before.guild.id}"
+        )
+
+        embed = self.bot.embed_api.Embed(title=message)
+
+        embed.add_field(name="Channel Name", value=before.name)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_guild_channel_pins_update_event(self, *args, **kwargs):
+        """Renders the named event."""
+        channel = kwargs.get("channel_")
+        # last_pin = kwargs.get("last_pin")
+        server_text = self.get_server_text(channel)
+
+        message = f"New message pin event in channel with ID {channel.id} in guild with ID {channel.guild.id}"
+
+        embed = self.bot.embed_api.Embed(title=message)
+
+        embed.add_field(name="Channel Name", value=channel.name)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_guild_integrations_update_event(self, *args, **kwargs):
+        """Renders the named event."""
+        guild = kwargs.get("guild")
+        server_text = self.get_server_text(None, guild=guild)
+
+        message = f"Integrations updated in guild with ID {guild.id}"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_webhooks_update_event(self, *args, **kwargs):
+        """Renders the named event."""
+        channel = kwargs.get("channel_")
+        server_text = self.get_server_text(channel)
+
+        message = f"Webooks updated for channel with ID {channel.id} in guild with ID {channel.guild.id}"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Channel", value=channel.name)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_member_join_event(self, *args, **kwargs):
+        """Renders the named event."""
+        member = kwargs.get("member")
+        server_text = self.get_server_text(member)
+
+        message = (
+            f"Member with ID {member.id} has joined guild with ID {member.guild.id}"
+        )
+        embed = self.bot.embed_api.Embed(title=message)
+
+        embed.add_field(name="Member", value=member)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_member_remove_event(self, *args, **kwargs):
+        """Renders the named event."""
+        member = kwargs.get("member")
+        server_text = self.get_server_text(member)
+
+        message = f"Member with ID {member.id} has left guild with ID {member.guild.id}"
+        embed = self.bot.embed_api.Embed(title=message)
+
+        embed.add_field(name="Member", value=member)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_member_update_event(self, *args, **kwargs):
+        """Renders the named event."""
+        before = kwargs.get("before")
+        # after = kwargs.get("after")
+        server_text = self.get_server_text(before)
+
+        message = (
+            f"Member with ID {before.id} has joined guild with ID {before.guild.id}"
+        )
+        embed = self.bot.embed_api.Embed(title=message)
+
+        embed.add_field(name="Member", value=before)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_guild_join_event(self, *args, **kwargs):
+        """Renders the named event."""
+        guild = kwargs.get("guild")
+        server_text = self.get_server_text(None, guild=guild)
+
+        message = f"Joined guild with ID {guild.id}"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_guild_remove_event(self, *args, **kwargs):
+        """Renders the named event."""
+        guild = kwargs.get("guild")
+        server_text = self.get_server_text(None, guild=guild)
+
+        message = f"Left guild with ID {guild.id}"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_guild_update_event(self, *args, **kwargs):
+        """Renders the named event."""
+        before = kwargs.get("before")
+        # after = kwargs.get("after")
+        server_text = self.get_server_text(None, guild=before)
+
+        message = f"Guild with ID {before.id} updated"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_guild_role_create_event(self, *args, **kwargs):
+        """Renders the named event."""
+        role = kwargs.get("role")
+        server_text = self.get_server_text(role)
+
+        message = (
+            f"New role with name {role.name} added to guild with ID {role.guild.id}"
+        )
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_guild_role_delete_event(self, *args, **kwargs):
+        """Renders the named event."""
+        role = kwargs.get("role")
+        server_text = self.get_server_text(role)
+
+        message = (
+            f"Role with name {role.name} deleted from guild with ID {role.guild.id}"
+        )
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_guild_role_update_event(self, *args, **kwargs):
+        """Renders the named event."""
+        before = kwargs.get("before")
+        # after = kwargs.get("after")
+        server_text = self.get_server_text(before)
+
+        message = (
+            f"Role with name {before.name} updated in guild with ID {before.guild.id}"
+        )
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_guild_emojis_update_event(self, *args, **kwargs):
+        """Renders the named event."""
+        guild = kwargs.get("guild")
+        # before = kwargs.get("before")
+        # after = kwargs.get("after")
+        server_text = self.get_server_text(None, guild=guild)
+
+        message = f"Emojis updated in guild with ID {guild.id}"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_member_ban_event(self, *args, **kwargs):
+        """Renders the named event."""
+        guild = kwargs.get("guild")
+        user = kwargs.get("user")
+        server_text = self.get_server_text(None, guild=guild)
+
+        message = f"User with ID {user.id} banned from guild with ID {guild.id}"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="User", value=user)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    def render_member_unban_event(self, *args, **kwargs):
+        """Renders the named event."""
+        guild = kwargs.get("guild")
+        user = kwargs.get("user")
+        server_text = self.get_server_text(None, guild=guild)
+
+        message = f"User with ID {user.id} unbanned from guild with ID {guild.id}"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="User", value=user)
+        embed.add_field(name="Server", value=server_text)
+
+        return message, embed
+
+    @staticmethod
+    def get_server_text(upper_object, guild=None):
+        """Gets the embed text for a guild.
+
+        parameters:
+            upper_object (obj): the object to pull the guild from
+            guild (discord.Guild): the guild to use instead of an upper object
+        """
+        guild = guild or getattr(upper_object, "guild", None)
+        return f"{guild.name} ({guild.id})" if guild else "DM"
 
     def generate_log_embed(self, message, level_):
         """Wrapper for generated the log embed.
@@ -481,3 +1009,69 @@ class BotLogger:
         embed.set_thumbnail(url=self.bot.user.avatar_url)
 
         return embed
+
+    async def log_from_queue(self):
+        """Logs from the in-memory log queue.
+
+        This provides an easier way of handling log throughput to Discord.
+        """
+
+        last_send_to_discord = datetime.datetime.now() - datetime.timedelta(
+            seconds=self.DISCORD_WAIT
+        )
+
+        while True:
+            try:
+                log_data = await self.send_queue.get()
+                if not log_data:
+                    continue
+
+                log_data = munch.munchify(log_data)
+
+                is_error = log_data.level == "error"
+                if not self._is_console_only(log_data.kwargs, is_error=is_error):
+                    # check if we need to sleep before sending to discord again
+                    duration = (datetime.datetime.now() - last_send_to_discord).seconds
+                    if duration < self.DISCORD_WAIT:
+                        await asyncio.sleep(int(self.DISCORD_WAIT - duration))
+                    last_send_to_discord = datetime.datetime.now()
+
+                if log_data.level == "info":
+                    await self.handle_generic_log(
+                        log_data.message,
+                        "info",
+                        self.console.info,
+                        *log_data.args,
+                        **log_data.kwargs,
+                    )
+                elif log_data.level == "debug":
+                    await self.handle_generic_log(
+                        log_data.message,
+                        "debug",
+                        self.console.debug,
+                        *log_data.args,
+                        **log_data.kwargs,
+                    )
+                elif log_data.level == "warning":
+                    await self.handle_generic_log(
+                        log_data.message,
+                        "warning",
+                        self.console.warning,
+                        *log_data.args,
+                        **log_data.kwargs,
+                    )
+                elif log_data.level == "event":
+                    await self.handle_event_log(
+                        log_data.event_type, *log_data.args, **log_data.kwargs
+                    )
+                elif log_data.level == "error":
+                    await self.handle_error_log(
+                        log_data.message, *log_data.args, **log_data.kwargs
+                    )
+                else:
+                    self.console.warning(
+                        f"Received unprocessable log level: {log_data.level}"
+                    )
+
+            except Exception as exception:
+                self.console.error(f"Could not read from log queue: {exception}")

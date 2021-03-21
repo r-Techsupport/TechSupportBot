@@ -16,11 +16,10 @@ class PluginAPI:
     def __init__(self, bot):
         self.bot = bot
         self.plugins = munch.Munch()
-        self.logger = self.bot.get_logger(self.__class__.__name__)
 
     def get_modules(self):
         """Gets the current list of plugin modules."""
-        self.logger.console.info(f"Searching {self.PLUGINS_DIR} for plugins")
+        self.bot.logger.console.info(f"Searching {self.PLUGINS_DIR} for plugins")
 
         return [
             os.path.basename(f)[:-3]
@@ -33,7 +32,7 @@ class PluginAPI:
 
         returns (dict): the set of loaded and available to load plugins
         """
-        self.logger.console.info("Getting plugin status")
+        self.bot.logger.console.info("Getting plugin status")
 
         statuses = {}
 
@@ -61,27 +60,27 @@ class PluginAPI:
             bot (BasementBot): the bot object to which the plugin is loaded
             allow_failure (bool): True if loader does not raise an exception
         """
-        self.logger.console.info(f"Loading plugin: {plugin_name}")
+        self.bot.logger.console.info(f"Loading plugin: {plugin_name}")
 
         if self.plugins.get(plugin_name):
             message = f"Plugin {plugin_name} already loaded - ignoring load request"
-            self.logger.console.warning(message)
+            self.bot.logger.console.warning(message)
             return self._make_response(False, message)
 
         if plugin_name in self.bot.config.main.disabled_plugins:
             message = f"Plugin {plugin_name} is disabled in bot config - ignoring load request"
-            self.logger.console.warning(message)
+            self.bot.logger.console.warning(message)
             return self._make_response(False, message)
 
         try:
             self.bot.load_extension(f"plugins.{plugin_name}")
             message = f"Successfully loaded plugin: {plugin_name}"
-            self.logger.console.info(message)
+            self.bot.logger.console.info(message)
             return self._make_response(True, message)
 
         except Exception as e:  # pylint: disable=broad-except
             message = f"Unable to load plugin: {plugin_name} (reason: {e})"
-            self.logger.console.error(message)
+            self.bot.logger.console.error(message)
             if allow_failure:
                 return self._make_response(False, message)
 
@@ -95,7 +94,7 @@ class PluginAPI:
             bot (BasementBot): the bot object to which the plugin is loaded
             allow_failure (bool): True if loader does not raise an exception
         """
-        self.logger.console.info(f"Unloading plugin: {plugin_name}")
+        self.bot.logger.console.info(f"Unloading plugin: {plugin_name}")
 
         if not self.plugins.get(plugin_name):
             message = f"Plugin {plugin_name} not loaded - ignoring unload request"
@@ -110,7 +109,7 @@ class PluginAPI:
 
         except Exception as e:  # pylint: disable=broad-except
             message = f"Unable to unload plugin: {plugin_name} (reason: {e})"
-            self.logger.console.error(message)
+            self.bot.logger.console.error(message)
             if allow_failure:
                 return self._make_response(False, message)
             raise RuntimeError from e
@@ -122,7 +121,7 @@ class PluginAPI:
             bot (BasementBot): the bot object to which the plugin is loaded
             allow_failure (bool): True if loader does not raise an exception
         """
-        self.logger.console.debug("Retrieving plugin modules")
+        self.bot.logger.console.debug("Retrieving plugin modules")
         for plugin_name in self.get_modules():
             self.load_plugin(plugin_name, allow_failure=allow_failure)
 
@@ -139,19 +138,21 @@ class PluginAPI:
             module = inspect.getmodule(frame[0])
             if module.__name__.startswith("plugins."):
                 plugin_name = module.__name__.split(".")[-1]
-                self.logger.console.debug(f"Found plugin module name: {plugin_name}")
+                self.bot.logger.console.debug(
+                    f"Found plugin module name: {plugin_name}"
+                )
                 break
 
         if not plugin_name:
             raise RuntimeError("Could not obtain module name for plugin")
 
         for cog in cogs:
-            self.logger.console.debug(f"Adding cog: {cog.__name__}")
-            self.bot.add_cog(cog(self.bot, models=models))
+            self.bot.logger.console.debug(f"Adding cog: {cog.__name__}")
+            self.bot.add_cog(cog(self.bot, models=models, plugin_name=plugin_name))
 
         config = config.data if config else {}
 
-        self.logger.console.debug(f"Registering plugin name: {plugin_name}")
+        self.bot.logger.console.debug(f"Registering plugin name: {plugin_name}")
         self.plugins[plugin_name] = munch.munchify(
             {"status": "loaded", "config": config, "memory": munch.Munch()}
         )

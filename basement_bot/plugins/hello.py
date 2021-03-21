@@ -18,5 +18,3 @@ class Greeter(base.BaseCog):
         emojis = ["🇭", "🇪", "🇾"]
         for emoji in emojis:
             await ctx.message.add_reaction(emoji)
-
-        raise RuntimeError("bitch")

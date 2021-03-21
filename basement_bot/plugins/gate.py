@@ -56,7 +56,9 @@ class ServerGate(base.MatchCog):
     async def response(self, config, ctx, content):
         prefix = await self.bot.get_prefix(ctx.message)
 
-        if content.startswith(prefix):
+        is_admin = await self.bot.is_bot_admin(ctx)
+
+        if content.startswith(prefix) and is_admin:
             return
 
         await ctx.message.delete()
