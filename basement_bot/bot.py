@@ -176,20 +176,21 @@ class BasementBot(commands.Bot):
         """Callback for when the bot is finished starting up."""
         self._startup_time = datetime.datetime.utcnow()
 
-        await self.logger.event("ready", send=True)
+        await self.logger.event("ready")
 
         await self.get_owner()
 
         await self.logger.debug("Online!", send=True)
 
     async def on_command(self, ctx):
-        await self.logger.event("command", context=ctx, send=True)
+        log_channel = await self.get_log_channel_from_guild(getattr(ctx, "guild", None))
+        await self.logger.event("command", context=ctx, send=True, channel=log_channel)
 
     async def on_connect(self):
-        await self.logger.event("connected", send=True)
+        await self.logger.event("connected")
 
     async def on_resumed(self):
-        await self.logger.event("resumed", send=True)
+        await self.logger.event("resumed")
 
     async def on_disconnect(self):
         await self.logger.event("disconnected")
@@ -198,105 +199,216 @@ class BasementBot(commands.Bot):
         await self.logger.event("typing", channel=channel, user=user, when=when)
 
     async def on_message_delete(self, message):
-        await self.logger.event("message_delete", message=message, send=True)
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(message.channel, "guild", None)
+        )
+        await self.logger.event(
+            "message_delete", message=message, send=True, channel=log_channel
+        )
 
     async def on_bulk_message_delete(self, messages):
         await self.logger.event("bulk_message_delete", messages=messages, send=True)
 
     async def on_message_edit(self, before, after):
-        await self.logger.event("message_edit", before=before, after=after, send=True)
+        # this seems to spam, not sure why
+        if before.content == after.content:
+            return
+
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(before.channel, "guild", None)
+        )
+        await self.logger.event(
+            "message_edit", before=before, after=after, send=True, channel=log_channel
+        )
 
     async def on_reaction_add(self, reaction, user):
-        await self.logger.event("reaction_add", reaction=reaction, user=user, send=True)
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(reaction.message, "guild", None)
+        )
+        await self.logger.event(
+            "reaction_add", reaction=reaction, user=user, send=True, channel=log_channel
+        )
 
     async def on_reaction_remove(self, reaction, user):
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(reaction.message, "guild", None)
+        )
         await self.logger.event(
-            "reaction_remove", reaction=reaction, user=user, send=True
+            "reaction_remove",
+            reaction=reaction,
+            user=user,
+            send=True,
+            channel=log_channel,
         )
 
     async def on_reaction_clear(self, message, reactions):
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(message, "guild", None)
+        )
         await self.logger.event(
-            "reaction_clear", message=message, reactions=reactions, send=True
+            "reaction_clear",
+            message=message,
+            reactions=reactions,
+            send=True,
+            channel=log_channel,
         )
 
     async def on_reaction_clear_emoji(self, reaction):
-        await self.logger.event("reaction_clear_emoji", reaction=reaction, send=True)
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(reaction.message, "guild", None)
+        )
+        await self.logger.event(
+            "reaction_clear_emoji", reaction=reaction, send=True, channel=log_channel
+        )
 
     async def on_guild_channel_delete(self, channel):
-        await self.logger.event("guild_channel_delete", channel=channel, send=True)
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(channel, "guild", None)
+        )
+        await self.logger.event(
+            "guild_channel_delete", channel_=channel, send=True, channel=log_channel
+        )
 
     async def on_guild_channel_create(self, channel):
-        await self.logger.event("guild_channel_create", channel=channel, send=True)
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(channel, "guild", None)
+        )
+        await self.logger.event(
+            "guild_channel_create", channel_=channel, send=True, channel=log_channel
+        )
 
     async def on_guild_channel_update(self, before, after):
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(before, "guild", None)
+        )
         await self.logger.event(
-            "guild_channel_create", before=before, after=after, send=True
+            "guild_channel_create",
+            before=before,
+            after=after,
+            send=True,
+            channel=log_channel,
         )
 
     async def on_guild_channel_pins_update(self, channel, last_pin):
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(channel, "guild", None)
+        )
         await self.logger.event(
-            "guild_channel_pins_update", channel=channel, last_pin=last_pin
+            "guild_channel_pins_update",
+            channel_=channel,
+            last_pin=last_pin,
+            channel=log_channel,
         )
 
     async def on_guild_integrations_update(self, guild):
-        await self.logger.event("guild_integrations_update", guild=guild, send=True)
-
-    async def on_webhooks_update(self, channel):
-        await self.logger.event("webhooks_update", channel=channel, send=True)
-
-    async def on_member_join(self, member):
-        await self.logger.event("member_join", member=member, send=True)
-
-    async def on_member_remove(self, member):
-        await self.logger.event("member_remove", member=member, send=True)
-
-    async def on_member_update(self, before, after):
-        await self.logger.event("member_update", before=before, after=after, send=True)
-
-    async def on_user_update(self, before, after):
-        await self.logger.event("user_update", before=before, after=after, send=True)
-
-    async def on_guild_join(self, guild):
-        await self.logger.event("guild_join", guild=guild, send=True)
-
-    async def on_guild_remove(self, guild):
-        await self.logger.event("guild_remove", guild=guild, send=True)
-
-    async def on_guild_update(self, before, after):
-        await self.logger.event("guild_update", before=before, after=after, send=True)
-
-    async def on_guild_role_create(self, role):
-        await self.logger.event("guild_role_create", role=role, send=True)
-
-    async def on_guild_role_delete(self, role):
-        await self.logger.event("guild_role_delete", role=role, send=True)
-
-    async def on_guild_role_update(self, before, after):
+        log_channel = await self.get_log_channel_from_guild(guild)
         await self.logger.event(
-            "guild_role_update", before=before, after=after, send=True
+            "guild_integrations_update", guild=guild, send=True, channel=log_channel
         )
 
-    async def on_guild_emojis_update(self, before, after):
+    async def on_webhooks_update(self, channel):
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(channel, "guild", None)
+        )
+        await self.logger.event(
+            "webhooks_update", channel_=channel, send=True, channel=log_channel
+        )
+
+    async def on_member_join(self, member):
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(member, "guild", None)
+        )
+        await self.logger.event(
+            "member_join", member=member, send=True, channel=log_channel
+        )
+
+    async def on_member_remove(self, member):
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(member, "guild", None)
+        )
+        await self.logger.event(
+            "member_remove", member=member, send=True, channel=log_channel
+        )
+
+    async def on_member_update(self, before, after):
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(before, "guild", None)
+        )
+        await self.logger.event(
+            "member_update", before=before, after=after, send=True, channel=log_channel
+        )
+
+    async def on_guild_join(self, guild):
+        log_channel = await self.get_log_channel_from_guild(guild)
+        await self.logger.event(
+            "guild_join", guild=guild, send=True, channel=log_channel
+        )
+
+    async def on_guild_remove(self, guild):
+        log_channel = await self.get_log_channel_from_guild(guild)
+        await self.logger.event(
+            "guild_remove", guild=guild, send=True, channel=log_channel
+        )
+
+    async def on_guild_update(self, before, after):
+        log_channel = await self.get_log_channel_from_guild(before)
+        await self.logger.event(
+            "guild_update", before=before, after=after, send=True, channel=log_channel
+        )
+
+    async def on_guild_role_create(self, role):
+        log_channel = await self.get_log_channel_from_guild(role.guild)
+        await self.logger.event(
+            "guild_role_create", role=role, send=True, channel=log_channel
+        )
+
+    async def on_guild_role_delete(self, role):
+        log_channel = await self.get_log_channel_from_guild(role.guild)
+        await self.logger.event(
+            "guild_role_delete", role=role, send=True, channel=log_channel
+        )
+
+    async def on_guild_role_update(self, before, after):
+        log_channel = await self.get_log_channel_from_guild(before.guild)
+        await self.logger.event(
+            "guild_role_update",
+            before=before,
+            after=after,
+            send=True,
+            channel=log_channel,
+        )
+
+    async def on_guild_emojis_update(self, guild, before, after):
+        log_channel = await self.get_log_channel_from_guild(guild)
         await self.logger.event(
             "guild_emojis_update", before=before, after=after, send=True
         )
 
     async def on_guild_available(self, guild):
-        await self.logger.event("guild_available", guild=guild, send=True)
+        log_channel = await self.get_log_channel_from_guild(guild)
+        await self.logger.event(
+            "guild_available", guild=guild, send=True, channel=log_channel
+        )
 
     async def on_guild_unavailable(self, guild):
         await self.logger.event("guild_unavailable", guild=guild, send=True)
 
     async def on_member_ban(self, guild, user):
-        await self.logger.event("member_ban", guild=guild, user=user, send=True)
+        log_channel = await self.get_log_channel_from_guild(guild)
+        await self.logger.event(
+            "member_ban", guild=guild, user=user, send=True, channel=log_channel
+        )
 
     async def on_member_unban(self, guild, user):
-        await self.logger.event("member_unban", guild=guild, user=user, send=True)
+        log_channel = await self.get_log_channel_from_guild(guild)
+        await self.logger.event(
+            "member_unban", guild=guild, user=user, send=True, channel=log_channel
+        )
 
-    async def on_invite_create(invite):
+    async def on_invite_create(self, invite):
         await self.logger.event("invite_create", invite=invite, send=True)
 
-    async def on_invite_delete(invite):
+    async def on_invite_delete(self, invite):
         await self.logger.event("invite_delete", invite=invite, send=True)
 
     async def on_group_join(self, channel, user):
@@ -475,6 +587,18 @@ class BasementBot(commands.Bot):
             config_ = await self.sync_config(config_)
 
         return config_
+
+    async def get_log_channel_from_guild(self, guild):
+        if not guild:
+            return None
+
+        config_ = await self.get_context_config(None, guild=guild)
+        log_channel_id = config_.get("log_channel")
+
+        if not guild.get_channel(int(log_channel_id)):
+            return None
+
+        return log_channel_id
 
     async def create_new_context_config(self, lookup):
         """Creates a new guild config based on a lookup key (usually a guild ID).
@@ -878,7 +1002,7 @@ class BasementBot(commands.Bot):
                 break
 
             # check if the reaction should be processed
-            if (reaction.message.id != message.id):
+            if reaction.message.id != message.id:
                 continue
 
             if restrict and user.id != ctx.author.id:

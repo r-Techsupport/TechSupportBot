@@ -1,11 +1,11 @@
 """Module for logging bot events.
 """
 
+import asyncio
+import datetime
 import logging
 import os
 import traceback
-import datetime
-import asyncio
 
 import discord
 import munch
@@ -226,12 +226,9 @@ class BotLogger:
         """
 
         if self.queue_enabled:
-            await self.send_queue.put({
-                "level": "info",
-                "message": message,
-                "args": args,
-                "kwargs": kwargs
-            })
+            await self.send_queue.put(
+                {"level": "info", "message": message, "args": args, "kwargs": kwargs}
+            )
             return
 
         await self.handle_generic_log(
@@ -250,12 +247,9 @@ class BotLogger:
             return
 
         if self.queue_enabled:
-            await self.send_queue.put({
-                "level": "debug",
-                "message": message,
-                "args": args,
-                "kwargs": kwargs
-            })
+            await self.send_queue.put(
+                {"level": "debug", "message": message, "args": args, "kwargs": kwargs}
+            )
             return
 
         await self.handle_generic_log(
@@ -271,12 +265,9 @@ class BotLogger:
             send (bool): The reverse of the above (overrides console_only)
         """
         if self.queue_enabled:
-            await self.send_queue.put({
-                "level": "warning",
-                "message": message,
-                "args": args,
-                "kwargs": kwargs
-            })
+            await self.send_queue.put(
+                {"level": "warning", "message": message, "args": args, "kwargs": kwargs}
+            )
             return
 
         await self.handle_generic_log(
@@ -317,22 +308,26 @@ class BotLogger:
 
     async def event(self, event_type, *args, **kwargs):
         if self.queue_enabled:
-            await self.send_queue.put({
-                "level": "event",
-                "event_type": event_type,
-                "args": args,
-                "kwargs": kwargs
-            })
+            await self.send_queue.put(
+                {
+                    "level": "event",
+                    "event_type": event_type,
+                    "args": args,
+                    "kwargs": kwargs,
+                }
+            )
             return
 
         await self.handle_event_log(event_type, *args, **kwargs)
 
     async def handle_event_log(self, event_type, *args, **kwargs):
-        console_only = self._is_console_only(kwargs, is_error=False)    
+        console_only = self._is_console_only(kwargs, is_error=False)
 
         channel = kwargs.get("channel", None)
 
         event_data = self.generate_event_data(event_type, *args, **kwargs)
+        if not event_data:
+            return
 
         message = event_data.get("message")
         if not message:
@@ -368,11 +363,9 @@ class BotLogger:
             channel (int): the ID of the channel to send the log to
         """
         if self.queue_enabled:
-            await self.send_queue.put({
-                "level": "error",
-                "args": args,
-                "kwargs": kwargs
-            })
+            await self.send_queue.put(
+                {"level": "error", "args": args, "kwargs": kwargs}
+            )
             return
 
         await self.handle_error_log(message, *args, **kwargs)
@@ -460,40 +453,195 @@ class BotLogger:
             kwargs (dict): the kwargs to parse
             is_error (bool): True if the decision is for an error log
         """
-        default_send =  self.DEFAULT_ERROR_LOG_SEND if is_error else self.DEFAULT_LOG_SEND
+        default_send = (
+            self.DEFAULT_ERROR_LOG_SEND if is_error else self.DEFAULT_LOG_SEND
+        )
         return not kwargs.get("send", default_send)
 
     def generate_event_data(self, event_type, *args, **kwargs):
         message = None
-        embed = self.bot.embed_api.Embed()
+        embed = None
+
+        # hacky AF but I love it
+        render_func_name = f"render_{event_type}_event"
+        render_func = getattr(self, render_func_name, self.render_default_event)
+
+        if render_func.__name__ == "render_default_event":
+            kwargs["event_type"] = event_type
+
+        try:
+            message, embed = render_func(*args, **kwargs)
+        except Exception as e:
+            raise e
+
+        if not message or not embed:
+            return
+
         embed.set_thumbnail(url=self.bot.user.avatar_url)
 
-        if event_type == "command":
-            ctx = kwargs.get("context", kwargs.get("ctx"))
-
-            message = f"Command detected: {ctx.prefix}{ctx.command.name}"
-            embed.title = message
-            embed.add_field(name="User", value=ctx.author, inline=False)
-            embed.add_field(name="Channel", value=ctx.channel.name, inline=False)
-            embed.add_field(name="Server", value=f"{ctx.guild.name} ({ctx.guild.id})", inline=False)
-
-        elif event_type == "message_edit":
-            before = kwargs.get("before")
-            after = kwargs.get("after")
-
-            message = f"Message edit detected on message with ID {before.id}"
-            embed.title = message
-
-            embed.add_field(name="Before edit", value=before.content or "None")
-            embed.add_field(name="After edit", value=after.content or "None")
-            embed.add_field(name="Channel", value=before.channel.name)
-            embed.add_field(name="Server", value=f"{before.channel.guild.name} ({before.channel.guild.id})", inline=False)
-
-        else:
-            message = f"New event: {event_type}"
-            embed.title = message
-
         return {"message": message, "embed": embed}
+
+    def render_default_event(self, *args, **kwargs):
+        event_type = kwargs.get("event_type")
+
+        message = f"New event: {event_type}"
+        embed = self.bot.embed_api.Embed(title=message)
+
+        return message, embed
+
+    def render_command_event(self, *args, **kwargs):
+        ctx = kwargs.get("context", kwargs.get("ctx"))
+        server_text = self.get_server_text(ctx)
+
+        message = f"Command detected: `{ctx.message.content}`"[0:255]
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="User", value=ctx.author, inline=False)
+        embed.add_field(
+            name="Channel", value=getattr(ctx.channel, "name", "DM"), inline=False
+        )
+        embed.add_field(name="Server", value=server_text, inline=False)
+
+        return message, embed
+
+    def render_message_delete_event(self, *args, **kwargs):
+        message_object = kwargs.get("message")
+        server_text = self.get_server_text(message_object)
+
+        message = f"Message with ID {message_object.id} deleted"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(
+            name="Content", value=message_object.content or "None", inline=False
+        )
+        embed.add_field(
+            name="Channel",
+            value=getattr(message_object.channel, "name", "DM"),
+            inline=False,
+        )
+        embed.add_field(
+            name="Server",
+            value=server_text,
+            inline=False,
+        )
+
+        return message, embed
+
+    def render_message_edit_event(self, *args, **kwargs):
+        before = kwargs.get("before")
+        after = kwargs.get("after")
+        server_text = self.get_server_text(before.channel)
+
+        message = f"Message edit detected on message with ID {before.id}"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(
+            name="Before edit", value=before.content or "None", inline=False
+        )
+        embed.add_field(name="After edit", value=after.content or "None", inline=False)
+        embed.add_field(
+            name="Channel", value=getattr(before.channel, "name", "DM"), inline=False
+        )
+        embed.add_field(
+            name="Server",
+            value=server_text,
+            inline=False,
+        )
+
+        return message, embed
+
+    def render_bulk_message_delete_event(self, *args, **kwargs):
+        messages = kwargs.get("messages")
+
+        unique_channels = set()
+        unique_servers = set()
+        for message in messages:
+            unique_channels.add(message.channel.name)
+            unique_servers.add(
+                f"{message.channel.guild.name} ({message.channel.guild.id})"
+            )
+
+        message = f"{len(messages)} messages bulk deleted!"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Channels", value=",".join(unique_channels), inline=False)
+        embed.add_field(name="Servers", value=",".join(unique_servers), inline=False)
+
+        return message, embed
+
+    def render_reaction_add_event(self, *args, **kwargs):
+        reaction = kwargs.get("reaction")
+        user = kwargs.get("user")
+        server_text = self.get_server_text(reaction.message.channel)
+
+        message = f"Reaction added to message with ID {reaction.message.id} by user with ID {user.id}"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Emoji", value=reaction.emoji, inline=False)
+        embed.add_field(name="User", value=user, inline=False)
+        embed.add_field(name="Message", value=reaction.message.content or "None")
+        embed.add_field(name="Message Author", value=reaction.message.author)
+        embed.add_field(
+            name="Channel", value=getattr(reaction.message.channel, "name", "DM")
+        )
+        embed.add_field(
+            name="Server",
+            value=server_text,
+            inline=False,
+        )
+
+        return message, embed
+
+    def render_reaction_remove_event(self, *args, **kwargs):
+        reaction = kwargs.get("reaction")
+        user = kwargs.get("user")
+        server_text = self.get_server_text(reaction.message.channel)
+
+        message = f"Reaction removed from message with ID {reaction.message.id} by user with ID {user.id}"
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Emoji", value=reaction.emoji, inline=False)
+        embed.add_field(name="User", value=user, inline=False)
+        embed.add_field(name="Message", value=reaction.message.content or "None")
+        embed.add_field(name="Message Author", value=reaction.message.author)
+        embed.add_field(
+            name="Channel", value=getattr(reaction.message.channel, "name", "DM")
+        )
+        embed.add_field(
+            name="Server",
+            value=server_text,
+            inline=False,
+        )
+
+        return message, embed
+
+    def render_reaction_clear_event(self, *args, **kwargs):
+        message = kwargs.get("message")
+        reactions = kwargs.get("reactions")
+        server_text = self.get_server_text(message.channel)
+
+        message = f"{len(reactions)} cleared from message with ID {message.id}"
+
+        unique_users = set()
+        unique_emojis = set()
+        for reaction in reactions:
+            unique_emojis.add(reaction.emoji)
+
+        embed = self.bot.embed_api.Embed(title=message)
+        embed.add_field(name="Emojis", value=",".join(unique_emojis))
+        embed.add_field(name="Message", value=message.content or "None")
+        embed.add_field(name="Message Author", value=message.author)
+        embed.add_field(name="Channel", value=getattr(message.channel, "name", "DM"))
+        embed.add_field(
+            name="Server",
+            value=server_text,
+            inline=False,
+        )
+
+    @staticmethod
+    def get_server_text(upper_object):
+        guild = getattr(upper_object, "guild", None)
+        return f"{guild.name} ({guild.id})" if guild else "DM"
 
     def generate_log_embed(self, message, level_):
         """Wrapper for generated the log embed.
@@ -558,7 +706,9 @@ class BotLogger:
         return embed
 
     async def log_from_queue(self):
-        last_send_to_discord = datetime.datetime.now() - datetime.timedelta(seconds=self.DISCORD_WAIT)
+        last_send_to_discord = datetime.datetime.now() - datetime.timedelta(
+            seconds=self.DISCORD_WAIT
+        )
 
         while True:
             try:
@@ -573,20 +723,32 @@ class BotLogger:
                     # check if we need to sleep before sending to discord again
                     duration = (datetime.datetime.now() - last_send_to_discord).seconds
                     if duration < self.DISCORD_WAIT:
-                        await asyncio.sleep(int(self.DISCORD_WAIT-duration))
+                        await asyncio.sleep(int(self.DISCORD_WAIT - duration))
                     last_send_to_discord = datetime.datetime.now()
 
                 if log_data.level == "info":
                     await self.handle_generic_log(
-                        log_data.message, "info", self.console.info, *log_data.args, **log_data.kwargs
+                        log_data.message,
+                        "info",
+                        self.console.info,
+                        *log_data.args,
+                        **log_data.kwargs,
                     )
                 elif log_data.level == "debug":
                     await self.handle_generic_log(
-                        log_data.message, "debug", self.console.debug, *log_data.args, **log_data.kwargs
+                        log_data.message,
+                        "debug",
+                        self.console.debug,
+                        *log_data.args,
+                        **log_data.kwargs,
                     )
                 elif log_data.level == "warning":
                     await self.handle_generic_log(
-                        log_data.message, "debug", self.console.warning, *log_data.args, **log_data.kwargs
+                        log_data.message,
+                        "debug",
+                        self.console.warning,
+                        *log_data.args,
+                        **log_data.kwargs,
                     )
                 elif log_data.level == "event":
                     await self.handle_event_log(
@@ -597,7 +759,9 @@ class BotLogger:
                         log_data.message, *log_data.args, **log_data.kwargs
                     )
                 else:
-                    self.console.warning(f"Received unprocessable log level: {log_data.level}")
+                    self.console.warning(
+                        f"Received unprocessable log level: {log_data.level}"
+                    )
 
             except Exception as exception:
                 self.console.error(f"Could not read from log queue: {exception}")

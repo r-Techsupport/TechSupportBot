@@ -138,7 +138,9 @@ class PluginAPI:
             module = inspect.getmodule(frame[0])
             if module.__name__.startswith("plugins."):
                 plugin_name = module.__name__.split(".")[-1]
-                self.bot.logger.console.debug(f"Found plugin module name: {plugin_name}")
+                self.bot.logger.console.debug(
+                    f"Found plugin module name: {plugin_name}"
+                )
                 break
 
         if not plugin_name:
