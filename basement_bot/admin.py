@@ -304,15 +304,3 @@ class AdminControl(base.BaseCog):
         embed.set_thumbnail(url=self.bot.user.avatar_url)
 
         await self.bot.tagged_response(ctx, embed=embed)
-
-    @commands.command(name="history")
-    async def history(self, ctx):
-        embed = self.bot.embed_api.Embed(title="Command History")
-        for context_obj in self.bot.history.events:
-            embed.add_field(
-                name=context_obj.command.name,
-                value=context_obj.channel.id,
-                inline=False,
-            )
-
-        await ctx.send(embed=embed)

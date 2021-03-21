@@ -3,7 +3,6 @@
 
 
 import asyncio
-import inspect
 
 import munch
 from discord.ext import commands
@@ -46,7 +45,7 @@ class BaseCog(commands.Cog):
         try:
             await handler()
         except Exception as e:
-            await self.logger.error(
+            await self.bot.logger.error(
                 f"Cog preconfig error: {handler.__name__}!", exception=e
             )
             if not self.KEEP_COG_ON_FAILURE:
@@ -158,10 +157,10 @@ class LoopCog(BaseCog):
             except Exception as e:
                 # always try to wait even when execute fails
 
-                await self.logger.debug("Checking config for log channel")
+                await self.bot.logger.debug("Checking config for log channel")
                 channel = config.get("log_channel")
 
-                await self.logger.error(
+                await self.bot.logger.error(
                     f"Loop cog execute error: {self.__class__.__name__}!",
                     exception=e,
                     channel=channel,
@@ -170,7 +169,7 @@ class LoopCog(BaseCog):
             try:
                 await self.wait(config, guild)
             except Exception as e:
-                await self.logger.error(
+                await self.bot.logger.error(
                     f"Loop wait cog error: {self.__class__.__name__}!", exception=e
                 )
                 # avoid spamming
