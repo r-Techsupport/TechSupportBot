@@ -20,6 +20,7 @@ def setup(bot):
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
         embed_config = bot.db.Column(bot.db.String, default=None)
         loop_config = bot.db.Column(bot.db.String, default=None)
+        hidden = bot.db.Column(bot.db.Boolean, default=False)
 
     config = bot.PluginConfig()
     config.add(
@@ -44,13 +45,24 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             minutes=self.LOOP_UPDATE_MINUTES
         )
 
-    async def get_all_factoids(self, guild=None):
-        if guild:
+    async def get_all_factoids(self, guild=None, hide=False):
+        if guild and not hide:
             factoids = await self.models.Factoid.query.where(
                 self.models.Factoid.guild == str(guild.id)
             ).gino.all()
+        elif guild and hide:
+            factoids = (
+                await self.models.Factoid.query.where(
+                    self.models.Factoid.guild == str(guild.id)
+                )
+                .where(self.models.Factoid.hidden == False)
+                .gino.all()
+            )
         else:
             factoids = await self.bot.db.all(self.models.Factoid.query)
+
+        if factoids:
+            factoids.sort(key=lambda factoid: factoid.text)
 
         return factoids
 
@@ -499,7 +511,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             )
             return
 
-        factoids = await self.get_all_factoids(ctx.guild)
+        factoids = await self.get_all_factoids(ctx.guild, hide=True)
         if not factoids:
             await self.bot.tagged_response(ctx, "No factoids found!")
             return
@@ -541,3 +553,55 @@ class FactoidManager(base.MatchCog, base.LoopCog):
                 field_counter += 1
 
         self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
+
+    @decorate.with_typing
+    @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
+    @factoid.command(
+        brief="Hides a factoid",
+        description="Hides a factoid from showing in the all response",
+        usage="[factoid-name]",
+    )
+    async def hide(
+        self,
+        ctx,
+        factoid_name: str,
+    ):
+        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
+        if not factoid:
+            await self.bot.tagged_response(ctx, "I couldn't find that factoid")
+            return
+
+        if factoid.hidden:
+            await self.bot.tagged_response(ctx, "That factoid is already hidden")
+            return
+
+        await factoid.update(hidden=True).apply()
+
+        await self.bot.tagged_response(ctx, "That factoid is now hidden")
+
+    @decorate.with_typing
+    @commands.has_permissions(send_messages=True)
+    @commands.guild_only()
+    @factoid.command(
+        brief="Unhides a factoid",
+        description="Unhides a factoid from showing in the all response",
+        usage="[factoid-name]",
+    )
+    async def unhide(
+        self,
+        ctx,
+        factoid_name: str,
+    ):
+        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
+        if not factoid:
+            await self.bot.tagged_response(ctx, "I couldn't find that factoid")
+            return
+
+        if not factoid.hidden:
+            await self.bot.tagged_response(ctx, "That factoid is already unhidden")
+            return
+
+        await factoid.update(hidden=False).apply()
+
+        await self.bot.tagged_response(ctx, "That factoid is now unhidden")

@@ -28,6 +28,9 @@ main:
         news:
         wolfram:
         open_weather:
+    logging:
+        queue_enabled: True
+        block_discord_send: False
     disabled_plugins: ["kanye"]
     default_prefix: "."
     config_cache_reset: 30

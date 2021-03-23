@@ -3,7 +3,6 @@
 
 
 import asyncio
-import inspect
 
 import munch
 from discord.ext import commands
@@ -20,19 +19,17 @@ class BaseCog(commands.Cog):
     KEEP_COG_ON_FAILURE = False
     KEEP_PLUGIN_ON_FAILURE = False
 
-    def __init__(self, bot, models=None):
+    def __init__(self, bot, models=None, plugin_name=None):
         self.bot = bot
 
         # this is sure to throw a bug at some point
-        self.extension_name = inspect.getmodule(self).__name__.split(".")[-1]
+        self.extension_name = plugin_name
 
         if models is None:
             models = []
         self.models = munch.Munch()
         for model in models:
             self.models[model.__name__] = model
-
-        self.logger = self.bot.get_logger(self.__class__.__name__)
 
         self.bot.loop.create_task(self._preconfig())
 
@@ -48,7 +45,7 @@ class BaseCog(commands.Cog):
         try:
             await handler()
         except Exception as e:
-            await self.logger.error(
+            await self.bot.logger.error(
                 f"Cog preconfig error: {handler.__name__}!", exception=e
             )
             if not self.KEEP_COG_ON_FAILURE:
@@ -160,10 +157,10 @@ class LoopCog(BaseCog):
             except Exception as e:
                 # always try to wait even when execute fails
 
-                await self.logger.debug("Checking config for log channel")
+                await self.bot.logger.debug("Checking config for log channel")
                 channel = config.get("log_channel")
 
-                await self.logger.error(
+                await self.bot.logger.error(
                     f"Loop cog execute error: {self.__class__.__name__}!",
                     exception=e,
                     channel=channel,
@@ -172,7 +169,7 @@ class LoopCog(BaseCog):
             try:
                 await self.wait(config, guild)
             except Exception as e:
-                await self.logger.error(
+                await self.bot.logger.error(
                     f"Loop wait cog error: {self.__class__.__name__}!", exception=e
                 )
                 # avoid spamming
