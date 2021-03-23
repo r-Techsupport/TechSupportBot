@@ -144,6 +144,8 @@ class Grabber(base.BaseCog):
             )
             return
 
+        grabs.sort(reverse=True, key=lambda grab: grab.time)
+
         embed = self.bot.embed_api.Embed(
             title=f"Grabs for {user_to_grab.name}",
             description="Let's take a stroll down memory lane...",
