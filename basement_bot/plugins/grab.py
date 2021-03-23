@@ -78,7 +78,7 @@ class Grabber(base.BaseCog):
 
         if not grab_message:
             await self.bot.tagged_response(
-                ctx, f"Could not find a recent essage from user {user_to_grab}"
+                ctx, f"Could not find a recent message from user {user_to_grab}"
             )
             return
 
