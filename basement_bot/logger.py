@@ -806,7 +806,7 @@ class BotLogger:
         server_text = self.get_server_text(before)
 
         message = (
-            f"Member with ID {before.id} has joined guild with ID {before.guild.id}"
+            f"Member with ID {before.id} was updated in guild with ID {before.guild.id}"
         )
         embed = self.bot.embed_api.Embed(title=message)
 
