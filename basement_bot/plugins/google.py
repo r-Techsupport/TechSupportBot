@@ -97,7 +97,7 @@ class Googler(base.BaseCog):
         description="Returns the top Google Images search result",
         usage="[query]",
     )
-    async def images(self, ctx, query: str):
+    async def images(self, ctx, *, query: str):
         data = {
             "cx": self.bot.config.main.api_keys.google_cse,
             "q": query,
