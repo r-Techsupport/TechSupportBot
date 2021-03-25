@@ -1,3 +1,5 @@
+import datetime
+
 import base
 
 
@@ -62,5 +64,7 @@ class Logger(base.MatchCog):
         )
 
         embed.set_thumbnail(url=ctx.author.avatar_url)
+
+        embed.timestamp = datetime.datetime.utcnow()
 
         return embed
