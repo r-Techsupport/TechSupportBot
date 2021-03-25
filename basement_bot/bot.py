@@ -649,6 +649,9 @@ class BasementBot(commands.Bot):
         config_ = await self.get_context_config(None, guild=guild)
         log_channel_id = config_.get("log_channel")
 
+        if not log_channel_id:
+            return None
+
         if not guild.get_channel(int(log_channel_id)):
             return None
 
