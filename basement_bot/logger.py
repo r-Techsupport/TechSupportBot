@@ -77,6 +77,25 @@ class ErrorResponse:
         return self.message_format % tuple(values)
 
 
+class DelayedLog:
+    """Represents log data to be sent.
+
+    parameters:
+        level (str): the log level (eg. INFO, DEBUG, WARNING, EVENT)
+        message (str): the log message
+        args (tuple): optional positional arguments
+        kwargs (dict): optional keyword arguments
+    """
+
+    # pylint: disable=redefined-outer-name
+    def __init__(self, level, *args, log_message=None, **kwargs):
+        self.level = level
+        self.message = log_message
+        self.args = args
+        self.kwargs = kwargs
+        self.kwargs["time"] = datetime.datetime.utcnow()
+
+
 class BotLogger:
     """Logging channel interface for the bot.
 
@@ -230,7 +249,7 @@ class BotLogger:
         """
         if self.queue_enabled:
             await self.send_queue.put(
-                {"level": "info", "message": message, "args": args, "kwargs": kwargs}
+                DelayedLog(level="info", log_message=message, *args, **kwargs)
             )
             return
 
@@ -251,7 +270,7 @@ class BotLogger:
 
         if self.queue_enabled:
             await self.send_queue.put(
-                {"level": "debug", "message": message, "args": args, "kwargs": kwargs}
+                DelayedLog(level="debug", log_message=message, *args, **kwargs)
             )
             return
 
@@ -269,7 +288,7 @@ class BotLogger:
         """
         if self.queue_enabled:
             await self.send_queue.put(
-                {"level": "warning", "message": message, "args": args, "kwargs": kwargs}
+                DelayedLog(level="warning", log_message=message, *args, **kwargs)
             )
             return
 
@@ -302,6 +321,7 @@ class BotLogger:
             target = await self.bot.get_owner()
 
         embed = self.generate_log_embed(message, level_)
+        embed.timestamp = kwargs.get("time", datetime.datetime.utcnow())
 
         try:
             await target.send(embed=embed)
@@ -319,14 +339,8 @@ class BotLogger:
             channel (int): the ID of the channel to send the log to
         """
         if self.queue_enabled:
-            await self.send_queue.put(
-                {
-                    "level": "event",
-                    "event_type": event_type,
-                    "args": args,
-                    "kwargs": kwargs,
-                }
-            )
+            kwargs["event_type"] = event_type
+            await self.send_queue.put(DelayedLog(level="event", *args, **kwargs))
             return
 
         await self.handle_event_log(event_type, *args, **kwargs)
@@ -366,6 +380,8 @@ class BotLogger:
         if not embed:
             return
 
+        embed.timestamp = kwargs.get("time", datetime.datetime.utcnow())
+
         try:
             await target.send(embed=embed)
         except discord.Forbidden:
@@ -382,7 +398,7 @@ class BotLogger:
         """
         if self.queue_enabled:
             await self.send_queue.put(
-                {"level": "error", "message": message, "args": args, "kwargs": kwargs}
+                DelayedLog(level="error", log_message=message, *args, **kwargs)
             )
             return
 
@@ -456,6 +472,7 @@ class BotLogger:
         exception_string = exception_string[:1994]
 
         embed = self.generate_error_embed(message, ctx)
+        embed.timestamp = kwargs.get("time", datetime.datetime.utcnow())
 
         if channel:
             target = self.bot.get_channel(int(channel))
@@ -508,7 +525,10 @@ class BotLogger:
 
         try:
             message, embed = render_func(*args, **kwargs)
-        except Exception:
+        except Exception as exception:
+            self.console.error(
+                f"Could not render event data: {exception} (using default render)"
+            )
             message, embed = self.render_default_event(*args, **kwargs)
 
         if embed:
@@ -530,14 +550,15 @@ class BotLogger:
         ctx = kwargs.get("context", kwargs.get("ctx"))
         server_text = self.get_server_text(ctx)
 
-        message = f"Command detected: `{ctx.message.content}`"[0:255]
+        sliced_content = ctx.message.content[0:255]
+        message = f"Command detected: {sliced_content}"
 
-        embed = self.bot.embed_api.Embed(title=message)
-        embed.add_field(name="User", value=ctx.author, inline=False)
-        embed.add_field(
-            name="Channel", value=getattr(ctx.channel, "name", "DM"), inline=False
+        embed = self.bot.embed_api.Embed(
+            title="Command detected", description=sliced_content
         )
-        embed.add_field(name="Server", value=server_text, inline=False)
+        embed.add_field(name="User", value=ctx.author)
+        embed.add_field(name="Channel", value=getattr(ctx.channel, "name", "DM"))
+        embed.add_field(name="Server", value=server_text)
 
         return message, embed
 
@@ -548,20 +569,14 @@ class BotLogger:
 
         message = f"Message with ID {message_object.id} deleted"
 
-        embed = self.bot.embed_api.Embed(title=message)
-        embed.add_field(
-            name="Content", value=message_object.content or "None", inline=False
-        )
+        embed = self.bot.embed_api.Embed(title="Message deleted", description=message)
+        embed.add_field(name="Content", value=message_object.content or "None")
+        embed.add_field(name="Author", value=message_object.author)
         embed.add_field(
             name="Channel",
             value=getattr(message_object.channel, "name", "DM"),
-            inline=False,
         )
-        embed.add_field(
-            name="Server",
-            value=server_text,
-            inline=False,
-        )
+        embed.add_field(name="Server", value=server_text)
 
         return message, embed
 
@@ -573,18 +588,14 @@ class BotLogger:
 
         message = f"Message edit detected on message with ID {before.id}"
 
-        embed = self.bot.embed_api.Embed(title=message)
-        embed.add_field(
-            name="Before edit", value=before.content or "None", inline=False
-        )
-        embed.add_field(name="After edit", value=after.content or "None", inline=False)
-        embed.add_field(
-            name="Channel", value=getattr(before.channel, "name", "DM"), inline=False
-        )
+        embed = self.bot.embed_api.Embed(title="Message edited", description=message)
+        embed.add_field(name="Before edit", value=before.content or "None")
+        embed.add_field(name="After edit", value=after.content or "None")
+        embed.add_field(name="Author", value=before.author)
+        embed.add_field(name="Channel", value=getattr(before.channel, "name", "DM"))
         embed.add_field(
             name="Server",
             value=server_text,
-            inline=False,
         )
 
         return message, embed
@@ -603,9 +614,11 @@ class BotLogger:
 
         message = f"{len(messages)} messages bulk deleted!"
 
-        embed = self.bot.embed_api.Embed(title=message)
-        embed.add_field(name="Channels", value=",".join(unique_channels), inline=False)
-        embed.add_field(name="Servers", value=",".join(unique_servers), inline=False)
+        embed = self.bot.embed_api.Embed(
+            title="Bulk message delete", description=message
+        )
+        embed.add_field(name="Channels", value=",".join(unique_channels))
+        embed.add_field(name="Servers", value=",".join(unique_servers))
 
         return message, embed
 
@@ -617,19 +630,15 @@ class BotLogger:
 
         message = f"Reaction added to message with ID {reaction.message.id} by user with ID {user.id}"
 
-        embed = self.bot.embed_api.Embed(title=message)
-        embed.add_field(name="Emoji", value=reaction.emoji, inline=False)
-        embed.add_field(name="User", value=user, inline=False)
+        embed = self.bot.embed_api.Embed(title="Reaction added", description=message)
+        embed.add_field(name="Emoji", value=reaction.emoji)
+        embed.add_field(name="User", value=user)
         embed.add_field(name="Message", value=reaction.message.content or "None")
         embed.add_field(name="Message Author", value=reaction.message.author)
         embed.add_field(
             name="Channel", value=getattr(reaction.message.channel, "name", "DM")
         )
-        embed.add_field(
-            name="Server",
-            value=server_text,
-            inline=False,
-        )
+        embed.add_field(name="Server", value=server_text)
 
         return message, embed
 
@@ -641,19 +650,15 @@ class BotLogger:
 
         message = f"Reaction removed from message with ID {reaction.message.id} by user with ID {user.id}"
 
-        embed = self.bot.embed_api.Embed(title=message)
-        embed.add_field(name="Emoji", value=reaction.emoji, inline=False)
-        embed.add_field(name="User", value=user, inline=False)
+        embed = self.bot.embed_api.Embed(title="Reaction removed", description=message)
+        embed.add_field(name="Emoji", value=reaction.emoji)
+        embed.add_field(name="User", value=user)
         embed.add_field(name="Message", value=reaction.message.content or "None")
         embed.add_field(name="Message Author", value=reaction.message.author)
         embed.add_field(
             name="Channel", value=getattr(reaction.message.channel, "name", "DM")
         )
-        embed.add_field(
-            name="Server",
-            value=server_text,
-            inline=False,
-        )
+        embed.add_field(name="Server", value=server_text)
 
         return message, embed
 
@@ -669,16 +674,12 @@ class BotLogger:
         for reaction in reactions:
             unique_emojis.add(reaction.emoji)
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(title="Reactions cleared", description=message)
         embed.add_field(name="Emojis", value=",".join(unique_emojis))
         embed.add_field(name="Message", value=message.content or "None")
         embed.add_field(name="Message Author", value=message.author)
         embed.add_field(name="Channel", value=getattr(message.channel, "name", "DM"))
-        embed.add_field(
-            name="Server",
-            value=server_text,
-            inline=False,
-        )
+        embed.add_field(name="Server", value=server_text)
 
         return message, embed
 
@@ -691,7 +692,7 @@ class BotLogger:
             f"Channel with ID {channel.id} deleted in guild with ID {channel.guild.id}"
         )
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(title="Channel deleted", description=message)
 
         embed.add_field(name="Channel Name", value=channel.name)
         embed.add_field(name="Server", value=server_text)
@@ -707,7 +708,7 @@ class BotLogger:
             f"Channel with ID {channel.id} created in guild with ID {channel.guild.id}"
         )
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(title="Channel created", description=message)
 
         embed.add_field(name="Channel Name", value=channel.name)
         embed.add_field(name="Server", value=server_text)
@@ -724,7 +725,7 @@ class BotLogger:
             f"Channel with ID {before.id} modified in guild with ID {before.guild.id}"
         )
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(title="Channel updated", description=message)
 
         embed.add_field(name="Channel Name", value=before.name)
         embed.add_field(name="Server", value=server_text)
@@ -737,9 +738,11 @@ class BotLogger:
         # last_pin = kwargs.get("last_pin")
         server_text = self.get_server_text(channel)
 
-        message = f"New message pin event in channel with ID {channel.id} in guild with ID {channel.guild.id}"
+        message = f"Channel pins updated in channel with ID {channel.id} in guild with ID {channel.guild.id}"
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(
+            title="Channel pins updated", description=message
+        )
 
         embed.add_field(name="Channel Name", value=channel.name)
         embed.add_field(name="Server", value=server_text)
@@ -753,7 +756,9 @@ class BotLogger:
 
         message = f"Integrations updated in guild with ID {guild.id}"
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(
+            title="Integrations updated", description=message
+        )
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -765,7 +770,7 @@ class BotLogger:
 
         message = f"Webooks updated for channel with ID {channel.id} in guild with ID {channel.guild.id}"
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(title="Webhooks updated", description=message)
         embed.add_field(name="Channel", value=channel.name)
         embed.add_field(name="Server", value=server_text)
 
@@ -779,7 +784,9 @@ class BotLogger:
         message = (
             f"Member with ID {member.id} has joined guild with ID {member.guild.id}"
         )
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(
+            title="Member joined guild", description=message
+        )
 
         embed.add_field(name="Member", value=member)
         embed.add_field(name="Server", value=server_text)
@@ -792,7 +799,9 @@ class BotLogger:
         server_text = self.get_server_text(member)
 
         message = f"Member with ID {member.id} has left guild with ID {member.guild.id}"
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(
+            title="Member removed from guild", description=message
+        )
 
         embed.add_field(name="Member", value=member)
         embed.add_field(name="Server", value=server_text)
@@ -808,7 +817,9 @@ class BotLogger:
         message = (
             f"Member with ID {before.id} was updated in guild with ID {before.guild.id}"
         )
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(
+            title="Member updated in guild", description=message
+        )
 
         embed.add_field(name="Member", value=before)
         embed.add_field(name="Server", value=server_text)
@@ -822,7 +833,7 @@ class BotLogger:
 
         message = f"Joined guild with ID {guild.id}"
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(title="Guild joined", description=message)
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -834,7 +845,7 @@ class BotLogger:
 
         message = f"Left guild with ID {guild.id}"
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(title="Guild left", description=message)
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -847,7 +858,7 @@ class BotLogger:
 
         message = f"Guild with ID {before.id} updated"
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(title="Guild updated", description=message)
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -861,7 +872,7 @@ class BotLogger:
             f"New role with name {role.name} added to guild with ID {role.guild.id}"
         )
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(title="Role created", description=message)
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -875,7 +886,7 @@ class BotLogger:
             f"Role with name {role.name} deleted from guild with ID {role.guild.id}"
         )
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(title="Role deleted", description=message)
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -890,7 +901,7 @@ class BotLogger:
             f"Role with name {before.name} updated in guild with ID {before.guild.id}"
         )
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(title="Role updated", description=message)
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -904,7 +915,9 @@ class BotLogger:
 
         message = f"Emojis updated in guild with ID {guild.id}"
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(
+            title="Guild emojis updated", description=message
+        )
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -917,7 +930,7 @@ class BotLogger:
 
         message = f"User with ID {user.id} banned from guild with ID {guild.id}"
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(title="Member banned", description=message)
         embed.add_field(name="User", value=user)
         embed.add_field(name="Server", value=server_text)
 
@@ -931,7 +944,7 @@ class BotLogger:
 
         message = f"User with ID {user.id} unbanned from guild with ID {guild.id}"
 
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = self.bot.embed_api.Embed(title="Member unbanned", description=message)
         embed.add_field(name="User", value=user)
         embed.add_field(name="Server", value=server_text)
 
@@ -1003,7 +1016,6 @@ class BotLogger:
             embed.add_field(
                 name="Response",
                 value=f'*"{getattr(context, "error_message", "*Unknown*")}"*',
-                inline=True,
             )
 
         embed.set_thumbnail(url=self.bot.user.avatar_url)
@@ -1026,8 +1038,6 @@ class BotLogger:
                 if not log_data:
                     continue
 
-                log_data = munch.munchify(log_data)
-
                 is_error = log_data.level == "error"
                 if not self._is_console_only(log_data.kwargs, is_error=is_error):
                     # check if we need to sleep before sending to discord again
@@ -1044,6 +1054,7 @@ class BotLogger:
                         *log_data.args,
                         **log_data.kwargs,
                     )
+
                 elif log_data.level == "debug":
                     await self.handle_generic_log(
                         log_data.message,
@@ -1052,6 +1063,7 @@ class BotLogger:
                         *log_data.args,
                         **log_data.kwargs,
                     )
+
                 elif log_data.level == "warning":
                     await self.handle_generic_log(
                         log_data.message,
@@ -1060,14 +1072,23 @@ class BotLogger:
                         *log_data.args,
                         **log_data.kwargs,
                     )
+
                 elif log_data.level == "event":
+                    event_type = log_data.kwargs.pop("event_type", None)
+                    if not event_type:
+                        raise AttributeError(
+                            "Unable to get event_type from event log data"
+                        )
+
                     await self.handle_event_log(
-                        log_data.event_type, *log_data.args, **log_data.kwargs
+                        event_type, *log_data.args, **log_data.kwargs
                     )
+
                 elif log_data.level == "error":
                     await self.handle_error_log(
                         log_data.message, *log_data.args, **log_data.kwargs
                     )
+
                 else:
                     self.console.warning(
                         f"Received unprocessable log level: {log_data.level}"
