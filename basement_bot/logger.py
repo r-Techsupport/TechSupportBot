@@ -216,7 +216,6 @@ class BotLogger:
     DEFAULT_LOG_SEND = False
     # this defaults to True because most error logs should send out
     DEFAULT_ERROR_LOG_SEND = True
-    DISCORD_WAIT = 2
 
     def __init__(self, bot=None, name="root", queue=True, send=True):
         self.bot = bot
@@ -233,6 +232,8 @@ class BotLogger:
 
         self.send_queue = asyncio.Queue(maxsize=1000) if queue else None
         self.queue_enabled = queue
+
+        self.discord_wait = self.bot.config.main.logging.discord_wait_seconds
 
         self.send = send
 
@@ -1029,7 +1030,7 @@ class BotLogger:
         """
 
         last_send_to_discord = datetime.datetime.now() - datetime.timedelta(
-            seconds=self.DISCORD_WAIT
+            seconds=self.discord_wait
         )
 
         while True:
@@ -1042,8 +1043,8 @@ class BotLogger:
                 if not self._is_console_only(log_data.kwargs, is_error=is_error):
                     # check if we need to sleep before sending to discord again
                     duration = (datetime.datetime.now() - last_send_to_discord).seconds
-                    if duration < self.DISCORD_WAIT:
-                        await asyncio.sleep(int(self.DISCORD_WAIT - duration))
+                    if duration < self.discord_wait:
+                        await asyncio.sleep(int(self.discord_wait - duration))
                     last_send_to_discord = datetime.datetime.now()
 
                 if log_data.level == "info":
