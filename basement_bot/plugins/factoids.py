@@ -143,12 +143,13 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         content = factoid.message if not embed else None
 
-        message = await self.bot.tagged_response(
-            ctx, content=content, embed=embed, target=user_mentioned
-        )
-
-        if not message:
+        try:
+            await self.bot.tagged_response(
+                ctx, content=content, embed=embed, target=user_mentioned
+            )
+        except Exception:
             await self.bot.tagged_response(ctx, "I was unable to render that factoid")
+            return
 
         await self.dispatch_relay_factoid(config, ctx, factoid.message)
 
