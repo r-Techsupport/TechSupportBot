@@ -174,7 +174,6 @@ class BasementBot(commands.Bot):
         """Cleans up after the event loop is interupted."""
         await self.logger.debug("Cleaning up...", send=True)
         await super().logout()
-        await self.db.close()
         await self.rabbit.close()
 
     async def on_ready(self):
