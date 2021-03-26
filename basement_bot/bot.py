@@ -627,11 +627,12 @@ class BasementBot(commands.Bot):
             {"guild_id": {"$eq": lookup}}
         )
 
-        if not config_ and create_if_none:
+        if not config_:
             await self.logger.debug("No config found in MongoDB")
-            config_ = await self.create_new_context_config(lookup)
-        elif config_:
-            config_ = await self.sync_config(config_)
+            if create_if_none:
+                config_ = await self.create_new_context_config(lookup)
+            elif config_:
+                config_ = await self.sync_config(config_)
 
         return config_
 
