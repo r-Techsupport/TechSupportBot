@@ -240,9 +240,9 @@ class AdminControl(base.BaseCog):
 
         await user.send(content=message)
 
-    @commands.command(name="shutdown")
-    async def shutdown(self, ctx):
-        """Shuts down the bot.
+    @commands.command(name="restart")
+    async def restart(self, ctx):
+        """Restarts the bot.
 
         This is a command and should be accessed via Discord.
 
