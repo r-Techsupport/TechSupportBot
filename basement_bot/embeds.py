@@ -2,9 +2,15 @@
 """
 from discord import Embed as DiscordEmbed
 
+# this API is still a WIP and will expand as necessary
 
 class Embed(DiscordEmbed):
-    """Custom BasementBot embed."""
+    """Base Embed object.
+    """
+
+    # embeds strings tend to max out at 256 length
+    FIELD_VALUE_TRIM = 256
+    FIELD_NAME_TRIM = 256
 
     @classmethod
     def from_kwargs(cls, title=None, description=None, all_inline=False, **kwargs):
@@ -36,10 +42,10 @@ class Embed(DiscordEmbed):
         except Exception:
             value = ""
 
-        if len(name) > 256:
-            name = name[:256]
-        if len(value) > 256:
-            value = value[:256]
+        if len(name) > self.FIELD_NAME_TRIM:
+            name = name[:self.FIELD_NAME_TRIM]
+        if len(value) > self.FIELD_VALUE_TRIM:
+            value = value[:self.FIELD_VALUE_TRIM]
 
         return super().add_field(name=name, value=value, inline=inline)
 
