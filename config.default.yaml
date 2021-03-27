@@ -28,6 +28,7 @@ main:
         news:
         wolfram:
         open_weather:
+        github:
     logging:
         queue_enabled: True
         block_discord_send: False
@@ -38,3 +39,6 @@ main:
 
 # Special things
 special:
+    github:
+        username:
+        repo:
