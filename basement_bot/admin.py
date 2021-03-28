@@ -321,7 +321,7 @@ class AdminControl(base.BaseCog):
             description: the description of the issue
         """
 
-        ICON_URL = (
+        icon_url = (
             "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
         )
 
@@ -343,6 +343,7 @@ class AdminControl(base.BaseCog):
         if not username or not repo:
             await self.bot.tagged_response(ctx, "I couldn't find the repository")
             return
+
         route = f"{self.GITHUB_API_BASE_URL}/repos/{username}/{repo}/issues"
 
         response = await self.bot.http_call(
@@ -363,6 +364,6 @@ class AdminControl(base.BaseCog):
 
         embed = self.bot.embed_api.Embed(title="Issue Created")
         embed.add_field(name=f"Issue #{number}", value=f"{issue_url}")
-        embed.set_thumbnail(url=ICON_URL)
+        embed.set_thumbnail(url=icon_url)
 
         await self.bot.tagged_response(ctx, embed=embed)
