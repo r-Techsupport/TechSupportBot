@@ -925,7 +925,7 @@ class BasementBot(commands.Bot):
                     if response_object
                     else munch.Munch()
                 )
-                response["status_code"] = getattr(response_object, "status_code", None)
+                response["status_code"] = getattr(response_object, "status", None)
 
         except Exception as exception:
             await self.logger.error(f"HTTP {method} call", exception=exception)

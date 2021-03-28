@@ -1,6 +1,7 @@
 """Cog for controlling the bot.
 """
 
+import json
 import sys
 
 import base
@@ -13,6 +14,8 @@ class AdminControl(base.BaseCog):
     """Cog object for admin-only bot control"""
 
     ADMIN_ONLY = True
+
+    GITHUB_API_BASE_URL = "https://api.github.com"
 
     @commands.group(
         name="plugin",
@@ -302,5 +305,65 @@ class AdminControl(base.BaseCog):
         )
 
         embed.set_thumbnail(url=self.bot.user.avatar_url)
+
+        await self.bot.tagged_response(ctx, embed=embed)
+
+    @decorate.with_typing
+    @commands.command(name="issue", aliases=["ish", "botish", "botissue"])
+    async def issue(self, ctx, title: str, description: str):
+        """Creates an issue in the bot's Github Repo
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.ext.Context): the context object for the calling message
+            title: the title of the issue
+            description: the description of the issue
+        """
+
+        icon_url = (
+            "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+        )
+
+        oauth_token = self.bot.config.main.api_keys.github
+        if not oauth_token:
+            await self.bot.tagged_response(ctx, "I couldn't authenticate with Github")
+            return
+
+        headers = {
+            "Authorization": f"Bearer {oauth_token}",
+            "Accept": "application/vnd.github.v3+json",
+            "Content-Type": "text/plain",
+        }
+
+        data = {"title": title, "body": description}
+
+        username = self.bot.config.special.github.username
+        repo = self.bot.config.special.github.repo
+        if not username or not repo:
+            await self.bot.tagged_response(ctx, "I couldn't find the repository")
+            return
+
+        route = f"{self.GITHUB_API_BASE_URL}/repos/{username}/{repo}/issues"
+
+        response = await self.bot.http_call(
+            "post",
+            route,
+            headers=headers,
+            data=json.dumps(data),
+        )
+
+        if response.get("status_code") != 201:
+            await self.bot.tagged_response(
+                ctx, "I was unable to create your issue. Please try again later."
+            )
+            return
+
+        issue_url = response.get("html_url")
+        number = response.get("number")
+
+        embed = self.bot.embed_api.Embed(title="Issue Created")
+        embed.add_field(name=f"Issue #{number}", value=f"{issue_url}")
+        embed.set_thumbnail(url=icon_url)
 
         await self.bot.tagged_response(ctx, embed=embed)
