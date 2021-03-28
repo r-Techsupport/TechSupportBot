@@ -1,10 +1,10 @@
 """Cog for controlling the bot.
 """
 
+import json
 import sys
 
 import base
-import json
 import decorate
 import discord
 from discord.ext import commands
@@ -305,12 +305,9 @@ class AdminControl(base.BaseCog):
         embed.set_thumbnail(url=self.bot.user.avatar_url)
 
         await self.bot.tagged_response(ctx, embed=embed)
-    
+
     @decorate.with_typing
-    @commands.command(
-        name="issue",
-        aliases=["ish", "botish", "botissue"]
-    )
+    @commands.command(name="issue", aliases=["ish", "botish", "botissue"])
     async def issue(self, ctx, title: str, description: str):
         """Creates an issue in the bot's Github Repo
 
@@ -328,13 +325,15 @@ class AdminControl(base.BaseCog):
 
         oauth_token = self.bot.config.main.api_keys.github
         if not oauth_token:
-            await self.bot.tagged_response(ctx, "I couldn't authenticate with Github", target=ctx.author)
+            await self.bot.tagged_response(
+                ctx, "I couldn't authenticate with Github", target=ctx.author
+            )
             return
 
         headers = {
             "Authorization": f"Bearer {oauth_token}",
             "Accept": "application/vnd.github.v3+json",
-            "Content-Type": "text/plain"
+            "Content-Type": "text/plain",
         }
 
         data = {"title": f"{title}", "body": f"{description}"}
@@ -342,7 +341,9 @@ class AdminControl(base.BaseCog):
         username = self.bot.config.special.github.username
         repo = self.bot.config.special.github.repo
         if not username or not repo:
-            await self.bot.tagged_response(ctx, "I couldn't find the repository", target=ctx.author)
+            await self.bot.tagged_response(
+                ctx, "I couldn't find the repository", target=ctx.author
+            )
             return
         route = f"/repos/{username}/{repo}/issues"
 
@@ -354,7 +355,11 @@ class AdminControl(base.BaseCog):
         )
 
         if response.get("status_code") != 201:
-            await self.bot.tagged_response(ctx, "I was unable to create your issue. Please try again later.", target=ctx.author)
+            await self.bot.tagged_response(
+                ctx,
+                "I was unable to create your issue. Please try again later.",
+                target=ctx.author,
+            )
             return
 
         issueUrl = response.get("html_url")

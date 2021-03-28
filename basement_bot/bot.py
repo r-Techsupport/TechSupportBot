@@ -909,7 +909,7 @@ class BasementBot(commands.Bot):
         method_fn = getattr(client, method.lower(), None)
         if not method_fn:
             raise AttributeError(f"Unable to use HTTP method: {method}")
-        
+
         get_raw_response = kwargs.pop("get_raw_response", False)
 
         await self.logger.debug(f"Making HTTP {method.upper()} request to {url}")
