@@ -4,9 +4,9 @@ from discord import Embed as DiscordEmbed
 
 # this API is still a WIP and will expand as necessary
 
+
 class Embed(DiscordEmbed):
-    """Base Embed object.
-    """
+    """Base Embed object."""
 
     # embeds strings tend to max out at 256 length
     FIELD_VALUE_TRIM = 256
@@ -43,9 +43,9 @@ class Embed(DiscordEmbed):
             value = ""
 
         if len(name) > self.FIELD_NAME_TRIM:
-            name = name[:self.FIELD_NAME_TRIM]
+            name = name[: self.FIELD_NAME_TRIM]
         if len(value) > self.FIELD_VALUE_TRIM:
-            value = value[:self.FIELD_VALUE_TRIM]
+            value = value[: self.FIELD_VALUE_TRIM]
 
         return super().add_field(name=name, value=value, inline=inline)
 

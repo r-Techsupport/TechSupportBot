@@ -303,7 +303,7 @@ class BasementBot(commands.Bot):
             getattr(before, "guild", None), key="guild_events_channel"
         )
         await self.logger.event(
-            "guild_channel_create",
+            "guild_channel_update",
             before=before,
             after=after,
             send=True,
