@@ -1,7 +1,6 @@
 """The main bot functions.
 """
 
-# import ast
 import asyncio
 import collections
 import datetime
