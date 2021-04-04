@@ -93,6 +93,8 @@ class DiscordRelay(base.MatchCog):
 class IRCReceiver(base.LoopCog):
 
     IRC_LOGO = "📨"
+    # start the receiver right away
+    ON_START = True
 
     async def loop_preconfig(self):
         self.channels = list(self.bot.config.special.relay.channel_map.values())
