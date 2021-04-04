@@ -67,7 +67,7 @@ class ChannelDirectory(base.BaseCog):
             self.bot.loop.create_task(self.run_setup(guild))
 
     async def run_setup(self, guild):
-        config = await self.bot.get_context_config(ctx=None, guild=guild)
+        config = await self.bot.get_context_config(guild=guild)
 
         channel_id = config.plugins.directory.channel.value
         if not channel_id:

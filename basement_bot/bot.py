@@ -110,7 +110,7 @@ class BasementBot(commands.Bot):
         parameters:
             message (discord.Message): the message to check against
         """
-        guild_config = await self.get_context_config(ctx=None, guild=message.guild)
+        guild_config = await self.get_context_config(guild=message.guild)
         return getattr(guild_config, "command_prefix", self.config.main.default_prefix)
 
     def run(self, *args, **kwargs):
@@ -621,19 +621,23 @@ class BasementBot(commands.Bot):
             await asyncio.sleep(self.config.main.config_cache_reset)
 
     async def get_context_config(
-        self, ctx, guild=None, create_if_none=True, get_from_cache=True
+        self, ctx=None, guild=None, create_if_none=True, get_from_cache=True
     ):
         """Gets the appropriate config for the context.
 
         parameters:
             ctx (discord.ext.Context): the context of the config
-            guild (discord.Guild): the guild associated with the config
+            guild (discord.Guild): the guild associated with the config (provided instead of ctx)
             create_if_none (bool): True if the config should be created if not found
             get_from_cache (bool): True if the config should be fetched from the cache
         """
-        guild = guild or getattr(ctx, "guild", None)
-
-        lookup = guild.id if guild else "dmcontext"
+        if ctx:
+            guild_from_ctx = getattr(ctx, "guild", None)
+            lookup = guild_from_ctx.id if guild_from_ctx else "dmcontext"
+        elif guild:
+            lookup = guild.id
+        else:
+            return None
 
         await self.logger.debug(f"Getting config for lookup key: {lookup}")
 
@@ -667,7 +671,7 @@ class BasementBot(commands.Bot):
         if not guild:
             return None
 
-        config_ = await self.get_context_config(None, guild=guild)
+        config_ = await self.get_context_config(guild=guild)
         channel_id = config_.get(key)
 
         if not channel_id:

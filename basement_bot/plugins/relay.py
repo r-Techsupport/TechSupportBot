@@ -13,7 +13,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.process_plugin_setup(cogs=[DiscordRelay, IRCReceiver])
+    bot.process_plugin_setup(cogs=[DiscordRelay, IRCReceiver], no_guild=True)
 
 
 class DiscordRelay(base.MatchCog):
@@ -90,17 +90,14 @@ class DiscordRelay(base.MatchCog):
         return as_json
 
 
-class IRCReceiver(base.BaseCog):
+class IRCReceiver(base.LoopCog):
 
     IRC_LOGO = "📨"
 
-    async def preconfig(self):
+    async def loop_preconfig(self):
         self.channels = list(self.bot.config.special.relay.channel_map.values())
-        self.error_count = 0
 
-        await self.run()
-
-    async def run(self):
+    async def execute(self, _config, _guild):
         await self.bot.rabbit_consume(
             self.bot.config.special.relay.recv_queue,
             self.handle_event,

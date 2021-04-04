@@ -112,7 +112,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         await factoid.delete()
         await self.bot.tagged_response(
-            ctx, f"Successfully deleted factoid factoid: *{trigger}*"
+            ctx, f"Successfully deleted factoid: *{trigger}*"
         )
 
     async def match(self, _, __, content):

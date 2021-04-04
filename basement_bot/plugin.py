@@ -125,13 +125,14 @@ class PluginAPI:
         for plugin_name in self.get_modules():
             self.load_plugin(plugin_name, allow_failure=allow_failure)
 
-    def process_plugin_setup(self, cogs, models=None, config=None):
+    def process_plugin_setup(self, cogs, models=None, config=None, no_guild=False):
         """Loads a set of cogs and other objects representing a single plugin.
 
         parameters:
             cogs (List[discord.ext.Cog]): the list of cogs to load
             config (PluginConfig): the plugin config
             models (List[gino.Model]): the Postgres models for the plugin
+            no_guild (bool): True if the plugin should run globally
         """
         plugin_name = None
         for frame in inspect.stack():
@@ -148,7 +149,17 @@ class PluginAPI:
 
         for cog in cogs:
             self.bot.logger.console.debug(f"Adding cog: {cog.__name__}")
-            self.bot.add_cog(cog(self.bot, models=models, plugin_name=plugin_name))
+            try:
+                self.bot.add_cog(
+                    cog(
+                        self.bot,
+                        models=models,
+                        plugin_name=plugin_name,
+                        no_guild=no_guild,
+                    )
+                )
+            except TypeError:
+                self.bot.add_cog(cog(self.bot))
 
         config = config.data if config else {}
 

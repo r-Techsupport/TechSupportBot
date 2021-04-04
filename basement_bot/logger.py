@@ -594,9 +594,7 @@ class BotLogger:
         message = f"Message edit detected on message with ID {before.id}"
 
         if diff:
-            embed_title = (
-                ",".join(k.upper() for k in diff) + " updated for message"
-            )
+            embed_title = ",".join(k.upper() for k in diff) + " updated for message"
         else:
             embed_title = "Message updated"
         embed = self.bot.embed_api.Embed(title=embed_title, description=message)
@@ -748,9 +746,7 @@ class BotLogger:
         )
 
         if diff:
-            embed_title = (
-                ",".join(k.upper() for k in diff) + " updated for channel"
-            )
+            embed_title = ",".join(k.upper() for k in diff) + " updated for channel"
         else:
             embed_title = "Channel updated"
 
@@ -853,9 +849,7 @@ class BotLogger:
         )
 
         if diff:
-            embed_title = (
-                ",".join(k.upper() for k in diff) + " updated for member"
-            )
+            embed_title = ",".join(k.upper() for k in diff) + " updated for member"
         else:
             embed_title = "Member updated"
         embed = self.bot.embed_api.Embed(title=embed_title, description=message)
@@ -924,9 +918,7 @@ class BotLogger:
         message = f"Guild with ID {before.id} updated"
 
         if diff:
-            embed_title = (
-                ",".join(k.upper() for k in diff) + " updated for guild"
-            )
+            embed_title = ",".join(k.upper() for k in diff) + " updated for guild"
         else:
             embed_title = "Guild updated"
         embed = self.bot.embed_api.Embed(title=embed_title, description=message)
