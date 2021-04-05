@@ -1,7 +1,6 @@
 """The main bot functions.
 """
 
-# import ast
 import asyncio
 import collections
 import datetime
@@ -48,6 +47,7 @@ class BasementBot(commands.Bot):
         self._startup_time = None
         self.guild_config_collection = None
         self.config_cache = collections.defaultdict(dict)
+        self.config_lock = asyncio.Lock()
 
         self.load_bot_config(validate=True)
 
@@ -111,7 +111,7 @@ class BasementBot(commands.Bot):
         parameters:
             message (discord.Message): the message to check against
         """
-        guild_config = await self.get_context_config(ctx=None, guild=message.guild)
+        guild_config = await self.get_context_config(guild=message.guild)
         return getattr(guild_config, "command_prefix", self.config.main.default_prefix)
 
     def run(self, *args, **kwargs):
@@ -174,7 +174,6 @@ class BasementBot(commands.Bot):
         """Cleans up after the event loop is interupted."""
         await self.logger.debug("Cleaning up...", send=True)
         await super().logout()
-        await self.db.close()
         await self.rabbit.close()
 
     async def on_ready(self):
@@ -189,7 +188,9 @@ class BasementBot(commands.Bot):
 
     async def on_command(self, ctx):
         """See: https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.on_command"""
-        log_channel = await self.get_log_channel_from_guild(getattr(ctx, "guild", None))
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(ctx, "guild", None), key="logging_channel"
+        )
         await self.logger.event("command", context=ctx, send=True, channel=log_channel)
 
     async def on_connect(self):
@@ -211,7 +212,7 @@ class BasementBot(commands.Bot):
     async def on_message_delete(self, message):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_delete"""
         log_channel = await self.get_log_channel_from_guild(
-            getattr(message.channel, "guild", None)
+            getattr(message.channel, "guild", None), key="guild_events_channel"
         )
         await self.logger.event(
             "message_delete", message=message, send=True, channel=log_channel
@@ -228,7 +229,7 @@ class BasementBot(commands.Bot):
             return
 
         log_channel = await self.get_log_channel_from_guild(
-            getattr(before.channel, "guild", None)
+            getattr(before.channel, "guild", None), key="guild_events_channel"
         )
         await self.logger.event(
             "message_edit", before=before, after=after, send=True, channel=log_channel
@@ -237,7 +238,7 @@ class BasementBot(commands.Bot):
     async def on_reaction_add(self, reaction, user):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_add"""
         log_channel = await self.get_log_channel_from_guild(
-            getattr(reaction.message, "guild", None)
+            getattr(reaction.message, "guild", None), key="guild_events_channel"
         )
         await self.logger.event(
             "reaction_add", reaction=reaction, user=user, send=True, channel=log_channel
@@ -246,7 +247,7 @@ class BasementBot(commands.Bot):
     async def on_reaction_remove(self, reaction, user):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_remove"""
         log_channel = await self.get_log_channel_from_guild(
-            getattr(reaction.message, "guild", None)
+            getattr(reaction.message, "guild", None), key="guild_events_channel"
         )
         await self.logger.event(
             "reaction_remove",
@@ -259,7 +260,7 @@ class BasementBot(commands.Bot):
     async def on_reaction_clear(self, message, reactions):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_clear"""
         log_channel = await self.get_log_channel_from_guild(
-            getattr(message, "guild", None)
+            getattr(message, "guild", None), key="guild_events_channel"
         )
         await self.logger.event(
             "reaction_clear",
@@ -272,7 +273,7 @@ class BasementBot(commands.Bot):
     async def on_reaction_clear_emoji(self, reaction):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_clear_emoji"""
         log_channel = await self.get_log_channel_from_guild(
-            getattr(reaction.message, "guild", None)
+            getattr(reaction.message, "guild", None), key="guild_events_channel"
         )
         await self.logger.event(
             "reaction_clear_emoji", reaction=reaction, send=True, channel=log_channel
@@ -281,7 +282,7 @@ class BasementBot(commands.Bot):
     async def on_guild_channel_delete(self, channel):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_delete"""
         log_channel = await self.get_log_channel_from_guild(
-            getattr(channel, "guild", None)
+            getattr(channel, "guild", None), key="guild_events_channel"
         )
         await self.logger.event(
             "guild_channel_delete", channel_=channel, send=True, channel=log_channel
@@ -290,7 +291,7 @@ class BasementBot(commands.Bot):
     async def on_guild_channel_create(self, channel):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_create"""
         log_channel = await self.get_log_channel_from_guild(
-            getattr(channel, "guild", None)
+            getattr(channel, "guild", None), key="guild_events_channel"
         )
         await self.logger.event(
             "guild_channel_create", channel_=channel, send=True, channel=log_channel
@@ -299,10 +300,10 @@ class BasementBot(commands.Bot):
     async def on_guild_channel_update(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_update"""
         log_channel = await self.get_log_channel_from_guild(
-            getattr(before, "guild", None)
+            getattr(before, "guild", None), key="guild_events_channel"
         )
         await self.logger.event(
-            "guild_channel_create",
+            "guild_channel_update",
             before=before,
             after=after,
             send=True,
@@ -312,7 +313,7 @@ class BasementBot(commands.Bot):
     async def on_guild_channel_pins_update(self, channel, last_pin):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_pins_update"""
         log_channel = await self.get_log_channel_from_guild(
-            getattr(channel, "guild", None)
+            getattr(channel, "guild", None), key="guild_events_channel"
         )
         await self.logger.event(
             "guild_channel_pins_update",
@@ -324,7 +325,9 @@ class BasementBot(commands.Bot):
 
     async def on_guild_integrations_update(self, guild):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_integrations_update"""
-        log_channel = await self.get_log_channel_from_guild(guild)
+        log_channel = await self.get_log_channel_from_guild(
+            guild, key="guild_events_channel"
+        )
         await self.logger.event(
             "guild_integrations_update", guild=guild, send=True, channel=log_channel
         )
@@ -332,7 +335,7 @@ class BasementBot(commands.Bot):
     async def on_webhooks_update(self, channel):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_webhooks_update"""
         log_channel = await self.get_log_channel_from_guild(
-            getattr(channel, "guild", None)
+            getattr(channel, "guild", None), key="guild_events_channel"
         )
         await self.logger.event(
             "webhooks_update", channel_=channel, send=True, channel=log_channel
@@ -341,7 +344,7 @@ class BasementBot(commands.Bot):
     async def on_member_join(self, member):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
         log_channel = await self.get_log_channel_from_guild(
-            getattr(member, "guild", None)
+            getattr(member, "guild", None), key="member_events_channel"
         )
         await self.logger.event(
             "member_join", member=member, send=True, channel=log_channel
@@ -350,7 +353,7 @@ class BasementBot(commands.Bot):
     async def on_member_remove(self, member):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_remove"""
         log_channel = await self.get_log_channel_from_guild(
-            getattr(member, "guild", None)
+            getattr(member, "guild", None), key="member_events_channel"
         )
         await self.logger.event(
             "member_remove", member=member, send=True, channel=log_channel
@@ -359,7 +362,7 @@ class BasementBot(commands.Bot):
     async def on_member_update(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update"""
         log_channel = await self.get_log_channel_from_guild(
-            getattr(before, "guild", None)
+            getattr(before, "guild", None), key="member_events_channel"
         )
         await self.logger.event(
             "member_update", before=before, after=after, send=True, channel=log_channel
@@ -367,42 +370,54 @@ class BasementBot(commands.Bot):
 
     async def on_guild_join(self, guild):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_join"""
-        log_channel = await self.get_log_channel_from_guild(guild)
+        log_channel = await self.get_log_channel_from_guild(
+            guild, key="guild_events_channel"
+        )
         await self.logger.event(
             "guild_join", guild=guild, send=True, channel=log_channel
         )
 
     async def on_guild_remove(self, guild):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_remove"""
-        log_channel = await self.get_log_channel_from_guild(guild)
+        log_channel = await self.get_log_channel_from_guild(
+            guild, key="guild_events_channel"
+        )
         await self.logger.event(
             "guild_remove", guild=guild, send=True, channel=log_channel
         )
 
     async def on_guild_update(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_update"""
-        log_channel = await self.get_log_channel_from_guild(before)
+        log_channel = await self.get_log_channel_from_guild(
+            before, key="guild_events_channel"
+        )
         await self.logger.event(
             "guild_update", before=before, after=after, send=True, channel=log_channel
         )
 
     async def on_guild_role_create(self, role):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_create"""
-        log_channel = await self.get_log_channel_from_guild(role.guild)
+        log_channel = await self.get_log_channel_from_guild(
+            role.guild, key="guild_events_channel"
+        )
         await self.logger.event(
             "guild_role_create", role=role, send=True, channel=log_channel
         )
 
     async def on_guild_role_delete(self, role):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_delete"""
-        log_channel = await self.get_log_channel_from_guild(role.guild)
+        log_channel = await self.get_log_channel_from_guild(
+            role.guild, key="guild_events_channel"
+        )
         await self.logger.event(
             "guild_role_delete", role=role, send=True, channel=log_channel
         )
 
     async def on_guild_role_update(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_update"""
-        log_channel = await self.get_log_channel_from_guild(before.guild)
+        log_channel = await self.get_log_channel_from_guild(
+            before.guild, key="guild_events_channel"
+        )
         await self.logger.event(
             "guild_role_update",
             before=before,
@@ -413,7 +428,9 @@ class BasementBot(commands.Bot):
 
     async def on_guild_emojis_update(self, guild, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_emojis_update"""
-        log_channel = await self.get_log_channel_from_guild(guild)
+        log_channel = await self.get_log_channel_from_guild(
+            guild, key="guild_events_channel"
+        )
         await self.logger.event(
             "guild_emojis_update",
             guild=guild,
@@ -433,14 +450,18 @@ class BasementBot(commands.Bot):
 
     async def on_member_ban(self, guild, user):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_ban"""
-        log_channel = await self.get_log_channel_from_guild(guild)
+        log_channel = await self.get_log_channel_from_guild(
+            guild, key="member_events_channel"
+        )
         await self.logger.event(
             "member_ban", guild=guild, user=user, send=True, channel=log_channel
         )
 
     async def on_member_unban(self, guild, user):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_unban"""
-        log_channel = await self.get_log_channel_from_guild(guild)
+        log_channel = await self.get_log_channel_from_guild(
+            guild, key="member_events_channel"
+        )
         await self.logger.event(
             "member_unban", guild=guild, user=user, send=True, channel=log_channel
         )
@@ -520,16 +541,15 @@ class BasementBot(commands.Bot):
             context (discord.ext.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
-        config_ = await self.get_context_config(context)
 
-        await self.logger.debug("Checking config for log channel")
-        channel = config_.get("log_channel")
-
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(context, "guild", None), key="logging_channel"
+        )
         await self.logger.error(
             f"Command error: {exception}",
             context=context,
             exception=exception,
-            channel=channel,
+            channel=log_channel,
         )
 
     async def get_owner(self):
@@ -602,19 +622,23 @@ class BasementBot(commands.Bot):
             await asyncio.sleep(self.config.main.config_cache_reset)
 
     async def get_context_config(
-        self, ctx, guild=None, create_if_none=True, get_from_cache=True
+        self, ctx=None, guild=None, create_if_none=True, get_from_cache=True
     ):
         """Gets the appropriate config for the context.
 
         parameters:
             ctx (discord.ext.Context): the context of the config
-            guild (discord.Guild): the guild associated with the config
+            guild (discord.Guild): the guild associated with the config (provided instead of ctx)
             create_if_none (bool): True if the config should be created if not found
             get_from_cache (bool): True if the config should be fetched from the cache
         """
-        guild = guild or getattr(ctx, "guild", None)
-
-        lookup = guild.id if guild else "dmcontext"
+        if ctx:
+            guild_from_ctx = getattr(ctx, "guild", None)
+            lookup = guild_from_ctx.id if guild_from_ctx else "dmcontext"
+        elif guild:
+            lookup = guild.id
+        else:
+            return None
 
         await self.logger.debug(f"Getting config for lookup key: {lookup}")
 
@@ -623,39 +647,50 @@ class BasementBot(commands.Bot):
             if config_:
                 return config_
 
-        config_ = await self.guild_config_collection.find_one(
-            {"guild_id": {"$eq": lookup}}
-        )
+        # locking prevents duplicate configs being made
+        async with self.config_lock:
+            try:
+                config_ = await self.guild_config_collection.find_one(
+                    {"guild_id": {"$eq": lookup}}
+                )
+            except Exception as exception:
+                await self.logger.error("Could not lookup guild config", exception)
+                config_ = None
 
-        if not config_ and create_if_none:
-            await self.logger.debug("No config found in MongoDB")
-            config_ = await self.create_new_context_config(lookup)
-        elif config_:
-            config_ = await self.sync_config(config_)
+            if not config_:
+                await self.logger.debug("No config found in MongoDB")
+                if create_if_none:
+                    config_ = await self.create_new_context_config(lookup)
+            else:
+                config_ = await self.sync_config(config_)
+
+            if config_:
+                self.config_cache[lookup] = config_
 
         return config_
 
-    async def get_log_channel_from_guild(self, guild):
+    async def get_log_channel_from_guild(self, guild, key):
         """Gets the log channel ID associated with the given guild.
 
         This also checks if the channel exists in the correct guild.
 
         parameters:
             guild (discord.Guild): the guild object to reference
+            key (string): the key to use when looking up the channel
         """
         if not guild:
             return None
 
-        config_ = await self.get_context_config(None, guild=guild)
-        log_channel_id = config_.get("log_channel")
+        config_ = await self.get_context_config(guild=guild)
+        channel_id = config_.get(key)
 
-        if not log_channel_id:
+        if not channel_id:
             return None
 
-        if not guild.get_channel(int(log_channel_id)):
+        if not guild.get_channel(int(channel_id)):
             return None
 
-        return log_channel_id
+        return channel_id
 
     async def create_new_context_config(self, lookup):
         """Creates a new guild config based on a lookup key (usually a guild ID).
@@ -668,25 +703,26 @@ class BasementBot(commands.Bot):
 
         await self.logger.debug("Evaluating plugin data")
         for plugin_name, plugin_data in self.plugin_api.plugins.items():
-            plugins_config[plugin_name] = getattr(plugin_data, "config", {})
+            plugin_config = getattr(plugin_data, "config", None)
+            if plugin_config:
+                plugins_config[plugin_name] = getattr(plugin_data, "config", {})
 
         config_ = munch.Munch()
 
-        # pylint: disable=protected-access
-        config_._id = lookup
         config_.guild_id = lookup
         config_.command_prefix = self.config.main.default_prefix
+        config_.logging_channel = None
+        config_.member_events_channel = None
+        config_.guild_events_channel = None
+
         config_.plugins = plugins_config
-        config_.log_channel = None
 
         try:
             await self.logger.debug(f"Inserting new config for lookup key: {lookup}")
             await self.guild_config_collection.insert_one(config_)
         except Exception as exception:
             await self.logger.error(
-                "Could not insert guild config into MongoDB",
-                exception=exception,
-                send=False,
+                "Could not insert guild config into MongoDB", exception=exception
             )
 
         return config_
@@ -901,7 +937,7 @@ class BasementBot(commands.Bot):
                     if response_object
                     else munch.Munch()
                 )
-                response["status_code"] = getattr(response_object, "status_code", None)
+                response["status_code"] = getattr(response_object, "status", None)
 
         except Exception as exception:
             await self.logger.error(f"HTTP {method} call", exception=exception)

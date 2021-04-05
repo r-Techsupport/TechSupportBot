@@ -119,4 +119,6 @@ class Moderator(base.BaseCog):
         )
         embed.set_thumbnail(url=user.avatar_url)
 
+        embed.timestamp = datetime.datetime.utcnow()
+
         return embed

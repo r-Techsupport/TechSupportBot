@@ -28,12 +28,17 @@ main:
         news:
         wolfram:
         open_weather:
+        github:
     logging:
         queue_enabled: True
         block_discord_send: False
+        queue_wait_seconds: 3
     disabled_plugins: ["kanye"]
     default_prefix: "."
     config_cache_reset: 30
 
 # Special things
 special:
+    github:
+        username:
+        repo:

@@ -216,7 +216,6 @@ class BotLogger:
     DEFAULT_LOG_SEND = False
     # this defaults to True because most error logs should send out
     DEFAULT_ERROR_LOG_SEND = True
-    DISCORD_WAIT = 2
 
     def __init__(self, bot=None, name="root", queue=True, send=True):
         self.bot = bot
@@ -233,6 +232,8 @@ class BotLogger:
 
         self.send_queue = asyncio.Queue(maxsize=1000) if queue else None
         self.queue_enabled = queue
+
+        self.queue_wait = self.bot.config.main.logging.queue_wait_seconds
 
         self.send = send
 
@@ -396,7 +397,8 @@ class BotLogger:
             send (bool): The reverse of the above (overrides console_only)
             channel (int): the ID of the channel to send the log to
         """
-        if self.queue_enabled:
+        # if this is a not command error response, we can queue it for later
+        if not kwargs.get("context") and self.queue_enabled:
             await self.send_queue.put(
                 DelayedLog(level="error", log_message=message, *args, **kwargs)
             )
@@ -584,13 +586,22 @@ class BotLogger:
         """Renders the named event."""
         before = kwargs.get("before")
         after = kwargs.get("after")
+
+        attrs = ["content", "embeds"]
+        diff = self.get_object_diff(before, after, attrs)
+
         server_text = self.get_server_text(before.channel)
 
         message = f"Message edit detected on message with ID {before.id}"
 
-        embed = self.bot.embed_api.Embed(title="Message edited", description=message)
-        embed.add_field(name="Before edit", value=before.content or "None")
-        embed.add_field(name="After edit", value=after.content or "None")
+        if diff:
+            embed_title = ",".join(k.upper() for k in diff) + " updated for message"
+        else:
+            embed_title = "Message updated"
+        embed = self.bot.embed_api.Embed(title=embed_title, description=message)
+
+        embed = self.add_diff_fields(embed, diff)
+
         embed.add_field(name="Author", value=before.author)
         embed.add_field(name="Channel", value=getattr(before.channel, "name", "DM"))
         embed.add_field(
@@ -718,14 +729,31 @@ class BotLogger:
     def render_guild_channel_update_event(self, *args, **kwargs):
         """Renders the named event."""
         before = kwargs.get("before")
-        # after = kwargs.get("after")
+        after = kwargs.get("after")
         server_text = self.get_server_text(before)
+
+        attrs = [
+            "category",
+            "changed_roles",
+            "name",
+            "overwrites",
+            "permissions_synced",
+            "position",
+        ]
+        diff = self.get_object_diff(before, after, attrs)
 
         message = (
             f"Channel with ID {before.id} modified in guild with ID {before.guild.id}"
         )
 
-        embed = self.bot.embed_api.Embed(title="Channel updated", description=message)
+        if diff:
+            embed_title = ",".join(k.upper() for k in diff) + " updated for channel"
+        else:
+            embed_title = "Channel updated"
+
+        embed = self.bot.embed_api.Embed(title=embed_title, description=message)
+
+        embed = self.add_diff_fields(embed, diff)
 
         embed.add_field(name="Channel Name", value=before.name)
         embed.add_field(name="Server", value=server_text)
@@ -811,18 +839,27 @@ class BotLogger:
     def render_member_update_event(self, *args, **kwargs):
         """Renders the named event."""
         before = kwargs.get("before")
-        # after = kwargs.get("after")
+        after = kwargs.get("after")
         server_text = self.get_server_text(before)
+
+        attrs = ["avatar_url", "avatar", "nick", "roles", "status"]
+        diff = self.get_object_diff(before, after, attrs)
 
         message = (
             f"Member with ID {before.id} was updated in guild with ID {before.guild.id}"
         )
-        embed = self.bot.embed_api.Embed(
-            title="Member updated in guild", description=message
-        )
 
-        embed.add_field(name="Member", value=before)
-        embed.add_field(name="Server", value=server_text)
+        if diff:
+            embed_title = ",".join(k.upper() for k in diff) + " updated for member"
+            embed = self.bot.embed_api.Embed(title=embed_title, description=message)
+
+            embed = self.add_diff_fields(embed, diff)
+
+            embed.add_field(name="Member", value=before)
+            embed.add_field(name="Server", value=server_text)
+        else:
+            # avoid spamming of member activity changes
+            message, embed = None, None
 
         return message, embed
 
@@ -853,12 +890,43 @@ class BotLogger:
     def render_guild_update_event(self, *args, **kwargs):
         """Renders the named event."""
         before = kwargs.get("before")
-        # after = kwargs.get("after")
+        after = kwargs.get("after")
         server_text = self.get_server_text(None, guild=before)
+
+        attrs = [
+            "banner",
+            "banner_url",
+            "bitrate_limit",
+            "categories",
+            "default_role",
+            "description",
+            "discovery_splash",
+            "discovery_splash_url",
+            "emoji_limit",
+            "emojis",
+            "explicit_content_filter",
+            "features",
+            "icon",
+            "icon_url",
+            "name",
+            "owner",
+            "region",
+            "roles",
+            "rules_channel",
+            "verification_level",
+        ]
+        diff = self.get_object_diff(before, after, attrs)
 
         message = f"Guild with ID {before.id} updated"
 
-        embed = self.bot.embed_api.Embed(title="Guild updated", description=message)
+        if diff:
+            embed_title = ",".join(k.upper() for k in diff) + " updated for guild"
+        else:
+            embed_title = "Guild updated"
+        embed = self.bot.embed_api.Embed(title=embed_title, description=message)
+
+        embed = self.add_diff_fields(embed, diff)
+
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -894,14 +962,25 @@ class BotLogger:
     def render_guild_role_update_event(self, *args, **kwargs):
         """Renders the named event."""
         before = kwargs.get("before")
-        # after = kwargs.get("after")
+        after = kwargs.get("after")
         server_text = self.get_server_text(before)
+
+        attrs = ["color", "mentionable", "name", "permissions", "position", "tags"]
+        diff = self.get_object_diff(before, after, attrs)
 
         message = (
             f"Role with name {before.name} updated in guild with ID {before.guild.id}"
         )
 
-        embed = self.bot.embed_api.Embed(title="Role updated", description=message)
+        if diff:
+            embed_title = ",".join(k.upper() for k in diff) + " updated for role"
+        else:
+            embed_title = "Role updated"
+
+        embed = self.bot.embed_api.Embed(title=embed_title, description=message)
+
+        embed = self.add_diff_fields(embed, diff)
+
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -960,6 +1039,60 @@ class BotLogger:
         """
         guild = guild or getattr(upper_object, "guild", None)
         return f"{guild.name} ({guild.id})" if guild else "DM"
+
+    @staticmethod
+    def get_object_diff(before, after, attrs_to_check):
+        """Finds differences in before, after object pairs.
+
+        before (obj): the before object
+        after (obj): the after object
+        attrs_to_check (list): the attributes to compare
+        """
+        result = {}
+
+        for attr in attrs_to_check:
+            after_value = getattr(after, attr, None)
+            if not after_value:
+                continue
+
+            before_value = getattr(before, attr, None)
+            if not before_value:
+                continue
+
+            if before_value != after_value:
+                result[attr] = munch.munchify(
+                    {"before": before_value, "after": after_value}
+                )
+
+        return result
+
+    @staticmethod
+    def add_diff_fields(embed, diff):
+        """Adds fields to an embed based on diff data.
+
+        parameters:
+            embed (discord.Embed): the embed object
+            diff (dict): the diff data for an object
+        """
+        for attr, diff_data in diff.items():
+            attru = attr.upper()
+            if isinstance(diff_data.before, list):
+                action = (
+                    "added"
+                    if len(diff_data.before) < len(diff_data.after)
+                    else "removed"
+                )
+                list_diff = set(diff_data.after) ^ set(diff_data.before)
+
+                embed.add_field(
+                    name=f"{attru} {action}", value=",".join(str(o) for o in list_diff)
+                )
+                continue
+
+            embed.add_field(name=f"{attru} (before)", value=diff_data.before)
+            embed.add_field(name=f"{attru} (after)", value=diff_data.after)
+
+        return embed
 
     def generate_log_embed(self, message, level_):
         """Wrapper for generated the log embed.
@@ -1027,24 +1160,11 @@ class BotLogger:
 
         This provides an easier way of handling log throughput to Discord.
         """
-
-        last_send_to_discord = datetime.datetime.now() - datetime.timedelta(
-            seconds=self.DISCORD_WAIT
-        )
-
         while True:
             try:
                 log_data = await self.send_queue.get()
                 if not log_data:
                     continue
-
-                is_error = log_data.level == "error"
-                if not self._is_console_only(log_data.kwargs, is_error=is_error):
-                    # check if we need to sleep before sending to discord again
-                    duration = (datetime.datetime.now() - last_send_to_discord).seconds
-                    if duration < self.DISCORD_WAIT:
-                        await asyncio.sleep(int(self.DISCORD_WAIT - duration))
-                    last_send_to_discord = datetime.datetime.now()
 
                 if log_data.level == "info":
                     await self.handle_generic_log(
@@ -1096,3 +1216,5 @@ class BotLogger:
 
             except Exception as exception:
                 self.console.error(f"Could not read from log queue: {exception}")
+
+            await asyncio.sleep(self.queue_wait)

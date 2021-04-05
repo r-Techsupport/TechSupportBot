@@ -13,14 +13,17 @@ class BaseCog(commands.Cog):
 
     parameters:
         bot (Bot): the bot object
+        models (List[gino.Model]): the Postgres models for the plugin
+        no_guild (bool): True if the plugin should run globally
     """
 
     ADMIN_ONLY = False
     KEEP_COG_ON_FAILURE = False
     KEEP_PLUGIN_ON_FAILURE = False
 
-    def __init__(self, bot, models=None, plugin_name=None):
+    def __init__(self, bot, models=None, plugin_name=None, no_guild=False):
         self.bot = bot
+        self.no_guild = no_guild
 
         # this is sure to throw a bug at some point
         self.extension_name = plugin_name
@@ -124,12 +127,15 @@ class LoopCog(BaseCog):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.state = True
         self.bot.loop.create_task(self._loop_preconfig())
 
     async def _loop_preconfig(self):
         """Blocks the loop_preconfig until the bot is ready."""
         await self._handle_preconfig(self.loop_preconfig)
+
+        if self.no_guild:
+            self.bot.loop.create_task(self._loop_execute(None))
+            return
 
         for guild in self.bot.guilds:
             self.bot.loop.create_task(self._loop_execute(guild))
@@ -143,20 +149,19 @@ class LoopCog(BaseCog):
         parameters:
             guild (discord.Guild): the guild associated with the execution
         """
-        config = await self.bot.get_context_config(ctx=None, guild=guild)
+        config = await self.bot.get_context_config(guild=guild)
 
         if not self.ON_START:
             await self.wait(config, guild)
 
-        while self.state:
+        while self.bot.plugin_api.plugins.get(self.extension_name):
             # refresh the config on every loop step
-            config = await self.bot.get_context_config(ctx=None, guild=guild)
+            config = await self.bot.get_context_config(guild=guild)
 
             try:
                 await self.execute(config, guild)
             except Exception as e:
                 # always try to wait even when execute fails
-
                 await self.bot.logger.debug("Checking config for log channel")
                 channel = config.get("log_channel")
 
@@ -184,6 +189,7 @@ class LoopCog(BaseCog):
         """
 
     async def _default_wait(self):
+        """The default method used for waiting."""
         await asyncio.sleep(self.DEFAULT_WAIT)
 
     async def wait(self, _config, _guild):
@@ -194,8 +200,3 @@ class LoopCog(BaseCog):
             guild (discord.Guild): the guild associated with the execution
         """
         await self._default_wait()
-
-    def cog_unload(self):
-        """Allows the loop to exit after unloading."""
-        self.state = False
-        super().cog_unload()

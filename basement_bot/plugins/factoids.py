@@ -1,10 +1,13 @@
 import asyncio
 import collections
 import datetime
+import io
 import json
 
 import base
 import decorate
+import discord
+import yaml
 from discord.ext import commands
 
 
@@ -112,7 +115,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         await factoid.delete()
         await self.bot.tagged_response(
-            ctx, f"Successfully deleted factoid factoid: *{trigger}*"
+            ctx, f"Successfully deleted factoid: *{trigger}*"
         )
 
     async def match(self, _, __, content):
@@ -143,12 +146,13 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         content = factoid.message if not embed else None
 
-        message = await self.bot.tagged_response(
-            ctx, content=content, embed=embed, target=user_mentioned
-        )
-
-        if not message:
+        try:
+            await self.bot.tagged_response(
+                ctx, content=content, embed=embed, target=user_mentioned
+            )
+        except Exception:
             await self.bot.tagged_response(ctx, "I was unable to render that factoid")
+            return
 
         await self.dispatch_relay_factoid(config, ctx, factoid.message)
 
@@ -516,43 +520,21 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             await self.bot.tagged_response(ctx, "No factoids found!")
             return
 
-        config = await self.bot.get_context_config(ctx)
-
-        field_counter = 1
-        embeds = []
-        for index, factoid in enumerate(factoids):
-            embed = (
-                self.bot.embed_api.Embed(
-                    title="Factoids",
-                    description=f"Access factoids with the `?` prefix",
-                )
-                if field_counter == 1
-                else embed
-            )
-
-            label_addon = []
+        output_data = []
+        for factoid in factoids:
+            data = {
+                "message": factoid.message,
+            }
             if factoid.embed_config:
-                label_addon.append("(embed)")
-            if factoid.loop_config:
-                label_addon.append("(loop)")
+                data["embed"] = True
+            output_data.append({factoid.text: data})
 
-            label = " ".join(label_addon)
+        yaml_file = discord.File(
+            io.StringIO(yaml.dump(output_data)),
+            filename=f"factoids-for-server-{ctx.guild.id}-{datetime.datetime.utcnow()}.yaml",
+        )
 
-            embed.add_field(
-                name=f"{factoid.text} {label}",
-                value=factoid.message,
-                inline=False,
-            )
-            if (
-                field_counter == config.plugins.factoids.per_page.value
-                or index == len(factoids) - 1
-            ):
-                embeds.append(embed)
-                field_counter = 1
-            else:
-                field_counter += 1
-
-        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
+        await ctx.send(file=yaml_file)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)

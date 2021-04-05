@@ -77,7 +77,7 @@ class Protector(base.MatchCog):
         role_names = [role.name.lower() for role in getattr(ctx.author, "roles", [])]
 
         if any(
-            role_name in role_names
+            role_name.lower() in role_names
             for role_name in config.plugins.protect.bypass_roles.value
         ):
             return False
@@ -132,19 +132,23 @@ class Protector(base.MatchCog):
     async def handle_length_alert(self, config, ctx, content):
         await ctx.message.delete()
 
+        if not config.plugins.protect.linx_url.value:
+            await self.default_delete_response(config, ctx)
+            return
+
         linx_embed = await self.create_linx_embed(config, ctx, content)
         if not linx_embed:
-            await self.bot.tagged_response(
-                ctx,
-                f"I deleted your message because it was longer than {config.plugins.protect.length_limit.value} characters; please read Rule 1. Check your DM's for the original message",
-            )
-            await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
-            await self.send_admin_alert(
-                config, ctx, "Warning: could not convert message to Linx paste"
-            )
+            await self.default_delete_response(config, ctx)
             return
 
         await self.bot.tagged_response(ctx, embed=linx_embed)
+
+    async def default_delete_response(self, config, ctx):
+        await self.bot.tagged_response(
+            ctx,
+            f"I deleted your message because it was longer than {config.plugins.protect.length_limit.value} characters. Check your DM's for the original message",
+        )
+        await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
 
     async def send_admin_alert(self, config, ctx, message):
         alert_channel = ctx.guild.get_channel(
@@ -168,7 +172,7 @@ class Protector(base.MatchCog):
         await alert_channel.send(embed=embed)
 
     async def create_linx_embed(self, config, ctx, content):
-        if not config.plugins.protect.linx_url.value or not content:
+        if not content:
             return None
 
         headers = {
