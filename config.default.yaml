@@ -32,7 +32,7 @@ main:
     logging:
         queue_enabled: True
         block_discord_send: False
-        discord_wait_seconds: 5
+        queue_wait_seconds: 3
     disabled_plugins: ["kanye"]
     default_prefix: "."
     config_cache_reset: 30

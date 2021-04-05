@@ -127,9 +127,9 @@ class ConfigControl(base.BaseCog):
         json_config = config_object.copy()
 
         # the object ID won't serialize inherently
-        _id = json_config.get("_id")
-        if _id:
-            json_config["_id"] = str(_id)
+        # _id = json_config.get("_id")
+        # if _id:
+        #     json_config["_id"] = str(_id)
 
         json_file = discord.File(
             io.StringIO(json.dumps(json_config, indent=4)),

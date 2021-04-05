@@ -233,7 +233,7 @@ class BotLogger:
         self.send_queue = asyncio.Queue(maxsize=1000) if queue else None
         self.queue_enabled = queue
 
-        self.discord_wait = self.bot.config.main.logging.discord_wait_seconds
+        self.queue_wait = self.bot.config.main.logging.queue_wait_seconds
 
         self.send = send
 
@@ -397,7 +397,8 @@ class BotLogger:
             send (bool): The reverse of the above (overrides console_only)
             channel (int): the ID of the channel to send the log to
         """
-        if self.queue_enabled:
+        # if this is a not command error response, we can queue it for later
+        if not kwargs.get("context") and self.queue_enabled:
             await self.send_queue.put(
                 DelayedLog(level="error", log_message=message, *args, **kwargs)
             )
@@ -1158,24 +1159,11 @@ class BotLogger:
 
         This provides an easier way of handling log throughput to Discord.
         """
-
-        last_send_to_discord = datetime.datetime.now() - datetime.timedelta(
-            seconds=self.discord_wait
-        )
-
         while True:
             try:
                 log_data = await self.send_queue.get()
                 if not log_data:
                     continue
-
-                is_error = log_data.level == "error"
-                if not self._is_console_only(log_data.kwargs, is_error=is_error):
-                    # check if we need to sleep before sending to discord again
-                    duration = (datetime.datetime.now() - last_send_to_discord).seconds
-                    if duration < self.discord_wait:
-                        await asyncio.sleep(int(self.discord_wait - duration))
-                    last_send_to_discord = datetime.datetime.now()
 
                 if log_data.level == "info":
                     await self.handle_generic_log(
@@ -1227,3 +1215,5 @@ class BotLogger:
 
             except Exception as exception:
                 self.console.error(f"Could not read from log queue: {exception}")
+
+            await asyncio.sleep(self.queue_wait)
