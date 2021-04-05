@@ -649,9 +649,13 @@ class BasementBot(commands.Bot):
 
         # locking prevents duplicate configs being made
         async with self.config_lock:
-            config_ = await self.guild_config_collection.find_one(
-                {"guild_id": {"$eq": lookup}}
-            )
+            try:
+                config_ = await self.guild_config_collection.find_one(
+                    {"guild_id": {"$eq": lookup}}
+                )
+            except Exception as exception:
+                await self.logger.error("Could not lookup guild config", exception)
+                config_ = None
 
             if not config_:
                 await self.logger.debug("No config found in MongoDB")
@@ -718,8 +722,7 @@ class BasementBot(commands.Bot):
             await self.guild_config_collection.insert_one(config_)
         except Exception as exception:
             await self.logger.error(
-                "Could not insert guild config into MongoDB",
-                exception=exception
+                "Could not insert guild config into MongoDB", exception=exception
             )
 
         return config_
