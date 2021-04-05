@@ -842,7 +842,7 @@ class BotLogger:
         after = kwargs.get("after")
         server_text = self.get_server_text(before)
 
-        attrs = ["activity", "avatar_url", "avatar", "nick", "roles", "status"]
+        attrs = ["avatar_url", "avatar", "nick", "roles", "status"]
         diff = self.get_object_diff(before, after, attrs)
 
         message = (
@@ -851,14 +851,15 @@ class BotLogger:
 
         if diff:
             embed_title = ",".join(k.upper() for k in diff) + " updated for member"
+            embed = self.bot.embed_api.Embed(title=embed_title, description=message)
+
+            embed = self.add_diff_fields(embed, diff)
+
+            embed.add_field(name="Member", value=before)
+            embed.add_field(name="Server", value=server_text)
         else:
-            embed_title = "Member updated"
-        embed = self.bot.embed_api.Embed(title=embed_title, description=message)
-
-        embed = self.add_diff_fields(embed, diff)
-
-        embed.add_field(name="Member", value=before)
-        embed.add_field(name="Server", value=server_text)
+            # avoid spamming of member activity changes
+            message, embed = None, None
 
         return message, embed
 
