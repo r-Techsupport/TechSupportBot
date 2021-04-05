@@ -55,6 +55,7 @@ class ConfigControl(base.BaseCog):
                 {"_id": config.get("_id")}, uploaded_data
             )
 
+            await self.bot.tagged_response(ctx, "I've updated that config")
             return
 
         plugins_with_config = filter(
@@ -124,6 +125,7 @@ class ConfigControl(base.BaseCog):
                 {"_id": config.get("_id")}, config
             )
 
+            await self.bot.tagged_response(ctx, "I've updated that plugin config")
             return
 
         embeds = []
@@ -188,9 +190,6 @@ class ConfigControl(base.BaseCog):
             plugin_name (string): the name of the plugin for the config (if applicable)
         """
         json_config = config_object.copy()
-
-        if not plugin_name:
-            json_config.pop("plugins", None)
 
         json_file = discord.File(
             io.StringIO(json.dumps(json_config, indent=4)),

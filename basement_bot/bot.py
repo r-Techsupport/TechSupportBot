@@ -660,7 +660,8 @@ class BasementBot(commands.Bot):
             else:
                 config_ = await self.sync_config(config_)
 
-            self.config_cache[lookup] = config_
+            if config_:
+                self.config_cache[lookup] = config_
 
         return config_
 
@@ -718,8 +719,7 @@ class BasementBot(commands.Bot):
         except Exception as exception:
             await self.logger.error(
                 "Could not insert guild config into MongoDB",
-                exception=exception,
-                send=False,
+                exception=exception
             )
 
         return config_
