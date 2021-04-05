@@ -23,6 +23,13 @@ def setup(bot):
         default=None,
     )
     config.add(
+        key="embed_message",
+        datatype="str",
+        title="Directory embed message",
+        description="The message to display in the directory embed",
+        default="Once selecting a channel, you will be given the role to access it. You can come back here to remove the role or add more roles at any time",
+    )
+    config.add(
         key="channel_role_map",
         datatype="dict",
         title="Channel ID to Role mapping",
@@ -108,7 +115,7 @@ class ChannelDirectory(base.BaseCog):
         if message:
             await message.delete()
 
-        new_message = await self.send_embed(channel_map, guild, channel)
+        new_message = await self.send_embed(config, channel_map, guild, channel)
 
         await existence.update(last_message=str(new_message.id)).apply()
 
@@ -117,7 +124,7 @@ class ChannelDirectory(base.BaseCog):
     async def send_embed(self, channel_map, guild, directory_channel):
         embed = self.bot.embed_api.Embed(
             title="Channel Directory",
-            description="Once selecting a channel, you will be given the role to access it. You can come back here to remove the role or add more roles at any time",
+            description=config.plugins.directory.embed_message.value,
         )
 
         embed.set_thumbnail(url=self.DIR_ICON_URL)

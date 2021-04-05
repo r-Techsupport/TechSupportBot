@@ -344,18 +344,17 @@ class AdminControl(base.BaseCog):
             await self.bot.tagged_response(ctx, "I couldn't find the repository")
             return
 
-        route = f"{self.GITHUB_API_BASE_URL}/repos/{username}/{repo}/issues"
-
         response = await self.bot.http_call(
             "post",
-            route,
+            f"{self.GITHUB_API_BASE_URL}/repos/{username}/{repo}/issues",
             headers=headers,
             data=json.dumps(data),
         )
 
-        if response.get("status_code") != 201:
+        status_code = response.get("status_code")
+        if status_code != 201:
             await self.bot.tagged_response(
-                ctx, "I was unable to create your issue. Please try again later."
+                ctx, f"I was unable to create your issue (status code {status_code})"
             )
             return
 
