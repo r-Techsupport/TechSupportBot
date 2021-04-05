@@ -47,6 +47,7 @@ class BasementBot(commands.Bot):
         self._startup_time = None
         self.guild_config_collection = None
         self.config_cache = collections.defaultdict(dict)
+        self.config_lock = asyncio.Lock()
 
         self.load_bot_config(validate=True)
 
@@ -646,16 +647,20 @@ class BasementBot(commands.Bot):
             if config_:
                 return config_
 
-        config_ = await self.guild_config_collection.find_one(
-            {"guild_id": {"$eq": lookup}}
-        )
+        # locking prevents duplicate configs being made
+        async with self.config_lock:
+            config_ = await self.guild_config_collection.find_one(
+                {"guild_id": {"$eq": lookup}}
+            )
 
-        if not config_:
-            await self.logger.debug("No config found in MongoDB")
-            if create_if_none:
-                config_ = await self.create_new_context_config(lookup)
-        else:
-            config_ = await self.sync_config(config_)
+            if not config_:
+                await self.logger.debug("No config found in MongoDB")
+                if create_if_none:
+                    config_ = await self.create_new_context_config(lookup)
+            else:
+                config_ = await self.sync_config(config_)
+
+            self.config_cache[lookup] = config_
 
         return config_
 
@@ -693,18 +698,19 @@ class BasementBot(commands.Bot):
 
         await self.logger.debug("Evaluating plugin data")
         for plugin_name, plugin_data in self.plugin_api.plugins.items():
-            plugins_config[plugin_name] = getattr(plugin_data, "config", {})
+            plugin_config = getattr(plugin_data, "config", None)
+            if plugin_config:
+                plugins_config[plugin_name] = getattr(plugin_data, "config", {})
 
         config_ = munch.Munch()
 
-        # pylint: disable=protected-access
-        config_._id = lookup
         config_.guild_id = lookup
         config_.command_prefix = self.config.main.default_prefix
-        config_.plugins = plugins_config
         config_.logging_channel = None
         config_.member_events_channel = None
         config_.guild_events_channel = None
+
+        config_.plugins = plugins_config
 
         try:
             await self.logger.debug(f"Inserting new config for lookup key: {lookup}")
