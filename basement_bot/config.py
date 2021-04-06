@@ -40,9 +40,7 @@ class ConfigControl(base.BaseCog):
         )
         if uploaded_data:
             # handle upload instead
-            if any(key not in config for key in uploaded_data.keys()) or len(
-                config
-            ) - 1 != len(uploaded_data):
+            if any(key not in config for key in uploaded_data.keys()):
                 await self.bot.tagged_response(
                     ctx,
                     "I couldn't match your upload data with the guild config schema",

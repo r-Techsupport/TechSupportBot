@@ -205,10 +205,6 @@ class BasementBot(commands.Bot):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_disconnect"""
         await self.logger.event("disconnected")
 
-    async def on_typing(self, channel, user, when):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_typing"""
-        await self.logger.event("typing", channel=channel, user=user, when=when)
-
     async def on_message_delete(self, message):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_delete"""
         log_channel = await self.get_log_channel_from_guild(
