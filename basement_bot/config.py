@@ -39,78 +39,26 @@ class ConfigControl(base.BaseCog):
             ctx.message, allow_failure=False
         )
         if uploaded_data:
-            # handle upload instead
-            if any(key not in config for key in uploaded_data.keys()):
+            # server-side check of guild
+            uploaded_data["guild_id"] = ctx.guild.id
+            if (
+                any(key not in config for key in uploaded_data.keys())
+                or len(config) != len(uploaded_data) + 1
+            ):
                 await self.bot.tagged_response(
                     ctx,
                     "I couldn't match your upload data with the guild config schema",
                 )
                 return
 
-            uploaded_data["plugins"] = config.plugins
-
             await self.bot.guild_config_collection.replace_one(
-                {"_id": config.get("_id")}, uploaded_data
+                {"guild_id": config.get("guild_id")}, uploaded_data
             )
 
             await self.bot.tagged_response(ctx, "I've updated that config")
             return
 
-        plugins_with_config = filter(
-            lambda plugin_name: bool(config.plugins.get(plugin_name)),
-            config.plugins.keys(),
-        )
-
         json_file = self.convert_config_to_json_file(ctx, config)
-
-        await ctx.send(file=json_file)
-
-    @config_group.command(name="plugin")
-    async def plugin(self, ctx, plugin_name: str):
-        """Displays the current plugin config to the user.
-
-        This is a command and should be accessed via Discord.
-
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
-        """
-
-        config = await self.bot.get_context_config(ctx, get_from_cache=True)
-
-        plugin_config = config.plugins.get(plugin_name)
-        if not plugin_config:
-            await self.bot.tagged_response(
-                ctx, "I couldn't find any config for that plugin name"
-            )
-            return
-
-        uploaded_data = await self.bot.get_json_from_attachment(
-            ctx.message, allow_failure=False
-        )
-        if uploaded_data:
-            # handle upload instead
-            if any(key not in plugin_config for key in uploaded_data.keys()) or len(
-                plugin_config
-            ) != len(uploaded_data):
-                await self.bot.tagged_response(
-                    ctx,
-                    "I couldn't match your upload data with the plugin config schema",
-                )
-                return
-
-            plugin_config = uploaded_data
-            config.plugins[plugin_name] = plugin_config
-
-            await self.bot.guild_config_collection.replace_one(
-                {"_id": config.get("_id")}, config
-            )
-
-            await self.bot.tagged_response(ctx, "I've updated that plugin config")
-            return
-
-        json_file = self.convert_config_to_json_file(
-            ctx, plugin_config, plugin_name=plugin_name
-        )
 
         await ctx.send(file=json_file)
 
@@ -124,9 +72,7 @@ class ConfigControl(base.BaseCog):
         """
         json_config = config_object.copy()
 
-        _id = json_config.get("_id")
-        if _id:
-            json_config["_id"] = str(_id)
+        json_config.pop("_id")
 
         json_file = discord.File(
             io.StringIO(json.dumps(json_config, indent=4)),
