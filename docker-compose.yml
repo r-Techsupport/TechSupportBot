@@ -9,3 +9,5 @@ services:
             - DEBUG=0
         restart: always
         stop_signal: SIGINT
+        volumes:
+            - ${HOST_CONFIG_PATH:-./config.yml}:/var/basement_bot/config.yml
