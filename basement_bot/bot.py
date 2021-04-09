@@ -57,7 +57,7 @@ class BasementBot(commands.Bot):
         self.logger = logger.BotLogger(
             bot=self,
             name=self.__class__.__name__,
-            queue=self.config.main.logging.queue_enabled,
+            queue_wait=self.config.main.logging.queue_wait_seconds,
             send=not self.config.main.logging.block_discord_send,
         )
 
@@ -236,6 +236,7 @@ class BasementBot(commands.Bot):
             context=context,
             exception=exception,
             channel=log_channel,
+            critical=True,
         )
 
     async def get_owner(self):
