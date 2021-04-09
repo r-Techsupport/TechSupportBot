@@ -17,21 +17,21 @@ class Embedder(base.BaseCog):
     )
     async def embed(self, ctx, *, keep_option: str = None):
         if not ctx.message.attachments:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, "Please provide a JSON file for your embeds"
             )
             return
 
-        request_body = await self.bot.get_json_from_attachment(ctx.message)
+        request_body = await self.bot.get_json_from_attachments(ctx.message)
         if not request_body:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, "I couldn't find any data in your upload"
             )
             return
 
         embeds = await self.process_request(ctx, request_body)
         if not embeds:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, "I was unable to generate any embeds from your request"
             )
             return

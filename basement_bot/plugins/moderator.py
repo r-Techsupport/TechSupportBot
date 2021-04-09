@@ -45,7 +45,7 @@ class Moderator(base.BaseCog):
             return False
 
         await ctx.channel.purge(limit=amount, check=check)
-        await self.bot.tagged_response(
+        await self.bot.send_with_mention(
             ctx,
             f"I finished deleting {amount} messages",
         )
@@ -63,7 +63,7 @@ class Moderator(base.BaseCog):
         )
 
         await ctx.channel.purge(after=timestamp)
-        await self.bot.tagged_response(
+        await self.bot.send_with_mention(
             ctx,
             f"I finished deleting messages up to `{timestamp}` UTC",
         )
@@ -81,7 +81,7 @@ class Moderator(base.BaseCog):
 
         embed = await self.generate_user_modified_embed(user, "ban", reason)
 
-        await self.bot.tagged_response(ctx, embed=embed)
+        await self.bot.send_with_mention(ctx, embed=embed)
 
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
@@ -96,7 +96,7 @@ class Moderator(base.BaseCog):
 
         embed = await self.generate_user_modified_embed(user, "unban", reason)
 
-        await self.bot.tagged_response(ctx, embed=embed)
+        await self.bot.send_with_mention(ctx, embed=embed)
 
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
@@ -111,7 +111,7 @@ class Moderator(base.BaseCog):
 
         embed = await self.generate_user_modified_embed(user, "kick", reason)
 
-        await self.bot.tagged_response(ctx, embed=embed)
+        await self.bot.send_with_mention(ctx, embed=embed)
 
     async def generate_user_modified_embed(self, user, action, reason):
         embed = self.bot.embed_api.Embed(

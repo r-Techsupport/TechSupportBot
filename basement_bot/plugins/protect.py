@@ -122,7 +122,7 @@ class Protector(base.MatchCog):
         else:
             alert_message = ctx.protect_actions.string_alert.message
 
-        await self.bot.tagged_response(ctx, alert_message)
+        await self.bot.send_with_mention(ctx, alert_message)
         await self.send_admin_alert(
             config,
             ctx,
@@ -141,10 +141,10 @@ class Protector(base.MatchCog):
             await self.default_delete_response(config, ctx)
             return
 
-        await self.bot.tagged_response(ctx, embed=linx_embed)
+        await self.bot.send_with_mention(ctx, embed=linx_embed)
 
     async def default_delete_response(self, config, ctx):
-        await self.bot.tagged_response(
+        await self.bot.send_with_mention(
             ctx,
             f"I deleted your message because it was longer than {config.plugins.protect.length_limit.value} characters. Check your DM's for the original message",
         )

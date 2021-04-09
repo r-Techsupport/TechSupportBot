@@ -52,4 +52,4 @@ class MagicConch(base.BaseCog):
 
         embed.set_thumbnail(url=self.PIC_URL)
 
-        await self.bot.tagged_response(ctx, embed=embed)
+        await self.bot.send_with_mention(ctx, embed=embed)

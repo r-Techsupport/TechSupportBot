@@ -50,7 +50,7 @@ class Evaluator(base.BaseCog):
 
         while True:
             if result != self.UNDEFINED_RESULT:
-                await self.bot.tagged_response(
+                await self.bot.send_with_mention(
                     ctx, f"`{result}`" if result is not None else "`None`"
                 )
                 return
@@ -59,7 +59,7 @@ class Evaluator(base.BaseCog):
                 raise RuntimeError(f"Thread finished with error: {error_}")
 
             elif datetime.datetime.now() > finish_time:
-                await self.bot.tagged_response(
+                await self.bot.send_with_mention(
                     ctx,
                     f"Result not received from eval() after {self.THREAD_WAIT_MINUTES} minutes",
                 )

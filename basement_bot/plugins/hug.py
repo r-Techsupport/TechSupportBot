@@ -43,12 +43,12 @@ class Hugger(base.BaseCog):
             ctx (Context): the context
         """
         if user_to_hug.id == ctx.author.id:
-            await self.bot.tagged_response(ctx, "Let's be serious")
+            await self.bot.send_with_mention(ctx, "Let's be serious")
             return
 
         embed = self.generate_embed(ctx, user_to_hug)
 
-        await self.bot.tagged_response(ctx, embed=embed, target=user_to_hug)
+        await self.bot.send_with_mention(ctx, embed=embed, target=user_to_hug)
 
     def generate_embed(self, ctx, user_to_hug):
         hug_text = random.choice(self.HUGS_SELECTION).format(

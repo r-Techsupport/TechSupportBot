@@ -20,7 +20,7 @@ class Embed(DiscordEmbed):
             title (str): the title for the embed
             description (str): the description for the embed
             all_inline (bool): True if all fields should be added with inline=True
-            **kwargs (dict): a set of keyword values to be displayed
+            kwargs (dict): a set of keyword values to be displayed
         """
         embed = cls(title=title, description=description)
         for key, value in kwargs.items():

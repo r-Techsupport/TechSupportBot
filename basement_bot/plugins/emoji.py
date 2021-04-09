@@ -78,14 +78,16 @@ class Emojis(base.BaseCog):
     )
     async def message(self, ctx, *, message: str):
         if ctx.message.mentions:
-            await self.bot.tagged_response(ctx, "I can't make an emoji from a mention!")
+            await self.bot.send_with_mention(
+                ctx, "I can't make an emoji from a mention!"
+            )
             return
 
         emoji_message = self.emoji_message_from_string(message)
         if emoji_message:
-            await self.bot.tagged_response(ctx, emoji_message)
+            await self.bot.send_with_mention(ctx, emoji_message)
         else:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, "I can't get any emoji letters from your message!"
             )
 
@@ -108,12 +110,14 @@ class Emojis(base.BaseCog):
                 react_message = channel_message
                 break
         if not react_message:
-            await self.bot.tagged_response(ctx, "No valid messages found to react to!")
+            await self.bot.send_with_mention(
+                ctx, "No valid messages found to react to!"
+            )
             return
 
         emoji_list = self.emoji_reaction_from_string(message)
         if not emoji_list:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, "Invalid message! Make sure there are no repeat characters!"
             )
             return

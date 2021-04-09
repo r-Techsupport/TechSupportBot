@@ -37,7 +37,9 @@ class Spotify(base.BaseCog):
     async def spotify(self, ctx, *, query: str):
         oauth_token = await self.get_oauth_token()
         if not oauth_token:
-            await self.bot.tagged_response(ctx, "I couldn't authenticate with Spotify")
+            await self.bot.send_with_mention(
+                ctx, "I couldn't authenticate with Spotify"
+            )
             return
 
         headers = {"Authorization": f"Bearer {oauth_token}"}
@@ -49,7 +51,7 @@ class Spotify(base.BaseCog):
         items = response.get("tracks", {}).get("items", [])
 
         if not items:
-            await self.bot.tagged_response(ctx, "I couldn't find any results")
+            await self.bot.send_with_mention(ctx, "I couldn't find any results")
             return
 
         links = []
@@ -60,7 +62,7 @@ class Spotify(base.BaseCog):
             links.append(song_url)
 
         if not links:
-            await self.bot.tagged_response("I had trouble parsing the search results")
+            await self.bot.send_with_mention("I had trouble parsing the search results")
             return
 
         self.bot.task_paginate(ctx, links, restrict=True)

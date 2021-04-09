@@ -35,9 +35,7 @@ class ConfigControl(base.BaseCog):
         """
         config = await self.bot.get_context_config(ctx, get_from_cache=True)
 
-        uploaded_data = await self.bot.get_json_from_attachment(
-            ctx.message, allow_failure=False
-        )
+        uploaded_data = await self.bot.get_json_from_attachments(ctx.message)
         if uploaded_data:
             # server-side check of guild
             uploaded_data["guild_id"] = ctx.guild.id
@@ -45,7 +43,7 @@ class ConfigControl(base.BaseCog):
                 any(key not in config for key in uploaded_data.keys())
                 or len(config) != len(uploaded_data) + 1
             ):
-                await self.bot.tagged_response(
+                await self.bot.send_with_mention(
                     ctx,
                     "I couldn't match your upload data with the guild config schema",
                 )
@@ -55,7 +53,7 @@ class ConfigControl(base.BaseCog):
                 {"guild_id": config.get("guild_id")}, uploaded_data
             )
 
-            await self.bot.tagged_response(ctx, "I've updated that config")
+            await self.bot.send_with_mention(ctx, "I've updated that config")
             return
 
         json_file = self.convert_config_to_json_file(ctx, config)

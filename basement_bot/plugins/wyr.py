@@ -526,4 +526,4 @@ class WouldYouRather(base.BaseCog):
                 self.last = question.id
                 break
 
-        await self.bot.tagged_response(ctx, question.get_question())
+        await self.bot.send_with_mention(ctx, question.get_question())
