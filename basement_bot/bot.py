@@ -845,7 +845,12 @@ class BasementBot(commands.Bot):
 
     async def on_bulk_message_delete(self, messages):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_bulk_message_delete"""
-        await self.logger.event("bulk_message_delete", messages=messages, send=True)
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(messages[0].channel, "guild", None), key="guild_events_channel"
+        )
+        await self.logger.event(
+            "bulk_message_delete", messages=messages, send=True, channel=log_channel
+        )
 
     async def on_message_edit(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_edit"""
