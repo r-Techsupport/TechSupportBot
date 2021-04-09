@@ -164,7 +164,6 @@ class LoopCog(BaseCog):
                 # always try to wait even when execute fails
                 await self.bot.logger.debug("Checking config for log channel")
                 channel = config.get("log_channel")
-
                 await self.bot.logger.error(
                     f"Loop cog execute error: {self.__class__.__name__}!",
                     exception=e,
