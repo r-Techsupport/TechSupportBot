@@ -15,7 +15,7 @@ RUN pip install pipenv && \
 
 WORKDIR /var/BasementBot
 COPY . .
-COPY config.yaml basement_bot
+COPY config.yml basement_bot
 
 FROM python:3.7-alpine
 RUN apk add --no-cache \
