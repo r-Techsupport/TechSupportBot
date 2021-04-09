@@ -1,4 +1,4 @@
 .env
-config.yaml
+config.yml
 *.pyc
 .vscode

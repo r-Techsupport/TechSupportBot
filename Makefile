@@ -49,6 +49,6 @@ logs:
 	docker logs basement_bot -f
 
 establish_config:
-	@if [ ! -f "./config.yaml" ]; then\
-		touch ./config.yaml;\
+	@if [ ! -f "./config.yml" ]; then\
+		touch ./config.yml;\
 	fi

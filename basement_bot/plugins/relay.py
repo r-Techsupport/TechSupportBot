@@ -39,7 +39,20 @@ class DiscordRelay(base.MatchCog):
 
         payload = self.serialize("message", ctx_data)
 
-        await self.bot.rabbit_publish(payload, self.bot.config.special.relay.send_queue)
+        try:
+            await self.bot.rabbit_publish(
+                payload, self.bot.config.special.relay.send_queue
+            )
+        except Exception as e:
+            log_channel = await self.bot.get_log_channel_from_guild(
+                self, ctx.guild, "log_channel"
+            )
+            await self.bot.logger.error(
+                "Could not publish Discord event to relay broker",
+                e,
+                channel=log_channel,
+                critical=True,
+            )
 
     @staticmethod
     def serialize(type_, ctx):
@@ -100,12 +113,23 @@ class IRCReceiver(base.LoopCog):
         self.channels = list(self.bot.config.special.relay.channel_map.values())
 
     async def execute(self, _config, _guild):
-        await self.bot.rabbit_consume(
-            self.bot.config.special.relay.recv_queue,
-            self.handle_event,
-            poll_wait=1,
-            durable=True,
-        )
+        try:
+            await self.bot.rabbit_consume(
+                self.bot.config.special.relay.recv_queue,
+                self.handle_event,
+                poll_wait=1,
+                durable=True,
+            )
+        except Exception as e:
+            log_channel = await self.bot.get_log_channel_from_guild(
+                self, ctx.guild, "log_channel"
+            )
+            await self.bot.logger.error(
+                "Could not consume IRC event from relay broker (will restart consuming in {self.DEFAULT_WAIT} seconds)",
+                e,
+                channel=log_channel,
+                critical=True,
+            )
 
     async def handle_event(self, response):
         data = self.deserialize(response)

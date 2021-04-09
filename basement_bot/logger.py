@@ -217,7 +217,7 @@ class BotLogger:
     # this defaults to True because most error logs should send out
     DEFAULT_ERROR_LOG_SEND = True
 
-    def __init__(self, bot=None, name="root", queue=True, send=True):
+    def __init__(self, bot=None, name="root", queue_wait=None, send=True):
         self.bot = bot
 
         try:
@@ -230,14 +230,12 @@ class BotLogger:
 
         self.console = logging.getLogger(name)
 
-        self.send_queue = asyncio.Queue(maxsize=1000) if queue else None
-        self.queue_enabled = queue
-
-        self.queue_wait = self.bot.config.main.logging.queue_wait_seconds
+        self.queue_wait = queue_wait
+        self.send_queue = asyncio.Queue(maxsize=1000) if queue_wait else None
 
         self.send = send
 
-        if self.queue_enabled:
+        if self.queue_wait:
             self.bot.loop.create_task(self.log_from_queue())
 
     async def info(self, message, *args, **kwargs):
@@ -248,7 +246,7 @@ class BotLogger:
             send (bool): The reverse of the above (overrides console_only)
             channel (int): the ID of the channel to send the log to
         """
-        if self.queue_enabled:
+        if self.queue_wait:
             await self.send_queue.put(
                 DelayedLog(level="info", log_message=message, *args, **kwargs)
             )
@@ -269,7 +267,7 @@ class BotLogger:
         if not self.debug_mode:
             return
 
-        if self.queue_enabled:
+        if self.queue_wait:
             await self.send_queue.put(
                 DelayedLog(level="debug", log_message=message, *args, **kwargs)
             )
@@ -287,7 +285,7 @@ class BotLogger:
             send (bool): The reverse of the above (overrides console_only)
             channel (int): the ID of the channel to send the log to
         """
-        if self.queue_enabled:
+        if self.queue_wait:
             await self.send_queue.put(
                 DelayedLog(level="warning", log_message=message, *args, **kwargs)
             )
@@ -309,17 +307,25 @@ class BotLogger:
         """
         console_only = self._is_console_only(kwargs, is_error=False)
 
-        channel = kwargs.get("channel", None)
+        channel_id = kwargs.get("channel", None)
 
         console(message)
 
         if console_only:
             return
 
+        channel = self.bot.get_channel(int(channel_id)) if channel_id else None
+
         if channel:
-            target = self.bot.get_channel(int(channel))
+            target = channel
         else:
             target = await self.bot.get_owner()
+
+        if not target:
+            self.console.warning(
+                f"Could not determine Discord target to send {level_} log"
+            )
+            return
 
         embed = self.generate_log_embed(message, level_)
         embed.timestamp = kwargs.get("time", datetime.datetime.utcnow())
@@ -339,7 +345,7 @@ class BotLogger:
             send (bool): The reverse of the above (overrides console_only)
             channel (int): the ID of the channel to send the log to
         """
-        if self.queue_enabled:
+        if self.queue_wait:
             kwargs["event_type"] = event_type
             await self.send_queue.put(DelayedLog(level="event", *args, **kwargs))
             return
@@ -356,7 +362,7 @@ class BotLogger:
         """
         console_only = self._is_console_only(kwargs, is_error=False)
 
-        channel = kwargs.get("channel", None)
+        channel_id = kwargs.get("channel", None)
 
         event_data = self.generate_event_data(event_type, *args, **kwargs)
         if not event_data:
@@ -372,10 +378,16 @@ class BotLogger:
         if console_only:
             return
 
+        channel = self.bot.get_channel(int(channel_id)) if channel_id else None
+
         if channel:
-            target = self.bot.get_channel(int(channel))
+            target = channel
         else:
             target = await self.bot.get_owner()
+
+        if not target:
+            self.console.warning("Could not determine Discord target to send EVENT log")
+            return
 
         embed = event_data.get("embed")
         if not embed:
@@ -396,9 +408,10 @@ class BotLogger:
             exception (Exception): the exception object
             send (bool): The reverse of the above (overrides console_only)
             channel (int): the ID of the channel to send the log to
+            critical (bool): True if the critical error handler should be invoked
         """
         # if this is a not command error response, we can queue it for later
-        if not kwargs.get("context") and self.queue_enabled:
+        if not kwargs.get("context") and self.queue_wait:
             await self.send_queue.put(
                 DelayedLog(level="error", log_message=message, *args, **kwargs)
             )
@@ -406,7 +419,8 @@ class BotLogger:
 
         await self.handle_error_log(message, *args, **kwargs)
 
-    # pylint: disable=too-many-return-statements,too-many-branches
+    # this really needs to be split up lol
+    # pylint: disable=too-many-return-statements,too-many-branches,too-many-locals
     async def handle_error_log(self, message, *args, **kwargs):
         """Handles error logging.
 
@@ -415,16 +429,19 @@ class BotLogger:
             exception (Exception): the exception object
             send (bool): The reverse of the above (overrides console_only)
             channel (int): the ID of the channel to send the log to
+            critical (bool): True if the critical error handler should be invoked
         """
         ctx = kwargs.get("context", None)
         exception = kwargs.get("exception", None)
+        critical = kwargs.get("critical")
         console_only = self._is_console_only(kwargs, is_error=True)
 
-        channel = kwargs.get("channel", None)
+        channel_id = kwargs.get("channel", None)
 
         self.console.error(message)
 
         # command error
+        error_message = None
         if ctx and exception:
             #  begin original Discord.py logic
             if self.bot.extra_events.get("on_command_error", None):
@@ -456,8 +473,6 @@ class BotLogger:
 
             await ctx.send(f"{ctx.author.mention} {error_message}")
 
-            ctx.error_message = error_message
-
         if console_only:
             return
 
@@ -473,19 +488,28 @@ class BotLogger:
         print(exception_string)
         exception_string = exception_string[:1994]
 
-        embed = self.generate_error_embed(message, ctx)
+        embed = self.generate_error_embed(message, ctx, error_message)
         embed.timestamp = kwargs.get("time", datetime.datetime.utcnow())
 
+        if channel_id:
+            channel = self.bot.get_channel(int(channel_id))
+        else:
+            channel = None
+
+        # tag user if critical
         if channel:
-            target = self.bot.get_channel(int(channel))
+            content = channel.guild.owner.mention if critical else None
+            target = channel
         else:
             target = await self.bot.get_owner()
+            content = target.mention if critical else None
 
         if not target:
+            self.console.warning("Could not determine Discord target to send ERROR log")
             return
 
         try:
-            await target.send(embed=embed)
+            await target.send(content=content, embed=embed)
             await target.send(f"```{exception_string}```")
         except discord.Forbidden:
             pass
@@ -1109,13 +1133,13 @@ class BotLogger:
 
         return embed
 
-    def generate_error_embed(self, message, context=None):
+    def generate_error_embed(self, message, context=None, error_message=None):
         """Wrapper for generating the error embed.
 
         parameters:
             message (str): the message associated with the error (eg. message)
             context (discord.ext.Context): the context associated with the exception
-            exception (Exception): the exception object associated with the error
+            error_message (str): the error message sent to the user
         """
         embed = self.bot.embed_api.Embed(title="Logging.ERROR", description=message)
 
@@ -1148,7 +1172,7 @@ class BotLogger:
             )
             embed.add_field(
                 name="Response",
-                value=f'*"{getattr(context, "error_message", "*Unknown*")}"*',
+                value=error_message or "*Unknown*",
             )
 
         embed.set_thumbnail(url=self.bot.user.avatar_url)

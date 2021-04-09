@@ -3,9 +3,11 @@ version: '3'
 services:
 
     bot:
-        image: effprime/basement-bot:prod
-        container_name: basement_bot
+        image: ${BASEMENT_BOT_IMAGE_TAG:-effprime/basement-bot:prod}
+        container_name: ${BASEMENT_BOT_CONTAINER_NAME:-basement_bot}
         environment:
             - DEBUG=0
         restart: always
         stop_signal: SIGINT
+        volumes:
+            - ${BASEMENT_BOT_HOST_CONFIG_PATH:-./config.yml}:/var/basement_bot/config.yml

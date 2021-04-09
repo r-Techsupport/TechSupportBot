@@ -31,7 +31,7 @@ class BasementBot(commands.Bot):
         run_on_init (bool): True if the bot should run on instantiation
     """
 
-    CONFIG_PATH = "./config.yaml"
+    CONFIG_PATH = "./config.yml"
     GUILD_CONFIG_COLLECTION = "guild_config"
 
     PluginConfig = plugin.PluginConfig
@@ -57,7 +57,7 @@ class BasementBot(commands.Bot):
         self.logger = logger.BotLogger(
             bot=self,
             name=self.__class__.__name__,
-            queue=self.config.main.logging.queue_enabled,
+            queue_wait=self.config.main.logging.queue_wait_seconds,
             send=not self.config.main.logging.block_discord_send,
         )
 
