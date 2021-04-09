@@ -490,6 +490,8 @@ class BasementBot(commands.Bot):
         db_url = self.generate_db_url()
         await db_ref.set_bind(db_url)
 
+        db_ref.Model.__table_args__ = {"extend_existing": True}
+
         return db_ref
 
     def get_mongo_ref(self):
