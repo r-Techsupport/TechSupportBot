@@ -236,7 +236,6 @@ class BasementBot(commands.Bot):
             context=context,
             exception=exception,
             channel=log_channel,
-            critical=True,
         )
 
     async def get_owner(self):

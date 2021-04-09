@@ -386,9 +386,7 @@ class BotLogger:
             target = await self.bot.get_owner()
 
         if not target:
-            self.console.warning(
-                "Could not determine Discord target to send EVENT log"
-            )
+            self.console.warning("Could not determine Discord target to send EVENT log")
             return
 
         embed = event_data.get("embed")
@@ -507,9 +505,7 @@ class BotLogger:
             content = target.mention if critical else None
 
         if not target:
-            self.console.warning(
-                "Could not determine Discord target to send ERROR log"
-            )
+            self.console.warning("Could not determine Discord target to send ERROR log")
             return
 
         try:
