@@ -10,4 +10,4 @@ services:
         restart: always
         stop_signal: SIGINT
         volumes:
-            - ${HOST_CONFIG_PATH:-./config.yml}:/var/basement_bot/config.yml
+            - ${BASEMENT_BOT_HOST_CONFIG_PATH:-./config.yml}:/var/basement_bot/config.yml
