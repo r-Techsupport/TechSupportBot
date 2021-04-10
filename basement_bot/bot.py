@@ -621,6 +621,8 @@ class BasementBot(commands.Bot):
             )
             response["status_code"] = getattr(response_object, "status", None)
 
+        await client.close()
+
         return response
 
     async def send_with_mention(self, ctx, content=None, target=None, **kwargs):

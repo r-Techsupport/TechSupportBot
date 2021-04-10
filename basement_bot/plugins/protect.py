@@ -21,57 +21,85 @@ def setup(bot):
         key="channels",
         datatype="list",
         title="Protected channels",
-        description="The list of channel ID's associated with the channels to protect",
+        description="The list of channel ID's associated with the channels to auto-protect",
         default=[],
     )
     config.add(
         key="bypass_roles",
         datatype="list",
         title="Bypassed role names",
-        description="The list of role names associated with bypassed roles",
+        description="The list of role names associated with bypassed roles by the auto-protect",
+        default=[],
+    )
+    config.add(
+        key="bypass_roles",
+        datatype="list",
+        title="Bypassed role names",
+        description="The list of role names associated with bypassed roles by the auto-protect",
         default=[],
     )
     config.add(
         key="bypass_ids",
         datatype="list",
         title="Bypassed member ID's",
-        description="The list of member ID's associated with bypassed members",
+        description="The list of member ID's associated with bypassed members by the auto-protect",
         default=[],
     )
     config.add(
         key="length_limit",
         datatype="int",
         title="Max length limit",
-        description="The max char limit on messages before they trigger an action",
+        description="The max char limit on messages before they trigger an action by the auto-protect",
         default=500,
     )
     config.add(
         key="string_map",
         datatype="dict",
         title="Keyword string map",
-        description="The mapping of keyword strings to data defining the action to take",
+        description="The mapping of keyword strings to data defining the action to take by the auto-protect",
         default={},
     )
     config.add(
         key="alert_channel",
         datatype="int",
         title="Alert channel ID",
-        description="The ID of the channel to send protect alerts to",
+        description="The ID of the channel to send auto-protect alerts to",
         default=None,
     )
     config.add(
         key="max_mentions",
         datatype="int",
         title="Max message mentions",
-        description="The max number of mentions allowed in a message",
+        description="The max number of mentions allowed in a message before triggering the auto-protect",
         default=3,
     )
     config.add(
         key="linx_url",
         datatype="str",
         title="Linx API URL",
-        description="The URL to an optional Linx API for pastebinning long messages",
+        description="The URL to an optional Linx API for pastebinning long messages by the auto-protect",
         default=None,
+    )
+    config.add(
+        key="max_warnings",
+        datatype="int",
+        title="Max Warnings",
+        description="The amount of warnings a user should be banned on",
+        default=3,
+    )
+    config.add(
+        key="ban_delete_duration",
+        datatype="int",
+        title="Ban delete duration (days)",
+        description="The amount of days to delete messages for a user after they are banned",
+        default=7,
+    )
+    config.add(
+        key="max_purge_amount",
+        datatype="int",
+        title="Max Purge Amount",
+        description="The max amount of messages allowed to be purged in one command",
+        default=50,
     )
 
     bot.process_plugin_setup(cogs=[Protector], config=config, models=[Warning])
@@ -83,8 +111,6 @@ class Protector(base.MatchCog):
     CLIPBOARD_ICON_URL = (
         "https://icon-icons.com/icons2/203/PNG/128/diagram-30_24487.png"
     )
-    MAX_WARNINGS = 3
-    DELETE_MESSAGES_DAYS = 7
 
     async def match(self, config, ctx, content):
         # exit the match based on exclusion parameters
@@ -144,22 +170,22 @@ class Protector(base.MatchCog):
         )
         return warnings
 
-    async def handle_warn(self, ctx, user, reason):
+    async def handle_warn(self, ctx, user, reason, bypass=False):
+        if not bypass:
+            can_execute = await self.can_execute(ctx, user)
+            if not can_execute:
+                return
+
         warnings = await self.get_warnings(user, ctx.guild)
 
         new_count = len(warnings) + 1
 
-        if new_count >= self.MAX_WARNINGS:
+        config = await self.bot.get_context_config(ctx)
+
+        if new_count >= config.plugins.protect.max_warnings.value:
             # ban the user instead of saving new warning count
-            await ctx.guild.ban(
-                ctx.author, reason=reason, delete_message_days=self.DELETE_MESSAGES_DAYS
-            )
-
-            ban_reason = f"Over max warning count {new_count}/{self.MAX_WARNINGS} (final warning: {reason})"
-
-            embed = await self.generate_user_modified_embed(
-                ctx.author, "ban", ban_reason
-            )
+            ban_reason = f"Over max warning count {new_count}/{config.plugins.protect.max_warnings.value} (final warning: {reason})"
+            await self.handle_ban(ctx, ctx.author, ban_reason, bypass=True)
         else:
             await self.models.Warning(
                 user_id=str(ctx.author.id), guild_id=str(ctx.guild.id), reason=reason
@@ -171,7 +197,12 @@ class Protector(base.MatchCog):
 
         await self.bot.send_with_mention(ctx, embed=embed)
 
-    async def handle_unwarn(self, ctx, user, reason):
+    async def handle_unwarn(self, ctx, user, reason, bypass=False):
+        if not bypass:
+            can_execute = await self.can_execute(ctx, user)
+            if not can_execute:
+                return
+
         warnings = await self.get_warnings(user, ctx.guild)
         if not warnings:
             await self.bot.send_with_mention(ctx, "There are no warnings for that user")
@@ -185,23 +216,41 @@ class Protector(base.MatchCog):
 
         await self.bot.send_with_mention(ctx, embed=embed)
 
-    async def handle_ban(self, ctx, user, reason):
+    async def handle_ban(self, ctx, user, reason, bypass=False):
+        if not bypass:
+            can_execute = await self.can_execute(ctx, user)
+            if not can_execute:
+                return
+
+        config = await self.bot.get_context_config(ctx)
         await ctx.guild.ban(
-            user, reason=reason, delete_message_days=self.DELETE_MESSAGES_DAYS
+            user,
+            reason=reason,
+            delete_message_days=config.plugins.protect.ban_delete_duration.value,
         )
 
         embed = await self.generate_user_modified_embed(user, "ban", reason)
 
         await self.bot.send_with_mention(ctx, embed=embed)
 
-    async def handle_unban(self, ctx, user, reason):
+    async def handle_unban(self, ctx, user, reason, bypass=False):
+        if not bypass:
+            can_execute = await self.can_execute(ctx, user)
+            if not can_execute:
+                return
+
         await user.unban(reason=reason)
 
         embed = await self.generate_user_modified_embed(user, "unban", reason)
 
         await self.bot.send_with_mention(ctx, embed=embed)
 
-    async def handle_kick(self, ctx, user, reason):
+    async def handle_kick(self, ctx, user, reason, bypass=False):
+        if not bypass:
+            can_execute = await self.can_execute(ctx, user)
+            if not can_execute:
+                return
+
         await ctx.guild.kick(user, reason=reason)
 
         embed = await self.generate_user_modified_embed(user, "kick", reason)
@@ -239,7 +288,7 @@ class Protector(base.MatchCog):
 
     async def handle_mass_mention_alert(self, config, ctx, content):
         await ctx.message.delete()
-        await self.handle_warn(ctx, ctx.author, "mass mention")
+        await self.handle_warn(ctx, ctx.author, "mass mention", bypass=True)
         await self.send_admin_alert(config, ctx, f"Mass mentions from {ctx.author}")
 
     async def send_default_delete_response(self, config, ctx, content, reason):
@@ -296,7 +345,7 @@ class Protector(base.MatchCog):
 
     async def handle_string_alert(self, config, ctx, content, filter_config):
         if filter_config.warn:
-            await self.handle_warn(ctx, ctx.author, filter_config.message)
+            await self.handle_warn(ctx, ctx.author, filter_config.message, bypass=True)
 
         if filter_config.delete:
             await ctx.message.delete()
@@ -311,6 +360,15 @@ class Protector(base.MatchCog):
             ctx,
             f"Message contained trigger: {filter_config.trigger}",
         )
+
+    async def can_execute(self, ctx, target):
+        if target.top_role >= ctx.author.top_role:
+            await self.bot.send_with_mention(
+                ctx, f"Your role is too low to do that to {target}"
+            )
+            return False
+
+        return True
 
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
@@ -415,8 +473,10 @@ class Protector(base.MatchCog):
             else None
         )
 
-        if amount <= 0 or amount > 50:
-            amount = 50
+        config = await self.bot.get_context_config(ctx)
+
+        if amount <= 0 or amount > config.plugins.protect.max_purge_amount.value:
+            amount = config.plugins.protect.max_purge_amount.value
 
         def check(message):
             if not targets or message.author.id in targets:
