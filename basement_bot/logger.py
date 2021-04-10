@@ -510,7 +510,7 @@ class BotLogger:
 
         try:
             await target.send(content=content, embed=embed)
-            await target.send(f"```py{exception_string}```")
+            await target.send(f"```py\n{exception_string}```")
         except discord.Forbidden:
             pass
 

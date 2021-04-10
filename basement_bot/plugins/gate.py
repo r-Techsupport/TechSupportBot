@@ -76,10 +76,8 @@ class ServerGate(base.MatchCog):
             bot_message = await self.bot.send_with_mention(
                 ctx,
                 f"{welcome_message} (this message will delete in {delete_wait} seconds)",
+                delete_after=float(delete_wait),
             )
-
-            await asyncio.sleep(delete_wait)
-            await bot_message.delete()
 
     async def get_roles(self, config, ctx):
         roles = []

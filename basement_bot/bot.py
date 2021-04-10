@@ -427,7 +427,6 @@ class BasementBot(commands.Bot):
 
             if not plugin_config and plugin_config_from_data:
                 should_update = True
-
                 await self.logger.debug(
                     f"Found plugin {plugin_name} not in config with ID {config_object.guild_id}"
                 )
