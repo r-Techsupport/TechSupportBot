@@ -156,7 +156,7 @@ class Protector(base.MatchCog):
             )
 
             ban_reason = f"Over max warning count {new_count}/{self.MAX_WARNINGS} (final warning: {reason})"
-    
+
             embed = await self.generate_user_modified_embed(
                 ctx.author, "ban", ban_reason
             )
@@ -214,8 +214,6 @@ class Protector(base.MatchCog):
         )
         embed.set_thumbnail(url=user.avatar_url)
 
-        embed.timestamp = datetime.datetime.utcnow()
-
         return embed
 
     async def handle_length_alert(self, config, ctx, content):
@@ -232,6 +230,9 @@ class Protector(base.MatchCog):
         linx_embed = await self.create_linx_embed(config, ctx, content)
         if not linx_embed:
             await self.send_default_delete_response(config, ctx, content, reason)
+            await self.send_admin_alert(
+                config, ctx, "Could not convert text to Linx paste"
+            )
             return
 
         await self.bot.send_with_mention(ctx, embed=linx_embed)
@@ -239,6 +240,7 @@ class Protector(base.MatchCog):
     async def handle_mass_mention_alert(self, config, ctx, content):
         await ctx.message.delete()
         await self.handle_warn(ctx, ctx.author, "mass mention")
+        await self.send_admin_alert(config, ctx, f"Mass mentions from {ctx.author}")
 
     async def send_default_delete_response(self, config, ctx, content, reason):
         await self.bot.send_with_mention(
@@ -307,7 +309,7 @@ class Protector(base.MatchCog):
         await self.send_admin_alert(
             config,
             ctx,
-            f"Message contained trigger: `{filter_config.trigger}`",
+            f"Message contained trigger: {filter_config.trigger}",
         )
 
     @commands.has_permissions(ban_members=True)
@@ -364,6 +366,28 @@ class Protector(base.MatchCog):
     )
     async def unwarn_user(self, ctx, user: discord.Member, *, reason: str = None):
         await self.handle_unwarn(ctx, user, reason)
+
+    @commands.has_permissions(kick_members=True)
+    @commands.bot_has_permissions(kick_members=True)
+    @commands.command(
+        name="warnings",
+        brief="Gets warnings",
+        description="Gets warnings for a user",
+        usage="@user",
+    )
+    async def get_warnings_command(self, ctx, user: discord.Member):
+        warnings = await self.get_warnings(user, ctx.guild)
+        if not warnings:
+            await self.bot.send_with_mention(ctx, "There are no warnings for that user")
+            return
+
+        embed = self.bot.embed_api.Embed(title=f"Warnings for {user}")
+        for warning in warnings:
+            embed.add_field(name="Reason", value=warning.reason, inline=False)
+
+        embed.set_thumbnail(url=user.avatar_url)
+
+        await self.bot.send_with_mention(ctx, embed=embed)
 
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
