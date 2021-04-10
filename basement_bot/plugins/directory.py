@@ -80,7 +80,7 @@ class ChannelDirectory(base.BaseCog):
         if not channel_id:
             return
 
-        channel = self.bot.get_channel(int(channel_id))
+        channel = guild.get_channel(int(channel_id))
         if not channel:
             return
 
@@ -134,7 +134,7 @@ class ChannelDirectory(base.BaseCog):
         self.option_map[guild.id] = {}
 
         for index, channel_id in enumerate(channel_map):
-            channel = self.bot.get_channel(int(channel_id))
+            channel = guild.get_channel(int(channel_id))
             if not channel or not channel.topic:
                 continue
 
