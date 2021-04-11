@@ -212,7 +212,7 @@ class Protector(base.MatchCog):
             self.models.Warning.user_id == str(user.id)
         ).where(self.models.Warning.guild_id == str(ctx.guild.id)).gino.status()
 
-        embed = await self.generate_user_modified_embed(ctx.author, "UNWARNED", reason)
+        embed = await self.generate_user_modified_embed(user, "UNWARNED", reason)
 
         await self.bot.send_with_mention(ctx, embed=embed)
 
