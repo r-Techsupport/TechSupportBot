@@ -403,6 +403,7 @@ class BasementBot(commands.Bot):
             await self.logger.debug(f"Inserting new config for lookup key: {lookup}")
             await self.guild_config_collection.insert_one(config_)
         except Exception as exception:
+            # safely finish because the new config is still useful
             await self.logger.error(
                 "Could not insert guild config into MongoDB", exception=exception
             )
@@ -426,7 +427,6 @@ class BasementBot(commands.Bot):
 
             if not plugin_config and plugin_config_from_data:
                 should_update = True
-
                 await self.logger.debug(
                     f"Found plugin {plugin_name} not in config with ID {config_object.guild_id}"
                 )
@@ -489,6 +489,8 @@ class BasementBot(commands.Bot):
         db_url = self.generate_db_url()
         await db_ref.set_bind(db_url)
 
+        db_ref.Model.__table_args__ = {"extend_existing": True}
+
         return db_ref
 
     def get_mongo_ref(self):
@@ -536,10 +538,9 @@ class BasementBot(commands.Bot):
             body (str): the body to send
             routing_key (str): the queue name to publish to
         """
-        await self.logger.debug(f"RabbitMQ publish event to queue: {routing_key}")
-
         channel = await self.rabbit.channel()
 
+        await self.logger.debug(f"RabbitMQ publish event to queue: {routing_key}")
         await channel.default_exchange.publish(
             aio_pika.Message(body=body.encode()), routing_key=routing_key
         )
@@ -561,6 +562,7 @@ class BasementBot(commands.Bot):
 
         channel = await self.rabbit.channel()
 
+        await self.logger.debug(f"Declaring queue: {queue_name}")
         queue = await channel.declare_queue(queue_name, *args, **kwargs)
 
         state = True
@@ -597,39 +599,33 @@ class BasementBot(commands.Bot):
             method (str): the HTTP method to use
             url (str): the URL to call
             get_raw_response (bool): True if the actual response object should be returned
+
         """
         client = self.get_http_session()
 
-        method_fn = getattr(client, method.lower(), None)
-        if not method_fn:
-            raise AttributeError(f"Unable to use HTTP method: {method}")
+        method_fn = getattr(client, method.lower())
 
         get_raw_response = kwargs.pop("get_raw_response", False)
 
         await self.logger.debug(f"Making HTTP {method.upper()} request to {url}")
+        response_object = await method_fn(url, *args, **kwargs)
 
-        try:
-            response_object = await method_fn(url, *args, **kwargs)
-
-            if get_raw_response:
-                response = response_object
-            else:
-                response = (
-                    await munch.munchify(response_object.json())
-                    if response_object
-                    else munch.Munch()
-                )
-                response["status_code"] = getattr(response_object, "status", None)
-
-        except Exception as exception:
-            await self.logger.error(f"HTTP {method} call", exception=exception)
-            response = {"status_code": None}
+        if get_raw_response:
+            response = response_object
+        else:
+            await self.logger.debug("Converting response to JSON object")
+            response = (
+                await munch.munchify(response_object.json())
+                if response_object
+                else munch.Munch()
+            )
+            response["status_code"] = getattr(response_object, "status", None)
 
         await client.close()
 
         return response
 
-    async def tagged_response(self, ctx, content=None, target=None, **kwargs):
+    async def send_with_mention(self, ctx, content=None, target=None, **kwargs):
         """Sends a context response with the original author tagged.
 
         parameters:
@@ -677,43 +673,44 @@ class BasementBot(commands.Bot):
             user = self.get_user(id_)
             return f"@{user.name}" if user else "@user"
 
-        self.logger.console.debug("Subbing mention texts with usernames")
-
+        self.logger.console.debug(f"Performing regex subtitution on {content}")
         return re.sub(r"<@?!?(\d+)>", get_nick_from_id_match, content)
 
-    async def get_json_from_attachment(
-        self, message, as_string=False, allow_failure=True
+    async def get_json_from_attachments(
+        self, message, as_string=False, allow_failure=False
     ):
-        """Returns a JSON object parsed from a message's attachment.
+        """Returns concatted JSON from a message's attachments.
 
         parameters:
             ctx (discord.ext.Context): the context object for the message
             message (Message): the message object
+            as_string (bool): True if the serialized JSON should be returned
+            allow_failure (bool): True if an exception should be ignored when parsing attachments
         """
-        data = None
-
         await self.logger.debug(f"Checking message ID: {message.id} for attachments")
-        if message.attachments:
-            await self.logger.debug(
-                f"Parsing JSON from upload associated with message ID: {message.id}"
-            )
+        attachment_jsons = []
+        for attachment in message.attachments:
             try:
-                json_bytes = await message.attachments[0].read()
-                json_str = json_bytes.decode("UTF-8")
-                # hehehe munch ~~O< oooo
-                # data = munch.munchify(ast.literal_eval(json_str))
-                data = munch.munchify(json.loads(json_str))
-                if as_string:
-                    data = json.dumps(data)
-            # this could probably be more specific
+                json_bytes = await attachment.read()
+                attachment_jsons.append(json.loads(json_bytes.decode("UTF-8")))
             except Exception as exception:
-                await self.logger.error(
-                    f"Could not parse JSON from file: {exception}", send=False
-                )
-                if not allow_failure:
-                    raise exception
+                if allow_failure:
+                    await self.logger.debug(
+                        f"Found unprocessable JSON - ignoring ({exception})"
+                    )
+                    continue
+                raise exception
 
-        return data
+        if len(attachment_jsons) == 1:
+            attachment_jsons = attachment_jsons[0]
+        elif len(attachment_jsons) == 0:
+            attachment_jsons = {}
+
+        return (
+            json.dumps(attachment_jsons)
+            if as_string
+            else munch.munchify(attachment_jsons)
+        )
 
     # pylint: disable=too-many-branches, too-many-arguments
     async def paginate(self, ctx, embeds, timeout=300, tag_user=False, restrict=False):
@@ -744,7 +741,7 @@ class BasementBot(commands.Bot):
         }
 
         if tag_user:
-            message = await self.tagged_response(ctx, **get_args(index))
+            message = await self.send_with_mention(ctx, **get_args(index))
         else:
             message = await ctx.send(**get_args(index))
 
@@ -805,22 +802,12 @@ class BasementBot(commands.Bot):
                     "Could not delete user reaction on pagination message", send=False
                 )
 
-        try:
-            await message.clear_reactions()
-        except (discord.Forbidden, discord.NotFound):
-            await self.logger.error(
-                "Could not delete all reactions on pagination message", send=False
-            )
+        await message.clear_reactions()
 
     def task_paginate(self, *args, **kwargs):
-        """Creates a pagination task.
+        """Creates a pagination task from the given args.
 
         This is useful if you want your command to finish executing when pagination starts.
-
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
-            *args (...list): the args with which to call the pagination method
-            **kwargs (...dict): the keyword args with which to call the pagination method
         """
         self.loop.create_task(self.paginate(*args, **kwargs))
 
@@ -866,7 +853,12 @@ class BasementBot(commands.Bot):
 
     async def on_bulk_message_delete(self, messages):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_bulk_message_delete"""
-        await self.logger.event("bulk_message_delete", messages=messages, send=True)
+        log_channel = await self.get_log_channel_from_guild(
+            getattr(messages[0].channel, "guild", None), key="guild_events_channel"
+        )
+        await self.logger.event(
+            "bulk_message_delete", messages=messages, send=True, channel=log_channel
+        )
 
     async def on_message_edit(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_edit"""

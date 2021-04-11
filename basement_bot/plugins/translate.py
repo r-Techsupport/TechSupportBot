@@ -28,7 +28,7 @@ class Translator(base.BaseCog):
         translated = response.get("responseData", {}).get("translatedText")
 
         if not translated:
-            await self.bot.tagged_response(ctx, "I could not translate your message")
+            await self.bot.send_with_mention(ctx, "I could not translate your message")
             return
 
-        await self.bot.tagged_response(ctx, translated)
+        await self.bot.send_with_mention(ctx, translated)

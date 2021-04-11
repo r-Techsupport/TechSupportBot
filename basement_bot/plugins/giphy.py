@@ -40,7 +40,7 @@ class Giphy(base.BaseCog):
 
         data = response.get("data")
         if not data:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, f"No search results found for: *{query}*"
             )
             return

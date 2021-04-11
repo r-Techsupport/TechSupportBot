@@ -21,7 +21,7 @@ class IPInfo(base.BaseCog):
         response = await self.bot.http_call("get", f"{self.API_URL}/{ip_address}/json")
 
         if not response.get("ip"):
-            await self.bot.tagged_response(ctx, "I couldn't find that IP")
+            await self.bot.send_with_mention(ctx, "I couldn't find that IP")
             return
 
         response.pop("readme", None)
@@ -33,4 +33,4 @@ class IPInfo(base.BaseCog):
 
         embed.set_thumbnail(url=self.IP_ICON_URL)
 
-        await self.bot.tagged_response(ctx, embed=embed)
+        await self.bot.send_with_mention(ctx, embed=embed)

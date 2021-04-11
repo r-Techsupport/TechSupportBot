@@ -35,8 +35,8 @@ class News(base.LoopCog):
 
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
 
-    async def execute(self, config, _):
-        channel = self.bot.get_channel(int(config.plugins.news.channel.value))
+    async def execute(self, config, guild):
+        channel = guild.get_channel(int(config.plugins.news.channel.value))
         if not channel:
             return
 

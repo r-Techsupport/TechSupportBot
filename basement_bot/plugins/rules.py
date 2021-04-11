@@ -1,22 +1,23 @@
+import datetime
+import io
+import json
+
 import base
+import discord
 from discord.ext import commands
 
 
 def setup(bot):
-    class Rule(bot.db.Model):
-        __tablename__ = "guildrules"
-
-        pk = bot.db.Column(bot.db.Integer, primary_key=True)
-        guild_id = bot.db.Column(bot.db.String)
-        number = bot.db.Column(bot.db.Integer)
-        description = bot.db.Column(bot.db.String)
-
-    bot.process_plugin_setup(cogs=[Rules], models=[Rule])
+    bot.process_plugin_setup(cogs=[Rules])
 
 
 class Rules(base.BaseCog):
 
     RULE_ICON_URL = "https://cdn.icon-icons.com/icons2/907/PNG/512/balance-scale-of-justice_icon-icons.com_70554.png"
+
+    async def preconfig(self):
+        if not self.extension_name in await self.bot.mongo.list_collection_names():
+            await self.bot.mongo.create_collection(self.extension_name)
 
     @commands.group(name="rule")
     async def rule_group(self, ctx):
@@ -25,45 +26,41 @@ class Rules(base.BaseCog):
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     @rule_group.command(
-        name="add",
-        brief="Adds a rule",
-        description="Adds a rule by number for the current server",
-        usage="[number] [description]",
+        name="edit",
+        brief="Edits rules",
+        description="Edits rules by uploading JSON",
+        usage="|uploaded-json|",
     )
-    async def add_rule(self, ctx, number: int, *, description: str):
-        # first check if a rule with this number/guild-id exists
-        existing_rule = await self.get_rule_by_number(ctx, number)
+    async def edit_rules(self, ctx):
+        collection = self.bot.mongo[self.extension_name]
 
-        if existing_rule:
-            await self.bot.tagged_response(ctx, f"Rule {number} already exists")
+        uploaded_data = await self.bot.get_json_from_attachments(ctx.message)
+        if uploaded_data:
+            uploaded_data["guild_id"] = str(ctx.guild.id)
+            await collection.replace_one({"guild_id": str(ctx.guild.id)}, uploaded_data)
+            await self.bot.send_with_mention(ctx, "I've updated to those rules")
             return
 
-        rule = await self.models.Rule(
-            guild_id=str(ctx.guild.id), number=number, description=description
-        ).create()
+        rules_data = await collection.find_one({"guild_id": {"$eq": str(ctx.guild.id)}})
+        if not rules_data:
+            rules_data = {
+                "guild_id": str(ctx.guild.id),
+                "rules": [
+                    {"description": "No spamming! (this is an example rule)"},
+                    {"description": "Keep it friendly! (this is an example rule)"},
+                ],
+            }
+            await collection.insert_one(rules_data)
 
-        await self.bot.tagged_response(ctx, f"Rule {number} added: {description}")
+        rules_data.pop("_id", None)
+        json_file = discord.File(
+            io.StringIO(json.dumps(rules_data, indent=4)),
+            filename=f"{ctx.guild.id}-rules-{datetime.datetime.utcnow()}.json",
+        )
 
-    @commands.has_permissions(administrator=True)
-    @commands.guild_only()
-    @rule_group.command(
-        name="delete",
-        brief="Deletes a rule",
-        description="Deletes a rule by number for the current server",
-        usage="[number]",
-    )
-    async def delete_rule(self, ctx, number: int):
-        rule = await self.get_rule_by_number(ctx, number)
-
-        if not rule:
-            await self.bot.tagged_response(ctx, "I couldn't find that rule")
-            return
-
-        description = rule.description
-
-        await rule.delete()
-
-        await self.bot.tagged_response(ctx, f"Rule {number} deleted: {description}")
+        await self.bot.send_with_mention(
+            ctx, content="Re-upload this file to apply new rules", file=json_file
+        )
 
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
@@ -74,19 +71,31 @@ class Rules(base.BaseCog):
         usage="[number]",
     )
     async def get_rule(self, ctx, number: int):
-        rule = await self.get_rule_by_number(ctx, number)
+        rules_data = await self.bot.mongo[self.extension_name].find_one(
+            {"guild_id": {"$eq": str(ctx.guild.id)}}
+        )
+        if not rules_data or not rules_data.get("rules"):
+            await self.bot.send_with_mention(ctx, "There are no rules for this server")
+            return
+
+        rules = rules_data.get("rules")
+
+        try:
+            rule = rules[number - 1]
+        except IndexError:
+            rule = None
 
         if not rule:
-            await self.bot.tagged_response(ctx, "I couldn't find that rule")
+            await self.bot.send_with_mention(ctx, "That rule number doesn't exist")
             return
 
         embed = self.bot.embed_api.Embed(
-            title=f"Rule {rule.number}", description=rule.description
+            title=f"Rule {number}", description=rule.get("description", "None")
         )
 
         embed.set_thumbnail(url=self.RULE_ICON_URL)
 
-        await self.bot.tagged_response(ctx, embed=embed)
+        await self.bot.send_with_mention(ctx, embed=embed)
 
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
@@ -96,14 +105,11 @@ class Rules(base.BaseCog):
         description="Gets all the rules for the current server",
     )
     async def get_all_rules(self, ctx):
-        rules = await self.models.Rule.query.where(
-            self.models.Rule.guild_id == str(ctx.guild.id)
-        ).gino.all()
-
-        if not rules:
-            await self.bot.tagged_response(
-                ctx, "I couldn't find any rules for this server"
-            )
+        rules_data = await self.bot.mongo[self.extension_name].find_one(
+            {"guild_id": {"$eq": str(ctx.guild.id)}}
+        )
+        if not rules_data or not rules_data.get("rules"):
+            await self.bot.send_with_mention(ctx, "There are no rules for this server")
             return
 
         embed = self.bot.embed_api.Embed(
@@ -111,21 +117,13 @@ class Rules(base.BaseCog):
             description="By talking on this server, you agree to the following rules",
         )
 
-        for rule in rules:
+        for index, rule in enumerate(rules_data.get("rules")):
             embed.add_field(
-                name=f"Rule {rule.number}", value=rule.description, inline=False
+                name=f"Rule {index+1}",
+                value=rule.get("description", "None"),
+                inline=False,
             )
 
         embed.set_thumbnail(url=self.RULE_ICON_URL)
 
         await ctx.send(embed=embed)
-
-    async def get_rule_by_number(self, ctx, number):
-        rule = (
-            await self.models.Rule.query.where(
-                self.models.Rule.guild_id == str(ctx.guild.id),
-            )
-            .where(self.models.Rule.number == number)
-            .gino.first()
-        )
-        return rule

@@ -35,10 +35,10 @@ class Corrector(base.BaseCog):
                 break
 
         if new_content:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, f"*Correction:* {new_content} :white_check_mark:", target=target
             )
         else:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, "I couldn't find any message to correct"
             )

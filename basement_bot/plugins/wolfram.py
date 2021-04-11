@@ -28,4 +28,4 @@ class Wolfram(base.BaseCog):
         response = await self.bot.http_call("get", url, get_raw_response=True)
         answer = await response.text()
 
-        await self.bot.tagged_response(ctx, answer)
+        await self.bot.send_with_mention(ctx, answer)

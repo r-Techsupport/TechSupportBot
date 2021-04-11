@@ -486,7 +486,7 @@ class BotLogger:
         )
 
         print(exception_string)
-        exception_string = exception_string[:1994]
+        exception_string = exception_string[:1992]
 
         embed = self.generate_error_embed(message, ctx, error_message)
         embed.timestamp = kwargs.get("time", datetime.datetime.utcnow())
@@ -510,7 +510,7 @@ class BotLogger:
 
         try:
             await target.send(content=content, embed=embed)
-            await target.send(f"```{exception_string}```")
+            await target.send(f"```py\n{exception_string}```")
         except discord.Forbidden:
             pass
 

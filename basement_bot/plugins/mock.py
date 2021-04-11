@@ -36,7 +36,7 @@ class Mocker(base.BaseCog):
     )
     async def mock(self, ctx, user_to_mock: discord.Member):
         if not user_to_mock:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, "You must tag a user if you want to mock them!"
             )
             return
@@ -55,7 +55,7 @@ class Mocker(base.BaseCog):
                 break
 
         if not mock_message:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, f"No message found for user {user_to_mock}"
             )
             return
@@ -67,4 +67,4 @@ class Mocker(base.BaseCog):
         )
         embed.set_thumbnail(url=user_to_mock.avatar_url)
 
-        await self.bot.tagged_response(ctx, embed=embed)
+        await self.bot.send_with_mention(ctx, embed=embed)

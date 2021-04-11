@@ -46,4 +46,6 @@ class Burn(base.BaseCog):
             await matched_message.add_reaction(emoji)
 
         message = random.choice(self.PHRASES)
-        await self.bot.tagged_response(ctx, f"🔥🔥🔥 {message} 🔥🔥🔥", target=user_to_match)
+        await self.bot.send_with_mention(
+            ctx, f"🔥🔥🔥 {message} 🔥🔥🔥", target=user_to_match
+        )

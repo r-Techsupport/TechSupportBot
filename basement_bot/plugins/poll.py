@@ -1,5 +1,7 @@
 import asyncio
 import datetime
+import io
+import json
 
 import base
 import decorate
@@ -16,18 +18,11 @@ class Poller(base.BaseCog):
 
     OPTION_EMOJIS = ["one", "two", "three", "four", "five"]
     STOP_EMOJI = "\u26D4"
-    EXAMPLE_JSON = """
-    {
-        "question": "Best ice cream",
-        "options": [
-            "Chocolate",
-            "Vanilla",
-            "Strawberry",
-            "Cookie Dough",
-            "Other..."
-        ],
+    EXAMPLE_DATA = {
+        "question": "Best ice cream?",
+        "options": ["Chocolate", "Vanilla", "Strawberry", "Cookie Dough", "Other..."],
         "timeout": 60,
-    }"""
+    }
 
     async def preconfig(self):
         self.option_emojis = [
@@ -49,9 +44,11 @@ class Poller(base.BaseCog):
         description="Shows what JSON to upload to generate a poll",
     )
     async def example(self, ctx):
-        await self.bot.tagged_response(
-            ctx, f"Upload a JSON like this: ```{self.EXAMPLE_JSON}```"
+        json_file = discord.File(
+            io.StringIO(json.dumps(self.EXAMPLE_DATA, indent=4)),
+            filename="poll_example.json",
         )
+        await self.bot.send_with_mention(ctx, file=json_file)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
@@ -63,9 +60,9 @@ class Poller(base.BaseCog):
         usage="|json-upload|",
     )
     async def generate(self, ctx):
-        request_body = await self.bot.get_json_from_attachment(ctx.message)
+        request_body = await self.bot.get_json_from_attachments(ctx.message)
         if not request_body:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, "I couldn't find any data in your upload"
             )
             return
@@ -74,7 +71,7 @@ class Poller(base.BaseCog):
         if not request_body:
             return
 
-        message = await self.bot.tagged_response(ctx, "Poll loading...")
+        message = await self.bot.send_with_mention(ctx, "Poll loading...")
 
         display_timeout = (
             request_body.timeout
@@ -99,14 +96,14 @@ class Poller(base.BaseCog):
             ctx, message, request_body.timeout, request_body.options
         )
         if results is None:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, "I ran into an issue grabbing the poll results..."
             )
             try:
                 await message.edit(content="*Poll aborted!*", embed=None)
                 await message.clear_reactions()
             except discord.NotFound:
-                await self.bot.tagged_response(
+                await self.bot.send_with_mention(
                     ctx,
                     "I could not find the poll message. It might have been deleted?",
                 )
@@ -116,7 +113,7 @@ class Poller(base.BaseCog):
 
         total = sum(count for count in results.values())
         if total == 0:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, "Nobody voted in the poll, so I won't bother showing any results"
             )
             return
@@ -131,7 +128,7 @@ class Poller(base.BaseCog):
             percentage = str((count * 100) // total)
             embed.add_field(name=option, value=f"{percentage}%", inline=False)
 
-        await self.bot.tagged_response(ctx, embed=embed)
+        await self.bot.send_with_mention(ctx, embed=embed)
 
     async def wait_for_results(self, ctx, message, timeout, options):
         option_emojis = self.option_emojis[: len(options)]
@@ -183,23 +180,23 @@ class Poller(base.BaseCog):
         timeout = request_body.get("timeout")
 
         if not question:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, "I did not find a poll question (`question` key)"
             )
             return None
         elif not isinstance(question, str):
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, "I need the poll question to be a string (`question` key)"
             )
             return None
 
         if not isinstance(options, list):
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, "I need the poll options to be a list (`question` key)"
             )
             return None
         elif len(options) < 2 or len(options) > max_options:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, f"I need between 2 and {max_options} options! (`options` key)"
             )
             return None

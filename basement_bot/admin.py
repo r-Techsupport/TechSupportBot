@@ -41,16 +41,16 @@ class AdminControl(base.BaseCog):
 
         error = status_data.get("error")
         if error:
-            await self.bot.tagged_response(ctx, f"Error: {error}")
+            await self.bot.send_with_mention(ctx, f"Error: {error}")
             return
 
         if plugin_name:
             status = status_data.get(plugin_name)
             if not status:
-                await self.bot.tagged_response(ctx, "Plugin not found!")
+                await self.bot.send_with_mention(ctx, "Plugin not found!")
                 return
 
-            await self.bot.tagged_response(ctx, f"Plugin is {status}")
+            await self.bot.send_with_mention(ctx, f"Plugin is {status}")
             return
 
         embeds = []
@@ -82,7 +82,7 @@ class AdminControl(base.BaseCog):
             plugin_name (str): the name of the plugin
         """
         response = ctx.bot.plugin_api.load_plugin(plugin_name)
-        await self.bot.tagged_response(ctx, response.message)
+        await self.bot.send_with_mention(ctx, response.message)
 
     @decorate.with_typing
     @plugin_group.command(name="unload")
@@ -96,7 +96,7 @@ class AdminControl(base.BaseCog):
             plugin_name (str): the name of the plugin
         """
         response = ctx.bot.plugin_api.unload_plugin(plugin_name)
-        await self.bot.tagged_response(ctx, response.message)
+        await self.bot.send_with_mention(ctx, response.message)
 
     @commands.group(
         name="command",
@@ -120,17 +120,17 @@ class AdminControl(base.BaseCog):
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await self.bot.tagged_response(ctx, f"No such command: `{command_name}`")
+            await self.bot.send_with_mention(ctx, f"No such command: `{command_name}`")
             return
 
         if command_.enabled:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, f"Command `{command_name}` is already enabled!"
             )
             return
 
         command_.enabled = True
-        await self.bot.tagged_response(
+        await self.bot.send_with_mention(
             ctx, f"Successfully enabled command: `{command_name}`"
         )
 
@@ -147,17 +147,17 @@ class AdminControl(base.BaseCog):
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await self.bot.tagged_response(ctx, f"No such command: `{command_name}`")
+            await self.bot.send_with_mention(ctx, f"No such command: `{command_name}`")
             return
 
         if not command_.enabled:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, f"Command `{command_name}` is already disabled!"
             )
             return
 
         command_.enabled = False
-        await self.bot.tagged_response(
+        await self.bot.send_with_mention(
             ctx, f"Successfully disabled command: `{command_name}`"
         )
 
@@ -182,7 +182,9 @@ class AdminControl(base.BaseCog):
             game_name (str): the name of the game
         """
         await ctx.bot.set_game(game_name)
-        await self.bot.tagged_response(ctx, f"Successfully set game to: *{game_name}*")
+        await self.bot.send_with_mention(
+            ctx, f"Successfully set game to: *{game_name}*"
+        )
 
     @decorate.with_typing
     @set_group.command(name="nick")
@@ -196,7 +198,7 @@ class AdminControl(base.BaseCog):
             nick (str): the bot nickname
         """
         await ctx.message.guild.me.edit(nick=nick)
-        await self.bot.tagged_response(ctx, f"Successfully set nick to: *{nick}*")
+        await self.bot.send_with_mention(ctx, f"Successfully set nick to: *{nick}*")
 
     @commands.group(
         brief="Executes an echo bot command", description="Executes an echo bot command"
@@ -219,7 +221,7 @@ class AdminControl(base.BaseCog):
         """
         channel = self.bot.get_channel(channel_id)
         if not channel:
-            await self.bot.tagged_response(ctx, "I couldn't find that channel")
+            await self.bot.send_with_mention(ctx, "I couldn't find that channel")
             return
 
         await channel.send(content=message)
@@ -238,7 +240,7 @@ class AdminControl(base.BaseCog):
         """
         user = await self.bot.fetch_user(int(user_id))
         if not user:
-            await self.bot.tagged_response(ctx, "I couldn't find that user")
+            await self.bot.send_with_mention(ctx, "I couldn't find that user")
             return
 
         await user.send(content=message)
@@ -252,7 +254,7 @@ class AdminControl(base.BaseCog):
         parameters:
             ctx (discord.ext.Context): the context object for the calling message
         """
-        await self.bot.tagged_response(ctx, "Shutting down! Cya later!")
+        await self.bot.send_with_mention(ctx, "Shutting down! Cya later!")
         sys.exit()
 
     @commands.command(name="leave")
@@ -267,7 +269,7 @@ class AdminControl(base.BaseCog):
         """
         guild = discord.utils.get(self.bot.guilds, id=guild_id)
         if not guild:
-            await self.bot.tagged_response(ctx, "I don't appear to be in that guild")
+            await self.bot.send_with_mention(ctx, "I don't appear to be in that guild")
             return
 
         await guild.leave()
@@ -306,7 +308,7 @@ class AdminControl(base.BaseCog):
 
         embed.set_thumbnail(url=self.bot.user.avatar_url)
 
-        await self.bot.tagged_response(ctx, embed=embed)
+        await self.bot.send_with_mention(ctx, embed=embed)
 
     @decorate.with_typing
     @commands.command(name="issue", aliases=["ish", "botish", "botissue"])
@@ -327,7 +329,7 @@ class AdminControl(base.BaseCog):
 
         oauth_token = self.bot.config.main.api_keys.github
         if not oauth_token:
-            await self.bot.tagged_response(ctx, "I couldn't authenticate with Github")
+            await self.bot.send_with_mention(ctx, "I couldn't authenticate with Github")
             return
 
         headers = {
@@ -341,7 +343,7 @@ class AdminControl(base.BaseCog):
         username = self.bot.config.special.github.username
         repo = self.bot.config.special.github.repo
         if not username or not repo:
-            await self.bot.tagged_response(ctx, "I couldn't find the repository")
+            await self.bot.send_with_mention(ctx, "I couldn't find the repository")
             return
 
         response = await self.bot.http_call(
@@ -353,7 +355,7 @@ class AdminControl(base.BaseCog):
 
         status_code = response.get("status_code")
         if status_code != 201:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, f"I was unable to create your issue (status code {status_code})"
             )
             return
@@ -365,4 +367,4 @@ class AdminControl(base.BaseCog):
         embed.add_field(name=f"Issue #{number}", value=f"{issue_url}")
         embed.set_thumbnail(url=icon_url)
 
-        await self.bot.tagged_response(ctx, embed=embed)
+        await self.bot.send_with_mention(ctx, embed=embed)

@@ -52,7 +52,7 @@ class Googler(base.BaseCog):
         items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, f"No search results found for: *{query}*"
             )
             return
@@ -107,7 +107,7 @@ class Googler(base.BaseCog):
         items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, f"No image search results found for: *{query}*"
             )
             return
@@ -116,7 +116,7 @@ class Googler(base.BaseCog):
         for item in items:
             link = item.get("link")
             if not link:
-                await self.bot.tagged_response(
+                await self.bot.send_with_mention(
                     ctx,
                     "I had an issue processing Google's response... try again later!",
                 )
@@ -145,7 +145,7 @@ class Googler(base.BaseCog):
         )
 
         if not items:
-            await self.bot.tagged_response(
+            await self.bot.send_with_mention(
                 ctx, f"No video results found for: *{query}*"
             )
             return

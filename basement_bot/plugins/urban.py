@@ -38,7 +38,7 @@ class UrbanDictionary(base.BaseCog):
         config = await self.bot.get_context_config(ctx)
 
         if not definitions:
-            await self.bot.tagged_response(ctx, f"No results found for: *{query}*")
+            await self.bot.send_with_mention(ctx, f"No results found for: *{query}*")
             return
 
         query_no_spaces = query.replace(" ", "%20")
