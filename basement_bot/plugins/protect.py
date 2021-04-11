@@ -491,7 +491,7 @@ class Protector(base.MatchCog):
 
         await user.remove_roles(role)
 
-        embed = await self.generate_user_modified_embed(user, "muted", reason)
+        embed = await self.generate_user_modified_embed(user, "umuted", reason)
 
         await self.bot.send_with_mention(ctx, embed=embed)
 
