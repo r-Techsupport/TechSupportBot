@@ -185,14 +185,14 @@ class Protector(base.MatchCog):
         if new_count >= config.plugins.protect.max_warnings.value:
             # ban the user instead of saving new warning count
             ban_reason = f"Over max warning count {new_count}/{config.plugins.protect.max_warnings.value} (final warning: {reason})"
-            await self.handle_ban(ctx, ctx.author, ban_reason, bypass=True)
+            await self.handle_ban(ctx, user, ban_reason, bypass=True)
         else:
             await self.models.Warning(
-                user_id=str(ctx.author.id), guild_id=str(ctx.guild.id), reason=reason
+                user_id=str(user.id), guild_id=str(ctx.guild.id), reason=reason
             ).create()
 
             embed = await self.generate_user_modified_embed(
-                ctx.author, "warn", f"{reason} ({new_count} total warnings)"
+                user, "warn", f"{reason} ({new_count} total warnings)"
             )
 
         await self.bot.send_with_mention(ctx, embed=embed)
