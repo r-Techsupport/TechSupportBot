@@ -501,7 +501,12 @@ class Protector(base.MatchCog):
             minutes=duration_minutes
         )
 
-        await ctx.channel.purge(after=timestamp)
+        config = await self.bot.get_context_config(ctx)
+
+        await ctx.channel.purge(
+            after=timestamp, limit=config.plugins.protect.max_purge_amount.value
+        )
+
         await self.bot.send_with_mention(
             ctx,
             f"I finished deleting messages up to `{timestamp}` UTC",
