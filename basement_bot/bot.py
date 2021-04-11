@@ -676,13 +676,16 @@ class BasementBot(commands.Bot):
         self.logger.console.debug(f"Performing regex subtitution on {content}")
         return re.sub(r"<@?!?(\d+)>", get_nick_from_id_match, content)
 
-    async def get_json_from_attachments(self, message, as_string=False):
+    async def get_json_from_attachments(
+        self, message, as_string=False, allow_failure=False
+    ):
         """Returns concatted JSON from a message's attachments.
 
         parameters:
             ctx (discord.ext.Context): the context object for the message
             message (Message): the message object
             as_string (bool): True if the serialized JSON should be returned
+            allow_failure (bool): True if an exception should be ignored when parsing attachments
         """
         await self.logger.debug(f"Checking message ID: {message.id} for attachments")
         attachment_jsons = []
@@ -690,9 +693,13 @@ class BasementBot(commands.Bot):
             try:
                 json_bytes = await attachment.read()
                 attachment_jsons.append(json.loads(json_bytes.decode("UTF-8")))
-            except Exception as e:
-                await self.logger.debug(f"Found unprocessable JSON - ignoring ({e})")
-                continue
+            except Exception as exception:
+                if allow_failure:
+                    await self.logger.debug(
+                        f"Found unprocessable JSON - ignoring ({exception})"
+                    )
+                    continue
+                raise exception
 
         if len(attachment_jsons) == 1:
             attachment_jsons = attachment_jsons[0]
