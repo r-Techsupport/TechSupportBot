@@ -447,6 +447,54 @@ class Protector(base.MatchCog):
 
         await self.bot.send_with_mention(ctx, embed=embed)
 
+    @commands.has_permissions(kick_members=True)
+    @commands.bot_has_permissions(kick_members=True)
+    @commands.command(
+        name="mute",
+        brief="Mutes a user",
+        description="Assigns the Muted role to a user (you need to create/configure this role)",
+        usage="@user",
+    )
+    async def mute(self, ctx, user: discord.Member, reason: str = None):
+        can_execute = await self.can_execute(ctx, user)
+        if not can_execute:
+            return
+
+        role = discord.utils.get(ctx.guild.roles, name="Muted")
+        if not role:
+            await self.bot.send_with_mention(ctx, "The `Muted` role does not exist")
+            return
+
+        await user.add_roles(role)
+
+        embed = await self.generate_user_modified_embed(user, "muted", reason)
+
+        await self.bot.send_with_mention(ctx, embed=embed)
+
+    @commands.has_permissions(kick_members=True)
+    @commands.bot_has_permissions(kick_members=True)
+    @commands.command(
+        name="unmute",
+        brief="Unutes a user",
+        description="Assigns the Muted role to a user (you need to create/configure this role)",
+        usage="@user",
+    )
+    async def unmute(self, ctx, user: discord.Member, reason: str = None):
+        can_execute = await self.can_execute(ctx, user)
+        if not can_execute:
+            return
+
+        role = discord.utils.get(ctx.guild.roles, name="Muted")
+        if not role:
+            await self.bot.send_with_mention(ctx, "The `Muted` role does not exist")
+            return
+
+        await user.remove_roles(role)
+
+        embed = await self.generate_user_modified_embed(user, "muted", reason)
+
+        await self.bot.send_with_mention(ctx, embed=embed)
+
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
     @commands.group(
