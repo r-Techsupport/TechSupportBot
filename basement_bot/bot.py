@@ -599,7 +599,6 @@ class BasementBot(commands.Bot):
             method (str): the HTTP method to use
             url (str): the URL to call
             get_raw_response (bool): True if the actual response object should be returned
-
         """
         client = self.get_http_session()
 
@@ -622,6 +621,8 @@ class BasementBot(commands.Bot):
             response["status_code"] = getattr(response_object, "status", None)
 
         await client.close()
+
+        await self.logger.debug(f"HTTP response: {response}")
 
         return response
 

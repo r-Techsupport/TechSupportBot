@@ -194,8 +194,7 @@ class Protector(base.MatchCog):
             embed = await self.generate_user_modified_embed(
                 user, "warn", f"{reason} ({new_count} total warnings)"
             )
-
-        await self.bot.send_with_mention(ctx, embed=embed)
+            await self.bot.send_with_mention(ctx, embed=embed)
 
     async def handle_unwarn(self, ctx, user, reason, bypass=False):
         if not bypass:
