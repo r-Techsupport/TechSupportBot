@@ -421,7 +421,7 @@ class Protector(base.MatchCog):
         description="Unwarns a user with a given reason",
         usage="@user [reason]",
     )
-    async def unwarn_user(self, ctx, user: discord.Member, *, reason: str = None):
+    async def unwarn_user(self, ctx, user: discord.User, *, reason: str = None):
         await self.handle_unwarn(ctx, user, reason)
 
     @commands.has_permissions(kick_members=True)
@@ -432,7 +432,7 @@ class Protector(base.MatchCog):
         description="Gets warnings for a user",
         usage="@user",
     )
-    async def get_warnings_command(self, ctx, user: discord.Member):
+    async def get_warnings_command(self, ctx, user: discord.User):
         warnings = await self.get_warnings(user, ctx.guild)
         if not warnings:
             await self.bot.send_with_mention(ctx, "There are no warnings for that user")
@@ -475,7 +475,7 @@ class Protector(base.MatchCog):
     @commands.command(
         name="unmute",
         brief="Unutes a user",
-        description="Assigns the Muted role to a user (you need to create/configure this role)",
+        description="Removes the Muted role from a user (you need to create/configure this role)",
         usage="@user",
     )
     async def unmute(self, ctx, user: discord.Member, reason: str = None):
@@ -508,10 +508,10 @@ class Protector(base.MatchCog):
         aliases=["x"],
         brief="Purges messages by amount",
         description="Purges the current channel's messages based on amount and author criteria",
-        usage="@user @another-user ... [number-to-purge (50 by default)]",
+        usage="[amount] @user @another-user ...",
     )
     async def purge_amount(
-        self, ctx, targets: commands.Greedy[discord.Member], amount: int = 1
+        self, ctx, amount: int = 1, targets: commands.Greedy[discord.Member] = None
     ):
         # dat constant lookup
         targets = (
@@ -544,6 +544,10 @@ class Protector(base.MatchCog):
         usage="@user @another-user ... [duration (minutes)]",
     )
     async def purge_duration(self, ctx, duration_minutes: int):
+        if duration_minutes < 0:
+            await self.bot.send_with_mention(ctx, "I can't use that input")
+            return
+
         timestamp = datetime.datetime.utcnow() - datetime.timedelta(
             minutes=duration_minutes
         )
