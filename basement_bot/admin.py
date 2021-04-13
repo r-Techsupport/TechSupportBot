@@ -57,9 +57,7 @@ class AdminControl(base.BaseCog):
         field_counter = 1
         for index, key in enumerate(list(status_data.keys())):
             embed = (
-                self.bot.embed_api.Embed(title="Plugin Status")
-                if field_counter == 1
-                else embed
+                discord.Embed(title="Plugin Status") if field_counter == 1 else embed
             )
             embed.add_field(name=key, value=status_data[key], inline=False)
             if field_counter == 5 or index == len(status_data) - 1:
@@ -285,7 +283,7 @@ class AdminControl(base.BaseCog):
         parameters:
             ctx (discord.ext.Context): the context object for the calling message
         """
-        embed = self.bot.embed_api.Embed(title=self.bot.user.name)
+        embed = discord.Embed(title=self.bot.user.name)
 
         embed.add_field(
             name="Started",
@@ -363,7 +361,7 @@ class AdminControl(base.BaseCog):
         issue_url = response.get("html_url")
         number = response.get("number")
 
-        embed = self.bot.embed_api.Embed(title="Issue Created")
+        embed = discord.Embed(title="Issue Created")
         embed.add_field(name=f"Issue #{number}", value=f"{issue_url}")
         embed.set_thumbnail(url=icon_url)
 

@@ -52,7 +52,7 @@ class UrbanDictionary(base.BaseCog):
                 .replace("\n", "")
             )
             embed = (
-                self.bot.embed_api.Embed(
+                discord.Embed(
                     title=f"Results for {query}",
                     description=f"{self.SEE_MORE_URL}{query_no_spaces}",
                 )

@@ -83,7 +83,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         embed_config = json.loads(factoid.embed_config)
 
-        return self.bot.embed_api.Embed.from_dict(embed_config)
+        return discord.Embed.from_dict(embed_config)
 
     async def add_factoid(self, ctx, **kwargs):
         trigger = kwargs.get("trigger")
@@ -418,7 +418,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         if factoid.embed_config:
             embed_label = "(embed)"
 
-        embed = self.bot.embed_api.Embed(
+        embed = discord.Embed(
             title=f"Loop config for {factoid_name} {embed_label}",
             description=f'"{factoid.message}"',
         )
@@ -497,7 +497,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             finish_time = loop_config.get("finish_time", "???")
             embed_kwargs[factoid_name] = f"Next execution: {finish_time} UTC"
 
-        embed = self.bot.embed_api.Embed.from_kwargs(
+        embed = self.bot.generate_embed_from_kwargs(
             title="Running factoid loops",
             description=f"Next cache update: {self.cache_update_time} UTC",
             **embed_kwargs,

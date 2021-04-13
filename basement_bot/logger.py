@@ -567,7 +567,7 @@ class BotLogger:
         event_type = kwargs.get("event_type")
 
         message = f"New event: {event_type}"
-        embed = self.bot.embed_api.Embed(title=message)
+        embed = discord.Embed(title=message)
 
         return message, embed
 
@@ -579,9 +579,7 @@ class BotLogger:
         sliced_content = ctx.message.content[0:255]
         message = f"Command detected: {sliced_content}"
 
-        embed = self.bot.embed_api.Embed(
-            title="Command detected", description=sliced_content
-        )
+        embed = discord.Embed(title="Command detected", description=sliced_content)
         embed.add_field(name="User", value=ctx.author)
         embed.add_field(name="Channel", value=getattr(ctx.channel, "name", "DM"))
         embed.add_field(name="Server", value=server_text)
@@ -595,7 +593,7 @@ class BotLogger:
 
         message = f"Message with ID {message_object.id} deleted"
 
-        embed = self.bot.embed_api.Embed(title="Message deleted", description=message)
+        embed = discord.Embed(title="Message deleted", description=message)
         embed.add_field(name="Content", value=message_object.content or "None")
         embed.add_field(name="Author", value=message_object.author)
         embed.add_field(
@@ -622,7 +620,7 @@ class BotLogger:
             embed_title = ",".join(k.upper() for k in diff) + " updated for message"
         else:
             embed_title = "Message updated"
-        embed = self.bot.embed_api.Embed(title=embed_title, description=message)
+        embed = discord.Embed(title=embed_title, description=message)
 
         embed = self.add_diff_fields(embed, diff)
 
@@ -649,9 +647,7 @@ class BotLogger:
 
         message = f"{len(messages)} messages bulk deleted!"
 
-        embed = self.bot.embed_api.Embed(
-            title="Bulk message delete", description=message
-        )
+        embed = discord.Embed(title="Bulk message delete", description=message)
         embed.add_field(name="Channels", value=",".join(unique_channels))
         embed.add_field(name="Servers", value=",".join(unique_servers))
 
@@ -665,7 +661,7 @@ class BotLogger:
 
         message = f"Reaction added to message with ID {reaction.message.id} by user with ID {user.id}"
 
-        embed = self.bot.embed_api.Embed(title="Reaction added", description=message)
+        embed = discord.Embed(title="Reaction added", description=message)
         embed.add_field(name="Emoji", value=reaction.emoji)
         embed.add_field(name="User", value=user)
         embed.add_field(name="Message", value=reaction.message.content or "None")
@@ -685,7 +681,7 @@ class BotLogger:
 
         message = f"Reaction removed from message with ID {reaction.message.id} by user with ID {user.id}"
 
-        embed = self.bot.embed_api.Embed(title="Reaction removed", description=message)
+        embed = discord.Embed(title="Reaction removed", description=message)
         embed.add_field(name="Emoji", value=reaction.emoji)
         embed.add_field(name="User", value=user)
         embed.add_field(name="Message", value=reaction.message.content or "None")
@@ -709,7 +705,7 @@ class BotLogger:
         for reaction in reactions:
             unique_emojis.add(reaction.emoji)
 
-        embed = self.bot.embed_api.Embed(title="Reactions cleared", description=message)
+        embed = discord.Embed(title="Reactions cleared", description=message)
         embed.add_field(name="Emojis", value=",".join(unique_emojis))
         embed.add_field(name="Message", value=message.content or "None")
         embed.add_field(name="Message Author", value=message.author)
@@ -727,7 +723,7 @@ class BotLogger:
             f"Channel with ID {channel.id} deleted in guild with ID {channel.guild.id}"
         )
 
-        embed = self.bot.embed_api.Embed(title="Channel deleted", description=message)
+        embed = discord.Embed(title="Channel deleted", description=message)
 
         embed.add_field(name="Channel Name", value=channel.name)
         embed.add_field(name="Server", value=server_text)
@@ -743,7 +739,7 @@ class BotLogger:
             f"Channel with ID {channel.id} created in guild with ID {channel.guild.id}"
         )
 
-        embed = self.bot.embed_api.Embed(title="Channel created", description=message)
+        embed = discord.Embed(title="Channel created", description=message)
 
         embed.add_field(name="Channel Name", value=channel.name)
         embed.add_field(name="Server", value=server_text)
@@ -775,7 +771,7 @@ class BotLogger:
         else:
             embed_title = "Channel updated"
 
-        embed = self.bot.embed_api.Embed(title=embed_title, description=message)
+        embed = discord.Embed(title=embed_title, description=message)
 
         embed = self.add_diff_fields(embed, diff)
 
@@ -792,9 +788,7 @@ class BotLogger:
 
         message = f"Channel pins updated in channel with ID {channel.id} in guild with ID {channel.guild.id}"
 
-        embed = self.bot.embed_api.Embed(
-            title="Channel pins updated", description=message
-        )
+        embed = discord.Embed(title="Channel pins updated", description=message)
 
         embed.add_field(name="Channel Name", value=channel.name)
         embed.add_field(name="Server", value=server_text)
@@ -808,9 +802,7 @@ class BotLogger:
 
         message = f"Integrations updated in guild with ID {guild.id}"
 
-        embed = self.bot.embed_api.Embed(
-            title="Integrations updated", description=message
-        )
+        embed = discord.Embed(title="Integrations updated", description=message)
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -822,7 +814,7 @@ class BotLogger:
 
         message = f"Webooks updated for channel with ID {channel.id} in guild with ID {channel.guild.id}"
 
-        embed = self.bot.embed_api.Embed(title="Webhooks updated", description=message)
+        embed = discord.Embed(title="Webhooks updated", description=message)
         embed.add_field(name="Channel", value=channel.name)
         embed.add_field(name="Server", value=server_text)
 
@@ -836,9 +828,7 @@ class BotLogger:
         message = (
             f"Member with ID {member.id} has joined guild with ID {member.guild.id}"
         )
-        embed = self.bot.embed_api.Embed(
-            title="Member joined guild", description=message
-        )
+        embed = discord.Embed(title="Member joined guild", description=message)
 
         embed.add_field(name="Member", value=member)
         embed.add_field(name="Server", value=server_text)
@@ -851,9 +841,7 @@ class BotLogger:
         server_text = self.get_server_text(member)
 
         message = f"Member with ID {member.id} has left guild with ID {member.guild.id}"
-        embed = self.bot.embed_api.Embed(
-            title="Member removed from guild", description=message
-        )
+        embed = discord.Embed(title="Member removed from guild", description=message)
 
         embed.add_field(name="Member", value=member)
         embed.add_field(name="Server", value=server_text)
@@ -875,7 +863,7 @@ class BotLogger:
 
         if diff:
             embed_title = ",".join(k.upper() for k in diff) + " updated for member"
-            embed = self.bot.embed_api.Embed(title=embed_title, description=message)
+            embed = discord.Embed(title=embed_title, description=message)
 
             embed = self.add_diff_fields(embed, diff)
 
@@ -894,7 +882,7 @@ class BotLogger:
 
         message = f"Joined guild with ID {guild.id}"
 
-        embed = self.bot.embed_api.Embed(title="Guild joined", description=message)
+        embed = discord.Embed(title="Guild joined", description=message)
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -906,7 +894,7 @@ class BotLogger:
 
         message = f"Left guild with ID {guild.id}"
 
-        embed = self.bot.embed_api.Embed(title="Guild left", description=message)
+        embed = discord.Embed(title="Guild left", description=message)
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -947,7 +935,7 @@ class BotLogger:
             embed_title = ",".join(k.upper() for k in diff) + " updated for guild"
         else:
             embed_title = "Guild updated"
-        embed = self.bot.embed_api.Embed(title=embed_title, description=message)
+        embed = discord.Embed(title=embed_title, description=message)
 
         embed = self.add_diff_fields(embed, diff)
 
@@ -964,7 +952,7 @@ class BotLogger:
             f"New role with name {role.name} added to guild with ID {role.guild.id}"
         )
 
-        embed = self.bot.embed_api.Embed(title="Role created", description=message)
+        embed = discord.Embed(title="Role created", description=message)
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -978,7 +966,7 @@ class BotLogger:
             f"Role with name {role.name} deleted from guild with ID {role.guild.id}"
         )
 
-        embed = self.bot.embed_api.Embed(title="Role deleted", description=message)
+        embed = discord.Embed(title="Role deleted", description=message)
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -1001,7 +989,7 @@ class BotLogger:
         else:
             embed_title = "Role updated"
 
-        embed = self.bot.embed_api.Embed(title=embed_title, description=message)
+        embed = discord.Embed(title=embed_title, description=message)
 
         embed = self.add_diff_fields(embed, diff)
 
@@ -1018,9 +1006,7 @@ class BotLogger:
 
         message = f"Emojis updated in guild with ID {guild.id}"
 
-        embed = self.bot.embed_api.Embed(
-            title="Guild emojis updated", description=message
-        )
+        embed = discord.Embed(title="Guild emojis updated", description=message)
         embed.add_field(name="Server", value=server_text)
 
         return message, embed
@@ -1033,7 +1019,7 @@ class BotLogger:
 
         message = f"User with ID {user.id} banned from guild with ID {guild.id}"
 
-        embed = self.bot.embed_api.Embed(title="Member banned", description=message)
+        embed = discord.Embed(title="Member banned", description=message)
         embed.add_field(name="User", value=user)
         embed.add_field(name="Server", value=server_text)
 
@@ -1047,7 +1033,7 @@ class BotLogger:
 
         message = f"User with ID {user.id} unbanned from guild with ID {guild.id}"
 
-        embed = self.bot.embed_api.Embed(title="Member unbanned", description=message)
+        embed = discord.Embed(title="Member unbanned", description=message)
         embed.add_field(name="User", value=user)
         embed.add_field(name="Server", value=server_text)
 
@@ -1125,9 +1111,7 @@ class BotLogger:
             message (str): the message
             level (str): the logging level
         """
-        embed = self.bot.embed_api.Embed(
-            title=f"Logging.{level_.upper()}", description=message
-        )
+        embed = discord.Embed(title=f"Logging.{level_.upper()}", description=message)
 
         embed.set_thumbnail(url=self.bot.user.avatar_url)
 
@@ -1141,7 +1125,7 @@ class BotLogger:
             context (discord.ext.Context): the context associated with the exception
             error_message (str): the error message sent to the user
         """
-        embed = self.bot.embed_api.Embed(title="Logging.ERROR", description=message)
+        embed = discord.Embed(title="Logging.ERROR", description=message)
 
         # inject context data if relevant
         if context:

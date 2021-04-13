@@ -33,7 +33,7 @@ class Logger(base.MatchCog):
         await channel.send(embed=self.generate_embed(ctx))
 
     def generate_embed(self, ctx):
-        embed = self.bot.embed_api.Embed()
+        embed = discord.Embed()
         embed.add_field(
             name="Content", value=ctx.message.content or "<None>", inline=False
         )

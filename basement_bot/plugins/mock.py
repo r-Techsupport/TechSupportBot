@@ -62,9 +62,7 @@ class Mocker(base.BaseCog):
 
         filtered_message = self.bot.sub_mentions_for_usernames(mock_message)
         mock_string = self.mock_string(filtered_message)
-        embed = self.bot.embed_api.Embed(
-            title=f'"{mock_string}"', description=user_to_mock.name
-        )
+        embed = discord.Embed(title=f'"{mock_string}"', description=user_to_mock.name)
         embed.set_thumbnail(url=user_to_mock.avatar_url)
 
         await self.bot.send_with_mention(ctx, embed=embed)
