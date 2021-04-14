@@ -42,7 +42,7 @@ class Weather(base.BaseCog):
 
     def generate_embed(self, response):
         try:
-            embed = self.bot.embed_api.Embed(
+            embed = discord.Embed(
                 title=f"Weather for {response.name} ({response.sys.country})"
             )
 

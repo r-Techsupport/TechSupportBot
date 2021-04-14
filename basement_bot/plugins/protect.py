@@ -257,7 +257,7 @@ class Protector(base.MatchCog):
         await self.bot.send_with_mention(ctx, embed=embed)
 
     async def generate_user_modified_embed(self, user, action, reason):
-        embed = self.bot.embed_api.Embed(
+        embed = discord.Embed(
             title=f"{action.upper()}: {user}", description=f"Reason: {reason}"
         )
         embed.set_thumbnail(url=user.avatar_url)
@@ -304,9 +304,7 @@ class Protector(base.MatchCog):
         if not alert_channel:
             return
 
-        embed = self.bot.embed_api.Embed(
-            title="Protect Plugin Alert", description=f"{message}"
-        )
+        embed = discord.Embed(title="Protect Plugin Alert", description=f"{message}")
 
         embed.add_field(name="User", value=ctx.author.mention)
         embed.add_field(name="Channel", value=f"#{ctx.channel.name}")
@@ -334,9 +332,7 @@ class Protector(base.MatchCog):
         if not url:
             return None
 
-        embed = self.bot.embed_api.Embed(
-            title=f"Paste by {ctx.author}", description=url
-        )
+        embed = discord.Embed(title=f"Paste by {ctx.author}", description=url)
 
         embed.set_thumbnail(url=self.CLIPBOARD_ICON_URL)
 
@@ -438,7 +434,7 @@ class Protector(base.MatchCog):
             await self.bot.send_with_mention(ctx, "There are no warnings for that user")
             return
 
-        embed = self.bot.embed_api.Embed(title=f"Warnings for {user}")
+        embed = discord.Embed(title=f"Warnings for {user}")
         for warning in warnings:
             embed.add_field(name="Reason", value=warning.reason, inline=False)
 

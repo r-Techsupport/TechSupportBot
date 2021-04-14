@@ -9,13 +9,12 @@ import re
 import sys
 
 import admin
+import botlog
 import aio_pika
 import aiohttp
 import config
 import discord
-import embeds as embed_package
 import gino
-import logger
 import munch
 import plugin
 import yaml
@@ -52,9 +51,8 @@ class BasementBot(commands.Bot):
         self.load_bot_config(validate=True)
 
         self.plugin_api = plugin.PluginAPI(bot=self)
-        self.embed_api = embed_package.EmbedAPI(bot=self)
 
-        self.logger = logger.BotLogger(
+        self.logger = botlog.BotLogger(
             bot=self,
             name=self.__class__.__name__,
             queue_wait=self.config.main.logging.queue_wait_seconds,
@@ -227,7 +225,6 @@ class BasementBot(commands.Bot):
             context (discord.ext.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
-
         log_channel = await self.get_log_channel_from_guild(
             getattr(context, "guild", None), key="logging_channel"
         )
@@ -728,16 +725,16 @@ class BasementBot(commands.Bot):
         embeds = embeds[:20]
 
         for index, embed in enumerate(embeds):
-            if isinstance(embed, self.embed_api.Embed):
+            if isinstance(embed, discord.Embed):
                 embed.set_footer(text=f"Page {index+1} of {len(embeds)}")
 
         index = 0
         get_args = lambda index: {
             "content": embeds[index]
-            if not isinstance(embeds[index], self.embed_api.Embed)
+            if not isinstance(embeds[index], discord.Embed)
             else None,
             "embed": embeds[index]
-            if isinstance(embeds[index], self.embed_api.Embed)
+            if isinstance(embeds[index], discord.Embed)
             else None,
         }
 
@@ -811,6 +808,23 @@ class BasementBot(commands.Bot):
         This is useful if you want your command to finish executing when pagination starts.
         """
         self.loop.create_task(self.paginate(*args, **kwargs))
+
+    @staticmethod
+    def generate_embed_from_kwargs(
+        title=None, description=None, all_inline=False, **kwargs
+    ):
+        """Wrapper for generating an embed from a set of key, values.
+
+        parameters:
+            title (str): the title for the embed
+            description (str): the description for the embed
+            all_inline (bool): True if all fields should be added with inline=True
+            kwargs (dict): a set of keyword values to be displayed
+        """
+        embed = discord.Embed(title=title, description=description)
+        for key, value in kwargs.items():
+            embed.add_field(name=key, value=value, inline=all_inline)
+        return embed
 
     def process_plugin_setup(self, *args, **kwargs):
         """Provides a bot-level interface to loading a plugin.

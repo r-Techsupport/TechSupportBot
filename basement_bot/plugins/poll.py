@@ -126,7 +126,7 @@ class ReactionPoller(PollGenerator):
         )
         display_timeout_units = "seconds" if request_body.timeout <= 60 else "minutes"
 
-        embed = self.bot.embed_api.Embed(
+        embed = discord.Embed(
             title=request_body.question,
             description=f"Poll timeout: {display_timeout} {display_timeout_units}",
         )
@@ -164,7 +164,7 @@ class ReactionPoller(PollGenerator):
             )
             return
 
-        embed = self.bot.embed_api.Embed(
+        embed = discord.Embed(
             title=f"Poll results for `{request_body.question}`",
             description=f"Votes: {total}",
         )

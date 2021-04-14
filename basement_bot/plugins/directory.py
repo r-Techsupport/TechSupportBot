@@ -122,7 +122,7 @@ class ChannelDirectory(base.BaseCog):
         self.message_ids.add(new_message.id)
 
     async def send_embed(self, channel_map, guild, directory_channel):
-        embed = self.bot.embed_api.Embed(
+        embed = discord.Embed(
             title="Channel Directory",
             description=config.plugins.directory.embed_message.value,
         )

@@ -785,7 +785,7 @@ class DuckHunt(base.LoopCog):
             return
 
         start_time = datetime.datetime.now()
-        embed = self.bot.embed_api.Embed(
+        embed = discord.Embed(
             title="*Quack Quack*",
             description="Befriend the duck with `bef` or shoot with `bang`",
         )
@@ -837,7 +837,7 @@ class DuckHunt(base.LoopCog):
 
         await duck_user.update(updated=datetime.datetime.now()).apply()
 
-        embed = self.bot.embed_api.Embed(
+        embed = discord.Embed(
             title=f"Duck {action}!",
             description=f"{winner.mention} {action} the duck in {duration} seconds!",
         )
@@ -953,7 +953,7 @@ class DuckHunt(base.LoopCog):
             )
             return
 
-        embed = self.bot.embed_api.Embed(title="Duck Stats", description=user.mention)
+        embed = discord.Embed(title="Duck Stats", description=user.mention)
         embed.color = embed_colors.green()
         embed.add_field(name="Friends", value=duck_user.befriend_count)
         embed.add_field(name="Kills", value=duck_user.kill_count)
@@ -988,9 +988,7 @@ class DuckHunt(base.LoopCog):
         embeds = []
         for index, duck_user in enumerate(duck_users):
             embed = (
-                self.bot.embed_api.Embed(title="Duck Friendships")
-                if field_counter == 1
-                else embed
+                discord.Embed(title="Duck Friendships") if field_counter == 1 else embed
             )
 
             embed.set_thumbnail(url=self.DUCK_PIC_URL)
@@ -1033,11 +1031,7 @@ class DuckHunt(base.LoopCog):
         field_counter = 1
         embeds = []
         for index, duck_user in enumerate(duck_users):
-            embed = (
-                self.bot.embed_api.Embed(title="Duck Kills")
-                if field_counter == 1
-                else embed
-            )
+            embed = discord.Embed(title="Duck Kills") if field_counter == 1 else embed
 
             embed.set_thumbnail(url=self.DUCK_PIC_URL)
             embed.color = embed_colors.green()

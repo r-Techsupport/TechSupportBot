@@ -56,7 +56,7 @@ class Hugger(base.BaseCog):
             user_to_hug=user_to_hug.mention,
         )
 
-        embed = self.bot.embed_api.Embed()
+        embed = discord.Embed()
 
         embed.add_field(name="You've been hugged!", value=hug_text)
 
