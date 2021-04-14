@@ -1,8 +1,9 @@
 """Basement Bot main thread.
 """
+import logging
+
 import bot
 import discord
-import logging
 
 OVERRIDDEN_MODULES_MAP = {
     "discord": logging.INFO,
