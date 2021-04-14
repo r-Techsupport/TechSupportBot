@@ -1,5 +1,6 @@
 import base
 import decorate
+import discord
 import munch
 from discord.ext import commands
 

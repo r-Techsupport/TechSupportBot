@@ -1,5 +1,6 @@
 import base
 import decorate
+import discord
 from discord.ext import commands
 
 

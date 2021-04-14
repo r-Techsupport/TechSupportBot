@@ -1,6 +1,7 @@
 import datetime
 
 import base
+import discord
 
 
 def setup(bot):

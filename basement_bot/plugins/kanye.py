@@ -2,6 +2,7 @@ import asyncio
 import random
 
 import base
+import discord
 
 
 def setup(bot):
