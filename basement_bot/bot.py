@@ -9,12 +9,12 @@ import re
 import sys
 
 import admin
+import botlog
 import aio_pika
 import aiohttp
 import config
 import discord
 import gino
-import logger
 import munch
 import plugin
 import yaml
@@ -52,7 +52,7 @@ class BasementBot(commands.Bot):
 
         self.plugin_api = plugin.PluginAPI(bot=self)
 
-        self.logger = logger.BotLogger(
+        self.logger = botlog.BotLogger(
             bot=self,
             name=self.__class__.__name__,
             queue_wait=self.config.main.logging.queue_wait_seconds,
