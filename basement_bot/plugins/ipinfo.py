@@ -1,4 +1,5 @@
 import base
+import discord
 from discord.ext import commands
 
 
@@ -27,7 +28,7 @@ class IPInfo(base.BaseCog):
         response.pop("readme", None)
         response.pop("status_code", None)
 
-        embed = self.bot.embed_api.Embed.from_kwargs(
+        embed = self.bot.generate_embed_from_kwargs(
             title=f"IP info for {ip_address}", all_inline=True, **response
         )
 

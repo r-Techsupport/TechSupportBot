@@ -1,6 +1,7 @@
 import random
 
 import base
+import discord
 from discord.ext import commands
 
 
@@ -48,7 +49,7 @@ class MagicConch(base.BaseCog):
 
         question = self.bot.sub_mentions_for_usernames(question)
 
-        embed = self.bot.embed_api.Embed(title=question, description=response)
+        embed = discord.Embed(title=question, description=response)
 
         embed.set_thumbnail(url=self.PIC_URL)
 

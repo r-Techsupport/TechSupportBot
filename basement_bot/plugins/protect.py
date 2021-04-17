@@ -194,8 +194,7 @@ class Protector(base.MatchCog):
             embed = await self.generate_user_modified_embed(
                 user, "warn", f"{reason} ({new_count} total warnings)"
             )
-
-        await self.bot.send_with_mention(ctx, embed=embed)
+            await self.bot.send_with_mention(ctx, embed=embed)
 
     async def handle_unwarn(self, ctx, user, reason, bypass=False):
         if not bypass:
@@ -258,7 +257,7 @@ class Protector(base.MatchCog):
         await self.bot.send_with_mention(ctx, embed=embed)
 
     async def generate_user_modified_embed(self, user, action, reason):
-        embed = self.bot.embed_api.Embed(
+        embed = discord.Embed(
             title=f"{action.upper()}: {user}", description=f"Reason: {reason}"
         )
         embed.set_thumbnail(url=user.avatar_url)
@@ -305,9 +304,7 @@ class Protector(base.MatchCog):
         if not alert_channel:
             return
 
-        embed = self.bot.embed_api.Embed(
-            title="Protect Plugin Alert", description=f"{message}"
-        )
+        embed = discord.Embed(title="Protect Plugin Alert", description=f"{message}")
 
         embed.add_field(name="User", value=ctx.author.mention)
         embed.add_field(name="Channel", value=f"#{ctx.channel.name}")
@@ -335,9 +332,7 @@ class Protector(base.MatchCog):
         if not url:
             return None
 
-        embed = self.bot.embed_api.Embed(
-            title=f"Paste by {ctx.author}", description=url
-        )
+        embed = discord.Embed(title=f"Paste by {ctx.author}", description=url)
 
         embed.set_thumbnail(url=self.CLIPBOARD_ICON_URL)
 
@@ -422,7 +417,7 @@ class Protector(base.MatchCog):
         description="Unwarns a user with a given reason",
         usage="@user [reason]",
     )
-    async def unwarn_user(self, ctx, user: discord.Member, *, reason: str = None):
+    async def unwarn_user(self, ctx, user: discord.User, *, reason: str = None):
         await self.handle_unwarn(ctx, user, reason)
 
     @commands.has_permissions(kick_members=True)
@@ -433,13 +428,13 @@ class Protector(base.MatchCog):
         description="Gets warnings for a user",
         usage="@user",
     )
-    async def get_warnings_command(self, ctx, user: discord.Member):
+    async def get_warnings_command(self, ctx, user: discord.User):
         warnings = await self.get_warnings(user, ctx.guild)
         if not warnings:
             await self.bot.send_with_mention(ctx, "There are no warnings for that user")
             return
 
-        embed = self.bot.embed_api.Embed(title=f"Warnings for {user}")
+        embed = discord.Embed(title=f"Warnings for {user}")
         for warning in warnings:
             embed.add_field(name="Reason", value=warning.reason, inline=False)
 
@@ -476,7 +471,7 @@ class Protector(base.MatchCog):
     @commands.command(
         name="unmute",
         brief="Unutes a user",
-        description="Assigns the Muted role to a user (you need to create/configure this role)",
+        description="Removes the Muted role from a user (you need to create/configure this role)",
         usage="@user",
     )
     async def unmute(self, ctx, user: discord.Member, reason: str = None):
@@ -491,7 +486,7 @@ class Protector(base.MatchCog):
 
         await user.remove_roles(role)
 
-        embed = await self.generate_user_modified_embed(user, "muted", reason)
+        embed = await self.generate_user_modified_embed(user, "umuted", reason)
 
         await self.bot.send_with_mention(ctx, embed=embed)
 
@@ -509,10 +504,10 @@ class Protector(base.MatchCog):
         aliases=["x"],
         brief="Purges messages by amount",
         description="Purges the current channel's messages based on amount and author criteria",
-        usage="@user @another-user ... [number-to-purge (50 by default)]",
+        usage="[amount] @user @another-user ...",
     )
     async def purge_amount(
-        self, ctx, targets: commands.Greedy[discord.Member], amount: int = 1
+        self, ctx, amount: int = 1, targets: commands.Greedy[discord.Member] = None
     ):
         # dat constant lookup
         targets = (
@@ -545,6 +540,10 @@ class Protector(base.MatchCog):
         usage="@user @another-user ... [duration (minutes)]",
     )
     async def purge_duration(self, ctx, duration_minutes: int):
+        if duration_minutes < 0:
+            await self.bot.send_with_mention(ctx, "I can't use that input")
+            return
+
         timestamp = datetime.datetime.utcnow() - datetime.timedelta(
             minutes=duration_minutes
         )

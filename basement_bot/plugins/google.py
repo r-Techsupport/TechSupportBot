@@ -1,5 +1,6 @@
 import base
 import decorate
+import discord
 from discord.ext import commands
 
 
@@ -67,7 +68,7 @@ class Googler(base.BaseCog):
                 link = item.get("link")
                 snippet = item.get("snippet", "<Details Unknown>").replace("\n", "")
                 embed = (
-                    self.bot.embed_api.Embed(
+                    discord.Embed(
                         title=f"Results for {query}", value="https://google.com"
                     )
                     if field_counter == 1

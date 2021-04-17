@@ -89,7 +89,7 @@ class Rules(base.BaseCog):
             await self.bot.send_with_mention(ctx, "That rule number doesn't exist")
             return
 
-        embed = self.bot.embed_api.Embed(
+        embed = discord.Embed(
             title=f"Rule {number}", description=rule.get("description", "None")
         )
 
@@ -112,7 +112,7 @@ class Rules(base.BaseCog):
             await self.bot.send_with_mention(ctx, "There are no rules for this server")
             return
 
-        embed = self.bot.embed_api.Embed(
+        embed = discord.Embed(
             title="Server Rules",
             description="By talking on this server, you agree to the following rules",
         )

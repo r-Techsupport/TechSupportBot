@@ -2,6 +2,7 @@ import asyncio
 import random
 
 import base
+import discord
 
 
 def setup(bot):
@@ -49,7 +50,7 @@ class KanyeQuotes(base.LoopCog):
         if not quote:
             return
 
-        embed = self.bot.embed_api.Embed(title=f'"{quote}"', description="Kanye Quest")
+        embed = discord.Embed(title=f'"{quote}"', description="Kanye Quest")
 
         embed.set_thumbnail(url=random.choice(self.KANYE_PICS))
 

@@ -1,5 +1,6 @@
 import base
 import decorate
+import discord
 from discord.ext import commands
 
 
@@ -62,7 +63,7 @@ class Embedder(base.BaseCog):
         embeds = []
         try:
             for embed_request in request_body.get("embeds", []):
-                embeds.append(self.bot.embed_api.Embed.from_dict(embed_request))
+                embeds.append(discord.Embed.from_dict(embed_request))
         except Exception:
             pass
 

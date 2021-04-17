@@ -146,7 +146,7 @@ class Grabber(base.BaseCog):
 
         grabs.sort(reverse=True, key=lambda grab: grab.time)
 
-        embed = self.bot.embed_api.Embed(
+        embed = discord.Embed(
             title=f"Grabs for {user_to_grab.name}",
             description="Let's take a stroll down memory lane...",
         )
@@ -156,7 +156,7 @@ class Grabber(base.BaseCog):
         for index, grab_ in enumerate(grabs):
             filtered_message = self.bot.sub_mentions_for_usernames(grab_.message)
             embed = (
-                self.bot.embed_api.Embed(
+                discord.Embed(
                     title=f"Grabs for {user_to_grab.name}",
                     description=f"Let's take a stroll down memory lane...",
                 )
@@ -216,7 +216,7 @@ class Grabber(base.BaseCog):
 
         filtered_message = self.bot.sub_mentions_for_usernames(grab.message)
 
-        embed = self.bot.embed_api.Embed(
+        embed = discord.Embed(
             title=f'"{filtered_message}"',
             description=f"{user_to_grab.name}, {grab.time.date()}",
         )

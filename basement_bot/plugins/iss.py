@@ -1,5 +1,6 @@
 import base
 import decorate
+import discord
 from discord.ext import commands
 
 
@@ -52,7 +53,7 @@ class ISSLocator(base.BaseCog):
         if not location:
             location = "Unknown"
 
-        embed = self.bot.embed_api.Embed(
+        embed = discord.Embed(
             title="ISS Location", description="Track the International Space Station!"
         )
         embed.add_field(name="Location", value=location)
