@@ -45,7 +45,7 @@ class DiscordRelay(base.MatchCog):
             )
         except Exception as e:
             log_channel = await self.bot.get_log_channel_from_guild(
-                self, ctx.guild, "log_channel"
+                ctx.guild, "logging_channel"
             )
             await self.bot.logger.error(
                 "Could not publish Discord event to relay broker",
