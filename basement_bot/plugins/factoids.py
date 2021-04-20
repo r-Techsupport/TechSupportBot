@@ -263,6 +263,14 @@ class FactoidManager(base.MatchCog, base.LoopCog):
                     ] = datetime.datetime.utcnow() + datetime.timedelta(
                         minutes=sleep_duration
                     )
+                    previous_message = await channel.history(limit=1).flatten()
+
+                    if (
+                        previous_message.author.id == self.bot.user.id
+                        and previous_message.content == content
+                    ):
+                        continue
+
                     message = await channel.send(content=content, embed=embed)
 
                     context = await self.bot.get_context(message)
