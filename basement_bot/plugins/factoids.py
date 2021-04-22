@@ -263,20 +263,29 @@ class FactoidManager(base.MatchCog, base.LoopCog):
                     ] = datetime.datetime.utcnow() + datetime.timedelta(
                         minutes=sleep_duration
                     )
-                    previous_message = await channel.history(limit=1).flatten()
+                    previous_messages = await channel.history(limit=1).flatten()
 
                     if (
-                        previous_message.author.id == self.bot.user.id
-                        and previous_message.content == content
+                        previous_messages[0].author.id == self.bot.user.id
+                        and previous_messages[0].content == content
                     ):
                         continue
 
                     message = await channel.send(content=content, embed=embed)
 
                     context = await self.bot.get_context(message)
+                    await self.dispatch_relay_factoid(config, context, factoid.message)
 
-                    await self.dispatch_relay_factoid(context, factoid.message)
-                except Exception:
+                except Exception as e:
+                    log_channel = await self.bot.get_log_channel_from_guild(
+                        guild, "logging_channel"
+                    )
+                    await self.bot.logger.error(
+                        "Could not send looped factoid",
+                        exception=e,
+                        channel=log_channel,
+                        critical=True,
+                    )
                     continue
 
     # main clock for looping

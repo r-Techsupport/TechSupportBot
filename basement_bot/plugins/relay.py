@@ -49,7 +49,7 @@ class DiscordRelay(base.MatchCog):
             )
             await self.bot.logger.error(
                 "Could not publish Discord event to relay broker",
-                e,
+                exception=e,
                 channel=log_channel,
                 critical=True,
             )
