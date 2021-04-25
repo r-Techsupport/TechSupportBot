@@ -1,4 +1,4 @@
-"""Cog for controlling the bot.
+"""Module for admin commands.
 """
 
 import json
@@ -7,7 +7,8 @@ import sys
 import base
 import decorate
 import discord
-from discord.ext import commands
+import munch
+from discord.ext import commands, ipc
 
 
 class AdminControl(base.BaseCog):
@@ -366,3 +367,60 @@ class AdminControl(base.BaseCog):
         embed.set_thumbnail(url=icon_url)
 
         await self.bot.send_with_mention(ctx, embed=embed)
+
+    @ipc.server.route(name="health")
+    async def health_endpoint(self, _):
+        """Returns a 200 code in the best of circumstances."""
+        return self.bot.ipc_response()
+
+    @ipc.server.route(name="describe")
+    async def describe_endpoint(self, _):
+        """Gets all relevant bot information."""
+        bot_data = munch.Munch()
+
+        bot_data.plugins = self.bot.plugin_api.get_status()
+        bot_data.startup_time = str(self.bot.startup_time)
+        bot_data.latency = self.bot.latency
+        bot_data.description = self.bot.description
+        bot_data.guilds = [
+            {"id": guild.id, "name": guild.name} for guild in self.bot.guilds
+        ]
+
+        return self.bot.ipc_response(payload=bot_data)
+
+    @ipc.server.route(name="get_plugin_status")
+    async def plugin_status_endpoint(self, _):
+        """IPC endpoint for getting plugin status."""
+        return self.bot.ipc_response(payload=self.bot.plugin_api.get_status())
+
+    @ipc.server.route(name="load_plugin")
+    async def load_plugin_endpoint(self, data):
+        """IPC endpoint for loading a plugin.
+
+        parameters:
+            data (object): the data provided by the client request
+        """
+        if not data.plugin_name:
+            return self.bot.ipc_response(code=400, error="Plugin name not provided")
+
+        response = self.bot.plugin_api.load_plugin(data.plugin_name)
+        if not response.status:
+            return self.bot.ipc_response(code=500, error=response.message)
+
+        return self.bot.ipc_response()
+
+    @ipc.server.route(name="unload_plugin")
+    async def unload_plugin_endpoint(self, data):
+        """IPC endpoint for unloading a plugin.
+
+        parameters:
+            data (object): the data provided by the client request
+        """
+        if not data.plugin_name:
+            return self.bot.ipc_response(code=400, error="Plugin name not provided")
+
+        response = self.bot.plugin_api.unload_plugin(data.plugin_name)
+        if not response.status:
+            return self.bot.ipc_response(code=500, error=response.message)
+
+        return self.bot.ipc_response()

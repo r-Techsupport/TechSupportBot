@@ -35,21 +35,16 @@ class PluginAPI:
         self.bot.logger.console.info("Getting plugin status")
 
         statuses = {}
-        try:
-            for plugin_name in self.get_modules():
-                status = "loaded" if self.plugins.get(plugin_name) else "unloaded"
-                if (
-                    status == "unloaded"
-                    and plugin_name in self.bot.config.main.disabled_plugins
-                ):
-                    status = "disabled"
-                statuses[plugin_name] = status
+        for plugin_name in self.get_modules():
+            status = "loaded" if self.plugins.get(plugin_name) else "unloaded"
+            if (
+                status == "unloaded"
+                and plugin_name in self.bot.config.main.disabled_plugins
+            ):
+                status = "disabled"
+            statuses[plugin_name] = status
 
-            return statuses
-
-        # pylint: disable=broad-except
-        except Exception as e:
-            return {"error": str(e)}
+        return statuses
 
     def load_plugin(self, plugin_name):
         """Loads a plugin by name.
@@ -155,6 +150,12 @@ class PluginAPI:
 
     @staticmethod
     def _make_response(status, message):
+        """Makes a plugin API response object.
+
+        parameters:
+            status (bool): True if the status was successful
+            message (str): the response message
+        """
         return munch.munchify({"status": status, "message": message})
 
 
