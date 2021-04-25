@@ -33,7 +33,8 @@ class BotEndpoints(base.BaseCog):
     async def config(self, data):
         """Gets config for the bot or a guild.
 
-        data (object): the data provided by the client request
+        parameters:
+            data (object): the data provided by the client request
         """
         if not data.guild_id:
             return str(self.bot.config.toJSON())
