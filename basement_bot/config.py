@@ -1,4 +1,4 @@
-"""Cog for interfacing with guild configs.
+"""Module for config commands.
 """
 
 import datetime

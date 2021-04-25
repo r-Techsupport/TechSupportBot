@@ -1,4 +1,4 @@
-"""Cog for controlling the bot.
+"""Module for admin commands.
 """
 
 import json

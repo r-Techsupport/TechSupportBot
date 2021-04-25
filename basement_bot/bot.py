@@ -5,6 +5,7 @@ import asyncio
 import collections
 import datetime
 import json
+import os
 import re
 import sys
 
@@ -14,11 +15,12 @@ import aiohttp
 import botlog
 import config
 import discord
+import endpoints
 import gino
 import munch
 import plugin
 import yaml
-from discord.ext import commands
+from discord.ext import commands, ipc
 from motor import motor_asyncio
 
 
@@ -32,6 +34,7 @@ class BasementBot(commands.Bot):
 
     CONFIG_PATH = "./config.yml"
     GUILD_CONFIG_COLLECTION = "guild_config"
+    IPC_SECRET_ENV_KEY = "IPC_SECRET"
 
     PluginConfig = plugin.PluginConfig
 
@@ -47,6 +50,7 @@ class BasementBot(commands.Bot):
         self.guild_config_collection = None
         self.config_cache = collections.defaultdict(dict)
         self.config_lock = asyncio.Lock()
+        self.ipc = None
 
         self.load_bot_config(validate=True)
 
@@ -113,7 +117,17 @@ class BasementBot(commands.Bot):
         return getattr(guild_config, "command_prefix", self.config.main.default_prefix)
 
     def run(self, *args, **kwargs):
-        """Starts the event loop and blocks until interrupted."""
+        """Starts IPC and the event loop and blocks until interrupted."""
+        if os.getenv(self.IPC_SECRET_ENV_KEY):
+            self.logger.console.debug("Setting up IPC server")
+            self.add_cog(endpoints.BotEndpoints(self))
+            self.ipc = ipc.Server(
+                self, host="0.0.0.0", secret_key=os.getenv(self.IPC_SECRET_ENV_KEY)
+            )
+            self.ipc.start()
+        else:
+            self.logger.console.debug("No IPC secret found in env - ignoring IPC setup")
+
         try:
             self.loop.run_until_complete(self.start(*args, **kwargs))
         except (SystemExit, KeyboardInterrupt):
@@ -234,6 +248,15 @@ class BasementBot(commands.Bot):
             exception=exception,
             channel=log_channel,
         )
+
+    async def on_ipc_error(self, _endpoint, exception):
+        """Catches IPC errors and sends them to the error logger for processing.
+
+        parameters:
+            endpoint (str): the endpoint called
+            exception (Exception): the exception object associated with the error
+        """
+        await self.logger.error(f"IPC error: {exception}", exception=exception)
 
     async def get_owner(self):
         """Gets the owner object from the bot application."""
