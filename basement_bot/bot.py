@@ -15,7 +15,6 @@ import aiohttp
 import botlog
 import config
 import discord
-import endpoints
 import gino
 import munch
 import plugin
@@ -120,7 +119,6 @@ class BasementBot(commands.Bot):
         """Starts IPC and the event loop and blocks until interrupted."""
         if os.getenv(self.IPC_SECRET_ENV_KEY):
             self.logger.console.debug("Setting up IPC server")
-            self.add_cog(endpoints.BotEndpoints(self))
             self.ipc = ipc.Server(
                 self, host="0.0.0.0", secret_key=os.getenv(self.IPC_SECRET_ENV_KEY)
             )
@@ -855,6 +853,16 @@ class BasementBot(commands.Bot):
         It is recommended to use this when setting up plugins.
         """
         return self.plugin_api.process_plugin_setup(*args, **kwargs)
+
+    def ipc_response(self, code=200, error=None, payload=None):
+        """Makes a response object for an IPC client.
+
+        parameters:
+            code (int): the HTTP-like status code
+            error (str): the response error message
+            payload (dict): the optional data payload
+        """
+        return {"code": code, "error": error, "payload": payload}
 
     @property
     def startup_time(self):
