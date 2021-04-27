@@ -4,6 +4,7 @@
 import asyncio
 import collections
 import datetime
+import inspect
 import json
 import os
 import re
@@ -863,6 +864,42 @@ class BasementBot(commands.Bot):
             payload (dict): the optional data payload
         """
         return {"code": code, "error": error, "payload": payload}
+
+    def preserialize_object(self, obj):
+        """Provides sane object -> dict transformation for most objects.
+
+        This is primarily used to send Discord.py object data via the IPC server.
+
+        parameters;
+            obj (object): the object to serialize
+        """
+        attributes = inspect.getmembers(obj, lambda a: not inspect.isroutine(a))
+        filtered_attributes = filter(
+            lambda e: not (e[0].startswith("__") and e[0].endswith("__")), attributes
+        )
+
+        data = {}
+        for name, attr in filtered_attributes:
+            # remove single underscores
+            if name.startswith("_"):
+                name = name[1:]
+
+            # if it's not a basic type, stringify it
+            # only catch: nested data is not readily JSON
+            if isinstance(attr, list):
+                attr = [str(element) for element in attr]
+            elif isinstance(attr, dict):
+                attr = {key: str(value) for key, value in attr.items()}
+            elif isinstance(attr, int):
+                attr = int(attr)
+            elif isinstance(attr, float):
+                attr = float(attr)
+            else:
+                attr = str(attr)
+
+            data[name] = attr
+
+        return data
 
     @property
     def startup_time(self):
