@@ -332,6 +332,9 @@ class Protector(base.MatchCog):
 
         embed = discord.Embed(title=f"Paste by {ctx.author}", description=url)
 
+        if len(content) > 256:
+            embed.add_field(name="Preview", value=content[:256])
+
         embed.set_thumbnail(url=self.CLIPBOARD_ICON_URL)
 
         return embed
@@ -375,9 +378,7 @@ class Protector(base.MatchCog):
         await self.handle_ban(ctx, user, reason)
 
         config = await self.bot.get_context_config(ctx)
-        await self.send_alert(
-            config, ctx, "Ban command"
-        )
+        await self.send_alert(config, ctx, "Ban command")
 
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
@@ -402,9 +403,7 @@ class Protector(base.MatchCog):
         await self.handle_kick(ctx, user, reason)
 
         config = await self.bot.get_context_config(ctx)
-        await self.send_alert(
-            config, ctx, "Kick command"
-        )
+        await self.send_alert(config, ctx, "Kick command")
 
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
@@ -418,9 +417,7 @@ class Protector(base.MatchCog):
         await self.handle_warn(ctx, user, reason)
 
         config = await self.bot.get_context_config(ctx)
-        await self.send_alert(
-            config, ctx, "Warn command"
-        )
+        await self.send_alert(config, ctx, "Warn command")
 
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
@@ -480,9 +477,7 @@ class Protector(base.MatchCog):
         await self.bot.send_with_mention(ctx, embed=embed)
 
         config = await self.bot.get_context_config(ctx)
-        await self.send_alert(
-            config, ctx, "Mute command"
-        )
+        await self.send_alert(config, ctx, "Mute command")
 
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
@@ -522,21 +517,17 @@ class Protector(base.MatchCog):
         aliases=["x"],
         brief="Purges messages by amount",
         description="Purges the current channel's messages based on amoun",
-        usage="[amount]"
+        usage="[amount]",
     )
-    async def purge_amount(
-        self, ctx, amount: int = 1
-    ):
+    async def purge_amount(self, ctx, amount: int = 1):
         config = await self.bot.get_context_config(ctx)
 
         if amount <= 0 or amount > config.plugins.protect.max_purge_amount.value:
             amount = config.plugins.protect.max_purge_amount.value
 
         await ctx.channel.purge(limit=amount)
-        
-        await self.send_alert(
-            config, ctx, f"Purge command"
-        )
+
+        await self.send_alert(config, ctx, f"Purge command")
 
     @purge.command(
         name="duration",
@@ -560,6 +551,4 @@ class Protector(base.MatchCog):
             after=timestamp, limit=config.plugins.protect.max_purge_amount.value
         )
 
-        await self.send_alert(
-            config, ctx, f"Purge command"
-        )
+        await self.send_alert(config, ctx, f"Purge command")
