@@ -124,6 +124,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         return content.startswith("?")
 
     async def response(self, config, ctx, arg):
+        raise AttributeError("Idk")
         query = arg[1:]
         user_mentioned = None
         if len(ctx.message.mentions) == 1:

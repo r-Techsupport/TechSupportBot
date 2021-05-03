@@ -91,7 +91,18 @@ class MatchCog(BaseCog):
         if not result:
             return
 
-        await self.response(config, ctx, message.content)
+        try:
+            await self.response(config, ctx, message.content)
+        except Exception as e:
+            await self.bot.logger.debug("Checking config for log channel")
+            config = await self.bot.get_context_config(ctx)
+            channel = config.get("logging_channel")
+            await self.bot.logger.error(
+                f"Match cog error: {self.__class__.__name__}!",
+                exception=e,
+                context=ctx,
+                channel=channel,
+            )
 
     async def match(self, _config, _ctx, _content):
         """Runs a boolean check on message content.
@@ -163,7 +174,7 @@ class LoopCog(BaseCog):
             except Exception as e:
                 # always try to wait even when execute fails
                 await self.bot.logger.debug("Checking config for log channel")
-                channel = config.get("log_channel")
+                channel = config.get("logging_channel")
                 await self.bot.logger.error(
                     f"Loop cog execute error: {self.__class__.__name__}!",
                     exception=e,
