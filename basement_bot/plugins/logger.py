@@ -34,10 +34,10 @@ class Logger(base.MatchCog):
         await channel.send(embed=self.generate_embed(ctx))
 
     def generate_embed(self, ctx):
+        content = ctx.message.content[:256] if ctx.message.content else "None"
+
         embed = discord.Embed()
-        embed.add_field(
-            name="Content", value=ctx.message.content or "<None>", inline=False
-        )
+        embed.add_field(name="Content", value=content, inline=False)
 
         if ctx.message.attachments:
             embed.add_field(

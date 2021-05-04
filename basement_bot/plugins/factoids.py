@@ -124,7 +124,6 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         return content.startswith("?")
 
     async def response(self, config, ctx, arg):
-        raise AttributeError("Idk")
         query = arg[1:]
         user_mentioned = None
         if len(ctx.message.mentions) == 1:
@@ -141,7 +140,6 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             return
 
         factoid = await self.get_factoid_from_query(query, ctx.guild)
-
         if not factoid:
             return
 
