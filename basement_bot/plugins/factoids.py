@@ -198,7 +198,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         if not factoid.loop_config:
             # delete stale job
             if old_loop_config:
-                del self.loop_jobs[factoid.text]
+                del guild_loop_jobs[factoid.text]
             return
 
         loop_config = {}
