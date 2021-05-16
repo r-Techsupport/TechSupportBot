@@ -44,12 +44,12 @@ class ConfigControl(base.BaseCog):
         parameters:
             ctx (discord.ext.Context): the context object for the message
         """
-        config = await self.bot.get_context_config(ctx, get_from_cache=True)
+        config = await self.bot.get_context_config(ctx, get_from_cache=False)
 
         uploaded_data = await self.bot.get_json_from_attachments(ctx.message)
         if uploaded_data:
             # server-side check of guild
-            uploaded_data["guild_id"] = ctx.guild.id
+            uploaded_data["guild_id"] = str(ctx.guild.id)
             if not self.schema_matches(uploaded_data, config):
                 await self.bot.send_with_mention(
                     ctx,
@@ -114,7 +114,7 @@ class ConfigControl(base.BaseCog):
             return self.bot.ipc_response(code=404, error="Guild not found")
 
         current_config = await self.bot.get_context_config(
-            guild=guild, get_from_cache=True
+            guild=guild, get_from_cache=False
         )
 
         config = getattr(data, "new_config", None)

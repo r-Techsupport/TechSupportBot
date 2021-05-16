@@ -345,6 +345,8 @@ class BasementBot(commands.Bot):
         else:
             return None
 
+        lookup = str(lookup)
+
         await self.logger.debug(f"Getting config for lookup key: {lookup}")
 
         # locking prevents duplicate configs being made
@@ -410,7 +412,7 @@ class BasementBot(commands.Bot):
 
         config_ = munch.Munch()
 
-        config_.guild_id = lookup
+        config_.guild_id = str(lookup)
         config_.command_prefix = self.config.main.default_prefix
         config_.logging_channel = None
         config_.member_events_channel = None
@@ -891,9 +893,9 @@ class BasementBot(commands.Bot):
             elif isinstance(attr, dict):
                 attr = {key: str(value) for key, value in attr.items()}
             elif isinstance(attr, int):
-                attr = int(attr)
+                attr = str(attr)
             elif isinstance(attr, float):
-                attr = float(attr)
+                pass
             else:
                 attr = str(attr)
 
