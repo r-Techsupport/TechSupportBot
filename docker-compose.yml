@@ -15,3 +15,10 @@ services:
             - ${IPC_MULTICAST_PORT:-20000}:20000
         volumes:
             - ${BASEMENT_BOT_HOST_CONFIG_PATH:-./config.yml}:/var/basement_bot/config.yml
+        networks:
+            - ipc
+            - default
+        
+networks: 
+    ipc:
+        external: true

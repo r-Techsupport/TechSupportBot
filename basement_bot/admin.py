@@ -418,7 +418,6 @@ class AdminControl(base.BaseCog):
     async def get_all_guilds_endpoint(self, _):
         """IPC endpoint for getting all guilds."""
         guilds = [self.bot.preserialize_object(guild) for guild in self.bot.guilds]
-        print(guilds)
         return self.bot.ipc_response(payload={"guilds": guilds})
 
     @ipc.server.route(name="get_guild")
