@@ -145,7 +145,7 @@ class IRCReceiver(base.LoopCog):
 
         if data.event.type == "quit":
             for channel_id in self.channels:
-                channel = self.bot.get_channel(channel_id)
+                channel = self.bot.get_channel(int(channel_id))
                 if not channel:
                     continue
                 await channel.send(message)
@@ -179,7 +179,7 @@ class IRCReceiver(base.LoopCog):
             if channel_id == self.bot.config.special.relay.channel_map.get(
                 data.channel.name
             ):
-                return self.bot.get_channel(channel_id)
+                return self.bot.get_channel(int(channel_id))
 
     def deserialize(self, body):
         deserialized = munch.Munch.fromJSON(body)
