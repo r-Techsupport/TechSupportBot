@@ -114,7 +114,7 @@ class Protector(base.MatchCog):
 
     async def match(self, config, ctx, content):
         # exit the match based on exclusion parameters
-        if not ctx.channel.id in config.plugins.protect.channels.value:
+        if not str(ctx.channel.id) in config.plugins.protect.channels.value:
             return False
 
         admin = await self.bot.is_bot_admin(ctx)
