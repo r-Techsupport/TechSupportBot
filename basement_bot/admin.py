@@ -414,6 +414,36 @@ class AdminControl(base.BaseCog):
 
         return self.bot.ipc_response()
 
+    @ipc.server.route(name="echo_user")
+    async def echo_user_endpoint(self, data):
+        """IPC endpoint for DMing a user.
+
+        parameters:
+            data (object): the data provided by the client request
+        """
+        user = await self.bot.fetch_user(int(data.user_id))
+        if not user:
+            return self.bot.ipc_response(code=404, error="User not found")
+
+        await user.send(content=data.message)
+
+        return self.bot.ipc_response()
+
+    @ipc.server.route(name="echo_channel")
+    async def echo_channel_endpoint(self, data):
+        """IPC endpoint for sending to a channel.
+
+        parameters:
+            data (object): the data provided by the client request
+        """
+        channel = self.bot.get_channel(int(data.channel_id))
+        if not channel:
+            return self.bot.ipc_response(code=404, error="Channel not found")
+
+        await channel.send(content=data.message)
+
+        return self.bot.ipc_response()
+
     @ipc.server.route(name="get_all_guilds")
     async def get_all_guilds_endpoint(self, _):
         """IPC endpoint for getting all guilds."""
