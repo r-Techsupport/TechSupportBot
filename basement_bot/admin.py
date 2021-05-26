@@ -378,9 +378,23 @@ class AdminControl(base.BaseCog):
         return self.bot.ipc_response(payload=self.bot.preserialize_object(self.bot))
 
     @ipc.server.route(name="get_plugin_status")
-    async def plugin_status_endpoint(self, _):
-        """IPC endpoint for getting plugin status."""
-        return self.bot.ipc_response(payload=self.bot.plugin_api.get_status())
+    async def plugin_status_endpoint(self, data):
+        """IPC endpoint for getting plugin status.
+
+        parameters:
+            data (object): the data provided by the client request
+        """
+        if data.plugin_name:
+            payload = self.bot.plugin_api.get_status(data.plugin_name)
+            if not payload:
+                return self.bot.ipc_response(
+                    code=404, error="Plugin not found (in memory or file)"
+                )
+
+        else:
+            payload = self.bot.plugin_api.get_all_statuses()
+
+        return self.bot.ipc_response(payload=payload)
 
     @ipc.server.route(name="load_plugin")
     async def load_plugin_endpoint(self, data):

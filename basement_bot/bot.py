@@ -406,9 +406,10 @@ class BasementBot(commands.Bot):
 
         await self.logger.debug("Evaluating plugin data")
         for plugin_name, plugin_data in self.plugin_api.plugins.items():
-            plugin_config = getattr(plugin_data, "config", None)
+            plugin_config = getattr(plugin_data, "fallback_config", {})
             if plugin_config:
-                plugins_config[plugin_name] = getattr(plugin_data, "config", {})
+                # don't attach to guild config if plugin isn't configurable
+                plugins_config[plugin_name] = plugin_config
 
         config_ = munch.Munch()
 
@@ -444,7 +445,7 @@ class BasementBot(commands.Bot):
         await self.logger.debug("Evaluating plugin data")
         for plugin_name, plugin_data in self.plugin_api.plugins.items():
             plugin_config = config_object.plugins.get(plugin_name)
-            plugin_config_from_data = getattr(plugin_data, "config", {})
+            plugin_config_from_data = getattr(plugin_data, "fallback_config", {})
 
             if not plugin_config and plugin_config_from_data:
                 should_update = True
