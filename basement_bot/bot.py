@@ -418,6 +418,7 @@ class BasementBot(commands.Bot):
         config_.logging_channel = None
         config_.member_events_channel = None
         config_.guild_events_channel = None
+        config_.private_channels = []
 
         config_.plugins = plugins_config
 
@@ -911,6 +912,10 @@ class BasementBot(commands.Bot):
 
     async def on_command(self, ctx):
         """See: https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.on_command"""
+        config_ = await self.get_context_config(ctx)
+        if str(ctx.channel.id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
             getattr(ctx, "guild", None), key="logging_channel"
         )
@@ -930,8 +935,15 @@ class BasementBot(commands.Bot):
 
     async def on_message_delete(self, message):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_delete"""
+        guild = getattr(message.channel, "guild", None)
+        channel_id = getattr(message.channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(message.channel, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "message_delete", message=message, send=True, channel=log_channel
@@ -939,8 +951,15 @@ class BasementBot(commands.Bot):
 
     async def on_bulk_message_delete(self, messages):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_bulk_message_delete"""
+        guild = getattr(messages[0].channel, "guild", None)
+        channel_id = getattr(messages[0].channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(messages[0].channel, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "bulk_message_delete", messages=messages, send=True, channel=log_channel
@@ -948,12 +967,19 @@ class BasementBot(commands.Bot):
 
     async def on_message_edit(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_edit"""
+        guild = getattr(before.channel, "guild", None)
+        channel_id = getattr(before.channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         # this seems to spam, not sure why
         if before.content == after.content:
             return
 
         log_channel = await self.get_log_channel_from_guild(
-            getattr(before.channel, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "message_edit", before=before, after=after, send=True, channel=log_channel
@@ -961,8 +987,15 @@ class BasementBot(commands.Bot):
 
     async def on_reaction_add(self, reaction, user):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_add"""
+        guild = getattr(reaction.message.channel, "guild", None)
+        channel_id = getattr(reaction.message.channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(reaction.message, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "reaction_add", reaction=reaction, user=user, send=True, channel=log_channel
@@ -970,8 +1003,15 @@ class BasementBot(commands.Bot):
 
     async def on_reaction_remove(self, reaction, user):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_remove"""
+        guild = getattr(reaction.message.channel, "guild", None)
+        channel_id = getattr(reaction.message.channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(reaction.message, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "reaction_remove",
@@ -983,8 +1023,15 @@ class BasementBot(commands.Bot):
 
     async def on_reaction_clear(self, message, reactions):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_clear"""
+        guild = getattr(message.channel, "guild", None)
+        channel_id = getattr(message.channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(message, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "reaction_clear",
@@ -996,6 +1043,13 @@ class BasementBot(commands.Bot):
 
     async def on_reaction_clear_emoji(self, reaction):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_clear_emoji"""
+        guild = getattr(reaction.message.channel, "guild", None)
+        channel_id = getattr(reaction.message.channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
             getattr(reaction.message, "guild", None), key="guild_events_channel"
         )
@@ -1023,8 +1077,15 @@ class BasementBot(commands.Bot):
 
     async def on_guild_channel_update(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_update"""
+        guild = getattr(before, "guild", None)
+        channel_id = getattr(before, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(before, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "guild_channel_update",
@@ -1036,8 +1097,15 @@ class BasementBot(commands.Bot):
 
     async def on_guild_channel_pins_update(self, channel, last_pin):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_pins_update"""
+        guild = getattr(channel, "guild", None)
+        channel_id = getattr(channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(channel, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "guild_channel_pins_update",
@@ -1058,8 +1126,15 @@ class BasementBot(commands.Bot):
 
     async def on_webhooks_update(self, channel):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_webhooks_update"""
+        guild = getattr(channel, "guild", None)
+        channel_id = getattr(channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(channel, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "webhooks_update", channel_=channel, send=True, channel=log_channel
