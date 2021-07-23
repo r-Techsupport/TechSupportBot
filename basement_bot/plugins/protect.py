@@ -1,5 +1,6 @@
 import datetime
 import io
+from typing import Type
 
 import base
 import discord
@@ -115,11 +116,14 @@ class Protector(base.MatchCog):
     async def match(self, config, ctx, content):
         # exit the match based on exclusion parameters
         if not str(ctx.channel.id) in config.plugins.protect.channels.value:
+            await self.bot.logger.info(
+                "Channel not in protected channels - ignoring protect check"
+            )
             return False
 
-        admin = await self.bot.is_bot_admin(ctx)
-        if admin:
-            return False
+        # admin = await self.bot.is_bot_admin(ctx)
+        # if admin:
+        #     return False
 
         role_names = [role.name.lower() for role in getattr(ctx.author, "roles", [])]
 
@@ -296,9 +300,13 @@ class Protector(base.MatchCog):
         await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
 
     async def send_alert(self, config, ctx, message):
-        alert_channel = ctx.guild.get_channel(
-            int(config.plugins.protect.alert_channel.value)
-        )
+        try:
+            alert_channel = ctx.guild.get_channel(
+                int(config.plugins.protect.alert_channel.value)
+            )
+        except TypeError:
+            alert_channel = None
+
         if not alert_channel:
             return
 
@@ -307,10 +315,9 @@ class Protector(base.MatchCog):
         embed.add_field(name="Channel", value=f"#{ctx.channel.name}")
         embed.add_field(name="User", value=ctx.author.mention)
         embed.add_field(name="Message", value=ctx.message.content, inline=False)
+        embed.add_field(name="URL", value=ctx.message.jump_url, inline=False)
 
         embed.set_thumbnail(url=self.ALERT_ICON_URL)
-
-        await alert_channel.send(embed=embed)
 
     async def create_linx_embed(self, config, ctx, content):
         if not content:
@@ -358,6 +365,10 @@ class Protector(base.MatchCog):
         )
 
     async def can_execute(self, ctx, target):
+        if target.id == self.bot.user.id:
+            await self.bot.send_with_mention(ctx, f"It would be silly to warn myself")
+            return False
+
         if target.top_role >= ctx.author.top_role:
             await self.bot.send_with_mention(
                 ctx, f"Your role is too low to do that to {target}"
