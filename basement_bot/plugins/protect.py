@@ -121,9 +121,9 @@ class Protector(base.MatchCog):
             )
             return False
 
-        # admin = await self.bot.is_bot_admin(ctx)
-        # if admin:
-        #     return False
+        admin = await self.bot.is_bot_admin(ctx)
+        if admin:
+            return False
 
         role_names = [role.name.lower() for role in getattr(ctx.author, "roles", [])]
 
