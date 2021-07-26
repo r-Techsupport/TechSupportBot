@@ -471,7 +471,7 @@ class Protector(base.MatchCog):
         description="Assigns the Muted role to a user (you need to create/configure this role)",
         usage="@user",
     )
-    async def mute(self, ctx, user: discord.Member, reason: str = None):
+    async def mute(self, ctx, user: discord.Member, *, reason: str = None):
         can_execute = await self.can_execute(ctx, user)
         if not can_execute:
             return
