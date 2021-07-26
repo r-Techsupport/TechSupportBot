@@ -340,7 +340,9 @@ class Protector(base.MatchCog):
         embed = discord.Embed(title=f"Paste by {ctx.author}", description=url)
 
         if len(content) > 256:
-            embed.add_field(name="Preview", value=content[:256])
+            content = content[:256]
+
+        embed.add_field(name="Preview", value=content.strip("\n"))
 
         embed.set_thumbnail(url=self.CLIPBOARD_ICON_URL)
 
