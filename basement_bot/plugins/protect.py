@@ -295,7 +295,7 @@ class Protector(base.MatchCog):
     async def send_default_delete_response(self, config, ctx, content, reason):
         await self.bot.send_with_mention(
             ctx,
-            f"I deleted your message because: {reason}. Check your DM's for the original message",
+            f"I deleted your message because: `{reason}`",
         )
         await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
 
