@@ -179,7 +179,7 @@ class AdminControl(base.BaseCog):
             ctx (discord.ext.Context): the context object for the message
             game_name (str): the name of the game
         """
-        await ctx.bot.set_game(game_name)
+        await ctx.bot.change_presence(activity=discord.Game(name=game_name))
         await self.bot.send_with_mention(
             ctx, f"Successfully set game to: *{game_name}*"
         )
