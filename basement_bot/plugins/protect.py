@@ -310,7 +310,7 @@ class Protector(base.MatchCog):
         if not alert_channel:
             return
 
-        embed = discord.Embed(title="Protect Alert", description=f"{message}")
+        embed = discord.Embed(title="Protect Alert", description=message)
 
         embed.add_field(name="Channel", value=f"#{ctx.channel.name}")
         embed.add_field(name="User", value=ctx.author.mention)
@@ -318,6 +318,8 @@ class Protector(base.MatchCog):
         embed.add_field(name="URL", value=ctx.message.jump_url, inline=False)
 
         embed.set_thumbnail(url=self.ALERT_ICON_URL)
+
+        await alert_channel.send(embed=embed)
 
     async def create_linx_embed(self, config, ctx, content):
         if not content:
