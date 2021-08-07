@@ -74,6 +74,7 @@ class Who(base.BaseCog):
     async def set_note(self, ctx, user: discord.Member, *, body: str):
         if ctx.author.id == user.id:
             await self.bot.send_with_mention(ctx, "You cannot add a note for yourself")
+            return
 
         note = self.models.UserNote(
             user_id=str(user.id),
