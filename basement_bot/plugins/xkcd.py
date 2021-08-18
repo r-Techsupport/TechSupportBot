@@ -1,6 +1,7 @@
 import random
 
 import base
+import discord
 from discord.ext import commands
 
 
@@ -49,14 +50,14 @@ class XKCD(base.BaseCog):
             )
             return
 
-        image_url = random_comic_data.get("img")
-        if not image_url:
+        embed = self.generate_embed(random_comic_data)
+        if not embed:
             await self.bot.send_with_mention(
-                ctx, f"I couldn't find the image URL for comic #{comic_number}"
+                ctx, f"I had trouble calling getting the correct XKCD info"
             )
             return
 
-        await self.bot.send_with_mention(ctx, image_url)
+        await self.bot.send_with_mention(ctx, embed=embed)
 
     @xkcd.command(
         name="number",
@@ -73,17 +74,33 @@ class XKCD(base.BaseCog):
             )
             return
 
-        image_url = comic_data.get("img")
-        if not image_url:
+        embed = self.generate_embed(comic_data)
+        if not embed:
             await self.bot.send_with_mention(
-                ctx, f"I couldn't find the image URL for comic #{number}"
+                ctx, f"I had trouble calling getting the correct XKCD info"
             )
             return
 
-        await self.bot.send_with_mention(ctx, image_url)
+        await self.bot.send_with_mention(ctx, embed=embed)
 
     async def api_call(self, number=None):
         url = self.SPECIFIC_API_URL % (number) if number else self.MOST_RECENT_API_URL
         response = await self.bot.http_call("get", url)
-        print(response)
+
         return response
+
+    def generate_embed(self, comic_data):
+        num = comic_data.get("num")
+        image_url = comic_data.get("img")
+        title = comic_data.get("safe_title")
+        alt_text = comic_data.get("alt")
+
+        if not all([num, image_url, title, alt_text]):
+            return None
+
+        embed = discord.Embed(title=title, description=f"https://xkcd.com/{num}")
+        embed.set_author(name=f"XKCD #{num}")
+        embed.set_image(url=image_url)
+        embed.set_footer(text=alt_text)
+
+        return embed
