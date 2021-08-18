@@ -636,16 +636,13 @@ class BasementBot(commands.Bot):
             response = response_object
         else:
             await self.logger.debug("Converting response to JSON object")
+            response_json = await response_object.json()
             response = (
-                await munch.munchify(response_object.json())
-                if response_object
-                else munch.Munch()
+                munch.munchify(response_json) if response_object else munch.Munch()
             )
             response["status_code"] = getattr(response_object, "status", None)
 
         await client.close()
-
-        await self.logger.debug(f"HTTP response: {response}")
 
         return response
 

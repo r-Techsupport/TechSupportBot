@@ -22,7 +22,6 @@ def setup(bot):
 class Who(base.BaseCog):
 
     # whois command
-    @commands.has_permissions(kick_members=True)
     @commands.command(
         name="whois",
         brief="Gets user data",
@@ -57,6 +56,7 @@ class Who(base.BaseCog):
 
         await self.bot.send_with_mention(ctx, embed=embed)
 
+    @commands.has_permissions(kick_members=True)
     @commands.group(
         brief="Executes a note command",
         description="Executes a note command",
@@ -64,7 +64,6 @@ class Who(base.BaseCog):
     async def note(self, ctx):
         pass
 
-    @commands.has_permissions(kick_members=True)
     @note.command(
         name="set",
         brief="Sets a note for a user",
@@ -87,7 +86,6 @@ class Who(base.BaseCog):
 
         await self.bot.send_with_mention(ctx, "I created that note successfully")
 
-    @commands.has_permissions(kick_members=True)
     @note.command(
         name="clear",
         brief="Clears all notes for a user",
