@@ -92,7 +92,7 @@ class MatchCog(BaseCog):
             return
 
         try:
-            await self.response(config, ctx, message.content)
+            await self.response(config, ctx, message.content, result)
         except Exception as e:
             await self.bot.logger.debug("Checking config for log channel")
             config = await self.bot.get_context_config(ctx)
@@ -116,7 +116,7 @@ class MatchCog(BaseCog):
         """
         return True
 
-    async def response(self, _config, _ctx, _content):
+    async def response(self, _config, _ctx, _content, _result):
         """Performs a response if the match is valid.
 
         parameters:

@@ -123,7 +123,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     async def match(self, _, __, content):
         return content.startswith("?")
 
-    async def response(self, config, ctx, arg):
+    async def response(self, config, ctx, arg, _):
         query = arg[1:]
         user_mentioned = None
         if len(ctx.message.mentions) == 1:

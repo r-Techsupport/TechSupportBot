@@ -26,7 +26,7 @@ class DiscordRelay(base.MatchCog):
             return True
         return False
 
-    async def response(self, _, ctx, __):
+    async def response(self, _, ctx, __, ___):
         ctx_data = munch.Munch()
 
         ctx_data.message = copy.copy(ctx.message)

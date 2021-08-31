@@ -74,6 +74,7 @@ class BasementBot(commands.Bot):
         parameters:
             validate (bool): True if validations should be ran on the file
         """
+        # pylint: disable=unspecified-encoding
         with open(self.CONFIG_PATH) as iostream:
             config_ = yaml.safe_load(iostream)
 

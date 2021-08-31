@@ -24,7 +24,7 @@ class Logger(base.MatchCog):
 
         return True
 
-    async def response(self, config, ctx, _):
+    async def response(self, config, ctx, _, __):
         channel = ctx.guild.get_channel(
             int(config.plugins.logger.channel_map.value.get(str(ctx.channel.id)))
         )

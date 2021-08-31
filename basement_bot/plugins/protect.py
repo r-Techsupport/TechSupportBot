@@ -138,7 +138,7 @@ class Protector(base.MatchCog):
 
         return True
 
-    async def response(self, config, ctx, content):
+    async def response(self, config, ctx, content, _):
         # check length of content
         if len(content) > config.plugins.protect.length_limit.value:
             await self.handle_length_alert(config, ctx, content)

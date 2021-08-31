@@ -53,7 +53,7 @@ class ServerGate(base.MatchCog):
 
         return ctx.channel.id == int(config.plugins.gate.channel.value)
 
-    async def response(self, config, ctx, content):
+    async def response(self, config, ctx, content, _):
         prefix = await self.bot.get_prefix(ctx.message)
 
         is_admin = await self.bot.is_bot_admin(ctx)
