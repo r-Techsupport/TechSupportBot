@@ -33,11 +33,25 @@ class SpeccyParser(base.MatchCog):
         api_response = await self.call_api(speccy_id)
         response_text = await api_response.text()
 
+        print(response_text)
+
         response_data = munch.munchify(json.loads(response_text))
 
-        embed = await self.generate_embed(ctx, response_data)
+        parse_status = response_data.get("Parsed", "Unknown")
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        if response_data.get("Status") == "Parsed":
+            try:
+                embed = await self.generate_embed(ctx, response_data)
+                await self.bot.send_with_mention(ctx, embed=embed)
+            except Exception:
+                await self.bot.send_with_mention(
+                    ctx, "I had trouble reading the Speccy results"
+                )
+        else:
+            await self.bot.send_with_mention(
+                ctx,
+                f"I was unable to parse that Speccy link (parse status = {parse_status}",
+            )
 
         await ctx.message.delete()
         await found_message.delete()
@@ -61,6 +75,7 @@ class SpeccyParser(base.MatchCog):
         del mutated_response_data["Link"]
 
         # we also don't need these in the render
+        del mutated_response_data["Status"]
         del mutated_response_data["ReportDate"]
         del mutated_response_data["CurrentTime"]
 
@@ -73,10 +88,16 @@ class SpeccyParser(base.MatchCog):
 
         embed.set_thumbnail(url=self.ICON_URL)
 
+        yikes_score = mutated_response_data.get("Yikes", 0)
+        if yikes_score > 0:
+            embed.color = discord.Color.red()
+        else:
+            embed.color = discord.Color.green()
+
         return embed
 
     def generate_multiline_content(self, check_data):
-        if isinstance(check_data, str):
+        if any(isinstance(check_data, ele) for ele in [str, int, float]):
             return check_data
 
         result = ""

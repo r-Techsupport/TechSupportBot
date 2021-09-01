@@ -170,7 +170,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         ctx.message.content = message
 
-        await relay_cog.response(config, ctx, message)
+        await relay_cog.response(config, ctx, message, "")
 
     async def load_jobs(self):
         factoids = await self.get_all_factoids()
