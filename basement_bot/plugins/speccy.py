@@ -67,16 +67,7 @@ class SpeccyParser(base.MatchCog):
             title=f"Speccy Results for {ctx.author}", description=response_data.Link
         )
 
-        mutated_response_data = response_data.copy()
-        # we've already added this as the description
-        # so filter it out before rendering the data
-        del mutated_response_data["Link"]
-
-        # we also don't need these in the render
-        del mutated_response_data["Status"]
-        del mutated_response_data["ReportDate"]
-        del mutated_response_data["CurrentTime"]
-
+        # define the order of rendering and any metadata for each render
         order = [
             {"key": "Yikes", "transform": "Yikes Score"},
             {"key": "HardwareSummary", "transform": "HW Summary"},
@@ -103,7 +94,7 @@ class SpeccyParser(base.MatchCog):
 
         embed.set_thumbnail(url=self.ICON_URL)
 
-        yikes_score = mutated_response_data.get("Yikes", 0)
+        yikes_score = response_data.get("Yikes", 0)
         if yikes_score > 3:
             embed.color = discord.Color.red()
         elif yikes_score > 1.5:
