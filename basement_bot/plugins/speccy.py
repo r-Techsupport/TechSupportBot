@@ -33,8 +33,6 @@ class SpeccyParser(base.MatchCog):
         api_response = await self.call_api(speccy_id)
         response_text = await api_response.text()
 
-        print(response_text)
-
         response_data = munch.munchify(json.loads(response_text))
 
         parse_status = response_data.get("Parsed", "Unknown")
@@ -47,13 +45,13 @@ class SpeccyParser(base.MatchCog):
                 await self.bot.send_with_mention(
                     ctx, "I had trouble reading the Speccy results"
                 )
+            await ctx.message.delete()
         else:
             await self.bot.send_with_mention(
                 ctx,
-                f"I was unable to parse that Speccy link (parse status = {parse_status}",
+                f"I was unable to parse that Speccy link (parse status = {parse_status})",
             )
 
-        await ctx.message.delete()
         await found_message.delete()
 
     async def call_api(self, speccy_id):
@@ -79,25 +77,44 @@ class SpeccyParser(base.MatchCog):
         del mutated_response_data["ReportDate"]
         del mutated_response_data["CurrentTime"]
 
-        for key, value_ in mutated_response_data.items():
+        order = [
+            {"key": "Yikes", "transform": "Yikes Score"},
+            {"key": "HardwareSummary", "transform": "HW Summary"},
+            {"key": "HardwareCheck", "transform": "HW Check"},
+            {"key": "OSCheck", "transform": "OS Check"},
+            {"key": "SecurityCheck", "transform": "Security"},
+            {"key": "SoftwareCheck", "transform": "SW Check"},
+        ]
+
+        for section in order:
+            key = section.get("key")
+            if not key:
+                continue
+
+            content = response_data.get(key)
+            if not content:
+                continue
+
             embed.add_field(
-                name=key.upper(),
-                value=self.generate_multiline_content(value_),
+                name=f"__{section.get('transform', key.upper())}__",
+                value=self.generate_multiline_content(content),
                 inline=False,
             )
 
         embed.set_thumbnail(url=self.ICON_URL)
 
         yikes_score = mutated_response_data.get("Yikes", 0)
-        if yikes_score > 0:
+        if yikes_score > 3:
             embed.color = discord.Color.red()
+        elif yikes_score > 1.5:
+            embed.color = discord.Color.yellow()
         else:
             embed.color = discord.Color.green()
 
         return embed
 
     def generate_multiline_content(self, check_data):
-        if any(isinstance(check_data, ele) for ele in [str, int, float]):
+        if not isinstance(check_data, dict):
             return check_data
 
         result = ""
@@ -108,6 +125,6 @@ class SpeccyParser(base.MatchCog):
             if not value:
                 continue
 
-            result += f"**{key}**: {value}\n"
+            result += f"**{key}**\n {value}\n"
 
         return result
