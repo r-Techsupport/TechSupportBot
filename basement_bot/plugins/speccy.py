@@ -41,11 +41,10 @@ class SpeccyParser(base.MatchCog):
             try:
                 embed = await self.generate_embed(ctx, response_data)
                 await self.bot.send_with_mention(ctx, embed=embed)
-            except Exception:
+            except Exception as e:
                 await self.bot.send_with_mention(
                     ctx, "I had trouble reading the Speccy results"
                 )
-            await ctx.message.delete()
         else:
             await self.bot.send_with_mention(
                 ctx,
