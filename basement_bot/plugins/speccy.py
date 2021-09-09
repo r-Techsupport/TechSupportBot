@@ -45,6 +45,14 @@ class SpeccyParser(base.MatchCog):
                 await self.bot.send_with_mention(
                     ctx, "I had trouble reading the Speccy results"
                 )
+                log_channel = await self.bot.get_log_channel_from_guild(
+                    ctx.guild, "logging_channel"
+                )
+                await self.bot.logger.error(
+                    "Could not read Speccy results",
+                    exception=e,
+                    channel=log_channel,
+                )
         else:
             await self.bot.send_with_mention(
                 ctx,
@@ -85,9 +93,14 @@ class SpeccyParser(base.MatchCog):
             if not content:
                 continue
 
+            try:
+                content = self.generate_multiline_content(content)
+            except Exception:
+                continue
+
             embed.add_field(
                 name=f"__{section.get('transform', key.upper())}__",
-                value=self.generate_multiline_content(content),
+                value=content,
                 inline=False,
             )
 
@@ -96,8 +109,8 @@ class SpeccyParser(base.MatchCog):
         yikes_score = response_data.get("Yikes", 0)
         if yikes_score > 3:
             embed.color = discord.Color.red()
-        elif yikes_score > 1.5:
-            embed.color = discord.Color.yellow()
+        elif yikes_score > 0:
+            embed.color = discord.Color.gold()
         else:
             embed.color = discord.Color.green()
 
@@ -115,6 +128,6 @@ class SpeccyParser(base.MatchCog):
             if not value:
                 continue
 
-            result += f"**{key}**\n {value}\n"
+            result += f"**{key}**: {value}\n"
 
         return result
