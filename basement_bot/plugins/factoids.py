@@ -299,7 +299,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         pass
 
     @decorate.with_typing
-    @commands.has_permissions(send_messages=True)
+    @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     @factoid.command(
         brief="Creates a factoid",
@@ -327,7 +327,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         )
 
     @decorate.with_typing
-    @commands.has_permissions(send_messages=True)
+    @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     @factoid.command(
         brief="Deletes a factoid",
@@ -344,7 +344,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         await self.delete_factoid(ctx, factoid_name)
 
     @decorate.with_typing
-    @commands.has_permissions(send_messages=True)
+    @commands.has_permissions(ban_members=True)
     @commands.guild_only()
     @factoid.command(
         brief="Loops a factoid",
@@ -378,7 +378,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         )
 
     @decorate.with_typing
-    @commands.has_permissions(send_messages=True)
+    @commands.has_permissions(ban_members=True)
     @commands.guild_only()
     @factoid.command(
         brief="Removes a factoid's loop config",
@@ -559,7 +559,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         await ctx.send(file=yaml_file)
 
     @decorate.with_typing
-    @commands.has_permissions(send_messages=True)
+    @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     @factoid.command(
         brief="Hides a factoid",
@@ -585,7 +585,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         await self.bot.send_with_mention(ctx, "That factoid is now hidden")
 
     @decorate.with_typing
-    @commands.has_permissions(send_messages=True)
+    @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     @factoid.command(
         brief="Unhides a factoid",
