@@ -40,7 +40,6 @@ def setup(bot):
 class FactoidManager(base.MatchCog, base.LoopCog):
 
     LOOP_UPDATE_MINUTES = 10
-    ALLOWED_MENTIONS = discord.AllowedMentions(everyone=False, roles=False)
 
     async def loop_preconfig(self):
         self.loop_jobs = collections.defaultdict(dict)
@@ -150,11 +149,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         try:
             await self.bot.send_with_mention(
-                ctx,
-                content=content,
-                embed=embed,
-                target=user_mentioned,
-                allowed_mentions=self.ALLOWED_MENTIONS,
+                ctx, content=content, embed=embed, target=user_mentioned
             )
         except Exception:
             await self.bot.send_with_mention(ctx, "I was unable to render that factoid")
@@ -287,11 +282,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
                     ):
                         continue
 
-                    message = await channel.send(
-                        content=content,
-                        embed=embed,
-                        allowed_mentions=self.ALLOWED_MENTIONS,
-                    )
+                    message = await channel.send(content=content, embed=embed)
 
                     context = await self.bot.get_context(message)
                     await self.dispatch_relay_factoid(config, context, factoid.message)

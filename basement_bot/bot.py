@@ -38,8 +38,12 @@ class BasementBot(commands.Bot):
 
     PluginConfig = plugin.PluginConfig
 
-    def __init__(self, run_on_init=True, intents=None):
-        super().__init__(command_prefix=self.get_prefix, intents=intents)
+    def __init__(self, run_on_init=True, intents=None, allowed_mentions=None):
+        super().__init__(
+            command_prefix=self.get_prefix,
+            intents=intents,
+            allowed_mentions=allowed_mentions,
+        )
 
         self.owner = None
         self.config = None

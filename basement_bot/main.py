@@ -17,4 +17,8 @@ for module_name, level in OVERRIDDEN_MODULES_MAP.items():
 intents = discord.Intents.default()
 intents.members = True
 
-bot_ = bot.BasementBot(intents=intents)
+# plugins can override this manually
+# this avoids general ping abuse of plugins
+allowed_mentions = discord.AllowedMentions(everyone=False, roles=False)
+
+bot_ = bot.BasementBot(intents=intents, allowed_mentions=allowed_mentions)
