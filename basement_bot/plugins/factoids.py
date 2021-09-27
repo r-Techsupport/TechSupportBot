@@ -40,6 +40,7 @@ def setup(bot):
 class FactoidManager(base.MatchCog, base.LoopCog):
 
     LOOP_UPDATE_MINUTES = 10
+    ALLOWED_MENTIONS = discord.AllowedMentions(everyone=False, roles=False)
 
     async def loop_preconfig(self):
         self.loop_jobs = collections.defaultdict(dict)
@@ -149,13 +150,29 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         try:
             await self.bot.send_with_mention(
-                ctx, content=content, embed=embed, target=user_mentioned
+                ctx,
+                content=content,
+                embed=embed,
+                target=user_mentioned,
+                allowed_mentions=self.ALLOWED_MENTIONS,
             )
         except Exception:
             await self.bot.send_with_mention(ctx, "I was unable to render that factoid")
             return
 
         await self.dispatch_relay_factoid(config, ctx, factoid.message)
+
+    def message_has_mentions(self, message):
+        if message.mention_everyone:
+            return True
+
+        if message.role_mentions:
+            return True
+
+        if message.mentions:
+            return True
+
+        return False
 
     async def dispatch_relay_factoid(self, config, ctx, message):
         relay_cog = self.bot.cogs.get("DiscordRelay")
@@ -270,7 +287,17 @@ class FactoidManager(base.MatchCog, base.LoopCog):
                     ):
                         continue
 
-                    message = await channel.send(content=content, embed=embed)
+                    pre_message = await commands.MessageConverter.convert(
+                        ctx=None, argument=content
+                    )
+                    if self.message_has_mentions(pre_message):
+                        continue
+
+                    message = await channel.send(
+                        content=content,
+                        embed=embed,
+                        allowed_mentions=self.ALLOWED_MENTIONS,
+                    )
 
                     context = await self.bot.get_context(message)
                     await self.dispatch_relay_factoid(config, context, factoid.message)
@@ -307,9 +334,9 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         usage="[factoid-name] [factoid-output] |optional-embed-json-upload|",
     )
     async def remember(self, ctx, factoid_name: str, *, message: str):
-        if ctx.message.mentions:
+        if self.message_has_mentions(ctx.message):
             await self.bot.send_with_mention(
-                ctx, "Sorry, factoids don't work well with mentions"
+                ctx, "I am configured to not remember factoids with mentions"
             )
             return
 
@@ -335,12 +362,6 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         usage="[factoid-name]",
     )
     async def forget(self, ctx, factoid_name: str):
-        if ctx.message.mentions:
-            await self.bot.send_with_mention(
-                ctx, "Sorry, factoids don't work well with mentions"
-            )
-            return
-
         await self.delete_factoid(ctx, factoid_name)
 
     @decorate.with_typing
@@ -531,12 +552,6 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         description="Shows an embed with all the factoids",
     )
     async def all_(self, ctx):
-        if ctx.message.mentions:
-            await self.bot.send_with_mention(
-                ctx, "Sorry, factoids don't work well with mentions"
-            )
-            return
-
         factoids = await self.get_all_factoids(ctx.guild, hide=True)
         if not factoids:
             await self.bot.send_with_mention(ctx, "No factoids found!")
