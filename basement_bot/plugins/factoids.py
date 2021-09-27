@@ -287,12 +287,6 @@ class FactoidManager(base.MatchCog, base.LoopCog):
                     ):
                         continue
 
-                    pre_message = await commands.MessageConverter.convert(
-                        ctx=None, argument=content
-                    )
-                    if self.message_has_mentions(pre_message):
-                        continue
-
                     message = await channel.send(
                         content=content,
                         embed=embed,
