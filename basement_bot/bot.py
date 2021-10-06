@@ -894,7 +894,7 @@ class BasementBot(commands.Bot):
             if isinstance(attr, list):
                 attr = [str(element) for element in attr]
             elif isinstance(attr, dict):
-                attr = {key: str(value) for key, value in attr.items()}
+                attr = {str(key): str(value) for key, value in attr.items()}
             elif isinstance(attr, int):
                 attr = str(attr)
             elif isinstance(attr, float):
@@ -902,7 +902,7 @@ class BasementBot(commands.Bot):
             else:
                 attr = str(attr)
 
-            data[name] = attr
+            data[str(name)] = attr
 
         return data
 

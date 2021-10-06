@@ -482,6 +482,28 @@ class AdminControl(base.BaseCog):
 
         return self.bot.ipc_response(payload=self.bot.preserialize_object(guild))
 
+    @ipc.server.route(name="get_guild_channels")
+    async def get_guild_channels_endpoint(self, data):
+        """IPC endpoint for getting detail on guild channels.
+
+        parameters:
+            data (object): the data provided by the client request
+        """
+        if not data.guild_id:
+            return self.bot.ipc_response(code=400, error="Guild ID not provided")
+
+        guild = self.bot.get_guild(int(data.guild_id))
+        if not guild:
+            return self.bot.ipc_response(code=404, error="Guild not found")
+
+        channels = []
+        for channel in guild.text_channels:
+            channels.append(self.bot.preserialize_object(channel))
+
+        print(channels)
+
+        return self.bot.ipc_response(payload={"channels": channels[:-1]})
+
     @ipc.server.route(name="leave_guild")
     async def leave_guild_endpoint(self, data):
         """IPC endpoint for getting a single guild.
