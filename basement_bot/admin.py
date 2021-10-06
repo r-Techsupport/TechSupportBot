@@ -17,6 +17,8 @@ class AdminControl(base.BaseCog):
 
     GITHUB_API_BASE_URL = "https://api.github.com"
 
+    MESSAGE_HISTORY_LIMIT = 100
+
     @commands.group(
         name="plugin",
         brief="Executes a plugin bot command",
@@ -497,3 +499,73 @@ class AdminControl(base.BaseCog):
         await guild.leave()
 
         return self.bot.ipc_response()
+
+    @ipc.server.route(name="get_channel_message_history")
+    async def get_channel_message_history_endpoint(self, data):
+        """IPC endpoint for getting message history for a particular channel.
+
+        parameters:
+            data(object): the data provided by the client request
+        """
+        if not data.channel_id:
+            return self.bot.ipc_response(code=400, error="Channel ID not provided")
+
+        # if your bot has a lot of channels
+        # this search can sometimes take a while
+        try:
+            channel = self.bot.get_channel(int(data.channel_id))
+        except TypeError:
+            channel = None
+
+        if not channel:
+            return self.bot.ipc_response(code=404, error="Channel not found")
+
+        try:
+            limit = int(data.limit)
+            if limit > self.MESSAGE_HISTORY_LIMIT:
+                limit = self.MESSAGE_HISTORY_LIMIT
+        except TypeError:
+            limit = None
+
+        messages = []
+        async for message in channel.history(limit=limit):
+            message_data = self.bot.preserialize_object(message)
+            del message_data["CACHED_SLOTS"]
+            del message_data["HANDLERS"]
+            messages.append(message_data)
+
+        return self.bot.ipc_response(payload={"history": messages.reverse()})
+
+    @ipc.server.route(name="get_dm_message_history")
+    async def get_dm_message_history_endpoint(self, data):
+        """IPC endpoint for getting message history for a particular channel.
+
+        parameters:
+            data(object): the data provided by the client request
+        """
+        if not data.user_id:
+            return self.bot.ipc_response(code=400, error="User ID not provided")
+
+        try:
+            user = self.bot.get_user(int(data.user_id))
+        except TypeError:
+            user = None
+
+        if not user:
+            return self.bot.ipc_response(code=404, error="User not found")
+
+        try:
+            limit = int(data.limit)
+            if limit > self.MESSAGE_HISTORY_LIMIT:
+                limit = self.MESSAGE_HISTORY_LIMIT
+        except TypeError:
+            limit = None
+
+        messages = []
+        async for message in user.dm_channel.history(limit=limit):
+            message_data = self.bot.preserialize_object(message)
+            del message_data["CACHED_SLOTS"]
+            del message_data["HANDLERS"]
+            messages.append(message_data)
+
+        return self.bot.ipc_response(payload={"history": messages.reverse()})
