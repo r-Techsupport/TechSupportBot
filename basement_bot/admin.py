@@ -534,7 +534,9 @@ class AdminControl(base.BaseCog):
             del message_data["HANDLERS"]
             messages.append(message_data)
 
-        return self.bot.ipc_response(payload={"history": messages.reverse()})
+        messages.reverse()
+
+        return self.bot.ipc_response(payload={"history": messages})
 
     @ipc.server.route(name="get_dm_message_history")
     async def get_dm_message_history_endpoint(self, data):
@@ -568,4 +570,6 @@ class AdminControl(base.BaseCog):
             del message_data["HANDLERS"]
             messages.append(message_data)
 
-        return self.bot.ipc_response(payload={"history": messages.reverse()})
+        messages.reverse()
+
+        return self.bot.ipc_response(payload={"history": messages})
