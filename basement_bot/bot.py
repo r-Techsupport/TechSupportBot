@@ -1159,13 +1159,6 @@ class BasementBot(commands.Bot):
             "member_remove", member=member, send=True, channel=log_channel
         )
 
-    async def on_member_update(self, before, after):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update"""
-        if before.status != after.status:
-            return
-
-        await self.logger.event("member_update", before=before, after=after, send=False)
-
     async def on_guild_join(self, guild):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_join"""
         log_channel = await self.get_log_channel_from_guild(
