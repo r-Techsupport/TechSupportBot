@@ -348,7 +348,7 @@ class Protector(base.MatchCog):
         if len(content) > 256:
             content = content[:256]
 
-        embed.add_field(name="Preview", value=content.strip("\n"))
+        embed.add_field(name="Preview", value=content.replace("\n", " "))
 
         embed.set_thumbnail(url=self.CLIPBOARD_ICON_URL)
 
