@@ -1161,16 +1161,7 @@ class BasementBot(commands.Bot):
 
     async def on_member_update(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update"""
-        if str(before.status) != str(after.status):
-            # don't spam constant online/offline updates
-            return
-
-        log_channel = await self.get_log_channel_from_guild(
-            getattr(before, "guild", None), key="member_events_channel"
-        )
-        await self.logger.event(
-            "member_update", before=before, after=after, send=True, channel=log_channel
-        )
+        await self.logger.event("member_update", before=before, after=after, send=False)
 
     async def on_guild_join(self, guild):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_join"""
