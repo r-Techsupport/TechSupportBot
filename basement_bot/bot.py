@@ -1161,7 +1161,7 @@ class BasementBot(commands.Bot):
 
     async def on_member_update(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update"""
-        if before.status != after.status:
+        if str(before.status) != str(after.status):
             # don't spam constant online/offline updates
             return
 
