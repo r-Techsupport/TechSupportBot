@@ -773,8 +773,8 @@ class DuckHunt(base.LoopCog):
     async def wait(self, config, _):
         await asyncio.sleep(
             random.randint(
-                config.plugins.duck.min_wait.value * 20,
-                config.plugins.duck.max_wait.value * 20,
+                config.plugins.duck.min_wait.value * 3600,
+                config.plugins.duck.max_wait.value * 3600,
             )
         )
 

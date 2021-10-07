@@ -150,6 +150,7 @@ class LoopCog(BaseCog):
         await self._handle_preconfig(self.loop_preconfig)
 
         if self.no_guild:
+            await self.bot.logger.debug("Creating loop task for guild with no ID")
             self.bot.loop.create_task(self._loop_execute(None))
             return
 
@@ -172,12 +173,22 @@ class LoopCog(BaseCog):
                     )
                     self.bot.loop.create_task(self._loop_execute(guild, channel))
             else:
+                await self.bot.logger.debug(
+                    f"Creating loop task for guild with ID {guild.id}"
+                )
                 self.bot.loop.create_task(self._loop_execute(guild))
 
     async def _track_new_channels(self):
         """Periodifically kicks off new per-channel tasks based on updated channels config."""
         while True:
+            await self.bot.logger.debug(
+                f"Sleeping for {self.TRACKER_WAIT} seconds before checking channel config"
+            )
             await asyncio.sleep(self.TRACKER_WAIT)
+
+            await self.bot.logger.info(
+                f"Checking registered channels for {self.extension_name} loop plugin"
+            )
             for guild_id, registered_channels in self.channels.items():
                 guild = self.bot.get_guild(guild_id)
                 config = await self.bot.get_context_config(guild=guild)
@@ -187,26 +198,35 @@ class LoopCog(BaseCog):
                     .get("value")
                 )
                 if not isinstance(configured_channels, list):
-                    await self.bot.logger.debug(
+                    await self.bot.logger.error(
                         f"Configured channels no longer readable for guild with ID {guild_id} - deleting registration"
                     )
                     del registered_channels
                     continue
 
+                new_registered_channels = []
                 for channel_id in configured_channels:
                     try:
                         channel_id = int(channel_id)
                     except TypeError:
                         channel_id = 0
 
-                    if not channel_id in [ch.id for ch in registered_channels]:
-                        channel = self.bot.get_channel(channel_id)
-                        if not channel:
-                            continue
+                    channel = self.bot.get_channel(channel_id)
+                    if not channel:
+                        await self.bot.logger.debug(
+                            f"Could not find channel with ID {channel_id} - moving on"
+                        )
+                        continue
+
+                    if not channel.id in [ch.id for ch in registered_channels]:
                         await self.bot.logger.debug(
                             f"Found new channel with ID {channel.id} in loop config - starting task"
                         )
                         self.bot.loop.create_task(self._loop_execute(guild, channel))
+
+                    new_registered_channels.append(channel)
+
+                registered_channels = new_registered_channels
 
     async def loop_preconfig(self):
         """Preconfigures the environment before starting the loop."""
