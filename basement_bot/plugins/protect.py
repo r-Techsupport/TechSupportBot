@@ -121,10 +121,6 @@ class Protector(base.MatchCog):
             )
             return False
 
-        admin = await self.bot.is_bot_admin(ctx)
-        if admin:
-            return False
-
         role_names = [role.name.lower() for role in getattr(ctx.author, "roles", [])]
 
         if any(
@@ -139,17 +135,13 @@ class Protector(base.MatchCog):
         return True
 
     async def response(self, config, ctx, content, _):
-        # check length of content
-        if len(content) > config.plugins.protect.length_limit.value:
-            await self.handle_length_alert(config, ctx, content)
-            return
-
-        # check mass mentions
+        # check mass mentions first - return after handling
         if len(ctx.message.mentions) > config.plugins.protect.max_mentions.value:
             await self.handle_mass_mention_alert(config, ctx, content)
             return
 
-        # finally search the message against keyword strings
+        # search the message against keyword strings
+        triggered_config = None
         for keyword, filter_config in config.plugins.protect.string_map.value.items():
             filter_config = munch.munchify(filter_config)
             search_keyword = keyword
@@ -161,8 +153,20 @@ class Protector(base.MatchCog):
 
             if search_keyword in search_content:
                 filter_config["trigger"] = keyword
-                await self.handle_string_alert(config, ctx, content, filter_config)
+                triggered_config = filter_config
+
+                if triggered_config.get("delete"):
+                    break
+
+        if triggered_config:
+            await self.handle_string_alert(config, ctx, content, triggered_config)
+            if triggered_config.get("delete"):
+                # the message is deleted, no need to pastebin it
                 return
+
+        # check length of content
+        if len(content) > config.plugins.protect.length_limit.value:
+            await self.handle_length_alert(config, ctx, content)
 
     async def get_warnings(self, user, guild):
         warnings = (
