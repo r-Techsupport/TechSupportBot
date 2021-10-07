@@ -24,11 +24,11 @@ def setup(bot):
 
     config = bot.PluginConfig()
     config.add(
-        key="channel",
-        datatype="int",
-        title="DuckHunt Channel ID",
-        description="The ID of the channel the duck should appear in",
-        default=None,
+        key="hunt_channels",
+        datatype="list",
+        title="DuckHunt Channel IDs",
+        description="The IDs of the channels the duck should appear in",
+        default=[],
     )
     config.add(
         key="min_wait",
@@ -765,6 +765,7 @@ class DuckHunt(base.LoopCog):
     KILL_URL = "https://cdn.icon-icons.com/icons2/1919/PNG/512/huntingtarget_122049.png"
     MW2_QUOTES = MW2_QUOTES
     ON_START = False
+    CHANNELS_KEY = "hunt_channels"
 
     async def loop_preconfig(self):
         self.cooldowns = {}
@@ -772,17 +773,16 @@ class DuckHunt(base.LoopCog):
     async def wait(self, config, _):
         await asyncio.sleep(
             random.randint(
-                config.plugins.duck.min_wait.value * 3600,
-                config.plugins.duck.max_wait.value * 3600,
+                config.plugins.duck.min_wait.value * 20,
+                config.plugins.duck.max_wait.value * 20,
             )
         )
 
-    async def execute(self, config, guild):
-        self.cooldowns[guild.id] = {}
-
-        channel = guild.get_channel(int(config.plugins.duck.channel.value))
+    async def execute(self, config, guild, channel):
         if not channel:
             return
+
+        self.cooldowns[guild.id] = {}
 
         start_time = datetime.datetime.now()
         embed = discord.Embed(
@@ -799,7 +799,7 @@ class DuckHunt(base.LoopCog):
                 "message",
                 timeout=config.plugins.duck.timeout.value,
                 # can't pull the config in a non-coroutine
-                check=functools.partial(self.message_check, config),
+                check=functools.partial(self.message_check, config, channel),
             )
         except AsyncTimeoutError:
             pass
@@ -852,9 +852,9 @@ class DuckHunt(base.LoopCog):
 
         await channel.send(embed=embed)
 
-    def message_check(self, config, message):
+    def message_check(self, config, channel, message):
         # ignore other channels
-        if message.channel.id != int(config.plugins.duck.channel.value):
+        if message.channel.id != channel.id:
             return False
 
         if not message.content.lower() in ["bef", "bang"]:

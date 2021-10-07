@@ -136,11 +136,14 @@ class LoopCog(BaseCog):
     """
 
     DEFAULT_WAIT = 300
+    TRACKER_WAIT = 300
     ON_START = False
+    CHANNELS_KEY = "channels"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.bot.loop.create_task(self._loop_preconfig())
+        self.channels = {}
 
     async def _loop_preconfig(self):
         """Blocks the loop_preconfig until the bot is ready."""
@@ -151,12 +154,64 @@ class LoopCog(BaseCog):
             return
 
         for guild in self.bot.guilds:
-            self.bot.loop.create_task(self._loop_execute(guild))
+            config = await self.bot.get_context_config(guild=guild)
+            channels = (
+                config.plugins.get(self.extension_name, {})
+                .get(self.CHANNELS_KEY, {})
+                .get("value")
+            )
+            if channels is not None:
+                self.channels[guild.id] = [
+                    self.bot.get_channel(int(ch_id)) for ch_id in channels
+                ]
+
+            if self.channels.get(guild.id):
+                for channel in self.channels.get(guild.id, []):
+                    await self.bot.logger.debug(
+                        f"Creating loop task for channel with ID {channel.id}"
+                    )
+                    self.bot.loop.create_task(self._loop_execute(guild, channel))
+            else:
+                self.bot.loop.create_task(self._loop_execute(guild))
+
+    async def _track_new_channels(self):
+        """Periodifically kicks off new per-channel tasks based on updated channels config."""
+        while True:
+            await asyncio.sleep(self.TRACKER_WAIT)
+            for guild_id, registered_channels in self.channels.items():
+                guild = self.bot.get_guild(guild_id)
+                config = await self.bot.get_context_config(guild=guild)
+                configured_channels = (
+                    config.plugins.get(self.extension_name, {})
+                    .get(self.CHANNELS_KEY, {})
+                    .get("value")
+                )
+                if not isinstance(configured_channels, list):
+                    await self.bot.logger.debug(
+                        f"Configured channels no longer readable for guild with ID {guild_id} - deleting registration"
+                    )
+                    del registered_channels
+                    continue
+
+                for channel_id in configured_channels:
+                    try:
+                        channel_id = int(channel_id)
+                    except TypeError:
+                        channel_id = 0
+
+                    if not channel_id in [ch.id for ch in registered_channels]:
+                        channel = self.bot.get_channel(channel_id)
+                        if not channel:
+                            continue
+                        await self.bot.logger.debug(
+                            f"Found new channel with ID {channel.id} in loop config - starting task"
+                        )
+                        self.bot.loop.create_task(self._loop_execute(guild, channel))
 
     async def loop_preconfig(self):
         """Preconfigures the environment before starting the loop."""
 
-    async def _loop_execute(self, guild):
+    async def _loop_execute(self, guild, target_channel=None):
         """Loops through the execution method.
 
         parameters:
@@ -171,8 +226,17 @@ class LoopCog(BaseCog):
             # refresh the config on every loop step
             config = await self.bot.get_context_config(guild=guild)
 
+            if target_channel and not str(target_channel.id) in config.plugins.get(
+                self.extension_name, {}
+            ).get(self.CHANNELS_KEY, {}).get("value", []):
+                # exit task if the channel is no longer configured
+                break
+
             try:
-                await self.execute(config, guild)
+                if target_channel:
+                    await self.execute(config, guild, target_channel)
+                else:
+                    await self.execute(config, guild)
             except Exception as e:
                 # always try to wait even when execute fails
                 await self.bot.logger.debug("Checking config for log channel")
@@ -192,12 +256,13 @@ class LoopCog(BaseCog):
                 # avoid spamming
                 await self._default_wait()
 
-    async def execute(self, _config, _guild):
+    async def execute(self, _config, _guild, _target_channel=None):
         """Runs sequentially after each wait method.
 
         parameters:
             config (munch.Munch): the config object for the guild
             guild (discord.Guild): the guild associated with the execution
+            target_channel (discord.Channel): the channel object to use
         """
 
     async def _default_wait(self):
