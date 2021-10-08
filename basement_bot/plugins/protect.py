@@ -316,9 +316,14 @@ class Protector(base.MatchCog):
 
         embed = discord.Embed(title="Protect Alert", description=message)
 
+        if len(ctx.message.content) >= 256:
+            message_content = ctx.message.content[0:256]
+        else:
+            message_content = ctx.message.content
+
         embed.add_field(name="Channel", value=f"#{ctx.channel.name}")
         embed.add_field(name="User", value=ctx.author.mention)
-        embed.add_field(name="Message", value=ctx.message.content, inline=False)
+        embed.add_field(name="Message", value=message_content, inline=False)
         embed.add_field(name="URL", value=ctx.message.jump_url, inline=False)
 
         embed.set_thumbnail(url=self.ALERT_ICON_URL)
