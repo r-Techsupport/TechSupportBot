@@ -21,13 +21,21 @@ class SpeccyParser(base.MatchCog):
         matches = re.findall(self.URL_PATTERN, content, re.MULTILINE)
         return matches
 
-    async def response(self, config, ctx, content, result):
+    async def response(self, _, ctx, __, result):
         speccy_id = result[0].split("/")[-1]
         if not speccy_id:
             return
 
+        confirmed = await self.bot.confirm(
+            ctx,
+            "Speccy link detected. Would you like me to parse the results?",
+            delete_after=True,
+        )
+        if not confirmed:
+            return
+
         found_message = await self.bot.send_with_mention(
-            ctx, "Speccy link detected - parsing results now..."
+            ctx, "Parsing Speccy results now..."
         )
 
         api_response = await self.call_api(speccy_id)

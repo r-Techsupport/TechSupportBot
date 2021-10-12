@@ -784,23 +784,21 @@ class BasementBot(commands.Bot):
                 break
 
             try:
-                reaction, user = await ctx.bot.wait_for(
-                    "reaction_add", timeout=timeout, check=lambda r, u: not bool(u.bot)
+                reaction, user = await self.wait_for(
+                    "reaction_add",
+                    timeout=timeout,
+                    check=lambda r, u: not bool(u.bot) and r.message.id != message.id,
                 )
             # this seems to raise an odd timeout error, for now just catch-all
             except Exception:
                 break
-
-            # check if the reaction should be processed
-            if reaction.message.id != message.id:
-                continue
 
             if restrict and user.id != ctx.author.id:
                 # this is checked first so it can pass to the deletion
                 pass
 
             # move forward
-            elif str(reaction) == "\u25B6" and index < len(embeds) - 1:
+            if str(reaction) == "\u25B6" and index < len(embeds) - 1:
                 index += 1
                 await message.edit(**get_args(index))
 
@@ -835,6 +833,53 @@ class BasementBot(commands.Bot):
         This is useful if you want your command to finish executing when pagination starts.
         """
         self.loop.create_task(self.paginate(*args, **kwargs))
+
+    async def confirm(self, ctx, title, timeout=60, delete_after=False):
+        """Waits on a confirm reaction from a given user.
+
+        parameters:
+            ctx (discord.ext.Context): the context object for the message
+            member (discord.Member): the user to wait on
+            title (str): the message content to which the user reacts
+            timeout (int): the number of seconds before timing out
+            delete_after (bool): True if the confirmation message should be deleted
+        """
+        message = await self.send_with_mention(ctx, content=title, target=ctx.author)
+        await message.add_reaction("✔️")
+        await message.add_reaction("❌")
+
+        result = False
+        while True:
+            try:
+                reaction, user = await self.wait_for(
+                    "reaction_add",
+                    timeout=timeout,
+                    check=lambda r, u: not bool(u.bot) and r.message.id == message.id,
+                )
+            except Exception:
+                break
+
+            if user.id != ctx.author.id:
+                pass
+
+            elif str(reaction) == "✔️":
+                result = True
+                break
+
+            elif str(reaction) == "❌":
+                break
+
+            try:
+                await reaction.remove(user)
+            except discord.Forbidden:
+                await self.logger.error(
+                    "Could not delete user reaction on pagination message", send=False
+                )
+
+        if delete_after:
+            await message.delete()
+
+        return result
 
     @staticmethod
     def generate_embed_from_kwargs(
