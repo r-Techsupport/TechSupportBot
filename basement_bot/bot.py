@@ -872,7 +872,7 @@ class BasementBot(commands.Bot):
                 await reaction.remove(user)
             except discord.Forbidden:
                 await self.logger.error(
-                    "Could not delete user reaction on pagination message", send=False
+                    "Could not delete user reaction on confirmation message", send=False
                 )
 
         if delete_after:
