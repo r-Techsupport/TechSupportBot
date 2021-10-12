@@ -41,11 +41,14 @@ class SpeccyParser(base.MatchCog):
         api_response = await self.call_api(speccy_id)
         response_text = await api_response.text()
 
-        response_data = munch.munchify(json.loads(response_text))
+        try:
+            response_data = munch.munchify(json.loads(response_text))
+            parse_status = response_data.get("Status", "Unknown")
+        except Exception:
+            response_data = None
+            parse_status = "Error"
 
-        parse_status = response_data.get("Parsed", "Unknown")
-
-        if response_data.get("Status") == "Parsed":
+        if parse_status == "Parsed":
             try:
                 embed = await self.generate_embed(ctx, response_data)
                 await self.bot.send_with_mention(ctx, embed=embed)
