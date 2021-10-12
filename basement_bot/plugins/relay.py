@@ -126,7 +126,7 @@ class IRCReceiver(base.LoopCog):
     async def loop_preconfig(self):
         self.channels = list(self.bot.config.special.relay.channel_map.values())
 
-    async def execute(self, _config, _guild):
+    async def execute(self, _config, guild):
         try:
             await self.bot.rabbit_consume(
                 self.bot.config.special.relay.recv_queue,
@@ -136,7 +136,7 @@ class IRCReceiver(base.LoopCog):
             )
         except Exception as e:
             log_channel = await self.bot.get_log_channel_from_guild(
-                self, ctx.guild, "log_channel"
+                guild, "log_channel"
             )
             await self.bot.logger.error(
                 "Could not consume IRC event from relay broker (will restart consuming in {self.DEFAULT_WAIT} seconds)",
@@ -172,20 +172,21 @@ class IRCReceiver(base.LoopCog):
 
         guild = self.bot.get_guild_from_channel_id(channel.id)
 
-        message = self._add_mentions(message, guild)
+        message = self._add_mentions(message, guild, channel)
 
         await channel.send(message)
 
     @staticmethod
-    def _add_mentions(message, guild):
+    def _add_mentions(message, guild, channel):
         new_message = ""
         for word in message.split(" "):
             member = guild.get_member_named(word)
             if member:
-                new_message += f"{member.mention} "
-            else:
-                new_message += f"{word} "
-
+                channel_permissions = channel.permissions_for(member)
+                if channel_permissions.read_messages:
+                    new_message += f"{member.mention} "
+                    continue
+            new_message += f"{word} "
         return new_message
 
     def _get_channel(self, data):
