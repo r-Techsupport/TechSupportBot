@@ -839,7 +839,6 @@ class BasementBot(commands.Bot):
 
         parameters:
             ctx (discord.ext.Context): the context object for the message
-            member (discord.Member): the user to wait on
             title (str): the message content to which the user reacts
             timeout (int): the number of seconds before timing out
             delete_after (bool): True if the confirmation message should be deleted
