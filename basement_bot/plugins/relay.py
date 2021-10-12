@@ -216,15 +216,12 @@ class IRCReceiver(base.LoopCog):
         return False
 
     def process_message(self, data):
-        if data.event.type in ["message", "factoid"]:
+        if data.event.type == "message":
             return self._format_chat_message(data)
 
         return self._format_event_message(data)
 
     def _format_chat_message(self, data):
-        data.event.content = data.event.content.replace("@everyone", "everyone")
-        data.event.content = data.event.content.replace("@here", "here")
-
         return f"{self.IRC_LOGO} `{self._get_permissions_label(data.author.permissions)}{data.author.nickname}` {data.event.content}"
 
     def _format_event_message(self, data):
