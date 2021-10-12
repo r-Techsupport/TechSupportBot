@@ -34,6 +34,9 @@ class DiscordRelay(base.MatchCog):
         if not message:
             return
 
+        if message.author.bot:
+            return
+
         payload = self.serialize(
             "message",
             message,
