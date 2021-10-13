@@ -35,6 +35,12 @@ class BasementBot(commands.Bot):
     CONFIG_PATH = "./config.yml"
     GUILD_CONFIG_COLLECTION = "guild_config"
     IPC_SECRET_ENV_KEY = "IPC_SECRET"
+    CONFIRM_YES_EMOJI = "✅"
+    CONFIRM_NO_EMOJI = "❌"
+    PAGINATE_LEFT_EMOJI = "⬅️"
+    PAGINATE_RIGHT_EMOJI = "➡️"
+    PAGINATE_STOP_EMOJI = "⏹️"
+    PAGINATE_DELETE_EMOJI = "🗑️"
 
     PluginConfig = plugin.PluginConfig
 
@@ -775,7 +781,12 @@ class BasementBot(commands.Bot):
 
         start_time = datetime.datetime.now()
 
-        for unicode_reaction in ["\u25C0", "\u25B6", "\u26D4", "\U0001F5D1"]:
+        for unicode_reaction in [
+            self.PAGINATE_LEFT_EMOJI,
+            self.PAGINATE_RIGHT_EMOJI,
+            self.PAGINATE_STOP_EMOJI,
+            self.PAGINATE_DELETE_EMOJI,
+        ]:
             await message.add_reaction(unicode_reaction)
 
         await self.logger.debug(f"Starting pagination loop with {len(embeds)} pages")
@@ -798,22 +809,24 @@ class BasementBot(commands.Bot):
                 pass
 
             # move forward
-            if str(reaction) == "\u25B6" and index < len(embeds) - 1:
+            if str(reaction) == self.PAGINATE_RIGHT_EMOJI and index < len(embeds) - 1:
                 index += 1
                 await message.edit(**get_args(index))
 
             # move backward
-            elif str(reaction) == "\u25C0" and index > 0:
+            elif str(reaction) == self.PAGINATE_LEFT_EMOJI and index > 0:
                 index -= 1
                 await message.edit(**get_args(index))
 
             # stop pagination
-            elif str(reaction) == "\u26D4" and user.id == ctx.author.id:
+            elif str(reaction) == self.PAGINATE_STOP_EMOJI and user.id == ctx.author.id:
                 await self.logger.debug("Stopping pagination message at user request")
                 break
 
             # delete embed
-            elif str(reaction) == "\U0001F5D1" and user.id == ctx.author.id:
+            elif (
+                str(reaction) == self.PAGINATE_DELETE_EMOJI and user.id == ctx.author.id
+            ):
                 await self.logger.debug("Deleting pagination message at user request")
                 await message.delete()
                 break
@@ -844,8 +857,8 @@ class BasementBot(commands.Bot):
             delete_after (bool): True if the confirmation message should be deleted
         """
         message = await self.send_with_mention(ctx, content=title, target=ctx.author)
-        await message.add_reaction("✔️")
-        await message.add_reaction("❌")
+        await message.add_reaction(self.CONFIRM_YES_EMOJI)
+        await message.add_reaction(self.CONFIRM_NO_EMOJI)
 
         result = False
         while True:
@@ -861,11 +874,11 @@ class BasementBot(commands.Bot):
             if user.id != ctx.author.id:
                 pass
 
-            elif str(reaction) == "✔️":
+            elif str(reaction) == self.CONFIRM_YES_EMOJI:
                 result = True
                 break
 
-            elif str(reaction) == "❌":
+            elif str(reaction) == self.CONFIRM_NO_EMOJI:
                 break
 
             try:

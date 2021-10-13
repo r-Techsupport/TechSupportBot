@@ -13,7 +13,7 @@ def setup(bot):
 
 class HWInfoParser(base.MatchCog):
 
-    API_URL = "http://134.122.122.134"
+    API_URL = "http://134.122.122.133"
     ICON_URL = (
         "https://cdn.icon-icons.com/icons2/39/PNG/128/hwinfo_info_hardare_6211.png"
     )
@@ -43,38 +43,46 @@ class HWInfoParser(base.MatchCog):
         )
 
         api_response = await self.call_api(result)
-        response_text = await api_response.text()
-
-        try:
-            response_data = munch.munchify(json.loads(response_text))
-            parse_status = response_data.get("Status", "Unknown")
-        except Exception:
-            response_data = None
-            parse_status = "Error"
-
-        if parse_status == "Parsed":
-            try:
-                embed = await self.generate_embed(ctx, response_data)
-                await self.bot.send_with_mention(ctx, embed=embed)
-            except Exception as e:
-                await self.bot.send_with_mention(
-                    ctx, "I had trouble reading the HWInfo logs"
-                )
-                log_channel = await self.bot.get_log_channel_from_guild(
-                    ctx.guild, "logging_channel"
-                )
-                await self.bot.logger.error(
-                    "Could not read HWInfo logs",
-                    exception=e,
-                    channel=log_channel,
-                )
-        else:
+        if api_response.status != 200:
             await self.bot.send_with_mention(
                 ctx,
-                f"I was unable to parse those HWInfo logs (parse status = {parse_status})",
+                f"I was unable to parse those HWInfo logs (received {api_response.status_code} from server)",
             )
 
-        await found_message.delete()
+        try:
+            response_text = await api_response.text()
+            response_data = munch.munchify(json.loads(response_text))
+        except Exception as e:
+            await self.bot.send_with_mention(
+                ctx, "I was unable to convert the parse results to JSON"
+            )
+            log_channel = await self.bot.get_log_channel_from_guild(
+                ctx.guild, "logging_channel"
+            )
+            await self.bot.logger.error(
+                "Could not deserialize HWInfo parse response to JSON",
+                exception=e,
+                channel=log_channel,
+            )
+            return await found_message.delete()
+
+        try:
+            embed = await self.generate_embed(ctx, response_data)
+            await self.bot.send_with_mention(ctx, embed=embed)
+        except Exception as e:
+            await self.bot.send_with_mention(
+                ctx, "I had trouble reading the HWInfo logs"
+            )
+            log_channel = await self.bot.get_log_channel_from_guild(
+                ctx.guild, "logging_channel"
+            )
+            await self.bot.logger.error(
+                "Could not read HWInfo logs",
+                exception=e,
+                channel=log_channel,
+            )
+
+        return await found_message.delete()
 
     async def call_api(self, hwinfo_url):
         response = await self.bot.http_call(
@@ -86,7 +94,25 @@ class HWInfoParser(base.MatchCog):
 
     async def generate_embed(self, ctx, response_data):
         embed = discord.Embed(
-            title=f"Speccy Results for {ctx.author}", description=response_data.Link
+            title=f"HWInfo Summary for {ctx.author}", description="min/average/max"
         )
-        # TODO
+
+        summary = ""
+        for key, value in response_data.items():
+            if key == "ToC":
+                continue
+            summary += f"**{key.upper()}**: {value}\n"
+
+        embed.add_field(name="__Summary__", value=summary)
+
+        toc_content = ""
+        for key, value in response_data.get("ToC", {}).items():
+            toc_content += f"**{key.upper()}**: {value}\n"
+
+        embed.add_field(
+            name="__Temperatures of Concern__", value=toc_content, inline=False
+        )
+
+        embed.set_thumbnail(url=self.ICON_URL)
+
         return embed
