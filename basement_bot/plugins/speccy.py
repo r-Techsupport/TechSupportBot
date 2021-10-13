@@ -44,9 +44,17 @@ class SpeccyParser(base.MatchCog):
         try:
             response_data = munch.munchify(json.loads(response_text))
             parse_status = response_data.get("Status", "Unknown")
-        except Exception:
+        except Exception as e:
             response_data = None
             parse_status = "Error"
+            log_channel = await self.bot.get_log_channel_from_guild(
+                ctx.guild, "logging_channel"
+            )
+            await self.bot.logger.error(
+                "Could not deserialize Speccy parse response to JSON",
+                exception=e,
+                channel=log_channel,
+            )
 
         if parse_status == "Parsed":
             try:

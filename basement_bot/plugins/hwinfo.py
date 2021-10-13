@@ -43,11 +43,6 @@ class HWInfoParser(base.MatchCog):
         )
 
         api_response = await self.call_api(result)
-        if api_response.status != 200:
-            await self.bot.send_with_mention(
-                ctx,
-                f"I was unable to parse those HWInfo logs (received {api_response.status_code} from server)",
-            )
 
         try:
             response_text = await api_response.text()
