@@ -787,7 +787,7 @@ class BasementBot(commands.Bot):
                 reaction, user = await self.wait_for(
                     "reaction_add",
                     timeout=timeout,
-                    check=lambda r, u: not bool(u.bot) and r.message.id != message.id,
+                    check=lambda r, u: not bool(u.bot) and r.message.id == message.id,
                 )
             # this seems to raise an odd timeout error, for now just catch-all
             except Exception:
