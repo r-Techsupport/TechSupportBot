@@ -199,7 +199,6 @@ class BasementBot(commands.Bot):
 
         await self.logger.debug("Loading Raw commands...")
         try:
-            self.remove_command("help")
             self.add_cog(raw.Raw(self))
         except Exception as exception:
             await self.logger.warning(f"Could not load Raw commands: {exception}")
