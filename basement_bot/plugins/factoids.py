@@ -544,10 +544,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         output_data = []
         for factoid in factoids:
-            data = {
-                "message": factoid.message,
-            }
-            data["embed"] = bool(factoid.embed_config)
+            data = {"message": factoid.message, "embed": bool(factoid.embed_config)}
             output_data.append({factoid.text: data})
 
         yaml_file = discord.File(
