@@ -17,6 +17,7 @@ import botlog
 import config
 import discord
 import gino
+import help as help_commands
 import munch
 import plugin
 import yaml
@@ -187,6 +188,13 @@ class BasementBot(commands.Bot):
             self.add_cog(config.ConfigControl(self))
         except Exception as exception:
             await self.logger.warning(f"Could not load Config commands: {exception}")
+
+        await self.logger.debug("Loading Help commands...")
+        try:
+            self.remove_command("help")
+            self.add_cog(help_commands.Helper(self))
+        except Exception as exception:
+            await self.logger.warning(f"Could not load Helper commands: {exception}")
 
         await self.logger.debug("Logging into Discord...")
         await super().start(*args, **kwargs)
