@@ -7,8 +7,7 @@ from discord.ext import commands
 
 
 class Helper(base.BaseCog):
-    """Cog object for help commands.
-    """
+    """Cog object for help commands."""
 
     PLUGINS_PER_GENERAL_PAGE = 10
 
@@ -60,7 +59,7 @@ class Helper(base.BaseCog):
         command_prefix = await self.bot.get_prefix(ctx.message)
         embed = discord.Embed(
             title="Help",
-            #pylint: disable=no-member
+            # pylint: disable=no-member
             description=f"use `{command_prefix}{self.help_command.name} <plugin_name>` to see commands\n\n {plugin_name_text}",
         )
 
