@@ -56,13 +56,13 @@ class CDIParser(base.MatchCog):
             await self.bot.send_with_mention(
                 ctx, "I was unable to convert the parse results to JSON"
             )
-            log_channel = await self.bot.get_log_channel_from_guild(
-                ctx.guild, "logging_channel"
-            )
-            await self.bot.logger.error(
+            await self.bot.guild_log(
+                ctx.guild,
+                "logging_channel",
+                "error",
                 "Could not deserialize CDI parse response to JSON",
+                send=True,
                 exception=e,
-                channel=log_channel,
             )
             return await found_message.delete()
 
@@ -70,16 +70,14 @@ class CDIParser(base.MatchCog):
             embed = await self.generate_embed(ctx, response_data)
             await self.bot.send_with_mention(ctx, embed=embed)
         except Exception as e:
-            await self.bot.send_with_mention(
-                ctx, "I had trouble reading the HWInfo logs"
-            )
-            log_channel = await self.bot.get_log_channel_from_guild(
-                ctx.guild, "logging_channel"
-            )
-            await self.bot.logger.error(
+            await self.bot.send_with_mention(ctx, "I had trouble reading the CDI logs")
+            await self.bot.guild_log(
+                ctx.guild,
+                "logging_channel",
+                "error",
                 "Could not read CDI data",
+                send=True,
                 exception=e,
-                channel=log_channel,
             )
 
         return await found_message.delete()
@@ -101,11 +99,15 @@ class CDIParser(base.MatchCog):
         )
 
         for drive_data in response_data.values():
+            if not isinstance(drive_data, dict):
+                continue
+
             drive_name = drive_data.get("Model", "Unknown")
+            drive_letter = drive_data.get("Drive Letter(s)")
             cdi_health = drive_data.get("CDI Health", "Unknown")
             consult_health = drive_data.get("r/TS Health", "Unknown")
             embed.add_field(
-                name=f"`{drive_name}`",
+                name=f"`{drive_letter} - {drive_name}`",
                 value=f"{cdi_health} | {consult_health}",
                 inline=False,
             )
@@ -151,13 +153,13 @@ class SpeccyParser(base.MatchCog):
         except Exception as e:
             response_data = None
             parse_status = "Error"
-            log_channel = await self.bot.get_log_channel_from_guild(
-                ctx.guild, "logging_channel"
-            )
-            await self.bot.logger.error(
+            await self.bot.guild_log(
+                ctx.guild,
+                "logging_channel",
+                "error",
                 "Could not deserialize Speccy parse response to JSON",
+                send=True,
                 exception=e,
-                channel=log_channel,
             )
 
         if parse_status == "Parsed":
@@ -168,13 +170,13 @@ class SpeccyParser(base.MatchCog):
                 await self.bot.send_with_mention(
                     ctx, "I had trouble reading the Speccy results"
                 )
-                log_channel = await self.bot.get_log_channel_from_guild(
-                    ctx.guild, "logging_channel"
-                )
-                await self.bot.logger.error(
+                await self.bot.guild_log(
+                    ctx.guild,
+                    "logging_channel",
+                    "error",
                     "Could not read Speccy results",
+                    send=True,
                     exception=e,
-                    channel=log_channel,
                 )
         else:
             await self.bot.send_with_mention(
@@ -296,13 +298,13 @@ class HWInfoParser(base.MatchCog):
             await self.bot.send_with_mention(
                 ctx, "I was unable to convert the parse results to JSON"
             )
-            log_channel = await self.bot.get_log_channel_from_guild(
-                ctx.guild, "logging_channel"
-            )
-            await self.bot.logger.error(
+            await self.bot.guild_log(
+                ctx.guild,
+                "logging_channel",
+                "error",
                 "Could not deserialize HWInfo parse response to JSON",
+                send=True,
                 exception=e,
-                channel=log_channel,
             )
             return await found_message.delete()
 
@@ -313,13 +315,13 @@ class HWInfoParser(base.MatchCog):
             await self.bot.send_with_mention(
                 ctx, "I had trouble reading the HWInfo logs"
             )
-            log_channel = await self.bot.get_log_channel_from_guild(
-                ctx.guild, "logging_channel"
-            )
-            await self.bot.logger.error(
+            await self.bot.guild_log(
+                ctx.guild,
+                "logging_channel",
+                "error",
                 "Could not read HWInfo logs",
+                send=True,
                 exception=e,
-                channel=log_channel,
             )
 
         return await found_message.delete()

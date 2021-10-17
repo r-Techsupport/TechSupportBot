@@ -73,6 +73,13 @@ class ServerGate(base.MatchCog):
         if content.lower() == config.plugins.gate.verify_text.value:
             roles = await self.get_roles(config, ctx)
             if not roles:
+                await self.bot.guild_log(
+                    ctx.guild,
+                    "logging_channel",
+                    "warning",
+                    f"Roles not configured for gate plugin - ignoring message",
+                    send=True,
+                )
                 return
 
             await ctx.author.add_roles(*roles)
@@ -80,7 +87,7 @@ class ServerGate(base.MatchCog):
             welcome_message = config.plugins.gate.welcome_message.value
             delete_wait = config.plugins.gate.delete_wait.value
 
-            bot_message = await self.bot.send_with_mention(
+            await self.bot.send_with_mention(
                 ctx,
                 f"{welcome_message} (this message will delete in {delete_wait} seconds)",
                 delete_after=float(delete_wait),

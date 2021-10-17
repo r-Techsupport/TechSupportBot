@@ -65,13 +65,13 @@ class DiscordRelay(base.MatchCog):
                 payload, self.bot.config.special.relay.send_queue
             )
         except Exception as e:
-            log_channel = await self.bot.get_log_channel_from_guild(
-                guild, "logging_channel"
-            )
-            await self.bot.logger.error(
+            await self.bot.guild_log(
+                guild,
+                "logging_channel",
+                "error",
                 "Could not publish Discord event to relay broker",
+                send=True,
                 exception=e,
-                channel=log_channel,
             )
 
     @staticmethod
@@ -138,14 +138,13 @@ class IRCReceiver(base.LoopCog):
                 durable=True,
             )
         except Exception as e:
-            log_channel = await self.bot.get_log_channel_from_guild(
-                guild, "log_channel"
-            )
-            await self.bot.logger.error(
+            await self.bot.guild_log(
+                guild,
+                "logging_channel",
+                "error",
                 "Could not consume IRC event from relay broker (will restart consuming in {self.DEFAULT_WAIT} seconds)",
-                e,
-                channel=log_channel,
-                critical=True,
+                send=True,
+                exception=e,
             )
 
     async def handle_event(self, response):

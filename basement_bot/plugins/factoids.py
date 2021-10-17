@@ -143,6 +143,14 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         if not factoid:
             return
 
+        await self.bot.guild_log(
+            ctx.guild,
+            "logging_channel",
+            "info",
+            f"Sending factoid: {query}",
+            send=True,
+        )
+
         embed = self.get_embed_from_factoid(factoid)
 
         content = factoid.message if not embed else None
@@ -185,6 +193,8 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         await relay_cog.response(config, ctx, message, "")
 
     async def load_jobs(self):
+        await self.bot.logger.info("Loading factoid jobs", send=True)
+
         factoids = await self.get_all_factoids()
 
         if not factoids:
@@ -282,6 +292,13 @@ class FactoidManager(base.MatchCog, base.LoopCog):
                     ):
                         continue
 
+                    await self.bot.guild_log(
+                        guild,
+                        "logging_channel",
+                        "info",
+                        f"Sending looped factoid: {factoid_key}",
+                        send=True,
+                    )
                     message = await channel.send(content=content, embed=embed)
 
                     context = await self.bot.get_context(message)

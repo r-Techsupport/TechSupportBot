@@ -780,6 +780,13 @@ class DuckHunt(base.LoopCog):
 
     async def execute(self, config, guild, channel):
         if not channel:
+            await self.bot.guild_log(
+                guild,
+                "logging_channel",
+                "warning",
+                "Channel not found for Duckhunt loop - continuing",
+                send=True,
+            )
             return
 
         self.cooldowns[guild.id] = {}
@@ -820,6 +827,14 @@ class DuckHunt(base.LoopCog):
             )
 
     async def handle_winner(self, winner, guild, action, duration, channel):
+        await self.bot.guild_log(
+            guild,
+            "logging_channel",
+            "info",
+            f"Duck {action} by {winner}",
+            send=True,
+        )
+
         duck_user = await self.get_duck_user(winner.id, guild.id)
         if not duck_user:
             duck_user = self.models.DuckUser(

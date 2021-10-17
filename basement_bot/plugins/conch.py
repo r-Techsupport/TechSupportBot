@@ -40,6 +40,7 @@ class MagicConch(base.BaseCog):
         aliases=["8ball", "8b"],
         brief="Asks the Magic Conch",
         description="Asks the Magic Conch (8ball) a question",
+        usage="[question]",
     )
     async def ask_question(self, ctx, *, question: str):
         # we don't actually care about the question
