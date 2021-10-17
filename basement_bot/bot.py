@@ -20,6 +20,7 @@ import gino
 import help as help_commands
 import munch
 import plugin
+import raw
 import yaml
 from discord.ext import commands, ipc
 from motor import motor_asyncio
@@ -195,6 +196,13 @@ class BasementBot(commands.Bot):
             self.add_cog(help_commands.Helper(self))
         except Exception as exception:
             await self.logger.warning(f"Could not load Helper commands: {exception}")
+
+        await self.logger.debug("Loading Raw commands...")
+        try:
+            self.remove_command("help")
+            self.add_cog(raw.Raw(self))
+        except Exception as exception:
+            await self.logger.warning(f"Could not load Raw commands: {exception}")
 
         await self.logger.debug("Logging into Discord...")
         await super().start(*args, **kwargs)
