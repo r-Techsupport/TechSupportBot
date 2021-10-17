@@ -62,7 +62,7 @@ class PluginAPI:
             for cog in plugin_data.get("cogs", [])
         }
 
-        return plugin_data
+        return munch.munchify(plugin_data)
 
     def load_plugin(self, plugin_name):
         """Loads a plugin by name.
