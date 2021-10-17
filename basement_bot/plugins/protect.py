@@ -1,5 +1,6 @@
 import datetime
 import io
+from typing import Type
 
 import base
 import discord
@@ -114,11 +115,10 @@ class Protector(base.MatchCog):
 
     async def match(self, config, ctx, content):
         # exit the match based on exclusion parameters
-        if not ctx.channel.id in config.plugins.protect.channels.value:
-            return False
-
-        admin = await self.bot.is_bot_admin(ctx)
-        if admin:
+        if not str(ctx.channel.id) in config.plugins.protect.channels.value:
+            await self.bot.logger.info(
+                "Channel not in protected channels - ignoring protect check"
+            )
             return False
 
         role_names = [role.name.lower() for role in getattr(ctx.author, "roles", [])]
@@ -134,18 +134,14 @@ class Protector(base.MatchCog):
 
         return True
 
-    async def response(self, config, ctx, content):
-        # check length of content
-        if len(content) > config.plugins.protect.length_limit.value:
-            await self.handle_length_alert(config, ctx, content)
-            return
-
-        # check mass mentions
+    async def response(self, config, ctx, content, _):
+        # check mass mentions first - return after handling
         if len(ctx.message.mentions) > config.plugins.protect.max_mentions.value:
             await self.handle_mass_mention_alert(config, ctx, content)
             return
 
-        # finally search the message against keyword strings
+        # search the message against keyword strings
+        triggered_config = None
         for keyword, filter_config in config.plugins.protect.string_map.value.items():
             filter_config = munch.munchify(filter_config)
             search_keyword = keyword
@@ -157,8 +153,20 @@ class Protector(base.MatchCog):
 
             if search_keyword in search_content:
                 filter_config["trigger"] = keyword
-                await self.handle_string_alert(config, ctx, content, filter_config)
+                triggered_config = filter_config
+
+                if triggered_config.get("delete"):
+                    break
+
+        if triggered_config:
+            await self.handle_string_alert(config, ctx, content, triggered_config)
+            if triggered_config.get("delete"):
+                # the message is deleted, no need to pastebin it
                 return
+
+        # check length of content
+        if len(content) > config.plugins.protect.length_limit.value:
+            await self.handle_length_alert(config, ctx, content)
 
     async def get_warnings(self, user, guild):
         warnings = (
@@ -170,7 +178,7 @@ class Protector(base.MatchCog):
         )
         return warnings
 
-    async def handle_warn(self, ctx, user, reason, bypass=False):
+    async def handle_warn(self, ctx, user, reason, bypass=False, alert=True):
         if not bypass:
             can_execute = await self.can_execute(ctx, user)
             if not can_execute:
@@ -278,9 +286,7 @@ class Protector(base.MatchCog):
         linx_embed = await self.create_linx_embed(config, ctx, content)
         if not linx_embed:
             await self.send_default_delete_response(config, ctx, content, reason)
-            await self.send_admin_alert(
-                config, ctx, "Could not convert text to Linx paste"
-            )
+            await self.send_alert(config, ctx, "Could not convert text to Linx paste")
             return
 
         await self.bot.send_with_mention(ctx, embed=linx_embed)
@@ -288,27 +294,37 @@ class Protector(base.MatchCog):
     async def handle_mass_mention_alert(self, config, ctx, content):
         await ctx.message.delete()
         await self.handle_warn(ctx, ctx.author, "mass mention", bypass=True)
-        await self.send_admin_alert(config, ctx, f"Mass mentions from {ctx.author}")
+        await self.send_alert(config, ctx, f"Mass mentions from {ctx.author}")
 
     async def send_default_delete_response(self, config, ctx, content, reason):
         await self.bot.send_with_mention(
             ctx,
-            f"I deleted your message because: {reason}. Check your DM's for the original message",
+            f"I deleted your message because: `{reason}`",
         )
         await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
 
-    async def send_admin_alert(self, config, ctx, message):
-        alert_channel = ctx.guild.get_channel(
-            int(config.plugins.protect.alert_channel.value)
-        )
+    async def send_alert(self, config, ctx, message):
+        try:
+            alert_channel = ctx.guild.get_channel(
+                int(config.plugins.protect.alert_channel.value)
+            )
+        except TypeError:
+            alert_channel = None
+
         if not alert_channel:
             return
 
-        embed = discord.Embed(title="Protect Plugin Alert", description=f"{message}")
+        embed = discord.Embed(title="Protect Alert", description=message)
 
-        embed.add_field(name="User", value=ctx.author.mention)
+        if len(ctx.message.content) >= 256:
+            message_content = ctx.message.content[0:256]
+        else:
+            message_content = ctx.message.content
+
         embed.add_field(name="Channel", value=f"#{ctx.channel.name}")
-        embed.add_field(name="Message", value=ctx.message.content, inline=False)
+        embed.add_field(name="User", value=ctx.author.mention)
+        embed.add_field(name="Message", value=message_content, inline=False)
+        embed.add_field(name="URL", value=ctx.message.jump_url, inline=False)
 
         embed.set_thumbnail(url=self.ALERT_ICON_URL)
 
@@ -334,6 +350,11 @@ class Protector(base.MatchCog):
 
         embed = discord.Embed(title=f"Paste by {ctx.author}", description=url)
 
+        if len(content) > 256:
+            content = content[:256]
+
+        embed.add_field(name="Preview", value=content.replace("\n", " "))
+
         embed.set_thumbnail(url=self.CLIPBOARD_ICON_URL)
 
         return embed
@@ -350,13 +371,17 @@ class Protector(base.MatchCog):
         else:
             await self.bot.send_with_mention(ctx, filter_config.message)
 
-        await self.send_admin_alert(
+        await self.send_alert(
             config,
             ctx,
             f"Message contained trigger: {filter_config.trigger}",
         )
 
     async def can_execute(self, ctx, target):
+        if target.id == self.bot.user.id:
+            await self.bot.send_with_mention(ctx, f"It would be silly to warn myself")
+            return False
+
         if target.top_role >= ctx.author.top_role:
             await self.bot.send_with_mention(
                 ctx, f"Your role is too low to do that to {target}"
@@ -375,6 +400,9 @@ class Protector(base.MatchCog):
     )
     async def ban_user(self, ctx, user: discord.Member, *, reason: str = None):
         await self.handle_ban(ctx, user, reason)
+
+        config = await self.bot.get_context_config(ctx)
+        await self.send_alert(config, ctx, "Ban command")
 
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
@@ -398,6 +426,9 @@ class Protector(base.MatchCog):
     async def kick_user(self, ctx, user: discord.Member, *, reason: str = None):
         await self.handle_kick(ctx, user, reason)
 
+        config = await self.bot.get_context_config(ctx)
+        await self.send_alert(config, ctx, "Kick command")
+
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
     @commands.command(
@@ -409,6 +440,9 @@ class Protector(base.MatchCog):
     async def warn_user(self, ctx, user: discord.Member, *, reason: str = None):
         await self.handle_warn(ctx, user, reason)
 
+        config = await self.bot.get_context_config(ctx)
+        await self.send_alert(config, ctx, "Warn command")
+
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
     @commands.command(
@@ -417,7 +451,7 @@ class Protector(base.MatchCog):
         description="Unwarns a user with a given reason",
         usage="@user [reason]",
     )
-    async def unwarn_user(self, ctx, user: discord.User, *, reason: str = None):
+    async def unwarn_user(self, ctx, user: discord.Member, *, reason: str = None):
         await self.handle_unwarn(ctx, user, reason)
 
     @commands.has_permissions(kick_members=True)
@@ -450,7 +484,7 @@ class Protector(base.MatchCog):
         description="Assigns the Muted role to a user (you need to create/configure this role)",
         usage="@user",
     )
-    async def mute(self, ctx, user: discord.Member, reason: str = None):
+    async def mute(self, ctx, user: discord.Member, *, reason: str = None):
         can_execute = await self.can_execute(ctx, user)
         if not can_execute:
             return
@@ -465,6 +499,9 @@ class Protector(base.MatchCog):
         embed = await self.generate_user_modified_embed(user, "muted", reason)
 
         await self.bot.send_with_mention(ctx, embed=embed)
+
+        config = await self.bot.get_context_config(ctx)
+        await self.send_alert(config, ctx, "Mute command")
 
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
@@ -503,41 +540,25 @@ class Protector(base.MatchCog):
         name="amount",
         aliases=["x"],
         brief="Purges messages by amount",
-        description="Purges the current channel's messages based on amount and author criteria",
-        usage="[amount] @user @another-user ...",
+        description="Purges the current channel's messages based on amoun",
+        usage="[amount]",
     )
-    async def purge_amount(
-        self, ctx, amount: int = 1, targets: commands.Greedy[discord.Member] = None
-    ):
-        # dat constant lookup
-        targets = (
-            set(user.id for user in ctx.message.mentions)
-            if ctx.message.mentions
-            else None
-        )
-
+    async def purge_amount(self, ctx, amount: int = 1):
         config = await self.bot.get_context_config(ctx)
 
         if amount <= 0 or amount > config.plugins.protect.max_purge_amount.value:
             amount = config.plugins.protect.max_purge_amount.value
 
-        def check(message):
-            if not targets or message.author.id in targets:
-                return True
-            return False
+        await ctx.channel.purge(limit=amount)
 
-        await ctx.channel.purge(limit=amount, check=check)
-        await self.bot.send_with_mention(
-            ctx,
-            f"I finished deleting {amount} messages",
-        )
+        await self.send_alert(config, ctx, f"Purge command")
 
     @purge.command(
         name="duration",
         aliases=["d"],
         brief="Purges messages by duration",
-        description="Purges the current channel's messages up to a time based on author criteria",
-        usage="@user @another-user ... [duration (minutes)]",
+        description="Purges the current channel's messages up to a time",
+        usage="[duration (minutes)]",
     )
     async def purge_duration(self, ctx, duration_minutes: int):
         if duration_minutes < 0:
@@ -554,7 +575,4 @@ class Protector(base.MatchCog):
             after=timestamp, limit=config.plugins.protect.max_purge_amount.value
         )
 
-        await self.bot.send_with_mention(
-            ctx,
-            f"I finished deleting messages up to `{timestamp}` UTC",
-        )
+        await self.send_alert(config, ctx, f"Purge command")

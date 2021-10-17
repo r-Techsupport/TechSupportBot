@@ -3,6 +3,8 @@
 
 import inspect
 
+import discord
+
 
 def with_typing(command):
     """Decorator for commands to utilize "async with" ctx.typing()
@@ -23,7 +25,12 @@ def with_typing(command):
         if not typing_func:
             await original_callback(*args, **kwargs)
         else:
-            async with typing_func():
+            try:
+                async with typing_func():
+                    await original_callback(*args, **kwargs)
+            except discord.Forbidden:
+                # sometimes the discord API doesn't like this
+                # proceed without typing
                 await original_callback(*args, **kwargs)
 
     # this has to be done so invoke will see the original signature

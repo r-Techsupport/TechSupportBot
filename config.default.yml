@@ -1,5 +1,5 @@
 main:
-    auth_token: 
+    auth_token:
     admins:
         ids: []
         roles: []

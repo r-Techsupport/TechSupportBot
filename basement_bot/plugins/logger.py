@@ -24,9 +24,9 @@ class Logger(base.MatchCog):
 
         return True
 
-    async def response(self, config, ctx, _):
+    async def response(self, config, ctx, _, __):
         channel = ctx.guild.get_channel(
-            config.plugins.logger.channel_map.value.get(str(ctx.channel.id))
+            int(config.plugins.logger.channel_map.value.get(str(ctx.channel.id)))
         )
         if not channel:
             return
@@ -34,10 +34,10 @@ class Logger(base.MatchCog):
         await channel.send(embed=self.generate_embed(ctx))
 
     def generate_embed(self, ctx):
+        content = ctx.message.content[:256] if ctx.message.content else "None"
+
         embed = discord.Embed()
-        embed.add_field(
-            name="Content", value=ctx.message.content or "<None>", inline=False
-        )
+        embed.add_field(name="Content", value=content, inline=False)
 
         if ctx.message.attachments:
             embed.add_field(

@@ -4,7 +4,9 @@
 import asyncio
 import collections
 import datetime
+import inspect
 import json
+import os
 import re
 import sys
 
@@ -18,7 +20,7 @@ import gino
 import munch
 import plugin
 import yaml
-from discord.ext import commands
+from discord.ext import commands, ipc
 from motor import motor_asyncio
 
 
@@ -32,11 +34,22 @@ class BasementBot(commands.Bot):
 
     CONFIG_PATH = "./config.yml"
     GUILD_CONFIG_COLLECTION = "guild_config"
+    IPC_SECRET_ENV_KEY = "IPC_SECRET"
+    CONFIRM_YES_EMOJI = "✅"
+    CONFIRM_NO_EMOJI = "❌"
+    PAGINATE_LEFT_EMOJI = "⬅️"
+    PAGINATE_RIGHT_EMOJI = "➡️"
+    PAGINATE_STOP_EMOJI = "⏹️"
+    PAGINATE_DELETE_EMOJI = "🗑️"
 
     PluginConfig = plugin.PluginConfig
 
-    def __init__(self, run_on_init=True, intents=None):
-        super().__init__(command_prefix=self.get_prefix, intents=intents)
+    def __init__(self, run_on_init=True, intents=None, allowed_mentions=None):
+        super().__init__(
+            command_prefix=self.get_prefix,
+            intents=intents,
+            allowed_mentions=allowed_mentions,
+        )
 
         self.owner = None
         self.config = None
@@ -47,6 +60,7 @@ class BasementBot(commands.Bot):
         self.guild_config_collection = None
         self.config_cache = collections.defaultdict(dict)
         self.config_lock = asyncio.Lock()
+        self.ipc = None
 
         self.load_bot_config(validate=True)
 
@@ -70,7 +84,7 @@ class BasementBot(commands.Bot):
         parameters:
             validate (bool): True if validations should be ran on the file
         """
-        with open(self.CONFIG_PATH) as iostream:
+        with open(self.CONFIG_PATH, encoding="utf8") as iostream:
             config_ = yaml.safe_load(iostream)
 
         self.config = munch.munchify(config_)
@@ -113,7 +127,16 @@ class BasementBot(commands.Bot):
         return getattr(guild_config, "command_prefix", self.config.main.default_prefix)
 
     def run(self, *args, **kwargs):
-        """Starts the event loop and blocks until interrupted."""
+        """Starts IPC and the event loop and blocks until interrupted."""
+        if os.getenv(self.IPC_SECRET_ENV_KEY):
+            self.logger.console.debug("Setting up IPC server")
+            self.ipc = ipc.Server(
+                self, host="0.0.0.0", secret_key=os.getenv(self.IPC_SECRET_ENV_KEY)
+            )
+            self.ipc.start()
+        else:
+            self.logger.console.debug("No IPC secret found in env - ignoring IPC setup")
+
         try:
             self.loop.run_until_complete(self.start(*args, **kwargs))
         except (SystemExit, KeyboardInterrupt):
@@ -235,6 +258,15 @@ class BasementBot(commands.Bot):
             channel=log_channel,
         )
 
+    async def on_ipc_error(self, _endpoint, exception):
+        """Catches IPC errors and sends them to the error logger for processing.
+
+        parameters:
+            endpoint (str): the endpoint called
+            exception (Exception): the exception object associated with the error
+        """
+        await self.logger.error(f"IPC error: {exception}", exception=exception)
+
     async def get_owner(self):
         """Gets the owner object from the bot application."""
 
@@ -323,6 +355,8 @@ class BasementBot(commands.Bot):
         else:
             return None
 
+        lookup = str(lookup)
+
         await self.logger.debug(f"Getting config for lookup key: {lookup}")
 
         # locking prevents duplicate configs being made
@@ -382,17 +416,19 @@ class BasementBot(commands.Bot):
 
         await self.logger.debug("Evaluating plugin data")
         for plugin_name, plugin_data in self.plugin_api.plugins.items():
-            plugin_config = getattr(plugin_data, "config", None)
+            plugin_config = getattr(plugin_data, "fallback_config", {})
             if plugin_config:
-                plugins_config[plugin_name] = getattr(plugin_data, "config", {})
+                # don't attach to guild config if plugin isn't configurable
+                plugins_config[plugin_name] = plugin_config
 
         config_ = munch.Munch()
 
-        config_.guild_id = lookup
+        config_.guild_id = str(lookup)
         config_.command_prefix = self.config.main.default_prefix
         config_.logging_channel = None
         config_.member_events_channel = None
         config_.guild_events_channel = None
+        config_.private_channels = []
 
         config_.plugins = plugins_config
 
@@ -420,7 +456,7 @@ class BasementBot(commands.Bot):
         await self.logger.debug("Evaluating plugin data")
         for plugin_name, plugin_data in self.plugin_api.plugins.items():
             plugin_config = config_object.plugins.get(plugin_name)
-            plugin_config_from_data = getattr(plugin_data, "config", {})
+            plugin_config_from_data = getattr(plugin_data, "fallback_config", {})
 
             if not plugin_config and plugin_config_from_data:
                 should_update = True
@@ -610,16 +646,13 @@ class BasementBot(commands.Bot):
             response = response_object
         else:
             await self.logger.debug("Converting response to JSON object")
+            response_json = await response_object.json()
             response = (
-                await munch.munchify(response_object.json())
-                if response_object
-                else munch.Munch()
+                munch.munchify(response_json) if response_object else munch.Munch()
             )
             response["status_code"] = getattr(response_object, "status", None)
 
         await client.close()
-
-        await self.logger.debug(f"HTTP response: {response}")
 
         return response
 
@@ -748,7 +781,12 @@ class BasementBot(commands.Bot):
 
         start_time = datetime.datetime.now()
 
-        for unicode_reaction in ["\u25C0", "\u25B6", "\u26D4", "\U0001F5D1"]:
+        for unicode_reaction in [
+            self.PAGINATE_LEFT_EMOJI,
+            self.PAGINATE_RIGHT_EMOJI,
+            self.PAGINATE_STOP_EMOJI,
+            self.PAGINATE_DELETE_EMOJI,
+        ]:
             await message.add_reaction(unicode_reaction)
 
         await self.logger.debug(f"Starting pagination loop with {len(embeds)} pages")
@@ -757,38 +795,38 @@ class BasementBot(commands.Bot):
                 break
 
             try:
-                reaction, user = await ctx.bot.wait_for(
-                    "reaction_add", timeout=timeout, check=lambda r, u: not bool(u.bot)
+                reaction, user = await self.wait_for(
+                    "reaction_add",
+                    timeout=timeout,
+                    check=lambda r, u: not bool(u.bot) and r.message.id == message.id,
                 )
             # this seems to raise an odd timeout error, for now just catch-all
             except Exception:
                 break
-
-            # check if the reaction should be processed
-            if reaction.message.id != message.id:
-                continue
 
             if restrict and user.id != ctx.author.id:
                 # this is checked first so it can pass to the deletion
                 pass
 
             # move forward
-            elif str(reaction) == "\u25B6" and index < len(embeds) - 1:
+            if str(reaction) == self.PAGINATE_RIGHT_EMOJI and index < len(embeds) - 1:
                 index += 1
                 await message.edit(**get_args(index))
 
             # move backward
-            elif str(reaction) == "\u25C0" and index > 0:
+            elif str(reaction) == self.PAGINATE_LEFT_EMOJI and index > 0:
                 index -= 1
                 await message.edit(**get_args(index))
 
             # stop pagination
-            elif str(reaction) == "\u26D4" and user.id == ctx.author.id:
+            elif str(reaction) == self.PAGINATE_STOP_EMOJI and user.id == ctx.author.id:
                 await self.logger.debug("Stopping pagination message at user request")
                 break
 
             # delete embed
-            elif str(reaction) == "\U0001F5D1" and user.id == ctx.author.id:
+            elif (
+                str(reaction) == self.PAGINATE_DELETE_EMOJI and user.id == ctx.author.id
+            ):
                 await self.logger.debug("Deleting pagination message at user request")
                 await message.delete()
                 break
@@ -808,6 +846,52 @@ class BasementBot(commands.Bot):
         This is useful if you want your command to finish executing when pagination starts.
         """
         self.loop.create_task(self.paginate(*args, **kwargs))
+
+    async def confirm(self, ctx, title, timeout=60, delete_after=False):
+        """Waits on a confirm reaction from a given user.
+
+        parameters:
+            ctx (discord.ext.Context): the context object for the message
+            title (str): the message content to which the user reacts
+            timeout (int): the number of seconds before timing out
+            delete_after (bool): True if the confirmation message should be deleted
+        """
+        message = await self.send_with_mention(ctx, content=title, target=ctx.author)
+        await message.add_reaction(self.CONFIRM_YES_EMOJI)
+        await message.add_reaction(self.CONFIRM_NO_EMOJI)
+
+        result = False
+        while True:
+            try:
+                reaction, user = await self.wait_for(
+                    "reaction_add",
+                    timeout=timeout,
+                    check=lambda r, u: not bool(u.bot) and r.message.id == message.id,
+                )
+            except Exception:
+                break
+
+            if user.id != ctx.author.id:
+                pass
+
+            elif str(reaction) == self.CONFIRM_YES_EMOJI:
+                result = True
+                break
+
+            elif str(reaction) == self.CONFIRM_NO_EMOJI:
+                break
+
+            try:
+                await reaction.remove(user)
+            except discord.Forbidden:
+                await self.logger.error(
+                    "Could not delete user reaction on confirmation message", send=False
+                )
+
+        if delete_after:
+            await message.delete()
+
+        return result
 
     @staticmethod
     def generate_embed_from_kwargs(
@@ -833,6 +917,52 @@ class BasementBot(commands.Bot):
         """
         return self.plugin_api.process_plugin_setup(*args, **kwargs)
 
+    def ipc_response(self, code=200, error=None, payload=None):
+        """Makes a response object for an IPC client.
+
+        parameters:
+            code (int): the HTTP-like status code
+            error (str): the response error message
+            payload (dict): the optional data payload
+        """
+        return {"code": code, "error": error, "payload": payload}
+
+    def preserialize_object(self, obj):
+        """Provides sane object -> dict transformation for most objects.
+
+        This is primarily used to send Discord.py object data via the IPC server.
+
+        parameters;
+            obj (object): the object to serialize
+        """
+        attributes = inspect.getmembers(obj, lambda a: not inspect.isroutine(a))
+        filtered_attributes = filter(
+            lambda e: not (e[0].startswith("__") and e[0].endswith("__")), attributes
+        )
+
+        data = {}
+        for name, attr in filtered_attributes:
+            # remove single underscores
+            if name.startswith("_"):
+                name = name[1:]
+
+            # if it's not a basic type, stringify it
+            # only catch: nested data is not readily JSON
+            if isinstance(attr, list):
+                attr = [str(element) for element in attr]
+            elif isinstance(attr, dict):
+                attr = {str(key): str(value) for key, value in attr.items()}
+            elif isinstance(attr, int):
+                attr = str(attr)
+            elif isinstance(attr, float):
+                pass
+            else:
+                attr = str(attr)
+
+            data[str(name)] = attr
+
+        return data
+
     @property
     def startup_time(self):
         """Gets the startup timestamp of the bot."""
@@ -840,6 +970,10 @@ class BasementBot(commands.Bot):
 
     async def on_command(self, ctx):
         """See: https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.on_command"""
+        config_ = await self.get_context_config(ctx)
+        if str(ctx.channel.id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
             getattr(ctx, "guild", None), key="logging_channel"
         )
@@ -859,8 +993,15 @@ class BasementBot(commands.Bot):
 
     async def on_message_delete(self, message):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_delete"""
+        guild = getattr(message.channel, "guild", None)
+        channel_id = getattr(message.channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(message.channel, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "message_delete", message=message, send=True, channel=log_channel
@@ -868,8 +1009,15 @@ class BasementBot(commands.Bot):
 
     async def on_bulk_message_delete(self, messages):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_bulk_message_delete"""
+        guild = getattr(messages[0].channel, "guild", None)
+        channel_id = getattr(messages[0].channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(messages[0].channel, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "bulk_message_delete", messages=messages, send=True, channel=log_channel
@@ -877,12 +1025,19 @@ class BasementBot(commands.Bot):
 
     async def on_message_edit(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_edit"""
+        guild = getattr(before.channel, "guild", None)
+        channel_id = getattr(before.channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         # this seems to spam, not sure why
         if before.content == after.content:
             return
 
         log_channel = await self.get_log_channel_from_guild(
-            getattr(before.channel, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "message_edit", before=before, after=after, send=True, channel=log_channel
@@ -890,8 +1045,15 @@ class BasementBot(commands.Bot):
 
     async def on_reaction_add(self, reaction, user):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_add"""
+        guild = getattr(reaction.message.channel, "guild", None)
+        channel_id = getattr(reaction.message.channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(reaction.message, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "reaction_add", reaction=reaction, user=user, send=True, channel=log_channel
@@ -899,8 +1061,15 @@ class BasementBot(commands.Bot):
 
     async def on_reaction_remove(self, reaction, user):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_remove"""
+        guild = getattr(reaction.message.channel, "guild", None)
+        channel_id = getattr(reaction.message.channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(reaction.message, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "reaction_remove",
@@ -912,8 +1081,15 @@ class BasementBot(commands.Bot):
 
     async def on_reaction_clear(self, message, reactions):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_clear"""
+        guild = getattr(message.channel, "guild", None)
+        channel_id = getattr(message.channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(message, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "reaction_clear",
@@ -925,6 +1101,13 @@ class BasementBot(commands.Bot):
 
     async def on_reaction_clear_emoji(self, reaction):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_clear_emoji"""
+        guild = getattr(reaction.message.channel, "guild", None)
+        channel_id = getattr(reaction.message.channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
             getattr(reaction.message, "guild", None), key="guild_events_channel"
         )
@@ -952,8 +1135,15 @@ class BasementBot(commands.Bot):
 
     async def on_guild_channel_update(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_update"""
+        guild = getattr(before, "guild", None)
+        channel_id = getattr(before, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(before, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "guild_channel_update",
@@ -965,8 +1155,15 @@ class BasementBot(commands.Bot):
 
     async def on_guild_channel_pins_update(self, channel, last_pin):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_pins_update"""
+        guild = getattr(channel, "guild", None)
+        channel_id = getattr(channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(channel, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "guild_channel_pins_update",
@@ -987,8 +1184,15 @@ class BasementBot(commands.Bot):
 
     async def on_webhooks_update(self, channel):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_webhooks_update"""
+        guild = getattr(channel, "guild", None)
+        channel_id = getattr(channel, "id", None)
+
+        config_ = await self.get_context_config(guild=guild)
+        if str(channel_id) in config_.get("private_channels", []):
+            return
+
         log_channel = await self.get_log_channel_from_guild(
-            getattr(channel, "guild", None), key="guild_events_channel"
+            guild, key="guild_events_channel"
         )
         await self.logger.event(
             "webhooks_update", channel_=channel, send=True, channel=log_channel
@@ -1010,15 +1214,6 @@ class BasementBot(commands.Bot):
         )
         await self.logger.event(
             "member_remove", member=member, send=True, channel=log_channel
-        )
-
-    async def on_member_update(self, before, after):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update"""
-        log_channel = await self.get_log_channel_from_guild(
-            getattr(before, "guild", None), key="member_events_channel"
-        )
-        await self.logger.event(
-            "member_update", before=before, after=after, send=True, channel=log_channel
         )
 
     async def on_guild_join(self, guild):

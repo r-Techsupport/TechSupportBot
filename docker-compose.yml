@@ -7,7 +7,18 @@ services:
         container_name: ${BASEMENT_BOT_CONTAINER_NAME:-basement_bot}
         environment:
             - DEBUG=0
+            - IPC_SECRET=${IPC_SECRET}
         restart: always
         stop_signal: SIGINT
+        ports:
+            - ${IPC_PORT:-8765}:8765
+            - ${IPC_MULTICAST_PORT:-20000}:20000
         volumes:
             - ${BASEMENT_BOT_HOST_CONFIG_PATH:-./config.yml}:/var/basement_bot/config.yml
+        networks:
+            - ipc
+            - default
+        
+networks: 
+    ipc:
+        external: true

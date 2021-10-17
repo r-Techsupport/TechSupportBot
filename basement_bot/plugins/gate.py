@@ -22,6 +22,13 @@ def setup(bot):
         default=[],
     )
     config.add(
+        key="intro_message",
+        datatype="str",
+        title="Server Gate intro message",
+        description="The message that's sent when running the intro message command",
+        default="Welcome to our server! 👋 Please read the rules then type agree below to verify yourself",
+    )
+    config.add(
         key="welcome_message",
         datatype="str",
         title="Server Gate welcome message",
@@ -53,7 +60,7 @@ class ServerGate(base.MatchCog):
 
         return ctx.channel.id == int(config.plugins.gate.channel.value)
 
-    async def response(self, config, ctx, content):
+    async def response(self, config, ctx, content, _):
         prefix = await self.bot.get_prefix(ctx.message)
 
         is_admin = await self.bot.is_bot_admin(ctx)
@@ -91,3 +98,30 @@ class ServerGate(base.MatchCog):
                 roles.append(role)
 
         return roles
+
+    @commands.group(
+        name="gate",
+        brief="Executes a gate command",
+        description="Executes a gate command",
+    )
+    async def gate_command(self, ctx):
+        pass
+
+    @commands.has_permissions(manage_messages=True)
+    @commands.guild_only()
+    @gate_command.command(
+        name="intro",
+        brief="Generates a gate intro message",
+        description="Generates the configured gate intro message",
+        usage="[query]",
+    )
+    async def intro_message(self, ctx):
+        config = await self.bot.get_context_config(ctx)
+
+        if ctx.channel.id != int(config.plugins.gate.channel.value):
+            await self.bot.send_with_mention(
+                ctx, "That command is only usable in the gate channel"
+            )
+            return
+
+        await ctx.channel.send(config.plugins.gate.intro_message.value)

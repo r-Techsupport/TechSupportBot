@@ -21,41 +21,61 @@ class DiscordRelay(base.MatchCog):
         self.channels = list(self.bot.config.special.relay.channel_map.values())
         self.bot.plugin_api.plugins.relay.memory.channels = self.channels
 
+    @commands.Cog.listener()
+    async def on_raw_message_edit(self, payload):
+        channel = self.bot.get_channel(payload.channel_id)
+        if not channel:
+            return
+
+        if not channel.id in self.channels:
+            return
+
+        message = await channel.fetch_message(payload.message_id)
+        if not message:
+            return
+
+        if message.author.bot:
+            return
+
+        payload = self.serialize(
+            "message",
+            message,
+            alternate_content=f"{message.content}** (message edited)",
+        )
+
+        await self.publish(payload, message.guild)
+
     async def match(self, _, ctx, __):
         if ctx.channel.id in self.channels:
             return True
         return False
 
-    async def response(self, _, ctx, __):
-        ctx_data = munch.Munch()
-
-        ctx_data.message = copy.copy(ctx.message)
-        ctx_data.author = ctx.author
-        ctx_data.channel = ctx.channel
-
-        ctx_data.message.content = self.bot.sub_mentions_for_usernames(
-            ctx_data.message.content
+    async def response(self, _, ctx, __, ___):
+        payload = self.serialize(
+            "message",
+            ctx.message,
+            alternate_content=self.bot.sub_mentions_for_usernames(ctx.message.content),
         )
 
-        payload = self.serialize("message", ctx_data)
+        await self.publish(payload, ctx.message.guild)
 
+    async def publish(self, payload, guild):
         try:
             await self.bot.rabbit_publish(
                 payload, self.bot.config.special.relay.send_queue
             )
         except Exception as e:
             log_channel = await self.bot.get_log_channel_from_guild(
-                ctx.guild, "logging_channel"
+                guild, "logging_channel"
             )
             await self.bot.logger.error(
                 "Could not publish Discord event to relay broker",
-                e,
+                exception=e,
                 channel=log_channel,
-                critical=True,
             )
 
     @staticmethod
-    def serialize(type_, ctx):
+    def serialize(type_, message, alternate_content=None):
         data = munch.Munch()
 
         # event data
@@ -65,24 +85,21 @@ class DiscordRelay(base.MatchCog):
         data.event.time = datetime.datetime.now(datetime.timezone.utc).strftime(
             "%Y-%m-%d %H:%M:%S.%f"
         )
-        data.event.content = ctx.message.content
-        data.event.command = None
-        data.event.attachments = [
-            attachment.url for attachment in ctx.message.attachments
-        ]
+        data.event.content = alternate_content or message.content
+        data.event.attachments = [attachment.url for attachment in message.attachments]
 
         # author data
         data.author = munch.Munch()
-        data.author.username = ctx.author.name
-        data.author.id = ctx.author.id
-        data.author.nickname = ctx.author.display_name
-        data.author.discriminator = ctx.author.discriminator
-        data.author.is_bot = ctx.author.bot
-        data.author.top_role = str(ctx.author.top_role)
+        data.author.username = message.author.name
+        data.author.id = message.author.id
+        data.author.nickname = message.author.display_name
+        data.author.discriminator = message.author.discriminator
+        data.author.is_bot = message.author.bot
+        data.author.top_role = str(message.author.top_role)
 
         # permissions data
         data.author.permissions = munch.Munch()
-        discord_permissions = ctx.author.permissions_in(ctx.channel)
+        discord_permissions = message.author.permissions_in(message.channel)
         data.author.permissions.kick = discord_permissions.kick_members
         data.author.permissions.ban = discord_permissions.ban_members
         data.author.permissions.unban = discord_permissions.ban_members
@@ -90,13 +107,13 @@ class DiscordRelay(base.MatchCog):
 
         # server data
         data.server = munch.Munch()
-        data.server.name = ctx.author.guild.name
-        data.server.id = ctx.author.guild.id
+        data.server.name = message.author.guild.name
+        data.server.id = message.author.guild.id
 
         # channel data
         data.channel = munch.Munch()
-        data.channel.name = ctx.channel.name
-        data.channel.id = ctx.channel.id
+        data.channel.name = message.channel.name
+        data.channel.id = message.channel.id
 
         # non-lossy
         as_json = data.toJSON()
@@ -112,7 +129,7 @@ class IRCReceiver(base.LoopCog):
     async def loop_preconfig(self):
         self.channels = list(self.bot.config.special.relay.channel_map.values())
 
-    async def execute(self, _config, _guild):
+    async def execute(self, _config, guild):
         try:
             await self.bot.rabbit_consume(
                 self.bot.config.special.relay.recv_queue,
@@ -122,7 +139,7 @@ class IRCReceiver(base.LoopCog):
             )
         except Exception as e:
             log_channel = await self.bot.get_log_channel_from_guild(
-                self, ctx.guild, "log_channel"
+                guild, "log_channel"
             )
             await self.bot.logger.error(
                 "Could not consume IRC event from relay broker (will restart consuming in {self.DEFAULT_WAIT} seconds)",
@@ -145,7 +162,7 @@ class IRCReceiver(base.LoopCog):
 
         if data.event.type == "quit":
             for channel_id in self.channels:
-                channel = self.bot.get_channel(channel_id)
+                channel = self.bot.get_channel(int(channel_id))
                 if not channel:
                     continue
                 await channel.send(message)
@@ -158,20 +175,21 @@ class IRCReceiver(base.LoopCog):
 
         guild = self.bot.get_guild_from_channel_id(channel.id)
 
-        message = self._add_mentions(message, guild)
+        message = self._add_mentions(message, guild, channel)
 
         await channel.send(message)
 
     @staticmethod
-    def _add_mentions(message, guild):
+    def _add_mentions(message, guild, channel):
         new_message = ""
         for word in message.split(" "):
             member = guild.get_member_named(word)
             if member:
-                new_message += f"{member.mention} "
-            else:
-                new_message += f"{word} "
-
+                channel_permissions = channel.permissions_for(member)
+                if channel_permissions.read_messages:
+                    new_message += f"{member.mention} "
+                    continue
+            new_message += f"{word} "
         return new_message
 
     def _get_channel(self, data):
@@ -179,7 +197,7 @@ class IRCReceiver(base.LoopCog):
             if channel_id == self.bot.config.special.relay.channel_map.get(
                 data.channel.name
             ):
-                return self.bot.get_channel(channel_id)
+                return self.bot.get_channel(int(channel_id))
 
     def deserialize(self, body):
         deserialized = munch.Munch.fromJSON(body)
@@ -202,15 +220,12 @@ class IRCReceiver(base.LoopCog):
         return False
 
     def process_message(self, data):
-        if data.event.type in ["message", "factoid"]:
+        if data.event.type == "message":
             return self._format_chat_message(data)
 
         return self._format_event_message(data)
 
     def _format_chat_message(self, data):
-        data.event.content = data.event.content.replace("@everyone", "everyone")
-        data.event.content = data.event.content.replace("@here", "here")
-
         return f"{self.IRC_LOGO} `{self._get_permissions_label(data.author.permissions)}{data.author.nickname}` {data.event.content}"
 
     def _format_event_message(self, data):
