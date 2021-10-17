@@ -1,10 +1,7 @@
 """Module for custom help commands.
 """
 
-import inspect
-
 import base
-import discord
 from discord.ext import commands
 
 
@@ -15,6 +12,13 @@ class Raw(base.BaseCog):
 
     @commands.command(name="raw")
     async def raw_command(self, ctx):
+        """Executes raw uploaded Python code.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.ext.Context): the context object for the message
+        """
         if not ctx.message.attachments:
             await self.bot.send_with_mention(ctx, "No Python code found")
             return
@@ -24,15 +28,21 @@ class Raw(base.BaseCog):
 
         try:
             await self.aexec(py_code)
-        except Exception as exception:
-            await self.bot.send_with_mention(ctx, f"Error: ```{exception}```")
+        except Exception as e:
+            await self.bot.send_with_mention(ctx, f"Error: ```{e}```")
             return
 
         await self.bot.send_with_mention(ctx, self.bot.CONFIRM_YES_EMOJI)
 
     async def aexec(self, code):
+        """Uses exec to define a custom async function, and then awaits it.
+
+        parameters:
+            code (str): the raw Python code to exec (including async)
+        """
         # Make an async function with the code and `exec` it
-        exec(f"async def __ex(self): " + "".join(f"\n {l}" for l in code.split("\n")))
+        # pylint: disable=exec-used
+        exec("async def __ex(self): " + "".join(f"\n {l}" for l in code.split("\n")))
 
         # Get `__ex` from local variables, call it and return the result
         return await locals()["__ex"](self)
