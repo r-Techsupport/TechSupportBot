@@ -30,7 +30,7 @@ class AdminControl(base.BaseCog):
 
     @decorate.with_typing
     @plugin_group.command(name="status")
-    async def plugin_status(self, ctx, *, plugin_name: str = None):
+    async def plugin_status(self, ctx, *, plugin_name: str):
         """Gets the status of the bot plugins.
 
         This is a command and should be accessed via Discord.
@@ -39,36 +39,13 @@ class AdminControl(base.BaseCog):
             ctx (discord.ext.Context): the context object for the message
             plugin_name (str): the name of the plugin
         """
-        status_data = ctx.bot.plugin_api.get_status()
+        status_data = ctx.bot.plugin_api.get_status(plugin_name)
 
-        error = status_data.get("error")
-        if error:
-            await self.bot.send_with_mention(ctx, f"Error: {error}")
-            return
-
-        if plugin_name:
-            status = status_data.get(plugin_name)
-            if not status:
-                await self.bot.send_with_mention(ctx, "Plugin not found!")
-                return
-
-            await self.bot.send_with_mention(ctx, f"Plugin is {status}")
-            return
-
-        embeds = []
-        field_counter = 1
-        for index, key in enumerate(list(status_data.keys())):
-            embed = (
-                discord.Embed(title="Plugin Status") if field_counter == 1 else embed
-            )
-            embed.add_field(name=key, value=status_data[key], inline=False)
-            if field_counter == 5 or index == len(status_data) - 1:
-                embeds.append(embed)
-                field_counter = 1
-            else:
-                field_counter += 1
-
-        self.bot.task_paginate(ctx, embeds)
+        embed = discord.Embed(
+            title=f"Plugin status for `{plugin_name}`",
+            description=status_data.status if status_data else "not found",
+        )
+        await self.bot.send_with_mention(ctx, embed=embed)
 
     @decorate.with_typing
     @plugin_group.command(name="load")

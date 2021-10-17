@@ -330,7 +330,7 @@ class BasementBot(commands.Bot):
         return False
 
     async def reset_config_cache(self):
-        """Deletes the guild config cache on a peridodic basis."""
+        """Deletes the guild config cache on a periodic basis."""
         while True:
             await self.logger.debug("Resetting guild config cache")
             self.config_cache = collections.defaultdict(dict)
