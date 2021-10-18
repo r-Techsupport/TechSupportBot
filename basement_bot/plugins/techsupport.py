@@ -7,10 +7,37 @@ import munch
 
 
 def setup(bot):
-    bot.process_plugin_setup(cogs=[CDIParser, SpeccyParser, HWInfoParser])
+    config = bot.PluginConfig()
+    config.add(
+        key="confirm_roles",
+        datatype="list",
+        title="Confirm roles",
+        description="List of role names able to confirm parses",
+        default=[],
+    )
+
+    bot.process_plugin_setup(
+        cogs=[CDIParser, SpeccyParser, HWInfoParser], config=config
+    )
 
 
-class CDIParser(base.MatchCog):
+class BaseParser(base.MatchCog):
+    async def confirm(self, ctx, message, config):
+        role_names = config.plugins.techsupport.confirm_roles.value
+        roles = []
+        for role_name in role_names:
+            role = discord.utils.get(ctx.guild.roles, name=role_name)
+            if role:
+                roles.append(role)
+
+        confirmed = await self.bot.confirm(
+            ctx, message, bypass=roles, delete_after=True
+        )
+
+        return confirmed
+
+
+class CDIParser(BaseParser):
 
     API_URL = "http://134.122.122.133"
     ICON_URL = "https://cdn.icon-icons.com/icons2/24/PNG/256/harddiskdrive_hardware_discodur_2522.png"
@@ -26,19 +53,17 @@ class CDIParser(base.MatchCog):
 
         return False
 
-    async def response(self, _, ctx, __, result):
-        confirmed = await self.bot.confirm(
+    async def response(self, config, ctx, __, result):
+        confirmed = await self.confirm(
             ctx,
             "Is this a Crystal Disk Info (CDI) file?",
-            delete_after=True,
+            config,
         )
         if not confirmed:
             return
 
-        confirmed = await self.bot.confirm(
-            ctx,
-            "Great! Would you like me to parse the results?",
-            delete_after=True,
+        confirmed = await self.confirm(
+            ctx, "Great! Would you like me to parse the results?", config
         )
         if not confirmed:
             return
@@ -82,10 +107,10 @@ class CDIParser(base.MatchCog):
 
         return await found_message.delete()
 
-    async def call_api(self, speccy_id):
+    async def call_api(self, cdi_link):
         response = await self.bot.http_call(
             "get",
-            f"{self.API_URL}/?cdi={speccy_id}&json=true",
+            f"{self.API_URL}/?cdi={cdi_link}&json=true",
             get_raw_response=True,
         )
         return response
@@ -117,7 +142,7 @@ class CDIParser(base.MatchCog):
         return embed
 
 
-class SpeccyParser(base.MatchCog):
+class SpeccyParser(BaseParser):
 
     URL_PATTERN = r"http://speccy.piriform.com/results/[a-zA-Z0-9]+"
     API_URL = "http://134.122.122.133"
@@ -127,15 +152,13 @@ class SpeccyParser(base.MatchCog):
         matches = re.findall(self.URL_PATTERN, content, re.MULTILINE)
         return matches
 
-    async def response(self, _, ctx, __, result):
+    async def response(self, config, ctx, __, result):
         speccy_id = result[0].split("/")[-1]
         if not speccy_id:
             return
 
-        confirmed = await self.bot.confirm(
-            ctx,
-            "Speccy link detected. Would you like me to parse the results?",
-            delete_after=True,
+        confirmed = await self.confirm(
+            ctx, "Speccy link detected. Would you like me to parse the results?", config
         )
         if not confirmed:
             return
@@ -258,7 +281,7 @@ class SpeccyParser(base.MatchCog):
         return result
 
 
-class HWInfoParser(base.MatchCog):
+class HWInfoParser(BaseParser):
 
     API_URL = "http://134.122.122.133"
     ICON_URL = (
@@ -276,11 +299,11 @@ class HWInfoParser(base.MatchCog):
 
         return False
 
-    async def response(self, _, ctx, __, result):
-        confirmed = await self.bot.confirm(
+    async def response(self, config, ctx, __, result):
+        confirmed = await self.confirm(
             ctx,
             "If this is a HWINFO log file, I can try parsing it. Would you like me to do that?",
-            delete_after=True,
+            config,
         )
         if not confirmed:
             return

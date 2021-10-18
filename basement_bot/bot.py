@@ -836,7 +836,7 @@ class BasementBot(commands.Bot):
                 pass
 
             # move forward
-            if str(reaction) == self.PAGINATE_RIGHT_EMOJI and index < len(embeds) - 1:
+            elif str(reaction) == self.PAGINATE_RIGHT_EMOJI and index < len(embeds) - 1:
                 index += 1
                 await message.edit(**get_args(index))
 
@@ -846,14 +846,12 @@ class BasementBot(commands.Bot):
                 await message.edit(**get_args(index))
 
             # stop pagination
-            elif str(reaction) == self.PAGINATE_STOP_EMOJI and user.id == ctx.author.id:
+            elif str(reaction) == self.PAGINATE_STOP_EMOJI:
                 await self.logger.debug("Stopping pagination message at user request")
                 break
 
             # delete embed
-            elif (
-                str(reaction) == self.PAGINATE_DELETE_EMOJI and user.id == ctx.author.id
-            ):
+            elif str(reaction) == self.PAGINATE_DELETE_EMOJI:
                 await self.logger.debug("Deleting pagination message at user request")
                 await message.delete()
                 break
@@ -874,7 +872,7 @@ class BasementBot(commands.Bot):
         """
         self.loop.create_task(self.paginate(*args, **kwargs))
 
-    async def confirm(self, ctx, title, timeout=60, delete_after=False):
+    async def confirm(self, ctx, title, timeout=60, delete_after=False, bypass=None):
         """Waits on a confirm reaction from a given user.
 
         parameters:
@@ -898,7 +896,9 @@ class BasementBot(commands.Bot):
             except Exception:
                 break
 
-            if user.id != ctx.author.id:
+            if user.id != ctx.author.id and not any(
+                role in user.roles for role in bypass
+            ):
                 pass
 
             elif str(reaction) == self.CONFIRM_YES_EMOJI:
