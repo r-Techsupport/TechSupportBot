@@ -896,8 +896,12 @@ class BasementBot(commands.Bot):
             except Exception:
                 break
 
-            if user.id != ctx.author.id and not any(
-                role in user.roles for role in bypass
+            member = ctx.guild.get_member(user.id)
+            if not member:
+                pass
+
+            elif user.id != ctx.author.id and not any(
+                role in getattr(member, "roles", []) for role in bypass
             ):
                 pass
 
