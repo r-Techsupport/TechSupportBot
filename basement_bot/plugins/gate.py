@@ -77,7 +77,7 @@ class ServerGate(base.MatchCog):
                     ctx.guild,
                     "logging_channel",
                     "warning",
-                    f"Roles not configured for gate plugin - ignoring message",
+                    f"No roles to give user in gate plugin channel - ignoring message",
                     send=True,
                 )
                 return

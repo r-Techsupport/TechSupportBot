@@ -81,9 +81,11 @@ class Helper(base.BaseCog):
 
         command_prefix = await self.bot.get_prefix(ctx.message)
 
+        commands_found = False
         for cog_name in plugin_data.cogs:
             cog = self.bot.get_cog(cog_name)
             for command in cog.walk_commands():
+                commands_found = True
                 if command.full_parent_name == "":
                     syntax = f"{command_prefix}{command.name}"
                 else:
@@ -96,6 +98,9 @@ class Helper(base.BaseCog):
                 embed.add_field(
                     name=f"`{syntax} {usage}`", value=command.description, inline=False
                 )
+
+        if not commands_found:
+            embed.description = "There are no commands for this plugin"
 
         return embed
 
