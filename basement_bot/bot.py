@@ -280,7 +280,9 @@ class BasementBot(commands.Bot):
             endpoint (str): the endpoint called
             exception (Exception): the exception object associated with the error
         """
-        await self.logger.error(f"IPC error: {exception}", exception=exception)
+        await self.logger.error(
+            f"IPC error: {exception}", exception=exception, send=True
+        )
 
     async def get_owner(self):
         """Gets the owner object from the bot application."""
