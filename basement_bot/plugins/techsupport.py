@@ -375,7 +375,9 @@ class HWInfoParser(BaseParser):
             toc_content += f"**{key.upper()}**: {value}\n"
 
         embed.add_field(
-            name="__Temperatures of Concern__", value=toc_content, inline=False
+            name="__Temperatures of Concern__",
+            value=toc_content or "None",
+            inline=False,
         )
 
         embed.set_thumbnail(url=self.ICON_URL)
