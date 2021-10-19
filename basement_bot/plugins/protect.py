@@ -1,7 +1,7 @@
+import asyncio
 import collections
 import datetime
 import io
-from typing import Type
 
 import base
 import discord
@@ -120,9 +120,39 @@ class Protector(base.MatchCog):
     CLIPBOARD_ICON_URL = (
         "https://icon-icons.com/icons2/203/PNG/128/diagram-30_24487.png"
     )
+    CACHE_CLEAN_MINUTES = 0.0833333
 
     async def preconfig(self):
-        self.string_alert_cache = collections.defaultdict(dict)
+        self.string_alert_cache = collections.defaultdict(
+            lambda: collections.defaultdict(dict)
+        )
+        self.cache_lock = asyncio.Lock()
+        await self.bot.loop.create_task(self.cache_clean_loop())
+
+    async def clean_string_alert_cache(self):
+        for guild_cache in self.string_alert_cache.values():
+            for user_cache in guild_cache.values():
+                for expire_time in user_cache.values():
+                    if datetime.datetime.utcnow() > expire_time:
+                        await self.bot.logger.debug(
+                            "Clearing protect plugin trigger cache since time expired"
+                        )
+                        del expire_time
+                # if we've deleted everything in the user cache, delete the user key too
+                if len(user_cache) == 0:
+                    await self.bot.logger.debug(
+                        "Clearing protect plugin user cache since no triggers found"
+                    )
+                    del user_cache
+
+    async def cache_clean_loop(self):
+        while True:
+            async with self.cache_lock:
+                await self.clean_string_alert_cache()
+            await self.bot.logger.debug(
+                "Sleeping until next protect plugin cache clean cycle"
+            )
+            await asyncio.sleep(int(self.CACHE_CLEAN_MINUTES * 60))
 
     async def match(self, config, ctx, content):
         # exit the match based on exclusion parameters
@@ -383,9 +413,8 @@ class Protector(base.MatchCog):
             f"Message contained trigger: {filter_config.trigger}",
         )
 
-        max_seconds = config.plugins.protect.string_alert_cache_time.value
         # check if this response data has triggered a response recently
-        if self.user_cached(ctx, filter_config.trigger, max_seconds):
+        if self.user_cached(ctx, filter_config.trigger):
             return
 
         if filter_config.delete:
@@ -395,22 +424,33 @@ class Protector(base.MatchCog):
         else:
             await self.bot.send_with_mention(ctx, filter_config.message)
 
-        self.cache_user(ctx, filter_config.trigger)
+        async with self.cache_lock:
+            await self.cache_user(config, ctx, filter_config.trigger)
 
-    def cache_user(self, ctx, trigger):
-        user_cache = self.string_alert_cache[ctx.author.id]
-        user_cache[trigger] = datetime.datetime.utcnow()
+    async def cache_user(self, config, ctx, trigger):
+        try:
+            user_cache = self.string_alert_cache[ctx.guild.id][ctx.author.id]
+            user_cache[trigger] = datetime.datetime.utcnow() + datetime.timedelta(
+                seconds=config.plugins.protect.string_alert_cache_time.value
+            )
 
-    def user_cached(self, ctx, trigger, max_seconds=600):
-        user_cache = self.string_alert_cache[ctx.author.id]
-        trigger_time = user_cache.get(trigger)
+        except Exception as e:
+            await self.bot.guild_log(
+                ctx.guild,
+                "logging_channel",
+                "error",
+                "Could not cache trigger response user: {e}",
+                send=True,
+            )
 
-        if not trigger_time:
+    def user_cached(self, ctx, trigger):
+        user_cache = self.string_alert_cache[ctx.guild.id][ctx.author.id]
+        expire_time = user_cache.get(trigger)
+
+        if not expire_time:
             return False
 
-        duration = (datetime.datetime.utcnow() - trigger_time).seconds
-
-        if duration > max_seconds:
+        if datetime.datetime.utcnow() > expire_time:
             return False
 
         return True
