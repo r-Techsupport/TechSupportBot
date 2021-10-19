@@ -120,7 +120,7 @@ class Protector(base.MatchCog):
     CLIPBOARD_ICON_URL = (
         "https://icon-icons.com/icons2/203/PNG/128/diagram-30_24487.png"
     )
-    CACHE_CLEAN_MINUTES = 0.0833333
+    CACHE_CLEAN_MINUTES = 60
 
     async def preconfig(self):
         self.string_alert_cache = collections.defaultdict(
