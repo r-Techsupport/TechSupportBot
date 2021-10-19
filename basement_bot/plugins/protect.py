@@ -1,3 +1,4 @@
+import collections
 import datetime
 import io
 from typing import Type
@@ -102,6 +103,13 @@ def setup(bot):
         description="The max amount of messages allowed to be purged in one command",
         default=50,
     )
+    config.add(
+        key="string_alert_cache_time",
+        datatype="int",
+        title="String alert caching time",
+        description="The number of seconds that must pass before the same trigger response is sent to a user",
+        default=600,
+    )
 
     bot.process_plugin_setup(cogs=[Protector], config=config, models=[Warning])
 
@@ -112,6 +120,9 @@ class Protector(base.MatchCog):
     CLIPBOARD_ICON_URL = (
         "https://icon-icons.com/icons2/203/PNG/128/diagram-30_24487.png"
     )
+
+    async def preconfig(self):
+        self.string_alert_cache = collections.defaultdict(dict)
 
     async def match(self, config, ctx, content):
         # exit the match based on exclusion parameters
@@ -365,17 +376,44 @@ class Protector(base.MatchCog):
 
         if filter_config.delete:
             await ctx.message.delete()
-            await self.send_default_delete_response(
-                config, ctx, content, filter_config.message
-            )
-        else:
-            await self.bot.send_with_mention(ctx, filter_config.message)
 
         await self.send_alert(
             config,
             ctx,
             f"Message contained trigger: {filter_config.trigger}",
         )
+
+        max_seconds = config.plugins.protect.string_alert_cache_time.value
+        # check if this response data has triggered a response recently
+        if self.user_cached(ctx, filter_config.trigger, max_seconds):
+            return
+
+        if filter_config.delete:
+            await self.send_default_delete_response(
+                config, ctx, content, filter_config.message
+            )
+        else:
+            await self.bot.send_with_mention(ctx, filter_config.message)
+
+        self.cache_user(ctx, filter_config.trigger)
+
+    def cache_user(self, ctx, trigger):
+        user_cache = self.string_alert_cache[ctx.author.id]
+        user_cache[trigger] = datetime.datetime.utcnow()
+
+    def user_cached(self, ctx, trigger, max_seconds=600):
+        user_cache = self.string_alert_cache[ctx.author.id]
+        trigger_time = user_cache.get(trigger)
+
+        if not trigger_time:
+            return False
+
+        duration = (datetime.datetime.utcnow() - trigger_time).seconds
+
+        if duration > max_seconds:
+            return False
+
+        return True
 
     async def can_execute(self, ctx, target):
         if target.id == self.bot.user.id:
