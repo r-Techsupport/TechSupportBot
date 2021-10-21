@@ -808,17 +808,19 @@ class DuckHunt(base.LoopCog):
                 # can't pull the config in a non-coroutine
                 check=functools.partial(self.message_check, config, channel),
             )
-        except AsyncTimeoutError:
-            pass
+        except Exception as e:
+            await self.bot.guild_log(
+                guild,
+                "logging_channel",
+                "error",
+                "Exception thrown waiting for duckhunt input",
+                exception=e,
+            )
 
         await message.delete()
 
         if response_message:
             duration = (datetime.datetime.now() - start_time).seconds
-
-            if not getattr(response_message, "content", None):
-                return
-
             action = (
                 "befriended" if response_message.content.lower() == "bef" else "killed"
             )
@@ -884,7 +886,7 @@ class DuckHunt(base.LoopCog):
             cooldowns[message.author.id] = datetime.datetime.now()
             self.bot.loop.create_task(
                 message.author.send(
-                    f"I said to wait {config.plugins.duck.cooldown.value} seconds!"
+                    f"I said to wait {config.plugins.duck.cooldown.value} seconds! Resetting timer..."
                 )
             )
             return False

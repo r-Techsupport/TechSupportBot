@@ -78,9 +78,6 @@ class ReactionAddEvent(RelayEvent):
 
 
 class DiscordRelay(base.MatchCog):
-
-    MAX_MESSAGE_REACTION_SIZE = 30
-
     async def preconfig(self):
         self.channels = list(self.bot.config.special.relay.channel_map.values())
         self.bot.plugin_api.plugins.relay.memory.channels = self.channels

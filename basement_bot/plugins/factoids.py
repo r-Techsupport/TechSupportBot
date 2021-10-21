@@ -117,9 +117,6 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             return
 
         await factoid.delete()
-        await self.bot.send_with_mention(
-            ctx, f"Successfully deleted factoid: *{trigger}*"
-        )
 
     async def match(self, _, __, content):
         return content.startswith("?")
@@ -148,7 +145,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             ctx.guild,
             "logging_channel",
             "info",
-            f"Sending factoid: {query}",
+            f"Sending factoid: {query} (triggered by {ctx.author} in #{ctx.channel.name})",
             send=True,
         )
 
@@ -160,22 +157,25 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             await self.bot.send_with_mention(
                 ctx, content=content, embed=embed, target=user_mentioned
             )
-        except Exception:
-            await self.bot.send_with_mention(ctx, "I was unable to render that factoid")
-            return
+        except Exception as e:
+            await self.bot.guild_log(
+                ctx.guild,
+                "logging_channel",
+                "error",
+                "Could not send factoid",
+                exception=e,
+            )
+            await self.bot.send_with_mention(ctx, factoid.message)
 
         await self.dispatch_relay_factoid(config, ctx, factoid.message)
 
     def message_has_mentions(self, message):
         if message.mention_everyone:
             return True
-
         if message.role_mentions:
             return True
-
         if message.mentions:
             return True
-
         return False
 
     async def dispatch_relay_factoid(self, config, ctx, message):
@@ -283,37 +283,26 @@ class FactoidManager(base.MatchCog, base.LoopCog):
                     ] = datetime.datetime.utcnow() + datetime.timedelta(
                         minutes=sleep_duration
                     )
-                    previous_messages = await channel.history(limit=1).flatten()
-
-                    if (
-                        previous_messages[0].author.id == self.bot.user.id
-                        and previous_messages[0].content == content
-                    ):
-                        continue
 
                     await self.bot.guild_log(
                         guild,
                         "logging_channel",
                         "info",
-                        f"Sending looped factoid: {factoid_key}",
+                        f"Sending looped factoid: {factoid_key} in #{channel.name}",
                         send=True,
                     )
                     message = await channel.send(content=content, embed=embed)
-
                     context = await self.bot.get_context(message)
                     await self.dispatch_relay_factoid(config, context, factoid.message)
-
                 except Exception as e:
-                    log_channel = await self.bot.get_log_channel_from_guild(
-                        guild, "logging_channel"
-                    )
-                    await self.bot.logger.error(
-                        "Could not send looped factoid",
+                    await self.bot.guild_log(
+                        guild,
+                        "logging_channel",
+                        "error",
+                        f"Could not send looped factoid: {factoid_key} in #{channel.name}",
                         exception=e,
-                        channel=log_channel,
                         critical=True,
                     )
-                    continue
 
     # main clock for looping
     async def wait(self, _, __):
@@ -364,6 +353,9 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     )
     async def forget(self, ctx, factoid_name: str):
         await self.delete_factoid(ctx, factoid_name)
+        await self.bot.send_with_mention(
+            ctx, f"Successfully deleted factoid: *{factoid_name}*"
+        )
 
     @decorate.with_typing
     @commands.has_permissions(ban_members=True)
@@ -469,7 +461,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         channel_ids = loop_config.get("channel_ids", [])
         # check this shit out
         channels = [
-            "#" + getattr(ctx.guild.get_channel(int(channel_id)), "name", "???")
+            "#" + getattr(ctx.guild.get_channel(int(channel_id)), "name", "Unknown")
             for channel_id in channel_ids
         ]
         embed.add_field(name="Channels", value=", ".join(channels), inline=False)
@@ -478,7 +470,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             name="Next execution (UTC)",
             value=self.loop_jobs.get(ctx.guild.id, {})
             .get(factoid_name, {})
-            .get("finish_time", "???"),  # get-er-done
+            .get("finish_time", "Unknown"),  # get-er-done
         )
 
         await self.bot.send_with_mention(ctx, embed=embed)
