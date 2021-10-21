@@ -882,7 +882,11 @@ class BasementBot(commands.Bot):
             title (str): the message content to which the user reacts
             timeout (int): the number of seconds before timing out
             delete_after (bool): True if the confirmation message should be deleted
+            bypass (list[discord.Role]): the list of roles able to confirm (empty by default)
         """
+        if bypass is None:
+            bypass = []
+
         message = await self.send_with_mention(ctx, content=title, target=ctx.author)
         await message.add_reaction(self.CONFIRM_YES_EMOJI)
         await message.add_reaction(self.CONFIRM_NO_EMOJI)
