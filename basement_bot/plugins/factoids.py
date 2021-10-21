@@ -43,6 +43,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
     async def loop_preconfig(self):
         self.loop_jobs = collections.defaultdict(dict)
+        await self.bot.logger.info("Loading factoid jobs", send=True)
         await self.load_jobs()
         self.cache_update_time = datetime.datetime.utcnow() + datetime.timedelta(
             minutes=self.LOOP_UPDATE_MINUTES
@@ -193,8 +194,6 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         await relay_cog.response(config, ctx, message, "")
 
     async def load_jobs(self):
-        await self.bot.logger.info("Loading factoid jobs", send=True)
-
         factoids = await self.get_all_factoids()
 
         if not factoids:
