@@ -2,6 +2,7 @@ import random
 
 import base
 import decorate
+import util
 from discord.ext import commands
 
 
@@ -29,7 +30,7 @@ class Giphy(base.BaseCog):
         usage="[query]",
     )
     async def giphy(self, ctx, *, query: str):
-        response = await self.bot.http_call(
+        response = await util.http_call(
             "get",
             self.GIPHY_URL.format(
                 query.replace(" ", "+"),
@@ -40,9 +41,7 @@ class Giphy(base.BaseCog):
 
         data = response.get("data")
         if not data:
-            await self.bot.send_with_mention(
-                ctx, f"No search results found for: *{query}*"
-            )
+            await util.send_with_mention(ctx, f"No search results found for: *{query}*")
             return
 
         embeds = []

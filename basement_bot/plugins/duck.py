@@ -7,6 +7,7 @@ from concurrent.futures._base import TimeoutError as AsyncTimeoutError
 import base
 import decorate
 import discord
+import util
 from discord import Color as embed_colors
 from discord.ext import commands
 
@@ -958,14 +959,14 @@ class DuckHunt(base.LoopCog):
             user = ctx.message.author
 
         if user.bot:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "If it looks like a duck, quacks like a duck, it's a duck!"
             )
             return
 
         duck_user = await self.get_duck_user(user.id, ctx.guild.id)
         if not duck_user:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "That user has not partcipated in the duck hunt"
             )
             return
@@ -976,7 +977,7 @@ class DuckHunt(base.LoopCog):
         embed.add_field(name="Kills", value=duck_user.kill_count)
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
@@ -996,7 +997,7 @@ class DuckHunt(base.LoopCog):
         )
 
         if not duck_users:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "It appears nobody has befriended any ducks"
             )
             return
@@ -1040,9 +1041,7 @@ class DuckHunt(base.LoopCog):
         )
 
         if not duck_users:
-            await self.bot.send_with_mention(
-                ctx, "It appears nobody has killed any ducks"
-            )
+            await util.send_with_mention(ctx, "It appears nobody has killed any ducks")
             return
 
         field_counter = 1

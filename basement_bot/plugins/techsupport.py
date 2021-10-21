@@ -4,6 +4,7 @@ import re
 import base
 import discord
 import munch
+import util
 
 
 def setup(bot):
@@ -68,9 +69,7 @@ class CDIParser(BaseParser):
         if not confirmed:
             return
 
-        found_message = await self.bot.send_with_mention(
-            ctx, "Parsing CDI results now..."
-        )
+        found_message = await util.send_with_mention(ctx, "Parsing CDI results now...")
 
         api_response = await self.call_api(result)
 
@@ -78,7 +77,7 @@ class CDIParser(BaseParser):
             response_text = await api_response.text()
             response_data = munch.munchify(json.loads(response_text))
         except Exception as e:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I was unable to convert the parse results to JSON"
             )
             await self.bot.guild_log(
@@ -93,9 +92,9 @@ class CDIParser(BaseParser):
 
         try:
             embed = await self.generate_embed(ctx, response_data)
-            await self.bot.send_with_mention(ctx, embed=embed)
+            await util.send_with_mention(ctx, embed=embed)
         except Exception as e:
-            await self.bot.send_with_mention(ctx, "I had trouble reading the CDI logs")
+            await util.send_with_mention(ctx, "I had trouble reading the CDI logs")
             await self.bot.guild_log(
                 ctx.guild,
                 "logging_channel",
@@ -108,7 +107,7 @@ class CDIParser(BaseParser):
         return await found_message.delete()
 
     async def call_api(self, cdi_link):
-        response = await self.bot.http_call(
+        response = await util.http_call(
             "get",
             f"{self.API_URL}/?cdi={cdi_link}&json=true",
             get_raw_response=True,
@@ -163,7 +162,7 @@ class SpeccyParser(BaseParser):
         if not confirmed:
             return
 
-        found_message = await self.bot.send_with_mention(
+        found_message = await util.send_with_mention(
             ctx, "Parsing Speccy results now..."
         )
 
@@ -188,9 +187,9 @@ class SpeccyParser(BaseParser):
         if parse_status == "Parsed":
             try:
                 embed = await self.generate_embed(ctx, response_data)
-                await self.bot.send_with_mention(ctx, embed=embed)
+                await util.send_with_mention(ctx, embed=embed)
             except Exception as e:
-                await self.bot.send_with_mention(
+                await util.send_with_mention(
                     ctx, "I had trouble reading the Speccy results"
                 )
                 await self.bot.guild_log(
@@ -202,7 +201,7 @@ class SpeccyParser(BaseParser):
                     exception=e,
                 )
         else:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx,
                 f"I was unable to parse that Speccy link (parse status = {parse_status})",
             )
@@ -210,7 +209,7 @@ class SpeccyParser(BaseParser):
         await found_message.delete()
 
     async def call_api(self, speccy_id):
-        response = await self.bot.http_call(
+        response = await util.http_call(
             "get",
             f"{self.API_URL}/?speccy={speccy_id}&json=true",
             get_raw_response=True,
@@ -308,9 +307,7 @@ class HWInfoParser(BaseParser):
         if not confirmed:
             return
 
-        found_message = await self.bot.send_with_mention(
-            ctx, "Parsing HWInfo logs now..."
-        )
+        found_message = await util.send_with_mention(ctx, "Parsing HWInfo logs now...")
 
         api_response = await self.call_api(result)
 
@@ -318,7 +315,7 @@ class HWInfoParser(BaseParser):
             response_text = await api_response.text()
             response_data = munch.munchify(json.loads(response_text))
         except Exception as e:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I was unable to convert the parse results to JSON"
             )
             await self.bot.guild_log(
@@ -333,11 +330,9 @@ class HWInfoParser(BaseParser):
 
         try:
             embed = await self.generate_embed(ctx, response_data)
-            await self.bot.send_with_mention(ctx, embed=embed)
+            await util.send_with_mention(ctx, embed=embed)
         except Exception as e:
-            await self.bot.send_with_mention(
-                ctx, "I had trouble reading the HWInfo logs"
-            )
+            await util.send_with_mention(ctx, "I had trouble reading the HWInfo logs")
             await self.bot.guild_log(
                 ctx.guild,
                 "logging_channel",
@@ -350,7 +345,7 @@ class HWInfoParser(BaseParser):
         return await found_message.delete()
 
     async def call_api(self, hwinfo_url):
-        response = await self.bot.http_call(
+        response = await util.http_call(
             "get",
             f"{self.API_URL}/?hwinfo={hwinfo_url}&json=true",
             get_raw_response=True,

@@ -2,6 +2,7 @@ import base
 import decorate
 import discord
 import munch
+import util
 from discord.ext import commands
 
 
@@ -28,18 +29,18 @@ class Weather(base.BaseCog):
     async def weather(
         self, ctx, city_name: str, state_code: str = None, country_code: str = None
     ):
-        response = await self.bot.http_call(
+        response = await util.http_call(
             "get", self.get_url([city_name, state_code, country_code])
         )
 
         embed = self.generate_embed(munch.munchify(response))
         if not embed:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I could not find the weather from your search"
             )
             return
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)
 
     def generate_embed(self, response):
         try:

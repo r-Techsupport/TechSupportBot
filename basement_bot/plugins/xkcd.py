@@ -2,6 +2,7 @@ import random
 
 import base
 import discord
+import util
 from discord.ext import commands
 
 
@@ -29,14 +30,12 @@ class XKCD(base.BaseCog):
     async def random_comic(self, ctx):
         most_recent_comic_data = await self.api_call()
         if most_recent_comic_data.status_code != 200:
-            await self.bot.send_with_mention(
-                ctx, "I had trouble looking up XKCD's comics"
-            )
+            await util.send_with_mention(ctx, "I had trouble looking up XKCD's comics")
             return
 
         max_number = most_recent_comic_data.get("num")
         if not max_number:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I could not determine the max XKCD number"
             )
             return
@@ -45,19 +44,19 @@ class XKCD(base.BaseCog):
 
         random_comic_data = await self.api_call(number=comic_number)
         if random_comic_data.status_code != 200:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, f"I had trouble calling a random comic (#{comic_number})"
             )
             return
 
         embed = self.generate_embed(random_comic_data)
         if not embed:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, f"I had trouble calling getting the correct XKCD info"
             )
             return
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)
 
     @xkcd.command(
         name="number",
@@ -69,23 +68,21 @@ class XKCD(base.BaseCog):
     async def numbered_comic(self, ctx, number: int):
         comic_data = await self.api_call(number=number)
         if comic_data.status_code != 200:
-            await self.bot.send_with_mention(
-                ctx, "I had trouble looking up XKCD's comics"
-            )
+            await util.send_with_mention(ctx, "I had trouble looking up XKCD's comics")
             return
 
         embed = self.generate_embed(comic_data)
         if not embed:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, f"I had trouble calling getting the correct XKCD info"
             )
             return
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)
 
     async def api_call(self, number=None):
         url = self.SPECIFIC_API_URL % (number) if number else self.MOST_RECENT_API_URL
-        response = await self.bot.http_call("get", url)
+        response = await util.http_call("get", url)
 
         return response
 

@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import io
 import json
 
@@ -7,6 +6,7 @@ import base
 import decorate
 import discord
 import emoji
+import util
 from discord.ext import commands
 
 
@@ -25,23 +25,23 @@ class PollGenerator(base.BaseCog):
         timeout = request_body.get("timeout")
 
         if not question:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I did not find a poll question (`question` key)"
             )
             return None
         elif not isinstance(question, str):
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I need the poll question to be a string (`question` key)"
             )
             return None
 
         if not isinstance(options, list):
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I need the poll options to be a list (`question` key)"
             )
             return None
         elif len(options) < 2 or len(options) > max_options:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, f"I need between 2 and {max_options} options! (`options` key)"
             )
             return None
@@ -94,7 +94,7 @@ class ReactionPoller(PollGenerator):
             io.StringIO(json.dumps(self.EXAMPLE_DATA, indent=4)),
             filename="poll_example.json",
         )
-        await self.bot.send_with_mention(ctx, file=json_file)
+        await util.send_with_mention(ctx, file=json_file)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
@@ -106,18 +106,16 @@ class ReactionPoller(PollGenerator):
         usage="|json-upload|",
     )
     async def generate(self, ctx):
-        request_body = await self.bot.get_json_from_attachments(ctx.message)
+        request_body = await util.get_json_from_attachments(ctx.message)
         if not request_body:
-            await self.bot.send_with_mention(
-                ctx, "I couldn't find any data in your upload"
-            )
+            await util.send_with_mention(ctx, "I couldn't find any data in your upload")
             return
 
         request_body = await self.validate_data(ctx, request_body)
         if not request_body:
             return
 
-        message = await self.bot.send_with_mention(ctx, "Poll loading...")
+        message = await util.send_with_mention(ctx, "Poll loading...")
 
         display_timeout = (
             request_body.timeout
@@ -142,14 +140,14 @@ class ReactionPoller(PollGenerator):
             ctx, message, request_body.timeout, request_body.options
         )
         if results is None:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I ran into an issue grabbing the poll results..."
             )
             try:
                 await message.edit(content="*Poll aborted!*", embed=None)
                 await message.clear_reactions()
             except discord.NotFound:
-                await self.bot.send_with_mention(
+                await util.send_with_mention(
                     ctx,
                     "I could not find the poll message. It might have been deleted?",
                 )
@@ -159,7 +157,7 @@ class ReactionPoller(PollGenerator):
 
         total = sum(count for count in results.values())
         if total == 0:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "Nobody voted in the poll, so I won't bother showing any results"
             )
             return
@@ -174,7 +172,7 @@ class ReactionPoller(PollGenerator):
             percentage = str((count * 100) // total)
             embed.add_field(name=option, value=f"{percentage}%", inline=False)
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)
 
     async def wait_for_results(self, ctx, message, timeout, options):
         option_emojis = self.option_emojis[: len(options)]
@@ -243,7 +241,7 @@ class StrawPoller(PollGenerator):
             io.StringIO(json.dumps(self.EXAMPLE_DATA, indent=4)),
             filename="poll_example.json",
         )
-        await self.bot.send_with_mention(ctx, file=json_file)
+        await util.send_with_mention(ctx, file=json_file)
 
     @decorate.with_typing
     @commands.has_permissions(send_messages=True)
@@ -253,11 +251,9 @@ class StrawPoller(PollGenerator):
         usage="|json-upload|",
     )
     async def generate(self, ctx):
-        request_body = await self.bot.get_json_from_attachments(ctx.message)
+        request_body = await util.get_json_from_attachments(ctx.message)
         if not request_body:
-            await self.bot.send_with_mention(
-                ctx, "I couldn't find any data in your upload"
-            )
+            await util.send_with_mention(ctx, "I couldn't find any data in your upload")
             return
 
         request_body = await self.validate_data(ctx, request_body, strawpoll=True)
@@ -268,13 +264,11 @@ class StrawPoller(PollGenerator):
             "poll": {"title": request_body.question, "answers": request_body.options}
         }
 
-        response = await self.bot.http_call("post", self.API_URL, json=post_body)
+        response = await util.http_call("post", self.API_URL, json=post_body)
 
         content_id = response.get("content_id")
         if not content_id:
-            await self.bot.send_with_mention(
-                ctx, "Strawpoll did not let me create a poll"
-            )
+            await util.send_with_mention(ctx, "Strawpoll did not let me create a poll")
             return
 
-        await self.bot.send_with_mention(ctx, f"https://strawpoll.com/{content_id}")
+        await util.send_with_mention(ctx, f"https://strawpoll.com/{content_id}")

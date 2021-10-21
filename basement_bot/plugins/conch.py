@@ -2,6 +2,7 @@ import random
 
 import base
 import discord
+import util
 from discord.ext import commands
 
 
@@ -54,4 +55,4 @@ class MagicConch(base.BaseCog):
 
         embed.set_thumbnail(url=self.PIC_URL)
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)

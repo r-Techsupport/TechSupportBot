@@ -1,6 +1,7 @@
 import base
 import decorate
 import discord
+import util
 from discord.ext import commands
 
 
@@ -22,27 +23,25 @@ class ISSLocator(base.BaseCog):
     )
     async def iss(self, ctx):
         # get ISS coordinates
-        response = await self.bot.http_call("get", self.ISS_URL)
+        response = await util.http_call("get", self.ISS_URL)
         if not response:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I had trouble calling the ISS API. Maybe it's down?"
             )
             return
         coordinates = response.get("iss_position", {})
         longitude, latitude = coordinates.get("longitude"), coordinates.get("latitude")
         if not longitude or not latitude:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I couldn't find the ISS coordinates from the API response"
             )
             return
 
         # get location information from coordinates
         location = None
-        response = await self.bot.http_call(
-            "get", self.GEO_URL.format(latitude, longitude)
-        )
+        response = await util.http_call("get", self.GEO_URL.format(latitude, longitude))
         if not response:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I had trouble calling the GEO API. Maybe it's down?"
             )
             return

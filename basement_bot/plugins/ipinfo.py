@@ -1,5 +1,5 @@
 import base
-import discord
+import util
 from discord.ext import commands
 
 
@@ -19,19 +19,19 @@ class IPInfo(base.BaseCog):
         description="Gets IP info (geodata) from a given IP",
     )
     async def get_info(self, ctx, ip_address: str):
-        response = await self.bot.http_call("get", f"{self.API_URL}/{ip_address}/json")
+        response = await util.http_call("get", f"{self.API_URL}/{ip_address}/json")
 
         if not response.get("ip"):
-            await self.bot.send_with_mention(ctx, "I couldn't find that IP")
+            await util.send_with_mention(ctx, "I couldn't find that IP")
             return
 
         response.pop("readme", None)
         response.pop("status_code", None)
 
-        embed = self.bot.generate_embed_from_kwargs(
+        embed = util.generate_embed_from_kwargs(
             title=f"IP info for {ip_address}", all_inline=True, **response
         )
 
         embed.set_thumbnail(url=self.IP_ICON_URL)
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)

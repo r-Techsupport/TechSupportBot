@@ -2,6 +2,7 @@ import asyncio
 
 import base
 import discord
+import util
 from discord.ext import commands
 
 
@@ -87,7 +88,7 @@ class ServerGate(base.MatchCog):
             welcome_message = config.plugins.gate.welcome_message.value
             delete_wait = config.plugins.gate.delete_wait.value
 
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx,
                 f"{welcome_message} (this message will delete in {delete_wait} seconds)",
                 delete_after=float(delete_wait),
@@ -126,7 +127,7 @@ class ServerGate(base.MatchCog):
         config = await self.bot.get_context_config(ctx)
 
         if ctx.channel.id != int(config.plugins.gate.channel.value):
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "That command is only usable in the gate channel"
             )
             return

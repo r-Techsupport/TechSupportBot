@@ -7,6 +7,7 @@ import sys
 import base
 import decorate
 import discord
+import util
 from discord.ext import commands, ipc
 
 
@@ -45,7 +46,7 @@ class AdminControl(base.BaseCog):
             title=f"Plugin status for `{plugin_name}`",
             description=status_data.status if status_data else "not found",
         )
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)
 
     @decorate.with_typing
     @plugin_group.command(name="load")
@@ -59,7 +60,7 @@ class AdminControl(base.BaseCog):
             plugin_name (str): the name of the plugin
         """
         response = ctx.bot.plugin_api.load_plugin(plugin_name)
-        await self.bot.send_with_mention(ctx, response.message)
+        await util.send_with_mention(ctx, response.message)
 
     @decorate.with_typing
     @plugin_group.command(name="unload")
@@ -73,7 +74,7 @@ class AdminControl(base.BaseCog):
             plugin_name (str): the name of the plugin
         """
         response = ctx.bot.plugin_api.unload_plugin(plugin_name)
-        await self.bot.send_with_mention(ctx, response.message)
+        await util.send_with_mention(ctx, response.message)
 
     @commands.group(
         name="command",
@@ -97,17 +98,17 @@ class AdminControl(base.BaseCog):
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await self.bot.send_with_mention(ctx, f"No such command: `{command_name}`")
+            await util.send_with_mention(ctx, f"No such command: `{command_name}`")
             return
 
         if command_.enabled:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, f"Command `{command_name}` is already enabled!"
             )
             return
 
         command_.enabled = True
-        await self.bot.send_with_mention(
+        await util.send_with_mention(
             ctx, f"Successfully enabled command: `{command_name}`"
         )
 
@@ -124,17 +125,17 @@ class AdminControl(base.BaseCog):
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await self.bot.send_with_mention(ctx, f"No such command: `{command_name}`")
+            await util.send_with_mention(ctx, f"No such command: `{command_name}`")
             return
 
         if not command_.enabled:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, f"Command `{command_name}` is already disabled!"
             )
             return
 
         command_.enabled = False
-        await self.bot.send_with_mention(
+        await util.send_with_mention(
             ctx, f"Successfully disabled command: `{command_name}`"
         )
 
@@ -159,9 +160,7 @@ class AdminControl(base.BaseCog):
             game_name (str): the name of the game
         """
         await ctx.bot.change_presence(activity=discord.Game(name=game_name))
-        await self.bot.send_with_mention(
-            ctx, f"Successfully set game to: *{game_name}*"
-        )
+        await util.send_with_mention(ctx, f"Successfully set game to: *{game_name}*")
 
     @decorate.with_typing
     @set_group.command(name="nick")
@@ -175,7 +174,7 @@ class AdminControl(base.BaseCog):
             nick (str): the bot nickname
         """
         await ctx.message.guild.me.edit(nick=nick)
-        await self.bot.send_with_mention(ctx, f"Successfully set nick to: *{nick}*")
+        await util.send_with_mention(ctx, f"Successfully set nick to: *{nick}*")
 
     @commands.group(
         brief="Executes an echo bot command", description="Executes an echo bot command"
@@ -198,7 +197,7 @@ class AdminControl(base.BaseCog):
         """
         channel = self.bot.get_channel(channel_id)
         if not channel:
-            await self.bot.send_with_mention(ctx, "I couldn't find that channel")
+            await util.send_with_mention(ctx, "I couldn't find that channel")
             return
 
         await channel.send(content=message)
@@ -217,7 +216,7 @@ class AdminControl(base.BaseCog):
         """
         user = await self.bot.fetch_user(int(user_id))
         if not user:
-            await self.bot.send_with_mention(ctx, "I couldn't find that user")
+            await util.send_with_mention(ctx, "I couldn't find that user")
             return
 
         await user.send(content=message)
@@ -231,7 +230,7 @@ class AdminControl(base.BaseCog):
         parameters:
             ctx (discord.ext.Context): the context object for the calling message
         """
-        await self.bot.send_with_mention(ctx, "Shutting down! Cya later!")
+        await util.send_with_mention(ctx, "Shutting down! Cya later!")
         sys.exit()
 
     @commands.command(name="leave")
@@ -246,7 +245,7 @@ class AdminControl(base.BaseCog):
         """
         guild = discord.utils.get(self.bot.guilds, id=guild_id)
         if not guild:
-            await self.bot.send_with_mention(ctx, "I don't appear to be in that guild")
+            await util.send_with_mention(ctx, "I don't appear to be in that guild")
             return
 
         await guild.leave()
@@ -285,7 +284,7 @@ class AdminControl(base.BaseCog):
 
         embed.set_thumbnail(url=self.bot.user.avatar_url)
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)
 
     @decorate.with_typing
     @commands.command(name="issue", aliases=["ish", "botish", "botissue"])
@@ -306,7 +305,7 @@ class AdminControl(base.BaseCog):
 
         oauth_token = self.bot.config.main.api_keys.github
         if not oauth_token:
-            await self.bot.send_with_mention(ctx, "I couldn't authenticate with Github")
+            await util.send_with_mention(ctx, "I couldn't authenticate with Github")
             return
 
         headers = {
@@ -320,10 +319,10 @@ class AdminControl(base.BaseCog):
         username = self.bot.config.special.github.username
         repo = self.bot.config.special.github.repo
         if not username or not repo:
-            await self.bot.send_with_mention(ctx, "I couldn't find the repository")
+            await util.send_with_mention(ctx, "I couldn't find the repository")
             return
 
-        response = await self.bot.http_call(
+        response = await util.http_call(
             "post",
             f"{self.GITHUB_API_BASE_URL}/repos/{username}/{repo}/issues",
             headers=headers,
@@ -332,7 +331,7 @@ class AdminControl(base.BaseCog):
 
         status_code = response.get("status_code")
         if status_code != 201:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, f"I was unable to create your issue (status code {status_code})"
             )
             return
@@ -344,17 +343,17 @@ class AdminControl(base.BaseCog):
         embed.add_field(name=f"Issue #{number}", value=f"{issue_url}")
         embed.set_thumbnail(url=icon_url)
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)
 
     @ipc.server.route(name="health")
     async def health_endpoint(self, _):
         """Returns a 200 code in the best of circumstances."""
-        return self.bot.ipc_response()
+        return util.ipc_response()
 
     @ipc.server.route(name="describe")
     async def describe_endpoint(self, _):
         """Gets all relevant bot information."""
-        return self.bot.ipc_response(payload=self.bot.preserialize_object(self.bot))
+        return util.ipc_response(payload=self.bot.preserialize_object(self.bot))
 
     @ipc.server.route(name="get_plugin_status")
     async def plugin_status_endpoint(self, data):
@@ -366,14 +365,14 @@ class AdminControl(base.BaseCog):
         if data.plugin_name:
             payload = self.bot.plugin_api.get_status(data.plugin_name)
             if not payload:
-                return self.bot.ipc_response(
+                return util.ipc_response(
                     code=404, error="Plugin not found (in memory or file)"
                 )
 
         else:
             payload = self.bot.plugin_api.get_all_statuses()
 
-        return self.bot.ipc_response(payload=payload)
+        return util.ipc_response(payload=payload)
 
     @ipc.server.route(name="load_plugin")
     async def load_plugin_endpoint(self, data):
@@ -383,13 +382,13 @@ class AdminControl(base.BaseCog):
             data (object): the data provided by the client request
         """
         if not data.plugin_name:
-            return self.bot.ipc_response(code=400, error="Plugin name not provided")
+            return util.ipc_response(code=400, error="Plugin name not provided")
 
         response = self.bot.plugin_api.load_plugin(data.plugin_name)
         if not response.status:
-            return self.bot.ipc_response(code=500, error=response.message)
+            return util.ipc_response(code=500, error=response.message)
 
-        return self.bot.ipc_response()
+        return util.ipc_response()
 
     @ipc.server.route(name="unload_plugin")
     async def unload_plugin_endpoint(self, data):
@@ -399,13 +398,13 @@ class AdminControl(base.BaseCog):
             data (object): the data provided by the client request
         """
         if not data.plugin_name:
-            return self.bot.ipc_response(code=400, error="Plugin name not provided")
+            return util.ipc_response(code=400, error="Plugin name not provided")
 
         response = self.bot.plugin_api.unload_plugin(data.plugin_name)
         if not response.status:
-            return self.bot.ipc_response(code=500, error=response.message)
+            return util.ipc_response(code=500, error=response.message)
 
-        return self.bot.ipc_response()
+        return util.ipc_response()
 
     @ipc.server.route(name="echo_user")
     async def echo_user_endpoint(self, data):
@@ -416,11 +415,11 @@ class AdminControl(base.BaseCog):
         """
         user = await self.bot.fetch_user(int(data.user_id))
         if not user:
-            return self.bot.ipc_response(code=404, error="User not found")
+            return util.ipc_response(code=404, error="User not found")
 
         await user.send(content=data.message)
 
-        return self.bot.ipc_response()
+        return util.ipc_response()
 
     @ipc.server.route(name="echo_channel")
     async def echo_channel_endpoint(self, data):
@@ -431,17 +430,17 @@ class AdminControl(base.BaseCog):
         """
         channel = self.bot.get_channel(int(data.channel_id))
         if not channel:
-            return self.bot.ipc_response(code=404, error="Channel not found")
+            return util.ipc_response(code=404, error="Channel not found")
 
         await channel.send(content=data.message)
 
-        return self.bot.ipc_response()
+        return util.ipc_response()
 
     @ipc.server.route(name="get_all_guilds")
     async def get_all_guilds_endpoint(self, _):
         """IPC endpoint for getting all guilds."""
         guilds = [self.bot.preserialize_object(guild) for guild in self.bot.guilds]
-        return self.bot.ipc_response(payload={"guilds": guilds})
+        return util.ipc_response(payload={"guilds": guilds})
 
     @ipc.server.route(name="get_guild")
     async def get_guild_endpoint(self, data):
@@ -451,13 +450,13 @@ class AdminControl(base.BaseCog):
             data (object): the data provided by the client request
         """
         if not data.guild_id:
-            return self.bot.ipc_response(code=400, error="Guild ID not provided")
+            return util.ipc_response(code=400, error="Guild ID not provided")
 
         guild = self.bot.get_guild(int(data.guild_id))
         if not guild:
-            return self.bot.ipc_response(code=404, error="Guild not found")
+            return util.ipc_response(code=404, error="Guild not found")
 
-        return self.bot.ipc_response(payload=self.bot.preserialize_object(guild))
+        return util.ipc_response(payload=self.bot.preserialize_object(guild))
 
     @ipc.server.route(name="get_guild_channels")
     async def get_guild_channels_endpoint(self, data):
@@ -467,11 +466,11 @@ class AdminControl(base.BaseCog):
             data (object): the data provided by the client request
         """
         if not data.guild_id:
-            return self.bot.ipc_response(code=400, error="Guild ID not provided")
+            return util.ipc_response(code=400, error="Guild ID not provided")
 
         guild = self.bot.get_guild(int(data.guild_id))
         if not guild:
-            return self.bot.ipc_response(code=404, error="Guild not found")
+            return util.ipc_response(code=404, error="Guild not found")
 
         channels = []
         for channel in guild.text_channels:
@@ -479,7 +478,7 @@ class AdminControl(base.BaseCog):
 
         print(channels)
 
-        return self.bot.ipc_response(payload={"channels": channels[:-1]})
+        return util.ipc_response(payload={"channels": channels[:-1]})
 
     @ipc.server.route(name="leave_guild")
     async def leave_guild_endpoint(self, data):
@@ -489,15 +488,15 @@ class AdminControl(base.BaseCog):
             data (object): the data provided by the client request
         """
         if not data.guild_id:
-            return self.bot.ipc_response(code=400, error="Guild ID not provided")
+            return util.ipc_response(code=400, error="Guild ID not provided")
 
         guild = self.bot.get_guild(int(data.guild_id))
         if not guild:
-            return self.bot.ipc_response(code=404, error="Guild not found")
+            return util.ipc_response(code=404, error="Guild not found")
 
         await guild.leave()
 
-        return self.bot.ipc_response()
+        return util.ipc_response()
 
     @ipc.server.route(name="get_channel_message_history")
     async def get_channel_message_history_endpoint(self, data):
@@ -507,7 +506,7 @@ class AdminControl(base.BaseCog):
             data(object): the data provided by the client request
         """
         if not data.channel_id:
-            return self.bot.ipc_response(code=400, error="Channel ID not provided")
+            return util.ipc_response(code=400, error="Channel ID not provided")
 
         # if your bot has a lot of channels
         # this search can sometimes take a while
@@ -517,7 +516,7 @@ class AdminControl(base.BaseCog):
             channel = None
 
         if not channel:
-            return self.bot.ipc_response(code=404, error="Channel not found")
+            return util.ipc_response(code=404, error="Channel not found")
 
         try:
             limit = int(data.limit)
@@ -535,7 +534,7 @@ class AdminControl(base.BaseCog):
 
         messages.reverse()
 
-        return self.bot.ipc_response(payload={"history": messages})
+        return util.ipc_response(payload={"history": messages})
 
     @ipc.server.route(name="get_dm_message_history")
     async def get_dm_message_history_endpoint(self, data):
@@ -545,7 +544,7 @@ class AdminControl(base.BaseCog):
             data(object): the data provided by the client request
         """
         if not data.user_id:
-            return self.bot.ipc_response(code=400, error="User ID not provided")
+            return util.ipc_response(code=400, error="User ID not provided")
 
         try:
             user = self.bot.get_user(int(data.user_id))
@@ -553,7 +552,7 @@ class AdminControl(base.BaseCog):
             user = None
 
         if not user:
-            return self.bot.ipc_response(code=404, error="User not found")
+            return util.ipc_response(code=404, error="User not found")
 
         try:
             limit = int(data.limit)
@@ -571,4 +570,4 @@ class AdminControl(base.BaseCog):
 
         messages.reverse()
 
-        return self.bot.ipc_response(payload={"history": messages})
+        return util.ipc_response(payload={"history": messages})

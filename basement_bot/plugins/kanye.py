@@ -3,6 +3,7 @@ import random
 
 import base
 import discord
+import util
 
 
 def setup(bot):
@@ -44,7 +45,7 @@ class KanyeQuotes(base.LoopCog):
     ]
 
     async def execute(self, config, guild):
-        response = await self.bot.http_call("get", self.API_URL)
+        response = await util.http_call("get", self.API_URL)
 
         quote = response.get("quote")
         if not quote:

@@ -3,6 +3,7 @@ import random
 import base
 import decorate
 import discord
+import util
 from discord.ext import commands
 
 
@@ -43,12 +44,12 @@ class Hugger(base.BaseCog):
             ctx (Context): the context
         """
         if user_to_hug.id == ctx.author.id:
-            await self.bot.send_with_mention(ctx, "Let's be serious")
+            await util.send_with_mention(ctx, "Let's be serious")
             return
 
         embed = self.generate_embed(ctx, user_to_hug)
 
-        await self.bot.send_with_mention(ctx, embed=embed, target=user_to_hug)
+        await util.send_with_mention(ctx, embed=embed, target=user_to_hug)
 
     def generate_embed(self, ctx, user_to_hug):
         hug_text = random.choice(self.HUGS_SELECTION).format(

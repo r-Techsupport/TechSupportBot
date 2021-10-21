@@ -1,6 +1,7 @@
 import base
 import decorate
 import discord
+import util
 from discord.ext import commands
 
 
@@ -33,13 +34,13 @@ class UrbanDictionary(base.BaseCog):
         usage="[query]",
     )
     async def urban(self, ctx, *, query: str):
-        response = await self.bot.http_call("get", f"{self.BASE_URL}{query}")
+        response = await util.http_call("get", f"{self.BASE_URL}{query}")
         definitions = response.get("list")
 
         config = await self.bot.get_context_config(ctx)
 
         if not definitions:
-            await self.bot.send_with_mention(ctx, f"No results found for: *{query}*")
+            await util.send_with_mention(ctx, f"No results found for: *{query}*")
             return
 
         query_no_spaces = query.replace(" ", "%20")

@@ -3,6 +3,7 @@ from random import choice
 
 import base
 import decorate
+import util
 from discord.ext import commands
 
 
@@ -526,4 +527,4 @@ class WouldYouRather(base.BaseCog):
                 self.last = question.id
                 break
 
-        await self.bot.send_with_mention(ctx, question.get_question())
+        await util.send_with_mention(ctx, question.get_question())

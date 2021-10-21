@@ -214,9 +214,7 @@ class IRCReceiver(base.LoopCog):
         if not channel:
             return
 
-        guild = self.bot.get_guild_from_channel_id(channel.id)
-
-        message = self._add_mentions(message, guild, channel)
+        message = self._add_mentions(message, channel.guild, channel)
 
         await channel.send(message)
 

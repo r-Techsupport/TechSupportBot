@@ -7,6 +7,7 @@ import json
 
 import base
 import discord
+import util
 from discord.ext import commands, ipc
 
 
@@ -46,12 +47,12 @@ class ConfigControl(base.BaseCog):
         """
         config = await self.bot.get_context_config(ctx, get_from_cache=False)
 
-        uploaded_data = await self.bot.get_json_from_attachments(ctx.message)
+        uploaded_data = await util.get_json_from_attachments(ctx.message)
         if uploaded_data:
             # server-side check of guild
             uploaded_data["guild_id"] = str(ctx.guild.id)
             if not self.schema_matches(uploaded_data, config):
-                await self.bot.send_with_mention(
+                await util.send_with_mention(
                     ctx,
                     "I couldn't match your upload data with the current config schema",
                 )
@@ -61,7 +62,7 @@ class ConfigControl(base.BaseCog):
                 {"guild_id": config.get("guild_id")}, uploaded_data
             )
 
-            await self.bot.send_with_mention(ctx, "I've updated that config")
+            await util.send_with_mention(ctx, "I've updated that config")
             return
 
         json_config = config.copy()
@@ -78,7 +79,7 @@ class ConfigControl(base.BaseCog):
     @ipc.server.route(name="get_bot_config")
     async def get_bot_config_endpoint(self, _):
         """IPC endpoint for getting bot config."""
-        return self.bot.ipc_response(payload=self.bot.config)
+        return util.ipc_response(payload=self.bot.config)
 
     @ipc.server.route(name="get_guild_config")
     async def get_guild_config_endpoint(self, data):
@@ -88,16 +89,16 @@ class ConfigControl(base.BaseCog):
             data (object): the data provided by the client request
         """
         if not data.guild_id:
-            return self.bot.ipc_response(code=400, error="Guild ID not provided")
+            return util.ipc_response(code=400, error="Guild ID not provided")
 
         guild = self.bot.get_guild(int(data.guild_id))
         if not guild:
-            return self.bot.ipc_response(code=404, error="Guild not found")
+            return util.ipc_response(code=404, error="Guild not found")
 
         config = await self.bot.get_context_config(guild=guild, get_from_cache=True)
         config.pop("_id", None)
 
-        return self.bot.ipc_response(payload=config)
+        return util.ipc_response(payload=config)
 
     @ipc.server.route(name="edit_guild_config")
     async def edit_guild_config_endpoint(self, data):
@@ -107,11 +108,11 @@ class ConfigControl(base.BaseCog):
             data (object): the data provided by the client request
         """
         if not data.guild_id:
-            return self.bot.ipc_response(code=400, error="Guild ID not provided")
+            return util.ipc_response(code=400, error="Guild ID not provided")
 
         guild = self.bot.get_guild(int(data.guild_id))
         if not guild:
-            return self.bot.ipc_response(code=404, error="Guild not found")
+            return util.ipc_response(code=404, error="Guild not found")
 
         current_config = await self.bot.get_context_config(
             guild=guild, get_from_cache=False
@@ -119,10 +120,10 @@ class ConfigControl(base.BaseCog):
 
         config = getattr(data, "new_config", None)
         if not config:
-            return self.bot.ipc_response(code=400, error="Config not provided")
+            return util.ipc_response(code=400, error="Config not provided")
 
         if not self.schema_matches(config, current_config):
-            return self.bot.ipc_response(
+            return util.ipc_response(
                 code=400, error="Current config schema doesn't match new config"
             )
 
@@ -130,4 +131,4 @@ class ConfigControl(base.BaseCog):
             {"guild_id": config.get("guild_id")}, config
         )
 
-        return self.bot.ipc_response()
+        return util.ipc_response()

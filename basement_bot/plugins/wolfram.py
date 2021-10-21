@@ -1,5 +1,6 @@
 import base
 import decorate
+import util
 from discord.ext import commands
 
 
@@ -25,7 +26,7 @@ class Wolfram(base.BaseCog):
 
         url = self.API_URL.format(self.bot.config.main.api_keys.wolfram, query)
 
-        response = await self.bot.http_call("get", url, get_raw_response=True)
+        response = await util.http_call("get", url, get_raw_response=True)
         answer = await response.text()
 
-        await self.bot.send_with_mention(ctx, answer)
+        await util.send_with_mention(ctx, answer)

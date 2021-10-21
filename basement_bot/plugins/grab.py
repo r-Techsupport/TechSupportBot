@@ -4,6 +4,7 @@ import random
 import base
 import decorate
 import discord
+import util
 from discord.ext import commands
 
 
@@ -46,7 +47,7 @@ class Grabber(base.BaseCog):
     # but oh well
     async def invalid_channel(self, config, ctx):
         if ctx.channel.id in config.plugins.grab.blocked_channels.value:
-            await self.bot.send_with_mention(ctx, "Grabs are disabled for this channel")
+            await util.send_with_mention(ctx, "Grabs are disabled for this channel")
             return True
 
         return False
@@ -67,7 +68,7 @@ class Grabber(base.BaseCog):
             return
 
         if user_to_grab.bot:
-            await self.bot.send_with_mention(ctx, "Ain't gonna catch me slipping!")
+            await util.send_with_mention(ctx, "Ain't gonna catch me slipping!")
             return
 
         grab_message = None
@@ -77,7 +78,7 @@ class Grabber(base.BaseCog):
                 break
 
         if not grab_message:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, f"Could not find a recent message from user {user_to_grab}"
             )
             return
@@ -91,7 +92,7 @@ class Grabber(base.BaseCog):
         )
 
         if grab:
-            await self.bot.send_with_mention(ctx, "That grab already exists!")
+            await util.send_with_mention(ctx, "That grab already exists!")
             return
 
         grab = self.models.Grab(
@@ -102,7 +103,7 @@ class Grabber(base.BaseCog):
         )
         await grab.create()
 
-        await self.bot.send_with_mention(ctx, f"Successfully saved: '*{grab_message}*'")
+        await util.send_with_mention(ctx, f"Successfully saved: '*{grab_message}*'")
 
     @commands.group(
         brief="Executes a grabs command",
@@ -127,7 +128,7 @@ class Grabber(base.BaseCog):
             return
 
         if user_to_grab.bot:
-            await self.bot.send_with_mention(ctx, "Ain't gonna catch me slipping!")
+            await util.send_with_mention(ctx, "Ain't gonna catch me slipping!")
             return
 
         grabs = (
@@ -139,9 +140,7 @@ class Grabber(base.BaseCog):
         )
 
         if not grabs:
-            await self.bot.send_with_mention(
-                ctx, f"No grabs found for {user_to_grab.name}"
-            )
+            await util.send_with_mention(ctx, f"No grabs found for {user_to_grab.name}")
             return
 
         grabs.sort(reverse=True, key=lambda grab: grab.time)
@@ -196,7 +195,7 @@ class Grabber(base.BaseCog):
             return
 
         if user_to_grab.bot:
-            await self.bot.send_with_mention(ctx, "Ain't gonna catch me slipping!")
+            await util.send_with_mention(ctx, "Ain't gonna catch me slipping!")
             return
 
         grabs = (
@@ -208,7 +207,7 @@ class Grabber(base.BaseCog):
         )
 
         if not grabs:
-            await self.bot.send_with_mention(ctx, f"No grabs found for {user_to_grab}")
+            await util.send_with_mention(ctx, f"No grabs found for {user_to_grab}")
             return
 
         random_index = random.randint(0, len(grabs) - 1)
@@ -223,4 +222,4 @@ class Grabber(base.BaseCog):
 
         embed.set_thumbnail(url=user_to_grab.avatar_url)
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)

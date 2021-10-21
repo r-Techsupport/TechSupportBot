@@ -1,6 +1,7 @@
 import base
 import decorate
 import discord
+import util
 from discord.ext import commands
 
 
@@ -23,7 +24,7 @@ class Googler(base.BaseCog):
     YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=1"
 
     async def get_items(self, url, data):
-        response = await self.bot.http_call("get", url, params=data)
+        response = await util.http_call("get", url, params=data)
         return response.get("items")
 
     @commands.group(
@@ -53,9 +54,7 @@ class Googler(base.BaseCog):
         items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
-            await self.bot.send_with_mention(
-                ctx, f"No search results found for: *{query}*"
-            )
+            await util.send_with_mention(ctx, f"No search results found for: *{query}*")
             return
 
         config = await self.bot.get_context_config(guild=ctx.guild)
@@ -108,7 +107,7 @@ class Googler(base.BaseCog):
         items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, f"No image search results found for: *{query}*"
             )
             return
@@ -117,7 +116,7 @@ class Googler(base.BaseCog):
         for item in items:
             link = item.get("link")
             if not link:
-                await self.bot.send_with_mention(
+                await util.send_with_mention(
                     ctx,
                     "I had an issue processing Google's response... try again later!",
                 )
@@ -146,9 +145,7 @@ class Googler(base.BaseCog):
         )
 
         if not items:
-            await self.bot.send_with_mention(
-                ctx, f"No video results found for: *{query}*"
-            )
+            await util.send_with_mention(ctx, f"No video results found for: *{query}*")
             return
 
         video_id = items[0].get("id", {}).get("videoId")
