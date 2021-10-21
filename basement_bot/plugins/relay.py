@@ -1,13 +1,7 @@
-import copy
 import datetime
-import functools
-import json
-import logging
-import re
 import uuid
 
 import base
-import decorate
 import munch
 from discord.ext import commands
 
