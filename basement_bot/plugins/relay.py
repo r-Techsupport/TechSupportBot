@@ -109,6 +109,9 @@ class DiscordRelay(base.MatchCog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
+        if payload.member.bot:
+            return
+
         channel = self.bot.get_channel(payload.channel_id)
         if not channel:
             return
