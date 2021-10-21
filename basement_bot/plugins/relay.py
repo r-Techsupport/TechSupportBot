@@ -16,7 +16,71 @@ def setup(bot):
     bot.process_plugin_setup(cogs=[DiscordRelay, IRCReceiver], no_guild=True)
 
 
+class RelayEvent:
+    def __init__(self, type, author, channel):
+        self.payload = munch.Munch()
+        self.payload.event = munch.Munch()
+        self.payload.event.id = str(uuid.uuid4())
+        self.payload.event.type = type
+        self.payload.event.time = datetime.datetime.now(datetime.timezone.utc).strftime(
+            "%Y-%m-%d %H:%M:%S.%f"
+        )
+
+        self.payload.author = munch.Munch()
+        self.payload.author.username = author.name
+        self.payload.author.id = author.id
+        self.payload.author.nickname = author.display_name
+        self.payload.author.discriminator = author.discriminator
+        self.payload.author.is_bot = author.bot
+        self.payload.author.top_role = str(author.top_role)
+
+        self.payload.author.permissions = munch.Munch()
+        discord_permissions = author.permissions_in(channel)
+        self.payload.author.permissions.kick = discord_permissions.kick_members
+        self.payload.author.permissions.ban = discord_permissions.ban_members
+        self.payload.author.permissions.unban = discord_permissions.ban_members
+        self.payload.author.permissions.admin = discord_permissions.administrator
+
+        self.payload.server = munch.Munch()
+        self.payload.server.name = author.guild.name
+        self.payload.server.id = author.guild.id
+
+        self.payload.channel = munch.Munch()
+        self.payload.channel.name = channel.name
+        self.payload.channel.id = channel.id
+
+    def to_json(self):
+        return self.payload.toJSON()
+
+
+class MessageEvent(RelayEvent):
+    def __init__(self, *args, **kwargs):
+        message = kwargs.pop("message")
+        alternate_content = kwargs.pop("content")
+        super().__init__("message", *args, **kwargs)
+        self.payload.event.content = alternate_content or message.content
+        self.payload.event.attachments = [
+            attachment.url for attachment in message.attachments
+        ]
+
+
+class MessageEditEvent(MessageEvent):
+    pass
+
+
+class ReactionAddEvent(RelayEvent):
+    def __init__(self, *args, **kwargs):
+        message = kwargs.pop("message")
+        emoji = kwargs.pop("emoji")
+        super().__init__("reaction_add", *args, **kwargs)
+        self.payload.event.emoji = emoji
+        self.payload.event.content = message.content
+
+
 class DiscordRelay(base.MatchCog):
+
+    MAX_MESSAGE_REACTION_SIZE = 30
+
     async def preconfig(self):
         self.channels = list(self.bot.config.special.relay.channel_map.values())
         self.bot.plugin_api.plugins.relay.memory.channels = self.channels
@@ -37,13 +101,38 @@ class DiscordRelay(base.MatchCog):
         if message.author.bot:
             return
 
-        payload = self.serialize(
-            "message",
-            message,
-            alternate_content=f"{message.content}** (message edited)",
+        edit_event = MessageEditEvent(
+            message.author,
+            channel,
+            message=message,
+            content=f"{message.content}** (message edited)",
         )
 
-        await self.publish(payload, message.guild)
+        await self.publish(edit_event.to_json(), message.guild)
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        channel = self.bot.get_channel(payload.channel_id)
+        if not channel:
+            return
+
+        if not channel.id in self.channels:
+            return
+
+        message = await channel.fetch_message(payload.message_id)
+        if not message:
+            return
+
+        emoji = (
+            payload.emoji.name
+            if payload.emoji.is_unicode_emoji()
+            else f":{payload.emoji.name}:"
+        )
+        reaction_add_event = ReactionAddEvent(
+            payload.member, channel, message=message, emoji=emoji
+        )
+
+        await self.publish(reaction_add_event.to_json(), message.guild)
 
     async def match(self, _, ctx, __):
         if ctx.channel.id in self.channels:
@@ -51,13 +140,11 @@ class DiscordRelay(base.MatchCog):
         return False
 
     async def response(self, _, ctx, __, ___):
-        payload = self.serialize(
-            "message",
-            ctx.message,
-            alternate_content=self.bot.sub_mentions_for_usernames(ctx.message.content),
+        alternate_content = self.bot.sub_mentions_for_usernames(ctx.message.content)
+        message_event = MessageEvent(
+            ctx.author, ctx.channel, message=ctx.message, content=alternate_content
         )
-
-        await self.publish(payload, ctx.message.guild)
+        await self.publish(message_event.to_json(), ctx.message.guild)
 
     async def publish(self, payload, guild):
         try:
@@ -73,51 +160,6 @@ class DiscordRelay(base.MatchCog):
                 send=True,
                 exception=e,
             )
-
-    @staticmethod
-    def serialize(type_, message, alternate_content=None):
-        data = munch.Munch()
-
-        # event data
-        data.event = munch.Munch()
-        data.event.id = str(uuid.uuid4())
-        data.event.type = type_
-        data.event.time = datetime.datetime.now(datetime.timezone.utc).strftime(
-            "%Y-%m-%d %H:%M:%S.%f"
-        )
-        data.event.content = alternate_content or message.content
-        data.event.attachments = [attachment.url for attachment in message.attachments]
-
-        # author data
-        data.author = munch.Munch()
-        data.author.username = message.author.name
-        data.author.id = message.author.id
-        data.author.nickname = message.author.display_name
-        data.author.discriminator = message.author.discriminator
-        data.author.is_bot = message.author.bot
-        data.author.top_role = str(message.author.top_role)
-
-        # permissions data
-        data.author.permissions = munch.Munch()
-        discord_permissions = message.author.permissions_in(message.channel)
-        data.author.permissions.kick = discord_permissions.kick_members
-        data.author.permissions.ban = discord_permissions.ban_members
-        data.author.permissions.unban = discord_permissions.ban_members
-        data.author.permissions.admin = discord_permissions.administrator
-
-        # server data
-        data.server = munch.Munch()
-        data.server.name = message.author.guild.name
-        data.server.id = message.author.guild.id
-
-        # channel data
-        data.channel = munch.Munch()
-        data.channel.name = message.channel.name
-        data.channel.id = message.channel.id
-
-        # non-lossy
-        as_json = data.toJSON()
-        return as_json
 
 
 class IRCReceiver(base.LoopCog):
