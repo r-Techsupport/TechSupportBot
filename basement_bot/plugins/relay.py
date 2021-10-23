@@ -52,14 +52,45 @@ class MessageEvent(RelayEvent):
         message = kwargs.pop("message")
         alternate_content = kwargs.pop("content")
         super().__init__("message", *args, **kwargs)
+
+        self.message = message
+
         self.payload.event.content = alternate_content or message.content
         self.payload.event.attachments = [
             attachment.url for attachment in message.attachments
         ]
 
+        self.payload.event.reply = munch.Munch()
 
-class MessageEditEvent(MessageEvent):
-    pass
+    async def fill_reply_data(self):
+        reference = self.message.reference
+        if not reference:
+            return
+
+        referenced_message = await self.message.channel.fetch_message(
+            reference.message_id
+        )
+        if not referenced_message:
+            return
+
+        self.payload.event.reply.content = referenced_message.content
+
+        self.payload.event.reply.author = munch.Munch()
+        self.payload.event.reply.author.username = referenced_message.author.name
+        self.payload.event.reply.author.id = referenced_message.author.id
+        self.payload.event.reply.author.nickname = (
+            referenced_message.author.display_name
+        )
+        self.payload.event.reply.author.discriminator = (
+            referenced_message.author.discriminator
+        )
+
+
+class MessageEditEvent(RelayEvent):
+    def __init__(self, *args, **kwargs):
+        message = kwargs.pop("message")
+        super().__init__("message_edit", *args, **kwargs)
+        self.payload.event.content = message.content
 
 
 class ReactionAddEvent(RelayEvent):
@@ -96,7 +127,6 @@ class DiscordRelay(base.MatchCog):
             message.author,
             channel,
             message=message,
-            content=f"{message.content}** (message edited)",
         )
 
         await self.publish(edit_event.to_json(), message.guild)
@@ -138,6 +168,7 @@ class DiscordRelay(base.MatchCog):
         message_event = MessageEvent(
             ctx.author, ctx.channel, message=ctx.message, content=alternate_content
         )
+        await message_event.fill_reply_data()
         await self.publish(message_event.to_json(), ctx.message.guild)
 
     async def publish(self, payload, guild):
