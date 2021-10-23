@@ -88,18 +88,18 @@ class MessageEvent(RelayEvent):
 
 class MessageEditEvent(RelayEvent):
     def __init__(self, *args, **kwargs):
-        message = kwargs.pop("message")
+        content = kwargs.pop("content")
         super().__init__("message_edit", *args, **kwargs)
-        self.payload.event.content = message.content
+        self.payload.event.content = content
 
 
 class ReactionAddEvent(RelayEvent):
     def __init__(self, *args, **kwargs):
-        message = kwargs.pop("message")
+        content = kwargs.pop("content")
         emoji = kwargs.pop("emoji")
         super().__init__("reaction_add", *args, **kwargs)
         self.payload.event.emoji = emoji
-        self.payload.event.content = message.content
+        self.payload.event.content = content
 
 
 class DiscordRelay(base.MatchCog):
@@ -126,7 +126,7 @@ class DiscordRelay(base.MatchCog):
         edit_event = MessageEditEvent(
             message.author,
             channel,
-            message=message,
+            content=self.bot.sub_mentions_for_usernames(message.content),
         )
 
         await self.publish(edit_event.to_json(), message.guild)
@@ -153,7 +153,10 @@ class DiscordRelay(base.MatchCog):
             else f":{payload.emoji.name}:"
         )
         reaction_add_event = ReactionAddEvent(
-            payload.member, channel, message=message, emoji=emoji
+            payload.member,
+            channel,
+            content=self.bot.sub_mentions_for_usernames(message.content),
+            emoji=emoji,
         )
 
         await self.publish(reaction_add_event.to_json(), message.guild)
