@@ -283,6 +283,23 @@ class BasementBot(commands.Bot):
             f"IPC error: {exception}", exception=exception, send=True
         )
 
+    async def on_guild_join(self, guild):
+        """Configures a new guild upon joining.
+
+        parameters:
+            guild (discord.Guild): the guild that was joined
+        """
+        for cog in self.cogs.values():
+            if getattr(cog, "COG_TYPE", "").lower() == "loop":
+                await cog.register_new_tasks(guild)
+
+        log_channel = await self.get_log_channel_from_guild(
+            guild, key="guild_events_channel"
+        )
+        await self.logger.event(
+            "guild_join", guild=guild, send=True, channel=log_channel
+        )
+
     async def get_owner(self):
         """Gets the owner object from the bot application."""
 
@@ -1113,15 +1130,6 @@ class BasementBot(commands.Bot):
         )
         await self.logger.event(
             "member_remove", member=member, send=True, channel=log_channel
-        )
-
-    async def on_guild_join(self, guild):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_join"""
-        log_channel = await self.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
-        )
-        await self.logger.event(
-            "guild_join", guild=guild, send=True, channel=log_channel
         )
 
     async def on_guild_remove(self, guild):

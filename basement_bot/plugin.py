@@ -117,6 +117,15 @@ class PluginAPI:
             self.bot.logger.console.error(message)
             return self._make_response(False, message)
 
+    def reload_plugin(self, plugin_name):
+        """Reloads a plugin by name.
+
+        parameters:
+            plugin_name (str): the name of the plugin file
+        """
+        self.unload_plugin(plugin_name)
+        self.load_plugin(plugin_name)
+
     def load_plugins(self):
         """Loads all plugins currently in the plugins directory."""
         self.bot.logger.console.debug("Retrieving plugin modules")

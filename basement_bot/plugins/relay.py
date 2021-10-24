@@ -104,8 +104,8 @@ class ReactionAddEvent(RelayEvent):
 
 class DiscordRelay(base.MatchCog):
     async def preconfig(self):
-        self.channels = list(self.bot.config.special.relay.channel_map.values())
-        self.bot.plugin_api.plugins.relay.memory.channels = self.channels
+        self.listen_channels = list(self.bot.config.special.relay.channel_map.values())
+        self.bot.plugin_api.plugins.relay.memory.channels = self.listen_channels
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
@@ -113,7 +113,7 @@ class DiscordRelay(base.MatchCog):
         if not channel:
             return
 
-        if not channel.id in self.channels:
+        if not channel.id in self.listen_channels:
             return
 
         message = await channel.fetch_message(payload.message_id)
@@ -140,7 +140,7 @@ class DiscordRelay(base.MatchCog):
         if not channel:
             return
 
-        if not channel.id in self.channels:
+        if not channel.id in self.listen_channels:
             return
 
         message = await channel.fetch_message(payload.message_id)
@@ -162,7 +162,7 @@ class DiscordRelay(base.MatchCog):
         await self.publish(reaction_add_event.to_json(), message.guild)
 
     async def match(self, _, ctx, __):
-        if ctx.channel.id in self.channels:
+        if ctx.channel.id in self.listen_channels:
             return True
         return False
 
@@ -197,7 +197,7 @@ class IRCReceiver(base.LoopCog):
     ON_START = True
 
     async def loop_preconfig(self):
-        self.channels = list(self.bot.config.special.relay.channel_map.values())
+        self.listen_channels = list(self.bot.config.special.relay.channel_map.values())
 
     async def execute(self, _config, guild):
         try:
@@ -230,7 +230,7 @@ class IRCReceiver(base.LoopCog):
             return
 
         if data.event.type == "quit":
-            for channel_id in self.channels:
+            for channel_id in self.listen_channels:
                 channel = self.bot.get_channel(int(channel_id))
                 if not channel:
                     continue
@@ -260,7 +260,7 @@ class IRCReceiver(base.LoopCog):
         return new_message
 
     def _get_channel(self, data):
-        for channel_id in self.channels:
+        for channel_id in self.listen_channels:
             if channel_id == self.bot.config.special.relay.channel_map.get(
                 data.channel.name
             ):
