@@ -1,3 +1,4 @@
+import asyncio
 import json
 import re
 
@@ -24,6 +25,14 @@ def setup(bot):
 
 class BaseParser(base.MatchCog):
     async def confirm(self, ctx, message, config):
+        roles = self.get_confirm_roles(ctx, config)
+        confirmed = await self.bot.confirm(
+            ctx, message, bypass=roles, delete_after=True
+        )
+        return confirmed
+
+    @staticmethod
+    def get_confirm_roles(ctx, config):
         role_names = config.plugins.techsupport.confirm_roles.value
         roles = []
         for role_name in role_names:
@@ -31,11 +40,7 @@ class BaseParser(base.MatchCog):
             if role:
                 roles.append(role)
 
-        confirmed = await self.bot.confirm(
-            ctx, message, bypass=roles, delete_after=True
-        )
-
-        return confirmed
+        return roles
 
 
 class CDIParser(BaseParser):
@@ -146,6 +151,8 @@ class SpeccyParser(BaseParser):
     URL_PATTERN = r"http://speccy.piriform.com/results/[a-zA-Z0-9]+"
     API_URL = "http://134.122.122.133"
     ICON_URL = "https://cdn.icon-icons.com/icons2/195/PNG/256/Speccy_23586.png"
+    EXPAND_EMOJI = "➕"
+    WAIT_FOR_EXPAND_TIMEOUT = 60
 
     async def match(self, config, ctx, content):
         matches = re.findall(self.URL_PATTERN, content, re.MULTILINE)
@@ -186,8 +193,8 @@ class SpeccyParser(BaseParser):
 
         if parse_status == "Parsed":
             try:
-                embed = await self.generate_embed(ctx, response_data)
-                await util.send_with_mention(ctx, embed=embed)
+                embed = await self.generate_layman_embed(ctx, response_data)
+                layman_message = await util.send_with_mention(ctx, embed=embed)
             except Exception as e:
                 await util.send_with_mention(
                     ctx, "I had trouble reading the Speccy results"
@@ -208,6 +215,61 @@ class SpeccyParser(BaseParser):
 
         await found_message.delete()
 
+        await self.wait_for_more_details(ctx, config, response_data, layman_message)
+
+    async def wait_for_more_details(self, ctx, config, response_data, layman_message):
+        expanded = False
+        await layman_message.add_reaction(self.EXPAND_EMOJI)
+        while True:
+            try:
+                reaction, user = await self.bot.wait_for(
+                    "reaction_add",
+                    timeout=self.WAIT_FOR_EXPAND_TIMEOUT,
+                    check=lambda r, u: not bool(u.bot)
+                    and r.message.id == layman_message.id,
+                )
+            except Exception as e:
+                print(e)
+                break
+
+            member = ctx.guild.get_member(user.id)
+            if not member:
+                pass
+
+            confirm_roles = self.get_confirm_roles(ctx, config)
+            if user.id != ctx.author.id and not any(
+                role in getattr(member, "roles", []) for role in confirm_roles
+            ):
+                pass
+
+            elif reaction.emoji == self.EXPAND_EMOJI:
+                try:
+                    detailed_embed = await self.generate_detailed_embed(
+                        ctx, response_data
+                    )
+                    await layman_message.edit(embed=detailed_embed)
+                    expanded = True
+                except Exception as e:
+                    await self.bot.guild_log(
+                        ctx.guild,
+                        "logging_channel",
+                        "error",
+                        "Could not generate detailed Speccy embed",
+                        send=True,
+                        exception=e,
+                    )
+                    await util.send_with_mention(
+                        ctx, "I had trouble generating a full Speccy summary"
+                    )
+                break
+
+            await reaction.remove(user)
+
+        if expanded:
+            return
+
+        await layman_message.clear_reactions()
+
     async def call_api(self, speccy_id):
         response = await util.http_call(
             "get",
@@ -216,7 +278,25 @@ class SpeccyParser(BaseParser):
         )
         return response
 
-    async def generate_embed(self, ctx, response_data):
+    async def generate_layman_embed(self, ctx, response_data):
+        software_check_data = response_data.get("SoftwareCheck")
+        layman_info = software_check_data.get(
+            "Layman", "There are no detected issues with your Speccy!"
+        )
+        embed = discord.Embed(
+            title=f"Speccy Results for {ctx.author}",
+            description=response_data.Link + layman_info,
+        )
+        embed.set_thumbnail(url=self.ICON_URL)
+        embed.set_footer(
+            text=f"For more details, click the {self.EXPAND_EMOJI} reaction below"
+        )
+
+        embed = self.add_yikes_color(embed, response_data)
+
+        return embed
+
+    async def generate_detailed_embed(self, ctx, response_data):
         embed = discord.Embed(
             title=f"Speccy Results for {ctx.author}", description=response_data.Link
         )
@@ -253,6 +333,11 @@ class SpeccyParser(BaseParser):
 
         embed.set_thumbnail(url=self.ICON_URL)
 
+        embed = self.add_yikes_color(embed, response_data)
+
+        return embed
+
+    def add_yikes_color(self, embed, response_data):
         yikes_score = response_data.get("Yikes", 0)
         if yikes_score > 3:
             embed.color = discord.Color.red()
@@ -269,15 +354,23 @@ class SpeccyParser(BaseParser):
 
         result = ""
         for key, value in check_data.items():
+            if self.should_skip_key(key):
+                continue
+            if not value or value == "False":
+                continue
+
             if isinstance(value, list):
                 value = ", ".join(value)
-
-            if not value:
-                continue
 
             result += f"**{key}**: {value}\n"
 
         return result
+
+    @staticmethod
+    def should_skip_key(key):
+        if key.lower() in ["bppc", "dateformat", "datetimeformat"]:
+            return True
+        return False
 
 
 class HWInfoParser(BaseParser):
