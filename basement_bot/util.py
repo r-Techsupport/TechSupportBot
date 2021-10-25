@@ -106,3 +106,19 @@ async def http_call(method, url, *args, **kwargs):
     await client.close()
 
     return response
+
+
+def config_schema_matches(input_config, current_config):
+    """Performs a schema check on an input config.
+
+    parameters:
+        input_config (dict): the config to be added
+        current_config (dict): the current config
+    """
+    if (
+        any(key not in current_config for key in input_config.keys())
+        or len(current_config) != len(input_config) + 1
+    ):
+        return False
+
+    return True

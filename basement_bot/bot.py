@@ -16,6 +16,7 @@ import config
 import discord
 import gino
 import help as help_commands
+import ipc as ipc_local
 import munch
 import plugin
 import raw
@@ -145,6 +146,7 @@ class BasementBot(commands.Bot):
         finally:
             self.loop.close()
 
+    # pylint: disable=too-many-statements
     async def start(self, *args, **kwargs):
         """Sets up config and connections then starts the actual bot."""
         # this is required for the bot
@@ -201,6 +203,13 @@ class BasementBot(commands.Bot):
             self.add_cog(raw.Raw(self))
         except Exception as exception:
             await self.logger.warning(f"Could not load Raw commands: {exception}")
+
+        if self.ipc:
+            await self.logger.debug("Loading IPC endpoints...")
+            try:
+                self.add_cog(ipc_local.IPCEndpoints(self))
+            except Exception as exception:
+                await self.logger.warning(f"Could not load IPC endpoints: {exception}")
 
         await self.logger.debug("Logging into Discord...")
         await super().start(*args, **kwargs)
