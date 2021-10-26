@@ -809,6 +809,8 @@ class DuckHunt(base.LoopCog):
                 # can't pull the config in a non-coroutine
                 check=functools.partial(self.message_check, config, channel),
             )
+        except asyncio.TimeoutError:
+            pass
         except Exception as e:
             await self.bot.guild_log(
                 guild,
