@@ -62,7 +62,7 @@ class MessageEvent(RelayEvent):
 
         self.payload.event.reply = munch.Munch()
 
-    async def fill_reply_data(self):
+    async def fill_reply_data(self, transform_fn=None):
         reference = self.message.reference
         if not reference:
             return
@@ -73,7 +73,11 @@ class MessageEvent(RelayEvent):
         if not referenced_message:
             return
 
-        self.payload.event.reply.content = referenced_message.content
+        self.payload.event.reply.content = (
+            transform_fn(referenced_message.content)
+            if transform_fn
+            else referenced_message.content
+        )
 
         self.payload.event.reply.author = munch.Munch()
         self.payload.event.reply.author.username = referenced_message.author.name
@@ -171,7 +175,7 @@ class DiscordRelay(base.MatchCog):
         message_event = MessageEvent(
             ctx.author, ctx.channel, message=ctx.message, content=alternate_content
         )
-        await message_event.fill_reply_data()
+        await message_event.fill_reply_data(self.bot.sub_mentions_for_usernames)
         await self.publish(message_event.to_json(), ctx.message.guild)
 
     async def publish(self, payload, guild):
