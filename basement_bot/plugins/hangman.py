@@ -208,7 +208,7 @@ class HangmanCog(base.BaseCog):
 
         content = f"Found `{letter}`" if correct else f"Letter `{letter}` not in word"
         if game.finished:
-            content = f"{content} - game finished!"
+            content = f"{content} - game finished! The word was {game.word}"
         await util.send_with_mention(ctx, content)
 
     async def generate_game_embed(self, ctx, game):
@@ -223,7 +223,7 @@ class HangmanCog(base.BaseCog):
 
         if game.failed:
             embed.color = discord.Color.red()
-            footer_text = "Game over!"
+            footer_text = "Game over! The word was `{game.word}`!"
         elif game.finished:
             embed.color = discord.Color.green()
             footer_text = "Word guessed! Nice job!"
