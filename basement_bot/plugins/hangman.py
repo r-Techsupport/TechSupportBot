@@ -160,7 +160,6 @@ class HangmanCog(base.BaseCog):
                 if not should_delete:
                     return
                 del self.games[ctx.channel.id]
-                await util.send_with_mention(ctx, "I deleted that game")
             else:
                 await util.send_with_mention(
                     ctx, "There is a game in progress for this channel"
@@ -252,3 +251,30 @@ class HangmanCog(base.BaseCog):
         embed = await self.generate_game_embed(ctx, game_data.get("game"))
         new_message = await ctx.send(embed=embed)
         game_data["message"] = new_message
+
+    @commands.has_permissions(kick_members=True)
+    @hangman.command(name="stop", description="Stops the current channel game")
+    async def stop(self, ctx):
+        game_data = self.games.get(ctx.channel.id)
+        if not game_data:
+            await util.send_with_mention(
+                ctx, "There is no game in progress for this channel"
+            )
+            return
+
+        should_delete = await self.bot.confirm(
+            ctx,
+            "Are you sure you want to end the current game?",
+            delete_after=True,
+        )
+
+        if not should_delete:
+            return
+
+        game = game_data.get("game")
+        word = getattr(game, "word", "???")
+
+        del self.games[ctx.channel.id]
+        await util.send_with_mention(
+            ctx, f"That game is now finished. The word was: `{word}`"
+        )
