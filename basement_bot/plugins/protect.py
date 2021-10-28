@@ -224,7 +224,7 @@ class Protector(base.MatchCog):
         )
         return warnings
 
-    async def handle_warn(self, ctx, user, reason, bypass=False, alert=True):
+    async def handle_warn(self, ctx, user, reason, bypass=False):
         if not bypass:
             can_execute = await self.can_execute(ctx, user)
             if not can_execute:
@@ -237,18 +237,32 @@ class Protector(base.MatchCog):
         config = await self.bot.get_context_config(ctx)
 
         if new_count >= config.plugins.protect.max_warnings.value:
-            # ban the user instead of saving new warning count
-            ban_reason = f"Over max warning count {new_count}/{config.plugins.protect.max_warnings.value} (final warning: {reason})"
-            await self.handle_ban(ctx, user, ban_reason, bypass=True)
-        else:
-            await self.models.Warning(
-                user_id=str(user.id), guild_id=str(ctx.guild.id), reason=reason
-            ).create()
+            if not bypass:
+                should_ban = await self.bot.confirm(
+                    ctx,
+                    f"This user has exceeded the max warnings {config.plugins.protect.max_warnings.value}. Would you like to ban them instead?",
+                    delete_after=True,
+                )
+                if not should_ban:
+                    await util.send_with_mention(ctx, "No warnings have been set")
+                    return
 
-            embed = await self.generate_user_modified_embed(
-                user, "warn", f"{reason} ({new_count} total warnings)"
+            await self.handle_ban(
+                ctx,
+                user,
+                f"Over max warning count {new_count}/{config.plugins.protect.max_warnings.value} (final warning: {reason})",
+                bypass=True,
             )
-            await util.send_with_mention(ctx, embed=embed)
+            await self.clear_warnings(user, ctx.guild)
+            return
+
+        await self.models.Warning(
+            user_id=str(user.id), guild_id=str(ctx.guild.id), reason=reason
+        ).create()
+        embed = await self.generate_user_modified_embed(
+            user, "warn", f"{reason} ({new_count} total warnings)"
+        )
+        await util.send_with_mention(ctx, embed=embed)
 
     async def handle_unwarn(self, ctx, user, reason, bypass=False):
         if not bypass:
@@ -261,13 +275,15 @@ class Protector(base.MatchCog):
             await util.send_with_mention(ctx, "There are no warnings for that user")
             return
 
-        await self.models.Warning.delete.where(
-            self.models.Warning.user_id == str(user.id)
-        ).where(self.models.Warning.guild_id == str(ctx.guild.id)).gino.status()
+        await self.clear_warnings(user, ctx.guild)
 
         embed = await self.generate_user_modified_embed(user, "UNWARNED", reason)
-
         await util.send_with_mention(ctx, embed=embed)
+
+    async def clear_warnings(self, user, guild):
+        await self.models.Warning.delete.where(
+            self.models.Warning.user_id == str(user.id)
+        ).where(self.models.Warning.guild_id == str(guild.id)).gino.status()
 
     async def handle_ban(self, ctx, user, reason, bypass=False):
         if not bypass:
@@ -315,6 +331,7 @@ class Protector(base.MatchCog):
             title=f"{action.upper()}: {user}", description=f"Reason: {reason}"
         )
         embed.set_thumbnail(url=user.avatar_url)
+        embed.color = discord.Color.red()
 
         return embed
 
@@ -373,6 +390,7 @@ class Protector(base.MatchCog):
         embed.add_field(name="URL", value=ctx.message.jump_url, inline=False)
 
         embed.set_thumbnail(url=self.ALERT_ICON_URL)
+        embed.color = discord.Color.red()
 
         await alert_channel.send(embed=embed)
 
@@ -400,8 +418,8 @@ class Protector(base.MatchCog):
             content = content[:256]
 
         embed.add_field(name="Preview", value=content.replace("\n", " "))
-
         embed.set_thumbnail(url=self.CLIPBOARD_ICON_URL)
+        embed.color = discord.Color.blue()
 
         return embed
 
@@ -464,13 +482,11 @@ class Protector(base.MatchCog):
         if target.id == self.bot.user.id:
             await util.send_with_mention(ctx, f"It would be silly to warn myself")
             return False
-
-        if target.top_role >= ctx.author.top_role:
-            await util.send_with_mention(
-                ctx, f"Your role is too low to do that to {target}"
-            )
-            return False
-
+        # if target.top_role >= ctx.author.top_role:
+        #     await util.send_with_mention(
+        #         ctx, f"Your top role is not high enough to do that to `{target}`"
+        #     )
+        #     return False
         return True
 
     @commands.has_permissions(ban_members=True)
@@ -553,9 +569,11 @@ class Protector(base.MatchCog):
 
         embed = discord.Embed(title=f"Warnings for {user}")
         for warning in warnings:
-            embed.add_field(name="Reason", value=warning.reason, inline=False)
+            embed.add_field(name=warning.time, value=warning.reason, inline=False)
 
         embed.set_thumbnail(url=user.avatar_url)
+
+        embed.color = discord.Color.red()
 
         await util.send_with_mention(ctx, embed=embed)
 
