@@ -254,10 +254,10 @@ class LoopCog(BaseCog):
         if not self.ON_START:
             await self.wait(config, guild)
 
-        while (
-            self.bot.plugin_api.plugins.get(self.extension_name)
-            and guild in self.bot.guilds
-        ):
+        while self.bot.plugin_api.plugins.get(self.extension_name):
+            if guild and guild not in self.bot.guilds:
+                break
+
             # refresh the config on every loop step
             config = await self.bot.get_context_config(guild=guild)
 
