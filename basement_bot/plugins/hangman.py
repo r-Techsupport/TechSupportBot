@@ -143,6 +143,9 @@ class HangmanCog(base.BaseCog):
         usage="[word]",
     )
     async def start_game(self, ctx, word: str):
+        # delete the message so the word is not seen
+        await ctx.message.delete()
+
         game_data = self.games.get(ctx.channel.id)
         if game_data:
             # if there is a game currently,
