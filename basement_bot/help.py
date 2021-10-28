@@ -56,12 +56,13 @@ class Helper(base.BaseCog):
         for plugin_name in plugin_names:
             plugin_name_text += f"- `{plugin_name}`\n"
 
+        # pylint: disable=no-member
         command_prefix = await self.bot.get_prefix(ctx.message)
         embed = discord.Embed(
-            title="Help",
-            # pylint: disable=no-member
-            description=f"use `{command_prefix}{self.help_command.name} <plugin_name>` to see commands\n\n {plugin_name_text}",
+            title=f"use `{command_prefix}{self.help_command.name} <plugin_name>` to see commands",
+            description=plugin_name_text,
         )
+        embed.color = discord.Color.green()
 
         return embed
 
@@ -85,6 +86,9 @@ class Helper(base.BaseCog):
         for cog_name in plugin_data.cogs:
             cog = self.bot.get_cog(cog_name)
             for command in cog.walk_commands():
+                if issubclass(command.__class__, commands.Group):
+                    continue
+
                 commands_found = True
                 if command.full_parent_name == "":
                     syntax = f"{command_prefix}{command.name}"
@@ -99,8 +103,11 @@ class Helper(base.BaseCog):
                     name=f"`{syntax} {usage}`", value=command.description, inline=False
                 )
 
+        embed.color = discord.Color.green()
+
         if not commands_found:
             embed.description = "There are no commands for this plugin"
+            embed.color = discord.Color.red()
 
         return embed
 
