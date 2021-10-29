@@ -165,10 +165,13 @@ class DiscordRelay(base.MatchCog):
 
         await self.publish(reaction_add_event.to_json(), message.guild)
 
-    async def match(self, _, ctx, __):
-        if ctx.channel.id in self.listen_channels:
-            return True
-        return False
+    async def match(self, _, ctx, content):
+        if not ctx.channel.id in self.listen_channels:
+            return False
+        prefix = await self.bot.get_prefix(ctx.message)
+        if content and content.startswith(prefix):
+            return False
+        return True
 
     async def response(self, _, ctx, __, ___):
         alternate_content = self.bot.sub_mentions_for_usernames(ctx.message.content)
