@@ -148,7 +148,7 @@ class DiscordRelay(base.MatchCog):
             return
 
         message = await channel.fetch_message(payload.message_id)
-        if not message:
+        if not message or not message.content:
             return
 
         emoji = (
