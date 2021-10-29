@@ -49,6 +49,9 @@ class CDIParser(BaseParser):
     ICON_URL = "https://cdn.icon-icons.com/icons2/24/PNG/256/harddiskdrive_hardware_discodur_2522.png"
 
     async def match(self, config, ctx, content):
+        if not ctx.guild:
+            return False
+
         if not ctx.message.attachments:
             return False
 
@@ -155,6 +158,9 @@ class SpeccyParser(BaseParser):
     WAIT_FOR_EXPAND_TIMEOUT = 60
 
     async def match(self, config, ctx, content):
+        if not ctx.guild:
+            return False
+
         matches = re.findall(self.URL_PATTERN, content, re.MULTILINE)
         return matches
 
@@ -381,6 +387,9 @@ class HWInfoParser(BaseParser):
     )
 
     async def match(self, _, ctx, __):
+        if not ctx.guild:
+            return False
+
         if not ctx.message.attachments:
             return False
 
