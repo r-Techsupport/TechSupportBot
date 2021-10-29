@@ -308,7 +308,7 @@ class Protector(base.MatchCog):
             if not can_execute:
                 return
 
-        await user.unban(reason=reason)
+        await ctx.guild.unban(user, reason=reason)
 
         embed = await self.generate_user_modified_embed(user, "unban", reason)
 
@@ -511,7 +511,7 @@ class Protector(base.MatchCog):
         description="Unbans a user with a given reason",
         usage="@user [reason]",
     )
-    async def unban_user(self, ctx, user: discord.Member, *, reason: str = None):
+    async def unban_user(self, ctx, user: discord.User, *, reason: str = None):
         await self.handle_unban(ctx, user, reason)
 
     @commands.has_permissions(kick_members=True)
