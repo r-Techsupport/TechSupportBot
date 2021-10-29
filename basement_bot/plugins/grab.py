@@ -150,11 +150,6 @@ class Grabber(base.BaseCog):
 
         grabs.sort(reverse=True, key=lambda grab: grab.time)
 
-        embed = discord.Embed(
-            title=f"Grabs for {user_to_grab.name}",
-            description="Let's take a stroll down memory lane...",
-        )
-        embed.set_thumbnail(url=user_to_grab.avatar_url)
         embeds = []
         field_counter = 1
         for index, grab_ in enumerate(grabs):
@@ -180,6 +175,7 @@ class Grabber(base.BaseCog):
                 or index == len(list(grabs)) - 1
             ):
                 embed.set_thumbnail(url=user_to_grab.avatar_url)
+                embed.color = discord.Color.orange()
                 embeds.append(embed)
                 field_counter = 1
             else:
@@ -236,6 +232,8 @@ class Grabber(base.BaseCog):
             title=f'"{filtered_message}"',
             description=f"{user_to_grab.name}, {grab.time.date()}",
         )
+
+        embed.color = discord.Color.orange()
 
         embed.set_thumbnail(url=user_to_grab.avatar_url)
 

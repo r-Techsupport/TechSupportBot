@@ -163,6 +163,7 @@ class ChannelDirectory(base.BaseCog):
         )
 
         embed.set_thumbnail(url=self.DIR_ICON_URL)
+        embed.color = discord.Color.gold()
 
         message = await directory_channel.send("Loading channel directory...")
 

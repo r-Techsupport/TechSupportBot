@@ -71,6 +71,7 @@ class UrbanDictionary(base.BaseCog):
                 or index == len(definitions) - 1
             ):
                 embed.set_thumbnail(url=self.ICON_URL)
+                embed.color = discord.Color.dark_green()
                 embeds.append(embed)
                 field_counter = 1
             else:

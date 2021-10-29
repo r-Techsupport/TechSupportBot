@@ -95,6 +95,7 @@ class Rules(base.BaseCog):
         )
 
         embed.set_thumbnail(url=self.RULE_ICON_URL)
+        embed.color = discord.Color.gold()
 
         await util.send_with_mention(ctx, embed=embed)
 
@@ -126,5 +127,6 @@ class Rules(base.BaseCog):
             )
 
         embed.set_thumbnail(url=self.RULE_ICON_URL)
+        embed.color = discord.Color.gold()
 
         await ctx.send(embed=embed)

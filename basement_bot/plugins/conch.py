@@ -54,5 +54,6 @@ class MagicConch(base.BaseCog):
         embed = discord.Embed(title=question, description=response)
 
         embed.set_thumbnail(url=self.PIC_URL)
+        embed.color = discord.Color.random()
 
         await util.send_with_mention(ctx, embed=embed)

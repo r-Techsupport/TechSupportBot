@@ -62,5 +62,6 @@ class Hugger(base.BaseCog):
         embed.add_field(name="You've been hugged!", value=hug_text)
 
         embed.set_thumbnail(url=self.ICON_URL)
+        embed.color = discord.Color.blurple()
 
         return embed

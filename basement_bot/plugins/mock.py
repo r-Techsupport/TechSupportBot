@@ -65,5 +65,6 @@ class Mocker(base.BaseCog):
         mock_string = self.mock_string(filtered_message)
         embed = discord.Embed(title=f'"{mock_string}"', description=user_to_mock.name)
         embed.set_thumbnail(url=user_to_mock.avatar_url)
+        embed.color = discord.Color.greyple()
 
         await util.send_with_mention(ctx, embed=embed)

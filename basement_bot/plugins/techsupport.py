@@ -145,6 +145,7 @@ class CDIParser(BaseParser):
             )
 
         embed.set_thumbnail(url=self.ICON_URL)
+        embed.color = discord.Color.blurple()
 
         return embed
 
@@ -478,5 +479,6 @@ class HWInfoParser(BaseParser):
         )
 
         embed.set_thumbnail(url=self.ICON_URL)
+        embed.color = discord.Color.blurple()
 
         return embed

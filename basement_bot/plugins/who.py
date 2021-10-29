@@ -51,6 +51,7 @@ class Who(base.BaseCog):
             total_notes = len(user_notes)
             user_notes = user_notes[-3:]
         embed.set_footer(text=f"{total_notes} total notes")
+        embed.color = discord.Color.dark_blue()
 
         for note in user_notes:
             author = ctx.guild.get_member(int(note.author_id)) or "<Not found>"

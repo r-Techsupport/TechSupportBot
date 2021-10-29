@@ -65,6 +65,7 @@ class Logger(base.MatchCog):
         )
 
         embed.set_thumbnail(url=ctx.author.avatar_url)
+        embed.color = discord.Color.greyple()
 
         embed.timestamp = datetime.datetime.utcnow()
 

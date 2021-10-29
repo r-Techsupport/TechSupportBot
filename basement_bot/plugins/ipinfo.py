@@ -1,4 +1,5 @@
 import base
+import discord
 import util
 from discord.ext import commands
 
@@ -33,5 +34,6 @@ class IPInfo(base.BaseCog):
         )
 
         embed.set_thumbnail(url=self.IP_ICON_URL)
+        embed.color = discord.Color.dark_green()
 
         await util.send_with_mention(ctx, embed=embed)

@@ -99,5 +99,6 @@ class XKCD(base.BaseCog):
         embed.set_author(name=f"XKCD #{num}")
         embed.set_image(url=image_url)
         embed.set_footer(text=alt_text)
+        embed.color = discord.Color.blue()
 
         return embed

@@ -129,6 +129,7 @@ class ReactionPoller(PollGenerator):
             description=f"Poll timeout: {display_timeout} {display_timeout_units}",
         )
         embed.set_thumbnail(url=request_body.image_url)
+        embed.color = discord.Color.gold()
 
         for index, option in enumerate(request_body.options):
             embed.add_field(name=option, value=index + 1, inline=False)

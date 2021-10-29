@@ -798,6 +798,7 @@ class DuckHunt(base.LoopCog):
             description="Befriend the duck with `bef` or shoot with `bang`",
         )
         embed.set_image(url=self.DUCK_PIC_URL)
+        embed.color = discord.Color.green()
 
         message = await channel.send(embed=embed)
 

@@ -54,6 +54,7 @@ class KanyeQuotes(base.LoopCog):
         embed = discord.Embed(title=f'"{quote}"', description="Kanye Quest")
 
         embed.set_thumbnail(url=random.choice(self.KANYE_PICS))
+        embed.color = discord.Color.dark_gold()
 
         channel = guild.get_channel(int(config.plugins.kanye.channel.value))
         if not channel:

@@ -100,9 +100,6 @@ class MatchCog(BaseCog):
             await self.bot.logger.debug("Checking config for log channel")
             config = await self.bot.get_context_config(ctx)
             channel = config.get("logging_channel")
-            # don't pass context to the logger for now
-            # as it tends to trigger a user response
-            # at some point the logger should have a non-user flags
             await self.bot.logger.error(
                 f"Match cog error: {self.__class__.__name__}!",
                 exception=e,
