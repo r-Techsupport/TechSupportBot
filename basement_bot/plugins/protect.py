@@ -214,15 +214,56 @@ class Protector(base.MatchCog):
         if len(content) > config.plugins.protect.length_limit.value:
             await self.handle_length_alert(config, ctx, content)
 
-    async def get_warnings(self, user, guild):
-        warnings = (
-            await self.models.Warning.query.where(
-                self.models.Warning.user_id == str(user.id)
-            )
-            .where(self.models.Warning.guild_id == str(guild.id))
-            .gino.all()
+    async def handle_length_alert(self, config, ctx, content):
+        await ctx.message.delete()
+
+        reason = (
+            f"message longer than {config.plugins.protect.length_limit.value} chars"
         )
-        return warnings
+
+        if not config.plugins.protect.linx_url.value:
+            await self.send_default_delete_response(config, ctx, content, reason)
+            return
+
+        linx_embed = await self.create_linx_embed(config, ctx, content)
+        if not linx_embed:
+            await self.send_default_delete_response(config, ctx, content, reason)
+            await self.send_alert(config, ctx, "Could not convert text to Linx paste")
+            return
+
+        await util.send_with_mention(ctx, embed=linx_embed)
+
+    async def handle_mass_mention_alert(self, config, ctx, content):
+        await ctx.message.delete()
+        await self.handle_warn(ctx, ctx.author, "mass mention", bypass=True)
+        await self.send_alert(config, ctx, f"Mass mentions from {ctx.author}")
+
+    async def handle_string_alert(self, config, ctx, content, filter_config):
+        if filter_config.warn:
+            await self.handle_warn(ctx, ctx.author, filter_config.message, bypass=True)
+
+        if filter_config.delete:
+            await ctx.message.delete()
+
+        await self.send_alert(
+            config,
+            ctx,
+            f"Message contained trigger: {filter_config.trigger}",
+        )
+
+        # check if this response data has triggered a response recently
+        if self.user_cached(ctx, filter_config.trigger):
+            return
+
+        if filter_config.delete:
+            await self.send_default_delete_response(
+                config, ctx, content, filter_config.message
+            )
+        else:
+            await util.send_with_mention(ctx, filter_config.message)
+
+        async with self.cache_lock:
+            await self.cache_user(config, ctx, filter_config.trigger)
 
     async def handle_warn(self, ctx, user, reason, bypass=False):
         if not bypass:
@@ -280,11 +321,6 @@ class Protector(base.MatchCog):
         embed = await self.generate_user_modified_embed(user, "UNWARNED", reason)
         await util.send_with_mention(ctx, embed=embed)
 
-    async def clear_warnings(self, user, guild):
-        await self.models.Warning.delete.where(
-            self.models.Warning.user_id == str(user.id)
-        ).where(self.models.Warning.guild_id == str(guild.id)).gino.status()
-
     async def handle_ban(self, ctx, user, reason, bypass=False):
         if not bypass:
             can_execute = await self.can_execute(ctx, user)
@@ -326,6 +362,11 @@ class Protector(base.MatchCog):
 
         await util.send_with_mention(ctx, embed=embed)
 
+    async def clear_warnings(self, user, guild):
+        await self.models.Warning.delete.where(
+            self.models.Warning.user_id == str(user.id)
+        ).where(self.models.Warning.guild_id == str(guild.id)).gino.status()
+
     async def generate_user_modified_embed(self, user, action, reason):
         embed = discord.Embed(
             title=f"{action.upper()}: {user}", description=f"Reason: {reason}"
@@ -334,121 +375,6 @@ class Protector(base.MatchCog):
         embed.color = discord.Color.red()
 
         return embed
-
-    async def handle_length_alert(self, config, ctx, content):
-        await ctx.message.delete()
-
-        reason = (
-            f"message longer than {config.plugins.protect.length_limit.value} chars"
-        )
-
-        if not config.plugins.protect.linx_url.value:
-            await self.send_default_delete_response(config, ctx, content, reason)
-            return
-
-        linx_embed = await self.create_linx_embed(config, ctx, content)
-        if not linx_embed:
-            await self.send_default_delete_response(config, ctx, content, reason)
-            await self.send_alert(config, ctx, "Could not convert text to Linx paste")
-            return
-
-        await util.send_with_mention(ctx, embed=linx_embed)
-
-    async def handle_mass_mention_alert(self, config, ctx, content):
-        await ctx.message.delete()
-        await self.handle_warn(ctx, ctx.author, "mass mention", bypass=True)
-        await self.send_alert(config, ctx, f"Mass mentions from {ctx.author}")
-
-    async def send_default_delete_response(self, config, ctx, content, reason):
-        await util.send_with_mention(
-            ctx,
-            f"I deleted your message because: `{reason}`",
-        )
-        await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
-
-    async def send_alert(self, config, ctx, message):
-        try:
-            alert_channel = ctx.guild.get_channel(
-                int(config.plugins.protect.alert_channel.value)
-            )
-        except TypeError:
-            alert_channel = None
-
-        if not alert_channel:
-            return
-
-        embed = discord.Embed(title="Protect Alert", description=message)
-
-        if len(ctx.message.content) >= 256:
-            message_content = ctx.message.content[0:256]
-        else:
-            message_content = ctx.message.content
-
-        embed.add_field(name="Channel", value=f"#{ctx.channel.name}")
-        embed.add_field(name="User", value=ctx.author.mention)
-        embed.add_field(name="Message", value=message_content, inline=False)
-        embed.add_field(name="URL", value=ctx.message.jump_url, inline=False)
-
-        embed.set_thumbnail(url=self.ALERT_ICON_URL)
-        embed.color = discord.Color.red()
-
-        await alert_channel.send(embed=embed)
-
-    async def create_linx_embed(self, config, ctx, content):
-        if not content:
-            return None
-
-        headers = {
-            "Linx-Expiry": "1800",
-            "Linx-Randomize": "yes",
-            "Accept": "application/json",
-        }
-        file = {"file": io.StringIO(content)}
-        response = await util.http_call(
-            "post", config.plugins.protect.linx_url.value, headers=headers, data=file
-        )
-
-        url = response.get("url")
-        if not url:
-            return None
-
-        embed = discord.Embed(title=f"Paste by {ctx.author}", description=url)
-
-        if len(content) > 256:
-            content = content[:256]
-
-        embed.add_field(name="Preview", value=content.replace("\n", " "))
-        embed.set_thumbnail(url=self.CLIPBOARD_ICON_URL)
-        embed.color = discord.Color.blue()
-
-        return embed
-
-    async def handle_string_alert(self, config, ctx, content, filter_config):
-        if filter_config.warn:
-            await self.handle_warn(ctx, ctx.author, filter_config.message, bypass=True)
-
-        if filter_config.delete:
-            await ctx.message.delete()
-
-        await self.send_alert(
-            config,
-            ctx,
-            f"Message contained trigger: {filter_config.trigger}",
-        )
-
-        # check if this response data has triggered a response recently
-        if self.user_cached(ctx, filter_config.trigger):
-            return
-
-        if filter_config.delete:
-            await self.send_default_delete_response(
-                config, ctx, content, filter_config.message
-            )
-        else:
-            await util.send_with_mention(ctx, filter_config.message)
-
-        async with self.cache_lock:
-            await self.cache_user(config, ctx, filter_config.trigger)
 
     async def cache_user(self, config, ctx, trigger):
         try:
@@ -482,12 +408,86 @@ class Protector(base.MatchCog):
         if target.id == self.bot.user.id:
             await util.send_with_mention(ctx, f"It would be silly to warn myself")
             return False
-        # if target.top_role >= ctx.author.top_role:
-        #     await util.send_with_mention(
-        #         ctx, f"Your top role is not high enough to do that to `{target}`"
-        #     )
-        #     return False
+        if target.top_role >= ctx.author.top_role:
+            await util.send_with_mention(
+                ctx, f"Your top role is not high enough to do that to `{target}`"
+            )
+            return False
         return True
+
+    async def send_alert(self, config, ctx, message):
+        try:
+            alert_channel = ctx.guild.get_channel(
+                int(config.plugins.protect.alert_channel.value)
+            )
+        except TypeError:
+            alert_channel = None
+
+        if not alert_channel:
+            return
+
+        embed = discord.Embed(title="Protect Alert", description=message)
+
+        if len(ctx.message.content) >= 256:
+            message_content = ctx.message.content[0:256]
+        else:
+            message_content = ctx.message.content
+
+        embed.add_field(name="Channel", value=f"#{ctx.channel.name}")
+        embed.add_field(name="User", value=ctx.author.mention)
+        embed.add_field(name="Message", value=message_content, inline=False)
+        embed.add_field(name="URL", value=ctx.message.jump_url, inline=False)
+
+        embed.set_thumbnail(url=self.ALERT_ICON_URL)
+        embed.color = discord.Color.red()
+
+        await alert_channel.send(embed=embed)
+
+    async def send_default_delete_response(self, config, ctx, content, reason):
+        await util.send_with_mention(
+            ctx,
+            f"I deleted your message because: `{reason}`",
+        )
+        await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
+
+    async def get_warnings(self, user, guild):
+        warnings = (
+            await self.models.Warning.query.where(
+                self.models.Warning.user_id == str(user.id)
+            )
+            .where(self.models.Warning.guild_id == str(guild.id))
+            .gino.all()
+        )
+        return warnings
+
+    async def create_linx_embed(self, config, ctx, content):
+        if not content:
+            return None
+
+        headers = {
+            "Linx-Expiry": "1800",
+            "Linx-Randomize": "yes",
+            "Accept": "application/json",
+        }
+        file = {"file": io.StringIO(content)}
+        response = await util.http_call(
+            "post", config.plugins.protect.linx_url.value, headers=headers, data=file
+        )
+
+        url = response.get("url")
+        if not url:
+            return None
+
+        embed = discord.Embed(title=f"Paste by {ctx.author}", description=url)
+
+        if len(content) > 256:
+            content = content[:256]
+
+        embed.add_field(name="Preview", value=content.replace("\n", " "))
+        embed.set_thumbnail(url=self.CLIPBOARD_ICON_URL)
+        embed.color = discord.Color.blue()
+
+        return embed
 
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
