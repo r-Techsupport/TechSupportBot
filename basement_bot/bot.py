@@ -14,6 +14,7 @@ import aio_pika
 import botlog
 import config
 import discord
+import error
 import gino
 import help as help_commands
 import ipc as ipc_local
@@ -271,12 +272,38 @@ class BasementBot(commands.Bot):
             context (discord.ext.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
+        if self.extra_events.get("on_command_error", None):
+            return
+        if hasattr(context.command, "on_error"):
+            return
+        if context.cog:
+            # pylint: disable=protected-access
+            if (
+                commands.Cog._get_overridden_method(context.cog.cog_command_error)
+                is not None
+            ):
+                return
+
+        message_template = error.COMMAND_ERROR_RESPONSE_TEMPLATES.get(
+            exception.__class__, ""
+        )
+        # see if we have mapped this error to no response (None)
+        # or if we have added it to the global ignore list of errors
+        if message_template is None or exception.__class__ in error.IGNORED_ERRORS:
+            return
+        # otherwise set it a default error message
+        if message_template == "":
+            message_template = error.ErrorResponse()
+
+        error_message = message_template.get_message(exception)
+
+        await context.send(f"{context.author.mention} {error_message}")
+
         log_channel = await self.get_log_channel_from_guild(
             getattr(context, "guild", None), key="logging_channel"
         )
         await self.logger.error(
             f"Command error: {exception}",
-            context=context,
             exception=exception,
             channel=log_channel,
         )
