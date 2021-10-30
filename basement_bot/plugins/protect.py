@@ -2,6 +2,7 @@ import asyncio
 import collections
 import datetime
 import io
+from typing import ChainMap
 
 import base
 import discord
@@ -122,6 +123,7 @@ class Protector(base.MatchCog):
         "https://icon-icons.com/icons2/203/PNG/128/diagram-30_24487.png"
     )
     CACHE_CLEAN_MINUTES = 60
+    CHARS_PER_NEWLINE = 80
 
     async def preconfig(self):
         self.string_alert_cache = collections.defaultdict(
@@ -163,9 +165,9 @@ class Protector(base.MatchCog):
             )
             return False
 
-        is_admin = await self.bot.is_bot_admin(ctx)
-        if is_admin:
-            return
+        # is_admin = await self.bot.is_bot_admin(ctx)
+        # if is_admin:
+        #     return
 
         role_names = [role.name.lower() for role in getattr(ctx.author, "roles", [])]
 
@@ -211,15 +213,18 @@ class Protector(base.MatchCog):
                 return
 
         # check length of content
-        if len(content) > config.plugins.protect.length_limit.value:
+        if len(content) > config.plugins.protect.length_limit.value or content.count(
+            "\n"
+        ) > self.max_newlines(config.plugins.protect.length_limit.value):
             await self.handle_length_alert(config, ctx, content)
+
+    def max_newlines(self, max_length):
+        return int(max_length / self.CHARS_PER_NEWLINE) + 1
 
     async def handle_length_alert(self, config, ctx, content):
         await ctx.message.delete()
 
-        reason = (
-            f"message longer than {config.plugins.protect.length_limit.value} chars"
-        )
+        reason = f"message too long (too many newlines or characters)"
 
         if not config.plugins.protect.linx_url.value:
             await self.send_default_delete_response(config, ctx, content, reason)
