@@ -21,7 +21,7 @@ munch = "==2.5.0"
 pyyaml = "==5.4"
 emoji = "==0.5.4"
 inflect = "==4.1.0"
-botlog = "==1.0.0"
+botlog = "==1.0.1"
 discord-ext-ipc = "==2.0.0"
 
 [requires]
