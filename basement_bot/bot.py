@@ -365,7 +365,10 @@ class BasementBot(commands.Bot):
             # treat this as a command error to be caught by the dispatcher
             raise commands.MissingPermissions(["bot_admin"])
 
-        result = await super().can_run(ctx, call_once=call_once)
+        if is_bot_admin:
+            result = True
+        else:
+            result = await super().can_run(ctx, call_once=call_once)
 
         return result
 
