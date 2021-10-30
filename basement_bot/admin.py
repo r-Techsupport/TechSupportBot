@@ -28,7 +28,11 @@ class AdminControl(base.BaseCog):
         pass
 
     @decorate.with_typing
-    @plugin_group.command(name="status")
+    @plugin_group.command(
+        name="status",
+        description="Gets the status of a plugin by name",
+        usage="[plugin-name]",
+    )
     async def plugin_status(self, ctx, *, plugin_name: str):
         """Gets the status of the bot plugins.
 
@@ -47,7 +51,9 @@ class AdminControl(base.BaseCog):
         await util.send_with_mention(ctx, embed=embed)
 
     @decorate.with_typing
-    @plugin_group.command(name="load")
+    @plugin_group.command(
+        name="load", description="Loads a plugin by name", usage="[plugin-name]"
+    )
     async def load_plugin(self, ctx, *, plugin_name: str):
         """Loads a plugin by filename.
 
@@ -61,7 +67,9 @@ class AdminControl(base.BaseCog):
         await util.send_with_mention(ctx, response.message)
 
     @decorate.with_typing
-    @plugin_group.command(name="unload")
+    @plugin_group.command(
+        name="unload", description="Unloads a plugin by name", usage="[plugin-name]"
+    )
     async def unload_plugin(self, ctx, *, plugin_name: str):
         """Unloads a plugin by filename.
 
@@ -84,7 +92,9 @@ class AdminControl(base.BaseCog):
         pass
 
     @decorate.with_typing
-    @command_group.command(name="enable")
+    @command_group.command(
+        name="enable", description="Enables a command by name", usage="[command-name]"
+    )
     async def enable_command(self, ctx, *, command_name: str):
         """Enables a command by name.
 
@@ -111,7 +121,9 @@ class AdminControl(base.BaseCog):
         )
 
     @decorate.with_typing
-    @command_group.command(name="disable")
+    @command_group.command(
+        name="disable", description="Disables a command by name", usage="[command-name]"
+    )
     async def disable_command(self, ctx, *, command_name: str):
         """Disables a command by name.
 
@@ -147,7 +159,9 @@ class AdminControl(base.BaseCog):
         pass
 
     @decorate.with_typing
-    @set_group.command(name="game")
+    @set_group.command(
+        name="game", description="Sets the game of the bot", usage="[game-name]"
+    )
     async def set_game(self, ctx, *, game_name: str):
         """Sets the bot's game (activity) by name.
 
@@ -161,7 +175,9 @@ class AdminControl(base.BaseCog):
         await util.send_with_mention(ctx, f"Successfully set game to: *{game_name}*")
 
     @decorate.with_typing
-    @set_group.command(name="nick")
+    @set_group.command(
+        name="nick", description="Sets the nick of the bot", usage="[nickname]"
+    )
     async def set_nick(self, ctx, *, nick: str):
         """Sets the bot's nick by name.
 
@@ -182,7 +198,11 @@ class AdminControl(base.BaseCog):
         pass
 
     @decorate.with_typing
-    @echo.command(name="channel")
+    @echo.command(
+        name="channel",
+        description="Echos a message to a channel",
+        usage="[channel-id] [message]",
+    )
     async def echo_channel(self, ctx, channel_id: int, *, message: str):
         """Sends a message to a specified channel.
 
@@ -201,7 +221,11 @@ class AdminControl(base.BaseCog):
         await channel.send(content=message)
 
     @decorate.with_typing
-    @echo.command(name="user")
+    @echo.command(
+        name="user",
+        description="Echos a message to a user",
+        usage="[user-id] [message]",
+    )
     async def echo_user(self, ctx, user_id: int, *, message: str):
         """Sends a message to a specified user.
 
@@ -219,7 +243,9 @@ class AdminControl(base.BaseCog):
 
         await user.send(content=message)
 
-    @commands.command(name="restart")
+    @commands.command(
+        name="restart", description="Restarts the bot at the container level"
+    )
     async def restart(self, ctx):
         """Restarts the bot.
 
@@ -231,7 +257,9 @@ class AdminControl(base.BaseCog):
         await util.send_with_mention(ctx, "Shutting down! Cya later!")
         sys.exit()
 
-    @commands.command(name="leave")
+    @commands.command(
+        name="leave", description="Leaves a guild by ID", usage="[guild-id]"
+    )
     async def leave(self, ctx, *, guild_id: int):
         """Leaves a guild by ID.
 
@@ -250,8 +278,8 @@ class AdminControl(base.BaseCog):
 
         await ctx.send(f"I have left the guild: {guild.name} ({guild.id})")
 
-    @commands.command(name="bot")
-    async def _bot_data(self, ctx):
+    @commands.command(name="bot", description="Provides bot info")
+    async def get_bot_data(self, ctx):
         """Gets various data about the bot.
 
         This is a command and should be accessed via Discord.
@@ -281,11 +309,17 @@ class AdminControl(base.BaseCog):
         )
 
         embed.set_thumbnail(url=self.bot.user.avatar_url)
+        embed.color = discord.Color.blurple()
 
         await util.send_with_mention(ctx, embed=embed)
 
     @decorate.with_typing
-    @commands.command(name="issue", aliases=["ish", "botish", "botissue"])
+    @commands.command(
+        name="issue",
+        aliases=["ish", "botish", "botissue"],
+        description="Creates a Github issue on the configured bot repo",
+        usage="[title] [description]",
+    )
     async def issue(self, ctx, title: str, description: str):
         """Creates an issue in the bot's Github Repo
 

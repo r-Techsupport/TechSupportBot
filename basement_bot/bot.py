@@ -67,6 +67,7 @@ class BasementBot(commands.Bot):
 
         self.load_bot_config(validate=True)
 
+        self.builtin_cogs = []
         self.plugin_api = plugin.PluginAPI(bot=self)
 
         self.logger = botlog.BotLogger(
@@ -180,30 +181,14 @@ class BasementBot(commands.Bot):
             await self.logger.debug("Syncing Postgres tables...")
             await self.db.gino.create_all()
 
-        await self.logger.debug("Loading Admin commands...")
-        try:
-            self.add_cog(admin.AdminControl(self))
-        except Exception as exception:
-            await self.logger.warning(f"Could not add Admin commands: {exception}")
-
-        await self.logger.debug("Loading Config commands...")
-        try:
-            self.add_cog(config.ConfigControl(self))
-        except Exception as exception:
-            await self.logger.warning(f"Could not load Config commands: {exception}")
-
         await self.logger.debug("Loading Help commands...")
-        try:
-            self.remove_command("help")
-            self.add_cog(help_commands.Helper(self))
-        except Exception as exception:
-            await self.logger.warning(f"Could not load Helper commands: {exception}")
+        self.remove_command("help")
+        help_cog = help_commands.Helper(self)
+        self.add_cog(help_cog)
 
-        await self.logger.debug("Loading Raw commands...")
-        try:
-            self.add_cog(raw.Raw(self))
-        except Exception as exception:
-            await self.logger.warning(f"Could not load Raw commands: {exception}")
+        await self.load_builtin_cog(admin.AdminControl)
+        await self.load_builtin_cog(config.ConfigControl)
+        await self.load_builtin_cog(raw.Raw)
 
         if self.ipc:
             await self.logger.debug("Loading IPC endpoints...")
@@ -214,6 +199,21 @@ class BasementBot(commands.Bot):
 
         await self.logger.debug("Logging into Discord...")
         await super().start(*args, **kwargs)
+
+    async def load_builtin_cog(self, cog):
+        """Loads a cog as a builtin.
+
+        parameters:
+            cog (discord.commands.ext.Cog): the cog to load
+        """
+        try:
+            cog = cog(self)
+            self.add_cog(cog)
+            self.builtin_cogs.append(cog.qualified_name)
+        except Exception as exception:
+            await self.logger.warning(
+                f"Could not load builtin cog {cog.__name__}: {exception}"
+            )
 
     async def cleanup(self):
         """Cleans up after the event loop is interupted."""
@@ -792,7 +792,10 @@ class BasementBot(commands.Bot):
                     "Could not delete user reaction on pagination message", send=False
                 )
 
-        await message.clear_reactions()
+        try:
+            await message.clear_reactions()
+        except discord.NotFound:
+            pass
 
     def task_paginate(self, *args, **kwargs):
         """Creates a pagination task from the given args.

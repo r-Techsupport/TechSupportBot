@@ -11,7 +11,9 @@ class Raw(base.BaseCog):
 
     ADMIN_ONLY = True
 
-    @commands.command(name="raw")
+    @commands.command(
+        name="raw", description="Runs raw Python code", usage="|uploaded-python-file|"
+    )
     async def raw_command(self, ctx):
         """Executes raw uploaded Python code.
 
