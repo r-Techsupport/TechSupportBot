@@ -133,6 +133,7 @@ class HangmanCog(base.BaseCog):
     async def preconfig(self):
         self.games = {}
 
+    @commands.guild_only()
     @commands.group(
         name="hangman", description="Runs a hangman command", aliases=["hm"]
     )
