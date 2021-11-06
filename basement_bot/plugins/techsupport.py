@@ -155,8 +155,6 @@ class SpeccyParser(BaseParser):
     URL_PATTERN = r"http://speccy.piriform.com/results/[a-zA-Z0-9]+"
     API_URL = "http://134.122.122.133"
     ICON_URL = "https://cdn.icon-icons.com/icons2/195/PNG/256/Speccy_23586.png"
-    EXPAND_EMOJI = "➕"
-    WAIT_FOR_EXPAND_TIMEOUT = 60
 
     async def match(self, config, ctx, content):
         if not ctx.guild:
@@ -171,7 +169,7 @@ class SpeccyParser(BaseParser):
             return
 
         confirmed = await self.confirm(
-            ctx, "Speccy link detected. Would you like me to parse the results?", config
+            ctx, "Speccy link detected! Should I summarize the results?", config
         )
         if not confirmed:
             return
@@ -232,9 +230,8 @@ class SpeccyParser(BaseParser):
 
     @staticmethod
     def get_layman_info(response_data):
-        software_check_data = response_data.get("SoftwareCheck")
         layman_info = (
-            software_check_data.get("Layman", "*<Layman info not found>*")
+            response_data.get("Layman", "*<Layman info not found>*")
             .strip("\n")
             .replace("\n", "\n - ")
             or "Your Speccy is in good shape!"
@@ -244,17 +241,21 @@ class SpeccyParser(BaseParser):
         return layman_info
 
     async def generate_embed(self, ctx, response_data):
+        response_data = self.prepare_response_fields(response_data)
+
+        yikes_score = response_data.get("Yikes", 0)
         embed = discord.Embed(
-            title=f"Speccy Results for {ctx.author}", description=response_data.Link
+            title=f"Speccy Results for {ctx.author} (yikes score = {yikes_score})",
+            description=response_data.Link,
         )
 
         # define the order of rendering and any metadata for each render
         order = [
-            {"key": "Yikes", "transform": "Yikes Score"},
+            {"key": "HardwareSummary", "transform": "HW Summary", "inline": False},
             {"key": "HardwareCheck", "transform": "HW Check"},
             {"key": "OSCheck", "transform": "OS Check"},
-            {"key": "SecurityCheck", "transform": "Security"},
             {"key": "SoftwareCheck", "transform": "SW Check"},
+            {"key": "SecurityCheck", "transform": "Security", "inline": False},
         ]
 
         for section in order:
@@ -274,7 +275,7 @@ class SpeccyParser(BaseParser):
             embed.add_field(
                 name=f"__{section.get('transform', key.upper())}__",
                 value=content,
-                inline=False,
+                inline=section.get("inline", True),
             )
 
         embed.add_field(name="__Summary__", value=self.get_layman_info(response_data))
@@ -285,7 +286,32 @@ class SpeccyParser(BaseParser):
 
         return embed
 
-    def add_yikes_color(self, embed, response_data):
+    @staticmethod
+    def prepare_response_fields(response_data):
+        os_check_data = response_data.get("OSCheck")
+        if os_check_data:
+            major_os = os_check_data.get("MajorOS")
+            minor_os = os_check_data.get("MinorOS")
+            os_supported = os_check_data.get("OSSupported")
+            os_check_data["OSDetails"] = f"{major_os}: {minor_os} ({os_supported})"
+            if major_os is not None:
+                del os_check_data["MajorOS"]
+            if minor_os is not None:
+                del os_check_data["MinorOS"]
+            if os_supported is not None:
+                del os_check_data["OSSupported"]
+
+        hw_summary_data = response_data.get("HardwareSummary")
+        if hw_summary_data:
+            motherboard = hw_summary_data.get("Motherboard")
+            hw_summary_data["Mobo"] = motherboard
+            if motherboard:
+                del hw_summary_data["Motherboard"]
+
+        return response_data
+
+    @staticmethod
+    def add_yikes_color(embed, response_data):
         yikes_score = response_data.get("Yikes", 0)
         if yikes_score > 3:
             embed.color = discord.Color.red()
@@ -302,13 +328,19 @@ class SpeccyParser(BaseParser):
 
         result = ""
         for key, value in check_data.items():
-            if self.should_skip_key(key):
-                continue
-            if not value or value == "False":
-                continue
-
             if isinstance(value, list):
                 value = ", ".join(value)
+
+            if len(value) > 30:
+                trimmed_value = value[:30]
+                excess_value = value[30:]
+                padded_value = excess_value.split(" ")[0]
+                value = trimmed_value + padded_value + "..."
+
+            if self.should_skip_key(key):
+                continue
+            if self.should_skip_value(value):
+                continue
 
             result += f"**{key}**: {value}\n"
 
@@ -317,6 +349,14 @@ class SpeccyParser(BaseParser):
     @staticmethod
     def should_skip_key(key):
         if key.lower() in ["bppc", "dateformat", "datetimeformat", "layman"]:
+            return True
+        return False
+
+    @staticmethod
+    def should_skip_value(value):
+        if value is None:
+            return True
+        if value.lower() in ["false", ""]:
             return True
         return False
 
