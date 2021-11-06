@@ -79,6 +79,14 @@ class CDIParser(BaseParser):
 
         found_message = await util.send_with_mention(ctx, "Parsing CDI results now...")
 
+        await self.bot.guild_log(
+            ctx.guild,
+            "logging_channel",
+            "info",
+            f"Parsing CDI file from {ctx.author} in #{ctx.channel}",
+            send=True,
+        )
+
         api_response = await self.call_api(result)
 
         try:
@@ -176,6 +184,14 @@ class SpeccyParser(BaseParser):
 
         found_message = await util.send_with_mention(
             ctx, "Parsing Speccy results now..."
+        )
+
+        await self.bot.guild_log(
+            ctx.guild,
+            "logging_channel",
+            "info",
+            f"Parsing Speccy URL with ID: {speccy_id} from {ctx.author} in #{ctx.channel}",
+            send=True,
         )
 
         api_response = await self.call_api(speccy_id)
@@ -385,13 +401,21 @@ class HWInfoParser(BaseParser):
     async def response(self, config, ctx, __, result):
         confirmed = await self.confirm(
             ctx,
-            "If this is a HWINFO log file, I can try parsing it. Would you like me to do that?",
+            "If this is a HWINFO log file, I can try scanning it. Would you like me to do that?",
             config,
         )
         if not confirmed:
             return
 
         found_message = await util.send_with_mention(ctx, "Parsing HWInfo logs now...")
+
+        await self.bot.guild_log(
+            ctx.guild,
+            "logging_channel",
+            "info",
+            f"Parsing HWInfo logs from {ctx.author} in #{ctx.channel}",
+            send=True,
+        )
 
         api_response = await self.call_api(result)
 
