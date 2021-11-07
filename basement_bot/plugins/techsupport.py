@@ -163,6 +163,7 @@ class SpeccyParser(BaseParser):
     URL_PATTERN = r"http://speccy.piriform.com/results/[a-zA-Z0-9]+"
     API_URL = "http://134.122.122.133"
     ICON_URL = "https://cdn.icon-icons.com/icons2/195/PNG/256/Speccy_23586.png"
+    VALUE_TRIM_LENGTH = 35
 
     async def match(self, config, ctx, content):
         if not ctx.guild:
@@ -269,8 +270,8 @@ class SpeccyParser(BaseParser):
         order = [
             {"key": "HardwareSummary", "transform": "HW Summary", "inline": False},
             {"key": "HardwareCheck", "transform": "HW Check"},
-            {"key": "OSCheck", "transform": "OS Check"},
             {"key": "SoftwareCheck", "transform": "SW Check"},
+            {"key": "OSCheck", "transform": "OS Check", "inline": False},
             {"key": "SecurityCheck", "transform": "Security", "inline": False},
         ]
 
@@ -347,11 +348,11 @@ class SpeccyParser(BaseParser):
             if isinstance(value, list):
                 value = ", ".join(value)
 
-            if len(value) > 30:
-                trimmed_value = value[:30]
-                excess_value = value[30:]
-                padded_value = excess_value.split(" ")[0]
-                value = trimmed_value + padded_value + "..."
+            if isinstance(value, int):
+                value = str(value)
+
+            if len(value) > self.VALUE_TRIM_LENGTH:
+                value = self.trim_value(key, value)
 
             if self.should_skip_key(key):
                 continue
@@ -361,6 +362,14 @@ class SpeccyParser(BaseParser):
             result += f"**{key}**: {value}\n"
 
         return result
+
+    def trim_value(self, key, value):
+        if key.lower() in ["osdetails"]:
+            return value
+        trimmed_value = value[: self.VALUE_TRIM_LENGTH]
+        excess_value = value[self.VALUE_TRIM_LENGTH :]
+        padded_value = excess_value.split(" ")[0]
+        return trimmed_value + padded_value + "..."
 
     @staticmethod
     def should_skip_key(key):
@@ -372,7 +381,7 @@ class SpeccyParser(BaseParser):
     def should_skip_value(value):
         if value is None:
             return True
-        if value.lower() in ["false", ""]:
+        if value.lower() in ["false", "", "0"]:
             return True
         return False
 
