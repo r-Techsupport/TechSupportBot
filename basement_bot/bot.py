@@ -9,18 +9,14 @@ import os
 import re
 import sys
 
-import admin
 import aio_pika
 import botlog
-import config
+import cogs
 import discord
 import error
 import gino
-import help as help_commands
-import ipc as ipc_local
 import munch
 import plugin
-import raw
 import util
 import yaml
 from discord.ext import commands, ipc
@@ -183,19 +179,15 @@ class BasementBot(commands.Bot):
 
         await self.logger.debug("Loading Help commands...")
         self.remove_command("help")
-        help_cog = help_commands.Helper(self)
+        help_cog = cogs.Helper(self)
         self.add_cog(help_cog)
 
-        await self.load_builtin_cog(admin.AdminControl)
-        await self.load_builtin_cog(config.ConfigControl)
-        await self.load_builtin_cog(raw.Raw)
+        await self.load_builtin_cog(cogs.AdminControl)
+        await self.load_builtin_cog(cogs.ConfigControl)
+        await self.load_builtin_cog(cogs.Raw)
 
         if self.ipc:
-            await self.logger.debug("Loading IPC endpoints...")
-            try:
-                self.add_cog(ipc_local.IPCEndpoints(self))
-            except Exception as exception:
-                await self.logger.warning(f"Could not load IPC endpoints: {exception}")
+            await self.load_builtin_cog(cogs.IPCEndpoints)
 
         await self.logger.debug("Logging into Discord...")
         await super().start(*args, **kwargs)
