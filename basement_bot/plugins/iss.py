@@ -1,5 +1,4 @@
 import base
-import decorate
 import discord
 import util
 from discord.ext import commands
@@ -14,7 +13,7 @@ class ISSLocator(base.BaseCog):
     ISS_URL = "http://api.open-notify.org/iss-now.json"
     GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="iss",

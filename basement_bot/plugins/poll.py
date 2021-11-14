@@ -3,7 +3,6 @@ import io
 import json
 
 import base
-import decorate
 import discord
 import emoji
 import util
@@ -83,7 +82,7 @@ class ReactionPoller(PollGenerator):
     async def poll(self, ctx):
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @poll.command(
         brief="Shows example poll JSON",
@@ -96,7 +95,7 @@ class ReactionPoller(PollGenerator):
         )
         await util.send_with_mention(ctx, file=json_file)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @poll.command(
@@ -231,7 +230,7 @@ class StrawPoller(PollGenerator):
     async def strawpoll(self, ctx):
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @strawpoll.command(
         brief="Shows example poll JSON",
@@ -244,7 +243,7 @@ class StrawPoller(PollGenerator):
         )
         await util.send_with_mention(ctx, file=json_file)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @strawpoll.command(
         brief="Generates a strawpoll",

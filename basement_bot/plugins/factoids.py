@@ -5,7 +5,6 @@ import io
 import json
 
 import base
-import decorate
 import discord
 import util
 import yaml
@@ -312,7 +311,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     async def factoid(self, ctx):
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     @factoid.command(
@@ -338,7 +337,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             embed_config=embed_config,
         )
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     @factoid.command(
@@ -352,7 +351,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             ctx, f"Successfully deleted factoid: *{factoid_name}*"
         )
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(ban_members=True)
     @commands.guild_only()
     @factoid.command(
@@ -384,7 +383,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             ctx, f"Successfully saved loop config for {factoid_name}"
         )
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(ban_members=True)
     @commands.guild_only()
     @factoid.command(
@@ -408,7 +407,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         await util.send_with_mention(ctx, "Loop config deleted")
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @factoid.command(
@@ -468,7 +467,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         await util.send_with_mention(ctx, embed=embed)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @factoid.command(
@@ -498,7 +497,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         await util.send_with_mention(ctx, file=json_file)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @factoid.command(
@@ -528,7 +527,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         await util.send_with_mention(ctx, embed=embed)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @factoid.command(
@@ -555,7 +554,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         await ctx.send(file=yaml_file)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     @factoid.command(
@@ -581,7 +580,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         await util.send_with_mention(ctx, "That factoid is now hidden")
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     @factoid.command(

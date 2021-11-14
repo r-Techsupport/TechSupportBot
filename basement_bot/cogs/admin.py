@@ -5,7 +5,6 @@ import json
 import sys
 
 import base
-import decorate
 import discord
 import util
 from discord.ext import commands
@@ -27,7 +26,7 @@ class AdminControl(base.BaseCog):
         # pylint: disable=missing-function-docstring
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @plugin_group.command(
         name="status",
         description="Gets the status of a plugin by name",
@@ -50,7 +49,7 @@ class AdminControl(base.BaseCog):
         )
         await util.send_with_mention(ctx, embed=embed)
 
-    @decorate.with_typing
+    @util.with_typing
     @plugin_group.command(
         name="load", description="Loads a plugin by name", usage="[plugin-name]"
     )
@@ -66,7 +65,7 @@ class AdminControl(base.BaseCog):
         response = ctx.bot.plugin_api.load_plugin(plugin_name)
         await util.send_with_mention(ctx, response.message)
 
-    @decorate.with_typing
+    @util.with_typing
     @plugin_group.command(
         name="unload", description="Unloads a plugin by name", usage="[plugin-name]"
     )
@@ -91,7 +90,7 @@ class AdminControl(base.BaseCog):
         # pylint: disable=missing-function-docstring
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @command_group.command(
         name="enable", description="Enables a command by name", usage="[command-name]"
     )
@@ -120,7 +119,7 @@ class AdminControl(base.BaseCog):
             ctx, f"Successfully enabled command: `{command_name}`"
         )
 
-    @decorate.with_typing
+    @util.with_typing
     @command_group.command(
         name="disable", description="Disables a command by name", usage="[command-name]"
     )
@@ -158,7 +157,7 @@ class AdminControl(base.BaseCog):
         # pylint: disable=missing-function-docstring
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @set_group.command(
         name="game", description="Sets the game of the bot", usage="[game-name]"
     )
@@ -174,7 +173,7 @@ class AdminControl(base.BaseCog):
         await ctx.bot.change_presence(activity=discord.Game(name=game_name))
         await util.send_with_mention(ctx, f"Successfully set game to: *{game_name}*")
 
-    @decorate.with_typing
+    @util.with_typing
     @set_group.command(
         name="nick", description="Sets the nick of the bot", usage="[nickname]"
     )
@@ -197,7 +196,7 @@ class AdminControl(base.BaseCog):
         # pylint: disable=missing-function-docstring
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @echo.command(
         name="channel",
         description="Echos a message to a channel",
@@ -220,7 +219,7 @@ class AdminControl(base.BaseCog):
 
         await channel.send(content=message)
 
-    @decorate.with_typing
+    @util.with_typing
     @echo.command(
         name="user",
         description="Echos a message to a user",
@@ -313,7 +312,7 @@ class AdminControl(base.BaseCog):
 
         await util.send_with_mention(ctx, embed=embed)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.command(
         name="issue",
         aliases=["ish", "botish", "botissue"],

@@ -1,5 +1,4 @@
 import base
-import decorate
 import discord
 import util
 from discord.ext import commands
@@ -35,7 +34,7 @@ class Googler(base.BaseCog):
     async def google(self, ctx):
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @google.command(
@@ -88,7 +87,7 @@ class Googler(base.BaseCog):
 
         self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @google.command(
@@ -125,7 +124,7 @@ class Googler(base.BaseCog):
 
         self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(

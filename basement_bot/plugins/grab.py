@@ -2,7 +2,6 @@ import datetime
 import random
 
 import base
-import decorate
 import discord
 import util
 from discord.ext import commands
@@ -53,7 +52,7 @@ class Grabber(base.BaseCog):
 
         return False
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(
@@ -114,7 +113,7 @@ class Grabber(base.BaseCog):
     async def grabs(self, ctx):
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @grabs.command(
@@ -183,7 +182,7 @@ class Grabber(base.BaseCog):
 
         self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @grabs.command(

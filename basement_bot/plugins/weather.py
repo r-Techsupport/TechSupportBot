@@ -1,5 +1,4 @@
 import base
-import decorate
 import discord
 import munch
 import util
@@ -17,7 +16,7 @@ class Weather(base.BaseCog):
         url = "http://api.openweathermap.org/data/2.5/weather"
         return f"{url}?q={searches}&units=imperial&appid={self.bot.file_config.main.api_keys.open_weather}"
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="we",

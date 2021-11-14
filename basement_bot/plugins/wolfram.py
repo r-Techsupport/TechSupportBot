@@ -1,5 +1,4 @@
 import base
-import decorate
 import util
 from discord.ext import commands
 
@@ -12,7 +11,7 @@ class Wolfram(base.BaseCog):
 
     API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="wa",

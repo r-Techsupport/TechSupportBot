@@ -1,7 +1,6 @@
 import random
 
 import base
-import decorate
 import util
 from discord.ext import commands
 
@@ -20,7 +19,7 @@ class Giphy(base.BaseCog):
         index = url.find("?cid=")
         return url[:index]
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(
