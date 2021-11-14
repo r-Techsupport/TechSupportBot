@@ -1,5 +1,4 @@
 import base
-import decorate
 import discord
 import util
 from discord.ext import commands
@@ -10,7 +9,7 @@ def setup(bot):
 
 
 class Embedder(base.BaseCog):
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(manage_messages=True)
     @commands.command(
         brief="Generates a list of embeds",

@@ -1,5 +1,4 @@
 import base
-import decorate
 import util
 from discord.ext import commands
 
@@ -14,7 +13,7 @@ class Translator(base.BaseCog):
 
     API_URL = "https://api.mymemory.translated.net/get?q={}&langpair={}|{}"
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Translates a message",

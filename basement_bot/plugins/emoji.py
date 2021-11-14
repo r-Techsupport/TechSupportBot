@@ -1,5 +1,4 @@
 import base
-import decorate
 import discord
 import emoji
 import inflect
@@ -69,7 +68,7 @@ class Emojis(base.BaseCog):
     async def emoji(self, ctx):
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @emoji.command(
         aliases=["msg"],

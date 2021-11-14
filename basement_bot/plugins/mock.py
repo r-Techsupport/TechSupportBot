@@ -1,5 +1,4 @@
 import base
-import decorate
 import discord
 import util
 from discord.ext import commands
@@ -26,7 +25,7 @@ class Mocker(base.BaseCog):
                 i = not i
         return mock
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(

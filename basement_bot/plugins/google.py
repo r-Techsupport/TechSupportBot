@@ -1,5 +1,4 @@
 import base
-import decorate
 import discord
 import util
 from discord.ext import commands
@@ -35,7 +34,7 @@ class Googler(base.BaseCog):
     async def google(self, ctx):
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @google.command(
@@ -46,9 +45,9 @@ class Googler(base.BaseCog):
     )
     async def search(self, ctx, *, query: str):
         data = {
-            "cx": self.bot.config.main.api_keys.google_cse,
+            "cx": self.bot.file_config.main.api_keys.google_cse,
             "q": query,
-            "key": self.bot.config.main.api_keys.google,
+            "key": self.bot.file_config.main.api_keys.google,
         }
 
         items = await self.get_items(self.GOOGLE_URL, data)
@@ -88,7 +87,7 @@ class Googler(base.BaseCog):
 
         self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @google.command(
@@ -99,9 +98,9 @@ class Googler(base.BaseCog):
     )
     async def images(self, ctx, *, query: str):
         data = {
-            "cx": self.bot.config.main.api_keys.google_cse,
+            "cx": self.bot.file_config.main.api_keys.google_cse,
             "q": query,
-            "key": self.bot.config.main.api_keys.google,
+            "key": self.bot.file_config.main.api_keys.google,
             "searchType": "image",
         }
         items = await self.get_items(self.GOOGLE_URL, data)
@@ -125,7 +124,7 @@ class Googler(base.BaseCog):
 
         self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(
@@ -139,7 +138,7 @@ class Googler(base.BaseCog):
             self.YOUTUBE_URL,
             data={
                 "q": query,
-                "key": self.bot.config.main.api_keys.google,
+                "key": self.bot.file_config.main.api_keys.google,
                 "type": "video",
             },
         )

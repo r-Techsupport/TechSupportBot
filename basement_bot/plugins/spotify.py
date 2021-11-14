@@ -1,6 +1,5 @@
 import aiohttp
 import base
-import decorate
 import util
 from discord.ext import commands
 
@@ -21,14 +20,14 @@ class Spotify(base.BaseCog):
             self.AUTH_URL,
             data=data,
             auth=aiohttp.BasicAuth(
-                self.bot.config.main.api_keys.spotify_client,
-                self.bot.config.main.api_keys.spotify_key,
+                self.bot.file_config.main.api_keys.spotify_client,
+                self.bot.file_config.main.api_keys.spotify_key,
             ),
         )
 
         return response.get("access_token")
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Searches Spotify",

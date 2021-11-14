@@ -108,8 +108,10 @@ class ReactionAddEvent(RelayEvent):
 
 class DiscordRelay(base.MatchCog):
     async def preconfig(self):
-        self.listen_channels = list(self.bot.config.special.relay.channel_map.values())
-        self.bot.plugin_api.plugins.relay.memory.channels = self.listen_channels
+        self.listen_channels = list(
+            self.bot.file_config.special.relay.channel_map.values()
+        )
+        self.bot.plugins.relay.memory.channels = self.listen_channels
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
@@ -184,7 +186,7 @@ class DiscordRelay(base.MatchCog):
     async def publish(self, payload, guild):
         try:
             await self.bot.rabbit_publish(
-                payload, self.bot.config.special.relay.send_queue
+                payload, self.bot.file_config.special.relay.send_queue
             )
         except Exception as e:
             await self.bot.guild_log(
@@ -204,12 +206,14 @@ class IRCReceiver(base.LoopCog):
     ON_START = True
 
     async def loop_preconfig(self):
-        self.listen_channels = list(self.bot.config.special.relay.channel_map.values())
+        self.listen_channels = list(
+            self.bot.file_config.special.relay.channel_map.values()
+        )
 
     async def execute(self, _config, guild):
         try:
             await self.bot.rabbit_consume(
-                self.bot.config.special.relay.recv_queue,
+                self.bot.file_config.special.relay.recv_queue,
                 self.handle_event,
                 poll_wait=1,
                 durable=True,
@@ -268,7 +272,7 @@ class IRCReceiver(base.LoopCog):
 
     def _get_channel(self, data):
         for channel_id in self.listen_channels:
-            if channel_id == self.bot.config.special.relay.channel_map.get(
+            if channel_id == self.bot.file_config.special.relay.channel_map.get(
                 data.channel.name
             ):
                 return self.bot.get_channel(int(channel_id))
@@ -288,7 +292,9 @@ class IRCReceiver(base.LoopCog):
         time = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f")
         now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
-        if (now - time).total_seconds() > self.bot.config.special.relay.stale_seconds:
+        if (
+            now - time
+        ).total_seconds() > self.bot.file_config.special.relay.stale_seconds:
             return True
 
         return False

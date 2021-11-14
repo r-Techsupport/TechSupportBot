@@ -1,7 +1,6 @@
 import random
 
 import base
-import decorate
 import discord
 import util
 from discord.ext import commands
@@ -23,7 +22,7 @@ class Burn(base.BaseCog):
         "Was that message a hot pan? BECAUSE IT BURNS!",
     ]
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(

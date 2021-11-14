@@ -1,7 +1,6 @@
 import random
 
 import base
-import decorate
 import util
 from discord.ext import commands
 
@@ -20,7 +19,7 @@ class Giphy(base.BaseCog):
         index = url.find("?cid=")
         return url[:index]
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(
@@ -34,7 +33,7 @@ class Giphy(base.BaseCog):
             "get",
             self.GIPHY_URL.format(
                 query.replace(" ", "+"),
-                self.bot.config.main.api_keys.giphy,
+                self.bot.file_config.main.api_keys.giphy,
                 self.SEARCH_LIMIT,
             ),
         )

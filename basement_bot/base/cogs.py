@@ -55,7 +55,7 @@ class BaseCog(commands.Cog):
             if not self.KEEP_COG_ON_FAILURE:
                 self.bot.remove_cog(self)
             if not self.KEEP_PLUGIN_ON_FAILURE:
-                self.bot.plugin_api.unload_plugin(self.extension_name)
+                self.bot.unload_plugin(self.extension_name)
 
     async def _preconfig(self):
         """Blocks the preconfig until the bot is ready."""
@@ -251,7 +251,7 @@ class LoopCog(BaseCog):
         if not self.ON_START:
             await self.wait(config, guild)
 
-        while self.bot.plugin_api.plugins.get(self.extension_name):
+        while self.bot.plugins.get(self.extension_name):
             if guild and guild not in self.bot.guilds:
                 break
 

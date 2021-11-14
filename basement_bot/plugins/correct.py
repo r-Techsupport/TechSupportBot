@@ -1,5 +1,4 @@
 import base
-import decorate
 import util
 from discord.ext import commands
 
@@ -12,7 +11,7 @@ class Corrector(base.BaseCog):
 
     SEARCH_LIMIT = 50
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(

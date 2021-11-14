@@ -1,5 +1,4 @@
 import base
-import decorate
 import discord
 import util
 from discord.ext import commands
@@ -24,7 +23,7 @@ class UrbanDictionary(base.BaseCog):
     SEE_MORE_URL = "https://www.urbandictionary.com/define.php?term="
     ICON_URL = "https://cdn.icon-icons.com/icons2/114/PNG/512/dictionary_19159.png"
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="urb",

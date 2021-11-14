@@ -1,10 +1,9 @@
 import datetime
 
 import base
-import decorate
 import discord
 import emoji
-import sqlalchemy
+import util
 from discord.ext import commands
 
 
@@ -228,7 +227,7 @@ class ChannelDirectory(base.BaseCog):
     async def directory(self, ctx):
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     @directory.command(

@@ -1,7 +1,6 @@
 import random
 
 import base
-import decorate
 import discord
 import util
 from discord.ext import commands
@@ -28,7 +27,7 @@ class Hugger(base.BaseCog):
         "https://cdn.icon-icons.com/icons2/1648/PNG/512/10022huggingface_110042.png"
     )
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(

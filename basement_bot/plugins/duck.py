@@ -5,7 +5,6 @@ import random
 from concurrent.futures._base import TimeoutError as AsyncTimeoutError
 
 import base
-import decorate
 import discord
 import util
 from discord import Color as embed_colors
@@ -949,7 +948,7 @@ class DuckHunt(base.LoopCog):
     async def duck(self, ctx):
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @duck.command(
@@ -982,7 +981,7 @@ class DuckHunt(base.LoopCog):
 
         await util.send_with_mention(ctx, embed=embed)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @duck.command(
@@ -1028,7 +1027,7 @@ class DuckHunt(base.LoopCog):
 
         self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @duck.command(
