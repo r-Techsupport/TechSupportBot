@@ -1,18 +1,19 @@
 # BasementBot
 
-BasementBot is a Dockerized Discord bot. Written on top of the [Python Discord API](https://discordpy.readthedocs.io/en/latest/api.html), it provides the loading and unloading of custom plugins to extend and scale the bot as much as you want.
+BasementBot is a Dockerized Discord bot. Written on top of the [Python Discord API](https://pycord.readthedocs.io/en/latest/api.html), it provides the loading and unloading of custom plugins to extend and scale the bot as much as you want.
 
-Note: the bot is currently being refactored heavily to work for a larger audience. This README might be stale in information.
+Note: *as of 2021*, Discord.py development ceased and is being maintaned by several forks. Currently the bot is utilizing [Pycord](https://github.com/Pycord-Development/pycord), but this may change in the future. 
 
 # Setup
 
+Note: *this bot requires at minimum a MongoDB connection to maintain guild settings. If you wish to not use a MongoDB connection, check the base module for bots that don't rely on MongoDB.*
+
 * Create a `config.yaml` file from the `config.default.yaml` file in the repo.
 * In the `config.yaml` file set your Discord developer `token` (see [here](https://discordapp.com/developers/docs/topics/oauth2))
+* In the `config.yaml` file set MongoDB connection settings (username, password, host, port, etc)
 * (Optional) set any other `config.yaml` variables. Some included plugins won't work without the correct API keys.
 
 ## Production
-
-* Fill out the settings appropriate to your bot.
 
 * Build the prod image:
     ```
@@ -63,29 +64,31 @@ The Makefile offers shortcut commands for development.
 
 # Making Plugins
 
-On startup, the bot will load all plugin files in the `basement_bot/plugins/` directory. 
-
-These files hold commands for the bot to use with its prefix. Each command is an async function decorated as a `command`, and each file must have an entrypoint function called `setup`, which tells the loading process how to add the plugin file.
+On startup, the bot will load all plugin files in the `basement_bot/plugins/` directory. These files hold commands for the bot to use with its prefix. Each command is an async function decorated as a `command`, and each file must have an entrypoint function called `setup`, which tells the loading process how to add the plugin file.
 
 A (very) simple example:
 
 ```python
+import base
 from discord.ext import commands
 
-def setup(bot):
-    bot.add_command(my_command)
 
-@commands.command(name="example")
-async def my_command(ctx, word, other_word, *args):
-    await ctx.send("Hello world!")
+def setup(bot):
+    bot.process_plugin_setup(cogs=[Greeter])
+
+
+class Greeter(base.BaseCog):
+    @commands.command(
+        name="hello",
+        brief="Says hello to the bot",
+        description="Says hello to the bot (because they are doing such a great job!)",
+        usage="",
+    )
+    async def hello(self, ctx):
+        # H, E, Y
+        emojis = ["🇭", "🇪", "🇾"]
+        for emoji in emojis:
+            await ctx.message.add_reaction(emoji)
 ```
 
-This command would trigger with something like `.example hello greetings ha ha ha`
-
-Each command must have its first arg as `ctx` which is the context for the command event. Each additional arg is an assumption that it be provided by the user (using `*args` helps in this case). 
-
-There are utility functions in `utils.helpers` or `cogs` modules for helping with this plugin-building process. For example, `utils.helpers.tagged_response` sends a message with the command author tagged. All plugins included with the repo are written as cog classes for a more structured approach. You can find information on this in the Discord.py docs.
-
-More advanced plugins can be written by interfacing with the bot's API. For instance, the admin plugin allows you to load and unpload plugins. You can also give the bot async tasks to run forever, or event listeners for a specific message.
-
-For more information, see [the Discord.py docs](https://discordpy.readthedocs.io/en/latest/ext/commands/commands.html).
+The idea of a plugin allows for more control over Discord extensions. Plugins can be configured per-guild with settings saved on MongoDB. There are several plugins included in the main repo, so please reference them for more advanced examples. 
