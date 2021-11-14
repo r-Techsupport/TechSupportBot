@@ -17,6 +17,7 @@ format:
 
 lint:
 	$(drun) pylint basement_bot/*.py
+	$(drun) pylint basement_bot/base/*.py
 	# TODO: add basement_bot/plugins/*.py after plugins documented
 
 test:

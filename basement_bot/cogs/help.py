@@ -88,7 +88,7 @@ class Helper(base.BaseCog):
         parameters:
             ctx (discord.ext.Context): the context object for the message
         """
-        plugin_names = list(self.bot.plugin_api.plugins.keys())
+        plugin_names = list(self.bot.plugins.keys())
         plugin_names.sort()
 
         embeds = []
@@ -129,7 +129,7 @@ class Helper(base.BaseCog):
         """
         embed = discord.Embed(title=f"Plugin Commands - `{plugin_name}`")
 
-        plugin_data = self.bot.plugin_api.plugins.get(plugin_name)
+        plugin_data = self.bot.plugins.get(plugin_name)
         if not plugin_data:
             embed.description = "That plugin could not be found"
             return embed

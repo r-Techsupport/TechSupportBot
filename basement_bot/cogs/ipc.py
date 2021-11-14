@@ -29,14 +29,14 @@ class IPCEndpoints(base.BaseCog):
             data (object): the data provided by the client request
         """
         if data.plugin_name:
-            payload = self.bot.plugin_api.get_status(data.plugin_name)
+            payload = self.bot.get_status(data.plugin_name)
             if not payload:
                 return util.ipc_response(
                     code=404, error="Plugin not found (in memory or file)"
                 )
 
         else:
-            payload = self.bot.plugin_api.get_all_statuses()
+            payload = self.bot.get_all_statuses()
 
         return util.ipc_response(payload=payload)
 
@@ -50,7 +50,7 @@ class IPCEndpoints(base.BaseCog):
         if not data.plugin_name:
             return util.ipc_response(code=400, error="Plugin name not provided")
 
-        response = self.bot.plugin_api.load_plugin(data.plugin_name)
+        response = self.bot.load_plugin(data.plugin_name)
         if not response.status:
             return util.ipc_response(code=500, error=response.message)
 
@@ -66,7 +66,7 @@ class IPCEndpoints(base.BaseCog):
         if not data.plugin_name:
             return util.ipc_response(code=400, error="Plugin name not provided")
 
-        response = self.bot.plugin_api.unload_plugin(data.plugin_name)
+        response = self.bot.unload_plugin(data.plugin_name)
         if not response.status:
             return util.ipc_response(code=500, error=response.message)
 

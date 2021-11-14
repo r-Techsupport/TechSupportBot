@@ -34,7 +34,7 @@ class Giphy(base.BaseCog):
             "get",
             self.GIPHY_URL.format(
                 query.replace(" ", "+"),
-                self.bot.config.main.api_keys.giphy,
+                self.bot.file_config.main.api_keys.giphy,
                 self.SEARCH_LIMIT,
             ),
         )

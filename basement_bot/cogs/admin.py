@@ -335,7 +335,7 @@ class AdminControl(base.BaseCog):
             "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
         )
 
-        oauth_token = self.bot.config.main.api_keys.github
+        oauth_token = self.bot.file_config.main.api_keys.github
         if not oauth_token:
             await util.send_with_mention(ctx, "I couldn't authenticate with Github")
             return
@@ -348,8 +348,8 @@ class AdminControl(base.BaseCog):
 
         data = {"title": title, "body": description}
 
-        username = self.bot.config.special.github.username
-        repo = self.bot.config.special.github.repo
+        username = self.bot.file_config.special.github.username
+        repo = self.bot.file_config.special.github.repo
         if not username or not repo:
             await util.send_with_mention(ctx, "I couldn't find the repository")
             return

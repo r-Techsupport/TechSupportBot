@@ -183,9 +183,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             return
 
         # add to the relay plugin queue if it's loaded
-        if not ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.get(
-            "channels", []
-        ):
+        if not ctx.channel.id in self.bot.plugins.relay.memory.get("channels", []):
             return
 
         ctx.message.content = message
