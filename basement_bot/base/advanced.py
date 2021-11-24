@@ -8,7 +8,7 @@ from .data import DataBot
 
 
 class AdvancedBot(DataBot):
-    """Advanced plugin bot with per-guild config access."""
+    """Advanced extension bot with per-guild config access."""
 
     GUILD_CONFIG_COLLECTION = "guild_config"
 
@@ -41,6 +41,7 @@ class AdvancedBot(DataBot):
         self, ctx=None, guild=None, create_if_none=True, get_from_cache=True
     ):
         """Gets the appropriate config for the context.
+
         parameters:
             ctx (discord.ext.Context): the context of the config
             guild (discord.Guild): the guild associated with the config (provided instead of ctx)
@@ -84,18 +85,17 @@ class AdvancedBot(DataBot):
 
     async def create_new_context_config(self, lookup):
         """Creates a new guild config based on a lookup key (usually a guild ID).
+
         parameters:
             lookup (str): the primary key for the guild config document object
         """
+        extensions_config = munch.Munch()
 
-        plugins_config = {}
-
-        await self.logger.debug("Evaluating plugin data")
-        for plugin_name, plugin_data in self.plugins.items():
-            plugin_config = getattr(plugin_data, "fallback_config", {})
-            if plugin_config:
-                # don't attach to guild config if plugin isn't configurable
-                plugins_config[plugin_name] = plugin_config
+        await self.logger.debug("Evaluating extension data")
+        for extension_name, extension_config in self.extension_configs.items():
+            if extension_config:
+                # don't attach to guild config if extension isn't configurable
+                extensions_config[extension_name] = extension_config.data
 
         config_ = munch.Munch()
 
@@ -105,8 +105,9 @@ class AdvancedBot(DataBot):
         config_.member_events_channel = None
         config_.guild_events_channel = None
         config_.private_channels = []
+        config_.enabled_extensions = []
 
-        config_.plugins = plugins_config
+        config_.extensions = extensions_config
 
         try:
             await self.logger.debug(f"Inserting new config for lookup key: {lookup}")
@@ -120,7 +121,8 @@ class AdvancedBot(DataBot):
         return config_
 
     async def sync_config(self, config_object):
-        """Syncs the given config with the currently loaded plugins.
+        """Syncs the given config with the currently loaded extensions.
+
         parameters:
             config_object (dict): the guild config object
         """
@@ -128,17 +130,20 @@ class AdvancedBot(DataBot):
 
         should_update = False
 
-        await self.logger.debug("Evaluating plugin data")
-        for plugin_name, plugin_data in self.plugins.items():
-            plugin_config = config_object.plugins.get(plugin_name)
-            plugin_config_from_data = getattr(plugin_data, "fallback_config", {})
-
-            if not plugin_config and plugin_config_from_data:
+        await self.logger.debug("Evaluating extension data")
+        for (
+            extension_name,
+            extension_config_from_data,
+        ) in self.extension_configs.items():
+            extension_config = config_object.extensions.get(extension_name)
+            if not extension_config and extension_config_from_data:
                 should_update = True
                 await self.logger.debug(
-                    f"Found plugin {plugin_name} not in config with ID {config_object.guild_id}"
+                    f"Found extension {extension_name} not in config with ID {config_object.guild_id}"
                 )
-                config_object.plugins[plugin_name] = plugin_config_from_data
+                config_object.extensions[
+                    extension_name
+                ] = extension_config_from_data.data
 
         if should_update:
             await self.logger.debug(

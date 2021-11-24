@@ -6,11 +6,11 @@ import aio_pika
 import gino
 from motor import motor_asyncio
 
-from .plugin import PluginBot
+from .extension import ExtensionsBot
 
 
-class DataBot(PluginBot):
-    """Plugin-based bot that supports Mongo, Postgres, and RabbitMQ."""
+class DataBot(ExtensionsBot):
+    """Bot that supports Mongo, Postgres, and RabbitMQ."""
 
     def __init__(self, *args, **kwargs):
         self.mongo = None

@@ -18,68 +18,74 @@ class AdminControl(base.BaseCog):
     GITHUB_API_BASE_URL = "https://api.github.com"
 
     @commands.group(
-        name="plugin",
-        brief="Executes a plugin bot command",
-        description="Executes a plugin bot command",
+        name="extension",
+        brief="Executes an extension bot command",
+        description="Executes an extension bot command",
     )
-    async def plugin_group(self, ctx):
+    async def extension_group(self, ctx):
         # pylint: disable=missing-function-docstring
         pass
 
     @util.with_typing
-    @plugin_group.command(
+    @extension_group.command(
         name="status",
-        description="Gets the status of a plugin by name",
-        usage="[plugin-name]",
+        description="Gets the status of an extension by name",
+        usage="[extension-name]",
     )
-    async def plugin_status(self, ctx, *, plugin_name: str):
-        """Gets the status of the bot plugins.
+    async def extension_status(self, ctx, *, extension_name: str):
+        """Gets the status of an extension.
 
         This is a command and should be accessed via Discord.
 
         parameters:
             ctx (discord.ext.Context): the context object for the message
-            plugin_name (str): the name of the plugin
+            extension_name (str): the name of the extension
         """
-        status_data = ctx.bot.plugin_api.get_status(plugin_name)
-
+        status = (
+            "loaded"
+            if ctx.bot.extensions.get(
+                f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}"
+            )
+            else "unloaded"
+        )
         embed = discord.Embed(
-            title=f"Plugin status for `{plugin_name}`",
-            description=status_data.status if status_data else "not found",
+            title=f"Extension status for `{extension_name}`", description=status
         )
         await util.send_with_mention(ctx, embed=embed)
 
     @util.with_typing
-    @plugin_group.command(
-        name="load", description="Loads a plugin by name", usage="[plugin-name]"
+    @extension_group.command(
+        name="load", description="Loads an extension by name", usage="[extension-name]"
     )
-    async def load_plugin(self, ctx, *, plugin_name: str):
-        """Loads a plugin by filename.
+    async def load_extension(self, ctx, *, extension_name: str):
+        """Loads an extension by filename.
 
         This is a command and should be accessed via Discord.
 
         parameters:
             ctx (discord.ext.Context): the context object for the message
-            plugin_name (str): the name of the plugin
+            extension_name (str): the name of the extension
         """
-        response = ctx.bot.plugin_api.load_plugin(plugin_name)
-        await util.send_with_mention(ctx, response.message)
+        ctx.bot.load_extension(f"extensions.{extension_name}")
+        await util.send_with_mention(ctx, "I've loaded that extension")
 
     @util.with_typing
-    @plugin_group.command(
-        name="unload", description="Unloads a plugin by name", usage="[plugin-name]"
+    @extension_group.command(
+        name="unload",
+        description="Unloads an extension by name",
+        usage="[extension-name]",
     )
-    async def unload_plugin(self, ctx, *, plugin_name: str):
-        """Unloads a plugin by filename.
+    async def unload_extension(self, ctx, *, extension_name: str):
+        """Unloads an extension by filename.
 
         This is a command and should be accessed via Discord.
 
         parameters:
             ctx (discord.ext.Context): the context object for the message
-            plugin_name (str): the name of the plugin
+            extension_name (str): the name of the extension
         """
-        response = ctx.bot.plugin_api.unload_plugin(plugin_name)
-        await util.send_with_mention(ctx, response.message)
+        ctx.bot.unload_extension(f"extensions.{extension_name}")
+        await util.send_with_mention(ctx, "I've unloaded that extension")
 
     @commands.group(
         name="command",

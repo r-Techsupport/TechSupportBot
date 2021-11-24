@@ -1,4 +1,4 @@
-"""Base cogs for making plugins.
+"""Base cogs for making extentions.
 """
 
 
@@ -9,25 +9,22 @@ from discord.ext import commands
 
 
 class BaseCog(commands.Cog):
-    """The base plugin.
+    """The base cog to use when making extensions.
 
     parameters:
         bot (Bot): the bot object
-        models (List[gino.Model]): the Postgres models for the plugin
-        no_guild (bool): True if the plugin should run globally
+        models (List[gino.Model]): the Postgres models for the extension
+        no_guild (bool): True if the extension should run globally
     """
 
     COG_TYPE = "Base"
     ADMIN_ONLY = False
     KEEP_COG_ON_FAILURE = False
-    KEEP_PLUGIN_ON_FAILURE = False
 
-    def __init__(self, bot, models=None, plugin_name=None, no_guild=False):
+    def __init__(self, bot, models=None, no_guild=False, extension_name=None):
         self.bot = bot
         self.no_guild = no_guild
-
-        # this is sure to throw a bug at some point
-        self.extension_name = plugin_name
+        self.extension_name = extension_name
 
         if models is None:
             models = []
@@ -38,9 +35,9 @@ class BaseCog(commands.Cog):
         self.bot.loop.create_task(self._preconfig())
 
     async def _handle_preconfig(self, handler):
-        """Wrapper for performing preconfig on a plugin.
+        """Wrapper for performing preconfig on an extension.
 
-        This makes the plugin unload when there is an error.
+        This makes the extension unload when there is an error.
 
         parameters:
             handler (asyncio.coroutine): the preconfig handler
@@ -54,20 +51,18 @@ class BaseCog(commands.Cog):
             )
             if not self.KEEP_COG_ON_FAILURE:
                 self.bot.remove_cog(self)
-            if not self.KEEP_PLUGIN_ON_FAILURE:
-                self.bot.unload_plugin(self.extension_name)
 
     async def _preconfig(self):
         """Blocks the preconfig until the bot is ready."""
         await self._handle_preconfig(self.preconfig)
 
     async def preconfig(self):
-        """Preconfigures the environment before starting the plugin."""
+        """Preconfigures the environment before starting the cog."""
 
 
 class MatchCog(BaseCog):
     """
-    Plugin for matching a specific context criteria and responding.
+    Cog for matching a specific context criteria and responding.
 
     This makes the process of handling events simpler for development.
     """
@@ -127,7 +122,7 @@ class MatchCog(BaseCog):
 
 
 class LoopCog(BaseCog):
-    """Plugin for various types of looping including cron-config.
+    """Cog for various types of looping including cron-config.
 
     This currently doesn't utilize the tasks library.
 
@@ -154,7 +149,7 @@ class LoopCog(BaseCog):
         """
         config = await self.bot.get_context_config(guild=guild)
         channels = (
-            config.plugins.get(self.extension_name, {})
+            config.extensions.get(self.extension_name, {})
             .get(self.CHANNELS_KEY, {})
             .get("value")
         )
@@ -196,13 +191,13 @@ class LoopCog(BaseCog):
             await asyncio.sleep(self.TRACKER_WAIT)
 
             await self.bot.logger.info(
-                f"Checking registered channels for {self.extension_name} loop plugin"
+                f"Checking registered channels for {self.extension_name} loop cog"
             )
             for guild_id, registered_channels in self.channels.items():
                 guild = self.bot.get_guild(guild_id)
                 config = await self.bot.get_context_config(guild=guild)
                 configured_channels = (
-                    config.plugins.get(self.extension_name, {})
+                    config.extensions.get(self.extension_name, {})
                     .get(self.CHANNELS_KEY, {})
                     .get("value")
                 )
@@ -251,14 +246,16 @@ class LoopCog(BaseCog):
         if not self.ON_START:
             await self.wait(config, guild)
 
-        while self.bot.plugins.get(self.extension_name):
+        while self.bot.extensions.get(
+            f"{self.bot.EXTENSIONS_DIR_NAME}.{self.extension_name}"
+        ):
             if guild and guild not in self.bot.guilds:
                 break
 
             # refresh the config on every loop step
             config = await self.bot.get_context_config(guild=guild)
 
-            if target_channel and not str(target_channel.id) in config.plugins.get(
+            if target_channel and not str(target_channel.id) in config.extensions.get(
                 self.extension_name, {}
             ).get(self.CHANNELS_KEY, {}).get("value", []):
                 # exit task if the channel is no longer configured
