@@ -271,7 +271,9 @@ class LoopCog(BaseCog):
                 # exit task if the channel is no longer configured
                 break
 
-            if self.extension_name in config.enabled_extensions:
+            if guild is None or self.extension_name in getattr(
+                config, "enabled_extensions", []
+            ):
                 try:
                     if target_channel:
                         await self.execute(config, guild, target_channel)
