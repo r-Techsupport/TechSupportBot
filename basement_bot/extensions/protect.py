@@ -113,7 +113,7 @@ def setup(bot):
         default=600,
     )
 
-    bot.add_cog(Protector(bot=bot, models=[Warning]))
+    bot.add_cog(Protector(bot=bot, models=[Warning], extension_name="protect"))
     bot.add_extension_config("protect", config)
 
 

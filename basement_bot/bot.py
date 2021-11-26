@@ -264,7 +264,9 @@ class BasementBot(base.AdvancedBot):
         if extension_name:
             config = await self.get_context_config(ctx)
             if not extension_name in config.enabled_extensions:
-                raise error.ExtensionDisabled()
+                raise error.ExtensionDisabled(
+                    "extension is disabled for this server/context"
+                )
 
         is_bot_admin = await self.is_bot_admin(ctx)
 

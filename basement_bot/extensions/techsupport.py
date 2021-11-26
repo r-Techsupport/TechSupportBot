@@ -18,9 +18,9 @@ def setup(bot):
         default=[],
     )
 
-    bot.add_cog(CDIParser(bot=bot))
-    bot.add_cog(SpeccyParser(bot=bot))
-    bot.add_cog(HWInfoParser(bot=bot))
+    bot.add_cog(CDIParser(bot=bot, extension_name="techsupport"))
+    bot.add_cog(SpeccyParser(bot=bot, extension_name="techsupport"))
+    bot.add_cog(HWInfoParser(bot=bot, extension_name="techsupport"))
     bot.add_extension_config("techsupport", config)
 
 

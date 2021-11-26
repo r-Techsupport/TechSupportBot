@@ -51,7 +51,7 @@ def setup(bot):
         default="agree",
     )
 
-    bot.add_cog(ServerGate(bot=bot))
+    bot.add_cog(ServerGate(bot=bot, extension_name="gate"))
     bot.add_extension_config("gate", config)
 
 

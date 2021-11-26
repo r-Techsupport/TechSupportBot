@@ -14,7 +14,7 @@ def setup(bot):
         default={},
     )
 
-    bot.add_cog(Logger(bot=bot))
+    bot.add_cog(Logger(bot=bot, extension_name="logger"))
     bot.add_extension_config("logger", config)
 
 

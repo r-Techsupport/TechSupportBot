@@ -4,6 +4,7 @@
 
 import asyncio
 
+import base
 import munch
 from discord.ext import commands
 
@@ -21,7 +22,13 @@ class BaseCog(commands.Cog):
     ADMIN_ONLY = False
     KEEP_COG_ON_FAILURE = False
 
-    def __init__(self, bot, models=None, no_guild=False, extension_name=None):
+    def __init__(
+        self,
+        bot: base.extension.ExtensionsBot,
+        models=None,
+        no_guild=False,
+        extension_name=None,
+    ):
         self.bot = bot
         self.no_guild = no_guild
         self.extension_name = extension_name
@@ -83,6 +90,9 @@ class MatchCog(BaseCog):
 
         config = await self.bot.get_context_config(ctx)
         if not config:
+            return
+
+        if not self.extension_name in config.get("enabled_extensions", []):
             return
 
         result = await self.match(config, ctx, message.content)
@@ -261,20 +271,21 @@ class LoopCog(BaseCog):
                 # exit task if the channel is no longer configured
                 break
 
-            try:
-                if target_channel:
-                    await self.execute(config, guild, target_channel)
-                else:
-                    await self.execute(config, guild)
-            except Exception as e:
-                # always try to wait even when execute fails
-                await self.bot.logger.debug("Checking config for log channel")
-                channel = config.get("logging_channel")
-                await self.bot.logger.error(
-                    f"Loop cog execute error: {self.__class__.__name__}!",
-                    exception=e,
-                    channel=channel,
-                )
+            if self.extension_name in config.enabled_extensions:
+                try:
+                    if target_channel:
+                        await self.execute(config, guild, target_channel)
+                    else:
+                        await self.execute(config, guild)
+                except Exception as e:
+                    # always try to wait even when execute fails
+                    await self.bot.logger.debug("Checking config for log channel")
+                    channel = config.get("logging_channel")
+                    await self.bot.logger.error(
+                        f"Loop cog execute error: {self.__class__.__name__}!",
+                        exception=e,
+                        channel=channel,
+                    )
 
             try:
                 await self.wait(config, guild)

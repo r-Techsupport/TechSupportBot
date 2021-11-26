@@ -7,7 +7,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(DiscordRelay(bot=bot, no_guild=True))
+    bot.add_cog(DiscordRelay(bot=bot, no_guild=True, extension_name="relay"))
     bot.add_cog(IRCReceiver(bot=bot, no_guild=True, extension_name="relay"))
 
 
