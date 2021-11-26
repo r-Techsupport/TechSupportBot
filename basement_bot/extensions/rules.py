@@ -9,7 +9,7 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Rules(bot=bot))
+    bot.add_cog(Rules(bot=bot, extension_name="rules"))
 
 
 class Rules(base.BaseCog):
