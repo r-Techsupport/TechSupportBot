@@ -135,9 +135,9 @@ class CDIParser(BaseParser):
         total_drives = len(response_data.keys())
 
         embed = discord.Embed(
-            title=f"CDI Results for {ctx.author}",
             description=f"{total_drives} total drive(s)",
         )
+        embed.set_author(name="CDI Results", icon_url=self.ICON_URL)
 
         for drive_data in response_data.values():
             if not isinstance(drive_data, dict):
@@ -153,7 +153,6 @@ class CDIParser(BaseParser):
                 inline=False,
             )
 
-        embed.set_thumbnail(url=self.ICON_URL)
         embed.color = discord.Color.blurple()
 
         return embed
@@ -263,9 +262,10 @@ class SpeccyParser(BaseParser):
 
         yikes_score = response_data.get("Yikes", 0)
         embed = discord.Embed(
-            title=f"Speccy Results for {ctx.author} (yikes score = {yikes_score})",
+            title=f"Yikes Score: `{yikes_score}`",
             description=response_data.Link,
         )
+        embed.set_author(name="Speccy Results", icon_url=self.ICON_URL)
 
         # define the order of rendering and any metadata for each render
         order = [
@@ -297,8 +297,6 @@ class SpeccyParser(BaseParser):
             )
 
         embed.add_field(name="__Summary__", value=self.get_layman_info(response_data))
-
-        embed.set_thumbnail(url=self.ICON_URL)
 
         embed = self.add_yikes_color(embed, response_data)
 
@@ -367,6 +365,9 @@ class SpeccyParser(BaseParser):
     def trim_value(self, key, value):
         if key.lower() in ["osdetails"]:
             return value
+        if key.lower() == "baddrives":
+            return value.replace("\n", ", ")[:-3]
+
         trimmed_value = value[: self.VALUE_TRIM_LENGTH]
         excess_value = value[self.VALUE_TRIM_LENGTH :]
         padded_value = excess_value.split(" ")[0]
@@ -471,9 +472,8 @@ class HWInfoParser(BaseParser):
         return response
 
     async def generate_embed(self, ctx, response_data):
-        embed = discord.Embed(
-            title=f"HWInfo Summary for {ctx.author}", description="min/average/max"
-        )
+        embed = discord.Embed(description="min/average/max")
+        embed.set_author(name="HWInfo Summary", icon_url=self.ICON_URL)
 
         summary = ""
         for key, value in response_data.items():
@@ -493,7 +493,6 @@ class HWInfoParser(BaseParser):
             inline=False,
         )
 
-        embed.set_thumbnail(url=self.ICON_URL)
         embed.color = discord.Color.blurple()
 
         return embed
