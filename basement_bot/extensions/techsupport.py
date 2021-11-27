@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import json
 import re
 
@@ -6,42 +7,157 @@ import base
 import discord
 import munch
 import util
+from discord import message
 
 
 def setup(bot):
     config = bot.ExtensionConfig()
     config.add(
-        key="confirm_roles",
+        key="support_roles",
         datatype="list",
         title="Confirm roles",
         description="List of role names able to confirm parses",
         default=[],
     )
+    config.add(
+        key="channels",
+        datatype="list",
+        title="Tech support channels",
+        description="List of channel ID's representing support channels",
+        default=[],
+    )
+    config.add(
+        key="idle_time",
+        datatype="int",
+        title="Auto-support idle time",
+        description="The number of minutes required to pass before auto-support is triggered",
+        default=30,
+    )
 
     bot.add_cog(CDIParser(bot=bot, extension_name="techsupport"))
     bot.add_cog(SpeccyParser(bot=bot, extension_name="techsupport"))
     bot.add_cog(HWInfoParser(bot=bot, extension_name="techsupport"))
+    bot.add_cog(AutoSupport(bot=bot, extension_name="techsupport"))
     bot.add_extension_config("techsupport", config)
+
+
+def get_support_roles(ctx, config):
+    role_names = config.extensions.techsupport.support_roles.value
+    roles = []
+    for role_name in role_names:
+        role = discord.utils.get(ctx.guild.roles, name=role_name)
+        if role:
+            roles.append(role)
+
+    return roles
+
+
+class AutoSupport(base.MatchCog):
+
+    CHANNEL_WAIT_MINUTES = 5
+
+    async def preconfig(self):
+        self.last_support_messages = munch.Munch()
+        self.send_records = munch.Munch()
+
+    async def match(self, config, ctx, content):
+        # check if message is in a support channel
+        if not str(ctx.channel.id) in config.extensions.techsupport.channels.value:
+            await self.bot.logger.debug(
+                "Channel not in tech support channels - ignoring auto-support"
+            )
+            return False
+
+        # check if the user is not a helper
+        support_roles = get_support_roles(ctx, config)
+        if any(role in ctx.author.roles for role in support_roles):
+            await self.bot.logger.debug(
+                "User is a tech support helper - ignoring auto-support"
+            )
+            self.last_support_messages[ctx.channel.id] = ctx.message
+            return False
+
+        now = datetime.datetime.utcnow()
+
+        last_auto_support_time = (
+            now - self.send_records.get(ctx.channel.id)
+            if self.send_records.get(ctx.channel.id)
+            else None
+        )
+
+        if (
+            last_auto_support_time
+            and last_auto_support_time.seconds / 60.0 < self.CHANNEL_WAIT_MINUTES
+        ):
+            return False
+
+        # get last message from cache or channel history
+        # cache for next time
+        last_support_message = self.last_support_messages.get(ctx.channel.id)
+        if not last_support_message:
+            last_support_message = await self.get_last_support_message(
+                ctx.channel, support_roles
+            )
+
+        last_support_message_created_at = getattr(
+            last_support_message, "created_at", None
+        )
+        last_support_message_time = (
+            now - last_support_message_created_at
+            if last_support_message_created_at
+            else None
+        )
+
+        if (
+            last_support_message_time is None
+            or last_support_message_time.seconds / 60.0
+            > config.extensions.techsupport.idle_time.value
+        ):
+            return True
+
+        return False
+
+    async def get_last_support_message(self, channel, support_roles):
+        async for message in channel.history(limit=100):
+            if any(role in message.author.roles for role in support_roles):
+                return message
+        return None
+
+    async def response(self, config, ctx, content, result):
+        self.send_records[ctx.channel.id] = datetime.datetime.utcnow()
+        embed = self.generate_embed(ctx)
+        await util.send_with_mention(ctx, embed=embed)
+
+    def generate_embed(self, ctx):
+        title = "Hey there! Looking for tech support?"
+        description = "It looks like there aren't any helpers around right now. In the meantime, I can help by scanning your computer specs and looking for any issues."
+        embed = discord.Embed(title=title, description=description)
+        embed.set_author(
+            name="Tech Support Auto-Support", icon_url=self.bot.user.avatar_url
+        )
+        embed.add_field(
+            name="1. Download Speccy from the following link:",
+            value="https://www.ccleaner.com/speccy/download/standard",
+            inline=False,
+        )
+        embed.add_field(
+            name="2. Run Speccy & share the URL:",
+            value="Click `File` -> `Publish Snapshot` and paste the link in this channel. *There is nothing sensitive in the published snapshot, we will not ask you to share private information.*",
+            inline=False,
+        )
+        embed.set_footer(
+            text="You should share a URL. Do not share a file or screenshot."
+        )
+        return embed
 
 
 class BaseParser(base.MatchCog):
     async def confirm(self, ctx, message, config):
-        roles = self.get_confirm_roles(ctx, config)
+        roles = get_support_roles(ctx, config)
         confirmed = await self.bot.confirm(
             ctx, message, bypass=roles, delete_after=True
         )
         return confirmed
-
-    @staticmethod
-    def get_confirm_roles(ctx, config):
-        role_names = config.extensions.techsupport.confirm_roles.value
-        roles = []
-        for role_name in role_names:
-            role = discord.utils.get(ctx.guild.roles, name=role_name)
-            if role:
-                roles.append(role)
-
-        return roles
 
 
 class CDIParser(BaseParser):
