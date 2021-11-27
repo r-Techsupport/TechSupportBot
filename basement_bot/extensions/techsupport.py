@@ -33,6 +33,13 @@ def setup(bot):
         description="The number of minutes required to pass before auto-support is triggered",
         default=30,
     )
+    config.add(
+        key="auto_support",
+        datatype="bool",
+        title="Auto tech support toggle",
+        description="True if auto tech support should be enabled",
+        default=True,
+    )
 
     bot.add_cog(CDIParser(bot=bot, extension_name="techsupport"))
     bot.add_cog(SpeccyParser(bot=bot, extension_name="techsupport"))
@@ -66,6 +73,13 @@ class AutoSupport(base.MatchCog):
             await self.bot.logger.debug(
                 "Channel not in tech support channels - ignoring auto-support"
             )
+            return False
+
+        if not config.extensions.techsupport.auto_support.value in [
+            True,
+            "True",
+            "true",
+        ]:
             return False
 
         # check if the user is not a helper
