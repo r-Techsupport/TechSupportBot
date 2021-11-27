@@ -142,7 +142,7 @@ class AutoSupport(base.MatchCog):
         )
         embed.add_field(
             name="2. Run Speccy & share the URL:",
-            value="Click `File` -> `Publish Snapshot` and paste the link in this channel. *There is nothing sensitive in the published snapshot, we will not ask you to share private information.*",
+            value="Click `File` -> `Publish Snapshot` and paste the link in this channel. *There is nothing sensitive in the published snapshot.*",
             inline=False,
         )
         embed.set_footer(
