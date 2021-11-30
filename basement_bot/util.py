@@ -110,7 +110,7 @@ async def http_call(method, url, *args, **kwargs):
 
 
 def config_schema_matches(input_config, current_config):
-    """Performs a schema check on an input config.
+    """Performs a schema check on an input guild config.
 
     parameters:
         input_config (dict): the config to be added
@@ -158,5 +158,43 @@ def with_typing(command):
 
     # calls the internal setter
     command.callback = typing_wrapper
+    command.callback.__module__ = original_callback.__module__
 
     return command
+
+
+def preserialize_object(obj):
+    """Provides sane object -> dict transformation for most objects.
+
+    This is primarily used to send Discord.py object data via the IPC server.
+
+    parameters;
+        obj (object): the object to serialize
+    """
+    attributes = inspect.getmembers(obj, lambda a: not inspect.isroutine(a))
+    filtered_attributes = filter(
+        lambda e: not (e[0].startswith("__") and e[0].endswith("__")), attributes
+    )
+
+    data = {}
+    for name, attr in filtered_attributes:
+        # remove single underscores
+        if name.startswith("_"):
+            name = name[1:]
+
+        # if it's not a basic type, stringify it
+        # only catch: nested data is not readily JSON
+        if isinstance(attr, list):
+            attr = [str(element) for element in attr]
+        elif isinstance(attr, dict):
+            attr = {str(key): str(value) for key, value in attr.items()}
+        elif isinstance(attr, int):
+            attr = str(attr)
+        elif isinstance(attr, float):
+            pass
+        else:
+            attr = str(attr)
+
+        data[str(name)] = attr
+
+    return data

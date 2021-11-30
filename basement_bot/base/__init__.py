@@ -2,4 +2,4 @@
 from .advanced import *
 from .cogs import *
 from .data import *
-from .plugin import *
+from .extension import *

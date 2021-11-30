@@ -4,6 +4,10 @@ import munch
 from discord.ext import commands
 
 
+class ExtensionDisabled(commands.errors.CheckFailure):
+    """The exception thrown when an extension is disabled."""
+
+
 # pylint: disable=too-few-public-methods
 class ErrorResponse:
     """Object for generating a custom error message from an exception.
@@ -159,6 +163,7 @@ COMMAND_ERROR_RESPONSE_TEMPLATES = {
         "That command is on cooldown for you. Try again in %s seconds",
         {"key": "retry_after", "wrapper": int},
     ),
+    ExtensionDisabled: ErrorResponse("That extension is disabled for this guild"),
 }
 
 IGNORED_ERRORS = set([commands.CommandNotFound])

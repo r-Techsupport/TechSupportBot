@@ -19,57 +19,61 @@ class IPCEndpoints(base.BaseCog):
     @ipc.server.route(name="describe")
     async def describe_endpoint(self, _):
         """Gets all relevant bot information."""
-        return util.ipc_response(payload=self.bot.preserialize_object(self.bot))
+        return util.ipc_response(payload=util.preserialize_object(self.bot))
 
-    @ipc.server.route(name="get_plugin_status")
-    async def plugin_status_endpoint(self, data):
-        """IPC endpoint for getting plugin status.
+    @ipc.server.route(name="get_extension_status")
+    async def extension_status_endpoint(self, data):
+        """IPC endpoint for getting extension status.
 
         parameters:
             data (object): the data provided by the client request
         """
-        if data.plugin_name:
-            payload = self.bot.get_status(data.plugin_name)
-            if not payload:
-                return util.ipc_response(
-                    code=404, error="Plugin not found (in memory or file)"
-                )
-
+        if data.extension_name:
+            if self.bot.extensions.get(
+                f"{self.bot.EXTENSIONS_DIR_NAME}.{data.extension_name}"
+            ):
+                payload = {data.extension_name: "loaded"}
+            else:
+                return util.ipc_response(code=404, error="extension not loaded")
         else:
-            payload = self.bot.get_all_statuses()
+            potential_extensions = self.bot.get_potential_extensions()
+            if not potential_extensions:
+                return util.ipc_response(code=404, error="no extensions to load")
+
+            payload = {}
+            for extension in potential_extensions:
+                payload[extension] = (
+                    "loaded"
+                    if self.bot.extensions.get(
+                        f"{self.bot.EXTENSIONS_DIR_NAME}.{data.extension_name}"
+                    )
+                    else "unloaded"
+                )
 
         return util.ipc_response(payload=payload)
 
-    @ipc.server.route(name="load_plugin")
-    async def load_plugin_endpoint(self, data):
-        """IPC endpoint for loading a plugin.
+    @ipc.server.route(name="load_extension")
+    async def load_extension_endpoint(self, data):
+        """IPC endpoint for loading an extension.
 
         parameters:
             data (object): the data provided by the client request
         """
-        if not data.plugin_name:
-            return util.ipc_response(code=400, error="Plugin name not provided")
-
-        response = self.bot.load_plugin(data.plugin_name)
-        if not response.status:
-            return util.ipc_response(code=500, error=response.message)
-
+        if not data.extension_name:
+            return util.ipc_response(code=400, error="extension name not provided")
+        self.bot.load_extension(f"extensions.{data.extension_name}")
         return util.ipc_response()
 
-    @ipc.server.route(name="unload_plugin")
-    async def unload_plugin_endpoint(self, data):
-        """IPC endpoint for unloading a plugin.
+    @ipc.server.route(name="unload_extension")
+    async def unload_extension_endpoint(self, data):
+        """IPC endpoint for unloading an extension.
 
         parameters:
             data (object): the data provided by the client request
         """
-        if not data.plugin_name:
-            return util.ipc_response(code=400, error="Plugin name not provided")
-
-        response = self.bot.unload_plugin(data.plugin_name)
-        if not response.status:
-            return util.ipc_response(code=500, error=response.message)
-
+        if not data.extension_name:
+            return util.ipc_response(code=400, error="extension name not provided")
+        self.bot.unload_extension(f"extensions.{data.extension_name}")
         return util.ipc_response()
 
     @ipc.server.route(name="echo_user")
@@ -105,7 +109,7 @@ class IPCEndpoints(base.BaseCog):
     @ipc.server.route(name="get_all_guilds")
     async def get_all_guilds_endpoint(self, _):
         """IPC endpoint for getting all guilds."""
-        guilds = [self.bot.preserialize_object(guild) for guild in self.bot.guilds]
+        guilds = [util.preserialize_object(guild) for guild in self.bot.guilds]
         return util.ipc_response(payload={"guilds": guilds})
 
     @ipc.server.route(name="get_guild")
@@ -122,7 +126,7 @@ class IPCEndpoints(base.BaseCog):
         if not guild:
             return util.ipc_response(code=404, error="Guild not found")
 
-        return util.ipc_response(payload=self.bot.preserialize_object(guild))
+        return util.ipc_response(payload=util.preserialize_object(guild))
 
     @ipc.server.route(name="get_guild_channels")
     async def get_guild_channels_endpoint(self, data):
@@ -140,7 +144,7 @@ class IPCEndpoints(base.BaseCog):
 
         channels = []
         for channel in guild.text_channels:
-            channels.append(self.bot.preserialize_object(channel))
+            channels.append(util.preserialize_object(channel))
 
         print(channels)
 
@@ -193,7 +197,7 @@ class IPCEndpoints(base.BaseCog):
 
         messages = []
         async for message in channel.history(limit=limit):
-            message_data = self.bot.preserialize_object(message)
+            message_data = util.preserialize_object(message)
             del message_data["CACHED_SLOTS"]
             del message_data["HANDLERS"]
             messages.append(message_data)
@@ -229,7 +233,7 @@ class IPCEndpoints(base.BaseCog):
 
         messages = []
         async for message in user.dm_channel.history(limit=limit):
-            message_data = self.bot.preserialize_object(message)
+            message_data = util.preserialize_object(message)
             del message_data["CACHED_SLOTS"]
             del message_data["HANDLERS"]
             messages.append(message_data)

@@ -1,7 +1,6 @@
 """The main bot functions.
 """
 import datetime
-import inspect
 import os
 import re
 import sys
@@ -30,6 +29,7 @@ class BasementBot(base.AdvancedBot):
     PAGINATE_STOP_EMOJI = "⏹️"
     PAGINATE_DELETE_EMOJI = "🗑️"
 
+    # pylint: disable=attribute-defined-outside-init
     def __init__(self, *args, **kwargs):
         run_on_init = kwargs.pop("run_on_init", None)
 
@@ -86,8 +86,8 @@ class BasementBot(base.AdvancedBot):
         except Exception as exception:
             await self.logger.warning(f"Could not connect to RabbitMQ: {exception}")
 
-        await self.logger.debug("Loading plugins...")
-        self.load_all_plugins()
+        await self.logger.debug("Loading extensions...")
+        self.load_extensions()
 
         if self.db:
             await self.logger.debug("Syncing Postgres tables...")
@@ -132,11 +132,8 @@ class BasementBot(base.AdvancedBot):
     async def on_ready(self):
         """Callback for when the bot is finished starting up."""
         self._startup_time = datetime.datetime.utcnow()
-
         await self.logger.event("ready")
-
         await self.get_owner()
-
         await self.logger.debug("Online!", send=True)
 
     async def on_message(self, message):
@@ -146,9 +143,7 @@ class BasementBot(base.AdvancedBot):
             message (discord.Message): the message object
         """
         await self.logger.event("message", message=message)
-
         owner = await self.get_owner()
-
         if (
             owner
             and isinstance(message.channel, discord.DMChannel)
@@ -158,10 +153,9 @@ class BasementBot(base.AdvancedBot):
             await self.logger.info(
                 f'PM from `{message.author}`: "{message.content}"', send=True
             )
-
         await self.process_commands(message)
 
-    async def on_error(self, event_method, *args, **kwargs):
+    async def on_error(self, event_method, *_args, **_kwargs):
         """Catches non-command errors and sends them to the error logger for processing.
 
         parameters:
@@ -265,6 +259,14 @@ class BasementBot(base.AdvancedBot):
             call_once (bool): True if the check should be retrieved from the call_once attribute
         """
         await self.logger.debug("Checking if command can run")
+
+        extension_name = self.get_command_extension_name(ctx.command)
+        if extension_name:
+            config = await self.get_context_config(ctx)
+            if not extension_name in config.enabled_extensions:
+                raise error.ExtensionDisabled(
+                    "extension is disabled for this server/context"
+                )
 
         is_bot_admin = await self.is_bot_admin(ctx)
 
@@ -521,42 +523,6 @@ class BasementBot(base.AdvancedBot):
             return f"@{user.name}" if user else "@user"
 
         return re.sub(r"<@?!?(\d+)>", get_nick_from_id_match, content)
-
-    def preserialize_object(self, obj):
-        """Provides sane object -> dict transformation for most objects.
-
-        This is primarily used to send Discord.py object data via the IPC server.
-
-        parameters;
-            obj (object): the object to serialize
-        """
-        attributes = inspect.getmembers(obj, lambda a: not inspect.isroutine(a))
-        filtered_attributes = filter(
-            lambda e: not (e[0].startswith("__") and e[0].endswith("__")), attributes
-        )
-
-        data = {}
-        for name, attr in filtered_attributes:
-            # remove single underscores
-            if name.startswith("_"):
-                name = name[1:]
-
-            # if it's not a basic type, stringify it
-            # only catch: nested data is not readily JSON
-            if isinstance(attr, list):
-                attr = [str(element) for element in attr]
-            elif isinstance(attr, dict):
-                attr = {str(key): str(value) for key, value in attr.items()}
-            elif isinstance(attr, int):
-                attr = str(attr)
-            elif isinstance(attr, float):
-                pass
-            else:
-                attr = str(attr)
-
-            data[str(name)] = attr
-
-        return data
 
     @property
     def startup_time(self):
