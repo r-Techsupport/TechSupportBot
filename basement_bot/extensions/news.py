@@ -3,6 +3,7 @@ import random
 import aiocron
 import base
 import util
+from discord.ext import commands
 
 
 def setup(bot):
@@ -37,11 +38,7 @@ class News(base.LoopCog):
 
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
 
-    async def execute(self, config, guild):
-        channel = guild.get_channel(int(config.extensions.news.channel.value))
-        if not channel:
-            return
-
+    async def get_headlines(self, config):
         response = await util.http_call(
             "get",
             self.API_URL.format(
@@ -52,21 +49,54 @@ class News(base.LoopCog):
 
         articles = response.get("articles")
         if not articles:
+            return None
+
+        return articles
+
+    async def get_random_headline(self, config):
+        articles = await self.get_headlines(config)
+        return random.choice(articles)
+
+    async def execute(self, config, guild):
+        channel = guild.get_channel(int(config.extensions.news.channel.value))
+        if not channel:
             return
 
-        random.shuffle(articles)
-
-        for article in articles:
-            source = article.get("source", {}).get("name")
-            if not source:
-                continue
-
+        url = None
+        while not url:
+            article = await self.get_random_headline(config)
             url = article.get("url")
-            if not url:
-                continue
 
-            await channel.send(url)
-            return
+        await self.bot.guild_log(
+            guild,
+            "logging_channel",
+            "info",
+            f"Sending news headline to #{channel.name}",
+            send=True,
+        )
+        await channel.send(url)
 
     async def wait(self, config, _):
         await aiocron.crontab(config.extensions.news.cron_config.value).next()
+
+    @commands.group(
+        brief="Executes a news command",
+        description="Executes a news command",
+    )
+    async def news(self, ctx):
+        pass
+
+    @news.command(
+        name="random",
+        brief="Gets a random news article",
+        description="Gets a random news headline",
+    )
+    async def random(self, ctx):
+        config = await self.bot.get_context_config(ctx)
+
+        url = None
+        while not url:
+            article = await self.get_random_headline(config)
+            url = article.get("url")
+
+        await util.send_with_mention(ctx, url)

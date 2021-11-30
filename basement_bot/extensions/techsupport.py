@@ -143,8 +143,10 @@ class AutoSupport(base.MatchCog):
         await util.send_with_mention(ctx, embed=embed)
 
     def generate_embed(self, ctx):
-        title = "Hey there! Looking for tech support?"
-        description = "It looks like there aren't any helpers around right now. In the meantime, I can help by scanning your computer specs and looking for any issues."
+        title = "It looks like there aren't any helpers around right now"
+        description = (
+            "I can help by scanning your computer specs and looking for any issues"
+        )
         embed = discord.Embed(title=title, description=description)
         embed.set_author(
             name="Tech Support Auto-Support", icon_url=self.bot.user.avatar_url
@@ -162,6 +164,9 @@ class AutoSupport(base.MatchCog):
         embed.set_footer(
             text="You should share a URL. Do not share a file or screenshot."
         )
+
+        embed.color = discord.Color.green()
+
         return embed
 
 

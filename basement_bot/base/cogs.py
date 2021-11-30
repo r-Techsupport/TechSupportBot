@@ -4,7 +4,6 @@
 
 import asyncio
 
-import base
 import munch
 from discord.ext import commands
 
@@ -24,7 +23,7 @@ class BaseCog(commands.Cog):
 
     def __init__(
         self,
-        bot: base.extension.ExtensionsBot,
+        bot,
         models=None,
         no_guild=False,
         extension_name=None,

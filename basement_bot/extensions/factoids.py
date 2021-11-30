@@ -527,6 +527,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             description=f"Next cache update: {self.cache_update_time} UTC",
             **embed_kwargs,
         )
+        embed.color = discord.Color.green()
 
         await util.send_with_mention(ctx, embed=embed)
 
