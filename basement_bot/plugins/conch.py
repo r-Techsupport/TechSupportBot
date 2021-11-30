@@ -2,6 +2,7 @@ import random
 
 import base
 import discord
+import util
 from discord.ext import commands
 
 
@@ -40,6 +41,7 @@ class MagicConch(base.BaseCog):
         aliases=["8ball", "8b"],
         brief="Asks the Magic Conch",
         description="Asks the Magic Conch (8ball) a question",
+        usage="[question]",
     )
     async def ask_question(self, ctx, *, question: str):
         # we don't actually care about the question
@@ -52,5 +54,6 @@ class MagicConch(base.BaseCog):
         embed = discord.Embed(title=question, description=response)
 
         embed.set_thumbnail(url=self.PIC_URL)
+        embed.color = discord.Color.random()
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)

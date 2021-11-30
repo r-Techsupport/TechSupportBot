@@ -1,39 +1,27 @@
 """The main bot functions.
 """
-
-import asyncio
-import collections
 import datetime
 import inspect
-import json
 import os
 import re
 import sys
 
-import admin
-import aio_pika
-import aiohttp
-import botlog
-import config
+import base
+import cogs as builtin_cogs
 import discord
-import gino
-import munch
-import plugin
-import yaml
+import error
+import util
 from discord.ext import commands, ipc
-from motor import motor_asyncio
 
 
 # pylint: disable=too-many-public-methods, too-many-instance-attributes
-class BasementBot(commands.Bot):
+class BasementBot(base.AdvancedBot):
     """The main bot object.
 
     parameters:
         run_on_init (bool): True if the bot should run on instantiation
     """
 
-    CONFIG_PATH = "./config.yml"
-    GUILD_CONFIG_COLLECTION = "guild_config"
     IPC_SECRET_ENV_KEY = "IPC_SECRET"
     CONFIRM_YES_EMOJI = "✅"
     CONFIRM_NO_EMOJI = "❌"
@@ -42,89 +30,18 @@ class BasementBot(commands.Bot):
     PAGINATE_STOP_EMOJI = "⏹️"
     PAGINATE_DELETE_EMOJI = "🗑️"
 
-    PluginConfig = plugin.PluginConfig
-
-    def __init__(self, run_on_init=True, intents=None, allowed_mentions=None):
-        super().__init__(
-            command_prefix=self.get_prefix,
-            intents=intents,
-            allowed_mentions=allowed_mentions,
-        )
+    def __init__(self, *args, **kwargs):
+        run_on_init = kwargs.pop("run_on_init", None)
 
         self.owner = None
-        self.config = None
-        self.mongo = None
-        self.db = None
-        self.rabbit = None
         self._startup_time = None
-        self.guild_config_collection = None
-        self.config_cache = collections.defaultdict(dict)
-        self.config_lock = asyncio.Lock()
         self.ipc = None
+        self.builtin_cogs = []
 
-        self.load_bot_config(validate=True)
+        super().__init__(*args, **kwargs)
 
-        self.plugin_api = plugin.PluginAPI(bot=self)
-
-        self.logger = botlog.BotLogger(
-            bot=self,
-            name=self.__class__.__name__,
-            queue_wait=self.config.main.logging.queue_wait_seconds,
-            send=not self.config.main.logging.block_discord_send,
-        )
-
-        if not run_on_init:
-            return
-
-        self.run(self.config.main.auth_token)
-
-    def load_bot_config(self, validate):
-        """Loads the config yaml file into a bot object.
-
-        parameters:
-            validate (bool): True if validations should be ran on the file
-        """
-        with open(self.CONFIG_PATH, encoding="utf8") as iostream:
-            config_ = yaml.safe_load(iostream)
-
-        self.config = munch.munchify(config_)
-
-        self.config.main.disabled_plugins = self.config.main.disabled_plugins or []
-
-        if not validate:
-            return
-
-        for subsection in ["required"]:
-            self.validate_bot_config_subsection("main", subsection)
-
-    def validate_bot_config_subsection(self, section, subsection):
-        """Loops through a config subsection to check for missing values.
-
-        parameters:
-            section (str): the section name containing the subsection
-            subsection (str): the subsection name
-        """
-        for key, value in self.config.get(section, {}).get(subsection, {}).items():
-            error_key = None
-            if value is None:
-                error_key = key
-            elif isinstance(value, dict):
-                for k, v in value.items():
-                    if v is None:
-                        error_key = k
-            if error_key:
-                raise ValueError(
-                    f"Config key {error_key} from {section}.{subsection} not supplied"
-                )
-
-    async def get_prefix(self, message):
-        """Gets the appropriate prefix for a command.
-
-        parameters:
-            message (discord.Message): the message to check against
-        """
-        guild_config = await self.get_context_config(guild=message.guild)
-        return getattr(guild_config, "command_prefix", self.config.main.default_prefix)
+        if run_on_init:
+            self.run(self.file_config.main.auth_token)
 
     def run(self, *args, **kwargs):
         """Starts IPC and the event loop and blocks until interrupted."""
@@ -144,6 +61,7 @@ class BasementBot(commands.Bot):
         finally:
             self.loop.close()
 
+    # pylint: disable=too-many-statements
     async def start(self, *args, **kwargs):
         """Sets up config and connections then starts the actual bot."""
         # this is required for the bot
@@ -155,7 +73,6 @@ class BasementBot(commands.Bot):
             await self.mongo.create_collection(self.GUILD_CONFIG_COLLECTION)
 
         self.guild_config_collection = self.mongo[self.GUILD_CONFIG_COLLECTION]
-        self.loop.create_task(self.reset_config_cache())
 
         await self.logger.debug("Connecting to Postgres...")
         try:
@@ -170,26 +87,41 @@ class BasementBot(commands.Bot):
             await self.logger.warning(f"Could not connect to RabbitMQ: {exception}")
 
         await self.logger.debug("Loading plugins...")
-        self.plugin_api.load_plugins()
+        self.load_all_plugins()
 
         if self.db:
             await self.logger.debug("Syncing Postgres tables...")
             await self.db.gino.create_all()
 
-        await self.logger.debug("Loading Admin commands...")
-        try:
-            self.add_cog(admin.AdminControl(self))
-        except Exception as exception:
-            await self.logger.warning(f"Could not add Admin commands: {exception}")
+        await self.logger.debug("Loading Help commands...")
+        self.remove_command("help")
+        help_cog = builtin_cogs.Helper(self)
+        self.add_cog(help_cog)
 
-        await self.logger.debug("Loading Config commands...")
-        try:
-            self.add_cog(config.ConfigControl(self))
-        except Exception as exception:
-            await self.logger.warning(f"Could not load Config commands: {exception}")
+        await self.load_builtin_cog(builtin_cogs.AdminControl)
+        await self.load_builtin_cog(builtin_cogs.ConfigControl)
+        await self.load_builtin_cog(builtin_cogs.Raw)
+
+        if self.ipc:
+            await self.load_builtin_cog(builtin_cogs.IPCEndpoints)
 
         await self.logger.debug("Logging into Discord...")
         await super().start(*args, **kwargs)
+
+    async def load_builtin_cog(self, cog):
+        """Loads a cog as a builtin.
+
+        parameters:
+            cog (discord.commands.ext.Cog): the cog to load
+        """
+        try:
+            cog = cog(self)
+            self.add_cog(cog)
+            self.builtin_cogs.append(cog.qualified_name)
+        except Exception as exception:
+            await self.logger.warning(
+                f"Could not load builtin cog {cog.__name__}: {exception}"
+            )
 
     async def cleanup(self):
         """Cleans up after the event loop is interupted."""
@@ -248,12 +180,38 @@ class BasementBot(commands.Bot):
             context (discord.ext.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
+        if self.extra_events.get("on_command_error", None):
+            return
+        if hasattr(context.command, "on_error"):
+            return
+        if context.cog:
+            # pylint: disable=protected-access
+            if (
+                commands.Cog._get_overridden_method(context.cog.cog_command_error)
+                is not None
+            ):
+                return
+
+        message_template = error.COMMAND_ERROR_RESPONSE_TEMPLATES.get(
+            exception.__class__, ""
+        )
+        # see if we have mapped this error to no response (None)
+        # or if we have added it to the global ignore list of errors
+        if message_template is None or exception.__class__ in error.IGNORED_ERRORS:
+            return
+        # otherwise set it a default error message
+        if message_template == "":
+            message_template = error.ErrorResponse()
+
+        error_message = message_template.get_message(exception)
+
+        await context.send(f"{context.author.mention} {error_message}")
+
         log_channel = await self.get_log_channel_from_guild(
             getattr(context, "guild", None), key="logging_channel"
         )
         await self.logger.error(
             f"Command error: {exception}",
-            context=context,
             exception=exception,
             channel=log_channel,
         )
@@ -265,7 +223,26 @@ class BasementBot(commands.Bot):
             endpoint (str): the endpoint called
             exception (Exception): the exception object associated with the error
         """
-        await self.logger.error(f"IPC error: {exception}", exception=exception)
+        await self.logger.error(
+            f"IPC error: {exception}", exception=exception, send=True
+        )
+
+    async def on_guild_join(self, guild):
+        """Configures a new guild upon joining.
+
+        parameters:
+            guild (discord.Guild): the guild that was joined
+        """
+        for cog in self.cogs.values():
+            if getattr(cog, "COG_TYPE", "").lower() == "loop":
+                await cog.register_new_tasks(guild)
+
+        log_channel = await self.get_log_channel_from_guild(
+            guild, key="guild_events_channel"
+        )
+        await self.logger.event(
+            "guild_join", guild=guild, send=True, channel=log_channel
+        )
 
     async def get_owner(self):
         """Gets the owner object from the bot application."""
@@ -296,7 +273,10 @@ class BasementBot(commands.Bot):
             # treat this as a command error to be caught by the dispatcher
             raise commands.MissingPermissions(["bot_admin"])
 
-        result = await super().can_run(ctx, call_once=call_once)
+        if is_bot_admin:
+            result = True
+        else:
+            result = await super().can_run(ctx, call_once=call_once)
 
         return result
 
@@ -316,71 +296,20 @@ class BasementBot(commands.Bot):
         if getattr(owner, "id", None) == ctx.author.id:
             return True
 
-        if ctx.message.author.id in [int(id) for id in self.config.main.admins.ids]:
+        if ctx.message.author.id in [
+            int(id) for id in self.file_config.main.admins.ids
+        ]:
             return True
 
         role_is_admin = False
         for role in getattr(ctx.message.author, "roles", []):
-            if role.name in self.config.main.admins.roles:
+            if role.name in self.file_config.main.admins.roles:
                 role_is_admin = True
                 break
         if role_is_admin:
             return True
 
         return False
-
-    async def reset_config_cache(self):
-        """Deletes the guild config cache on a peridodic basis."""
-        while True:
-            await self.logger.debug("Resetting guild config cache")
-            self.config_cache = collections.defaultdict(dict)
-            await asyncio.sleep(self.config.main.config_cache_reset)
-
-    async def get_context_config(
-        self, ctx=None, guild=None, create_if_none=True, get_from_cache=True
-    ):
-        """Gets the appropriate config for the context.
-
-        parameters:
-            ctx (discord.ext.Context): the context of the config
-            guild (discord.Guild): the guild associated with the config (provided instead of ctx)
-            create_if_none (bool): True if the config should be created if not found
-            get_from_cache (bool): True if the config should be fetched from the cache
-        """
-        if ctx:
-            guild_from_ctx = getattr(ctx, "guild", None)
-            lookup = guild_from_ctx.id if guild_from_ctx else "dmcontext"
-        elif guild:
-            lookup = guild.id
-        else:
-            return None
-
-        lookup = str(lookup)
-
-        await self.logger.debug(f"Getting config for lookup key: {lookup}")
-
-        # locking prevents duplicate configs being made
-        async with self.config_lock:
-            if get_from_cache:
-                config_ = self.config_cache[lookup]
-                if config_:
-                    return config_
-
-            config_ = await self.guild_config_collection.find_one(
-                {"guild_id": {"$eq": lookup}}
-            )
-
-            if not config_:
-                await self.logger.debug("No config found in MongoDB")
-                if create_if_none:
-                    config_ = await self.create_new_context_config(lookup)
-            else:
-                config_ = await self.sync_config(config_)
-
-            if config_:
-                self.config_cache[lookup] = config_
-
-        return config_
 
     async def get_log_channel_from_guild(self, guild, key):
         """Gets the log channel ID associated with the given guild.
@@ -405,343 +334,17 @@ class BasementBot(commands.Bot):
 
         return channel_id
 
-    async def create_new_context_config(self, lookup):
-        """Creates a new guild config based on a lookup key (usually a guild ID).
+    async def guild_log(self, guild, key, log_type, message, **kwargs):
+        """Shortcut wrapper for directly to a guild's log channel.
 
         parameters:
-            lookup (str): the primary key for the guild config document object
+            guild (discord.Guild): the guild object to reference
+            key (string): the key to use when looking up the channel
+            log_type (string): the log type to use (info, error, warning, etc.)
+            message (string): the log message
         """
-
-        plugins_config = {}
-
-        await self.logger.debug("Evaluating plugin data")
-        for plugin_name, plugin_data in self.plugin_api.plugins.items():
-            plugin_config = getattr(plugin_data, "fallback_config", {})
-            if plugin_config:
-                # don't attach to guild config if plugin isn't configurable
-                plugins_config[plugin_name] = plugin_config
-
-        config_ = munch.Munch()
-
-        config_.guild_id = str(lookup)
-        config_.command_prefix = self.config.main.default_prefix
-        config_.logging_channel = None
-        config_.member_events_channel = None
-        config_.guild_events_channel = None
-        config_.private_channels = []
-
-        config_.plugins = plugins_config
-
-        try:
-            await self.logger.debug(f"Inserting new config for lookup key: {lookup}")
-            await self.guild_config_collection.insert_one(config_)
-        except Exception as exception:
-            # safely finish because the new config is still useful
-            await self.logger.error(
-                "Could not insert guild config into MongoDB", exception=exception
-            )
-
-        return config_
-
-    async def sync_config(self, config_object):
-        """Syncs the given config with the currently loaded plugins.
-
-        parameters:
-            config_object (dict): the guild config object
-        """
-        config_object = munch.munchify(config_object)
-
-        should_update = False
-
-        await self.logger.debug("Evaluating plugin data")
-        for plugin_name, plugin_data in self.plugin_api.plugins.items():
-            plugin_config = config_object.plugins.get(plugin_name)
-            plugin_config_from_data = getattr(plugin_data, "fallback_config", {})
-
-            if not plugin_config and plugin_config_from_data:
-                should_update = True
-                await self.logger.debug(
-                    f"Found plugin {plugin_name} not in config with ID {config_object.guild_id}"
-                )
-                config_object.plugins[plugin_name] = plugin_config_from_data
-
-        if should_update:
-            await self.logger.debug(
-                f"Updating guild config for lookup key: {config_object.guild_id}"
-            )
-            await self.guild_config_collection.replace_one(
-                {"_id": config_object.get("_id")}, config_object
-            )
-
-        return config_object
-
-    def generate_db_url(self, postgres=True):
-        """Dynamically converts config to a Postgres/MongoDB url.
-
-        parameters:
-            postgres (bool): True if the URL for Postgres should be retrieved
-        """
-        db_type = "postgres" if postgres else "mongodb"
-
-        try:
-            config_child = getattr(self.config.main, db_type)
-
-            user = config_child.user
-            password = config_child.password
-
-            name = getattr(config_child, "name") if postgres else None
-
-            host = config_child.host
-            port = config_child.port
-
-        except AttributeError as exception:
-            self.logger.console.warning(
-                f"Could not generate DB URL for {db_type.upper()}: {exception}"
-            )
-            return None
-
-        url = f"{db_type}://{user}:{password}@{host}:{port}"
-        url_filtered = f"{db_type}://{user}:********@{host}:{port}"
-
-        if name:
-            url = f"{url}/{name}"
-
-        # don't log the password
-        self.logger.console.debug(f"Generated DB URL: {url_filtered}")
-
-        return url
-
-    async def get_postgres_ref(self):
-        """Grabs the main DB reference.
-
-        This doesn't follow a singleton pattern (use bot.db instead).
-        """
-        await self.logger.debug("Obtaining and binding to Gino instance")
-
-        db_ref = gino.Gino()
-        db_url = self.generate_db_url()
-        await db_ref.set_bind(db_url)
-
-        db_ref.Model.__table_args__ = {"extend_existing": True}
-
-        return db_ref
-
-    def get_mongo_ref(self):
-        """Grabs the MongoDB ref to the bot's configured table."""
-        self.logger.console.debug("Obtaining MongoDB client")
-
-        mongo_client = motor_asyncio.AsyncIOMotorClient(
-            self.generate_db_url(postgres=False)
-        )
-
-        return mongo_client[self.config.main.mongodb.name]
-
-    def generate_rabbit_url(self):
-        """Dynamically converts config to an AMQP URL."""
-        host = self.config.main.rabbitmq.host
-        port = self.config.main.rabbitmq.port
-        vhost = self.config.main.rabbitmq.vhost
-        user = self.config.main.rabbitmq.user
-        password = self.config.main.rabbitmq.password
-
-        rabbit_url = f"amqp://{user}:{password}@{host}:{port}{vhost}"
-        rabbit_url_filtered = f"amqp://{user}:********@{host}:{port}{vhost}"
-
-        self.logger.console.debug(f"Generated RabbitMQ URL: {rabbit_url_filtered}")
-
-        return rabbit_url
-
-    async def get_rabbit_connection(self):
-        """Grabs the main RabbitMQ connection.
-
-        This doesn't follow a singleton pattern (use bot.rabbit instead).
-        """
-        await self.logger.debug("Obtaining RabbitMQ robust instance")
-
-        connection = await aio_pika.connect_robust(
-            self.generate_rabbit_url(), loop=self.loop
-        )
-
-        return connection
-
-    async def rabbit_publish(self, body, routing_key):
-        """Publishes a body to the message queue.
-
-        parameters:
-            body (str): the body to send
-            routing_key (str): the queue name to publish to
-        """
-        channel = await self.rabbit.channel()
-
-        await self.logger.debug(f"RabbitMQ publish event to queue: {routing_key}")
-        await channel.default_exchange.publish(
-            aio_pika.Message(body=body.encode()), routing_key=routing_key
-        )
-
-        await channel.close()
-
-    async def rabbit_consume(self, queue_name, handler, *args, **kwargs):
-        """Consumes from a queue indefinitely.
-
-        parameters:
-            queue_name (str): the name of the queue
-            handler (asyncio.coroutine): a handler for processing each message
-            state_func (asyncio.coroutine): a state provider for exiting the consumation
-            poll_wait (int): the time to wait inbetween each consumation
-        """
-        state_func = kwargs.pop("state_func", None)
-
-        poll_wait = kwargs.pop("poll_wait", None)
-
-        channel = await self.rabbit.channel()
-
-        await self.logger.debug(f"Declaring queue: {queue_name}")
-        queue = await channel.declare_queue(queue_name, *args, **kwargs)
-
-        state = True
-        async with queue.iterator() as queue_iter:
-            async for message in queue_iter:
-
-                if state_func:
-                    state = await state_func()
-                    if not state:
-                        break
-
-                if poll_wait:
-                    await asyncio.sleep(poll_wait)
-
-                async with message.process():
-                    await self.logger.debug(
-                        f"RabbitMQ consume event from queue: {queue_name}"
-                    )
-                    await handler(message.body.decode())
-
-        await channel.close()
-
-    def get_http_session(self):
-        """Returns an async HTTP session."""
-        self.logger.console.debug("Generating HTTP Client object")
-        return aiohttp.ClientSession()
-
-    async def http_call(self, method, url, *args, **kwargs):
-        """Makes an HTTP request.
-
-        By default this returns JSON/dict with the status code injected.
-
-        parameters:
-            method (str): the HTTP method to use
-            url (str): the URL to call
-            get_raw_response (bool): True if the actual response object should be returned
-        """
-        client = self.get_http_session()
-
-        method_fn = getattr(client, method.lower())
-
-        get_raw_response = kwargs.pop("get_raw_response", False)
-
-        await self.logger.debug(f"Making HTTP {method.upper()} request to {url}")
-        response_object = await method_fn(url, *args, **kwargs)
-
-        if get_raw_response:
-            response = response_object
-        else:
-            await self.logger.debug("Converting response to JSON object")
-            response_json = await response_object.json()
-            response = (
-                munch.munchify(response_json) if response_object else munch.Munch()
-            )
-            response["status_code"] = getattr(response_object, "status", None)
-
-        await client.close()
-
-        return response
-
-    async def send_with_mention(self, ctx, content=None, target=None, **kwargs):
-        """Sends a context response with the original author tagged.
-
-        parameters:
-            ctx (discord.ext.Context): the context object
-            content (str): the message to send
-            target (discord.Member): the Discord user to tag
-        """
-        user_mention = target.mention if target else ctx.message.author.mention
-        content = f"{user_mention} {content}" if content else user_mention
-
-        message = await ctx.send(content=content, **kwargs)
-        return message
-
-    def get_guild_from_channel_id(self, channel_id):
-        """Helper for getting the guild associated with a channel.
-
-        parameters:
-            bot (BasementBot): the bot object
-            channel_id (Union[string, int]): the unique ID of the channel
-        """
-        self.logger.console.debug(f"Getting guild from channel ID: {channel_id}")
-        for guild in self.guilds:
-            for channel in guild.channels:
-                if channel.id == int(channel_id):
-                    self.logger.console.debug(
-                        f"Found guild ID {guild.id} associated with channel ID: {channel_id}"
-                    )
-                    return guild
-
-        self.logger.console.debug(
-            f"Could not find guild ID associated with channel ID: {channel_id}"
-        )
-        return None
-
-    def sub_mentions_for_usernames(self, content):
-        """Subs a string of Discord mentions with the corresponding usernames.
-
-        parameters:
-            bot (BasementBot): the bot object
-            content (str): the content to parse
-        """
-
-        def get_nick_from_id_match(match):
-            id_ = int(match.group(1))
-            user = self.get_user(id_)
-            return f"@{user.name}" if user else "@user"
-
-        self.logger.console.debug(f"Performing regex subtitution on {content}")
-        return re.sub(r"<@?!?(\d+)>", get_nick_from_id_match, content)
-
-    async def get_json_from_attachments(
-        self, message, as_string=False, allow_failure=False
-    ):
-        """Returns concatted JSON from a message's attachments.
-
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
-            message (Message): the message object
-            as_string (bool): True if the serialized JSON should be returned
-            allow_failure (bool): True if an exception should be ignored when parsing attachments
-        """
-        await self.logger.debug(f"Checking message ID: {message.id} for attachments")
-        attachment_jsons = []
-        for attachment in message.attachments:
-            try:
-                json_bytes = await attachment.read()
-                attachment_jsons.append(json.loads(json_bytes.decode("UTF-8")))
-            except Exception as exception:
-                if allow_failure:
-                    await self.logger.debug(
-                        f"Found unprocessable JSON - ignoring ({exception})"
-                    )
-                    continue
-                raise exception
-
-        if len(attachment_jsons) == 1:
-            attachment_jsons = attachment_jsons[0]
-        elif len(attachment_jsons) == 0:
-            attachment_jsons = {}
-
-        return (
-            json.dumps(attachment_jsons)
-            if as_string
-            else munch.munchify(attachment_jsons)
-        )
+        log_channel = await self.get_log_channel_from_guild(guild, key)
+        await getattr(self.logger, log_type)(message, channel=log_channel, **kwargs)
 
     # pylint: disable=too-many-branches, too-many-arguments
     async def paginate(self, ctx, embeds, timeout=300, tag_user=False, restrict=False):
@@ -772,7 +375,7 @@ class BasementBot(commands.Bot):
         }
 
         if tag_user:
-            message = await self.send_with_mention(ctx, **get_args(index))
+            message = await util.send_with_mention(ctx, **get_args(index))
         else:
             message = await ctx.send(**get_args(index))
 
@@ -809,7 +412,7 @@ class BasementBot(commands.Bot):
                 pass
 
             # move forward
-            if str(reaction) == self.PAGINATE_RIGHT_EMOJI and index < len(embeds) - 1:
+            elif str(reaction) == self.PAGINATE_RIGHT_EMOJI and index < len(embeds) - 1:
                 index += 1
                 await message.edit(**get_args(index))
 
@@ -819,14 +422,12 @@ class BasementBot(commands.Bot):
                 await message.edit(**get_args(index))
 
             # stop pagination
-            elif str(reaction) == self.PAGINATE_STOP_EMOJI and user.id == ctx.author.id:
+            elif str(reaction) == self.PAGINATE_STOP_EMOJI:
                 await self.logger.debug("Stopping pagination message at user request")
                 break
 
             # delete embed
-            elif (
-                str(reaction) == self.PAGINATE_DELETE_EMOJI and user.id == ctx.author.id
-            ):
+            elif str(reaction) == self.PAGINATE_DELETE_EMOJI:
                 await self.logger.debug("Deleting pagination message at user request")
                 await message.delete()
                 break
@@ -838,7 +439,10 @@ class BasementBot(commands.Bot):
                     "Could not delete user reaction on pagination message", send=False
                 )
 
-        await message.clear_reactions()
+        try:
+            await message.clear_reactions()
+        except discord.NotFound:
+            pass
 
     def task_paginate(self, *args, **kwargs):
         """Creates a pagination task from the given args.
@@ -847,7 +451,7 @@ class BasementBot(commands.Bot):
         """
         self.loop.create_task(self.paginate(*args, **kwargs))
 
-    async def confirm(self, ctx, title, timeout=60, delete_after=False):
+    async def confirm(self, ctx, title, timeout=60, delete_after=False, bypass=None):
         """Waits on a confirm reaction from a given user.
 
         parameters:
@@ -855,8 +459,12 @@ class BasementBot(commands.Bot):
             title (str): the message content to which the user reacts
             timeout (int): the number of seconds before timing out
             delete_after (bool): True if the confirmation message should be deleted
+            bypass (list[discord.Role]): the list of roles able to confirm (empty by default)
         """
-        message = await self.send_with_mention(ctx, content=title, target=ctx.author)
+        if bypass is None:
+            bypass = []
+
+        message = await util.send_with_mention(ctx, content=title, target=ctx.author)
         await message.add_reaction(self.CONFIRM_YES_EMOJI)
         await message.add_reaction(self.CONFIRM_NO_EMOJI)
 
@@ -871,7 +479,13 @@ class BasementBot(commands.Bot):
             except Exception:
                 break
 
-            if user.id != ctx.author.id:
+            member = ctx.guild.get_member(user.id)
+            if not member:
+                pass
+
+            elif user.id != ctx.author.id and not any(
+                role in getattr(member, "roles", []) for role in bypass
+            ):
                 pass
 
             elif str(reaction) == self.CONFIRM_YES_EMOJI:
@@ -893,39 +507,20 @@ class BasementBot(commands.Bot):
 
         return result
 
-    @staticmethod
-    def generate_embed_from_kwargs(
-        title=None, description=None, all_inline=False, **kwargs
-    ):
-        """Wrapper for generating an embed from a set of key, values.
+    def sub_mentions_for_usernames(self, content):
+        """Subs a string of Discord mentions with the corresponding usernames.
 
         parameters:
-            title (str): the title for the embed
-            description (str): the description for the embed
-            all_inline (bool): True if all fields should be added with inline=True
-            kwargs (dict): a set of keyword values to be displayed
+            bot (BasementBot): the bot object
+            content (str): the content to parse
         """
-        embed = discord.Embed(title=title, description=description)
-        for key, value in kwargs.items():
-            embed.add_field(name=key, value=value, inline=all_inline)
-        return embed
 
-    def process_plugin_setup(self, *args, **kwargs):
-        """Provides a bot-level interface to loading a plugin.
+        def get_nick_from_id_match(match):
+            id_ = int(match.group(1))
+            user = self.get_user(id_)
+            return f"@{user.name}" if user else "@user"
 
-        It is recommended to use this when setting up plugins.
-        """
-        return self.plugin_api.process_plugin_setup(*args, **kwargs)
-
-    def ipc_response(self, code=200, error=None, payload=None):
-        """Makes a response object for an IPC client.
-
-        parameters:
-            code (int): the HTTP-like status code
-            error (str): the response error message
-            payload (dict): the optional data payload
-        """
-        return {"code": code, "error": error, "payload": payload}
+        return re.sub(r"<@?!?(\d+)>", get_nick_from_id_match, content)
 
     def preserialize_object(self, obj):
         """Provides sane object -> dict transformation for most objects.
@@ -1214,15 +809,6 @@ class BasementBot(commands.Bot):
         )
         await self.logger.event(
             "member_remove", member=member, send=True, channel=log_channel
-        )
-
-    async def on_guild_join(self, guild):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_join"""
-        log_channel = await self.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
-        )
-        await self.logger.event(
-            "guild_join", guild=guild, send=True, channel=log_channel
         )
 
     async def on_guild_remove(self, guild):

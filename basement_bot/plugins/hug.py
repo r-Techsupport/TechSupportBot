@@ -1,8 +1,8 @@
 import random
 
 import base
-import decorate
 import discord
+import util
 from discord.ext import commands
 
 
@@ -27,7 +27,7 @@ class Hugger(base.BaseCog):
         "https://cdn.icon-icons.com/icons2/1648/PNG/512/10022huggingface_110042.png"
     )
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(
@@ -43,12 +43,12 @@ class Hugger(base.BaseCog):
             ctx (Context): the context
         """
         if user_to_hug.id == ctx.author.id:
-            await self.bot.send_with_mention(ctx, "Let's be serious")
+            await util.send_with_mention(ctx, "Let's be serious")
             return
 
         embed = self.generate_embed(ctx, user_to_hug)
 
-        await self.bot.send_with_mention(ctx, embed=embed, target=user_to_hug)
+        await util.send_with_mention(ctx, embed=embed, target=user_to_hug)
 
     def generate_embed(self, ctx, user_to_hug):
         hug_text = random.choice(self.HUGS_SELECTION).format(
@@ -61,5 +61,6 @@ class Hugger(base.BaseCog):
         embed.add_field(name="You've been hugged!", value=hug_text)
 
         embed.set_thumbnail(url=self.ICON_URL)
+        embed.color = discord.Color.blurple()
 
         return embed

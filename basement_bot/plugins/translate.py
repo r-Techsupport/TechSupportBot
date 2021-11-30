@@ -1,5 +1,5 @@
 import base
-import decorate
+import util
 from discord.ext import commands
 
 
@@ -13,7 +13,7 @@ class Translator(base.BaseCog):
 
     API_URL = "https://api.mymemory.translated.net/get?q={}&langpair={}|{}"
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Translates a message",
@@ -21,14 +21,14 @@ class Translator(base.BaseCog):
         usage='"[message (in quotes)]" [src language code (en)] [dest language code (es)]',
     )
     async def translate(self, ctx, message, src: str, dest: str):
-        response = await self.bot.http_call(
+        response = await util.http_call(
             "get",
             self.API_URL.format(message, src, dest),
         )
         translated = response.get("responseData", {}).get("translatedText")
 
         if not translated:
-            await self.bot.send_with_mention(ctx, "I could not translate your message")
+            await util.send_with_mention(ctx, "I could not translate your message")
             return
 
-        await self.bot.send_with_mention(ctx, translated)
+        await util.send_with_mention(ctx, translated)

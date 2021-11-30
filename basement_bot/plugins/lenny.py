@@ -1,7 +1,7 @@
 import random
 
 import base
-import decorate
+import util
 from discord.ext import commands
 
 
@@ -35,7 +35,7 @@ class Lenny(base.BaseCog):
         "✺◟( ͡° ͜ʖ ͡°)◞✺",
     ]
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="len",

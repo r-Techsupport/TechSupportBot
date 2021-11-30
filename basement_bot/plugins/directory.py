@@ -1,10 +1,9 @@
 import datetime
 
 import base
-import decorate
 import discord
 import emoji
-import sqlalchemy
+import util
 from discord.ext import commands
 
 
@@ -78,14 +77,35 @@ class ChannelDirectory(base.BaseCog):
 
         channel_id = config.plugins.directory.channel.value
         if not channel_id:
+            await self.bot.guild_log(
+                guild,
+                "logging_channel",
+                "warning",
+                "Directory plugin channel ID not setup - aborting guild setup",
+                send=True,
+            )
             return
 
         channel = guild.get_channel(int(channel_id))
         if not channel:
+            await self.bot.guild_log(
+                guild,
+                "logging_channel",
+                "warning",
+                "Directory plugin channel not found - aborting guild setup",
+                send=True,
+            )
             return
 
         channel_map = config.plugins.directory.channel_role_map.value
         if not channel_map:
+            await self.bot.guild_log(
+                guild,
+                "logging_channel",
+                "warning",
+                "Directory plugin channel_map not setup - aborting guild setup",
+                send=True,
+            )
             return
 
         existence = await self.models.DirectoryExistence.query.where(
@@ -103,8 +123,15 @@ class ChannelDirectory(base.BaseCog):
             # try to get its message ID keeping in mind it's stored as str
             try:
                 message_id = int(existence.last_message)
-            except ValueError:
+            except ValueError as e:
                 # nothing we can do, move on
+                await self.bot.guild_log(
+                    guild,
+                    "logging_channel",
+                    "error",
+                    "Could not determine last message ID for directory plugin from saved data (this is rare)",
+                    exception=e,
+                )
                 return
 
         message = (
@@ -113,6 +140,13 @@ class ChannelDirectory(base.BaseCog):
             else None
         )
         if message:
+            await self.bot.guild_log(
+                guild,
+                "logging_channel",
+                "info",
+                "Deleting previously saved message for directory plugin",
+                send=True,
+            )
             await message.delete()
 
         new_message = await self.send_embed(config, channel_map, guild, channel)
@@ -121,13 +155,14 @@ class ChannelDirectory(base.BaseCog):
 
         self.message_ids.add(new_message.id)
 
-    async def send_embed(self, channel_map, guild, directory_channel):
+    async def send_embed(self, config, channel_map, guild, directory_channel):
         embed = discord.Embed(
             title="Channel Directory",
             description=config.plugins.directory.embed_message.value,
         )
 
         embed.set_thumbnail(url=self.DIR_ICON_URL)
+        embed.color = discord.Color.gold()
 
         message = await directory_channel.send("Loading channel directory...")
 
@@ -192,7 +227,7 @@ class ChannelDirectory(base.BaseCog):
     async def directory(self, ctx):
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     @directory.command(

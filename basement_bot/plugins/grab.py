@@ -2,8 +2,8 @@ import datetime
 import random
 
 import base
-import decorate
 import discord
+import util
 from discord.ext import commands
 
 
@@ -17,6 +17,7 @@ def setup(bot):
         guild = bot.db.Column(bot.db.String)
         message = bot.db.Column(bot.db.String)
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+        nsfw = bot.db.Column(bot.db.Boolean, default=False)
 
     config = bot.PluginConfig()
     config.add(
@@ -46,12 +47,12 @@ class Grabber(base.BaseCog):
     # but oh well
     async def invalid_channel(self, config, ctx):
         if ctx.channel.id in config.plugins.grab.blocked_channels.value:
-            await self.bot.send_with_mention(ctx, "Grabs are disabled for this channel")
+            await util.send_with_mention(ctx, "Grabs are disabled for this channel")
             return True
 
         return False
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(
@@ -67,7 +68,7 @@ class Grabber(base.BaseCog):
             return
 
         if user_to_grab.bot:
-            await self.bot.send_with_mention(ctx, "Ain't gonna catch me slipping!")
+            await util.send_with_mention(ctx, "Ain't gonna catch me slipping!")
             return
 
         grab_message = None
@@ -77,7 +78,7 @@ class Grabber(base.BaseCog):
                 break
 
         if not grab_message:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, f"Could not find a recent message from user {user_to_grab}"
             )
             return
@@ -91,7 +92,7 @@ class Grabber(base.BaseCog):
         )
 
         if grab:
-            await self.bot.send_with_mention(ctx, "That grab already exists!")
+            await util.send_with_mention(ctx, "That grab already exists!")
             return
 
         grab = self.models.Grab(
@@ -99,10 +100,11 @@ class Grabber(base.BaseCog):
             channel=str(ctx.channel.id),
             guild=str(ctx.guild.id),
             message=grab_message,
+            nsfw=ctx.channel.is_nsfw(),
         )
         await grab.create()
 
-        await self.bot.send_with_mention(ctx, f"Successfully saved: '*{grab_message}*'")
+        await util.send_with_mention(ctx, f"Successfully saved: '*{grab_message}*'")
 
     @commands.group(
         brief="Executes a grabs command",
@@ -111,7 +113,7 @@ class Grabber(base.BaseCog):
     async def grabs(self, ctx):
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @grabs.command(
@@ -121,44 +123,43 @@ class Grabber(base.BaseCog):
         usage="@user",
     )
     async def all_grabs(self, ctx, user_to_grab: discord.Member):
+        is_nsfw = ctx.channel.is_nsfw()
+
         config = await self.bot.get_context_config(ctx)
 
         if await self.invalid_channel(config, ctx):
             return
 
         if user_to_grab.bot:
-            await self.bot.send_with_mention(ctx, "Ain't gonna catch me slipping!")
+            await util.send_with_mention(ctx, "Ain't gonna catch me slipping!")
             return
 
-        grabs = (
-            await self.models.Grab.query.where(
-                self.models.Grab.author_id == str(user_to_grab.id)
-            )
-            .where(self.models.Grab.guild == str(ctx.guild.id))
-            .gino.all()
-        )
+        query = self.models.Grab.query.where(
+            self.models.Grab.author_id == str(user_to_grab.id)
+        ).where(self.models.Grab.guild == str(ctx.guild.id))
+
+        if not is_nsfw:
+            query = query.where(self.models.Grab.nsfw == False)
+
+        grabs = await query.gino.all()
 
         if not grabs:
-            await self.bot.send_with_mention(
-                ctx, f"No grabs found for {user_to_grab.name}"
-            )
+            await util.send_with_mention(ctx, f"No grabs found for {user_to_grab.name}")
             return
 
         grabs.sort(reverse=True, key=lambda grab: grab.time)
 
-        embed = discord.Embed(
-            title=f"Grabs for {user_to_grab.name}",
-            description="Let's take a stroll down memory lane...",
-        )
-        embed.set_thumbnail(url=user_to_grab.avatar_url)
         embeds = []
         field_counter = 1
         for index, grab_ in enumerate(grabs):
             filtered_message = self.bot.sub_mentions_for_usernames(grab_.message)
+            description = "Let's take a stroll down memory lane..."
+            if not is_nsfw:
+                description = "Note: *NSFW grabs are hidden in this channel*"
             embed = (
                 discord.Embed(
                     title=f"Grabs for {user_to_grab.name}",
-                    description=f"Let's take a stroll down memory lane...",
+                    description=description,
                 )
                 if field_counter == 1
                 else embed
@@ -173,6 +174,7 @@ class Grabber(base.BaseCog):
                 or index == len(list(grabs)) - 1
             ):
                 embed.set_thumbnail(url=user_to_grab.avatar_url)
+                embed.color = discord.Color.orange()
                 embeds.append(embed)
                 field_counter = 1
             else:
@@ -180,13 +182,13 @@ class Grabber(base.BaseCog):
 
         self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @grabs.command(
         name="random",
         brief="Returns a random grab",
-        description="Returns a random grabbed message for a user",
+        description="Returns a random grabbed message for a user (note: NSFW messages are filtered by channel settings)",
         usage="@user",
     )
     async def random_grab(self, ctx, user_to_grab: discord.Member):
@@ -196,7 +198,7 @@ class Grabber(base.BaseCog):
             return
 
         if user_to_grab.bot:
-            await self.bot.send_with_mention(ctx, "Ain't gonna catch me slipping!")
+            await util.send_with_mention(ctx, "Ain't gonna catch me slipping!")
             return
 
         grabs = (
@@ -207,8 +209,17 @@ class Grabber(base.BaseCog):
             .gino.all()
         )
 
+        query = self.models.Grab.query.where(
+            self.models.Grab.author_id == str(user_to_grab.id)
+        ).where(self.models.Grab.guild == str(ctx.guild.id))
+
+        if not ctx.channel.is_nsfw():
+            query = query.where(self.models.Grab.nsfw == False)
+
+        grabs = await query.gino.all()
+
         if not grabs:
-            await self.bot.send_with_mention(ctx, f"No grabs found for {user_to_grab}")
+            await util.send_with_mention(ctx, f"No grabs found for {user_to_grab}")
             return
 
         random_index = random.randint(0, len(grabs) - 1)
@@ -221,6 +232,8 @@ class Grabber(base.BaseCog):
             description=f"{user_to_grab.name}, {grab.time.date()}",
         )
 
+        embed.color = discord.Color.orange()
+
         embed.set_thumbnail(url=user_to_grab.avatar_url)
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)

@@ -1,13 +1,7 @@
-import copy
 import datetime
-import functools
-import json
-import logging
-import re
 import uuid
 
 import base
-import decorate
 import munch
 from discord.ext import commands
 
@@ -16,10 +10,108 @@ def setup(bot):
     bot.process_plugin_setup(cogs=[DiscordRelay, IRCReceiver], no_guild=True)
 
 
+class RelayEvent:
+    def __init__(self, type, author, channel):
+        self.payload = munch.Munch()
+        self.payload.event = munch.Munch()
+        self.payload.event.id = str(uuid.uuid4())
+        self.payload.event.type = type
+        self.payload.event.time = datetime.datetime.now(datetime.timezone.utc).strftime(
+            "%Y-%m-%d %H:%M:%S.%f"
+        )
+
+        self.payload.author = munch.Munch()
+        self.payload.author.username = author.name
+        self.payload.author.id = author.id
+        self.payload.author.nickname = author.display_name
+        self.payload.author.discriminator = author.discriminator
+        self.payload.author.is_bot = author.bot
+        self.payload.author.top_role = str(author.top_role)
+
+        self.payload.author.permissions = munch.Munch()
+        discord_permissions = author.permissions_in(channel)
+        self.payload.author.permissions.kick = discord_permissions.kick_members
+        self.payload.author.permissions.ban = discord_permissions.ban_members
+        self.payload.author.permissions.unban = discord_permissions.ban_members
+        self.payload.author.permissions.admin = discord_permissions.administrator
+
+        self.payload.server = munch.Munch()
+        self.payload.server.name = author.guild.name
+        self.payload.server.id = author.guild.id
+
+        self.payload.channel = munch.Munch()
+        self.payload.channel.name = channel.name
+        self.payload.channel.id = channel.id
+
+    def to_json(self):
+        return self.payload.toJSON()
+
+
+class MessageEvent(RelayEvent):
+    def __init__(self, *args, **kwargs):
+        message = kwargs.pop("message")
+        alternate_content = kwargs.pop("content")
+        super().__init__("message", *args, **kwargs)
+
+        self.message = message
+
+        self.payload.event.content = alternate_content or message.content
+        self.payload.event.attachments = [
+            attachment.url for attachment in message.attachments
+        ]
+
+        self.payload.event.reply = munch.Munch()
+
+    async def fill_reply_data(self, transform_fn=None):
+        reference = self.message.reference
+        if not reference:
+            return
+
+        referenced_message = await self.message.channel.fetch_message(
+            reference.message_id
+        )
+        if not referenced_message:
+            return
+
+        self.payload.event.reply.content = (
+            transform_fn(referenced_message.content)
+            if transform_fn
+            else referenced_message.content
+        )
+
+        self.payload.event.reply.author = munch.Munch()
+        self.payload.event.reply.author.username = referenced_message.author.name
+        self.payload.event.reply.author.id = referenced_message.author.id
+        self.payload.event.reply.author.nickname = (
+            referenced_message.author.display_name
+        )
+        self.payload.event.reply.author.discriminator = (
+            referenced_message.author.discriminator
+        )
+
+
+class MessageEditEvent(RelayEvent):
+    def __init__(self, *args, **kwargs):
+        content = kwargs.pop("content")
+        super().__init__("message_edit", *args, **kwargs)
+        self.payload.event.content = content
+
+
+class ReactionAddEvent(RelayEvent):
+    def __init__(self, *args, **kwargs):
+        content = kwargs.pop("content")
+        emoji = kwargs.pop("emoji")
+        super().__init__("reaction_add", *args, **kwargs)
+        self.payload.event.emoji = emoji
+        self.payload.event.content = content
+
+
 class DiscordRelay(base.MatchCog):
     async def preconfig(self):
-        self.channels = list(self.bot.config.special.relay.channel_map.values())
-        self.bot.plugin_api.plugins.relay.memory.channels = self.channels
+        self.listen_channels = list(
+            self.bot.file_config.special.relay.channel_map.values()
+        )
+        self.bot.plugins.relay.memory.channels = self.listen_channels
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
@@ -27,7 +119,7 @@ class DiscordRelay(base.MatchCog):
         if not channel:
             return
 
-        if not channel.id in self.channels:
+        if not channel.id in self.listen_channels:
             return
 
         message = await channel.fetch_message(payload.message_id)
@@ -37,87 +129,74 @@ class DiscordRelay(base.MatchCog):
         if message.author.bot:
             return
 
-        payload = self.serialize(
-            "message",
-            message,
-            alternate_content=f"{message.content}** (message edited)",
+        edit_event = MessageEditEvent(
+            message.author,
+            channel,
+            content=self.bot.sub_mentions_for_usernames(message.content),
         )
 
-        await self.publish(payload, message.guild)
+        await self.publish(edit_event.to_json(), message.guild)
 
-    async def match(self, _, ctx, __):
-        if ctx.channel.id in self.channels:
-            return True
-        return False
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        channel = self.bot.get_channel(payload.channel_id)
+        if not channel:
+            return
+
+        if payload.member.bot:
+            return
+
+        if not channel.id in self.listen_channels:
+            return
+
+        message = await channel.fetch_message(payload.message_id)
+        if not message or not message.content:
+            return
+
+        emoji = (
+            payload.emoji.name
+            if payload.emoji.is_unicode_emoji()
+            else f":{payload.emoji.name}:"
+        )
+        reaction_add_event = ReactionAddEvent(
+            payload.member,
+            channel,
+            content=self.bot.sub_mentions_for_usernames(message.content),
+            emoji=emoji,
+        )
+
+        await self.publish(reaction_add_event.to_json(), message.guild)
+
+    async def match(self, _, ctx, content):
+        if not ctx.channel.id in self.listen_channels:
+            return False
+        prefix = await self.bot.get_prefix(ctx.message)
+        if content and content.startswith(prefix):
+            return False
+        return True
 
     async def response(self, _, ctx, __, ___):
-        payload = self.serialize(
-            "message",
-            ctx.message,
-            alternate_content=self.bot.sub_mentions_for_usernames(ctx.message.content),
+        alternate_content = self.bot.sub_mentions_for_usernames(ctx.message.content)
+        message_event = MessageEvent(
+            ctx.author, ctx.channel, message=ctx.message, content=alternate_content
         )
-
-        await self.publish(payload, ctx.message.guild)
+        await message_event.fill_reply_data(self.bot.sub_mentions_for_usernames)
+        await self.publish(message_event.to_json(), ctx.message.guild)
 
     async def publish(self, payload, guild):
         try:
             await self.bot.rabbit_publish(
-                payload, self.bot.config.special.relay.send_queue
+                payload, self.bot.file_config.special.relay.send_queue
             )
         except Exception as e:
-            log_channel = await self.bot.get_log_channel_from_guild(
-                guild, "logging_channel"
-            )
-            await self.bot.logger.error(
+            await self.bot.guild_log(
+                guild,
+                "logging_channel",
+                "error",
                 "Could not publish Discord event to relay broker",
+                send=True,
                 exception=e,
-                channel=log_channel,
             )
-
-    @staticmethod
-    def serialize(type_, message, alternate_content=None):
-        data = munch.Munch()
-
-        # event data
-        data.event = munch.Munch()
-        data.event.id = str(uuid.uuid4())
-        data.event.type = type_
-        data.event.time = datetime.datetime.now(datetime.timezone.utc).strftime(
-            "%Y-%m-%d %H:%M:%S.%f"
-        )
-        data.event.content = alternate_content or message.content
-        data.event.attachments = [attachment.url for attachment in message.attachments]
-
-        # author data
-        data.author = munch.Munch()
-        data.author.username = message.author.name
-        data.author.id = message.author.id
-        data.author.nickname = message.author.display_name
-        data.author.discriminator = message.author.discriminator
-        data.author.is_bot = message.author.bot
-        data.author.top_role = str(message.author.top_role)
-
-        # permissions data
-        data.author.permissions = munch.Munch()
-        discord_permissions = message.author.permissions_in(message.channel)
-        data.author.permissions.kick = discord_permissions.kick_members
-        data.author.permissions.ban = discord_permissions.ban_members
-        data.author.permissions.unban = discord_permissions.ban_members
-        data.author.permissions.admin = discord_permissions.administrator
-
-        # server data
-        data.server = munch.Munch()
-        data.server.name = message.author.guild.name
-        data.server.id = message.author.guild.id
-
-        # channel data
-        data.channel = munch.Munch()
-        data.channel.name = message.channel.name
-        data.channel.id = message.channel.id
-
-        # non-lossy
-        as_json = data.toJSON()
-        return as_json
 
 
 class IRCReceiver(base.LoopCog):
@@ -127,25 +206,26 @@ class IRCReceiver(base.LoopCog):
     ON_START = True
 
     async def loop_preconfig(self):
-        self.channels = list(self.bot.config.special.relay.channel_map.values())
+        self.listen_channels = list(
+            self.bot.file_config.special.relay.channel_map.values()
+        )
 
     async def execute(self, _config, guild):
         try:
             await self.bot.rabbit_consume(
-                self.bot.config.special.relay.recv_queue,
+                self.bot.file_config.special.relay.recv_queue,
                 self.handle_event,
                 poll_wait=1,
                 durable=True,
             )
         except Exception as e:
-            log_channel = await self.bot.get_log_channel_from_guild(
-                guild, "log_channel"
-            )
-            await self.bot.logger.error(
+            await self.bot.guild_log(
+                guild,
+                "logging_channel",
+                "error",
                 "Could not consume IRC event from relay broker (will restart consuming in {self.DEFAULT_WAIT} seconds)",
-                e,
-                channel=log_channel,
-                critical=True,
+                send=True,
+                exception=e,
             )
 
     async def handle_event(self, response):
@@ -161,7 +241,7 @@ class IRCReceiver(base.LoopCog):
             return
 
         if data.event.type == "quit":
-            for channel_id in self.channels:
+            for channel_id in self.listen_channels:
                 channel = self.bot.get_channel(int(channel_id))
                 if not channel:
                     continue
@@ -173,9 +253,7 @@ class IRCReceiver(base.LoopCog):
         if not channel:
             return
 
-        guild = self.bot.get_guild_from_channel_id(channel.id)
-
-        message = self._add_mentions(message, guild, channel)
+        message = self._add_mentions(message, channel.guild, channel)
 
         await channel.send(message)
 
@@ -193,8 +271,8 @@ class IRCReceiver(base.LoopCog):
         return new_message
 
     def _get_channel(self, data):
-        for channel_id in self.channels:
-            if channel_id == self.bot.config.special.relay.channel_map.get(
+        for channel_id in self.listen_channels:
+            if channel_id == self.bot.file_config.special.relay.channel_map.get(
                 data.channel.name
             ):
                 return self.bot.get_channel(int(channel_id))
@@ -214,7 +292,9 @@ class IRCReceiver(base.LoopCog):
         time = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f")
         now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
-        if (now - time).total_seconds() > self.bot.config.special.relay.stale_seconds:
+        if (
+            now - time
+        ).total_seconds() > self.bot.file_config.special.relay.stale_seconds:
             return True
 
         return False

@@ -2,7 +2,7 @@ import uuid
 from random import choice
 
 import base
-import decorate
+import util
 from discord.ext import commands
 
 
@@ -512,7 +512,7 @@ class WouldYouRather(base.BaseCog):
         Question("watch a two-hour movie", "watch two hours of shows"),
     ]
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="wyr",
@@ -526,4 +526,4 @@ class WouldYouRather(base.BaseCog):
                 self.last = question.id
                 break
 
-        await self.bot.send_with_mention(ctx, question.get_question())
+        await util.send_with_mention(ctx, question.get_question())

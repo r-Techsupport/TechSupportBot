@@ -1,8 +1,8 @@
 import random
 
 import base
-import decorate
 import discord
+import util
 from discord.ext import commands
 
 
@@ -22,7 +22,7 @@ class Burn(base.BaseCog):
         "Was that message a hot pan? BECAUSE IT BURNS!",
     ]
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(
@@ -46,6 +46,4 @@ class Burn(base.BaseCog):
             await matched_message.add_reaction(emoji)
 
         message = random.choice(self.PHRASES)
-        await self.bot.send_with_mention(
-            ctx, f"🔥🔥🔥 {message} 🔥🔥🔥", target=user_to_match
-        )
+        await util.send_with_mention(ctx, f"🔥🔥🔥 {message} 🔥🔥🔥", target=user_to_match)

@@ -1,7 +1,10 @@
 import datetime
+import io
 
 import base
 import discord
+import util
+import yaml
 from discord.ext import commands
 
 
@@ -31,7 +34,7 @@ class Who(base.BaseCog):
     async def whois_user(self, ctx, user: discord.Member):
         embed = discord.Embed(
             title=f"User info for {user}",
-            description="**Note: this user is a bot!**" if user.bot else "",
+            description="**Note: this is a bot account!**" if user.bot else "",
         )
 
         embed.set_thumbnail(url=user.avatar_url)
@@ -43,18 +46,22 @@ class Who(base.BaseCog):
 
         user_notes = await self.get_notes(user, ctx.guild)
 
+        total_notes = 0
         if user_notes:
+            total_notes = len(user_notes)
             user_notes = user_notes[-3:]
+        embed.set_footer(text=f"{total_notes} total notes")
+        embed.color = discord.Color.dark_blue()
 
         for note in user_notes:
-            author = ctx.guild.get_member(int(note.author_id))
+            author = ctx.guild.get_member(int(note.author_id)) or "<Not found>"
             embed.add_field(
                 name=f"Note (from {author} at {note.updated})",
                 value=f"*{note.body}*" or "*None*",
                 inline=False,
             )
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)
 
     @commands.has_permissions(kick_members=True)
     @commands.group(
@@ -72,7 +79,7 @@ class Who(base.BaseCog):
     )
     async def set_note(self, ctx, user: discord.Member, *, body: str):
         if ctx.author.id == user.id:
-            await self.bot.send_with_mention(ctx, "You cannot add a note for yourself")
+            await util.send_with_mention(ctx, "You cannot add a note for yourself")
             return
 
         note = self.models.UserNote(
@@ -84,7 +91,7 @@ class Who(base.BaseCog):
 
         await note.create()
 
-        await self.bot.send_with_mention(ctx, "I created that note successfully")
+        await util.send_with_mention(ctx, "I created that note successfully")
 
     @note.command(
         name="clear",
@@ -95,10 +102,50 @@ class Who(base.BaseCog):
     async def clear_notes(self, ctx, user: discord.Member):
         notes = await self.get_notes(user, ctx.guild)
 
+        if not notes:
+            await util.send_with_mention(ctx, "There are no notes for that user")
+            return
+
+        await self.bot.confirm(
+            ctx,
+            f"Are you sure you want to clear {len(notes)} notes?",
+            delete_after=True,
+        )
+
         for note in notes:
             await note.delete()
 
-        await self.bot.send_with_mention(ctx, "I cleared all the notes for that user")
+        await util.send_with_mention(ctx, "I cleared all the notes for that user")
+
+    @note.command(
+        name="all",
+        brief="Gets all notes for a user",
+        description="Gets all notes for a user instead of just new ones",
+        usage="@user",
+    )
+    async def all_notes(self, ctx, user: discord.Member):
+        notes = await self.get_notes(user, ctx.guild)
+
+        if not notes:
+            await util.send_with_mention(ctx, "There are no notes for that user")
+            return
+
+        note_output_data = []
+        for note in notes:
+            author = ctx.guild.get_member(int(note.author_id)) or "<Not found>"
+            data = {
+                "body": note.body,
+                "from": str(author),
+                "at": str(note.updated),
+            }
+            note_output_data.append(data)
+
+        yaml_file = discord.File(
+            io.StringIO(yaml.dump({"notes": note_output_data})),
+            filename=f"notes-for-{user.id}-{datetime.datetime.utcnow()}.yaml",
+        )
+
+        await util.send_with_mention(ctx, file=yaml_file)
 
     async def get_notes(self, user, guild):
         user_notes = (

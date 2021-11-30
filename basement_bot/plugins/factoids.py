@@ -5,8 +5,8 @@ import io
 import json
 
 import base
-import decorate
 import discord
+import util
 import yaml
 from discord.ext import commands
 
@@ -43,6 +43,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
     async def loop_preconfig(self):
         self.loop_jobs = collections.defaultdict(dict)
+        await self.bot.logger.info("Loading factoid jobs", send=True)
         await self.load_jobs()
         self.cache_update_time = datetime.datetime.utcnow() + datetime.timedelta(
             minutes=self.LOOP_UPDATE_MINUTES
@@ -93,9 +94,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         if factoid:
             # delete old one
             await factoid.delete()
-            await self.bot.send_with_mention(
-                ctx, "Deleting previous entry of factoid..."
-            )
+            await util.send_with_mention(ctx, "Deleting previous entry of factoid...")
 
         # finally, add new entry
         factoid = self.models.Factoid(
@@ -107,18 +106,15 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         )
         await factoid.create()
 
-        await self.bot.send_with_mention(ctx, f"Successfully added factoid *{trigger}*")
+        await util.send_with_mention(ctx, f"Successfully added factoid *{trigger}*")
 
     async def delete_factoid(self, ctx, trigger):
         factoid = await self.get_factoid_from_query(trigger, ctx.guild)
         if not factoid:
-            await self.bot.send_with_mention(ctx, "I couldn't find that factoid")
+            await util.send_with_mention(ctx, "I couldn't find that factoid")
             return
 
         await factoid.delete()
-        await self.bot.send_with_mention(
-            ctx, f"Successfully deleted factoid: *{trigger}*"
-        )
 
     async def match(self, _, __, content):
         return content.startswith("?")
@@ -131,7 +127,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             user_mentioned = ctx.message.mentions[0]
             query = query.split(" ")[0]
         elif len(ctx.message.mentions) > 1:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I can only tag one user when referencing a factoid!"
             )
             return
@@ -143,30 +139,41 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         if not factoid:
             return
 
+        await self.bot.guild_log(
+            ctx.guild,
+            "logging_channel",
+            "info",
+            f"Sending factoid: {query} (triggered by {ctx.author} in #{ctx.channel.name})",
+            send=True,
+        )
+
         embed = self.get_embed_from_factoid(factoid)
 
         content = factoid.message if not embed else None
 
         try:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, content=content, embed=embed, target=user_mentioned
             )
-        except Exception:
-            await self.bot.send_with_mention(ctx, "I was unable to render that factoid")
-            return
+        except Exception as e:
+            await self.bot.guild_log(
+                ctx.guild,
+                "logging_channel",
+                "error",
+                "Could not send factoid",
+                exception=e,
+            )
+            await util.send_with_mention(ctx, factoid.message)
 
         await self.dispatch_relay_factoid(config, ctx, factoid.message)
 
     def message_has_mentions(self, message):
         if message.mention_everyone:
             return True
-
         if message.role_mentions:
             return True
-
         if message.mentions:
             return True
-
         return False
 
     async def dispatch_relay_factoid(self, config, ctx, message):
@@ -175,9 +182,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             return
 
         # add to the relay plugin queue if it's loaded
-        if not ctx.channel.id in self.bot.plugin_api.plugins.relay.memory.get(
-            "channels", []
-        ):
+        if not ctx.channel.id in self.bot.plugins.relay.memory.get("channels", []):
             return
 
         ctx.message.content = message
@@ -274,30 +279,26 @@ class FactoidManager(base.MatchCog, base.LoopCog):
                     ] = datetime.datetime.utcnow() + datetime.timedelta(
                         minutes=sleep_duration
                     )
-                    previous_messages = await channel.history(limit=1).flatten()
 
-                    if (
-                        previous_messages[0].author.id == self.bot.user.id
-                        and previous_messages[0].content == content
-                    ):
-                        continue
-
+                    await self.bot.guild_log(
+                        guild,
+                        "logging_channel",
+                        "info",
+                        f"Sending looped factoid: {factoid_key} in #{channel.name}",
+                        send=True,
+                    )
                     message = await channel.send(content=content, embed=embed)
-
                     context = await self.bot.get_context(message)
                     await self.dispatch_relay_factoid(config, context, factoid.message)
-
                 except Exception as e:
-                    log_channel = await self.bot.get_log_channel_from_guild(
-                        guild, "logging_channel"
-                    )
-                    await self.bot.logger.error(
-                        "Could not send looped factoid",
+                    await self.bot.guild_log(
+                        guild,
+                        "logging_channel",
+                        "error",
+                        f"Could not send looped factoid: {factoid_key} in #{channel.name}",
                         exception=e,
-                        channel=log_channel,
                         critical=True,
                     )
-                    continue
 
     # main clock for looping
     async def wait(self, _, __):
@@ -310,7 +311,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     async def factoid(self, ctx):
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     @factoid.command(
@@ -320,14 +321,12 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     )
     async def remember(self, ctx, factoid_name: str, *, message: str):
         if self.message_has_mentions(ctx.message):
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I am configured to not remember factoids with mentions"
             )
             return
 
-        embed_config = await self.bot.get_json_from_attachments(
-            ctx.message, as_string=True
-        )
+        embed_config = await util.get_json_from_attachments(ctx.message, as_string=True)
 
         await self.add_factoid(
             ctx,
@@ -338,7 +337,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             embed_config=embed_config,
         )
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     @factoid.command(
@@ -348,8 +347,11 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     )
     async def forget(self, ctx, factoid_name: str):
         await self.delete_factoid(ctx, factoid_name)
+        await util.send_with_mention(
+            ctx, f"Successfully deleted factoid: *{factoid_name}*"
+        )
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(ban_members=True)
     @commands.guild_only()
     @factoid.command(
@@ -366,24 +368,22 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     ):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         if not factoid:
-            await self.bot.send_with_mention(ctx, "I couldn't find that factoid")
+            await util.send_with_mention(ctx, "I couldn't find that factoid")
             return
 
         if factoid.loop_config:
-            await self.bot.send_with_mention(
-                ctx, "Deleting previous loop configuration..."
-            )
+            await util.send_with_mention(ctx, "Deleting previous loop configuration...")
 
         new_loop_config = json.dumps(
             {"sleep_duration": sleep_duration, "channel_ids": channel_ids}
         )
         await factoid.update(loop_config=new_loop_config).apply()
 
-        await self.bot.send_with_mention(
+        await util.send_with_mention(
             ctx, f"Successfully saved loop config for {factoid_name}"
         )
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(ban_members=True)
     @commands.guild_only()
     @factoid.command(
@@ -394,20 +394,20 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     async def deloop(self, ctx, factoid_name: str):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         if not factoid:
-            await self.bot.send_with_mention(ctx, "I couldn't find that factoid")
+            await util.send_with_mention(ctx, "I couldn't find that factoid")
             return
 
         if not factoid.loop_config:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "There is no loop config for that factoid"
             )
             return
 
         await factoid.update(loop_config=None).apply()
 
-        await self.bot.send_with_mention(ctx, "Loop config deleted")
+        await util.send_with_mention(ctx, "Loop config deleted")
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @factoid.command(
@@ -419,11 +419,11 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
 
         if not factoid:
-            await self.bot.send_with_mention(ctx, "I couldn't find that factoid")
+            await util.send_with_mention(ctx, "I couldn't find that factoid")
             return
 
         if not factoid.loop_config:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "There is no loop config for that factoid"
             )
             return
@@ -431,7 +431,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         try:
             loop_config = json.loads(factoid.loop_config)
         except Exception:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I couldn't process the JSON for that loop config"
             )
             return
@@ -453,7 +453,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         channel_ids = loop_config.get("channel_ids", [])
         # check this shit out
         channels = [
-            "#" + getattr(ctx.guild.get_channel(int(channel_id)), "name", "???")
+            "#" + getattr(ctx.guild.get_channel(int(channel_id)), "name", "Unknown")
             for channel_id in channel_ids
         ]
         embed.add_field(name="Channels", value=", ".join(channels), inline=False)
@@ -462,12 +462,12 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             name="Next execution (UTC)",
             value=self.loop_jobs.get(ctx.guild.id, {})
             .get(factoid_name, {})
-            .get("finish_time", "???"),  # get-er-done
+            .get("finish_time", "Unknown"),  # get-er-done
         )
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @factoid.command(
@@ -480,11 +480,11 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
 
         if not factoid:
-            await self.bot.send_with_mention(ctx, "I couldn't find that factoid")
+            await util.send_with_mention(ctx, "I couldn't find that factoid")
             return
 
         if not factoid.embed_config:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "There is no embed config for that factoid"
             )
             return
@@ -495,9 +495,9 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             filename=f"{factoid_name}-factoid-embed-config-{datetime.datetime.utcnow()}.json",
         )
 
-        await self.bot.send_with_mention(ctx, file=json_file)
+        await util.send_with_mention(ctx, file=json_file)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @factoid.command(
@@ -508,7 +508,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         all_jobs = self.loop_jobs.get(ctx.guild.id, {})
 
         if not all_jobs:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx,
                 f"There are no currently running factoid loops (next cache update: {self.cache_update_time} UTC)",
             )
@@ -519,15 +519,15 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             finish_time = loop_config.get("finish_time", "???")
             embed_kwargs[factoid_name] = f"Next execution: {finish_time} UTC"
 
-        embed = self.bot.generate_embed_from_kwargs(
+        embed = util.generate_embed_from_kwargs(
             title="Running factoid loops",
             description=f"Next cache update: {self.cache_update_time} UTC",
             **embed_kwargs,
         )
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @factoid.command(
@@ -539,15 +539,12 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     async def all_(self, ctx):
         factoids = await self.get_all_factoids(ctx.guild, hide=True)
         if not factoids:
-            await self.bot.send_with_mention(ctx, "No factoids found!")
+            await util.send_with_mention(ctx, "No factoids found!")
             return
 
         output_data = []
         for factoid in factoids:
-            data = {
-                "message": factoid.message,
-            }
-            data["embed"] = bool(factoid.embed_config)
+            data = {"message": factoid.message, "embed": bool(factoid.embed_config)}
             output_data.append({factoid.text: data})
 
         yaml_file = discord.File(
@@ -557,7 +554,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         await ctx.send(file=yaml_file)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     @factoid.command(
@@ -572,18 +569,18 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     ):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         if not factoid:
-            await self.bot.send_with_mention(ctx, "I couldn't find that factoid")
+            await util.send_with_mention(ctx, "I couldn't find that factoid")
             return
 
         if factoid.hidden:
-            await self.bot.send_with_mention(ctx, "That factoid is already hidden")
+            await util.send_with_mention(ctx, "That factoid is already hidden")
             return
 
         await factoid.update(hidden=True).apply()
 
-        await self.bot.send_with_mention(ctx, "That factoid is now hidden")
+        await util.send_with_mention(ctx, "That factoid is now hidden")
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     @factoid.command(
@@ -598,13 +595,13 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     ):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         if not factoid:
-            await self.bot.send_with_mention(ctx, "I couldn't find that factoid")
+            await util.send_with_mention(ctx, "I couldn't find that factoid")
             return
 
         if not factoid.hidden:
-            await self.bot.send_with_mention(ctx, "That factoid is already unhidden")
+            await util.send_with_mention(ctx, "That factoid is already unhidden")
             return
 
         await factoid.update(hidden=False).apply()
 
-        await self.bot.send_with_mention(ctx, "That factoid is now unhidden")
+        await util.send_with_mention(ctx, "That factoid is now unhidden")

@@ -1,6 +1,6 @@
 import aiohttp
 import base
-import decorate
+import util
 from discord.ext import commands
 
 
@@ -15,19 +15,19 @@ class Spotify(base.BaseCog):
 
     async def get_oauth_token(self):
         data = {"grant_type": "client_credentials"}
-        response = await self.bot.http_call(
+        response = await util.http_call(
             "post",
             self.AUTH_URL,
             data=data,
             auth=aiohttp.BasicAuth(
-                self.bot.config.main.api_keys.spotify_client,
-                self.bot.config.main.api_keys.spotify_key,
+                self.bot.file_config.main.api_keys.spotify_client,
+                self.bot.file_config.main.api_keys.spotify_key,
             ),
         )
 
         return response.get("access_token")
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Searches Spotify",
@@ -37,21 +37,19 @@ class Spotify(base.BaseCog):
     async def spotify(self, ctx, *, query: str):
         oauth_token = await self.get_oauth_token()
         if not oauth_token:
-            await self.bot.send_with_mention(
-                ctx, "I couldn't authenticate with Spotify"
-            )
+            await util.send_with_mention(ctx, "I couldn't authenticate with Spotify")
             return
 
         headers = {"Authorization": f"Bearer {oauth_token}"}
         params = {"q": query, "type": "track", "market": "US", "limit": 3}
-        response = await self.bot.http_call(
+        response = await util.http_call(
             "get", self.API_URL, headers=headers, params=params
         )
 
         items = response.get("tracks", {}).get("items", [])
 
         if not items:
-            await self.bot.send_with_mention(ctx, "I couldn't find any results")
+            await util.send_with_mention(ctx, "I couldn't find any results")
             return
 
         links = []
@@ -62,7 +60,7 @@ class Spotify(base.BaseCog):
             links.append(song_url)
 
         if not links:
-            await self.bot.send_with_mention("I had trouble parsing the search results")
+            await util.send_with_mention("I had trouble parsing the search results")
             return
 
         self.bot.task_paginate(ctx, links, restrict=True)

@@ -1,6 +1,6 @@
 import base
-import decorate
 import discord
+import util
 from discord.ext import commands
 
 
@@ -9,7 +9,7 @@ def setup(bot):
 
 
 class Embedder(base.BaseCog):
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(manage_messages=True)
     @commands.command(
         brief="Generates a list of embeds",
@@ -18,21 +18,19 @@ class Embedder(base.BaseCog):
     )
     async def embed(self, ctx, *, keep_option: str = None):
         if not ctx.message.attachments:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "Please provide a JSON file for your embeds"
             )
             return
 
-        request_body = await self.bot.get_json_from_attachments(ctx.message)
+        request_body = await util.get_json_from_attachments(ctx.message)
         if not request_body:
-            await self.bot.send_with_mention(
-                ctx, "I couldn't find any data in your upload"
-            )
+            await util.send_with_mention(ctx, "I couldn't find any data in your upload")
             return
 
         embeds = await self.process_request(ctx, request_body)
         if not embeds:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I was unable to generate any embeds from your request"
             )
             return

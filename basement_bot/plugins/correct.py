@@ -1,5 +1,5 @@
 import base
-import decorate
+import util
 from discord.ext import commands
 
 
@@ -11,7 +11,7 @@ class Corrector(base.BaseCog):
 
     SEARCH_LIMIT = 50
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(
@@ -35,10 +35,8 @@ class Corrector(base.BaseCog):
                 break
 
         if new_content:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, f"*Correction:* {new_content} :white_check_mark:", target=target
             )
         else:
-            await self.bot.send_with_mention(
-                ctx, "I couldn't find any message to correct"
-            )
+            await util.send_with_mention(ctx, "I couldn't find any message to correct")

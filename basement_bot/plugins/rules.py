@@ -4,6 +4,7 @@ import json
 
 import base
 import discord
+import util
 from discord.ext import commands
 
 
@@ -34,11 +35,11 @@ class Rules(base.BaseCog):
     async def edit_rules(self, ctx):
         collection = self.bot.mongo[self.extension_name]
 
-        uploaded_data = await self.bot.get_json_from_attachments(ctx.message)
+        uploaded_data = await util.get_json_from_attachments(ctx.message)
         if uploaded_data:
             uploaded_data["guild_id"] = str(ctx.guild.id)
             await collection.replace_one({"guild_id": str(ctx.guild.id)}, uploaded_data)
-            await self.bot.send_with_mention(ctx, "I've updated to those rules")
+            await util.send_with_mention(ctx, "I've updated to those rules")
             return
 
         rules_data = await collection.find_one({"guild_id": {"$eq": str(ctx.guild.id)}})
@@ -58,7 +59,7 @@ class Rules(base.BaseCog):
             filename=f"{ctx.guild.id}-rules-{datetime.datetime.utcnow()}.json",
         )
 
-        await self.bot.send_with_mention(
+        await util.send_with_mention(
             ctx, content="Re-upload this file to apply new rules", file=json_file
         )
 
@@ -75,7 +76,7 @@ class Rules(base.BaseCog):
             {"guild_id": {"$eq": str(ctx.guild.id)}}
         )
         if not rules_data or not rules_data.get("rules"):
-            await self.bot.send_with_mention(ctx, "There are no rules for this server")
+            await util.send_with_mention(ctx, "There are no rules for this server")
             return
 
         rules = rules_data.get("rules")
@@ -86,7 +87,7 @@ class Rules(base.BaseCog):
             rule = None
 
         if not rule:
-            await self.bot.send_with_mention(ctx, "That rule number doesn't exist")
+            await util.send_with_mention(ctx, "That rule number doesn't exist")
             return
 
         embed = discord.Embed(
@@ -94,8 +95,9 @@ class Rules(base.BaseCog):
         )
 
         embed.set_thumbnail(url=self.RULE_ICON_URL)
+        embed.color = discord.Color.gold()
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)
 
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
@@ -109,7 +111,7 @@ class Rules(base.BaseCog):
             {"guild_id": {"$eq": str(ctx.guild.id)}}
         )
         if not rules_data or not rules_data.get("rules"):
-            await self.bot.send_with_mention(ctx, "There are no rules for this server")
+            await util.send_with_mention(ctx, "There are no rules for this server")
             return
 
         embed = discord.Embed(
@@ -125,5 +127,6 @@ class Rules(base.BaseCog):
             )
 
         embed.set_thumbnail(url=self.RULE_ICON_URL)
+        embed.color = discord.Color.gold()
 
         await ctx.send(embed=embed)

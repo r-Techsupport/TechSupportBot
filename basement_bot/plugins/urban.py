@@ -1,6 +1,6 @@
 import base
-import decorate
 import discord
+import util
 from discord.ext import commands
 
 
@@ -23,7 +23,7 @@ class UrbanDictionary(base.BaseCog):
     SEE_MORE_URL = "https://www.urbandictionary.com/define.php?term="
     ICON_URL = "https://cdn.icon-icons.com/icons2/114/PNG/512/dictionary_19159.png"
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="urb",
@@ -33,13 +33,13 @@ class UrbanDictionary(base.BaseCog):
         usage="[query]",
     )
     async def urban(self, ctx, *, query: str):
-        response = await self.bot.http_call("get", f"{self.BASE_URL}{query}")
+        response = await util.http_call("get", f"{self.BASE_URL}{query}")
         definitions = response.get("list")
 
         config = await self.bot.get_context_config(ctx)
 
         if not definitions:
-            await self.bot.send_with_mention(ctx, f"No results found for: *{query}*")
+            await util.send_with_mention(ctx, f"No results found for: *{query}*")
             return
 
         query_no_spaces = query.replace(" ", "%20")
@@ -70,6 +70,7 @@ class UrbanDictionary(base.BaseCog):
                 or index == len(definitions) - 1
             ):
                 embed.set_thumbnail(url=self.ICON_URL)
+                embed.color = discord.Color.dark_green()
                 embeds.append(embed)
                 field_counter = 1
             else:

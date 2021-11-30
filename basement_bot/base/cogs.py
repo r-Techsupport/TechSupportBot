@@ -17,6 +17,7 @@ class BaseCog(commands.Cog):
         no_guild (bool): True if the plugin should run globally
     """
 
+    COG_TYPE = "Base"
     ADMIN_ONLY = False
     KEEP_COG_ON_FAILURE = False
     KEEP_PLUGIN_ON_FAILURE = False
@@ -54,7 +55,7 @@ class BaseCog(commands.Cog):
             if not self.KEEP_COG_ON_FAILURE:
                 self.bot.remove_cog(self)
             if not self.KEEP_PLUGIN_ON_FAILURE:
-                self.bot.plugin_api.unload_plugin(self.extension_name)
+                self.bot.unload_plugin(self.extension_name)
 
     async def _preconfig(self):
         """Blocks the preconfig until the bot is ready."""
@@ -70,6 +71,8 @@ class MatchCog(BaseCog):
 
     This makes the process of handling events simpler for development.
     """
+
+    COG_TYPE = "Match"
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -97,9 +100,6 @@ class MatchCog(BaseCog):
             await self.bot.logger.debug("Checking config for log channel")
             config = await self.bot.get_context_config(ctx)
             channel = config.get("logging_channel")
-            # don't pass context to the logger for now
-            # as it tends to trigger a user response
-            # at some point the logger should have a non-user flags
             await self.bot.logger.error(
                 f"Match cog error: {self.__class__.__name__}!",
                 exception=e,
@@ -135,6 +135,7 @@ class LoopCog(BaseCog):
         bot (Bot): the bot object
     """
 
+    COG_TYPE = "Loop"
     DEFAULT_WAIT = 300
     TRACKER_WAIT = 300
     ON_START = False
@@ -144,6 +145,35 @@ class LoopCog(BaseCog):
         super().__init__(*args, **kwargs)
         self.bot.loop.create_task(self._loop_preconfig())
         self.channels = {}
+
+    async def register_new_tasks(self, guild):
+        """Creates the configured loop tasks for a given guild.
+
+        parameters:
+            guild (discord.Guild): the guild to add the tasks for
+        """
+        config = await self.bot.get_context_config(guild=guild)
+        channels = (
+            config.plugins.get(self.extension_name, {})
+            .get(self.CHANNELS_KEY, {})
+            .get("value")
+        )
+        if channels is not None:
+            self.channels[guild.id] = [
+                self.bot.get_channel(int(ch_id)) for ch_id in channels
+            ]
+
+        if self.channels.get(guild.id):
+            for channel in self.channels.get(guild.id, []):
+                await self.bot.logger.debug(
+                    f"Creating loop task for channel with ID {channel.id}"
+                )
+                self.bot.loop.create_task(self._loop_execute(guild, channel))
+        else:
+            await self.bot.logger.debug(
+                f"Creating loop task for guild with ID {guild.id}"
+            )
+            self.bot.loop.create_task(self._loop_execute(guild))
 
     async def _loop_preconfig(self):
         """Blocks the loop_preconfig until the bot is ready."""
@@ -155,28 +185,7 @@ class LoopCog(BaseCog):
             return
 
         for guild in self.bot.guilds:
-            config = await self.bot.get_context_config(guild=guild)
-            channels = (
-                config.plugins.get(self.extension_name, {})
-                .get(self.CHANNELS_KEY, {})
-                .get("value")
-            )
-            if channels is not None:
-                self.channels[guild.id] = [
-                    self.bot.get_channel(int(ch_id)) for ch_id in channels
-                ]
-
-            if self.channels.get(guild.id):
-                for channel in self.channels.get(guild.id, []):
-                    await self.bot.logger.debug(
-                        f"Creating loop task for channel with ID {channel.id}"
-                    )
-                    self.bot.loop.create_task(self._loop_execute(guild, channel))
-            else:
-                await self.bot.logger.debug(
-                    f"Creating loop task for guild with ID {guild.id}"
-                )
-                self.bot.loop.create_task(self._loop_execute(guild))
+            await self.register_new_tasks(guild)
 
     async def _track_new_channels(self):
         """Periodifically kicks off new per-channel tasks based on updated channels config."""
@@ -242,7 +251,10 @@ class LoopCog(BaseCog):
         if not self.ON_START:
             await self.wait(config, guild)
 
-        while self.bot.plugin_api.plugins.get(self.extension_name):
+        while self.bot.plugins.get(self.extension_name):
+            if guild and guild not in self.bot.guilds:
+                break
+
             # refresh the config on every loop step
             config = await self.bot.get_context_config(guild=guild)
 

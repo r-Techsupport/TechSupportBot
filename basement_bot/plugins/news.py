@@ -2,6 +2,7 @@ import random
 
 import aiocron
 import base
+import util
 
 
 def setup(bot):
@@ -40,10 +41,11 @@ class News(base.LoopCog):
         if not channel:
             return
 
-        response = await self.bot.http_call(
+        response = await util.http_call(
             "get",
             self.API_URL.format(
-                self.bot.config.main.api_keys.news, config.plugins.news.country.value
+                self.bot.file_config.main.api_keys.news,
+                config.plugins.news.country.value,
             ),
         )
 

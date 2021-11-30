@@ -5,8 +5,8 @@ import random
 from concurrent.futures._base import TimeoutError as AsyncTimeoutError
 
 import base
-import decorate
 import discord
+import util
 from discord import Color as embed_colors
 from discord.ext import commands
 
@@ -780,6 +780,13 @@ class DuckHunt(base.LoopCog):
 
     async def execute(self, config, guild, channel):
         if not channel:
+            await self.bot.guild_log(
+                guild,
+                "logging_channel",
+                "warning",
+                "Channel not found for Duckhunt loop - continuing",
+                send=True,
+            )
             return
 
         self.cooldowns[guild.id] = {}
@@ -790,6 +797,7 @@ class DuckHunt(base.LoopCog):
             description="Befriend the duck with `bef` or shoot with `bang`",
         )
         embed.set_image(url=self.DUCK_PIC_URL)
+        embed.color = discord.Color.green()
 
         message = await channel.send(embed=embed)
 
@@ -801,17 +809,21 @@ class DuckHunt(base.LoopCog):
                 # can't pull the config in a non-coroutine
                 check=functools.partial(self.message_check, config, channel),
             )
-        except AsyncTimeoutError:
+        except asyncio.TimeoutError:
             pass
+        except Exception as e:
+            await self.bot.guild_log(
+                guild,
+                "logging_channel",
+                "error",
+                "Exception thrown waiting for duckhunt input",
+                exception=e,
+            )
 
         await message.delete()
 
         if response_message:
             duration = (datetime.datetime.now() - start_time).seconds
-
-            if not getattr(response_message, "content", None):
-                return
-
             action = (
                 "befriended" if response_message.content.lower() == "bef" else "killed"
             )
@@ -820,6 +832,14 @@ class DuckHunt(base.LoopCog):
             )
 
     async def handle_winner(self, winner, guild, action, duration, channel):
+        await self.bot.guild_log(
+            guild,
+            "logging_channel",
+            "info",
+            f"Duck {action} by {winner}",
+            send=True,
+        )
+
         duck_user = await self.get_duck_user(winner.id, guild.id)
         if not duck_user:
             duck_user = self.models.DuckUser(
@@ -869,7 +889,7 @@ class DuckHunt(base.LoopCog):
             cooldowns[message.author.id] = datetime.datetime.now()
             self.bot.loop.create_task(
                 message.author.send(
-                    f"I said to wait {config.plugins.duck.cooldown.value} seconds!"
+                    f"I said to wait {config.plugins.duck.cooldown.value} seconds! Resetting timer..."
                 )
             )
             return False
@@ -928,7 +948,7 @@ class DuckHunt(base.LoopCog):
     async def duck(self, ctx):
         pass
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @duck.command(
@@ -941,14 +961,14 @@ class DuckHunt(base.LoopCog):
             user = ctx.message.author
 
         if user.bot:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "If it looks like a duck, quacks like a duck, it's a duck!"
             )
             return
 
         duck_user = await self.get_duck_user(user.id, ctx.guild.id)
         if not duck_user:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "That user has not partcipated in the duck hunt"
             )
             return
@@ -959,9 +979,9 @@ class DuckHunt(base.LoopCog):
         embed.add_field(name="Kills", value=duck_user.kill_count)
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @duck.command(
@@ -979,7 +999,7 @@ class DuckHunt(base.LoopCog):
         )
 
         if not duck_users:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "It appears nobody has befriended any ducks"
             )
             return
@@ -1007,7 +1027,7 @@ class DuckHunt(base.LoopCog):
 
         self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @duck.command(
@@ -1023,9 +1043,7 @@ class DuckHunt(base.LoopCog):
         )
 
         if not duck_users:
-            await self.bot.send_with_mention(
-                ctx, "It appears nobody has killed any ducks"
-            )
+            await util.send_with_mention(ctx, "It appears nobody has killed any ducks")
             return
 
         field_counter = 1

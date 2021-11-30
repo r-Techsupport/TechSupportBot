@@ -1,7 +1,7 @@
 import base
-import decorate
 import discord
 import munch
+import util
 from discord.ext import commands
 
 
@@ -14,9 +14,9 @@ class Weather(base.BaseCog):
         filtered_args = filter(bool, args)
         searches = ",".join(map(str, filtered_args))
         url = "http://api.openweathermap.org/data/2.5/weather"
-        return f"{url}?q={searches}&units=imperial&appid={self.bot.config.main.api_keys.open_weather}"
+        return f"{url}?q={searches}&units=imperial&appid={self.bot.file_config.main.api_keys.open_weather}"
 
-    @decorate.with_typing
+    @util.with_typing
     @commands.has_permissions(send_messages=True)
     @commands.command(
         name="we",
@@ -28,18 +28,18 @@ class Weather(base.BaseCog):
     async def weather(
         self, ctx, city_name: str, state_code: str = None, country_code: str = None
     ):
-        response = await self.bot.http_call(
+        response = await util.http_call(
             "get", self.get_url([city_name, state_code, country_code])
         )
 
         embed = self.generate_embed(munch.munchify(response))
         if not embed:
-            await self.bot.send_with_mention(
+            await util.send_with_mention(
                 ctx, "I could not find the weather from your search"
             )
             return
 
-        await self.bot.send_with_mention(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)
 
     def generate_embed(self, response):
         try:
@@ -66,6 +66,7 @@ class Weather(base.BaseCog):
             embed.set_thumbnail(
                 url="https://cdn.icon-icons.com/icons2/8/PNG/256/cloudyweather_cloud_inpart_day_wind_thunder_sunny_rain_darkness_nublad_1459.png"
             )
+            embed.color = discord.Color.blurple()
         except AttributeError:
             embed = None
 
