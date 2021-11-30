@@ -2,6 +2,7 @@ import uuid
 from random import choice
 
 import base
+import discord
 import util
 from discord.ext import commands
 
@@ -18,6 +19,12 @@ class Question:
 
     def get_question(self):
         return f"Would you rather: {self.a} **OR** {self.b}?"
+
+    def generate_embed(self):
+        description = f"{self.a}, or {self.b}?"
+        embed = discord.Embed(title="Would you rather...", description=description)
+        embed.color = discord.Color.blurple()
+        return embed
 
 
 class WouldYouRather(base.BaseCog):
@@ -526,4 +533,4 @@ class WouldYouRather(base.BaseCog):
                 self.last = question.id
                 break
 
-        await util.send_with_mention(ctx, question.get_question())
+        await util.send_with_mention(ctx, embed=question.generate_embed())

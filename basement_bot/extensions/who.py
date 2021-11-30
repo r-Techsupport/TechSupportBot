@@ -19,7 +19,17 @@ def setup(bot):
         author_id = bot.db.Column(bot.db.String)
         body = bot.db.Column(bot.db.String)
 
+    config = bot.ExtensionConfig()
+    config.add(
+        key="note_role",
+        datatype="int",
+        title="Note role",
+        description="The name of the role to be added when a note is added to a user",
+        default=None,
+    )
+
     bot.add_cog(Who(bot=bot, models=[UserNote]))
+    bot.add_extension_config("who", config)
 
 
 class Who(base.BaseCog):
@@ -93,6 +103,15 @@ class Who(base.BaseCog):
 
         await util.send_with_mention(ctx, "I created that note successfully")
 
+        config = await self.bot.get_context_config(ctx)
+        role = discord.utils.get(
+            ctx.guild.roles, name=config.extensions.who.note_role.value
+        )
+        if not role:
+            return
+
+        await user.add_roles(role)
+
     @note.command(
         name="clear",
         brief="Clears all notes for a user",
@@ -116,6 +135,15 @@ class Who(base.BaseCog):
             await note.delete()
 
         await util.send_with_mention(ctx, "I cleared all the notes for that user")
+
+        config = await self.bot.get_context_config(ctx)
+        role = discord.utils.get(
+            ctx.guild.roles, name=config.extensions.who.note_role.value
+        )
+        if not role:
+            return
+
+        await user.remove_roles(role)
 
     @note.command(
         name="all",
