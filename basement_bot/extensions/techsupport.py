@@ -16,7 +16,14 @@ def setup(bot):
         key="support_roles",
         datatype="list",
         title="Confirm roles",
-        description="List of role names able to confirm parses",
+        description="List of role names identifying tech support helpers",
+        default=[],
+    )
+    config.add(
+        key="support_users",
+        datatype="list",
+        title="Confirm roles",
+        description="List of user ID's identifying tech support helpers",
         default=[],
     )
     config.add(
@@ -61,11 +68,13 @@ def get_support_roles(ctx, config):
 
 class AutoSupport(base.MatchCog):
 
-    CHANNEL_WAIT_MINUTES = 15
+    CHANNEL_WAIT_MINUTES = 20
+    USER_COOLDOWN_MINUTES = 1440
 
     async def preconfig(self):
         self.last_support_messages = munch.Munch()
         self.send_records = munch.Munch()
+        self.user_records = munch.Munch()
 
     async def match(self, config, ctx, content):
         # check if message is in a support channel
@@ -82,9 +91,16 @@ class AutoSupport(base.MatchCog):
         ]:
             return False
 
+        if str(ctx.author.id) in config.extensions.techsupport.support_users.value:
+            return False
+
         # check if the user is not a helper
         support_roles = get_support_roles(ctx, config)
-        if any(role in ctx.author.roles for role in support_roles):
+        member = await ctx.guild.fetch_member(ctx.author.id)
+        if not support_roles or not member:
+            return False
+
+        if any(role in member.roles for role in support_roles):
             await self.bot.logger.debug(
                 "User is a tech support helper - ignoring auto-support"
             )
@@ -92,6 +108,18 @@ class AutoSupport(base.MatchCog):
             return False
 
         now = datetime.datetime.utcnow()
+
+        last_sent_to_user_time = (
+            now - self.user_records.get(ctx.author.id)
+            if self.user_records.get(ctx.author.id)
+            else None
+        )
+
+        if (
+            last_sent_to_user_time
+            and last_sent_to_user_time.seconds / 60.0 < self.USER_COOLDOWN_MINUTES
+        ):
+            return False
 
         last_auto_support_time = (
             now - self.send_records.get(ctx.channel.id)
@@ -138,9 +166,18 @@ class AutoSupport(base.MatchCog):
         return None
 
     async def response(self, config, ctx, content, result):
-        self.send_records[ctx.channel.id] = datetime.datetime.utcnow()
+        timestamp = datetime.datetime.utcnow()
+        self.send_records[ctx.channel.id] = timestamp
+        self.user_records[ctx.author.id] = timestamp
         embed = self.generate_embed(ctx)
         await util.send_with_mention(ctx, embed=embed)
+        await self.bot.guild_log(
+            ctx.guild,
+            "logging_channel",
+            "info",
+            f"Sending tech support auto-helper in #{ctx.channel.name}",
+            send=True,
+        )
 
     def generate_embed(self, ctx):
         title = "It looks like there aren't any helpers around right now"
