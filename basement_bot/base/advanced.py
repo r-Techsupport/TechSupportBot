@@ -1,6 +1,7 @@
 """Module for defining the advanced bot methods."""
 import asyncio
 import collections
+import time
 
 import munch
 
@@ -11,6 +12,7 @@ class AdvancedBot(DataBot):
     """Advanced extension bot with per-guild config access."""
 
     GUILD_CONFIG_COLLECTION = "guild_config"
+    CONFIG_RECEIVE_WARNING_TIME_MS = 1000
 
     def __init__(self, *args, **kwargs):
         kwargs.pop("prefix", None)
@@ -49,6 +51,7 @@ class AdvancedBot(DataBot):
             create_if_none (bool): True if the config should be created if not found
             get_from_cache (bool): True if the config should be fetched from the cache
         """
+        start = time.time()
         if ctx:
             guild_from_ctx = getattr(ctx, "guild", None)
             lookup = guild_from_ctx.id if guild_from_ctx else "dmcontext"
@@ -59,28 +62,39 @@ class AdvancedBot(DataBot):
 
         lookup = str(lookup)
 
-        await self.logger.debug(f"Getting config for lookup key: {lookup}")
+        config_ = None
 
-        # locking prevents duplicate configs being made
-        async with self.guild_config_lock:
-            if get_from_cache:
-                config_ = self.guild_config_cache[lookup]
+        if get_from_cache:
+            config_ = self.guild_config_cache[lookup]
+
+        if not config_:
+            # locking prevents duplicate configs being made
+            async with self.guild_config_lock:
+                config_ = await self.guild_config_collection.find_one(
+                    {"guild_id": {"$eq": lookup}}
+                )
+
+                if not config_:
+                    await self.logger.debug("No config found in MongoDB")
+                    if create_if_none:
+                        config_ = await self.create_new_context_config(lookup)
+                else:
+                    config_ = await self.sync_config(config_)
+
                 if config_:
-                    return config_
+                    self.guild_config_cache[lookup] = config_
 
-            config_ = await self.guild_config_collection.find_one(
-                {"guild_id": {"$eq": lookup}}
+        time_taken = (time.time() - start) * 1000.0
+
+        if time_taken > self.CONFIG_RECEIVE_WARNING_TIME_MS:
+            await self.logger.warning(
+                f"Context config receive time = {time_taken} ms (over {self.CONFIG_RECEIVE_WARNING_TIME_MS} threshold)",
+                send=True,
             )
 
-            if not config_:
-                await self.logger.debug("No config found in MongoDB")
-                if create_if_none:
-                    config_ = await self.create_new_context_config(lookup)
-            else:
-                config_ = await self.sync_config(config_)
-
-            if config_:
-                self.guild_config_cache[lookup] = config_
+        await self.logger.debug(
+            f"Getting config for lookup key: {lookup} (time taken = {time_taken} ms)"
+        )
 
         return config_
 

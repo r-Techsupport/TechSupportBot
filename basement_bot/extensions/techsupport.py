@@ -38,7 +38,7 @@ def setup(bot):
         datatype="int",
         title="Auto-support idle time",
         description="The number of minutes required to pass before auto-support is triggered",
-        default=30,
+        default=60,
     )
     config.add(
         key="auto_support",
@@ -68,7 +68,7 @@ def get_support_roles(ctx, config):
 
 class AutoSupport(base.MatchCog):
 
-    CHANNEL_WAIT_MINUTES = 20
+    CHANNEL_WAIT_MINUTES = 30
     USER_COOLDOWN_MINUTES = 1440
 
     async def preconfig(self):
@@ -77,6 +77,9 @@ class AutoSupport(base.MatchCog):
         self.user_records = munch.Munch()
 
     async def match(self, config, ctx, content):
+        if ctx.message.mentions or ctx.message.reference:
+            return False
+
         # check if message is in a support channel
         if not str(ctx.channel.id) in config.extensions.techsupport.channels.value:
             await self.bot.logger.debug(
@@ -184,7 +187,7 @@ class AutoSupport(base.MatchCog):
         )
 
     def generate_embed(self, ctx):
-        title = "It looks like there aren't any helpers around right now"
+        title = "It looks like there aren't any helper roles around right now"
         description = (
             "I can help by scanning your computer specs and looking for any issues"
         )
@@ -199,11 +202,11 @@ class AutoSupport(base.MatchCog):
         )
         embed.add_field(
             name="2. Run Speccy & share the URL:",
-            value="Click `File` -> `Publish Snapshot` and paste the link in this channel. *There is nothing sensitive in the published snapshot.*",
+            value="Click `File` -> `Publish Snapshot` and paste the link in this channel. You should share a URL. Do not share a file or screenshot. *There is nothing sensitive in the published snapshot.*",
             inline=False,
         )
         embed.set_footer(
-            text="You should share a URL. Do not share a file or screenshot."
+            text="This is an automated support message. If you need specific help, please wait for a helper or another user to assist you."
         )
 
         embed.color = discord.Color.green()

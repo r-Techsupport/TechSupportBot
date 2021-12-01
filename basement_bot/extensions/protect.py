@@ -117,6 +117,14 @@ def setup(bot):
     bot.add_extension_config("protect", config)
 
 
+class ProtectEmbed(discord.Embed):
+    def __init__(self, *args, **kwargs):
+        bot = kwargs.pop("bot")
+        super().__init__(*args, **kwargs)
+        self.set_author(name="Chat Protection", icon_url=bot.user.avatar_url)
+        self.color = discord.Color.gold()
+
+
 class Protector(base.MatchCog):
 
     ALERT_ICON_URL = "https://cdn.icon-icons.com/icons2/2063/PNG/512/alert_danger_warning_notification_icon_124692.png"
@@ -265,7 +273,8 @@ class Protector(base.MatchCog):
                 config, ctx, content, filter_config.message
             )
         else:
-            await util.send_with_mention(ctx, filter_config.message)
+            embed = ProtectEmbed(bot=self.bot, description=filter_config.message)
+            await util.send_with_mention(ctx, embed=embed)
 
         async with self.cache_lock:
             await self.cache_user(config, ctx, filter_config.trigger)
@@ -449,10 +458,10 @@ class Protector(base.MatchCog):
         await alert_channel.send(embed=embed)
 
     async def send_default_delete_response(self, config, ctx, content, reason):
-        await util.send_with_mention(
-            ctx,
-            f"I deleted your message because: `{reason}`",
+        embed = ProtectEmbed(
+            bot=self.bot, title="Message deleted", description=f"Reason: *{reason}*"
         )
+        await util.send_with_mention(ctx, embed=embed)
         await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
 
     async def get_warnings(self, user, guild):
@@ -491,6 +500,9 @@ class Protector(base.MatchCog):
         embed.add_field(name="Preview", value=content.replace("\n", " "))
         embed.set_author(
             name=f"Paste by {ctx.author}", icon_url=self.CLIPBOARD_ICON_URL
+        )
+        embed.set_footer(
+            text="This embed was generated because your message was too long."
         )
         embed.color = discord.Color.blue()
 

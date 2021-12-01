@@ -84,16 +84,25 @@ class ServerGate(base.MatchCog):
                 )
                 return
 
-            await ctx.author.add_roles(*roles)
+            # await ctx.author.add_roles(*roles)
 
             welcome_message = config.extensions.gate.welcome_message.value
             delete_wait = config.extensions.gate.delete_wait.value
 
+            embed = self.generate_welcome_embed(welcome_message, delete_wait)
+
             await util.send_with_mention(
                 ctx,
-                f"{welcome_message} (this message will delete in {delete_wait} seconds)",
+                embed=embed,
                 delete_after=float(delete_wait),
             )
+
+    def generate_welcome_embed(self, welcome_message, delete_wait):
+        embed = discord.Embed(description=welcome_message)
+        embed.set_author(name="Server Gate", icon_url=self.bot.user.avatar_url)
+        embed.set_footer(text=f"This message will be deleted in {delete_wait} seconds.")
+        embed.color = discord.Color.green()
+        return embed
 
     async def get_roles(self, config, ctx):
         roles = []

@@ -163,7 +163,9 @@ COMMAND_ERROR_RESPONSE_TEMPLATES = {
         "That command is on cooldown for you. Try again in %s seconds",
         {"key": "retry_after", "wrapper": int},
     ),
-    ExtensionDisabled: ErrorResponse("That extension is disabled for this guild"),
+    ExtensionDisabled: ErrorResponse(
+        "That extension is disabled for this context/server"
+    ),
 }
 
 IGNORED_ERRORS = set([commands.CommandNotFound])
