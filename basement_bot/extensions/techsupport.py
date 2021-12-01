@@ -96,11 +96,10 @@ class AutoSupport(base.MatchCog):
 
         # check if the user is not a helper
         support_roles = get_support_roles(ctx, config)
-        member = await ctx.guild.fetch_member(ctx.author.id)
-        if not support_roles or not member:
+        if not support_roles:
             return False
 
-        if any(role in member.roles for role in support_roles):
+        if any(role in ctx.author.roles for role in support_roles):
             await self.bot.logger.debug(
                 "User is a tech support helper - ignoring auto-support"
             )
@@ -161,8 +160,13 @@ class AutoSupport(base.MatchCog):
 
     async def get_last_support_message(self, channel, support_roles):
         async for message in channel.history(limit=100):
-            if any(role in message.author.roles for role in support_roles):
+            target_roles = getattr(message.author, "roles", None)
+            if not target_roles:
+                continue
+
+            if any(role in target_roles for role in support_roles):
                 return message
+
         return None
 
     async def response(self, config, ctx, content, result):

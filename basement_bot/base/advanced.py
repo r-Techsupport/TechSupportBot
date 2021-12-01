@@ -18,6 +18,7 @@ class AdvancedBot(DataBot):
         self.guild_config_cache = collections.defaultdict(dict)
         self.guild_config_lock = asyncio.Lock()
         super().__init__(*args, prefix=self.get_prefix, **kwargs)
+        self.loop.create_task(self.reset_config_cache())
 
     async def get_prefix(self, message):
         """Gets the appropriate prefix for a command.
