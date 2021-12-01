@@ -61,7 +61,7 @@ def get_support_roles(ctx, config):
 
 class AutoSupport(base.MatchCog):
 
-    CHANNEL_WAIT_MINUTES = 5
+    CHANNEL_WAIT_MINUTES = 15
 
     async def preconfig(self):
         self.last_support_messages = munch.Munch()

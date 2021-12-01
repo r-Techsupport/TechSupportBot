@@ -35,7 +35,7 @@ def setup(bot):
         default=[],
     )
 
-    bot.add_cog(Grabber(bot=bot))
+    bot.add_cog(Grabber(bot=bot, models=[Grab]))
     bot.add_extension_config("grab", config)
 
 
@@ -60,9 +60,11 @@ class Grabber(base.BaseCog):
         name="grab",
         brief="Grabs a user's last message",
         description="Gets the last message of the mentioned user and saves it",
-        usage="@user",
+        usage="@user [message-id (optional)]",
     )
-    async def grab_user(self, ctx, *, user_to_grab: discord.Member):
+    async def grab_user(
+        self, ctx, user_to_grab: discord.Member, message: discord.Message = None
+    ):
         config = await self.bot.get_context_config(ctx)
 
         if await self.invalid_channel(config, ctx):
@@ -72,13 +74,15 @@ class Grabber(base.BaseCog):
             await util.send_with_mention(ctx, "Ain't gonna catch me slipping!")
             return
 
-        grab_message = None
-        async for message in ctx.channel.history(limit=self.SEARCH_LIMIT):
-            if message.author == user_to_grab:
-                grab_message = message.content
-                break
+        if message:
+            content = message.content
+        else:
+            async for message in ctx.channel.history(limit=self.SEARCH_LIMIT):
+                if message.author == user_to_grab:
+                    content = message.content
+                    break
 
-        if not grab_message:
+        if not content:
             await util.send_with_mention(
                 ctx, f"Could not find a recent message from user {user_to_grab}"
             )
@@ -88,7 +92,7 @@ class Grabber(base.BaseCog):
             await self.models.Grab.query.where(
                 self.models.Grab.author_id == str(user_to_grab.id),
             )
-            .where(self.models.Grab.message == grab_message)
+            .where(self.models.Grab.message == content)
             .gino.first()
         )
 
@@ -100,12 +104,12 @@ class Grabber(base.BaseCog):
             author_id=str(user_to_grab.id),
             channel=str(ctx.channel.id),
             guild=str(ctx.guild.id),
-            message=grab_message,
+            message=content,
             nsfw=ctx.channel.is_nsfw(),
         )
         await grab.create()
 
-        await util.send_with_mention(ctx, f"Successfully saved: '*{grab_message}*'")
+        await util.send_with_mention(ctx, f"Successfully saved: '*{content}*'")
 
     @commands.group(
         brief="Executes a grabs command",
