@@ -77,9 +77,6 @@ class AutoSupport(base.MatchCog):
         self.user_records = munch.Munch()
 
     async def match(self, config, ctx, content):
-        if ctx.message.mentions or ctx.message.reference:
-            return False
-
         # check if message is in a support channel
         if not str(ctx.channel.id) in config.extensions.techsupport.channels.value:
             await self.bot.logger.debug(
@@ -94,19 +91,22 @@ class AutoSupport(base.MatchCog):
         ]:
             return False
 
-        if str(ctx.author.id) in config.extensions.techsupport.support_users.value:
-            return False
-
         # check if the user is not a helper
         support_roles = get_support_roles(ctx, config)
         if not support_roles:
             return False
 
-        if any(role in ctx.author.roles for role in support_roles):
+        if (
+            any(role in ctx.author.roles for role in support_roles)
+            or str(ctx.author.id) in config.extensions.techsupport.support_users.value
+        ):
             await self.bot.logger.debug(
                 "User is a tech support helper - ignoring auto-support"
             )
             self.last_support_messages[ctx.channel.id] = ctx.message
+            return False
+
+        if ctx.message.mentions or ctx.message.reference:
             return False
 
         now = datetime.datetime.utcnow()
