@@ -87,6 +87,49 @@ class AdminControl(base.BaseCog):
         ctx.bot.unload_extension(f"extensions.{extension_name}")
         await util.send_with_mention(ctx, "I've unloaded that extension")
 
+    @util.with_typing
+    @extension_group.command(
+        name="register",
+        description="Uploads an extension from Discord to be saved on the bot",
+        usage="[extension-name] |python-file-upload|",
+    )
+    async def register_extension(self, ctx, extension_name: str):
+        """Unloads an extension by filename.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.ext.Context): the context object for the message
+            extension_name (str): the name of the extension
+        """
+        if not ctx.message.attachments:
+            await util.send_with_mention(
+                ctx, "You did not provide a Python file upload"
+            )
+            return
+
+        attachment = ctx.message.attachments[0]
+        if not attachment.filename.endswith(".py"):
+            await util.send_with_mention(
+                ctx, "I don't recognize your upload as a Python file"
+            )
+            return
+
+        if extension_name.lower() in self.bot.get_potential_extensions():
+            confirm = await self.bot.confirm(
+                ctx,
+                f"Warning! This will replace the current `{extension_name}.py` extension! Are you SURE?",
+                delete_after=True,
+            )
+            if not confirm:
+                return
+
+        fp = await attachment.read()
+        self.bot.register_file_extension(extension_name, fp)
+        await util.send_with_mention(
+            ctx, "I've registered that extension. You can now try loading it"
+        )
+
     @commands.group(
         name="command",
         brief="Executes a commands bot command",

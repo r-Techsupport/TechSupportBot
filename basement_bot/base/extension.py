@@ -163,3 +163,23 @@ class ExtensionsBot(commands.Bot):
             return None
         extension_name = command.module.split(".")[1]
         return extension_name
+
+    def register_file_extension(self, extension_name, fp):
+        """Offers an interface for loading an extension from an external source.
+
+        This saves the external file data to the OS, without any validation.
+
+        parameters:
+            extension_name (str): the name of the extension to register
+            fp (io.BufferedIOBase): the file-like object to save to disk
+        """
+        if not extension_name:
+            raise NameError("Invalid extension name")
+
+        try:
+            self.unload_extension(f"{self.EXTENSIONS_DIR_NAME}.{extension_name}")
+        except commands.errors.ExtensionNotLoaded:
+            pass
+
+        with open(f"{self.EXTENSIONS_DIR}/{extension_name}.py", "wb") as file_handle:
+            file_handle.write(fp)

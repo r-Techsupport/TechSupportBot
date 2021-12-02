@@ -91,7 +91,7 @@ COMMAND_ERROR_RESPONSE_TEMPLATES = {
     commands.ChannelNotReadable: ErrorResponse(
         'I can\'t read the channel: "%s"', {"key": "argument"}
     ),
-    commands.ChannelNotReadable: ErrorResponse(
+    commands.BadColourArgument: ErrorResponse(
         'I can\'t use the color: "%s"', {"key": "argument"}
     ),
     commands.RoleNotFound: ErrorResponse(
