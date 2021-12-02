@@ -15,7 +15,6 @@ class AdvancedBot(DataBot):
     CONFIG_RECEIVE_WARNING_TIME_MS = 1000
 
     def __init__(self, *args, **kwargs):
-        kwargs.pop("prefix", None)
         self.guild_config_collection = None
         self.guild_config_cache = collections.defaultdict(dict)
         self.guild_config_lock = asyncio.Lock()
@@ -36,9 +35,9 @@ class AdvancedBot(DataBot):
     async def reset_config_cache(self):
         """Deletes the guild config cache on a periodic basis."""
         while True:
-            await self.logger.debug("Resetting guild config cache")
-            self.guild_config_cache = collections.defaultdict(dict)
             await asyncio.sleep(self.file_config.main.config_cache_reset)
+            await self.logger.info("Resetting guild config cache")
+            self.guild_config_cache = collections.defaultdict(dict)
 
     async def get_context_config(
         self, ctx=None, guild=None, create_if_none=True, get_from_cache=True
@@ -52,6 +51,7 @@ class AdvancedBot(DataBot):
             get_from_cache (bool): True if the config should be fetched from the cache
         """
         start = time.time()
+
         if ctx:
             guild_from_ctx = getattr(ctx, "guild", None)
             lookup = guild_from_ctx.id if guild_from_ctx else "dmcontext"

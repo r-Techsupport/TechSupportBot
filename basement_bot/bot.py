@@ -31,17 +31,12 @@ class BasementBot(base.AdvancedBot):
 
     # pylint: disable=attribute-defined-outside-init
     def __init__(self, *args, **kwargs):
-        run_on_init = kwargs.pop("run_on_init", None)
-
         self.owner = None
         self._startup_time = None
         self.ipc = None
         self.builtin_cogs = []
 
         super().__init__(*args, **kwargs)
-
-        if run_on_init:
-            self.run(self.file_config.main.auth_token)
 
     def run(self, *args, **kwargs):
         """Starts IPC and the event loop and blocks until interrupted."""
@@ -55,7 +50,9 @@ class BasementBot(base.AdvancedBot):
             self.logger.console.debug("No IPC secret found in env - ignoring IPC setup")
 
         try:
-            self.loop.run_until_complete(self.start(*args, **kwargs))
+            self.loop.run_until_complete(
+                self.start(self.file_config.main.auth_token, *args, **kwargs)
+            )
         except (SystemExit, KeyboardInterrupt):
             self.loop.run_until_complete(self.cleanup())
         finally:

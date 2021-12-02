@@ -53,9 +53,6 @@ class ExtensionsBot(commands.Bot):
         self.extension_states = munch.Munch()
         self.file_config = None
         self.load_file_config()
-        super().__init__(
-            command_prefix=prefix, intents=intents, allowed_mentions=allowed_mentions
-        )
 
         self.logger = botlog.BotLogger(
             bot=self,
@@ -64,7 +61,13 @@ class ExtensionsBot(commands.Bot):
             send=not self.file_config.main.logging.block_discord_send,
         )
 
-        self.run(self.file_config.main.auth_token)
+        super().__init__(
+            command_prefix=prefix, intents=intents, allowed_mentions=allowed_mentions
+        )
+
+    def run(self, *args, **kwargs):
+        """Runs the bot, but uses the file config auth token instead of args."""
+        super().run(self.file_config.main.auth_token, *args, **kwargs)
 
     def load_file_config(self, validate=True):
         """Loads the config yaml file into a bot object.

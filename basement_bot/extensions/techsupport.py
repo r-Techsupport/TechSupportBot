@@ -179,6 +179,7 @@ class AutoSupport(base.MatchCog):
                 continue
 
             if any(role in target_roles for role in support_roles):
+                self.last_support_messages[channel.id] = message
                 return message
 
         return None
@@ -265,7 +266,9 @@ class AutoSupport(base.MatchCog):
         timestamp = getattr(
             last_support_message, "created_at", "Not found within range"
         )
-        embed.add_field(name="Last support message", value=str(timestamp), inline=False)
+        embed.add_field(
+            name="Last support message", value=f"{timestamp} UTC", inline=False
+        )
 
         embed.add_field(
             name="Last sent",

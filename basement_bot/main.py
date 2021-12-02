@@ -22,3 +22,4 @@ intents.members = True
 allowed_mentions = discord.AllowedMentions(everyone=False, roles=False)
 
 bot_ = bot.BasementBot(intents=intents, allowed_mentions=allowed_mentions)
+bot_.run()
