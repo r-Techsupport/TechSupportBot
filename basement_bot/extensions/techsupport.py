@@ -11,6 +11,13 @@ from discord.ext import commands
 
 
 def setup(bot):
+    class SpeccyParse(bot.db.Model):
+        __tablename__ = "speccyparses"
+
+        speccy_id = bot.db.Column(bot.db.String, primary_key=True)
+        blob = bot.db.Column(bot.db.String)
+        time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+
     config = bot.ExtensionConfig()
     config.add(
         key="support_roles",
@@ -49,7 +56,9 @@ def setup(bot):
     )
 
     bot.add_cog(CDIParser(bot=bot, extension_name="techsupport"))
-    bot.add_cog(SpeccyParser(bot=bot, extension_name="techsupport"))
+    bot.add_cog(
+        SpeccyParser(bot=bot, extension_name="techsupport", models=[SpeccyParse])
+    )
     bot.add_cog(HWInfoParser(bot=bot, extension_name="techsupport"))
     bot.add_cog(AutoSupport(bot=bot, extension_name="techsupport"))
     bot.add_extension_config("techsupport", config)
@@ -454,25 +463,31 @@ class SpeccyParser(BaseParser):
             send=True,
         )
 
-        api_response = await self.call_api(speccy_id)
-        response_text = await api_response.text()
-
-        try:
-            response_data = munch.munchify(json.loads(response_text))
+        cached = False
+        response_data = await self.get_cached_parse(ctx, speccy_id)
+        if response_data:
             parse_status = response_data.get("Status", "Unknown")
-        except Exception as e:
-            response_data = None
-            parse_status = "Error"
-            await self.bot.guild_log(
-                ctx.guild,
-                "logging_channel",
-                "error",
-                "Could not deserialize Speccy parse response to JSON",
-                send=True,
-                exception=e,
-            )
+            cached = True
+        else:
+            api_response = await self.call_api(speccy_id)
+            response_text = await api_response.text()
+            try:
+                response_data = munch.munchify(json.loads(response_text))
+                parse_status = response_data.get("Status", "Unknown")
+            except Exception as e:
+                response_data = None
+                parse_status = "Error"
+                await self.bot.guild_log(
+                    ctx.guild,
+                    "logging_channel",
+                    "error",
+                    "Could not deserialize Speccy parse response to JSON",
+                    send=True,
+                    exception=e,
+                )
 
         if parse_status == "Parsed":
+            response_data_copy = response_data.copy()
             try:
                 embed = await self.generate_embed(ctx, response_data)
                 await util.send_with_mention(ctx, embed=embed)
@@ -488,6 +503,8 @@ class SpeccyParser(BaseParser):
                     send=True,
                     exception=e,
                 )
+            if not cached:
+                await self.cache_parse(ctx, speccy_id, response_data_copy)
         else:
             await util.send_with_mention(
                 ctx,
@@ -645,6 +662,46 @@ class SpeccyParser(BaseParser):
         if value.lower() in ["false", "", "0"]:
             return True
         return False
+
+    async def cache_parse(self, ctx, speccy_id, response_data):
+        parse = self.models.SpeccyParse(
+            speccy_id=speccy_id, blob=json.dumps(response_data)
+        )
+        try:
+            await parse.create()
+        except Exception as e:
+            await self.bot.guild_log(
+                ctx.guild,
+                "logging_channel",
+                "error",
+                "Could not cache Speccy parse results",
+                send=True,
+                exception=e,
+            )
+
+    async def get_cached_parse(self, ctx, speccy_id):
+        parse = await self.models.SpeccyParse.query.where(
+            self.models.SpeccyParse.speccy_id == speccy_id
+        ).gino.first()
+
+        if not parse:
+            return None
+
+        try:
+            response = munch.munchify(json.loads(parse.blob))
+        except Exception as e:
+            await parse.delete()
+            await self.bot.guild_log(
+                ctx.guild,
+                "logging_channel",
+                "error",
+                "Could not retrieve valid Speccy results from cache",
+                send=True,
+                exception=e,
+            )
+            response = None
+
+        return response
 
 
 class HWInfoParser(BaseParser):
