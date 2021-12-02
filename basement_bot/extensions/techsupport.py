@@ -1,6 +1,7 @@
 import datetime
 import json
 import re
+from time import time
 
 import base
 import discord
@@ -63,6 +64,19 @@ def get_support_roles(ctx, config):
             roles.append(role)
 
     return roles
+
+
+async def is_support_user(ctx):
+    config = await ctx.bot.get_context_config(ctx)
+    support_roles = get_support_roles(ctx, config)
+    if not support_roles and not config.extensions.techsupport.support_users.value:
+        raise commands.CommandError("No support roles found")
+    if not (
+        any(role in ctx.author.roles for role in support_roles)
+        or str(ctx.author.id) in config.extensions.techsupport.support_users.value
+    ):
+        raise commands.MissingAnyRole(support_roles)
+    return True
 
 
 class AutoSupport(base.MatchCog):
@@ -210,6 +224,8 @@ class AutoSupport(base.MatchCog):
 
         return embed
 
+    @commands.guild_only()
+    @commands.check(is_support_user)
     @commands.group(
         brief="Executes an autosupport command",
         description="Executes an autosuport command",
@@ -218,8 +234,6 @@ class AutoSupport(base.MatchCog):
         pass
 
     @util.with_typing
-    @commands.has_permissions(kick_members=True)
-    @commands.guild_only()
     @autosupport.command(
         name="state",
         brief="Gets the state of the autosupport cog",
@@ -244,14 +258,15 @@ class AutoSupport(base.MatchCog):
 
         last_support_message = self.last_support_messages.get(channel.id)
         if not last_support_message:
-            last_support_message = (
-                await self.get_last_support_message(channel, support_roles)
-                or "Not found within range"
+            last_support_message = await self.get_last_support_message(
+                channel, support_roles
             )
 
-        embed.add_field(
-            name="Last support message", value=str(last_support_message), inline=False
+        timestamp = getattr(
+            last_support_message, "created_at", "Not found within range"
         )
+        embed.add_field(name="Last support message", value=str(timestamp), inline=False)
+
         embed.add_field(
             name="Last sent",
             value=self.send_records.get(channel.id, "Never (since restart)"),

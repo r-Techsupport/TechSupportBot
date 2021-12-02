@@ -27,6 +27,13 @@ def setup(bot):
 
     config = bot.ExtensionConfig()
     config.add(
+        key="manage_role",
+        datatype="str",
+        title="Manage factoids role",
+        description="The role required to add and delete factoids",
+        default="Factoids",
+    )
+    config.add(
         key="per_page",
         datatype="int",
         title="Factoids per page",
@@ -36,6 +43,18 @@ def setup(bot):
 
     bot.add_cog(FactoidManager(bot=bot, models=[Factoid], extension_name="factoids"))
     bot.add_extension_config("factoids", config)
+
+
+async def has_manage_factoids_role(ctx):
+    config = await ctx.bot.get_context_config(ctx)
+    factoid_role = discord.utils.get(
+        ctx.guild.roles, name=config.extensions.factoids.manage_role.value
+    )
+    if not factoid_role:
+        raise commands.CommandError("No role found for factoid management")
+    if not factoid_role in getattr(ctx.author, "roles", []):
+        raise commands.MissingRole(factoid_role)
+    return True
 
 
 class FactoidManager(base.MatchCog, base.LoopCog):
@@ -315,7 +334,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         pass
 
     @util.with_typing
-    @commands.has_permissions(kick_members=True)
+    @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
         brief="Creates a factoid",
@@ -341,7 +360,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         )
 
     @util.with_typing
-    @commands.has_permissions(kick_members=True)
+    @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
         brief="Deletes a factoid",
@@ -355,7 +374,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         )
 
     @util.with_typing
-    @commands.has_permissions(ban_members=True)
+    @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
         brief="Loops a factoid",
@@ -387,7 +406,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         )
 
     @util.with_typing
-    @commands.has_permissions(ban_members=True)
+    @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
         brief="Removes a factoid's loop config",
@@ -411,7 +430,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         await util.send_with_mention(ctx, "Loop config deleted")
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
+    @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
         brief="Displays loop config",
@@ -471,7 +490,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         await util.send_with_mention(ctx, embed=embed)
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
+    @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
         name="json",
