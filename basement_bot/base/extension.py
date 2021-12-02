@@ -54,15 +54,15 @@ class ExtensionsBot(commands.Bot):
         self.file_config = None
         self.load_file_config()
 
+        super().__init__(
+            command_prefix=prefix, intents=intents, allowed_mentions=allowed_mentions
+        )
+
         self.logger = botlog.BotLogger(
             bot=self,
             name=self.__class__.__name__,
             queue_wait=self.file_config.main.logging.queue_wait_seconds,
             send=not self.file_config.main.logging.block_discord_send,
-        )
-
-        super().__init__(
-            command_prefix=prefix, intents=intents, allowed_mentions=allowed_mentions
         )
 
     def run(self, *args, **kwargs):
