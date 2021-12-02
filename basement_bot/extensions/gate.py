@@ -84,7 +84,7 @@ class ServerGate(base.MatchCog):
                 )
                 return
 
-            # await ctx.author.add_roles(*roles)
+            await ctx.author.add_roles(*roles)
 
             welcome_message = config.extensions.gate.welcome_message.value
             delete_wait = config.extensions.gate.delete_wait.value

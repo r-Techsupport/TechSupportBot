@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import json
 import re
@@ -7,7 +6,7 @@ import base
 import discord
 import munch
 import util
-from discord import message
+from discord.ext import commands
 
 
 def setup(bot):
@@ -135,8 +134,6 @@ class AutoSupport(base.MatchCog):
         ):
             return False
 
-        # get last message from cache or channel history
-        # cache for next time
         last_support_message = self.last_support_messages.get(ctx.channel.id)
         if not last_support_message:
             last_support_message = await self.get_last_support_message(
@@ -212,6 +209,64 @@ class AutoSupport(base.MatchCog):
         embed.color = discord.Color.green()
 
         return embed
+
+    @commands.group(
+        brief="Executes an autosupport command",
+        description="Executes an autosuport command",
+    )
+    async def autosupport(self, ctx):
+        pass
+
+    @util.with_typing
+    @commands.has_permissions(kick_members=True)
+    @commands.guild_only()
+    @autosupport.command(
+        name="state",
+        brief="Gets the state of the autosupport cog",
+        description="Retrieves the timestamp data associated with the autosupport cog",
+        usage="[channel-id (optional)]",
+    )
+    async def get_state(self, ctx, channel: discord.TextChannel = None):
+        if not channel:
+            channel = ctx.channel
+
+        embed = discord.Embed(title=f"Runtime State for #{channel.name}")
+        embed.color = discord.Color.blurple()
+        embed.set_author(
+            name="Tech Support Auto-Support", icon_url=self.bot.user.avatar_url
+        )
+
+        config = await self.bot.get_context_config(ctx)
+        support_roles = get_support_roles(ctx, config)
+        if not support_roles:
+            await util.send_with_mention(ctx, "I couldn't find any support roles")
+            return
+
+        last_support_message = self.last_support_messages.get(channel.id)
+        if not last_support_message:
+            last_support_message = (
+                await self.get_last_support_message(channel, support_roles)
+                or "Not found within range"
+            )
+
+        embed.add_field(
+            name="Last support message", value=str(last_support_message), inline=False
+        )
+        embed.add_field(
+            name="Last sent",
+            value=self.send_records.get(channel.id, "Never (since restart)"),
+            inline=False,
+        )
+
+        count = 0
+        for user_record in self.user_records.values():
+            now = datetime.datetime.utcnow()
+            if (now - user_record).seconds / 60.0 < self.USER_COOLDOWN_MINUTES:
+                count += 1
+
+        embed.add_field(name="User cooldowns (total per server)", value=str(count))
+
+        await util.send_with_mention(ctx, embed=embed)
 
 
 class BaseParser(base.MatchCog):
