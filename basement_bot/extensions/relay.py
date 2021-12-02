@@ -112,6 +112,7 @@ class DiscordRelay(base.MatchCog):
         self.listen_channels = list(
             self.bot.file_config.special.relay.channel_map.values()
         )
+        self.bot.extension_states.relay = munch.Munch()
         self.bot.extension_states.relay.channels = self.listen_channels
 
     @commands.Cog.listener()
