@@ -27,11 +27,11 @@ def setup(bot):
 
     config = bot.ExtensionConfig()
     config.add(
-        key="manage_role",
-        datatype="str",
-        title="Manage factoids role",
-        description="The role required to add and delete factoids",
-        default="Factoids",
+        key="manage_roles",
+        datatype="list",
+        title="Manage factoids roles",
+        description="The roles required to manage factoids",
+        default=["Factoids"],
     )
     config.add(
         key="per_page",
@@ -47,13 +47,21 @@ def setup(bot):
 
 async def has_manage_factoids_role(ctx):
     config = await ctx.bot.get_context_config(ctx)
-    factoid_role = discord.utils.get(
-        ctx.guild.roles, name=config.extensions.factoids.manage_role.value
-    )
-    if not factoid_role:
-        raise commands.CommandError("No role found for factoid management")
-    if not factoid_role in getattr(ctx.author, "roles", []):
-        raise commands.MissingRole(factoid_role)
+    factoid_roles = []
+    for name in config.extensions.factoids.manage_roles.value:
+        factoid_role = discord.utils.get(ctx.guild.roles, name=name)
+        if not factoid_role:
+            continue
+        factoid_roles.append(factoid_role)
+
+    if not factoid_roles:
+        raise commands.CommandError("No factoid management roles found")
+
+    if not any(
+        factoid_role in getattr(ctx.author, "roles", []) for role in factoid_roles
+    ):
+        raise commands.MissingAnyRole(factoid_roles)
+
     return True
 
 
