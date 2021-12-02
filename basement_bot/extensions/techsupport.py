@@ -245,13 +245,20 @@ class AutoSupport(base.MatchCog):
         if not channel:
             channel = ctx.channel
 
+        config = await self.bot.get_context_config(ctx)
+
+        if not str(channel.id) in config.extensions.techsupport.channels.value:
+            await util.send_with_mention(
+                ctx, f"#{channel.name} is not configured as a support channel"
+            )
+            return
+
         embed = discord.Embed(title=f"Runtime State for #{channel.name}")
         embed.color = discord.Color.blurple()
         embed.set_author(
             name="Tech Support Auto-Support", icon_url=self.bot.user.avatar_url
         )
 
-        config = await self.bot.get_context_config(ctx)
         support_roles = get_support_roles(ctx, config)
         if not support_roles:
             await util.send_with_mention(ctx, "I couldn't find any support roles")
