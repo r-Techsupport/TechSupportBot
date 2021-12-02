@@ -580,7 +580,7 @@ class SpeccyParser(BaseParser):
         yikes_score = response_data.get("Yikes", 0)
         if yikes_score > 3:
             embed.color = discord.Color.red()
-        elif yikes_score > 0:
+        elif yikes_score >= 1.0:
             embed.color = discord.Color.gold()
         else:
             embed.color = discord.Color.green()
