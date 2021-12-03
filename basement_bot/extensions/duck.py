@@ -837,7 +837,7 @@ class DuckHunt(base.LoopCog):
             guild,
             "logging_channel",
             "info",
-            f"Duck {action} by {winner}",
+            f"Duck {action} by {winner} in #{channel.name}",
             send=True,
         )
 
