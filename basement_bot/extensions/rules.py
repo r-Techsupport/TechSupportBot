@@ -9,16 +9,17 @@ from discord.ext import commands
 
 
 def setup(bot):
-    bot.add_cog(Rules(bot=bot, extension_name="rules"))
+    bot.add_cog(Rules(bot=bot))
 
 
 class Rules(base.BaseCog):
 
     RULE_ICON_URL = "https://cdn.icon-icons.com/icons2/907/PNG/512/balance-scale-of-justice_icon-icons.com_70554.png"
+    COLLECTION_NAME = "rules_extension"
 
     async def preconfig(self):
-        if not self.extension_name in await self.bot.mongo.list_collection_names():
-            await self.bot.mongo.create_collection(self.extension_name)
+        if not self.COLLECTION_NAME in await self.bot.mongo.list_collection_names():
+            await self.bot.mongo.create_collection(self.COLLECTION_NAME)
 
     @commands.group(name="rule")
     async def rule_group(self, ctx):
@@ -33,7 +34,7 @@ class Rules(base.BaseCog):
         usage="|uploaded-json|",
     )
     async def edit_rules(self, ctx):
-        collection = self.bot.mongo[self.extension_name]
+        collection = self.bot.mongo[self.COLLECTION_NAME]
 
         uploaded_data = await util.get_json_from_attachments(ctx.message)
         if uploaded_data:
