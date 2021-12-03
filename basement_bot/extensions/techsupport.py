@@ -282,15 +282,15 @@ class AutoSupport(base.MatchCog):
         timestamp = getattr(
             last_support_message, "created_at", "Not found within range"
         )
-        embed.add_field(
-            name="Last support message", value=f"{timestamp} UTC", inline=False
-        )
+        embed.add_field(name="Last support message", value=f"{timestamp}", inline=False)
 
         embed.add_field(
             name="Last sent",
             value=self.send_records.get(channel.id, "Never (since restart)"),
             inline=False,
         )
+
+        embed.set_footer(text="Timezone: UTC")
 
         count = 0
         for user_record in self.user_records.values():
