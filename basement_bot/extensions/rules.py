@@ -73,7 +73,7 @@ class Rules(base.BaseCog):
         usage="[number]",
     )
     async def get_rule(self, ctx, number: int):
-        rules_data = await self.bot.mongo[self.extension_name].find_one(
+        rules_data = await self.bot.mongo[self.COLLECTION_NAME].find_one(
             {"guild_id": {"$eq": str(ctx.guild.id)}}
         )
         if not rules_data or not rules_data.get("rules"):
@@ -108,7 +108,7 @@ class Rules(base.BaseCog):
         description="Gets all the rules for the current server",
     )
     async def get_all_rules(self, ctx):
-        rules_data = await self.bot.mongo[self.extension_name].find_one(
+        rules_data = await self.bot.mongo[self.COLLECTION_NAME].find_one(
             {"guild_id": {"$eq": str(ctx.guild.id)}}
         )
         if not rules_data or not rules_data.get("rules"):
