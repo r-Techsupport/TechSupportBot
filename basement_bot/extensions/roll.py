@@ -10,6 +10,7 @@ def setup(bot):
 
 
 class Roller(base.BaseCog):
+    @util.with_typing
     @commands.command(
         name="roll",
         brief="Rolls a number",
