@@ -187,6 +187,24 @@ class Protector(base.MatchCog):
 
         return True
 
+    @commands.Cog.listener()
+    async def on_raw_message_edit(self, payload):
+        channel = self.bot.get_channel(payload.channel_id)
+        if not channel:
+            return
+
+        message = await channel.fetch_message(payload.message_id)
+        if not message:
+            return
+
+        ctx = await self.bot.get_context(message)
+        config = await self.bot.get_context_config(ctx)
+        matched = await self.match(config, ctx, message.content)
+        if not matched:
+            return
+
+        await self.response(config, ctx, message.content, None)
+
     async def response(self, config, ctx, content, _):
         # check mass mentions first - return after handling
         if len(ctx.message.mentions) > config.extensions.protect.max_mentions.value:
