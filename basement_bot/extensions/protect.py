@@ -2,6 +2,7 @@ import asyncio
 import collections
 import datetime
 import io
+import re
 from typing import ChainMap
 
 import base
@@ -221,16 +222,26 @@ class Protector(base.MatchCog):
             search_keyword = keyword
             search_content = content
 
-            if filter_config.get("sensitive"):
-                search_keyword = search_keyword.lower()
-                search_content = search_content.lower()
-
-            if search_keyword in search_content:
-                filter_config["trigger"] = keyword
-                triggered_config = filter_config
-
-                if triggered_config.get("delete"):
-                    break
+            regex = filter_config.get("regex")
+            if regex:
+                try:
+                    match = re.search(regex, search_content)
+                except re.error:
+                    match = None
+                if match:
+                    filter_config["trigger"] = keyword
+                    triggered_config = filter_config
+                    if triggered_config.get("delete"):
+                        break
+            else:
+                if filter_config.get("sensitive"):
+                    search_keyword = search_keyword.lower()
+                    search_content = search_content.lower()
+                if search_keyword in search_content:
+                    filter_config["trigger"] = keyword
+                    triggered_config = filter_config
+                    if triggered_config.get("delete"):
+                        break
 
         if triggered_config:
             await self.handle_string_alert(config, ctx, content, triggered_config)
