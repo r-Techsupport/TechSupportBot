@@ -2,7 +2,7 @@
 
 BasementBot is a Dockerized Discord bot. Written on top of the [Python Discord API](https://pycord.readthedocs.io/en/latest/api.html), it provides the loading and unloading of custom plugins to extend and scale the bot as much as you want.
 
-Note: *as of 2021, Discord.py development ceased and is being maintaned by several forks. Currently the bot is utilizing [Pycord](https://github.com/Pycord-Development/pycord), but this may change in the future.*
+Note: *as of 2021, Discord.py development ceased and is being maintained by several forks. Currently the bot is utilizing [Pycord](https://github.com/Pycord-Development/pycord), but this may change in the future.*
 
 # Setup
 
