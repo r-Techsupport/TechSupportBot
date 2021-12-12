@@ -144,13 +144,27 @@ class BasementBot(base.AdvancedBot):
         if (
             owner
             and isinstance(message.channel, discord.DMChannel)
-            and message.author.id != owner.id
+            and message.author.id == owner.id
             and not message.author.bot
         ):
-            await self.logger.info(
-                f'PM from `{message.author}`: "{message.content}"', send=True
-            )
+            await self.handle_dm(message)
+
         await self.process_commands(message)
+
+    async def handle_dm(self, message):
+        """Handler for DM messages.
+
+        parameters:
+            message (discord.Message): the message object for the DM
+        """
+        # show attachments in the DM
+        attachment_urls = ", ".join(a.url for a in message.attachments)
+        content_string = f'"{message.content}"' if message.content else ""
+        attachment_string = f"({attachment_urls})" if attachment_urls else ""
+        await self.logger.info(
+            f"PM from `{message.author}`: {content_string} {attachment_string}",
+            send=True,
+        )
 
     async def on_error(self, event_method, *_args, **_kwargs):
         """Catches non-command errors and sends them to the error logger for processing.
