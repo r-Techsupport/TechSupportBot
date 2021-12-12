@@ -55,7 +55,7 @@ async def has_manage_factoids_role(ctx):
         factoid_roles.append(factoid_role)
 
     if not factoid_roles:
-        raise commands.CommandError("No factoid management roles found")
+        raise commands.CommandError("no factoid management roles found")
 
     if not any(
         factoid_role in getattr(ctx.author, "roles", []) for role in factoid_roles

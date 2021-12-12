@@ -8,7 +8,17 @@ from discord.ext import commands
 
 
 def setup(bot):
+    config = bot.ExtensionConfig()
+    config.add(
+        key="hangman_roles",
+        datatype="list",
+        title="Hangman admin roles",
+        description="The list of role names able to control hangman games",
+        default=[],
+    )
+
     bot.add_cog(HangmanCog(bot=bot))
+    bot.add_extension_config("hangman", config)
 
 
 class HangmanGame:
@@ -127,6 +137,33 @@ class HangmanGame:
         if letter.lower() in self.guesses:
             return True
         return False
+
+
+async def can_stop_game(ctx):
+    cog = ctx.bot.get_cog("HangmanCog")
+    if not cog:
+        raise AttributeError("could not find hangman cog when checking game states")
+
+    game_data = cog.games.get(ctx.channel.id)
+    user = game_data.get("user")
+    if getattr(user, "id", 0) == ctx.author.id:
+        return True
+
+    config = await ctx.bot.get_context_config(ctx)
+    roles = []
+    for role_name in config.extensions.hangman.hangman_roles.value:
+        role = discord.utils.get(ctx.guild.roles, name=role_name)
+        if not role:
+            continue
+        roles.append(role)
+
+    if not roles:
+        raise commands.CommandError("no hangman admin roles found")
+
+    if not any(role in ctx.author.roles for role in roles):
+        raise commands.MissingAnyRole(roles)
+
+    return True
 
 
 class HangmanCog(base.BaseCog):
@@ -255,7 +292,7 @@ class HangmanCog(base.BaseCog):
         new_message = await ctx.send(embed=embed)
         game_data["message"] = new_message
 
-    @commands.has_permissions(kick_members=True)
+    @commands.check(can_stop_game)
     @hangman.command(name="stop", description="Stops the current channel game")
     async def stop(self, ctx):
         game_data = self.games.get(ctx.channel.id)
