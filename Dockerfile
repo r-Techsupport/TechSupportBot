@@ -1,5 +1,5 @@
 
-FROM python:3.7-alpine as builder
+FROM python:3.9-alpine as builder
 
 COPY Pipfile* /tmp/
 
@@ -17,7 +17,7 @@ WORKDIR /var/BasementBot
 COPY . .
 COPY config.yml basement_bot
 
-FROM python:3.7-alpine
+FROM python:3.9-alpine
 RUN apk add --no-cache \
     libpq
 WORKDIR /var/basement_bot

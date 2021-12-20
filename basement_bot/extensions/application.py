@@ -1,10 +1,14 @@
+import asyncio
 import datetime
+import io
 import json
 import uuid
+from typing import Type
 
 import base
 import discord
 import util
+import yaml
 from discord.ext import commands
 
 
@@ -24,12 +28,27 @@ def setup(bot):
         description="The roles required to manage applications",
         default=["Applications"],
     )
+    config.add(
+        key="reminder_on",
+        datatype="bool",
+        title="Reminder feature toggle",
+        description="True if the bot should periodically remind of pending applications",
+        default=False,
+    )
+    config.add(
+        key="reminder_wait",
+        datatype="float",
+        title="Application reminder wait time",
+        description="The number of hours the bot should wait between application reminders",
+        default=24,
+    )
     bot.add_cog(ApplicationManager(bot=bot, extension_name="application"))
     bot.add_extension_config("application", config)
 
 
 async def has_manage_applications_role(ctx):
     config = await ctx.bot.get_context_config(ctx)
+
     application_roles = []
     for name in config.extensions.application.manage_roles.value:
         application_role = discord.utils.get(ctx.guild.roles, name=name)
@@ -42,7 +61,7 @@ async def has_manage_applications_role(ctx):
 
     if not any(
         application_role in getattr(ctx.author, "roles", [])
-        for role in application_roles
+        for application_role in application_roles
     ):
         raise commands.MissingAnyRole(application_roles)
 
@@ -57,7 +76,11 @@ class ApplicationEmbed(discord.Embed):
         self.color = discord.Color.blurple()
 
 
-class ApplicationManager(base.MatchCog):
+class NoPendingApplications(Exception):
+    pass
+
+
+class ApplicationManager(base.MatchCog, base.LoopCog):
 
     COLLECTION_NAME = "applications_extension"
     STALE_APPLICATION_DAYS = 30
@@ -113,6 +136,107 @@ class ApplicationManager(base.MatchCog):
         collection = self.bot.mongo[self.COLLECTION_NAME]
         await collection.insert_one(application_data)
 
+    async def execute(self, config, guild):
+        if not config.extensions.application.reminder_on.value:
+            return
+
+        try:
+            await self.send_reminder(config, guild)
+        except NoPendingApplications:
+            pass
+
+    async def wait(self, config, _):
+        await asyncio.sleep(config.extensions.application.reminder_wait.value * 3600)
+
+    async def send_reminder(self, config, guild, automated=True):
+        try:
+            webhook_id = int(config.extensions.application.webhook_id.value)
+        except TypeError:
+            raise ValueError("applications webhook ID not found in config")
+
+        try:
+            webhook = await self.bot.fetch_webhook(webhook_id)
+        except discord.NotFound:
+            raise RuntimeError("application webhook not found from configured ID")
+
+        applications = await self.get_applications(guild, status="pending")
+        if not applications:
+            raise NoPendingApplications()
+
+        description = (
+            f"There are {len(applications)} pending applications for `{guild.name}`"
+        )
+
+        embed = ApplicationEmbed(bot=self.bot, description=description)
+        embed.set_footer(
+            text="This is a periodic reminder"
+            if automated
+            else "This reminder was triggered manually"
+        )
+
+        fields = 0
+        for app in applications:
+            if fields >= 5:
+                break
+
+            id = app.get("id")
+            if not id:
+                continue
+            try:
+                user_id = int(app.get("user"))
+            except TypeError:
+                user_id = 0
+            user = guild.get_member(user_id)
+            if not user:
+                continue
+
+            embed.add_field(name=user, value=id)
+            fields += 1
+
+        await webhook.channel.send(embed=embed)
+
+    async def get_applications(
+        self, guild, status=None, include_stale=False, limit=100
+    ):
+        returned_applications = []
+
+        query = {"guild": {"$eq": str(guild.id)}}
+
+        status = status.lower()
+        if status and not status in ["pending", "approved", "denied"]:
+            raise ValueError("status must be one of: pending, approved, denied")
+
+        if status == "pending":
+            query["reviewed"] = {"$eq": False}
+        elif status == "denied":
+            query["reviewed"] = {"$eq": True}
+            query["approved"] = {"$eq": False}
+        elif status == "approved":
+            query["approved"] = {"$eq": True}
+
+        applications = []
+        cursor = self.bot.mongo[self.COLLECTION_NAME].find(query)
+        for document in await cursor.to_list(length=limit):
+            applications.append(document)
+        if not applications:
+            return returned_applications
+
+        if include_stale:
+            return returned_applications
+
+        for application_data in applications:
+            now = datetime.datetime.utcnow()
+            application_date = application_data.get("date", str(now))
+            try:
+                age = now - datetime.datetime.fromisoformat(application_date)
+            except Exception:
+                age = datetime.timedelta(0)
+            if (age).seconds / 86400 > self.STALE_APPLICATION_DAYS:
+                continue
+            returned_applications.append(application_data)
+
+        return returned_applications
+
     async def confirm_with_user(self, ctx, user):
         result = False
 
@@ -135,6 +259,17 @@ class ApplicationManager(base.MatchCog):
 
         return result
 
+    @staticmethod
+    def determine_app_status(application_data):
+        approved = application_data.get("approved", False)
+        reviewed = application_data.get("reviewed", False)
+        status = "Pending"
+        if approved:
+            status = "Approved"
+        elif reviewed:
+            status = "Denied"
+        return status
+
     def generate_embed(self, application_data, new):
         embed = ApplicationEmbed(
             bot=self.bot,
@@ -145,6 +280,8 @@ class ApplicationManager(base.MatchCog):
             embed.add_field(
                 name=response["question"], value=response["answer"], inline=False
             )
+
+        embed.set_footer(text=f"Status: {self.determine_app_status(application_data)}")
 
         return embed
 
@@ -163,7 +300,7 @@ class ApplicationManager(base.MatchCog):
         description="Gets an application by ID",
         usage="[application-id]",
     )
-    async def get_application(self, ctx, application_id: str):
+    async def get_application_by_id(self, ctx, application_id: str):
         collection = self.bot.mongo[self.COLLECTION_NAME]
         application_data = await collection.find_one({"id": {"$eq": application_id}})
         if not application_data:
@@ -197,6 +334,7 @@ class ApplicationManager(base.MatchCog):
             return
 
         application_data["approved"] = True
+        application_data["reviewed"] = True
         await collection.replace_one({"id": application_id}, application_data)
 
         await self.post_update(ctx, application_data, "approved")
@@ -207,7 +345,7 @@ class ApplicationManager(base.MatchCog):
         description="Denies an application by ID",
         usage="[application-id]",
     )
-    async def deny_application(self, ctx, application_id: str):
+    async def deny_application(self, ctx, application_id: str, *, reason: str):
         collection = self.bot.mongo[self.COLLECTION_NAME]
         application_data = await collection.find_one({"id": {"$eq": application_id}})
         if not application_data:
@@ -235,14 +373,18 @@ class ApplicationManager(base.MatchCog):
         application_data["approved"] = False
         await collection.replace_one({"id": application_id}, application_data)
 
-        try:
-            user_id = int(application_data.get("user"))
-        except TypeError:
-            user_id = None
+        await self.post_update(ctx, application_data, "denied", reason)
 
-        await self.post_update(ctx, application_data, "denied")
+    @application.command(
+        name="remind",
+        brief="Sends an application reminder",
+        description="Sends an application reminder to the configured channel",
+    )
+    async def remind(self, ctx):
+        config = await self.bot.get_context_config(ctx)
+        await self.send_reminder(config, ctx.guild, automated=False)
 
-    async def post_update(self, ctx, application_data, status):
+    async def post_update(self, ctx, application_data, status, reason=None):
         try:
             user_id = int(application_data.get("user"))
         except TypeError:
@@ -261,6 +403,8 @@ class ApplicationManager(base.MatchCog):
             title=f"Application {status}!",
             description=f"Hey, your application in `{ctx.guild.name}` has been {status}!",
         )
+        if reason:
+            embed.description = f"{embed.description} Reason: {reason}"
 
         if not user:
             return

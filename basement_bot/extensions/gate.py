@@ -131,7 +131,6 @@ class ServerGate(base.MatchCog):
         name="intro",
         brief="Generates a gate intro message",
         description="Generates the configured gate intro message",
-        usage="[query]",
     )
     async def intro_message(self, ctx):
         config = await self.bot.get_context_config(ctx)

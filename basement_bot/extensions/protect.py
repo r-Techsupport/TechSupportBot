@@ -531,7 +531,7 @@ class Protector(base.MatchCog):
             name=f"Paste by {ctx.author}", icon_url=self.CLIPBOARD_ICON_URL
         )
         embed.set_footer(
-            text="This embed was generated because your message was too long."
+            text="This embed was generated because your message was too long"
         )
         embed.color = discord.Color.blue()
 
