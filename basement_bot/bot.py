@@ -144,7 +144,7 @@ class BasementBot(base.AdvancedBot):
         if (
             owner
             and isinstance(message.channel, discord.DMChannel)
-            and message.author.id == owner.id
+            and message.author.id != owner.id
             and not message.author.bot
         ):
             await self.handle_dm(message)
