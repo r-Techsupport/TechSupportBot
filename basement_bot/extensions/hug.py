@@ -47,7 +47,7 @@ class Hugger(base.BaseCog):
 
         embed = self.generate_embed(ctx, user_to_hug)
 
-        await util.send_with_mention(ctx, embed=embed, target=user_to_hug)
+        await util.send_with_mention(ctx, embed=embed, targets=[user_to_hug])
 
     def generate_embed(self, ctx, user_to_hug):
         hug_text = random.choice(self.HUGS_SELECTION).format(

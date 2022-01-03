@@ -57,4 +57,4 @@ class Burn(base.BaseCog):
 
         message = random.choice(self.PHRASES)
         embed = BurnEmbed(description=f"🔥🔥🔥 {message} 🔥🔥🔥")
-        await util.send_with_mention(ctx, embed=embed, target=user_to_match)
+        await util.send_with_mention(ctx, embed=embed, targets=[user_to_match])

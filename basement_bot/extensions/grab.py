@@ -116,6 +116,7 @@ class Grabber(base.BaseCog):
 
     @util.with_typing
     @commands.guild_only()
+    @commands.check(invalid_channel)
     @grabs.command(
         name="all",
         brief="Returns grabs for a user",
@@ -126,9 +127,6 @@ class Grabber(base.BaseCog):
         is_nsfw = ctx.channel.is_nsfw()
 
         config = await self.bot.get_context_config(ctx)
-
-        if await self.invalid_channel(config, ctx):
-            return
 
         if user_to_grab.bot:
             await util.send_deny_embed(ctx, "Ain't gonna catch me slipping!")
@@ -184,6 +182,7 @@ class Grabber(base.BaseCog):
 
     @util.with_typing
     @commands.guild_only()
+    @commands.check(invalid_channel)
     @grabs.command(
         name="random",
         brief="Returns a random grab",
@@ -192,9 +191,6 @@ class Grabber(base.BaseCog):
     )
     async def random_grab(self, ctx, user_to_grab: discord.Member):
         config = await self.bot.get_context_config(ctx)
-
-        if await self.invalid_channel(config, ctx):
-            return
 
         if user_to_grab.bot:
             await util.send_deny_embed(ctx, "Ain't gonna catch me slipping!")

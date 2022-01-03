@@ -49,4 +49,4 @@ class Corrector(base.BaseCog):
 
         embed = CorrectEmbed(new_content=new_content)
 
-        await util.send_with_mention(ctx, embed=embed, target=target)
+        await util.send_with_mention(ctx, embed=embed, targets=[target])

@@ -143,8 +143,12 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         factoid = await self.get_factoid_from_query(trigger, ctx.guild)
         if factoid:
             # delete old one
+            should_delete = await self.bot.confirm(
+                ctx, "This factoid already exists. Should I overwrite it?"
+            )
+            if not should_delete:
+                return
             await factoid.delete()
-            await util.send_confirm_embed(ctx, "Deleting previous entry of factoid...")
 
         # finally, add new entry
         factoid = self.models.Factoid(
@@ -164,38 +168,26 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             await util.send_deny_embed(ctx, "I couldn't find that factoid")
             return
 
+        should_delete = await self.bot.confirm(
+            ctx, "This will remove the factoid forever. Are you sure?"
+        )
+        if not should_delete:
+            return
+
         await factoid.delete()
 
     async def match(self, _, __, content):
         return content.startswith("?")
 
-    async def response(self, config, ctx, arg, _):
-        query = arg[1:]
-        user_mentioned = None
-        if len(ctx.message.mentions) == 1:
-            # tag this user instead of the caller
-            user_mentioned = ctx.message.mentions[0]
-            query = query.split(" ")[0]
-        elif len(ctx.message.mentions) > 1:
-            await util.send_deny_embed(
-                ctx, "I can only tag one user when referencing a factoid!"
-            )
-            return
-
+    async def response(self, config, ctx, content, _):
         if not ctx.guild:
             return
+
+        query = content[1:].split(" ")[0]
 
         factoid = await self.get_factoid_from_query(query, ctx.guild)
         if not factoid:
             return
-
-        await self.bot.guild_log(
-            ctx.guild,
-            "logging_channel",
-            "info",
-            f"Sending factoid: {query} (triggered by {ctx.author} in #{ctx.channel.name})",
-            send=True,
-        )
 
         embed = self.get_embed_from_factoid(factoid)
 
@@ -203,7 +195,17 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         try:
             await util.send_with_mention(
-                ctx, content=content, embed=embed, target=user_mentioned
+                ctx,
+                content=content,
+                embed=embed,
+                targets=ctx.message.mentions or [ctx.author],
+            )
+            await self.bot.guild_log(
+                ctx.guild,
+                "logging_channel",
+                "info",
+                f"Sending factoid: {query} (triggered by {ctx.author} in #{ctx.channel.name})",
+                send=True,
             )
         except Exception as e:
             await self.bot.guild_log(

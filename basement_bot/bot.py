@@ -480,7 +480,7 @@ class BasementBot(base.AdvancedBot):
         embed = discord.Embed(title="Please confirm!", description=message)
         embed.color = discord.Color.green()
 
-        message = await util.send_with_mention(ctx, embed=embed, target=ctx.author)
+        message = await util.send_with_mention(ctx, embed=embed, targets=[ctx.author])
         await message.add_reaction(self.CONFIRM_YES_EMOJI)
         await message.add_reaction(self.CONFIRM_NO_EMOJI)
 

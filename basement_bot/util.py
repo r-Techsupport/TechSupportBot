@@ -10,16 +10,26 @@ import embeds
 import munch
 
 
-async def send_with_mention(ctx, content=None, target=None, **kwargs):
+async def send_with_mention(ctx, content=None, targets=None, **kwargs):
     """Sends a context response with the original author tagged.
 
     parameters:
         ctx (discord.ext.Context): the context object
         content (str): the message to send
-        target (discord.Member): the Discord user to tag (defaults to context)
+        targets ([discord.Member]): the Discord users to tag (defaults to context)
     """
-    user_mention = target.mention if target else ctx.message.author.mention
-    content = f"{user_mention} {content}" if content else user_mention
+    if targets is None:
+        targets = [ctx.message.author]
+
+    user_mentions = ""
+    for index, target in enumerate(targets):
+        mention = getattr(target, "mention", None)
+        if not mention:
+            continue
+        spacer = " " if (index != len(targets) - 1) else ""
+        user_mentions += mention + spacer
+
+    content = f"{user_mentions} {content}" if content else user_mentions
     message = await ctx.send(content=content, **kwargs)
     return message
 
@@ -32,7 +42,7 @@ async def send_confirm_embed(ctx, message, target=None):
         target (discord.Member): the Discord user to tag (defaults to context)
     """
     embed = embeds.ConfirmEmbed(message=message)
-    message = await send_with_mention(ctx, embed=embed, target=target)
+    message = await send_with_mention(ctx, embed=embed, targets=[target])
     return message
 
 
@@ -44,7 +54,7 @@ async def send_deny_embed(ctx, message, target=None):
         target (discord.Member): the Discord user to tag (defaults to context)
     """
     embed = embeds.DenyEmbed(message=message)
-    message = await send_with_mention(ctx, embed=embed, target=target)
+    message = await send_with_mention(ctx, embed=embed, targets=[target])
     return message
 
 
@@ -57,6 +67,9 @@ async def get_json_from_attachments(message, as_string=False, allow_failure=Fals
         as_string (bool): True if the serialized JSON should be returned
         allow_failure (bool): True if an exception should be ignored when parsing attachments
     """
+    if not message.attachments:
+        return None
+
     attachment_jsons = []
     for attachment in message.attachments:
         try:
@@ -69,8 +82,6 @@ async def get_json_from_attachments(message, as_string=False, allow_failure=Fals
 
     if len(attachment_jsons) == 1:
         attachment_jsons = attachment_jsons[0]
-    elif len(attachment_jsons) == 0:
-        attachment_jsons = {}
 
     return (
         json.dumps(attachment_jsons) if as_string else munch.munchify(attachment_jsons)
