@@ -523,6 +523,7 @@ class Protector(base.MatchCog):
         if len(content) > 256:
             content = content[:256]
 
+        embed.title = url
         embed.description = content.replace("\n", " ")
         embed.set_author(name=f"Paste by {ctx.author}", icon_url=ctx.author.avatar_url)
         embed.set_footer(
