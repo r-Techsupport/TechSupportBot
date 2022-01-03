@@ -70,9 +70,8 @@ async def has_manage_applications_role(ctx):
 
 class ApplicationEmbed(discord.Embed):
     def __init__(self, *args, **kwargs):
-        bot = kwargs.pop("bot")
         super().__init__(*args, **kwargs)
-        self.set_author(name="Application Manager", icon_url=bot.user.avatar_url)
+        self.title = "Application Manager"
         self.color = discord.Color.blurple()
 
 
@@ -167,7 +166,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             f"There are {len(applications)} pending applications for `{guild.name}`"
         )
 
-        embed = ApplicationEmbed(bot=self.bot, description=description)
+        embed = ApplicationEmbed(description=description)
         embed.set_footer(
             text="This is a periodic reminder"
             if automated
@@ -241,7 +240,6 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         result = False
 
         embed = ApplicationEmbed(
-            bot=self.bot,
             description=f"I received an application on the server `{ctx.guild.name}`. Did you make this application? Please reply with `yes` or `no`",
         )
         message = await user.send(embed=embed)
@@ -272,9 +270,8 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
     def generate_embed(self, application_data, new):
         embed = ApplicationEmbed(
-            bot=self.bot,
-            title="New Application!" if new else "Application Data",
-            description=f"Application ID: `{application_data['id']}`",
+            description=("New Application!" if new else "Application Data")
+            + f" Application ID: `{application_data['id']}`",
         )
         for response in application_data["responses"]:
             embed.add_field(
@@ -304,7 +301,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         collection = self.bot.mongo[self.COLLECTION_NAME]
         application_data = await collection.find_one({"id": {"$eq": application_id}})
         if not application_data:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "I couldn't find an application with that ID"
             )
             return
@@ -322,13 +319,13 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         collection = self.bot.mongo[self.COLLECTION_NAME]
         application_data = await collection.find_one({"id": {"$eq": application_id}})
         if not application_data:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "I couldn't find an application with that ID"
             )
             return
 
         if application_data.get("approved") == True:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "That application is already marked as approved"
             )
             return
@@ -349,7 +346,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         collection = self.bot.mongo[self.COLLECTION_NAME]
         application_data = await collection.find_one({"id": {"$eq": application_id}})
         if not application_data:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "I couldn't find an application with that ID"
             )
             return
@@ -363,9 +360,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
                 return
 
         if application_data.get("reviewed") == True:
-            await util.send_with_mention(
-                ctx, "That application has already been denied"
-            )
+            await util.send_deny_embed(ctx, "That application has already been denied")
             return
 
         application_data["reviewed"] = True
@@ -382,7 +377,10 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
     )
     async def remind(self, ctx):
         config = await self.bot.get_context_config(ctx)
-        await self.send_reminder(config, ctx.guild, automated=False)
+        try:
+            await self.send_reminder(config, ctx.guild, automated=False)
+        except NoPendingApplications:
+            await util.send_deny_embed(ctx, "There are no pending applications")
 
     async def post_update(self, ctx, application_data, status, reason=None):
         try:
@@ -392,15 +390,13 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
         user = ctx.guild.get_member(user_id)
         message_content = (
-            f"I've {status} that application and notified {user}!"
+            f"I've {status} that application and notified `{user}`!"
             if user
             else f"I've {status} that application, but could not find the original user"
         )
-        await util.send_with_mention(ctx, message_content)
+        await util.send_confirm_embed(ctx, message_content)
 
         embed = ApplicationEmbed(
-            bot=self.bot,
-            title=f"Application {status}!",
             description=f"Hey, your application in `{ctx.guild.name}` has been {status}!",
         )
         if reason:

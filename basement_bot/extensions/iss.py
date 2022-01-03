@@ -14,7 +14,6 @@ class ISSLocator(base.BaseCog):
     GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="iss",
         brief="Finds the ISS",
@@ -24,14 +23,14 @@ class ISSLocator(base.BaseCog):
         # get ISS coordinates
         response = await util.http_call("get", self.ISS_URL)
         if not response:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "I had trouble calling the ISS API. Maybe it's down?"
             )
             return
         coordinates = response.get("iss_position", {})
         longitude, latitude = coordinates.get("longitude"), coordinates.get("latitude")
         if not longitude or not latitude:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "I couldn't find the ISS coordinates from the API response"
             )
             return
@@ -40,7 +39,7 @@ class ISSLocator(base.BaseCog):
         location = None
         response = await util.http_call("get", self.GEO_URL.format(latitude, longitude))
         if not response:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "I had trouble calling the GEO API. Maybe it's down?"
             )
             return

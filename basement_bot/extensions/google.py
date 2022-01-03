@@ -18,6 +18,18 @@ def setup(bot):
     bot.add_extension_config("google", config)
 
 
+class GoogleEmbed(discord.Embed):
+
+    ICON_URL = (
+        "https://cdn.icon-icons.com/icons2/673/PNG/512/Google_icon-icons.com_60497.png"
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.color = discord.Color.blurple()
+        self.set_thumbnail(url=self.ICON_URL)
+
+
 class Googler(base.BaseCog):
 
     GOOGLE_URL = "https://www.googleapis.com/customsearch/v1"
@@ -36,7 +48,6 @@ class Googler(base.BaseCog):
         pass
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @google.command(
         aliases=["s"],
@@ -54,7 +65,7 @@ class Googler(base.BaseCog):
         items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
-            await util.send_with_mention(ctx, f"No search results found for: *{query}*")
+            await util.send_deny_embed(ctx, f"No search results found for: *{query}*")
             return
 
         config = await self.bot.get_context_config(guild=ctx.guild)
@@ -67,7 +78,7 @@ class Googler(base.BaseCog):
                 link = item.get("link")
                 snippet = item.get("snippet", "<Details Unknown>").replace("\n", "")
                 embed = (
-                    discord.Embed(
+                    GoogleEmbed(
                         title=f"Results for {query}", value="https://google.com"
                     )
                     if field_counter == 1
@@ -78,9 +89,6 @@ class Googler(base.BaseCog):
                     field_counter == config.extensions.google.max_responses.value
                     or index == len(items) - 1
                 ):
-                    embed.set_thumbnail(
-                        url="https://cdn.icon-icons.com/icons2/673/PNG/512/Google_icon-icons.com_60497.png"
-                    )
                     embeds.append(embed)
                     field_counter = 1
                 else:
@@ -89,7 +97,6 @@ class Googler(base.BaseCog):
         self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @google.command(
         aliases=["i", "is"],
@@ -107,7 +114,7 @@ class Googler(base.BaseCog):
         items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, f"No image search results found for: *{query}*"
             )
             return
@@ -116,7 +123,7 @@ class Googler(base.BaseCog):
         for item in items:
             link = item.get("link")
             if not link:
-                await util.send_with_mention(
+                await util.send_deny_embed(
                     ctx,
                     "I had an issue processing Google's response... try again later!",
                 )
@@ -126,7 +133,6 @@ class Googler(base.BaseCog):
         self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(
         aliases=["yt"],
@@ -145,7 +151,7 @@ class Googler(base.BaseCog):
         )
 
         if not items:
-            await util.send_with_mention(ctx, f"No video results found for: *{query}*")
+            await util.send_deny_embed(ctx, f"No video results found for: *{query}*")
             return
 
         video_id = items[0].get("id", {}).get("videoId")

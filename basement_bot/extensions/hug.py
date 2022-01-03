@@ -28,7 +28,6 @@ class Hugger(base.BaseCog):
     )
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(
         name="hug",
@@ -43,7 +42,7 @@ class Hugger(base.BaseCog):
             ctx (Context): the context
         """
         if user_to_hug.id == ctx.author.id:
-            await util.send_with_mention(ctx, "Let's be serious")
+            await util.send_deny_embed(ctx, "Let's be serious")
             return
 
         embed = self.generate_embed(ctx, user_to_hug)

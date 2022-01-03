@@ -210,7 +210,7 @@ class BasementBot(base.AdvancedBot):
 
         error_message = message_template.get_message(exception)
 
-        await context.send(f"{context.author.mention} {error_message}")
+        await util.send_deny_embed(context, error_message)
 
         log_channel = await self.get_log_channel_from_guild(
             getattr(context, "guild", None), key="logging_channel"

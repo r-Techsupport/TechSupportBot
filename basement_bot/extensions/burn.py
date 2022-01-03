@@ -10,6 +10,13 @@ def setup(bot):
     bot.add_cog(Burn(bot=bot))
 
 
+class BurnEmbed(discord.Embed):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.title = "Burn Alert!"
+        self.color = discord.Color.red()
+
+
 class Burn(base.BaseCog):
 
     SEARCH_LIMIT = 50
@@ -23,7 +30,6 @@ class Burn(base.BaseCog):
     ]
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(
         brief="Declares a BURN!",
@@ -42,8 +48,13 @@ class Burn(base.BaseCog):
                 matched_message = message
                 break
 
+        if not matched_message:
+            await util.send_deny_embed(ctx, "I could not a find a message to reply to")
+            return
+
         for emoji in ["🔥", "🚒", "👨‍🚒"]:
             await matched_message.add_reaction(emoji)
 
         message = random.choice(self.PHRASES)
-        await util.send_with_mention(ctx, f"🔥🔥🔥 {message} 🔥🔥🔥", target=user_to_match)
+        embed = BurnEmbed(description=f"🔥🔥🔥 {message} 🔥🔥🔥")
+        await util.send_with_mention(ctx, embed=embed, target=user_to_match)

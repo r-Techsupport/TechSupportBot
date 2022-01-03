@@ -55,6 +55,17 @@ def setup(bot):
     bot.add_extension_config("gate", config)
 
 
+class WelcomeEmbed(discord.Embed):
+    def __init__(self, *args, **kwargs):
+        welcome_message = kwargs.pop("welcome_message")
+        delete_wait = kwargs.pop("delete_wait")
+        super().__init__(*args, **kwargs)
+        self.title = "Server Gate"
+        self.description = welcome_message
+        self.set_footer(text=f"This message will be deleted in {delete_wait} seconds")
+        self.color = discord.Color.green()
+
+
 class ServerGate(base.MatchCog):
     async def match(self, config, ctx, _):
         if not config.extensions.gate.channel.value:
@@ -89,20 +100,14 @@ class ServerGate(base.MatchCog):
             welcome_message = config.extensions.gate.welcome_message.value
             delete_wait = config.extensions.gate.delete_wait.value
 
-            embed = self.generate_welcome_embed(welcome_message, delete_wait)
-
+            embed = WelcomeEmbed(
+                welcome_message=welcome_message, delete_wait=delete_wait
+            )
             await util.send_with_mention(
                 ctx,
                 embed=embed,
                 delete_after=float(delete_wait),
             )
-
-    def generate_welcome_embed(self, welcome_message, delete_wait):
-        embed = discord.Embed(description=welcome_message)
-        embed.set_author(name="Server Gate", icon_url=self.bot.user.avatar_url)
-        embed.set_footer(text=f"This message will be deleted in {delete_wait} seconds.")
-        embed.color = discord.Color.green()
-        return embed
 
     async def get_roles(self, config, ctx):
         roles = []
@@ -136,7 +141,7 @@ class ServerGate(base.MatchCog):
         config = await self.bot.get_context_config(ctx)
 
         if ctx.channel.id != int(config.extensions.gate.channel.value):
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "That command is only usable in the gate channel"
             )
             return

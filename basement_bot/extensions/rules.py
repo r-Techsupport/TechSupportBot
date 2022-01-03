@@ -12,6 +12,12 @@ def setup(bot):
     bot.add_cog(Rules(bot=bot))
 
 
+class RuleEmbed(discord.Embed):
+    def __init__(self, *args, **kwargs):
+        super().__init__(self, *args, **kwargs)
+        self.color = discord.Color.gold()
+
+
 class Rules(base.BaseCog):
 
     RULE_ICON_URL = "https://cdn.icon-icons.com/icons2/907/PNG/512/balance-scale-of-justice_icon-icons.com_70554.png"
@@ -40,7 +46,7 @@ class Rules(base.BaseCog):
         if uploaded_data:
             uploaded_data["guild_id"] = str(ctx.guild.id)
             await collection.replace_one({"guild_id": str(ctx.guild.id)}, uploaded_data)
-            await util.send_with_mention(ctx, "I've updated to those rules")
+            await util.send_confirm_embed(ctx, "I've updated to those rules")
             return
 
         rules_data = await collection.find_one({"guild_id": {"$eq": str(ctx.guild.id)}})
@@ -64,7 +70,6 @@ class Rules(base.BaseCog):
             ctx, content="Re-upload this file to apply new rules", file=json_file
         )
 
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @rule_group.command(
         name="get",
@@ -77,7 +82,7 @@ class Rules(base.BaseCog):
             {"guild_id": {"$eq": str(ctx.guild.id)}}
         )
         if not rules_data or not rules_data.get("rules"):
-            await util.send_with_mention(ctx, "There are no rules for this server")
+            await util.send_deny_embed(ctx, "There are no rules for this server")
             return
 
         rules = rules_data.get("rules")
@@ -88,10 +93,10 @@ class Rules(base.BaseCog):
             rule = None
 
         if not rule:
-            await util.send_with_mention(ctx, "That rule number doesn't exist")
+            await util.send_deny_embed(ctx, "That rule number doesn't exist")
             return
 
-        embed = discord.Embed(
+        embed = RuleEmbed(
             title=f"Rule {number}", description=rule.get("description", "None")
         )
 
@@ -100,7 +105,6 @@ class Rules(base.BaseCog):
 
         await util.send_with_mention(ctx, embed=embed)
 
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @rule_group.command(
         name="all",
@@ -112,10 +116,10 @@ class Rules(base.BaseCog):
             {"guild_id": {"$eq": str(ctx.guild.id)}}
         )
         if not rules_data or not rules_data.get("rules"):
-            await util.send_with_mention(ctx, "There are no rules for this server")
+            await util.send_confirm_embed(ctx, "There are no rules for this server")
             return
 
-        embed = discord.Embed(
+        embed = RuleEmbed(
             title="Server Rules",
             description="By talking on this server, you agree to the following rules",
         )

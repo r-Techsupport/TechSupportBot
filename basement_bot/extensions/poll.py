@@ -15,6 +15,14 @@ def setup(bot):
     bot.add_cog(StrawPoller(bot=bot))
 
 
+class PollEmbed(discord.Embed):
+    def __init__(self, *args, **kwargs):
+        thumbnail_url = kwargs.pop("thumbnail_url")
+        super().__init__(*args, **kwargs)
+        self.set_thumbnail(url=thumbnail_url)
+        self.color = discord.Color.gold()
+
+
 class PollGenerator(base.BaseCog):
     async def validate_data(self, ctx, request_body, strawpoll=False):
         # probably shouldn't touch this
@@ -26,23 +34,23 @@ class PollGenerator(base.BaseCog):
         timeout = request_body.get("timeout")
 
         if not question:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "I did not find a poll question (`question` key)"
             )
             return None
         elif not isinstance(question, str):
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "I need the poll question to be a string (`question` key)"
             )
             return None
 
         if not isinstance(options, list):
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "I need the poll options to be a list (`question` key)"
             )
             return None
         elif len(options) < 2 or len(options) > max_options:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, f"I need between 2 and {max_options} options! (`options` key)"
             )
             return None
@@ -85,7 +93,6 @@ class ReactionPoller(PollGenerator):
         pass
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @poll.command(
         brief="Shows example poll JSON",
         description="Shows what JSON to upload to generate a poll",
@@ -98,7 +105,6 @@ class ReactionPoller(PollGenerator):
         await util.send_with_mention(ctx, file=json_file)
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @poll.command(
         aliases=["create"],
@@ -109,14 +115,14 @@ class ReactionPoller(PollGenerator):
     async def generate(self, ctx):
         request_body = await util.get_json_from_attachments(ctx.message)
         if not request_body:
-            await util.send_with_mention(ctx, "I couldn't find any data in your upload")
+            await util.send_deny_embed(ctx, "I couldn't find any data in your upload")
             return
 
         request_body = await self.validate_data(ctx, request_body)
         if not request_body:
             return
 
-        message = await util.send_with_mention(ctx, "Poll loading...")
+        message = await util.send_confirm_embed(ctx, "Poll loading...")
 
         display_timeout = (
             request_body.timeout
@@ -125,12 +131,11 @@ class ReactionPoller(PollGenerator):
         )
         display_timeout_units = "seconds" if request_body.timeout <= 60 else "minutes"
 
-        embed = discord.Embed(
+        embed = PollEmbed(
             title=request_body.question,
             description=f"Poll timeout: {display_timeout} {display_timeout_units}",
+            thumbnail_url=request_body.image_url,
         )
-        embed.set_thumbnail(url=request_body.image_url)
-        embed.color = discord.Color.gold()
 
         for index, option in enumerate(request_body.options):
             embed.add_field(name=option, value=index + 1, inline=False)
@@ -142,14 +147,14 @@ class ReactionPoller(PollGenerator):
             ctx, message, request_body.timeout, request_body.options
         )
         if results is None:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "I ran into an issue grabbing the poll results..."
             )
             try:
                 await message.edit(content="*Poll aborted!*", embed=None)
                 await message.clear_reactions()
             except discord.NotFound:
-                await util.send_with_mention(
+                await util.send_deny_embed(
                     ctx,
                     "I could not find the poll message. It might have been deleted?",
                 )
@@ -159,16 +164,16 @@ class ReactionPoller(PollGenerator):
 
         total = sum(count for count in results.values())
         if total == 0:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "Nobody voted in the poll, so I won't bother showing any results"
             )
             return
 
-        embed = discord.Embed(
+        embed = PollEmbed(
             title=f"Poll results for `{request_body.question}`",
             description=f"Votes: {total}",
+            thumbnail_url=request_body.image_url,
         )
-        embed.set_thumbnail(url=request_body.image_url)
 
         for option, count in results.items():
             percentage = str((count * 100) // total)
@@ -233,7 +238,6 @@ class StrawPoller(PollGenerator):
         pass
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @strawpoll.command(
         brief="Shows example poll JSON",
         description="Shows what JSON to upload to generate a poll",
@@ -246,7 +250,6 @@ class StrawPoller(PollGenerator):
         await util.send_with_mention(ctx, file=json_file)
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @strawpoll.command(
         brief="Generates a strawpoll",
         description="Returns a link to a Strawpoll generated by args",
@@ -255,7 +258,7 @@ class StrawPoller(PollGenerator):
     async def generate(self, ctx):
         request_body = await util.get_json_from_attachments(ctx.message)
         if not request_body:
-            await util.send_with_mention(ctx, "I couldn't find any data in your upload")
+            await util.send_deny_embed(ctx, "I couldn't find any data in your upload")
             return
 
         request_body = await self.validate_data(ctx, request_body, strawpoll=True)
@@ -270,7 +273,7 @@ class StrawPoller(PollGenerator):
 
         content_id = response.get("content_id")
         if not content_id:
-            await util.send_with_mention(ctx, "Strawpoll did not let me create a poll")
+            await util.send_deny_embed(ctx, "Strawpoll did not let me create a poll")
             return
 
         await util.send_with_mention(ctx, f"https://strawpoll.com/{content_id}")

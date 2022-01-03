@@ -23,7 +23,7 @@ class IPInfo(base.BaseCog):
         response = await util.http_call("get", f"{self.API_URL}/{ip_address}/json")
 
         if not response.get("ip"):
-            await util.send_with_mention(ctx, "I couldn't find that IP")
+            await util.send_deny_embed(ctx, "I couldn't find that IP")
             return
 
         response.pop("readme", None)

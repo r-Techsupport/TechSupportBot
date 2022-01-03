@@ -25,7 +25,6 @@ class UrbanDictionary(base.BaseCog):
     ICON_URL = "https://cdn.icon-icons.com/icons2/114/PNG/512/dictionary_19159.png"
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="urb",
         aliases=["urbandictionary", "urban"],
@@ -40,7 +39,7 @@ class UrbanDictionary(base.BaseCog):
         config = await self.bot.get_context_config(ctx)
 
         if not definitions:
-            await util.send_with_mention(ctx, f"No results found for: *{query}*")
+            await util.send_deny_embed(ctx, f"No results found for: *{query}*")
             return
 
         query_no_spaces = query.replace(" ", "%20")

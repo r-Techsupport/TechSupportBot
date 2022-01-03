@@ -12,7 +12,6 @@ class Wolfram(base.BaseCog):
     API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="wa",
         aliases=["math", "wolframalpha"],
@@ -28,4 +27,4 @@ class Wolfram(base.BaseCog):
         response = await util.http_call("get", url, get_raw_response=True)
         answer = await response.text()
 
-        await util.send_with_mention(ctx, answer)
+        await util.send_confirm_embed(ctx, answer)

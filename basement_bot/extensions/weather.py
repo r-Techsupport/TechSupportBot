@@ -17,7 +17,6 @@ class Weather(base.BaseCog):
         return f"{url}?q={searches}&units=imperial&appid={self.bot.file_config.main.api_keys.open_weather}"
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="we",
         aliases=["weather", "wea"],
@@ -34,7 +33,7 @@ class Weather(base.BaseCog):
 
         embed = self.generate_embed(munch.munchify(response))
         if not embed:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "I could not find the weather from your search"
             )
             return
