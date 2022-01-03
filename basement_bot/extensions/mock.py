@@ -15,9 +15,10 @@ class MockEmbed(discord.Embed):
         super().__init__(*args, **kwargs)
 
         mock_string = self.mock_string(message)
-        embed = discord.Embed(title=f'"{mock_string}"', description=user.name)
-        embed.set_thumbnail(url=user.avatar_url)
-        embed.color = discord.Color.greyple()
+        self.title = f'"{mock_string}"'
+        self.description = user.name
+        self.set_thumbnail(url=user.avatar_url)
+        self.color = discord.Color.greyple()
 
     @staticmethod
     def mock_string(string):
