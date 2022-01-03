@@ -172,9 +172,6 @@ class DiscordRelay(base.MatchCog):
     async def match(self, _, ctx, content):
         if not ctx.channel.id in self.listen_channels:
             return False
-        prefix = await self.bot.get_prefix(ctx.message)
-        if content and content.startswith(prefix):
-            return False
         return True
 
     async def response(self, _, ctx, __, ___):
