@@ -464,12 +464,12 @@ class BasementBot(base.AdvancedBot):
         """
         self.loop.create_task(self.paginate(*args, **kwargs))
 
-    async def confirm(self, ctx, title, timeout=60, delete_after=False, bypass=None):
+    async def confirm(self, ctx, message, timeout=60, delete_after=False, bypass=None):
         """Waits on a confirm reaction from a given user.
 
         parameters:
             ctx (discord.ext.Context): the context object for the message
-            title (str): the message content to which the user reacts
+            message (str): the message content to which the user reacts
             timeout (int): the number of seconds before timing out
             delete_after (bool): True if the confirmation message should be deleted
             bypass (list[discord.Role]): the list of roles able to confirm (empty by default)
@@ -477,7 +477,10 @@ class BasementBot(base.AdvancedBot):
         if bypass is None:
             bypass = []
 
-        message = await util.send_with_mention(ctx, content=title, target=ctx.author)
+        embed = discord.Embed(title="Please confirm!", description=message)
+        embed.color = discord.Color.green()
+
+        message = await util.send_with_mention(ctx, embed=embed, target=ctx.author)
         await message.add_reaction(self.CONFIRM_YES_EMOJI)
         await message.add_reaction(self.CONFIRM_NO_EMOJI)
 

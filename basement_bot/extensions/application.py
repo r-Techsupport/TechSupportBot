@@ -42,6 +42,13 @@ def setup(bot):
         description="The number of hours the bot should wait between application reminders",
         default=24,
     )
+    config.add(
+        key="approve_roles",
+        datatype="list",
+        title="Approved application roles",
+        description="The list of role names to give someone once they are approved",
+        default=[],
+    )
     bot.add_cog(ApplicationManager(bot=bot, extension_name="application"))
     bot.add_extension_config("application", config)
 
@@ -342,7 +349,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         description="Denies an application by ID",
         usage="[application-id]",
     )
-    async def deny_application(self, ctx, application_id: str, *, reason: str):
+    async def deny_application(self, ctx, application_id: str, *, reason: str = None):
         collection = self.bot.mongo[self.COLLECTION_NAME]
         application_data = await collection.find_one({"id": {"$eq": application_id}})
         if not application_data:
@@ -358,10 +365,6 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             )
             if not confirm:
                 return
-
-        if application_data.get("reviewed") == True:
-            await util.send_deny_embed(ctx, "That application has already been denied")
-            return
 
         application_data["reviewed"] = True
         # set this in case we are denying after approval
@@ -383,6 +386,12 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             await util.send_deny_embed(ctx, "There are no pending applications")
 
     async def post_update(self, ctx, application_data, status, reason=None):
+        status = status.lower()
+        if status not in ["approved", "denied"]:
+            raise RuntimeError(
+                f"invalid application status: {status} passed to post-update handler"
+            )
+
         try:
             user_id = int(application_data.get("user"))
         except TypeError:
@@ -409,3 +418,14 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             await user.send(embed=embed)
         except discord.Forbidden:
             pass
+
+        if status == "approved":
+            config = await self.bot.get_context_config(ctx)
+            roles = []
+            for role_name in config.extensions.application.approve_roles.value:
+                role = discord.utils.get(ctx.guild.roles, name=role_name)
+                if not role:
+                    continue
+                roles.append(role)
+
+            await user.add_roles(*roles)
