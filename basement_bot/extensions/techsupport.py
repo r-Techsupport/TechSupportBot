@@ -257,7 +257,7 @@ class AutoSupport(base.MatchCog):
         config = await self.bot.get_context_config(ctx)
 
         if not str(channel.id) in config.extensions.techsupport.channels.value:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, f"#{channel.name} is not configured as a support channel"
             )
             return
@@ -270,7 +270,7 @@ class AutoSupport(base.MatchCog):
 
         support_roles = get_support_roles(ctx, config)
         if not support_roles:
-            await util.send_with_mention(ctx, "I couldn't find any support roles")
+            await util.send_deny_embed(ctx, "I couldn't find any support roles")
             return
 
         last_support_message = self.last_support_messages.get(channel.id)
@@ -346,7 +346,7 @@ class CDIParser(BaseParser):
         if not confirmed:
             return
 
-        found_message = await util.send_with_mention(ctx, "Parsing CDI results now...")
+        found_message = await util.send_confirm_embed(ctx, "Parsing CDI results now...")
 
         await self.bot.guild_log(
             ctx.guild,
@@ -362,7 +362,7 @@ class CDIParser(BaseParser):
             response_text = await api_response.text()
             response_data = munch.munchify(json.loads(response_text))
         except Exception as e:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "I was unable to convert the parse results to JSON"
             )
             await self.bot.guild_log(
@@ -379,7 +379,7 @@ class CDIParser(BaseParser):
             embed = await self.generate_embed(ctx, response_data)
             await util.send_with_mention(ctx, embed=embed)
         except Exception as e:
-            await util.send_with_mention(ctx, "I had trouble reading the CDI logs")
+            await util.send_deny_embed(ctx, "I had trouble reading the CDI logs")
             await self.bot.guild_log(
                 ctx.guild,
                 "logging_channel",
@@ -451,7 +451,7 @@ class SpeccyParser(BaseParser):
         if not confirmed:
             return
 
-        found_message = await util.send_with_mention(
+        found_message = await util.send_confirm_embed(
             ctx, "Parsing Speccy results now..."
         )
 
@@ -492,7 +492,7 @@ class SpeccyParser(BaseParser):
                 embed = await self.generate_embed(ctx, response_data)
                 await util.send_with_mention(ctx, embed=embed)
             except Exception as e:
-                await util.send_with_mention(
+                await util.send_deny_embed(
                     ctx, "I had trouble reading the Speccy results"
                 )
                 await self.bot.guild_log(
@@ -506,7 +506,7 @@ class SpeccyParser(BaseParser):
             if not cached:
                 await self.cache_parse(ctx, speccy_id, response_data_copy)
         else:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx,
                 f"I was unable to parse that Speccy link (parse status = {parse_status})",
             )
@@ -734,7 +734,7 @@ class HWInfoParser(BaseParser):
         if not confirmed:
             return
 
-        found_message = await util.send_with_mention(ctx, "Parsing HWInfo logs now...")
+        found_message = await util.send_confirm_embed(ctx, "Parsing HWInfo logs now...")
 
         await self.bot.guild_log(
             ctx.guild,
@@ -750,7 +750,7 @@ class HWInfoParser(BaseParser):
             response_text = await api_response.text()
             response_data = munch.munchify(json.loads(response_text))
         except Exception as e:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "I was unable to convert the parse results to JSON"
             )
             await self.bot.guild_log(
@@ -767,7 +767,7 @@ class HWInfoParser(BaseParser):
             embed = await self.generate_embed(ctx, response_data)
             await util.send_with_mention(ctx, embed=embed)
         except Exception as e:
-            await util.send_with_mention(ctx, "I had trouble reading the HWInfo logs")
+            await util.send_deny_embed(ctx, "I had trouble reading the HWInfo logs")
             await self.bot.guild_log(
                 ctx.guild,
                 "logging_channel",

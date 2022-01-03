@@ -28,7 +28,7 @@ class Translator(base.BaseCog):
         translated = response.get("responseData", {}).get("translatedText")
 
         if not translated:
-            await util.send_with_mention(ctx, "I could not translate your message")
+            await util.send_deny_embed(ctx, "I could not translate your message")
             return
 
-        await util.send_with_mention(ctx, translated)
+        await util.send_confirm_embed(ctx, translated)

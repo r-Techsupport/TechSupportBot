@@ -4,6 +4,7 @@ import random
 import base
 import discord
 import util
+from discord.ext import commands
 
 
 def setup(bot):
@@ -34,9 +35,8 @@ def setup(bot):
     bot.add_extension_config("kanye", config)
 
 
-class KanyeQuotes(base.LoopCog):
+class KanyeEmbed(discord.Embed):
 
-    API_URL = "https://api.kanye.rest"
     KANYE_PICS = [
         "https://i.imgur.com/ITmTXGz.jpg",
         "https://i.imgur.com/o8BkPrL.jpg",
@@ -45,17 +45,26 @@ class KanyeQuotes(base.LoopCog):
         "https://i.imgur.com/g1o2Gro.jpg",
     ]
 
-    async def execute(self, config, guild):
+    def __init__(self, *args, **kwargs):
+        quote = kwargs.pop("quote")
+        super().__init__(*args, **kwargs)
+        self.set_thumbnail(url=random.choice(self.KANYE_PICS))
+        self.color = discord.Color.dark_gold()
+        self.title = f'"{quote}"'
+        self.description = "Kanye West"
+
+
+class KanyeQuotes(base.LoopCog):
+
+    API_URL = "https://api.kanye.rest"
+
+    async def get_quote(self):
         response = await util.http_call("get", self.API_URL)
+        return response.get("quote")
 
-        quote = response.get("quote")
-        if not quote:
-            return
-
-        embed = discord.Embed(title=f'"{quote}"', description="Kanye Quest")
-
-        embed.set_thumbnail(url=random.choice(self.KANYE_PICS))
-        embed.color = discord.Color.dark_gold()
+    async def execute(self, config, guild):
+        quote = await self.get_quote()
+        embed = KanyeEmbed(quote=quote)
 
         channel = guild.get_channel(int(config.extensions.kanye.channel.value))
         if not channel:
@@ -70,3 +79,15 @@ class KanyeQuotes(base.LoopCog):
                 config.extensions.kanye.max_wait.value * 3600,
             )
         )
+
+    @util.with_typing
+    @commands.guild_only()
+    @commands.command(
+        brief="Gets a Kanye West quote",
+        description="Gets a random Kanye West quote from the Kanye West API",
+    )
+    async def kanye(self, ctx):
+        quote = await self.get_quote()
+        embed = KanyeEmbed(quote=quote)
+
+        await util.send_with_mention(ctx, embed=embed)

@@ -28,7 +28,6 @@ class Spotify(base.BaseCog):
         return response.get("access_token")
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.command(
         brief="Searches Spotify",
         description="Returns Spotify track results",
@@ -37,7 +36,7 @@ class Spotify(base.BaseCog):
     async def spotify(self, ctx, *, query: str):
         oauth_token = await self.get_oauth_token()
         if not oauth_token:
-            await util.send_with_mention(ctx, "I couldn't authenticate with Spotify")
+            await util.send_deny_embed(ctx, "I couldn't authenticate with Spotify")
             return
 
         headers = {"Authorization": f"Bearer {oauth_token}"}
@@ -49,7 +48,7 @@ class Spotify(base.BaseCog):
         items = response.get("tracks", {}).get("items", [])
 
         if not items:
-            await util.send_with_mention(ctx, "I couldn't find any results")
+            await util.send_deny_embed(ctx, "I couldn't find any results")
             return
 
         links = []
@@ -60,7 +59,7 @@ class Spotify(base.BaseCog):
             links.append(song_url)
 
         if not links:
-            await util.send_with_mention("I had trouble parsing the search results")
+            await util.send_deny_embed("I had trouble parsing the search results")
             return
 
         self.bot.task_paginate(ctx, links, restrict=True)

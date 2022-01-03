@@ -20,7 +20,6 @@ class Giphy(base.BaseCog):
         return url[:index]
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(
         name="giphy",
@@ -40,7 +39,7 @@ class Giphy(base.BaseCog):
 
         data = response.get("data")
         if not data:
-            await util.send_with_mention(ctx, f"No search results found for: *{query}*")
+            await util.send_deny_embed(ctx, f"No search results found for: *{query}*")
             return
 
         embeds = []

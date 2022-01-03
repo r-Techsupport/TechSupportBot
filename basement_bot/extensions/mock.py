@@ -8,9 +8,16 @@ def setup(bot):
     bot.add_cog(Mocker(bot=bot))
 
 
-class Mocker(base.BaseCog):
+class MockEmbed(discord.Embed):
+    def __init__(self, *args, **kwargs):
+        message = kwargs.pop("message")
+        user = kwargs.pop("user")
+        super().__init__(*args, **kwargs)
 
-    SEARCH_LIMIT = 20
+        mock_string = self.mock_string(message)
+        embed = discord.Embed(title=f'"{mock_string}"', description=user.name)
+        embed.set_thumbnail(url=user.avatar_url)
+        embed.color = discord.Color.greyple()
 
     @staticmethod
     def mock_string(string):
@@ -25,8 +32,12 @@ class Mocker(base.BaseCog):
                 i = not i
         return mock
 
+
+class Mocker(base.BaseCog):
+
+    SEARCH_LIMIT = 20
+
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(
         aliases=["sb"],
@@ -36,7 +47,7 @@ class Mocker(base.BaseCog):
     )
     async def mock(self, ctx, user_to_mock: discord.Member):
         if not user_to_mock:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "You must tag a user if you want to mock them!"
             )
             return
@@ -55,15 +66,9 @@ class Mocker(base.BaseCog):
                 break
 
         if not mock_message:
-            await util.send_with_mention(
-                ctx, f"No message found for user {user_to_mock}"
-            )
+            await util.send_deny_embed(ctx, f"No message found for user {user_to_mock}")
             return
 
         filtered_message = self.bot.sub_mentions_for_usernames(mock_message)
-        mock_string = self.mock_string(filtered_message)
-        embed = discord.Embed(title=f'"{mock_string}"', description=user_to_mock.name)
-        embed.set_thumbnail(url=user_to_mock.avatar_url)
-        embed.color = discord.Color.greyple()
-
+        embed = MockEmbed(message=filtered_message, user=user_to_mock)
         await util.send_with_mention(ctx, embed=embed)

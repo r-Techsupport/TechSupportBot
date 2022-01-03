@@ -36,11 +36,10 @@ class Lenny(base.BaseCog):
     ]
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="len",
         brief="Returns a Lenny face",
         description="Returns a randomly chosen Lenny face ( ͡° ͜ʖ ͡°)",
     )
     async def lenny(self, ctx):
-        await ctx.send(random.choice(self.LENNYS_SELECTION))
+        await util.send_with_mention(ctx, random.choice(self.LENNYS_SELECTION))

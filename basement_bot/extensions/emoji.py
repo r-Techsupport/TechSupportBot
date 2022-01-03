@@ -69,7 +69,6 @@ class Emojis(base.BaseCog):
         pass
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @emoji.command(
         aliases=["msg"],
         brief="Generates an emoji message",
@@ -77,17 +76,14 @@ class Emojis(base.BaseCog):
         usage="[message]",
     )
     async def message(self, ctx, *, message: str):
-        if ctx.message.mentions:
-            await util.send_with_mention(ctx, "I can't make an emoji from a mention!")
-            return
-
         emoji_message = self.emoji_message_from_string(message)
-        if emoji_message:
-            await util.send_with_mention(ctx, emoji_message)
-        else:
-            await util.send_with_mention(
+        if not emoji_message:
+            await util.send_deny_embed(
                 ctx, "I can't get any emoji letters from your message!"
             )
+            return
+
+        await util.send_with_mention(ctx, emoji_message)
 
     @commands.has_permissions(add_reactions=True)
     @commands.guild_only()
@@ -108,12 +104,12 @@ class Emojis(base.BaseCog):
                 react_message = channel_message
                 break
         if not react_message:
-            await util.send_with_mention(ctx, "No valid messages found to react to!")
+            await util.send_deny_embed(ctx, "No valid messages found to react to!")
             return
 
         emoji_list = self.emoji_reaction_from_string(message)
         if not emoji_list:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "Invalid message! Make sure there are no repeat characters!"
             )
             return

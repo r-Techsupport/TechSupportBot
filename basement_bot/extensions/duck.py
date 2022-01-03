@@ -2,7 +2,6 @@ import asyncio
 import datetime
 import functools
 import random
-from concurrent.futures._base import TimeoutError as AsyncTimeoutError
 
 import base
 import discord
@@ -950,7 +949,6 @@ class DuckHunt(base.LoopCog):
         pass
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @duck.command(
         brief="Get duck stats",
@@ -962,14 +960,14 @@ class DuckHunt(base.LoopCog):
             user = ctx.message.author
 
         if user.bot:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "If it looks like a duck, quacks like a duck, it's a duck!"
             )
             return
 
         duck_user = await self.get_duck_user(user.id, ctx.guild.id)
         if not duck_user:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "That user has not partcipated in the duck hunt"
             )
             return
@@ -983,7 +981,6 @@ class DuckHunt(base.LoopCog):
         await util.send_with_mention(ctx, embed=embed)
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @duck.command(
         brief="Get duck friendship scores",
@@ -1000,7 +997,7 @@ class DuckHunt(base.LoopCog):
         )
 
         if not duck_users:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, "It appears nobody has befriended any ducks"
             )
             return
@@ -1029,7 +1026,6 @@ class DuckHunt(base.LoopCog):
         self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @duck.command(
         brief="Get duck kill scores",
@@ -1044,7 +1040,7 @@ class DuckHunt(base.LoopCog):
         )
 
         if not duck_users:
-            await util.send_with_mention(ctx, "It appears nobody has killed any ducks")
+            await util.send_deny_embed(ctx, "It appears nobody has killed any ducks")
             return
 
         field_counter = 1

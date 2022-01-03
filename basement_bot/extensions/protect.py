@@ -120,9 +120,8 @@ def setup(bot):
 
 class ProtectEmbed(discord.Embed):
     def __init__(self, *args, **kwargs):
-        bot = kwargs.pop("bot")
         super().__init__(*args, **kwargs)
-        self.set_author(name="Chat Protection", icon_url=bot.user.avatar_url)
+        self.title = "Chat Protection"
         self.color = discord.Color.gold()
 
 
@@ -302,7 +301,7 @@ class Protector(base.MatchCog):
                 config, ctx, content, filter_config.message
             )
         else:
-            embed = ProtectEmbed(bot=self.bot, description=filter_config.message)
+            embed = ProtectEmbed(description=filter_config.message)
             await util.send_with_mention(ctx, embed=embed)
 
         async with self.cache_lock:
@@ -328,7 +327,7 @@ class Protector(base.MatchCog):
                     delete_after=True,
                 )
                 if not should_ban:
-                    await util.send_with_mention(ctx, "No warnings have been set")
+                    await util.send_deny_embed(ctx, "No warnings have been set")
                     return
 
             await self.handle_ban(
@@ -356,7 +355,7 @@ class Protector(base.MatchCog):
 
         warnings = await self.get_warnings(user, ctx.guild)
         if not warnings:
-            await util.send_with_mention(ctx, "There are no warnings for that user")
+            await util.send_deny_embed(ctx, "There are no warnings for that user")
             return
 
         await self.clear_warnings(user, ctx.guild)
@@ -449,10 +448,10 @@ class Protector(base.MatchCog):
 
     async def can_execute(self, ctx, target):
         if target.id == self.bot.user.id:
-            await util.send_with_mention(ctx, f"It would be silly to warn myself")
+            await util.send_deny_embed(ctx, "It would be silly to do that to myself")
             return False
         if target.top_role >= ctx.author.top_role:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, f"Your top role is not high enough to do that to `{target}`"
             )
             return False
@@ -487,9 +486,7 @@ class Protector(base.MatchCog):
         await alert_channel.send(embed=embed)
 
     async def send_default_delete_response(self, config, ctx, content, reason):
-        embed = ProtectEmbed(
-            bot=self.bot, title="Message deleted", description=f"Reason: *{reason}*"
-        )
+        embed = ProtectEmbed(description=f"Message deleted. Reason: *{reason}*")
         await util.send_with_mention(ctx, embed=embed)
         await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
 
@@ -526,10 +523,8 @@ class Protector(base.MatchCog):
         if len(content) > 256:
             content = content[:256]
 
-        embed.add_field(name="Preview", value=content.replace("\n", " "))
-        embed.set_author(
-            name=f"Paste by {ctx.author}", icon_url=self.CLIPBOARD_ICON_URL
-        )
+        embed.description = content.replace("\n", " ")
+        embed.set_author(name=f"Paste by {ctx.author}", icon_url=ctx.author.avatar_url)
         embed.set_footer(
             text="This embed was generated because your message was too long"
         )
@@ -612,7 +607,7 @@ class Protector(base.MatchCog):
     async def get_warnings_command(self, ctx, user: discord.User):
         warnings = await self.get_warnings(user, ctx.guild)
         if not warnings:
-            await util.send_with_mention(ctx, "There are no warnings for that user")
+            await util.send_deny_embed(ctx, "There are no warnings for that user")
             return
 
         embed = discord.Embed(title=f"Warnings for {user}")
@@ -640,7 +635,7 @@ class Protector(base.MatchCog):
 
         role = discord.utils.get(ctx.guild.roles, name="Muted")
         if not role:
-            await util.send_with_mention(ctx, "The `Muted` role does not exist")
+            await util.send_deny_embed(ctx, "The `Muted` role does not exist")
             return
 
         await user.add_roles(role)
@@ -667,7 +662,7 @@ class Protector(base.MatchCog):
 
         role = discord.utils.get(ctx.guild.roles, name="Muted")
         if not role:
-            await util.send_with_mention(ctx, "The `Muted` role does not exist")
+            await util.send_deny_embed(ctx, "The `Muted` role does not exist")
             return
 
         await user.remove_roles(role)
@@ -711,7 +706,7 @@ class Protector(base.MatchCog):
     )
     async def purge_duration(self, ctx, duration_minutes: int):
         if duration_minutes < 0:
-            await util.send_with_mention(ctx, "I can't use that input")
+            await util.send_deny_embed(ctx, "I can't use that input")
             return
 
         timestamp = datetime.datetime.utcnow() - datetime.timedelta(

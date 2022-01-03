@@ -520,7 +520,6 @@ class WouldYouRather(base.BaseCog):
     ]
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.command(
         name="wyr",
         brief="Gets Would You Rather questions",

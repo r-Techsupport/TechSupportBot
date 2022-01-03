@@ -10,6 +10,16 @@ def setup(bot):
     bot.add_cog(MagicConch(bot=bot))
 
 
+class ConchEmbed(discord.Embed):
+
+    PIC_URL = "https://i.imgur.com/vdvGrsR.png"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.set_thumbnail(url=self.PIC_URL)
+        self.color = discord.Color.blurple()
+
+
 class MagicConch(base.BaseCog):
 
     RESPONSES = [
@@ -34,7 +44,6 @@ class MagicConch(base.BaseCog):
         "Yes – definitely.",
         "You may rely on it.",
     ]
-    PIC_URL = "https://i.imgur.com/vdvGrsR.png"
 
     @commands.command(
         name="conch",
@@ -51,9 +60,6 @@ class MagicConch(base.BaseCog):
 
         question = self.bot.sub_mentions_for_usernames(question)
 
-        embed = discord.Embed(title=question, description=response)
-
-        embed.set_thumbnail(url=self.PIC_URL)
-        embed.color = discord.Color.random()
+        embed = ConchEmbed(title=question, description=response)
 
         await util.send_with_mention(ctx, embed=embed)

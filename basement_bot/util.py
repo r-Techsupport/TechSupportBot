@@ -6,6 +6,7 @@ import json
 
 import aiohttp
 import discord
+import embeds
 import munch
 
 
@@ -15,11 +16,35 @@ async def send_with_mention(ctx, content=None, target=None, **kwargs):
     parameters:
         ctx (discord.ext.Context): the context object
         content (str): the message to send
-        target (discord.Member): the Discord user to tag
+        target (discord.Member): the Discord user to tag (defaults to context)
     """
     user_mention = target.mention if target else ctx.message.author.mention
     content = f"{user_mention} {content}" if content else user_mention
     message = await ctx.send(content=content, **kwargs)
+    return message
+
+
+async def send_confirm_embed(ctx, message, target=None):
+    """Sends a confirmation embed.
+
+    parameters:
+        message (str): the base confirmation message
+        target (discord.Member): the Discord user to tag (defaults to context)
+    """
+    embed = embeds.ConfirmEmbed(message=message)
+    message = await send_with_mention(ctx, embed=embed, target=target)
+    return message
+
+
+async def send_deny_embed(ctx, message, target=None):
+    """Sends a deny embed.
+
+    parameters:
+        message (str): the base deny message
+        target (discord.Member): the Discord user to tag (defaults to context)
+    """
+    embed = embeds.DenyEmbed(message=message)
+    message = await send_with_mention(ctx, embed=embed, target=target)
     return message
 
 
@@ -53,7 +78,11 @@ async def get_json_from_attachments(message, as_string=False, allow_failure=Fals
 
 
 def generate_embed_from_kwargs(
-    title=None, description=None, all_inline=False, **kwargs
+    title=None,
+    description=None,
+    all_inline=False,
+    cls=None,
+    **kwargs,
 ):
     """Wrapper for generating an embed from a set of key, values.
 
@@ -61,9 +90,13 @@ def generate_embed_from_kwargs(
         title (str): the title for the embed
         description (str): the description for the embed
         all_inline (bool): True if all fields should be added with inline=True
+        cls (discord.Embed): the embed class to use
         kwargs (dict): a set of keyword values to be displayed
     """
-    embed = discord.Embed(title=title, description=description)
+    if not cls:
+        cls = discord.Embed
+
+    embed = cls(title=title, description=description)
     for key, value in kwargs.items():
         embed.add_field(name=key, value=value, inline=all_inline)
     return embed

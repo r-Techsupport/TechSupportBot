@@ -1,4 +1,5 @@
 import base
+import discord
 import util
 from discord.ext import commands
 
@@ -7,12 +8,20 @@ def setup(bot):
     bot.add_cog(Corrector(bot=bot))
 
 
+class CorrectEmbed(discord.Embed):
+    def __init__(self, *args, **kwargs):
+        new_content = kwargs.pop("new_content")
+        super().__init__(*args, **kwargs)
+        self.title = "Correction!"
+        self.description = f"{new_content} :white_check_mark:"
+        self.color = discord.Color.green()
+
+
 class Corrector(base.BaseCog):
 
     SEARCH_LIMIT = 50
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @commands.command(
         aliases=["c"],
@@ -34,9 +43,10 @@ class Corrector(base.BaseCog):
                 target = message.author
                 break
 
-        if new_content:
-            await util.send_with_mention(
-                ctx, f"*Correction:* {new_content} :white_check_mark:", target=target
-            )
-        else:
-            await util.send_with_mention(ctx, "I couldn't find any message to correct")
+        if not new_content:
+            await util.send_deny_embed(ctx, "I couldn't find any message to correct")
+            return
+
+        embed = CorrectEmbed(new_content=new_content)
+
+        await util.send_with_mention(ctx, embed=embed, target=target)

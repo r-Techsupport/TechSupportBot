@@ -39,23 +39,24 @@ def setup(bot):
     bot.add_extension_config("grab", config)
 
 
+async def invalid_channel(ctx):
+    config = await ctx.bot.get_context_config(ctx)
+
+    if ctx.channel.id in config.extensions.grab.blocked_channels.value:
+        await util.send_deny_embed(ctx, "Grabs are disabled for this channel")
+        return False
+
+    return True
+
+
 class Grabber(base.BaseCog):
 
     HAS_CONFIG = False
     SEARCH_LIMIT = 20
 
-    # this could probably be a check decorator
-    # but oh well
-    async def invalid_channel(self, config, ctx):
-        if ctx.channel.id in config.extensions.grab.blocked_channels.value:
-            await util.send_with_mention(ctx, "Grabs are disabled for this channel")
-            return True
-
-        return False
-
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
+    @commands.check(invalid_channel)
     @commands.command(
         name="grab",
         brief="Grabs a user's last message",
@@ -65,13 +66,8 @@ class Grabber(base.BaseCog):
     async def grab_user(
         self, ctx, user_to_grab: discord.Member, message: discord.Message = None
     ):
-        config = await self.bot.get_context_config(ctx)
-
-        if await self.invalid_channel(config, ctx):
-            return
-
         if user_to_grab.bot:
-            await util.send_with_mention(ctx, "Ain't gonna catch me slipping!")
+            await util.send_deny_embed(ctx, "Ain't gonna catch me slipping!")
             return
 
         if message:
@@ -83,7 +79,7 @@ class Grabber(base.BaseCog):
                     break
 
         if not content:
-            await util.send_with_mention(
+            await util.send_deny_embed(
                 ctx, f"Could not find a recent message from user {user_to_grab}"
             )
             return
@@ -97,7 +93,7 @@ class Grabber(base.BaseCog):
         )
 
         if grab:
-            await util.send_with_mention(ctx, "That grab already exists!")
+            await util.send_deny_embed(ctx, "That grab already exists!")
             return
 
         grab = self.models.Grab(
@@ -109,7 +105,7 @@ class Grabber(base.BaseCog):
         )
         await grab.create()
 
-        await util.send_with_mention(ctx, f"Successfully saved: '*{content}*'")
+        await util.send_confirm_embed(ctx, f"Successfully saved: '*{content}*'")
 
     @commands.group(
         brief="Executes a grabs command",
@@ -119,7 +115,6 @@ class Grabber(base.BaseCog):
         pass
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @grabs.command(
         name="all",
@@ -136,7 +131,7 @@ class Grabber(base.BaseCog):
             return
 
         if user_to_grab.bot:
-            await util.send_with_mention(ctx, "Ain't gonna catch me slipping!")
+            await util.send_deny_embed(ctx, "Ain't gonna catch me slipping!")
             return
 
         query = self.models.Grab.query.where(
@@ -149,7 +144,7 @@ class Grabber(base.BaseCog):
         grabs = await query.gino.all()
 
         if not grabs:
-            await util.send_with_mention(ctx, f"No grabs found for {user_to_grab.name}")
+            await util.send_deny_embed(ctx, f"No grabs found for {user_to_grab.name}")
             return
 
         grabs.sort(reverse=True, key=lambda grab: grab.time)
@@ -188,7 +183,6 @@ class Grabber(base.BaseCog):
         self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
 
     @util.with_typing
-    @commands.has_permissions(send_messages=True)
     @commands.guild_only()
     @grabs.command(
         name="random",
@@ -203,7 +197,7 @@ class Grabber(base.BaseCog):
             return
 
         if user_to_grab.bot:
-            await util.send_with_mention(ctx, "Ain't gonna catch me slipping!")
+            await util.send_deny_embed(ctx, "Ain't gonna catch me slipping!")
             return
 
         grabs = (
@@ -224,7 +218,7 @@ class Grabber(base.BaseCog):
         grabs = await query.gino.all()
 
         if not grabs:
-            await util.send_with_mention(ctx, f"No grabs found for {user_to_grab}")
+            await util.send_deny_embed(ctx, f"No grabs found for {user_to_grab}")
             return
 
         random_index = random.randint(0, len(grabs) - 1)
