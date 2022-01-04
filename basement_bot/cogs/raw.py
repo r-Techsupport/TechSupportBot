@@ -23,7 +23,7 @@ class Raw(base.BaseCog):
             ctx (discord.ext.Context): the context object for the message
         """
         if not ctx.message.attachments:
-            await util.send_with_mention(ctx, "No Python code found")
+            await util.send_deny_embed(ctx, "No Python code found")
             return
 
         py_code = await ctx.message.attachments[0].read()
@@ -32,7 +32,7 @@ class Raw(base.BaseCog):
         try:
             await self.aexec(py_code)
         except Exception as e:
-            await util.send_with_mention(ctx, f"Error: ```{e}```")
+            await util.send_deny_embed(ctx, f"Error: ```{e}```")
             return
 
         await util.send_with_mention(ctx, self.bot.CONFIRM_YES_EMOJI)

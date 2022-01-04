@@ -6,8 +6,17 @@ import sys
 
 import base
 import discord
+import embeds
 import util
 from discord.ext import commands
+
+
+class AdminEmbed(embeds.SaneEmbed):
+    """Base embed for admin commands."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.color = discord.Color.blurple()
 
 
 class AdminControl(base.BaseCog):
@@ -339,7 +348,7 @@ class AdminControl(base.BaseCog):
         parameters:
             ctx (discord.ext.Context): the context object for the calling message
         """
-        embed = discord.Embed(title=self.bot.user.name)
+        embed = AdminEmbed(title=self.bot.user.name)
 
         embed.add_field(
             name="Started",
@@ -361,9 +370,8 @@ class AdminControl(base.BaseCog):
         )
 
         embed.set_thumbnail(url=self.bot.user.avatar_url)
-        embed.color = discord.Color.blurple()
 
-        await util.send_confirm_embed(ctx, embed=embed)
+        await util.send_with_mention(ctx, embed=embed)
 
     @util.with_typing
     @commands.command(
@@ -383,34 +391,28 @@ class AdminControl(base.BaseCog):
             description: the description of the issue
         """
 
-        icon_url = (
-            "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
-        )
+        if not self.bot.file_config.main.api_keys.github:
+            await util.send_deny_embed(ctx, "I don't have a Github API key")
+            return
 
-        oauth_token = self.bot.file_config.main.api_keys.github
-        if not oauth_token:
-            await util.send_deny_embed(ctx, "I couldn't authenticate with Github")
+        if (
+            not self.bot.file_config.special.github.username
+            or not self.bot.file_config.special.github.repo
+        ):
+            await util.send_deny_embed(ctx, "I don't have a Github repo configured")
             return
 
         headers = {
-            "Authorization": f"Bearer {oauth_token}",
+            "Authorization": f"Bearer {self.bot.file_config.main.api_keys.github}",
             "Accept": "application/vnd.github.v3+json",
             "Content-Type": "text/plain",
         }
 
-        data = {"title": title, "body": description}
-
-        username = self.bot.file_config.special.github.username
-        repo = self.bot.file_config.special.github.repo
-        if not username or not repo:
-            await util.send_deny_embed(ctx, "I couldn't find the repository")
-            return
-
         response = await util.http_call(
             "post",
-            f"{self.GITHUB_API_BASE_URL}/repos/{username}/{repo}/issues",
+            f"{self.GITHUB_API_BASE_URL}/repos/{self.bot.file_config.special.github.username}/{self.bot.file_config.special.github.repo}/issues",
             headers=headers,
-            data=json.dumps(data),
+            data=json.dumps({"title": title, "body": description}),
         )
 
         status_code = response.get("status_code")
@@ -423,8 +425,10 @@ class AdminControl(base.BaseCog):
         issue_url = response.get("html_url")
         number = response.get("number")
 
-        embed = discord.Embed(title="Issue Created")
+        embed = AdminEmbed(title="Issue Created")
         embed.add_field(name=f"Issue #{number}", value=f"{issue_url}")
-        embed.set_thumbnail(url=icon_url)
+        embed.set_thumbnail(
+            url="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+        )
 
         await util.send_with_mention(ctx, embed=embed)

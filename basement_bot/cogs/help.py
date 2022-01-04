@@ -7,11 +7,18 @@ import util
 from discord.ext import commands
 
 
+class HelpEmbed(discord.Embed):
+    """Base embed for admin commands."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.color = discord.Color.green()
+
+
 class Helper(base.BaseCog):
     """Cog object for help commands."""
 
     EXTENSIONS_PER_GENERAL_PAGE = 15
-    EMBED_COLOR = discord.Color.green()
 
     @commands.group(name="help")
     async def help_command(self, ctx):
@@ -27,7 +34,7 @@ class Helper(base.BaseCog):
 
         command_prefix = await self.bot.get_prefix(ctx.message)
 
-        embed = discord.Embed(title="Choose commands to get help with")
+        embed = HelpEmbed(title="Choose commands to get help with")
         help_command_name = getattr(self.help_command, "name")
         embed.add_field(
             name="Builtin commands",
@@ -39,7 +46,6 @@ class Helper(base.BaseCog):
             value=f"`{command_prefix}{help_command_name} extension`",
             inline=False,
         )
-        embed.color = self.EMBED_COLOR
 
         await util.send_with_mention(ctx, embed=embed)
 
@@ -54,14 +60,12 @@ class Helper(base.BaseCog):
         """
         command_prefix = await self.bot.get_prefix(ctx.message)
 
-        embed = discord.Embed(title="Builtin commands")
+        embed = HelpEmbed(title="Builtin commands")
         for cog_name in self.bot.builtin_cogs:
             cog = self.bot.get_cog(cog_name)
             if not cog:
                 continue
             embed = self.add_cog_command_fields(cog, embed, command_prefix)
-
-        embed.color = self.EMBED_COLOR
 
         await util.send_with_mention(ctx, embed=embed)
 
@@ -125,11 +129,10 @@ class Helper(base.BaseCog):
 
         # pylint: disable=no-member
         command_prefix = await self.bot.get_prefix(ctx.message)
-        embed = discord.Embed(
+        embed = HelpEmbed(
             title=f"Use `{command_prefix}{self.help_command.name} {self.extension_help_command.name} <extension_name>` to see extension commands",
             description=extension_name_text,
         )
-        embed.color = self.EMBED_COLOR
 
         return embed
 
@@ -140,7 +143,7 @@ class Helper(base.BaseCog):
             ctx (discord.ext.Context): the context object for the message
             extension_name (str): the extension name to get help with
         """
-        embed = discord.Embed(title=f"Extension Commands: `{extension_name}`")
+        embed = HelpEmbed(title=f"Extension Commands: `{extension_name}`")
 
         if not self.bot.extensions.get(
             f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}"
@@ -152,11 +155,8 @@ class Helper(base.BaseCog):
 
         embed = self.add_extension_command_fields(extension_name, embed, command_prefix)
 
-        embed.color = self.EMBED_COLOR
-
         if len(embed.fields) == 0:
             embed.description = "There are no commands for this extension"
-            embed.color = discord.Color.red()
 
         return embed
 

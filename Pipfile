@@ -23,6 +23,7 @@ emoji = "==0.5.4"
 inflect = "==4.1.0"
 botlog = "==1.0.1"
 discord-ext-ipc = "==2.0.0"
+expiringdict = "==1.2.1"
 
 [requires]
 python_version = "3.9"

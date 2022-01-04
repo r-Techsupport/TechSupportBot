@@ -6,7 +6,7 @@ import json
 
 import base
 import discord
-import embeds
+import expiringdict
 import util
 import yaml
 from discord.ext import commands
@@ -95,7 +95,8 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         self.loop_jobs = collections.defaultdict(dict)
         await self.bot.logger.info("Loading factoid jobs", send=True)
         await self.load_jobs()
-        self.cache_update_time = datetime.datetime.utcnow() + datetime.timedelta(
+        self.factoid_cache = expiringdict.ExpiringDict(max_len=100, max_age_seconds=600)
+        self.loop_cache_update_time = datetime.datetime.utcnow() + datetime.timedelta(
             minutes=self.LOOP_UPDATE_MINUTES
         )
 
@@ -120,12 +121,19 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         return factoids
 
+    def get_cache_key(self, query, guild):
+        return f"{guild.id}_{query}"
+
     async def get_factoid_from_query(self, query, guild):
-        factoid = (
-            await self.models.Factoid.query.where(self.models.Factoid.text == query)
-            .where(self.models.Factoid.guild == str(guild.id))
-            .gino.first()
-        )
+        cache_key = self.get_cache_key(query, guild)
+        factoid = self.factoid_cache.get(cache_key)
+        if not factoid:
+            factoid = (
+                await self.models.Factoid.query.where(self.models.Factoid.text == query)
+                .where(self.models.Factoid.guild == str(guild.id))
+                .gino.first()
+            )
+            self.factoid_cache[cache_key] = factoid
         return factoid
 
     def get_embed_from_factoid(self, factoid):
@@ -159,6 +167,11 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             embed_config=kwargs.get("embed_config"),
         )
         await factoid.create()
+
+        try:
+            del self.factoid_cache[self.get_cache_key(trigger, ctx.guild)]
+        except KeyError:
+            pass
 
         await util.send_confirm_embed(ctx, f"Successfully added factoid *{trigger}*")
 
@@ -301,10 +314,11 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     async def execute(self, config, guild):
         compare_time = datetime.datetime.utcnow()
 
-        if compare_time > self.cache_update_time:
+        if compare_time > self.loop_cache_update_time:
             await self.load_jobs()
-            self.cache_update_time = datetime.datetime.utcnow() + datetime.timedelta(
-                minutes=self.LOOP_UPDATE_MINUTES
+            self.loop_cache_update_time = (
+                datetime.datetime.utcnow()
+                + datetime.timedelta(minutes=self.LOOP_UPDATE_MINUTES)
             )
 
         for factoid_key, loop_config in self.loop_jobs.get(guild.id, {}).items():
@@ -376,7 +390,6 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     )
     async def remember(self, ctx, factoid_name: str, *, message: str):
         embed_config = await util.get_json_from_attachments(ctx.message, as_string=True)
-
         await self.add_factoid(
             ctx,
             trigger=factoid_name,
@@ -554,7 +567,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         if not all_jobs:
             await util.send_deny_embed(
                 ctx,
-                f"There are no currently running factoid loops (next cache update: {self.cache_update_time} UTC)",
+                f"There are no currently running factoid loops (next cache update: {self.loop_cache_update_time} UTC)",
             )
             return
 
@@ -565,7 +578,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
         embed = util.generate_embed_from_kwargs(
             title="Running factoid loops",
-            description=f"Next cache update: {self.cache_update_time} UTC",
+            description=f"Next cache update: {self.loop_cache_update_time} UTC",
             cls=LoopEmbed,
             **embed_kwargs,
         )
