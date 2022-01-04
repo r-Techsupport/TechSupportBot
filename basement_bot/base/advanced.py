@@ -1,8 +1,8 @@
 """Module for defining the advanced bot methods."""
 import asyncio
-import collections
 import time
 
+import expiringdict
 import munch
 
 from .data import DataBot
@@ -16,10 +16,12 @@ class AdvancedBot(DataBot):
 
     def __init__(self, *args, **kwargs):
         self.guild_config_collection = None
-        self.guild_config_cache = collections.defaultdict(dict)
         self.guild_config_lock = asyncio.Lock()
         super().__init__(*args, prefix=self.get_prefix, **kwargs)
-        self.loop.create_task(self.reset_config_cache())
+        self.guild_config_cache = expiringdict.ExpiringDict(
+            max_len=self.file_config.main.cache.guild_config_cache_length,
+            max_age_seconds=self.file_config.main.cache.guild_config_cache_seconds,
+        )
 
     async def get_prefix(self, message):
         """Gets the appropriate prefix for a command.
@@ -31,13 +33,6 @@ class AdvancedBot(DataBot):
         return getattr(
             guild_config, "command_prefix", self.file_config.main.default_prefix
         )
-
-    async def reset_config_cache(self):
-        """Deletes the guild config cache on a periodic basis."""
-        while True:
-            await asyncio.sleep(self.file_config.main.config_cache_reset)
-            await self.logger.info("Resetting guild config cache")
-            self.guild_config_cache = collections.defaultdict(dict)
 
     async def get_context_config(
         self, ctx=None, guild=None, create_if_none=True, get_from_cache=True
@@ -65,7 +60,7 @@ class AdvancedBot(DataBot):
         config_ = None
 
         if get_from_cache:
-            config_ = self.guild_config_cache[lookup]
+            config_ = self.guild_config_cache.get(lookup)
 
         if not config_:
             # locking prevents duplicate configs being made

@@ -33,7 +33,7 @@ class UrbanDictionary(base.BaseCog):
         usage="[query]",
     )
     async def urban(self, ctx, *, query: str):
-        response = await util.http_call("get", f"{self.BASE_URL}{query}")
+        response = await self.bot.http_call("get", f"{self.BASE_URL}{query}")
         definitions = response.get("list")
 
         config = await self.bot.get_context_config(ctx)

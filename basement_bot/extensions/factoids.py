@@ -91,11 +91,13 @@ class FactoidManager(base.MatchCog, base.LoopCog):
 
     LOOP_UPDATE_MINUTES = 10
 
+    async def preconfig(self):
+        self.factoid_cache = expiringdict.ExpiringDict(max_len=100, max_age_seconds=600)
+
     async def loop_preconfig(self):
         self.loop_jobs = collections.defaultdict(dict)
         await self.bot.logger.info("Loading factoid jobs", send=True)
         await self.load_jobs()
-        self.factoid_cache = expiringdict.ExpiringDict(max_len=100, max_age_seconds=600)
         self.loop_cache_update_time = datetime.datetime.utcnow() + datetime.timedelta(
             minutes=self.LOOP_UPDATE_MINUTES
         )

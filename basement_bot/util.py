@@ -4,7 +4,6 @@
 import inspect
 import json
 
-import aiohttp
 import discord
 import embeds
 import munch
@@ -122,35 +121,6 @@ def ipc_response(code=200, error=None, payload=None):
         payload (dict): the optional data payload
     """
     return {"code": code, "error": error, "payload": payload}
-
-
-async def http_call(method, url, *args, **kwargs):
-    """Makes an HTTP request.
-
-    By default this returns JSON/dict with the status code injected.
-
-    parameters:
-        method (str): the HTTP method to use
-        url (str): the URL to call
-        get_raw_response (bool): True if the actual response object should be returned
-    """
-    client = aiohttp.ClientSession()
-
-    method_fn = getattr(client, method.lower())
-
-    get_raw_response = kwargs.pop("get_raw_response", False)
-    response_object = await method_fn(url, *args, **kwargs)
-
-    if get_raw_response:
-        response = response_object
-    else:
-        response_json = await response_object.json()
-        response = munch.munchify(response_json) if response_object else munch.Munch()
-        response["status_code"] = getattr(response_object, "status", None)
-
-    await client.close()
-
-    return response
 
 
 def config_schema_matches(input_config, current_config):

@@ -24,7 +24,7 @@ class Wolfram(base.BaseCog):
 
         url = self.API_URL.format(self.bot.file_config.main.api_keys.wolfram, query)
 
-        response = await util.http_call("get", url, get_raw_response=True)
+        response = await self.bot.http_call("get", url, get_raw_response=True)
         answer = await response.text()
 
         await util.send_confirm_embed(ctx, answer)

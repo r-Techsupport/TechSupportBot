@@ -20,7 +20,7 @@ class Translator(base.BaseCog):
         usage='"[message (in quotes)]" [src language code (en)] [dest language code (es)]',
     )
     async def translate(self, ctx, message, src: str, dest: str):
-        response = await util.http_call(
+        response = await self.bot.http_call(
             "get",
             self.API_URL.format(message, src, dest),
         )

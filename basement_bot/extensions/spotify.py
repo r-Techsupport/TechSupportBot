@@ -15,7 +15,7 @@ class Spotify(base.BaseCog):
 
     async def get_oauth_token(self):
         data = {"grant_type": "client_credentials"}
-        response = await util.http_call(
+        response = await self.bot.http_call(
             "post",
             self.AUTH_URL,
             data=data,
@@ -41,7 +41,7 @@ class Spotify(base.BaseCog):
 
         headers = {"Authorization": f"Bearer {oauth_token}"}
         params = {"q": query, "type": "track", "market": "US", "limit": 3}
-        response = await util.http_call(
+        response = await self.bot.http_call(
             "get", self.API_URL, headers=headers, params=params
         )
 

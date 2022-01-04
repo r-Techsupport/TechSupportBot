@@ -27,7 +27,7 @@ class Weather(base.BaseCog):
     async def weather(
         self, ctx, city_name: str, state_code: str = None, country_code: str = None
     ):
-        response = await util.http_call(
+        response = await self.bot.http_call(
             "get", self.get_url([city_name, state_code, country_code])
         )
 

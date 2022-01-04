@@ -23,7 +23,7 @@ class Joker(base.BaseCog):
 
     async def call_api(self, ctx, config):
         url = self.build_url(ctx, config)
-        response = await util.http_call("get", url, get_raw_response=True)
+        response = await self.bot.http_call("get", url, get_raw_response=True)
         return response
 
     def build_url(self, ctx, config):

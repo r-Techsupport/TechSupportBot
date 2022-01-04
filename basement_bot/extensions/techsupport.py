@@ -392,7 +392,7 @@ class CDIParser(BaseParser):
         return await found_message.delete()
 
     async def call_api(self, cdi_link):
-        response = await util.http_call(
+        response = await self.bot.http_call(
             "get",
             f"{self.API_URL}/?cdi={cdi_link}&json=true",
             get_raw_response=True,
@@ -514,7 +514,7 @@ class SpeccyParser(BaseParser):
         await found_message.delete()
 
     async def call_api(self, speccy_id):
-        response = await util.http_call(
+        response = await self.bot.http_call(
             "get",
             f"{self.API_URL}/?speccy={speccy_id}&json=true",
             get_raw_response=True,
@@ -780,7 +780,7 @@ class HWInfoParser(BaseParser):
         return await found_message.delete()
 
     async def call_api(self, hwinfo_url):
-        response = await util.http_call(
+        response = await self.bot.http_call(
             "get",
             f"{self.API_URL}/?hwinfo={hwinfo_url}&json=true",
             get_raw_response=True,

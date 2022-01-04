@@ -269,7 +269,7 @@ class StrawPoller(PollGenerator):
             "poll": {"title": request_body.question, "answers": request_body.options}
         }
 
-        response = await util.http_call("post", self.API_URL, json=post_body)
+        response = await self.bot.http_call("post", self.API_URL, json=post_body)
 
         content_id = response.get("content_id")
         if not content_id:

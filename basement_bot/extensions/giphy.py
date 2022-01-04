@@ -28,7 +28,7 @@ class Giphy(base.BaseCog):
         usage="[query]",
     )
     async def giphy(self, ctx, *, query: str):
-        response = await util.http_call(
+        response = await self.bot.http_call(
             "get",
             self.GIPHY_URL.format(
                 query.replace(" ", "+"),

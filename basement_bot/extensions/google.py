@@ -33,10 +33,10 @@ class GoogleEmbed(discord.Embed):
 class Googler(base.BaseCog):
 
     GOOGLE_URL = "https://www.googleapis.com/customsearch/v1"
-    YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=1"
+    YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=10"
 
     async def get_items(self, url, data):
-        response = await util.http_call("get", url, params=data)
+        response = await self.bot.http_call("get", url, params=data, use_cache=True)
         return response.get("items")
 
     @commands.group(

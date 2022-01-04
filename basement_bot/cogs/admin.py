@@ -408,7 +408,7 @@ class AdminControl(base.BaseCog):
             "Content-Type": "text/plain",
         }
 
-        response = await util.http_call(
+        response = await self.bot.http_call(
             "post",
             f"{self.GITHUB_API_BASE_URL}/repos/{self.bot.file_config.special.github.username}/{self.bot.file_config.special.github.repo}/issues",
             headers=headers,

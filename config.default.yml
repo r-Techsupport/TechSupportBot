@@ -35,7 +35,11 @@ main:
         queue_wait_seconds: 3
     disabled_extensions: ["kanye"]
     default_prefix: "."
-    config_cache_reset: 30
+    cache:
+        guild_config_cache_length: 100
+        guild_config_cache_seconds: 30
+        http_cache_length: 100
+        http_cache_seconds: 600
 
 # Special things
 special:

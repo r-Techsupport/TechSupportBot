@@ -39,7 +39,7 @@ class News(base.LoopCog):
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
 
     async def get_headlines(self, config):
-        response = await util.http_call(
+        response = await self.bot.http_call(
             "get",
             self.API_URL.format(
                 self.bot.file_config.main.api_keys.news,

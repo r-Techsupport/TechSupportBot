@@ -59,7 +59,7 @@ class KanyeQuotes(base.LoopCog):
     API_URL = "https://api.kanye.rest"
 
     async def get_quote(self):
-        response = await util.http_call("get", self.API_URL)
+        response = await self.bot.http_call("get", self.API_URL)
         return response.get("quote")
 
     async def execute(self, config, guild):

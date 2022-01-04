@@ -20,7 +20,7 @@ class IPInfo(base.BaseCog):
         description="Gets IP info (geodata) from a given IP",
     )
     async def get_info(self, ctx, ip_address: str):
-        response = await util.http_call("get", f"{self.API_URL}/{ip_address}/json")
+        response = await self.bot.http_call("get", f"{self.API_URL}/{ip_address}/json")
 
         if not response.get("ip"):
             await util.send_deny_embed(ctx, "I couldn't find that IP")

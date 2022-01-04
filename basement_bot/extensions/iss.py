@@ -21,7 +21,7 @@ class ISSLocator(base.BaseCog):
     )
     async def iss(self, ctx):
         # get ISS coordinates
-        response = await util.http_call("get", self.ISS_URL)
+        response = await self.bot.http_call("get", self.ISS_URL)
         if not response:
             await util.send_deny_embed(
                 ctx, "I had trouble calling the ISS API. Maybe it's down?"
@@ -37,7 +37,9 @@ class ISSLocator(base.BaseCog):
 
         # get location information from coordinates
         location = None
-        response = await util.http_call("get", self.GEO_URL.format(latitude, longitude))
+        response = await self.bot.http_call(
+            "get", self.GEO_URL.format(latitude, longitude)
+        )
         if not response:
             await util.send_deny_embed(
                 ctx, "I had trouble calling the GEO API. Maybe it's down?"

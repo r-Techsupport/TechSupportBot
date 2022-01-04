@@ -1,9 +1,13 @@
 """Module for defining the data bot methods."""
 
 import asyncio
+import urllib
 
 import aio_pika
+import aiohttp
+import expiringdict
 import gino
+import munch
 from motor import motor_asyncio
 
 from .extension import ExtensionsBot
@@ -17,6 +21,10 @@ class DataBot(ExtensionsBot):
         self.db = None
         self.rabbit = None
         super().__init__(*args, **kwargs)
+        self.http_cache = expiringdict.ExpiringDict(
+            max_len=self.file_config.main.cache.http_cache_length,
+            max_age_seconds=self.file_config.main.cache.http_cache_seconds,
+        )
 
     def generate_db_url(self, postgres=True):
         """Dynamically converts config to a Postgres/MongoDB url.
@@ -160,3 +168,56 @@ class DataBot(ExtensionsBot):
                     await handler(message.body.decode())
 
         await channel.close()
+
+    # pylint: disable=too-many-locals
+    async def http_call(self, method, url, *args, **kwargs):
+        """Makes an HTTP request.
+
+        By default this returns JSON/dict with the status code injected.
+
+        parameters:
+            method (str): the HTTP method to use
+            url (str): the URL to call
+            use_cache (bool): True if the GET result should be grabbed from cache
+            get_raw_response (bool): True if the actual response object should be returned
+        """
+        method = method.lower()
+        use_cache = kwargs.pop("use_cache", False)
+        get_raw_response = kwargs.pop("get_raw_response", False)
+
+        cache_key = url.lower()
+        if kwargs.get("params"):
+            params = urllib.parse.urlencode(kwargs.get("params"))
+            cache_key = f"{cache_key}?{params}"
+
+        cached_response = (
+            self.http_cache.get(cache_key) if (use_cache and method == "get") else None
+        )
+
+        client = None
+        if cached_response:
+            response_object = cached_response
+            log_message = f"Retrieving cached HTTP GET response ({cache_key})"
+        else:
+            client = aiohttp.ClientSession()
+            method_fn = getattr(client, method.lower())
+            response_object = await method_fn(url, *args, **kwargs)
+            if method == "get":
+                self.http_cache[cache_key] = response_object
+            log_message = f"Making HTTP {method.upper()} request to URL: {cache_key}"
+
+        await self.logger.info(log_message, send=True)
+
+        if get_raw_response:
+            response = response_object
+        else:
+            response_json = await response_object.json()
+            response = (
+                munch.munchify(response_json) if response_object else munch.Munch()
+            )
+            response["status_code"] = getattr(response_object, "status", None)
+
+        if client:
+            await client.close()
+
+        return response

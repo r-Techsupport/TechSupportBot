@@ -80,7 +80,7 @@ class XKCD(base.BaseCog):
 
     async def api_call(self, number=None):
         url = self.SPECIFIC_API_URL % (number) if number else self.MOST_RECENT_API_URL
-        response = await util.http_call("get", url)
+        response = await self.bot.http_call("get", url)
 
         return response
 
