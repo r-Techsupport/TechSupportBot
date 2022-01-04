@@ -1,10 +1,9 @@
-import asyncio
 import datetime
-import io
 import json
 import uuid
 from typing import Type
 
+import aiocron
 import base
 import discord
 import util
@@ -36,11 +35,11 @@ def setup(bot):
         default=False,
     )
     config.add(
-        key="reminder_wait",
-        datatype="float",
-        title="Application reminder wait time",
-        description="The number of hours the bot should wait between application reminders",
-        default=24,
+        key="reminder_cron_config",
+        datatype="string",
+        title="Application reminder cron config",
+        description="The cron syntax for automatic application reminders",
+        default="0 17 * * *",
     )
     config.add(
         key="approve_roles",
@@ -152,7 +151,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             pass
 
     async def wait(self, config, _):
-        await asyncio.sleep(config.extensions.application.reminder_wait.value * 3600)
+        await aiocron.crontab(
+            config.extensions.application.reminder_cron_config.value
+        ).next()
 
     async def send_reminder(self, config, guild, automated=True):
         try:
@@ -214,10 +215,12 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
         if status == "pending":
             query["reviewed"] = {"$eq": False}
+            query["approved"] = {"$eq": False}
         elif status == "denied":
             query["reviewed"] = {"$eq": True}
             query["approved"] = {"$eq": False}
         elif status == "approved":
+            query["reviewed"] = {"$eq": True}
             query["approved"] = {"$eq": True}
 
         applications = []
