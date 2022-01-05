@@ -41,7 +41,9 @@ async def send_confirm_embed(ctx, message, target=None):
         target (discord.Member): the Discord user to tag (defaults to context)
     """
     embed = embeds.ConfirmEmbed(message=message)
-    message = await send_with_mention(ctx, embed=embed, targets=[target] if target else None)
+    message = await send_with_mention(
+        ctx, embed=embed, targets=[target] if target else None
+    )
     return message
 
 
@@ -53,7 +55,9 @@ async def send_deny_embed(ctx, message, target=None):
         target (discord.Member): the Discord user to tag (defaults to context)
     """
     embed = embeds.DenyEmbed(message=message)
-    message = await send_with_mention(ctx, embed=embed, targets=[target] if target else None)
+    message = await send_with_mention(
+        ctx, embed=embed, targets=[target] if target else None
+    )
     return message
 
 

@@ -92,7 +92,9 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     LOOP_UPDATE_MINUTES = 10
 
     async def preconfig(self):
-        self.factoid_cache = expiringdict.ExpiringDict(max_len=100, max_age_seconds=600)
+        self.factoid_cache = expiringdict.ExpiringDict(
+            max_len=100, max_age_seconds=1200
+        )
 
     async def loop_preconfig(self):
         self.loop_jobs = collections.defaultdict(dict)

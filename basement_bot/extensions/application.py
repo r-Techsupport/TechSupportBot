@@ -24,7 +24,14 @@ def setup(bot):
         key="manage_roles",
         datatype="list",
         title="Manage applications roles",
-        description="The roles required to manage applications",
+        description="The list of roles required to manage applications",
+        default=["Applications"],
+    )
+    config.add(
+        key="ping_roles",
+        datatype="list",
+        title="New application ping roles",
+        description="The list of roles that are pinged on new applications",
         default=["Applications"],
     )
     config.add(
@@ -136,7 +143,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         }
 
         embed = self.generate_embed(application_data, new=True)
-        await ctx.send(embed=embed)
+
+        mention_string = await self.get_mention_string(ctx.guild)
+        await ctx.send(content=mention_string, embed=embed)
 
         collection = self.bot.mongo[self.COLLECTION_NAME]
         await collection.insert_one(application_data)
@@ -170,11 +179,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         if not applications:
             raise NoPendingApplications()
 
-        description = (
-            f"There are {len(applications)} pending applications for `{guild.name}`"
-        )
-
-        embed = ApplicationEmbed(description=description)
+        embed = ApplicationEmbed()
         embed.set_footer(
             text="This is a periodic reminder"
             if automated
@@ -197,10 +202,17 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             if not user:
                 continue
 
-            embed.add_field(name=user, value=id)
+            embed.add_field(name=user, value=id, inline=False)
             fields += 1
 
-        await webhook.channel.send(embed=embed)
+        description = f"Pending applications: {len(applications)}"
+        remaining = len(applications) - fields
+        if remaining > 0:
+            description = f"{description} - please review the following ID's and use the reminder command to view more"
+        embed.description = description
+
+        mention_string = await self.get_mention_string(guild)
+        await webhook.channel.send(content=mention_string, embed=embed)
 
     async def get_applications(
         self, guild, status=None, include_stale=False, limit=100
@@ -280,8 +292,8 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
     def generate_embed(self, application_data, new):
         embed = ApplicationEmbed(
-            description=("New Application!" if new else "Application Data")
-            + f" Application ID: `{application_data['id']}`",
+            description=("New Application! " if new else "")
+            + f"Application ID: `{application_data['id']}`",
         )
         for response in application_data["responses"]:
             embed.add_field(
@@ -291,6 +303,22 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         embed.set_footer(text=f"Status: {self.determine_app_status(application_data)}")
 
         return embed
+
+    async def get_mention_string(self, guild):
+        config = await self.bot.get_context_config(guild=guild)
+        mention_string = ""
+        for index, role_name in enumerate(
+            config.extensions.application.ping_roles.value
+        ):
+            role = discord.utils.get(guild.roles, name=role_name)
+            if not role:
+                continue
+            mention_string += role.mention + (
+                " "
+                if index != len(config.extensions.application.ping_roles.value) - 1
+                else ""
+            )
+        return mention_string
 
     @commands.guild_only()
     @commands.check(has_manage_applications_role)
