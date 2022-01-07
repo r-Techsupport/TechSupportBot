@@ -368,6 +368,13 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             )
             return
 
+        confirmed = await self.bot.confirm(
+            ctx,
+            "This will notify the user and approve their application. Are you sure?",
+        )
+        if not confirmed:
+            return
+
         application_data["approved"] = True
         application_data["reviewed"] = True
         await collection.replace_one({"id": application_id}, application_data)
@@ -396,6 +403,12 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             )
             if not confirm:
                 return
+
+        confirmed = await self.bot.confirm(
+            ctx, "This will notify the user and deny their application. Are you sure?"
+        )
+        if not confirmed:
+            return
 
         application_data["reviewed"] = True
         # set this in case we are denying after approval
