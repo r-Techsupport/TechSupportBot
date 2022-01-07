@@ -63,32 +63,16 @@ class Grabber(base.BaseCog):
         description="Gets the last message of the mentioned user and saves it",
         usage="@user [message-id (optional)]",
     )
-    async def grab_user(
-        self, ctx, user_to_grab: discord.Member, message: discord.Message = None
-    ):
-        if user_to_grab.bot:
+    async def grab_user(self, ctx, message: discord.Message):
+        if message.author.bot:
             await util.send_deny_embed(ctx, "Ain't gonna catch me slipping!")
-            return
-
-        if message:
-            content = message.content
-        else:
-            async for message in ctx.channel.history(limit=self.SEARCH_LIMIT):
-                if message.author == user_to_grab:
-                    content = message.content
-                    break
-
-        if not content:
-            await util.send_deny_embed(
-                ctx, f"Could not find a recent message from user {user_to_grab}"
-            )
             return
 
         grab = (
             await self.models.Grab.query.where(
-                self.models.Grab.author_id == str(user_to_grab.id),
+                self.models.Grab.author_id == str(message.author.id),
             )
-            .where(self.models.Grab.message == content)
+            .where(self.models.Grab.message == message.content)
             .gino.first()
         )
 
@@ -97,15 +81,15 @@ class Grabber(base.BaseCog):
             return
 
         grab = self.models.Grab(
-            author_id=str(user_to_grab.id),
+            author_id=str(message.author.id),
             channel=str(ctx.channel.id),
             guild=str(ctx.guild.id),
-            message=content,
+            message=message.content,
             nsfw=ctx.channel.is_nsfw(),
         )
         await grab.create()
 
-        await util.send_confirm_embed(ctx, f"Successfully saved: '*{content}*'")
+        await util.send_confirm_embed(ctx, f"Successfully saved: '*{message.content}*'")
 
     @commands.group(
         brief="Executes a grabs command",
