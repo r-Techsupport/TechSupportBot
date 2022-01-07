@@ -15,11 +15,7 @@ from discord.ext import commands, ipc
 
 # pylint: disable=too-many-public-methods, too-many-instance-attributes
 class BasementBot(base.AdvancedBot):
-    """The main bot object.
-
-    parameters:
-        run_on_init (bool): True if the bot should run on instantiation
-    """
+    """The main bot object."""
 
     IPC_SECRET_ENV_KEY = "IPC_SECRET"
     CONFIRM_YES_EMOJI = "✅"
