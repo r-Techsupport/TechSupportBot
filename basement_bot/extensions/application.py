@@ -145,7 +145,11 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         embed = self.generate_embed(application_data, new=True)
 
         mention_string = await self.get_mention_string(ctx.guild)
-        await ctx.send(content=mention_string, embed=embed)
+        await ctx.send(
+            content=mention_string,
+            embed=embed,
+            allowed_mentions=discord.AllowedMentions(roles=True),
+        )
 
         collection = self.bot.mongo[self.COLLECTION_NAME]
         await collection.insert_one(application_data)
@@ -212,7 +216,11 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         embed.description = description
 
         mention_string = await self.get_mention_string(guild)
-        await webhook.channel.send(content=mention_string, embed=embed)
+        await webhook.channel.send(
+            content=mention_string,
+            embed=embed,
+            allowed_mentions=discord.AllowedMentions(roles=True),
+        )
 
     async def get_applications(
         self, guild, status=None, include_stale=False, limit=100
