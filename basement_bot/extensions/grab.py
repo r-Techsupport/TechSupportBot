@@ -60,8 +60,8 @@ class Grabber(base.BaseCog):
     @commands.command(
         name="grab",
         brief="Grabs a user's last message",
-        description="Gets the last message of the mentioned user and saves it",
-        usage="@user [message-id (optional)]",
+        description="Grabs a message by ID and saves it",
+        usage="@user [message-id]",
     )
     async def grab_user(self, ctx, message: discord.Message):
         if message.author.bot:

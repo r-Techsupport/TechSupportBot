@@ -393,7 +393,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         name="deny",
         brief="Denies an application",
         description="Denies an application by ID",
-        usage="[application-id]",
+        usage="[application-id] [reason]",
     )
     async def deny_application(self, ctx, application_id: str, *, reason: str = None):
         collection = self.bot.mongo[self.COLLECTION_NAME]
