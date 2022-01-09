@@ -181,6 +181,8 @@ class DataBot(ExtensionsBot):
             use_cache (bool): True if the GET result should be grabbed from cache
             get_raw_response (bool): True if the actual response object should be returned
         """
+        url = url.replace(" ", "%20").replace("+", "%2b")
+
         method = method.lower()
         use_cache = kwargs.pop("use_cache", False)
         get_raw_response = kwargs.pop("get_raw_response", False)

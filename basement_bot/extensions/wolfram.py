@@ -21,9 +21,10 @@ class Wolfram(base.BaseCog):
         usage="[query]",
     )
     async def simple_search(self, ctx, *, query: str):
-        query = query.replace(" ", "+")
-
-        url = self.API_URL.format(self.bot.file_config.main.api_keys.wolfram, query)
+        url = self.API_URL.format(
+            self.bot.file_config.main.api_keys.wolfram,
+            query,
+        )
 
         response = await self.bot.http_call("get", url, get_raw_response=True)
         if response.status == 501:
