@@ -60,7 +60,7 @@ class AdminControl(base.BaseCog):
         embed = discord.Embed(
             title=f"Extension status for `{extension_name}`", description=status
         )
-        await util.send_confirm_embed(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     @util.with_typing
     @extension_group.command(
@@ -76,7 +76,7 @@ class AdminControl(base.BaseCog):
             extension_name (str): the name of the extension
         """
         ctx.bot.load_extension(f"extensions.{extension_name}")
-        await util.send_confirm_embed(ctx, "I've loaded that extension")
+        await ctx.send_confirm_embed("I've loaded that extension")
 
     @util.with_typing
     @extension_group.command(
@@ -94,7 +94,7 @@ class AdminControl(base.BaseCog):
             extension_name (str): the name of the extension
         """
         ctx.bot.unload_extension(f"extensions.{extension_name}")
-        await util.send_confirm_embed(ctx, "I've unloaded that extension")
+        await ctx.send_confirm_embed("I've unloaded that extension")
 
     @util.with_typing
     @extension_group.command(
@@ -112,14 +112,12 @@ class AdminControl(base.BaseCog):
             extension_name (str): the name of the extension
         """
         if not ctx.message.attachments:
-            await util.send_deny_embed(ctx, "You did not provide a Python file upload")
+            await ctx.send_deny_embed("You did not provide a Python file upload")
             return
 
         attachment = ctx.message.attachments[0]
         if not attachment.filename.endswith(".py"):
-            await util.send_deny_embed(
-                ctx, "I don't recognize your upload as a Python file"
-            )
+            await ctx.send_deny_embed("I don't recognize your upload as a Python file")
             return
 
         if extension_name.lower() in self.bot.get_potential_extensions():
@@ -133,8 +131,8 @@ class AdminControl(base.BaseCog):
 
         fp = await attachment.read()
         self.bot.register_file_extension(extension_name, fp)
-        await util.send_confirm_embed(
-            ctx, "I've registered that extension. You can now try loading it"
+        await ctx.send_confirm_embed(
+            "I've registered that extension. You can now try loading it"
         )
 
     @commands.group(
@@ -161,19 +159,15 @@ class AdminControl(base.BaseCog):
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await util.send_deny_embed(ctx, f"No such command: `{command_name}`")
+            await ctx.send_deny_embed(f"No such command: `{command_name}`")
             return
 
         if command_.enabled:
-            await util.send_deny_embed(
-                ctx, f"Command `{command_name}` is already enabled!"
-            )
+            await ctx.send_deny_embed(f"Command `{command_name}` is already enabled!")
             return
 
         command_.enabled = True
-        await util.send_confirm_embed(
-            ctx, f"Successfully enabled command: `{command_name}`"
-        )
+        await ctx.send_confirm_embed(f"Successfully enabled command: `{command_name}`")
 
     @util.with_typing
     @command_group.command(
@@ -190,19 +184,15 @@ class AdminControl(base.BaseCog):
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await util.send_deny_embed(ctx, f"No such command: `{command_name}`")
+            await ctx.send_deny_embed(f"No such command: `{command_name}`")
             return
 
         if not command_.enabled:
-            await util.send_deny_embed(
-                ctx, f"Command `{command_name}` is already disabled!"
-            )
+            await ctx.send_deny_embed(f"Command: `{command_name}` is already disabled!")
             return
 
         command_.enabled = False
-        await util.send_confirm_embed(
-            ctx, f"Successfully disabled command: `{command_name}`"
-        )
+        await ctx.send_confirm_embed(f"Successfully disabled command: `{command_name}`")
 
     @commands.group(
         name="set",
@@ -227,7 +217,7 @@ class AdminControl(base.BaseCog):
             game_name (str): the name of the game
         """
         await ctx.bot.change_presence(activity=discord.Game(name=game_name))
-        await util.send_confirm_embed(ctx, f"Successfully set game to: *{game_name}*")
+        await ctx.send_confirm_embed(f"Successfully set game to: *{game_name}*")
 
     @util.with_typing
     @set_group.command(
@@ -243,7 +233,7 @@ class AdminControl(base.BaseCog):
             nick (str): the bot nickname
         """
         await ctx.message.guild.me.edit(nick=nick)
-        await util.send_confirm_embed(ctx, f"Successfully set nick to: *{nick}*")
+        await ctx.send_confirm_embed(f"Successfully set nick to: *{nick}*")
 
     @commands.group(
         brief="Executes an echo bot command", description="Executes an echo bot command"
@@ -270,12 +260,12 @@ class AdminControl(base.BaseCog):
         """
         channel = self.bot.get_channel(channel_id)
         if not channel:
-            await util.send_deny_embed(ctx, "I couldn't find that channel")
+            await ctx.send_deny_embed("I couldn't find that channel")
             return
 
         await channel.send(content=message)
 
-        await util.send_confirm_embed(ctx, "Message sent")
+        await ctx.send_confirm_embed("Message sent")
 
     @util.with_typing
     @echo.command(
@@ -295,12 +285,12 @@ class AdminControl(base.BaseCog):
         """
         user = await self.bot.fetch_user(int(user_id))
         if not user:
-            await util.send_deny_embed(ctx, "I couldn't find that user")
+            await ctx.send_deny_embed("I couldn't find that user")
             return
 
         await user.send(content=message)
 
-        await util.send_confirm_embed(ctx, "Message sent")
+        await ctx.send_confirm_embed("Message sent")
 
     @commands.command(
         name="restart", description="Restarts the bot at the container level"
@@ -313,7 +303,7 @@ class AdminControl(base.BaseCog):
         parameters:
             ctx (discord.ext.Context): the context object for the calling message
         """
-        await util.send_confirm_embed(ctx, "Rebooting! Beep boop!")
+        await ctx.send_confirm_embed("Rebooting! Beep boop!")
         sys.exit()
 
     @commands.command(
@@ -330,13 +320,13 @@ class AdminControl(base.BaseCog):
         """
         guild = discord.utils.get(self.bot.guilds, id=guild_id)
         if not guild:
-            await util.send_deny_embed(ctx, "I don't appear to be in that guild")
+            await ctx.send_deny_embed("I don't appear to be in that guild")
             return
 
         await guild.leave()
 
-        await util.send_confirm_embed(
-            ctx, f"I have left the guild: {guild.name} ({guild.id})"
+        await ctx.send_confirm_embed(
+            f"I have left the guild: {guild.name} ({guild.id})"
         )
 
     @commands.command(name="bot", description="Provides bot info")
@@ -371,7 +361,7 @@ class AdminControl(base.BaseCog):
 
         embed.set_thumbnail(url=self.bot.user.avatar_url)
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     @util.with_typing
     @commands.command(
@@ -392,14 +382,14 @@ class AdminControl(base.BaseCog):
         """
 
         if not self.bot.file_config.main.api_keys.github:
-            await util.send_deny_embed(ctx, "I don't have a Github API key")
+            await ctx.send_deny_embed("I don't have a Github API key")
             return
 
         if (
             not self.bot.file_config.special.github.username
             or not self.bot.file_config.special.github.repo
         ):
-            await util.send_deny_embed(ctx, "I don't have a Github repo configured")
+            await ctx.send_deny_embed("I don't have a Github repo configured")
             return
 
         headers = {
@@ -417,8 +407,8 @@ class AdminControl(base.BaseCog):
 
         status_code = response.get("status_code")
         if status_code != 201:
-            await util.send_deny_embed(
-                ctx, f"I was unable to create your issue (status code {status_code})"
+            await ctx.send_deny_embed(
+                f"I was unable to create your issue (status code {status_code})"
             )
             return
 
@@ -431,4 +421,4 @@ class AdminControl(base.BaseCog):
             url="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
         )
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)

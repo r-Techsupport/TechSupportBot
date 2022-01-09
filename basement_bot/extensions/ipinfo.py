@@ -23,7 +23,7 @@ class IPInfo(base.BaseCog):
         response = await self.bot.http_call("get", f"{self.API_URL}/{ip_address}/json")
 
         if not response.get("ip"):
-            await util.send_deny_embed(ctx, "I couldn't find that IP")
+            await ctx.send_deny_embed("I couldn't find that IP")
             return
 
         response.pop("readme", None)
@@ -36,4 +36,4 @@ class IPInfo(base.BaseCog):
         embed.set_thumbnail(url=self.IP_ICON_URL)
         embed.color = discord.Color.dark_green()
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)

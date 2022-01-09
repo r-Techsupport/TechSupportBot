@@ -87,10 +87,6 @@ class AdvancedBot(DataBot):
                 send=True,
             )
 
-        await self.logger.debug(
-            f"Getting config for lookup key: {lookup} (time taken = {time_taken} ms)"
-        )
-
         return config_
 
     async def create_new_context_config(self, lookup):
@@ -101,7 +97,6 @@ class AdvancedBot(DataBot):
         """
         extensions_config = munch.Munch()
 
-        await self.logger.debug("Evaluating extension data")
         for extension_name, extension_config in self.extension_configs.items():
             if extension_config:
                 # don't attach to guild config if extension isn't configurable
@@ -140,7 +135,6 @@ class AdvancedBot(DataBot):
 
         should_update = False
 
-        await self.logger.debug("Evaluating extension data")
         for (
             extension_name,
             extension_config_from_data,

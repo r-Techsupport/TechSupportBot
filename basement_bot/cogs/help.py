@@ -3,7 +3,6 @@
 
 import base
 import discord
-import util
 from discord.ext import commands
 
 
@@ -47,7 +46,7 @@ class Helper(base.BaseCog):
             inline=False,
         )
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     @help_command.command(name="builtin")
     async def builtin_help_command(self, ctx):
@@ -67,7 +66,7 @@ class Helper(base.BaseCog):
                 continue
             embed = self.add_cog_command_fields(cog, embed, command_prefix)
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     @help_command.command(name="extension")
     async def extension_help_command(self, ctx, extension_name: str = None):
@@ -81,7 +80,7 @@ class Helper(base.BaseCog):
         """
         if extension_name:
             embed = await self.generate_extension_embed(ctx, extension_name)
-            await util.send_with_mention(ctx, embed=embed)
+            await ctx.send(embed=embed)
         else:
             embeds = await self.generate_general_embeds(ctx)
             await self.bot.paginate(ctx, embeds)

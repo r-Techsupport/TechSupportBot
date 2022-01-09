@@ -33,12 +33,10 @@ class Weather(base.BaseCog):
 
         embed = self.generate_embed(munch.munchify(response))
         if not embed:
-            await util.send_deny_embed(
-                ctx, "I could not find the weather from your search"
-            )
+            await ctx.send_deny_embed("I could not find the weather from your search")
             return
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     def generate_embed(self, response):
         try:

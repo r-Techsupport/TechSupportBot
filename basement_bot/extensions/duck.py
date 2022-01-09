@@ -960,16 +960,14 @@ class DuckHunt(base.LoopCog):
             user = ctx.message.author
 
         if user.bot:
-            await util.send_deny_embed(
-                ctx, "If it looks like a duck, quacks like a duck, it's a duck!"
+            await ctx.send_deny_embed(
+                "If it looks like a duck, quacks like a duck, it's a duck!"
             )
             return
 
         duck_user = await self.get_duck_user(user.id, ctx.guild.id)
         if not duck_user:
-            await util.send_deny_embed(
-                ctx, "That user has not partcipated in the duck hunt"
-            )
+            await ctx.send_deny_embed("That user has not partcipated in the duck hunt")
             return
 
         embed = discord.Embed(title="Duck Stats", description=user.mention)
@@ -978,7 +976,7 @@ class DuckHunt(base.LoopCog):
         embed.add_field(name="Kills", value=duck_user.kill_count)
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     @util.with_typing
     @commands.guild_only()
@@ -997,9 +995,7 @@ class DuckHunt(base.LoopCog):
         )
 
         if not duck_users:
-            await util.send_deny_embed(
-                ctx, "It appears nobody has befriended any ducks"
-            )
+            await ctx.send_deny_embed("It appears nobody has befriended any ducks")
             return
 
         field_counter = 1
@@ -1023,7 +1019,7 @@ class DuckHunt(base.LoopCog):
             else:
                 field_counter += 1
 
-        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds=embeds)
 
     @util.with_typing
     @commands.guild_only()
@@ -1040,7 +1036,7 @@ class DuckHunt(base.LoopCog):
         )
 
         if not duck_users:
-            await util.send_deny_embed(ctx, "It appears nobody has killed any ducks")
+            await ctx.send_deny_embed("It appears nobody has killed any ducks")
             return
 
         field_counter = 1
@@ -1062,7 +1058,7 @@ class DuckHunt(base.LoopCog):
             else:
                 field_counter += 1
 
-        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds=embeds)
 
     def get_user_text(self, duck_user):
         user = self.bot.get_user(int(duck_user.author_id))

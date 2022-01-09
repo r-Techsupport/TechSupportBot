@@ -198,7 +198,7 @@ class AutoSupport(base.MatchCog):
         self.send_records[ctx.channel.id] = timestamp
         self.user_records[ctx.author.id] = timestamp
         embed = self.generate_embed(ctx)
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
         await self.bot.guild_log(
             ctx.guild,
             "logging_channel",
@@ -257,8 +257,8 @@ class AutoSupport(base.MatchCog):
         config = await self.bot.get_context_config(ctx)
 
         if not str(channel.id) in config.extensions.techsupport.channels.value:
-            await util.send_deny_embed(
-                ctx, f"#{channel.name} is not configured as a support channel"
+            await ctx.send_deny_embed(
+                f"#{channel.name} is not configured as a support channel"
             )
             return
 
@@ -270,7 +270,7 @@ class AutoSupport(base.MatchCog):
 
         support_roles = get_support_roles(ctx, config)
         if not support_roles:
-            await util.send_deny_embed(ctx, "I couldn't find any support roles")
+            await ctx.send_deny_embed("I couldn't find any support roles")
             return
 
         last_support_message = self.last_support_messages.get(channel.id)
@@ -300,7 +300,7 @@ class AutoSupport(base.MatchCog):
 
         embed.add_field(name="User cooldowns (total per server)", value=str(count))
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
 
 class BaseParser(base.MatchCog):
@@ -346,7 +346,7 @@ class CDIParser(BaseParser):
         if not confirmed:
             return
 
-        found_message = await util.send_confirm_embed(ctx, "Parsing CDI results now...")
+        found_message = await ctx.send_confirm_embed("Parsing CDI results now...")
 
         await self.bot.guild_log(
             ctx.guild,
@@ -362,8 +362,8 @@ class CDIParser(BaseParser):
             response_text = await api_response.text()
             response_data = munch.munchify(json.loads(response_text))
         except Exception as e:
-            await util.send_deny_embed(
-                ctx, "I was unable to convert the parse results to JSON"
+            await ctx.send_deny_embed(
+                "I was unable to convert the parse results to JSON"
             )
             await self.bot.guild_log(
                 ctx.guild,
@@ -377,9 +377,9 @@ class CDIParser(BaseParser):
 
         try:
             embed = await self.generate_embed(ctx, response_data)
-            await util.send_with_mention(ctx, embed=embed)
+            await ctx.send(embed=embed)
         except Exception as e:
-            await util.send_deny_embed(ctx, "I had trouble reading the CDI logs")
+            await ctx.send_deny_embed("I had trouble reading the CDI logs")
             await self.bot.guild_log(
                 ctx.guild,
                 "logging_channel",
@@ -451,9 +451,7 @@ class SpeccyParser(BaseParser):
         if not confirmed:
             return
 
-        found_message = await util.send_confirm_embed(
-            ctx, "Parsing Speccy results now..."
-        )
+        found_message = await ctx.send_confirm_embed("Parsing Speccy results now...")
 
         await self.bot.guild_log(
             ctx.guild,
@@ -490,11 +488,9 @@ class SpeccyParser(BaseParser):
             response_data_copy = response_data.copy()
             try:
                 embed = await self.generate_embed(ctx, response_data)
-                await util.send_with_mention(ctx, embed=embed)
+                await ctx.send(embed=embed)
             except Exception as e:
-                await util.send_deny_embed(
-                    ctx, "I had trouble reading the Speccy results"
-                )
+                await ctx.send_deny_embed("I had trouble reading the Speccy results")
                 await self.bot.guild_log(
                     ctx.guild,
                     "logging_channel",
@@ -506,8 +502,7 @@ class SpeccyParser(BaseParser):
             if not cached:
                 await self.cache_parse(ctx, speccy_id, response_data_copy)
         else:
-            await util.send_deny_embed(
-                ctx,
+            await ctx.send_deny_embed(
                 f"I was unable to parse that Speccy link (parse status = {parse_status})",
             )
 
@@ -734,7 +729,7 @@ class HWInfoParser(BaseParser):
         if not confirmed:
             return
 
-        found_message = await util.send_confirm_embed(ctx, "Parsing HWInfo logs now...")
+        found_message = await ctx.send_confirm_embed("Parsing HWInfo logs now...")
 
         await self.bot.guild_log(
             ctx.guild,
@@ -750,8 +745,8 @@ class HWInfoParser(BaseParser):
             response_text = await api_response.text()
             response_data = munch.munchify(json.loads(response_text))
         except Exception as e:
-            await util.send_deny_embed(
-                ctx, "I was unable to convert the parse results to JSON"
+            await ctx.send_deny_embed(
+                "I was unable to convert the parse results to JSON"
             )
             await self.bot.guild_log(
                 ctx.guild,
@@ -765,9 +760,9 @@ class HWInfoParser(BaseParser):
 
         try:
             embed = await self.generate_embed(ctx, response_data)
-            await util.send_with_mention(ctx, embed=embed)
+            await ctx.send(embed=embed)
         except Exception as e:
-            await util.send_deny_embed(ctx, "I had trouble reading the HWInfo logs")
+            await ctx.send_deny_embed("I had trouble reading the HWInfo logs")
             await self.bot.guild_log(
                 ctx.guild,
                 "logging_channel",

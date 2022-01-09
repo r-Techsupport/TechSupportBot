@@ -90,4 +90,4 @@ class KanyeQuotes(base.LoopCog):
         quote = await self.get_quote()
         embed = KanyeEmbed(quote=quote)
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)

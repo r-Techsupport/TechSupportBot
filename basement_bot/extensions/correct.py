@@ -44,9 +44,9 @@ class Corrector(base.BaseCog):
                 break
 
         if not new_content:
-            await util.send_deny_embed(ctx, "I couldn't find any message to correct")
+            await ctx.send_deny_embed("I couldn't find any message to correct")
             return
 
         embed = CorrectEmbed(new_content=new_content)
 
-        await util.send_with_mention(ctx, embed=embed, targets=[target])
+        await ctx.send(embed=embed, targets=[target])

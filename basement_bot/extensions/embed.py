@@ -18,20 +18,18 @@ class Embedder(base.BaseCog):
     )
     async def embed(self, ctx, *, keep_option: str = None):
         if not ctx.message.attachments:
-            await util.send_deny_embed(
-                ctx, "Please provide a JSON file for your embeds"
-            )
+            await ctx.send_deny_embed("Please provide a JSON file for your embeds")
             return
 
-        request_body = await util.get_json_from_attachments(ctx.message)
+        request_body = await ctx.get_json_from_attachments(ctx.message)
         if not request_body:
-            await util.send_deny_embed(ctx, "I couldn't find any data in your upload")
+            await ctx.send_deny_embed("I couldn't find any data in your upload")
             return
 
         embeds = await self.process_request(ctx, request_body)
         if not embeds:
-            await util.send_deny_embed(
-                ctx, "I was unable to generate any embeds from your request"
+            await ctx.send_deny_embed(
+                "I was unable to generate any embeds from your request"
             )
             return
 

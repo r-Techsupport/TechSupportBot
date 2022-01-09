@@ -23,15 +23,15 @@ class ISSLocator(base.BaseCog):
         # get ISS coordinates
         response = await self.bot.http_call("get", self.ISS_URL)
         if not response:
-            await util.send_deny_embed(
-                ctx, "I had trouble calling the ISS API. Maybe it's down?"
+            await ctx.send_deny_embed(
+                "I had trouble calling the ISS API. Maybe it's down?"
             )
             return
         coordinates = response.get("iss_position", {})
         longitude, latitude = coordinates.get("longitude"), coordinates.get("latitude")
         if not longitude or not latitude:
-            await util.send_deny_embed(
-                ctx, "I couldn't find the ISS coordinates from the API response"
+            await ctx.send_deny_embed(
+                "I couldn't find the ISS coordinates from the API response"
             )
             return
 
@@ -41,8 +41,8 @@ class ISSLocator(base.BaseCog):
             "get", self.GEO_URL.format(latitude, longitude)
         )
         if not response:
-            await util.send_deny_embed(
-                ctx, "I had trouble calling the GEO API. Maybe it's down?"
+            await ctx.send_deny_embed(
+                "I had trouble calling the GEO API. Maybe it's down?"
             )
             return
         else:

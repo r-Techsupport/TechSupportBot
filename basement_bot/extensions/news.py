@@ -99,4 +99,4 @@ class News(base.LoopCog):
             article = await self.get_random_headline(config)
             url = article.get("url")
 
-        await util.send_with_mention(ctx, url)
+        await ctx.send(url)

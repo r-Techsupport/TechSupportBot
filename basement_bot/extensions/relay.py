@@ -51,19 +51,18 @@ class RelayEvent:
 class MessageEvent(RelayEvent):
     def __init__(self, *args, **kwargs):
         message = kwargs.pop("message")
-        alternate_content = kwargs.pop("content")
         super().__init__("message", *args, **kwargs)
 
         self.message = message
 
-        self.payload.event.content = alternate_content or message.content
+        self.payload.event.content = message.clean_content
         self.payload.event.attachments = [
             attachment.url for attachment in message.attachments
         ]
 
         self.payload.event.reply = munch.Munch()
 
-    async def fill_reply_data(self, transform_fn=None):
+    async def fill_reply_data(self):
         reference = self.message.reference
         if not reference:
             return
@@ -74,11 +73,7 @@ class MessageEvent(RelayEvent):
         if not referenced_message:
             return
 
-        self.payload.event.reply.content = (
-            transform_fn(referenced_message.content)
-            if transform_fn
-            else referenced_message.content
-        )
+        self.payload.event.reply.content = referenced_message.clean_content
 
         self.payload.event.reply.author = munch.Munch()
         self.payload.event.reply.author.username = referenced_message.author.name
@@ -93,18 +88,18 @@ class MessageEvent(RelayEvent):
 
 class MessageEditEvent(RelayEvent):
     def __init__(self, *args, **kwargs):
-        content = kwargs.pop("content")
+        message = kwargs.pop("message")
         super().__init__("message_edit", *args, **kwargs)
-        self.payload.event.content = content
+        self.payload.event.content = message.clean_content
 
 
 class ReactionAddEvent(RelayEvent):
     def __init__(self, *args, **kwargs):
-        content = kwargs.pop("content")
+        message = kwargs.pop("message")
         emoji = kwargs.pop("emoji")
         super().__init__("reaction_add", *args, **kwargs)
         self.payload.event.emoji = emoji
-        self.payload.event.content = content
+        self.payload.event.content = message.clean_content
 
 
 class DiscordRelay(base.MatchCog):
@@ -131,11 +126,7 @@ class DiscordRelay(base.MatchCog):
         if message.author.bot:
             return
 
-        edit_event = MessageEditEvent(
-            message.author,
-            channel,
-            content=self.bot.sub_mentions_for_usernames(message.content),
-        )
+        edit_event = MessageEditEvent(message.author, channel, message=message)
 
         await self.publish(edit_event.to_json(), message.guild)
 
@@ -163,7 +154,7 @@ class DiscordRelay(base.MatchCog):
         reaction_add_event = ReactionAddEvent(
             payload.member,
             channel,
-            content=self.bot.sub_mentions_for_usernames(message.content),
+            message=message,
             emoji=emoji,
         )
 
@@ -175,11 +166,12 @@ class DiscordRelay(base.MatchCog):
         return True
 
     async def response(self, _, ctx, __, ___):
-        alternate_content = self.bot.sub_mentions_for_usernames(ctx.message.content)
         message_event = MessageEvent(
-            ctx.author, ctx.channel, message=ctx.message, content=alternate_content
+            ctx.author,
+            ctx.channel,
+            message=ctx.message,
         )
-        await message_event.fill_reply_data(self.bot.sub_mentions_for_usernames)
+        await message_event.fill_reply_data()
         await self.publish(message_event.to_json(), ctx.message.guild)
 
     async def publish(self, payload, guild):
@@ -222,7 +214,7 @@ class IRCReceiver(base.LoopCog):
                 guild,
                 "logging_channel",
                 "error",
-                "Could not consume IRC event from relay broker (will restart consuming in {self.DEFAULT_WAIT} seconds)",
+                f"Could not consume IRC event from relay broker (will restart consuming in {self.DEFAULT_WAIT} seconds)",
                 send=True,
                 exception=e,
             )

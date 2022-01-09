@@ -103,8 +103,7 @@ class ServerGate(base.MatchCog):
             embed = WelcomeEmbed(
                 welcome_message=welcome_message, delete_wait=delete_wait
             )
-            await util.send_with_mention(
-                ctx,
+            await ctx.send(
                 embed=embed,
                 delete_after=float(delete_wait),
             )
@@ -141,9 +140,7 @@ class ServerGate(base.MatchCog):
         config = await self.bot.get_context_config(ctx)
 
         if ctx.channel.id != int(config.extensions.gate.channel.value):
-            await util.send_deny_embed(
-                ctx, "That command is only usable in the gate channel"
-            )
+            await ctx.send_deny_embed("That command is only usable in the gate channel")
             return
 
         await ctx.channel.send(config.extensions.gate.intro_message.value)

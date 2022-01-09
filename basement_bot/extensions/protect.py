@@ -235,7 +235,7 @@ class Protector(base.MatchCog):
             await self.send_alert(config, ctx, "Could not convert text to Linx paste")
             return
 
-        await util.send_with_mention(ctx, embed=linx_embed)
+        await ctx.send(embed=linx_embed)
 
     async def handle_mass_mention_alert(self, config, ctx, content):
         await ctx.message.delete()
@@ -265,7 +265,7 @@ class Protector(base.MatchCog):
             )
         else:
             embed = ProtectEmbed(description=filter_config.message)
-            await util.send_with_mention(ctx, embed=embed)
+            await ctx.send(embed=embed)
 
         self.string_alert_cache[cache_key] = True
 
@@ -289,7 +289,7 @@ class Protector(base.MatchCog):
                     delete_after=True,
                 )
                 if not should_ban:
-                    await util.send_deny_embed(ctx, "No warnings have been set")
+                    await ctx.send_deny_embed("No warnings have been set")
                     return
 
             await self.handle_ban(
@@ -307,7 +307,7 @@ class Protector(base.MatchCog):
         embed = await self.generate_user_modified_embed(
             user, "warn", f"{reason} ({new_count} total warnings)"
         )
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     async def handle_unwarn(self, ctx, user, reason, bypass=False):
         if not bypass:
@@ -317,13 +317,13 @@ class Protector(base.MatchCog):
 
         warnings = await self.get_warnings(user, ctx.guild)
         if not warnings:
-            await util.send_deny_embed(ctx, "There are no warnings for that user")
+            await ctx.send_deny_embed("There are no warnings for that user")
             return
 
         await self.clear_warnings(user, ctx.guild)
 
         embed = await self.generate_user_modified_embed(user, "UNWARNED", reason)
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     async def handle_ban(self, ctx, user, reason, bypass=False):
         if not bypass:
@@ -340,7 +340,7 @@ class Protector(base.MatchCog):
 
         embed = await self.generate_user_modified_embed(user, "ban", reason)
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     async def handle_unban(self, ctx, user, reason, bypass=False):
         if not bypass:
@@ -352,7 +352,7 @@ class Protector(base.MatchCog):
 
         embed = await self.generate_user_modified_embed(user, "unban", reason)
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     async def handle_kick(self, ctx, user, reason, bypass=False):
         if not bypass:
@@ -364,7 +364,7 @@ class Protector(base.MatchCog):
 
         embed = await self.generate_user_modified_embed(user, "kick", reason)
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     async def clear_warnings(self, user, guild):
         await self.models.Warning.delete.where(
@@ -385,11 +385,11 @@ class Protector(base.MatchCog):
 
     async def can_execute(self, ctx, target):
         if target.id == self.bot.user.id:
-            await util.send_deny_embed(ctx, "It would be silly to do that to myself")
+            await ctx.send_deny_embed("It would be silly to do that to myself")
             return False
         if target.top_role >= ctx.author.top_role:
-            await util.send_deny_embed(
-                ctx, f"Your top role is not high enough to do that to `{target}`"
+            await ctx.send_deny_embed(
+                f"Your top role is not high enough to do that to `{target}`"
             )
             return False
         return True
@@ -424,7 +424,7 @@ class Protector(base.MatchCog):
 
     async def send_default_delete_response(self, config, ctx, content, reason):
         embed = ProtectEmbed(description=f"Message deleted. Reason: *{reason}*")
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
         await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
 
     async def get_warnings(self, user, guild):
@@ -545,7 +545,7 @@ class Protector(base.MatchCog):
     async def get_warnings_command(self, ctx, user: discord.User):
         warnings = await self.get_warnings(user, ctx.guild)
         if not warnings:
-            await util.send_deny_embed(ctx, "There are no warnings for that user")
+            await ctx.send_deny_embed("There are no warnings for that user")
             return
 
         embed = discord.Embed(title=f"Warnings for {user}")
@@ -556,7 +556,7 @@ class Protector(base.MatchCog):
 
         embed.color = discord.Color.red()
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
@@ -573,14 +573,14 @@ class Protector(base.MatchCog):
 
         role = discord.utils.get(ctx.guild.roles, name="Muted")
         if not role:
-            await util.send_deny_embed(ctx, "The `Muted` role does not exist")
+            await ctx.send_deny_embed("The `Muted` role does not exist")
             return
 
         await user.add_roles(role)
 
         embed = await self.generate_user_modified_embed(user, "muted", reason)
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
         config = await self.bot.get_context_config(ctx)
         await self.send_alert(config, ctx, "Mute command")
@@ -600,14 +600,14 @@ class Protector(base.MatchCog):
 
         role = discord.utils.get(ctx.guild.roles, name="Muted")
         if not role:
-            await util.send_deny_embed(ctx, "The `Muted` role does not exist")
+            await ctx.send_deny_embed("The `Muted` role does not exist")
             return
 
         await user.remove_roles(role)
 
         embed = await self.generate_user_modified_embed(user, "umuted", reason)
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     @commands.has_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
@@ -644,7 +644,7 @@ class Protector(base.MatchCog):
     )
     async def purge_duration(self, ctx, duration_minutes: int):
         if duration_minutes < 0:
-            await util.send_deny_embed(ctx, "I can't use that input")
+            await ctx.send_deny_embed("I can't use that input")
             return
 
         timestamp = datetime.datetime.utcnow() - datetime.timedelta(

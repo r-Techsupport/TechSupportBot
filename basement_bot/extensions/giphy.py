@@ -39,7 +39,7 @@ class Giphy(base.BaseCog):
 
         data = response.get("data")
         if not data:
-            await util.send_deny_embed(ctx, f"No search results found for: *{query}*")
+            await ctx.send_deny_embed(f"No search results found for: *{query}*")
             return
 
         embeds = []
@@ -48,4 +48,4 @@ class Giphy(base.BaseCog):
             url = self.parse_url(url)
             embeds.append(url)
 
-        self.bot.task_paginate(ctx, embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds)

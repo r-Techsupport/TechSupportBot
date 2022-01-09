@@ -65,7 +65,7 @@ class Googler(base.BaseCog):
         items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
-            await util.send_deny_embed(ctx, f"No search results found for: *{query}*")
+            await ctx.send_deny_embed(f"No search results found for: *{query}*")
             return
 
         config = await self.bot.get_context_config(guild=ctx.guild)
@@ -94,7 +94,7 @@ class Googler(base.BaseCog):
                 else:
                     field_counter += 1
 
-        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds=embeds)
 
     @util.with_typing
     @commands.guild_only()
@@ -114,23 +114,20 @@ class Googler(base.BaseCog):
         items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
-            await util.send_deny_embed(
-                ctx, f"No image search results found for: *{query}*"
-            )
+            await ctx.send_deny_embed(f"No image search results found for: *{query}*")
             return
 
         embeds = []
         for item in items:
             link = item.get("link")
             if not link:
-                await util.send_deny_embed(
-                    ctx,
+                await ctx.send_deny_embed(
                     "I had an issue processing Google's response... try again later!",
                 )
                 return
             embeds.append(link)
 
-        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds=embeds)
 
     @util.with_typing
     @commands.guild_only()
@@ -151,7 +148,7 @@ class Googler(base.BaseCog):
         )
 
         if not items:
-            await util.send_deny_embed(ctx, f"No video results found for: *{query}*")
+            await ctx.send_deny_embed(f"No video results found for: *{query}*")
             return
 
         video_id = items[0].get("id", {}).get("videoId")
@@ -164,4 +161,4 @@ class Googler(base.BaseCog):
             if link:
                 links.append(link)
 
-        self.bot.task_paginate(ctx, links, restrict=True)
+        self.bot.task_paginate(ctx, links)

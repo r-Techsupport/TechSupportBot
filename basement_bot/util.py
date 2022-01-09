@@ -5,60 +5,7 @@ import inspect
 import json
 
 import discord
-import embeds
 import munch
-
-
-async def send_with_mention(ctx, content=None, targets=None, **kwargs):
-    """Sends a context response with the original author tagged.
-
-    parameters:
-        ctx (discord.ext.Context): the context object
-        content (str): the message to send
-        targets ([discord.Member]): the Discord users to tag (defaults to context)
-    """
-    if targets is None:
-        targets = [ctx.message.author]
-
-    user_mentions = ""
-    for index, target in enumerate(targets):
-        mention = getattr(target, "mention", None)
-        if not mention:
-            continue
-        spacer = " " if (index != len(targets) - 1) else ""
-        user_mentions += mention + spacer
-
-    content = f"{user_mentions} {content}" if content else user_mentions
-    message = await ctx.send(content=content, **kwargs)
-    return message
-
-
-async def send_confirm_embed(ctx, message, target=None):
-    """Sends a confirmation embed.
-
-    parameters:
-        message (str): the base confirmation message
-        target (discord.Member): the Discord user to tag (defaults to context)
-    """
-    embed = embeds.ConfirmEmbed(message=message)
-    message = await send_with_mention(
-        ctx, embed=embed, targets=[target] if target else None
-    )
-    return message
-
-
-async def send_deny_embed(ctx, message, target=None):
-    """Sends a deny embed.
-
-    parameters:
-        message (str): the base deny message
-        target (discord.Member): the Discord user to tag (defaults to context)
-    """
-    embed = embeds.DenyEmbed(message=message)
-    message = await send_with_mention(
-        ctx, embed=embed, targets=[target] if target else None
-    )
-    return message
 
 
 async def get_json_from_attachments(message, as_string=False, allow_failure=False):
@@ -157,18 +104,16 @@ def with_typing(command):
     async def typing_wrapper(*args, **kwargs):
         context = args[1]
 
-        typing_func = getattr(context, "typing", None)
+        typing_func = getattr(context, "trigger_typing", None)
 
         if not typing_func:
             await original_callback(*args, **kwargs)
         else:
             try:
-                async with typing_func():
-                    await original_callback(*args, **kwargs)
+                await typing_func()
             except discord.Forbidden:
-                # sometimes the discord API doesn't like this
-                # proceed without typing
-                await original_callback(*args, **kwargs)
+                pass
+            await original_callback(*args, **kwargs)
 
     # this has to be done so invoke will see the original signature
     typing_wrapper.__signature__ = original_signature

@@ -39,7 +39,7 @@ class UrbanDictionary(base.BaseCog):
         config = await self.bot.get_context_config(ctx)
 
         if not definitions:
-            await util.send_deny_embed(ctx, f"No results found for: *{query}*")
+            await ctx.send_deny_embed(f"No results found for: *{query}*")
             return
 
         query_no_spaces = query.replace(" ", "%20")
@@ -76,4 +76,4 @@ class UrbanDictionary(base.BaseCog):
             else:
                 field_counter += 1
 
-        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds=embeds)

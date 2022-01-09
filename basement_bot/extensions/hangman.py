@@ -201,8 +201,8 @@ class HangmanCog(base.BaseCog):
                     return
                 del self.games[ctx.channel.id]
             else:
-                await util.send_deny_embed(
-                    ctx, "There is a game in progress for this channel"
+                await ctx.send_deny_embed(
+                    "There is a game in progress for this channel"
                 )
                 return
 
@@ -223,20 +223,18 @@ class HangmanCog(base.BaseCog):
     )
     async def guess(self, ctx, letter: str):
         if len(letter) > 1 or not letter.isalpha():
-            await util.send_deny_embed(ctx, "You can only guess a letter")
+            await ctx.send_deny_embed("You can only guess a letter")
             return
 
         game_data = self.games.get(ctx.channel.id)
         if not game_data:
-            await util.send_deny_embed(
-                ctx, "There is no game in progress for this channel"
-            )
+            await ctx.send_deny_embed("There is no game in progress for this channel")
             return
 
         game = game_data.get("game")
 
         if game.guessed(letter):
-            await util.send_deny_embed(ctx, "That letter has already been guessed")
+            await ctx.send_deny_embed("That letter has already been guessed")
             return
 
         correct = game.guess(letter)
@@ -247,7 +245,7 @@ class HangmanCog(base.BaseCog):
         content = f"Found `{letter}`" if correct else f"Letter `{letter}` not in word"
         if game.finished:
             content = f"{content} - game finished! The word was {game.word}"
-        await util.send_with_mention(ctx, content)
+        await ctx.send(content)
 
     async def generate_game_embed(self, ctx, game):
         hangman_drawing = game.draw_hang_state()
@@ -277,9 +275,7 @@ class HangmanCog(base.BaseCog):
     async def redraw(self, ctx):
         game_data = self.games.get(ctx.channel.id)
         if not game_data:
-            await util.send_deny_embed(
-                ctx, "There is no game in progress for this channel"
-            )
+            await ctx.send_deny_embed("There is no game in progress for this channel")
             return
 
         old_message = game_data.get("message")
@@ -297,9 +293,7 @@ class HangmanCog(base.BaseCog):
     async def stop(self, ctx):
         game_data = self.games.get(ctx.channel.id)
         if not game_data:
-            await util.send_deny_embed(
-                ctx, "There is no game in progress for this channel"
-            )
+            await ctx.send_deny_embed("There is no game in progress for this channel")
             return
 
         should_delete = await self.bot.confirm(
@@ -315,6 +309,6 @@ class HangmanCog(base.BaseCog):
         word = getattr(game, "word", "???")
 
         del self.games[ctx.channel.id]
-        await util.send_confirm_embed(
-            ctx, f"That game is now finished. The word was: `{word}`"
+        await ctx.send_confirm_embed(
+            f"That game is now finished. The word was: `{word}`"
         )

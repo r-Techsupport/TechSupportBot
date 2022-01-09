@@ -48,9 +48,7 @@ class Mocker(base.BaseCog):
     )
     async def mock(self, ctx, user_to_mock: discord.Member):
         if not user_to_mock:
-            await util.send_deny_embed(
-                ctx, "You must tag a user if you want to mock them!"
-            )
+            await ctx.send_deny_embed("You must tag a user if you want to mock them!")
             return
 
         if user_to_mock.bot:
@@ -63,13 +61,12 @@ class Mocker(base.BaseCog):
             if message.author == user_to_mock and not message.content.startswith(
                 prefix
             ):
-                mock_message = message.content
+                mock_message = message.clean_content
                 break
 
         if not mock_message:
-            await util.send_deny_embed(ctx, f"No message found for user {user_to_mock}")
+            await ctx.send_deny_embed(f"No message found for user {user_to_mock}")
             return
 
-        filtered_message = self.bot.sub_mentions_for_usernames(mock_message)
-        embed = MockEmbed(message=filtered_message, user=user_to_mock)
-        await util.send_with_mention(ctx, embed=embed)
+        embed = MockEmbed(message=mock_message, user=user_to_mock)
+        await ctx.send(embed=embed)

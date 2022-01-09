@@ -49,7 +49,7 @@ class Burn(base.BaseCog):
                 break
 
         if not matched_message:
-            await util.send_deny_embed(ctx, "I could not a find a message to reply to")
+            await ctx.send_deny_embed("I could not a find a message to reply to")
             return
 
         for emoji in ["🔥", "🚒", "👨‍🚒"]:
@@ -57,4 +57,4 @@ class Burn(base.BaseCog):
 
         message = random.choice(self.PHRASES)
         embed = BurnEmbed(description=f"🔥🔥🔥 {message} 🔥🔥🔥")
-        await util.send_with_mention(ctx, embed=embed, targets=[user_to_match])
+        await ctx.send(embed=embed, targets=[user_to_match])

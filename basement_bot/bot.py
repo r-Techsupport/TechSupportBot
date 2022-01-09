@@ -2,14 +2,13 @@
 """
 import datetime
 import os
-import re
 import sys
 
 import base
 import cogs as builtin_cogs
+import context
 import discord
 import error
-import util
 from discord.ext import commands, ipc
 
 
@@ -174,7 +173,11 @@ class BasementBot(base.AdvancedBot):
             exception=exception,
         )
 
-    async def on_command_error(self, context, exception):
+    async def get_context(self, message, cls=context.Context):
+        """Wraps the parent context creation with a custom class."""
+        return await super().get_context(message, cls=cls)
+
+    async def on_command_error(self, ctx, exception):
         """Catches command errors and sends them to the error logger for processing.
 
         parameters:
@@ -183,12 +186,12 @@ class BasementBot(base.AdvancedBot):
         """
         if self.extra_events.get("on_command_error", None):
             return
-        if hasattr(context.command, "on_error"):
+        if hasattr(ctx.command, "on_error"):
             return
-        if context.cog:
+        if ctx.cog:
             # pylint: disable=protected-access
             if (
-                commands.Cog._get_overridden_method(context.cog.cog_command_error)
+                commands.Cog._get_overridden_method(ctx.cog.cog_command_error)
                 is not None
             ):
                 return
@@ -206,10 +209,10 @@ class BasementBot(base.AdvancedBot):
 
         error_message = message_template.get_message(exception)
 
-        await util.send_deny_embed(context, error_message)
+        await ctx.send_deny_embed(error_message)
 
         log_channel = await self.get_log_channel_from_guild(
-            getattr(context, "guild", None), key="logging_channel"
+            getattr(ctx, "guild", None), key="logging_channel"
         )
         await self.logger.error(
             f"Command error: {exception}",
@@ -356,15 +359,13 @@ class BasementBot(base.AdvancedBot):
         await getattr(self.logger, log_type)(message, channel=log_channel, **kwargs)
 
     # pylint: disable=too-many-branches, too-many-arguments
-    async def paginate(self, ctx, embeds, timeout=300, tag_user=False, restrict=False):
+    async def paginate(self, ctx, embeds, timeout=300):
         """Paginates a set of embed objects for users to sort through
 
         parameters:
             ctx (discord.ext.Context): the context object for the message
             embeds (Union[discord.Embed, str][]): the embeds (or URLs to render them) to paginate
             timeout (int) (seconds): the time to wait before exiting the reaction listener
-            tag_user (bool): True if the context user should be mentioned in the response
-            restrict (bool): True if only the caller can navigate the results
         """
         # limit large outputs
         embeds = embeds[:20]
@@ -383,10 +384,7 @@ class BasementBot(base.AdvancedBot):
             else None,
         }
 
-        if tag_user:
-            message = await util.send_with_mention(ctx, **get_args(index))
-        else:
-            message = await ctx.send(**get_args(index))
+        message = await ctx.send(**get_args(index))
 
         if isinstance(ctx.channel, discord.DMChannel):
             return
@@ -416,7 +414,7 @@ class BasementBot(base.AdvancedBot):
             except Exception:
                 break
 
-            if restrict and user.id != ctx.author.id:
+            if user.id != ctx.author.id:
                 # this is checked first so it can pass to the deletion
                 pass
 
@@ -476,7 +474,7 @@ class BasementBot(base.AdvancedBot):
         embed = discord.Embed(title="Please confirm!", description=message)
         embed.color = discord.Color.green()
 
-        message = await util.send_with_mention(ctx, embed=embed, targets=[ctx.author])
+        message = await ctx.send(embed=embed)
         await message.add_reaction(self.CONFIRM_YES_EMOJI)
         await message.add_reaction(self.CONFIRM_NO_EMOJI)
 
@@ -518,21 +516,6 @@ class BasementBot(base.AdvancedBot):
             await message.delete()
 
         return result
-
-    def sub_mentions_for_usernames(self, content):
-        """Subs a string of Discord mentions with the corresponding usernames.
-
-        parameters:
-            bot (BasementBot): the bot object
-            content (str): the content to parse
-        """
-
-        def get_nick_from_id_match(match):
-            id_ = int(match.group(1))
-            user = self.get_user(id_)
-            return f"@{user.name}" if user else "@user"
-
-        return re.sub(r"<@?!?(\d+)>", get_nick_from_id_match, content)
 
     @property
     def startup_time(self):

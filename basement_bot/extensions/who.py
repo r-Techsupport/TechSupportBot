@@ -71,7 +71,7 @@ class Who(base.BaseCog):
                 inline=False,
             )
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     @commands.has_permissions(kick_members=True)
     @commands.group(
@@ -89,7 +89,7 @@ class Who(base.BaseCog):
     )
     async def set_note(self, ctx, user: discord.Member, *, body: str):
         if ctx.author.id == user.id:
-            await util.send_deny_embed(ctx, "You cannot add a note for yourself")
+            await ctx.send_deny_embed("You cannot add a note for yourself")
             return
 
         note = self.models.UserNote(
@@ -101,7 +101,7 @@ class Who(base.BaseCog):
 
         await note.create()
 
-        await util.send_confirm_embed(ctx, "I created that note successfully")
+        await ctx.send_confirm_embed("I created that note successfully")
 
         config = await self.bot.get_context_config(ctx)
         role = discord.utils.get(
@@ -122,7 +122,7 @@ class Who(base.BaseCog):
         notes = await self.get_notes(user, ctx.guild)
 
         if not notes:
-            await util.send_deny_embed(ctx, "There are no notes for that user")
+            await ctx.send_deny_embed("There are no notes for that user")
             return
 
         await self.bot.confirm(
@@ -134,7 +134,7 @@ class Who(base.BaseCog):
         for note in notes:
             await note.delete()
 
-        await util.send_confirm_embed(ctx, "I cleared all the notes for that user")
+        await ctx.send_confirm_embed("I cleared all the notes for that user")
 
         config = await self.bot.get_context_config(ctx)
         role = discord.utils.get(
@@ -155,7 +155,7 @@ class Who(base.BaseCog):
         notes = await self.get_notes(user, ctx.guild)
 
         if not notes:
-            await util.send_deny_embed(ctx, "There are no notes for that user")
+            await ctx.send_deny_embed("There are no notes for that user")
             return
 
         note_output_data = []
@@ -173,7 +173,7 @@ class Who(base.BaseCog):
             filename=f"notes-for-{user.id}-{datetime.datetime.utcnow()}.yaml",
         )
 
-        await util.send_with_mention(ctx, file=yaml_file)
+        await ctx.send(file=yaml_file)
 
     async def get_notes(self, user, guild):
         user_notes = (

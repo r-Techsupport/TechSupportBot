@@ -42,12 +42,12 @@ class Hugger(base.BaseCog):
             ctx (Context): the context
         """
         if user_to_hug.id == ctx.author.id:
-            await util.send_deny_embed(ctx, "Let's be serious")
+            await ctx.send_deny_embed("Let's be serious")
             return
 
         embed = self.generate_embed(ctx, user_to_hug)
 
-        await util.send_with_mention(ctx, embed=embed, targets=[user_to_hug])
+        await ctx.send(embed=embed, targets=[user_to_hug])
 
     def generate_embed(self, ctx, user_to_hug):
         hug_text = random.choice(self.HUGS_SELECTION).format(

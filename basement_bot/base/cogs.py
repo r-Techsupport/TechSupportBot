@@ -91,7 +91,9 @@ class MatchCog(BaseCog):
         if not config:
             return
 
-        if not self.extension_name in config.get("enabled_extensions", []):
+        if not self.no_guild and not self.extension_name in config.get(
+            "enabled_extensions", []
+        ):
             return
 
         result = await self.match(config, ctx, message.content)

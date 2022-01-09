@@ -30,31 +30,31 @@ class XKCD(base.BaseCog):
     async def random_comic(self, ctx):
         most_recent_comic_data = await self.api_call()
         if most_recent_comic_data.status_code != 200:
-            await util.send_deny_embed(ctx, "I had trouble looking up XKCD's comics")
+            await ctx.send_deny_embed("I had trouble looking up XKCD's comics")
             return
 
         max_number = most_recent_comic_data.get("num")
         if not max_number:
-            await util.send_deny_embed(ctx, "I could not determine the max XKCD number")
+            await ctx.send_deny_embed("I could not determine the max XKCD number")
             return
 
         comic_number = random.randint(1, max_number)
 
         random_comic_data = await self.api_call(number=comic_number)
         if random_comic_data.status_code != 200:
-            await util.send_deny_embed(
-                ctx, f"I had trouble calling a random comic (#{comic_number})"
+            await ctx.send_deny_embed(
+                f"I had trouble calling a random comic (#{comic_number})"
             )
             return
 
         embed = self.generate_embed(random_comic_data)
         if not embed:
-            await util.send_deny_embed(
-                ctx, f"I had trouble calling getting the correct XKCD info"
+            await ctx.send_deny_embed(
+                f"I had trouble calling getting the correct XKCD info"
             )
             return
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     @xkcd.command(
         name="number",
@@ -66,17 +66,17 @@ class XKCD(base.BaseCog):
     async def numbered_comic(self, ctx, number: int):
         comic_data = await self.api_call(number=number)
         if comic_data.status_code != 200:
-            await util.send_deny_embed(ctx, "I had trouble looking up XKCD's comics")
+            await ctx.send_deny_embed("I had trouble looking up XKCD's comics")
             return
 
         embed = self.generate_embed(comic_data)
         if not embed:
-            await util.send_deny_embed(
-                ctx, f"I had trouble calling getting the correct XKCD info"
+            await ctx.send_deny_embed(
+                f"I had trouble calling getting the correct XKCD info"
             )
             return
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     async def api_call(self, number=None):
         url = self.SPECIFIC_API_URL % (number) if number else self.MOST_RECENT_API_URL

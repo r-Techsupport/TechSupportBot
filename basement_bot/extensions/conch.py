@@ -52,14 +52,11 @@ class MagicConch(base.BaseCog):
         description="Asks the Magic Conch (8ball) a question",
         usage="[question]",
     )
-    async def ask_question(self, ctx, *, question: str):
+    async def ask_question(self, ctx, *, question: commands.clean_content()):
         # we don't actually care about the question
         response = random.choice(self.RESPONSES)
         if not question.endswith("?"):
             question += "?"
 
-        question = self.bot.sub_mentions_for_usernames(question)
-
         embed = ConchEmbed(title=question, description=response)
-
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)

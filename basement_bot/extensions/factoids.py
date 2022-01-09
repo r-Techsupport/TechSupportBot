@@ -74,8 +74,8 @@ async def no_mentions(ctx):
         or ctx.message.mentions
         or ctx.message.channel_mentions
     ):
-        await util.send_deny_embed(
-            ctx, "I cannot remember factoids with user/role/channel mentions"
+        await ctx.send_deny_embed(
+            "I cannot remember factoids with user/role/channel mentions"
         )
         return False
     return True
@@ -177,12 +177,12 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         except KeyError:
             pass
 
-        await util.send_confirm_embed(ctx, f"Successfully added factoid *{trigger}*")
+        await ctx.send_confirm_embed(f"Successfully added factoid *{trigger}*")
 
     async def delete_factoid(self, ctx, trigger):
         factoid = await self.get_factoid_from_query(trigger, ctx.guild)
         if not factoid:
-            await util.send_deny_embed(ctx, "I couldn't find that factoid")
+            await ctx.send_deny_embed("I couldn't find that factoid")
             return
 
         should_delete = await self.bot.confirm(
@@ -211,8 +211,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         content = factoid.message if not embed else None
 
         try:
-            await util.send_with_mention(
-                ctx,
+            await ctx.send(
                 content=content,
                 embed=embed,
                 targets=ctx.message.mentions or [ctx.author],
@@ -232,7 +231,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
                 "Could not send factoid",
                 exception=e,
             )
-            await util.send_with_mention(ctx, factoid.message)
+            await ctx.send(factoid.message)
 
         await self.dispatch_relay_factoid(config, ctx, factoid.message)
 
@@ -413,9 +412,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     )
     async def forget(self, ctx, factoid_name: str):
         await self.delete_factoid(ctx, factoid_name)
-        await util.send_confirm_embed(
-            ctx, f"Successfully deleted factoid: *{factoid_name}*"
-        )
+        await ctx.send_confirm_embed(f"Successfully deleted factoid: *{factoid_name}*")
 
     @util.with_typing
     @commands.check(has_manage_factoids_role)
@@ -434,21 +431,19 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     ):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         if not factoid:
-            await util.send_deny_embed(ctx, "I couldn't find that factoid")
+            await ctx.send_deny_embed("I couldn't find that factoid")
             return
 
         if factoid.loop_config:
-            await util.send_confirm_embed(
-                ctx, "Deleting previous loop configuration..."
-            )
+            await ctx.send_confirm_embed("Deleting previous loop configuration...")
 
         new_loop_config = json.dumps(
             {"sleep_duration": sleep_duration, "channel_ids": channel_ids}
         )
         await factoid.update(loop_config=new_loop_config).apply()
 
-        await util.send_confirm_embed(
-            ctx, f"Successfully saved loop config for {factoid_name}"
+        await ctx.send_confirm_embed(
+            f"Successfully saved loop config for {factoid_name}"
         )
 
     @util.with_typing
@@ -462,16 +457,16 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     async def deloop(self, ctx, factoid_name: str):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         if not factoid:
-            await util.send_deny_embed(ctx, "I couldn't find that factoid")
+            await ctx.send_deny_embed("I couldn't find that factoid")
             return
 
         if not factoid.loop_config:
-            await util.send_deny_embed(ctx, "There is no loop config for that factoid")
+            await ctx.send_deny_embed("There is no loop config for that factoid")
             return
 
         await factoid.update(loop_config=None).apply()
 
-        await util.send_confirm_embed(ctx, "Loop config deleted")
+        await ctx.send_confirm_embed("Loop config deleted")
 
     @util.with_typing
     @commands.check(has_manage_factoids_role)
@@ -485,18 +480,18 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
 
         if not factoid:
-            await util.send_deny_embed(ctx, "I couldn't find that factoid")
+            await ctx.send_deny_embed("I couldn't find that factoid")
             return
 
         if not factoid.loop_config:
-            await util.send_deny_embed(ctx, "There is no loop config for that factoid")
+            await ctx.send_deny_embed("There is no loop config for that factoid")
             return
 
         try:
             loop_config = json.loads(factoid.loop_config)
         except Exception:
-            await util.send_deny_embed(
-                ctx, "I couldn't process the JSON for that loop config"
+            await ctx.send_deny_embed(
+                "I couldn't process the JSON for that loop config"
             )
             return
 
@@ -529,7 +524,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             .get("finish_time", "Unknown"),  # get-er-done
         )
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     @util.with_typing
     @commands.check(has_manage_factoids_role)
@@ -544,11 +539,11 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
 
         if not factoid:
-            await util.send_deny_embed(ctx, "I couldn't find that factoid")
+            await ctx.send_deny_embed("I couldn't find that factoid")
             return
 
         if not factoid.embed_config:
-            await util.send_deny_embed(ctx, "There is no embed config for that factoid")
+            await ctx.send_deny_embed("There is no embed config for that factoid")
             return
 
         formatted = json.dumps(json.loads(factoid.embed_config), indent=4)
@@ -557,7 +552,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             filename=f"{factoid_name}-factoid-embed-config-{datetime.datetime.utcnow()}.json",
         )
 
-        await util.send_with_mention(ctx, file=json_file)
+        await ctx.send(file=json_file)
 
     @util.with_typing
     @commands.guild_only()
@@ -569,8 +564,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         all_jobs = self.loop_jobs.get(ctx.guild.id, {})
 
         if not all_jobs:
-            await util.send_deny_embed(
-                ctx,
+            await ctx.send_deny_embed(
                 f"There are no currently running factoid loops (next cache update: {self.loop_cache_update_time} UTC)",
             )
             return
@@ -587,7 +581,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             **embed_kwargs,
         )
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     @util.with_typing
     @commands.guild_only()
@@ -600,7 +594,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     async def all_(self, ctx):
         factoids = await self.get_all_factoids(ctx.guild, hide=True)
         if not factoids:
-            await util.send_deny_embed(ctx, "No factoids found!")
+            await ctx.send_deny_embed("No factoids found!")
             return
 
         output_data = []
@@ -630,16 +624,16 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     ):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         if not factoid:
-            await util.send_deny_embed(ctx, "I couldn't find that factoid")
+            await ctx.send_deny_embed("I couldn't find that factoid")
             return
 
         if factoid.hidden:
-            await util.send_deny_embed(ctx, "That factoid is already hidden")
+            await ctx.send_deny_embed("That factoid is already hidden")
             return
 
         await factoid.update(hidden=True).apply()
 
-        await util.send_confirm_embed(ctx, "That factoid is now hidden")
+        await ctx.send_confirm_embed("That factoid is now hidden")
 
     @util.with_typing
     @commands.has_permissions(kick_members=True)
@@ -656,13 +650,13 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     ):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         if not factoid:
-            await util.send_deny_embed(ctx, "I couldn't find that factoid")
+            await ctx.send_deny_embed("I couldn't find that factoid")
             return
 
         if not factoid.hidden:
-            await util.send_deny_embed(ctx, "That factoid is already unhidden")
+            await ctx.send_deny_embed("That factoid is already unhidden")
             return
 
         await factoid.update(hidden=False).apply()
 
-        await util.send_confirm_embed(ctx, "That factoid is now unhidden")
+        await ctx.send_confirm_embed("That factoid is now unhidden")

@@ -56,4 +56,4 @@ class Joker(base.BaseCog):
         response = await self.call_api(ctx, config)
         text = await response.text()
         embed = self.generate_embed(text)
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)

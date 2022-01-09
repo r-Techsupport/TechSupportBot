@@ -43,7 +43,7 @@ async def invalid_channel(ctx):
     config = await ctx.bot.get_context_config(ctx)
 
     if ctx.channel.id in config.extensions.grab.blocked_channels.value:
-        await util.send_deny_embed(ctx, "Grabs are disabled for this channel")
+        await ctx.send_deny_embed("Grabs are disabled for this channel")
         return False
 
     return True
@@ -59,13 +59,13 @@ class Grabber(base.BaseCog):
     @commands.check(invalid_channel)
     @commands.command(
         name="grab",
-        brief="Grabs a user's last message",
+        brief="Grabs a user's message",
         description="Grabs a message by ID and saves it",
-        usage="@user [message-id]",
+        usage="[message-id]",
     )
     async def grab_user(self, ctx, message: discord.Message):
         if message.author.bot:
-            await util.send_deny_embed(ctx, "Ain't gonna catch me slipping!")
+            await ctx.send_deny_embed("Ain't gonna catch me slipping!")
             return
 
         grab = (
@@ -77,19 +77,19 @@ class Grabber(base.BaseCog):
         )
 
         if grab:
-            await util.send_deny_embed(ctx, "That grab already exists!")
+            await ctx.send_deny_embed("That grab already exists!")
             return
 
         grab = self.models.Grab(
             author_id=str(message.author.id),
             channel=str(ctx.channel.id),
             guild=str(ctx.guild.id),
-            message=message.content,
+            message=message.clean_content,
             nsfw=ctx.channel.is_nsfw(),
         )
         await grab.create()
 
-        await util.send_confirm_embed(ctx, f"Successfully saved: '*{message.content}*'")
+        await ctx.send_confirm_embed(f"Successfully saved: '*{message.clean_content}*'")
 
     @commands.group(
         brief="Executes a grabs command",
@@ -113,7 +113,7 @@ class Grabber(base.BaseCog):
         config = await self.bot.get_context_config(ctx)
 
         if user_to_grab.bot:
-            await util.send_deny_embed(ctx, "Ain't gonna catch me slipping!")
+            await ctx.send_deny_embed("Ain't gonna catch me slipping!")
             return
 
         query = self.models.Grab.query.where(
@@ -126,7 +126,7 @@ class Grabber(base.BaseCog):
         grabs = await query.gino.all()
 
         if not grabs:
-            await util.send_deny_embed(ctx, f"No grabs found for {user_to_grab.name}")
+            await ctx.send_deny_embed(f"No grabs found for {user_to_grab.name}")
             return
 
         grabs.sort(reverse=True, key=lambda grab: grab.time)
@@ -134,7 +134,6 @@ class Grabber(base.BaseCog):
         embeds = []
         field_counter = 1
         for index, grab_ in enumerate(grabs):
-            filtered_message = self.bot.sub_mentions_for_usernames(grab_.message)
             description = "Let's take a stroll down memory lane..."
             if not is_nsfw:
                 description = "Note: *NSFW grabs are hidden in this channel*"
@@ -147,7 +146,7 @@ class Grabber(base.BaseCog):
                 else embed
             )
             embed.add_field(
-                name=f'"{filtered_message}"',
+                name=f'"{grab_.message}"',
                 value=grab_.time.date(),
                 inline=False,
             )
@@ -162,7 +161,7 @@ class Grabber(base.BaseCog):
             else:
                 field_counter += 1
 
-        self.bot.task_paginate(ctx, embeds=embeds, restrict=True)
+        self.bot.task_paginate(ctx, embeds=embeds)
 
     @util.with_typing
     @commands.guild_only()
@@ -177,7 +176,7 @@ class Grabber(base.BaseCog):
         config = await self.bot.get_context_config(ctx)
 
         if user_to_grab.bot:
-            await util.send_deny_embed(ctx, "Ain't gonna catch me slipping!")
+            await ctx.send_deny_embed("Ain't gonna catch me slipping!")
             return
 
         grabs = (
@@ -198,16 +197,14 @@ class Grabber(base.BaseCog):
         grabs = await query.gino.all()
 
         if not grabs:
-            await util.send_deny_embed(ctx, f"No grabs found for {user_to_grab}")
+            await ctx.send_deny_embed(f"No grabs found for {user_to_grab}")
             return
 
         random_index = random.randint(0, len(grabs) - 1)
         grab = grabs[random_index]
 
-        filtered_message = self.bot.sub_mentions_for_usernames(grab.message)
-
         embed = discord.Embed(
-            title=f'"{filtered_message}"',
+            title=f'"{grab.message}"',
             description=f"{user_to_grab.name}, {grab.time.date()}",
         )
 
@@ -215,4 +212,4 @@ class Grabber(base.BaseCog):
 
         embed.set_thumbnail(url=user_to_grab.avatar_url)
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)

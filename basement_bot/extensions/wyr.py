@@ -532,4 +532,4 @@ class WouldYouRather(base.BaseCog):
                 self.last = question.id
                 break
 
-        await util.send_with_mention(ctx, embed=question.generate_embed())
+        await ctx.send(embed=question.generate_embed())

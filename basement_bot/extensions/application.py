@@ -347,13 +347,11 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         collection = self.bot.mongo[self.COLLECTION_NAME]
         application_data = await collection.find_one({"id": {"$eq": application_id}})
         if not application_data:
-            await util.send_deny_embed(
-                ctx, "I couldn't find an application with that ID"
-            )
+            await ctx.send_deny_embed("I couldn't find an application with that ID")
             return
 
         embed = self.generate_embed(application_data, new=False)
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     @application.command(
         name="approve",
@@ -365,15 +363,11 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         collection = self.bot.mongo[self.COLLECTION_NAME]
         application_data = await collection.find_one({"id": {"$eq": application_id}})
         if not application_data:
-            await util.send_deny_embed(
-                ctx, "I couldn't find an application with that ID"
-            )
+            await ctx.send_deny_embed("I couldn't find an application with that ID")
             return
 
         if application_data.get("approved") == True:
-            await util.send_deny_embed(
-                ctx, "That application is already marked as approved"
-            )
+            await ctx.send_deny_embed("That application is already marked as approved")
             return
 
         confirmed = await self.bot.confirm(
@@ -399,9 +393,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         collection = self.bot.mongo[self.COLLECTION_NAME]
         application_data = await collection.find_one({"id": {"$eq": application_id}})
         if not application_data:
-            await util.send_deny_embed(
-                ctx, "I couldn't find an application with that ID"
-            )
+            await ctx.send_deny_embed("I couldn't find an application with that ID")
             return
 
         if application_data.get("approved") == True:
@@ -435,7 +427,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         try:
             await self.send_reminder(config, ctx.guild, automated=False)
         except NoPendingApplications:
-            await util.send_deny_embed(ctx, "There are no pending applications")
+            await ctx.send_deny_embed("There are no pending applications")
 
     async def post_update(self, ctx, application_data, status, reason=None):
         status = status.lower()
@@ -455,7 +447,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             if user
             else f"I've {status} that application, but could not find the original user"
         )
-        await util.send_confirm_embed(ctx, message_content)
+        await ctx.send_confirm_embed(message_content)
 
         embed = ApplicationEmbed(
             description=f"Hey, your application in `{ctx.guild.name}` has been {status}!",

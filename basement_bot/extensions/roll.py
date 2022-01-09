@@ -29,4 +29,4 @@ class Roller(base.BaseCog):
     )
     async def roll(self, ctx, min: int = 1, max: int = 100):
         embed = RollEmbed(roll=random.randint(min, max))
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)

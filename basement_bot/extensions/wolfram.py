@@ -27,15 +27,13 @@ class Wolfram(base.BaseCog):
 
         response = await self.bot.http_call("get", url, get_raw_response=True)
         if response.status == 501:
-            await util.send_deny_embed(
-                ctx, f"{self.WOLFRAM_ALPHA_LABEL} did not like that question"
+            await ctx.send_deny_embed(
+                f"{self.WOLFRAM_ALPHA_LABEL} did not like that question"
             )
             return
         if response.status != 200:
-            await util.send_deny_embed(
-                ctx, f"{self.WOLFRAM_ALPHA_LABEL} ran into an error"
-            )
+            await ctx.send_deny_embed(f"{self.WOLFRAM_ALPHA_LABEL} ran into an error")
             return
 
         answer = await response.text()
-        await util.send_confirm_embed(ctx, answer)
+        await ctx.send_confirm_embed(answer)

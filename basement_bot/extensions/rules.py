@@ -46,7 +46,7 @@ class Rules(base.BaseCog):
         if uploaded_data:
             uploaded_data["guild_id"] = str(ctx.guild.id)
             await collection.replace_one({"guild_id": str(ctx.guild.id)}, uploaded_data)
-            await util.send_confirm_embed(ctx, "I've updated to those rules")
+            await ctx.send_confirm_embed("I've updated to those rules")
             return
 
         rules_data = await collection.find_one({"guild_id": {"$eq": str(ctx.guild.id)}})
@@ -66,9 +66,7 @@ class Rules(base.BaseCog):
             filename=f"{ctx.guild.id}-rules-{datetime.datetime.utcnow()}.json",
         )
 
-        await util.send_with_mention(
-            ctx, content="Re-upload this file to apply new rules", file=json_file
-        )
+        await ctx.send(content="Re-upload this file to apply new rules", file=json_file)
 
     @commands.guild_only()
     @rule_group.command(
@@ -82,7 +80,7 @@ class Rules(base.BaseCog):
             {"guild_id": {"$eq": str(ctx.guild.id)}}
         )
         if not rules_data or not rules_data.get("rules"):
-            await util.send_deny_embed(ctx, "There are no rules for this server")
+            await ctx.send_deny_embed("There are no rules for this server")
             return
 
         rules = rules_data.get("rules")
@@ -93,7 +91,7 @@ class Rules(base.BaseCog):
             rule = None
 
         if not rule:
-            await util.send_deny_embed(ctx, "That rule number doesn't exist")
+            await ctx.send_deny_embed("That rule number doesn't exist")
             return
 
         embed = RuleEmbed(
@@ -103,7 +101,7 @@ class Rules(base.BaseCog):
         embed.set_thumbnail(url=self.RULE_ICON_URL)
         embed.color = discord.Color.gold()
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     @commands.guild_only()
     @rule_group.command(
@@ -116,7 +114,7 @@ class Rules(base.BaseCog):
             {"guild_id": {"$eq": str(ctx.guild.id)}}
         )
         if not rules_data or not rules_data.get("rules"):
-            await util.send_confirm_embed(ctx, "There are no rules for this server")
+            await ctx.send_confirm_embed("There are no rules for this server")
             return
 
         embed = RuleEmbed(

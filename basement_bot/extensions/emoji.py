@@ -78,12 +78,12 @@ class Emojis(base.BaseCog):
     async def message(self, ctx, *, message: str):
         emoji_message = self.emoji_message_from_string(message)
         if not emoji_message:
-            await util.send_deny_embed(
-                ctx, "I can't get any emoji letters from your message!"
+            await ctx.send_deny_embed(
+                "I can't get any emoji letters from your message!"
             )
             return
 
-        await util.send_with_mention(ctx, emoji_message)
+        await ctx.send(emoji_message)
 
     @commands.has_permissions(add_reactions=True)
     @commands.guild_only()
@@ -104,13 +104,13 @@ class Emojis(base.BaseCog):
                 react_message = channel_message
                 break
         if not react_message:
-            await util.send_deny_embed(ctx, "No valid messages found to react to!")
+            await ctx.send_deny_embed("No valid messages found to react to!")
             return
 
         emoji_list = self.emoji_reaction_from_string(message)
         if not emoji_list:
-            await util.send_deny_embed(
-                ctx, "Invalid message! Make sure there are no repeat characters!"
+            await ctx.send_deny_embed(
+                "Invalid message! Make sure there are no repeat characters!"
             )
             return
 
