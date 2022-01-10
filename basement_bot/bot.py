@@ -93,6 +93,7 @@ class BasementBot(base.AdvancedBot):
         await self.load_builtin_cog(builtin_cogs.AdminControl)
         await self.load_builtin_cog(builtin_cogs.ConfigControl)
         await self.load_builtin_cog(builtin_cogs.Raw)
+        await self.load_builtin_cog(builtin_cogs.Listener)
 
         if self.ipc:
             await self.load_builtin_cog(builtin_cogs.IPCEndpoints)
@@ -161,6 +162,10 @@ class BasementBot(base.AdvancedBot):
             send=True,
         )
 
+    async def get_context(self, message, cls=context.Context):
+        """Wraps the parent context creation with a custom class."""
+        return await super().get_context(message, cls=cls)
+
     async def on_error(self, event_method, *_args, **_kwargs):
         """Catches non-command errors and sends them to the error logger for processing.
 
@@ -172,10 +177,6 @@ class BasementBot(base.AdvancedBot):
             f"Bot error in {event_method}: {exception}",
             exception=exception,
         )
-
-    async def get_context(self, message, cls=context.Context):
-        """Wraps the parent context creation with a custom class."""
-        return await super().get_context(message, cls=cls)
 
     async def on_command_error(self, ctx, exception):
         """Catches command errors and sends them to the error logger for processing.

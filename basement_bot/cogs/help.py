@@ -36,12 +36,12 @@ class Helper(base.BaseCog):
         embed = HelpEmbed(title="Choose commands to get help with")
         help_command_name = getattr(self.help_command, "name")
         embed.add_field(
-            name="Builtin commands",
+            name="Builtin help",
             value=f"`{command_prefix}{help_command_name} builtin`",
             inline=False,
         )
         embed.add_field(
-            name="extension commands",
+            name="Extension help",
             value=f"`{command_prefix}{help_command_name} extension`",
             inline=False,
         )

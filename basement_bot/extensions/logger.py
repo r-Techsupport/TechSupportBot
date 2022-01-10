@@ -2,6 +2,7 @@ import datetime
 
 import base
 import discord
+from discord.ext import commands
 
 
 def setup(bot):
@@ -63,9 +64,19 @@ class Logger(base.MatchCog):
 
     async def response(self, config, ctx, _, __):
         channel = ctx.guild.get_channel(
-            int(config.extensions.logger.channel_map.value.get(str(ctx.channel.id)))
+            int(config.extensions.logger.channel_map.value.get(ctx.channel.id))
         )
         if not channel:
+            return
+
+        if channel.guild.id != ctx.guild.id:
+            await self.bot.guild_log(
+                ctx.guild,
+                "logging_channel",
+                "warning",
+                "Configured channel not in associated guild - aborting log",
+                send=True,
+            )
             return
 
         await channel.send(embed=LogEmbed(context=ctx))
