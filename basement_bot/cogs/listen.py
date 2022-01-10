@@ -187,7 +187,9 @@ class Listener(base.BaseCog):
             for dst in destinations:
                 dst_str += f"#{dst.name} - {dst.guild.name}\n"
             embed.add_field(
-                name=f"Source: #{src_ch.name} - {src_ch.guild.name}", value=dst_str
+                name=f"Source: #{src_ch.name} - {src_ch.guild.name}",
+                value=dst_str,
+                inline=False,
             )
 
         await ctx.send(embed=embed)
