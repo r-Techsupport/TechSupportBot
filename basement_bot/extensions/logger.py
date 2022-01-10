@@ -63,9 +63,11 @@ class Logger(base.MatchCog):
         return True
 
     async def response(self, config, ctx, _, __):
-        channel = ctx.guild.get_channel(
-            int(config.extensions.logger.channel_map.value.get(ctx.channel.id))
-        )
+        mapped_id = config.extensions.logger.channel_map.value.get(ctx.channel.id)
+        if not mapped_id:
+            return
+
+        channel = ctx.guild.get_channel(int(mapped_id))
         if not channel:
             return
 
