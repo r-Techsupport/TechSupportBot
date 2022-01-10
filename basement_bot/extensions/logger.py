@@ -59,11 +59,10 @@ class Logger(base.MatchCog):
     async def match(self, config, ctx, _):
         if not str(ctx.channel.id) in config.extensions.logger.channel_map.value:
             return False
-
         return True
 
     async def response(self, config, ctx, _, __):
-        mapped_id = config.extensions.logger.channel_map.value.get(ctx.channel.id)
+        mapped_id = config.extensions.logger.channel_map.value.get(str(ctx.channel.id))
         if not mapped_id:
             return
 
