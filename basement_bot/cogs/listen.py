@@ -6,6 +6,7 @@ import datetime
 import base
 import discord
 import embeds
+import expiringdict
 from discord.ext import commands
 
 
@@ -68,11 +69,121 @@ class Listener(base.BaseCog):
 
     ADMIN_ONLY = True
     MAX_DESTINATIONS = 10
+    CACHE_TIME = 60
+    COLLECTION_NAME = "listener"
 
     # pylint: disable=attribute-defined-outside-init
     async def preconfig(self):
         """Preconfigures the listener cog."""
-        self.destinations = {}
+        self.destination_cache = expiringdict.ExpiringDict(
+            max_len=1000,
+            max_age_seconds=1200,
+        )
+        if not self.COLLECTION_NAME in await self.bot.mongo.list_collection_names():
+            await self.bot.mongo.create_collection(self.COLLECTION_NAME)
+
+    async def get_destinations(self, src):
+        """Gets channel object destinations for a given source channel.
+
+        parameters:
+            src (discord.TextChannel): the source channel to build for
+        """
+        destinations = self.destination_cache.get(src.id)
+
+        if not destinations:
+            destinations = await self.build_destinations_from_src(src)
+            self.destination_cache[src.id] = destinations
+
+        return destinations
+
+    async def build_destinations_from_src(self, src):
+        """Builds channel objects for a given src.
+
+        parameters:
+            src (discord.TextChannel): the source channel to build for
+        """
+        destination_data = await self.get_destination_data(src)
+        destination_ids = (
+            destination_data.get("destinations", []) if destination_data else []
+        )
+        destinations = await self.build_destinations(destination_ids)
+        return destinations
+
+    async def build_destinations(self, destination_ids):
+        """Converts destination ID's to their actual channels objects.
+
+        parameters:
+            destination_ids ([int]): the destination ID's to reference
+        """
+        destinations = set()
+        for did in destination_ids:
+            # the input might be str, make int
+            try:
+                did = int(did)
+            except TypeError:
+                continue
+
+            channel = self.bot.get_channel(did)
+            if not channel or channel in destinations:
+                continue
+
+            destinations.add(channel)
+
+        return destinations
+
+    async def get_destination_data(self, src):
+        """Retrieves raw destination data given a source channel.
+
+        parameters:
+            src (discord.TextChannel): the source channel to build for
+        """
+        destination_data = await self.bot.mongo[self.COLLECTION_NAME].find_one(
+            {"source_id": {"$eq": str(src.id)}}
+        )
+        return destination_data
+
+    async def get_all_sources(self):
+        """Gets all source data.
+
+        This is kind of expensive, so use lightly.
+        """
+        source_objects = []
+        cursor = self.bot.mongo[self.COLLECTION_NAME].find({})
+        for doc in await cursor.to_list(length=50):
+            src_ch = self.bot.get_channel(int(doc.get("source_id"), 0))
+            if not src_ch:
+                continue
+
+            destination_ids = doc.get("destinations")
+            if not destination_ids:
+                continue
+
+            destinations = await self.build_destinations(destination_ids)
+            if not destinations:
+                continue
+
+            source_objects.append(
+                {"source": src_ch, "destinations": list(destinations)}
+            )
+
+        return source_objects
+
+    async def update_destinations(self, src, destination_ids):
+        """Updates destinations in Mongo given a src.
+
+        parameters:
+            src (discord.TextChannel): the source channel to build for
+            destination_ids ([int]): the destination ID's to reference
+        """
+        as_str = str(src.id)
+        new_data = {"source_id": as_str, "destinations": list(set(destination_ids))}
+        await self.bot.mongo[self.COLLECTION_NAME].replace_one(
+            {"source_id": as_str}, new_data, upsert=True
+        )
+        try:
+            del self.destination_cache[src.id]
+        except KeyError:
+            pass
 
     @commands.group(description="Executes a listen command")
     async def listen(self, ctx):
@@ -98,19 +209,22 @@ class Listener(base.BaseCog):
             await ctx.send_deny_embed("Source and destination channels must differ")
             return
 
-        destinations = self.get_destinations(src)
-        if not destinations:
-            destinations = {dst}
-        elif dst in destinations:
+        destination_data = await self.get_destination_data(src)
+        destinations = (
+            destination_data.get("destinations", []) if destination_data else []
+        )
+
+        if str(dst.id) in destinations:
             await ctx.send_deny_embed("That source and destination already exist")
             return
-        elif len(destinations) > self.MAX_DESTINATIONS:
+
+        if len(destinations) > self.MAX_DESTINATIONS:
             await ctx.send_deny_embed("There are too many destinations for that source")
             return
-        else:
-            destinations.add(dst)
 
-        self.destinations[src.id] = destinations
+        destinations.append(str(dst.id))
+        await self.update_destinations(src, destinations)
+
         await ctx.send_confirm_embed("Listening registered!")
 
     @listen.command(
@@ -130,15 +244,19 @@ class Listener(base.BaseCog):
             await ctx.send_deny_embed("Source and destination channels must differ")
             return
 
-        destinations = self.get_destinations(src)
+        destination_data = await self.get_destination_data(src)
+        destinations = (
+            destination_data.get("destinations", []) if destination_data else []
+        )
         if not dst in destinations:
             await ctx.send_deny_embed(
                 "That destination is not registered with that source"
             )
             return
 
-        destinations.remove(dst)
-        self.destinations[src.id] = destinations
+        destinations.remove(str(dst.id))
+        await self.update_destinations(src, destinations)
+
         await ctx.send_confirm_embed("Listening deregistered!")
 
     # pylint: disable=attribute-defined-outside-init
@@ -153,11 +271,9 @@ class Listener(base.BaseCog):
         parameters:
             ctx (discord.ext.Context): the context object for the message
         """
-        if len(self.destinations) == 0:
-            await ctx.send_deny_embed("There are currently no registered listeners")
-            return
+        await self.bot.mongo[self.COLLECTION_NAME].delete_many({})
+        self.destination_cache.clear()
 
-        self.destinations = {}
         await ctx.send_confirm_embed("All listeners deregistered!")
 
     @listen.command(
@@ -171,20 +287,22 @@ class Listener(base.BaseCog):
         parameters:
             ctx (discord.ext.Context): the context object for the message
         """
-        if len(self.destinations) == 0:
+        source_objects = await self.get_all_sources()
+
+        if len(source_objects) == 0:
             await ctx.send_deny_embed("There are currently no registered listeners")
             return
 
         embed = InfoEmbed(
             title="Listener Registrations",
         )
-        for src, destinations in self.destinations.items():
-            src_ch = await self.bot.fetch_channel(src)
+        for source_obj in source_objects:
+            src_ch = source_obj.get("source")
             if not src_ch:
                 continue
 
             dst_str = ""
-            for dst in destinations:
+            for dst in source_obj.get("destinations", []):
                 dst_str += f"#{dst.name} - {dst.guild.name}\n"
             embed.add_field(
                 name=f"Source: #{src_ch.name} - {src_ch.guild.name}",
@@ -193,14 +311,6 @@ class Listener(base.BaseCog):
             )
 
         await ctx.send(embed=embed)
-
-    def get_destinations(self, src):
-        """Helper for getting destinations for a given source channel.
-
-        parameters:
-            src (discord.TextChannel): the channel to reference
-        """
-        return self.destinations.get(src.id, [])
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -212,11 +322,10 @@ class Listener(base.BaseCog):
         if message.author.bot:
             return
 
-        destinations = self.get_destinations(message.channel)
-        sent = 0
+        if isinstance(message.channel, discord.DMChannel):
+            return
+
+        destinations = await self.get_destinations(message.channel)
         for dst in destinations:
-            if sent > self.MAX_DESTINATIONS:
-                return
             embed = MessageEmbed(message=message)
             await dst.send(embed=embed)
-            sent += 1

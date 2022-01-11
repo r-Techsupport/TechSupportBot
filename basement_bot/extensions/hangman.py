@@ -245,7 +245,7 @@ class HangmanCog(base.BaseCog):
         content = f"Found `{letter}`" if correct else f"Letter `{letter}` not in word"
         if game.finished:
             content = f"{content} - game finished! The word was {game.word}"
-        await ctx.send(content)
+        await ctx.send(content=content)
 
     async def generate_game_embed(self, ctx, game):
         hangman_drawing = game.draw_hang_state()
