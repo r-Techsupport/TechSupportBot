@@ -26,6 +26,18 @@ def setup(bot):
         loop_config = bot.db.Column(bot.db.String, default=None)
         hidden = bot.db.Column(bot.db.Boolean, default=False)
 
+    class FactoidResponseEvent(bot.db.Model):
+        __tablename__ = "factoid_responses"
+
+        pk = bot.db.Column(bot.db.Integer, primary_key=True)
+        ref_content = bot.db.Column(bot.db.String)
+        text = bot.db.Column(bot.db.String)
+        message = bot.db.Column(bot.db.String)
+        embed_config = bot.db.Column(bot.db.String, default=None)
+        channel_name = bot.db.Column(bot.db.String)
+        server_name = bot.db.Column(bot.db.String)
+        time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+
     config = bot.ExtensionConfig()
     config.add(
         key="manage_roles",
@@ -35,14 +47,18 @@ def setup(bot):
         default=["Factoids"],
     )
     config.add(
-        key="per_page",
-        datatype="int",
-        title="Factoids per page",
-        description="The number of factoids per page when retrieving all factoids",
-        default=20,
+        key="response_listen_channels",
+        datatype="list",
+        title="Factoids response listen channels",
+        description="The list of channel ID's to listen for factoid response events",
+        default=[],
     )
 
-    bot.add_cog(FactoidManager(bot=bot, models=[Factoid], extension_name="factoids"))
+    bot.add_cog(
+        FactoidManager(
+            bot=bot, models=[Factoid, FactoidResponseEvent], extension_name="factoids"
+        )
+    )
     bot.add_extension_config("factoids", config)
 
 
@@ -234,6 +250,9 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             await ctx.send(factoid.message)
 
         await self.dispatch_relay_factoid(config, ctx, factoid.message)
+
+        if ctx.message.mentions or ctx.message.reference:
+            await self.process_response_event(ctx, factoid)
 
     def message_has_mentions(self, message):
         if message.mention_everyone:
@@ -660,3 +679,61 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         await factoid.update(hidden=False).apply()
 
         await ctx.send_confirm_embed("That factoid is now unhidden")
+
+    async def process_response_event(self, ctx, factoid):
+        config = await self.bot.get_context_config(ctx)
+        if (
+            not str(ctx.channel.id)
+            in config.extensions.factoids.response_listen_channels.value
+        ):
+            return
+
+        await self.bot.guild_log(
+            ctx.guild,
+            "logging_channel",
+            "info",
+            f"Processing factoid response event",
+            send=True,
+        )
+
+        found = 0
+
+        users = {}
+        for user in ctx.message.mentions:
+            if user.bot:
+                continue
+            if user.id == ctx.author.id:
+                continue
+            users[user] = None
+
+        if ctx.message.reference and ctx.message.reference.cached_message:
+            # try to get message
+            users[
+                ctx.message.reference.cached_message.author
+            ] = ctx.message.reference.cached_message
+            found += 1
+
+        async for message in ctx.channel.history(limit=100):
+            if found >= len(users):
+                break
+
+            if not message.author in users:
+                continue
+
+            saved_message = users.get(message.author)
+            if saved_message:
+                continue
+
+            users[message.author] = message
+            found += 1
+
+        for user, message in users.items():
+            event = self.models.FactoidResponseEvent(
+                ref_content=message.content,
+                text=factoid.text,
+                message=factoid.message,
+                embed_config=factoid.embed_config,
+                channel_name=ctx.channel.name,
+                server_name=ctx.guild.name,
+            )
+            await event.create()
