@@ -248,7 +248,7 @@ class Listener(base.BaseCog):
         destinations = (
             destination_data.get("destinations", []) if destination_data else []
         )
-        if not str(dst.id) in destinations:
+        if str(dst.id) not in destinations:
             await ctx.send_deny_embed(
                 "That destination is not registered with that source"
             )
