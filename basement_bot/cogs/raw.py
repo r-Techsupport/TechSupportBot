@@ -34,7 +34,7 @@ class Raw(base.BaseCog):
             await ctx.send_deny_embed(f"Error: ```{e}```")
             return
 
-        await ctx.send(self.bot.CONFIRM_YES_EMOJI)
+        await ctx.send_confirm_embed("Code executed!")
 
     async def aexec(self, code):
         """Uses exec to define a custom async function, and then awaits it.
