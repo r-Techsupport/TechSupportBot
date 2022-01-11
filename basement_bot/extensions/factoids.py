@@ -36,6 +36,7 @@ def setup(bot):
         embed_config = bot.db.Column(bot.db.String, default=None)
         channel_name = bot.db.Column(bot.db.String)
         server_name = bot.db.Column(bot.db.String)
+        responder = bot.db.Column(bot.db.String)
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
 
     config = bot.ExtensionConfig()
@@ -688,14 +689,6 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         ):
             return
 
-        await self.bot.guild_log(
-            ctx.guild,
-            "logging_channel",
-            "info",
-            f"Processing factoid response event",
-            send=True,
-        )
-
         found = 0
 
         users = {}
@@ -706,8 +699,11 @@ class FactoidManager(base.MatchCog, base.LoopCog):
                 continue
             users[user] = None
 
-        if ctx.message.reference and ctx.message.reference.cached_message:
-            # try to get message
+        if (
+            ctx.message.reference
+            and ctx.message.reference.cached_message
+            and ctx.message.reference.cached_message.author.id != ctx.author.id
+        ):
             users[
                 ctx.message.reference.cached_message.author
             ] = ctx.message.reference.cached_message
@@ -727,6 +723,14 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             users[message.author] = message
             found += 1
 
+        await self.bot.guild_log(
+            ctx.guild,
+            "logging_channel",
+            "info",
+            f"Processing factoid response event",
+            send=True,
+        )
+
         for user, message in users.items():
             event = self.models.FactoidResponseEvent(
                 ref_content=message.content,
@@ -735,5 +739,6 @@ class FactoidManager(base.MatchCog, base.LoopCog):
                 embed_config=factoid.embed_config,
                 channel_name=ctx.channel.name,
                 server_name=ctx.guild.name,
+                responder=str(ctx.author),
             )
             await event.create()
