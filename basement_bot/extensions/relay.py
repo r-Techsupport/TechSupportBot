@@ -112,7 +112,6 @@ class IRCEmbed(discord.Embed):
         super().__init__(*args, **kwargs)
         self.data = data
         self.color = discord.Color.blurple()
-        self.set_footer(text=f"IRC {self.data.server.name} - {self.data.channel.name}")
 
     @staticmethod
     def get_permissions_label(permissions):
@@ -132,7 +131,7 @@ class IRCMessageEmbed(IRCEmbed):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.set_author(
-            name=f"{self.get_permissions_label(self.data.author.permissions)}{self.data.author.nickname}",
+            name=f"{self.get_permissions_label(self.data.author.permissions)}{self.data.author.nickname} - {self.data.server.name}/{self.data.channel.name}",
             icon_url=self.ICON_URL,
         )
         self.description = self.data.event.content
@@ -141,7 +140,10 @@ class IRCMessageEmbed(IRCEmbed):
 class IRCEventEmbed(IRCEmbed):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.set_author(name="IRC Event", icon_url=self.ICON_URL)
+        self.set_author(
+            name=f"IRC Event - {self.data.server.name}/{self.data.channel.name}",
+            icon_url=self.ICON_URL,
+        )
         self.description = self.generate_event_message()
 
     def generate_event_message(self):
