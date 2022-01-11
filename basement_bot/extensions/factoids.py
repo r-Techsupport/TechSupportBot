@@ -255,14 +255,67 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         if ctx.message.mentions or ctx.message.reference:
             await self.process_response_event(ctx, factoid)
 
-    def message_has_mentions(self, message):
-        if message.mention_everyone:
-            return True
-        if message.role_mentions:
-            return True
-        if message.mentions:
-            return True
-        return False
+    async def process_response_event(self, ctx, factoid):
+        config = await self.bot.get_context_config(ctx)
+        if (
+            not str(ctx.channel.id)
+            in config.extensions.factoids.response_listen_channels.value
+        ):
+            return
+
+        found = 0
+
+        users = {}
+        for user in ctx.message.mentions:
+            if user.bot:
+                continue
+            if user.id == ctx.author.id:
+                continue
+            users[user] = None
+
+        if (
+            ctx.message.reference
+            and ctx.message.reference.cached_message
+            and ctx.message.reference.cached_message.author.id != ctx.author.id
+        ):
+            users[
+                ctx.message.reference.cached_message.author
+            ] = ctx.message.reference.cached_message
+            found += 1
+
+        async for message in ctx.channel.history(limit=100):
+            if found >= len(users):
+                break
+
+            if not message.author in users:
+                continue
+
+            saved_message = users.get(message.author)
+            if saved_message:
+                continue
+
+            users[message.author] = message
+            found += 1
+
+        await self.bot.guild_log(
+            ctx.guild,
+            "logging_channel",
+            "info",
+            f"Processing factoid response event",
+            send=True,
+        )
+
+        for user, message in users.items():
+            event = self.models.FactoidResponseEvent(
+                ref_content=message.content,
+                text=factoid.text,
+                message=factoid.message,
+                embed_config=factoid.embed_config,
+                channel_name=ctx.channel.name,
+                server_name=ctx.guild.name,
+                responder=str(ctx.author),
+            )
+            await event.create()
 
     async def dispatch_relay_factoid(self, config, ctx, message):
         relay_cog = self.bot.cogs.get("DiscordRelay")
@@ -680,65 +733,3 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         await factoid.update(hidden=False).apply()
 
         await ctx.send_confirm_embed("That factoid is now unhidden")
-
-    async def process_response_event(self, ctx, factoid):
-        config = await self.bot.get_context_config(ctx)
-        if (
-            not str(ctx.channel.id)
-            in config.extensions.factoids.response_listen_channels.value
-        ):
-            return
-
-        found = 0
-
-        users = {}
-        for user in ctx.message.mentions:
-            if user.bot:
-                continue
-            if user.id == ctx.author.id:
-                continue
-            users[user] = None
-
-        if (
-            ctx.message.reference
-            and ctx.message.reference.cached_message
-            and ctx.message.reference.cached_message.author.id != ctx.author.id
-        ):
-            users[
-                ctx.message.reference.cached_message.author
-            ] = ctx.message.reference.cached_message
-            found += 1
-
-        async for message in ctx.channel.history(limit=100):
-            if found >= len(users):
-                break
-
-            if not message.author in users:
-                continue
-
-            saved_message = users.get(message.author)
-            if saved_message:
-                continue
-
-            users[message.author] = message
-            found += 1
-
-        await self.bot.guild_log(
-            ctx.guild,
-            "logging_channel",
-            "info",
-            f"Processing factoid response event",
-            send=True,
-        )
-
-        for user, message in users.items():
-            event = self.models.FactoidResponseEvent(
-                ref_content=message.content,
-                text=factoid.text,
-                message=factoid.message,
-                embed_config=factoid.embed_config,
-                channel_name=ctx.channel.name,
-                server_name=ctx.guild.name,
-                responder=str(ctx.author),
-            )
-            await event.create()
