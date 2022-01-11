@@ -149,6 +149,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             content=mention_string,
             embed=embed,
             allowed_mentions=discord.AllowedMentions(roles=True),
+            mention_author=False,
         )
 
         collection = self.bot.mongo[self.COLLECTION_NAME]
