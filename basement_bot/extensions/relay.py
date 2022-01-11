@@ -2,6 +2,7 @@ import datetime
 import uuid
 
 import base
+import discord
 import munch
 from discord.ext import commands
 
@@ -100,6 +101,66 @@ class ReactionAddEvent(RelayEvent):
         super().__init__("reaction_add", *args, **kwargs)
         self.payload.event.emoji = emoji
         self.payload.event.content = message.clean_content
+
+
+class IRCEmbed(discord.Embed):
+
+    ICON_URL = "https://cdn.icon-icons.com/icons2/1508/PNG/512/ircchat_104581.png"
+
+    def __init__(self, *args, **kwargs):
+        data = kwargs.pop("data")
+        super().__init__(*args, **kwargs)
+        self.data = data
+        self.color = discord.Color.blurple()
+        self.set_footer(text=f"IRC {self.data.server.name} - {self.data.channel.name}")
+
+    @staticmethod
+    def get_permissions_label(permissions):
+        label = ""
+        if permissions:
+            if "v" in permissions:
+                label += "+"
+            if "o" in permissions:
+                label += "@"
+        return label
+
+
+class IRCMessageEmbed(IRCEmbed):
+
+    ICON_URL = "https://cdn.icon-icons.com/icons2/1508/PNG/512/ircchat_104581.png"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.set_author(
+            name=f"{self.get_permissions_label(self.data.author.permissions)}{self.data.author.nickname}",
+            icon_url=self.ICON_URL,
+        )
+        self.description = self.data.event.content
+
+
+class IRCEventEmbed(IRCEmbed):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.set_author(name="IRC Event", icon_url=self.ICON_URL)
+        self.description = self.generate_event_message()
+
+    def generate_event_message(self):
+        permissions_label = self.get_permissions_label(self.data.author.permissions)
+        if self.data.event.type == "join":
+            return f"`{permissions_label}{self.data.author.mask}` has joined {self.data.channel.name}!"
+        elif self.data.event.type == "part":
+            return f"`{permissions_label}{self.data.author.mask}` left {self.data.channel.name}!"
+        elif self.data.event.type == "quit":
+            return f"`{permissions_label}{self.data.author.mask}` quit ({self.data.event.content})"
+        elif self.data.event.type == "kick":
+            return f"`{permissions_label}{self.data.author.mask}` kicked `{self.data.event.target}` from {self.data.channel.name}! (reason: *{self.data.event.content}*)."
+        elif self.data.event.type == "action":
+            return f"`{permissions_label}{self.data.author.nickname}` {self.data.event.content}"
+        elif self.data.event.type == "other":
+            if self.data.event.irc_command.lower() == "mode":
+                return f"`{permissions_label}{self.data.author.nickname}` sets mode **{self.data.event.irc_paramlist[1]}** on `{self.data.event.irc_paramlist[2]}`"
+            else:
+                return f"`{self.data.author.mask}` did some configuration on {self.data.channel.name}..."
 
 
 class DiscordRelay(base.MatchCog):
@@ -227,16 +288,14 @@ class IRCReceiver(base.LoopCog):
         if not data.event.type in ["message", "join", "part", "quit", "kick", "action"]:
             return
 
-        message = self.process_message(data)
-        if not message:
-            return
+        embed = self.process_embed(data)
 
         if data.event.type == "quit":
             for channel_id in self.listen_channels:
                 channel = self.bot.get_channel(int(channel_id))
                 if not channel:
                     continue
-                await channel.send(message)
+                await channel.send(embed=embed)
 
             return
 
@@ -244,9 +303,7 @@ class IRCReceiver(base.LoopCog):
         if not channel:
             return
 
-        message = self._add_mentions(message, channel.guild, channel)
-
-        await channel.send(message)
+        await channel.send(embed=embed)
 
     @staticmethod
     def _add_mentions(message, guild, channel):
@@ -289,6 +346,11 @@ class IRCReceiver(base.LoopCog):
             return True
 
         return False
+
+    def process_embed(self, data):
+        if data.event.type == "message":
+            return IRCMessageEmbed(data=data)
+        return IRCEventEmbed(data=data)
 
     def process_message(self, data):
         if data.event.type == "message":
