@@ -1,4 +1,5 @@
 import datetime
+import io
 import json
 import uuid
 from typing import Type
@@ -6,7 +7,6 @@ from typing import Type
 import aiocron
 import base
 import discord
-import util
 import yaml
 from discord.ext import commands
 
@@ -96,6 +96,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
     COLLECTION_NAME = "applications_extension"
     STALE_APPLICATION_DAYS = 30
+    MAX_REMINDER_FIELDS = 2
 
     async def preconfig(self):
         if not self.COLLECTION_NAME in await self.bot.mongo.list_collection_names():
@@ -193,35 +194,53 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
         fields = 0
         for app in applications:
-            if fields >= 5:
-                break
+            # remove this until voting implemented
+            app = self.clean_file_data(app)
 
-            id = app.get("id")
-            if not id:
-                continue
-            try:
-                user_id = int(app.get("user"))
-            except TypeError:
-                user_id = 0
-            user = guild.get_member(user_id)
-            if not user:
-                continue
-
-            embed.add_field(name=user, value=id, inline=False)
-            fields += 1
+            if fields < self.MAX_REMINDER_FIELDS:
+                id = app.get("id")
+                if not id:
+                    continue
+                try:
+                    user_id = int(app.get("user"))
+                except TypeError:
+                    user_id = 0
+                user = guild.get_member(user_id)
+                if not user:
+                    continue
+                embed.add_field(name=user, value=id, inline=False)
+                fields += 1
 
         description = f"Pending applications: {len(applications)}"
         remaining = len(applications) - fields
+
+        file = None
         if remaining > 0:
-            description = f"{description} - please review the following ID's and use the reminder command to view more"
+            description = f"{description} - see attached for all applications"
+            file = discord.File(
+                io.StringIO(yaml.dump(applications)),
+                filename=f"pending-apps-for-server-{guild.id}-{datetime.datetime.utcnow()}.yaml",
+            )
+
         embed.description = description
 
         mention_string = await self.get_mention_string(guild)
         await webhook.channel.send(
             content=mention_string,
             embed=embed,
+            file=file,
             allowed_mentions=discord.AllowedMentions(roles=True),
         )
+
+    @staticmethod
+    def clean_file_data(application_data):
+        try:
+            del application_data["_id"]
+            del application_data["yayers"]
+            del application_data["nayers"]
+        except KeyError:
+            pass
+        return application_data
 
     async def get_applications(
         self, guild, status=None, include_stale=False, limit=100
@@ -230,7 +249,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
         query = {"guild": {"$eq": str(guild.id)}}
 
-        status = status.lower()
+        status = status.lower() if status else None
         if status and not status in ["pending", "approved", "denied"]:
             raise ValueError("status must be one of: pending, approved, denied")
 
@@ -252,24 +271,22 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             return returned_applications
 
         if include_stale:
-            return returned_applications
-
-        for application_data in applications:
-            now = datetime.datetime.utcnow()
-            application_date = application_data.get("date", str(now))
-            try:
-                age = now - datetime.datetime.fromisoformat(application_date)
-            except Exception:
-                age = datetime.timedelta(0)
-            if (age).seconds / 86400 > self.STALE_APPLICATION_DAYS:
-                continue
-            returned_applications.append(application_data)
+            returned_applications = applications
+        else:
+            for application_data in applications:
+                now = datetime.datetime.utcnow()
+                application_date = application_data.get("date", str(now))
+                try:
+                    age = now - datetime.datetime.fromisoformat(application_date)
+                except Exception:
+                    age = datetime.timedelta(0)
+                if (age).seconds / 86400 > self.STALE_APPLICATION_DAYS:
+                    continue
+                returned_applications.append(application_data)
 
         return returned_applications
 
     async def confirm_with_user(self, ctx, user):
-        result = False
-
         embed = ApplicationEmbed(
             description=f"I received an application on the server `{ctx.guild.name}`. Did you make this application? Please reply with `yes` or `no`",
         )
@@ -281,12 +298,8 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             and m.author.id == user.id
             and isinstance(m.channel, discord.DMChannel),
         )
-        if message.content.lower() == "yes":
-            result = True
-
         await message.add_reaction(self.bot.CONFIRM_YES_EMOJI)
-
-        return result
+        return message.content.lower() == "yes"
 
     @staticmethod
     def determine_app_status(application_data):
@@ -344,7 +357,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         description="Gets an application by ID",
         usage="[application-id]",
     )
-    async def get_application_by_id(self, ctx, application_id: str):
+    async def get_app(self, ctx, application_id: str):
         collection = self.bot.mongo[self.COLLECTION_NAME]
         application_data = await collection.find_one({"id": {"$eq": application_id}})
         if not application_data:
@@ -353,6 +366,30 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
         embed = self.generate_embed(application_data, new=False)
         await ctx.send(embed=embed)
+
+    @application.command(
+        name="all",
+        brief="Gets all applications",
+        description="Gets all applications given an optional status",
+        usage="[status (optional: approved/denied/pending)]",
+    )
+    async def get_all_apps(self, ctx, status: str = None):
+        applications = await self.get_applications(
+            ctx.guild, status=status, include_stale=True
+        )
+        if not applications:
+            await ctx.send_deny_embed("I couldn't find any applications")
+            return
+
+        for app in applications:
+            # remove this from the surface until voting implemented
+            app = self.clean_file_data(app)
+
+        yaml_file = discord.File(
+            io.StringIO(yaml.dump(applications)),
+            filename=f"applications-for-server-{ctx.guild.id}-{datetime.datetime.utcnow()}.yaml",
+        )
+        await ctx.send(file=yaml_file)
 
     @application.command(
         name="approve",

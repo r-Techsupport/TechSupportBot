@@ -1,9 +1,12 @@
 import datetime
 import uuid
+from multiprocessing.sharedctypes import Value
+from xml.dom.minidom import Attr
 
 import base
 import discord
 import munch
+from attr import Attribute
 from discord.ext import commands
 
 
@@ -74,7 +77,20 @@ class MessageEvent(RelayEvent):
         if not referenced_message:
             return
 
-        self.payload.event.reply.content = referenced_message.clean_content
+        content = ""
+        if referenced_message.clean_content:
+            content = referenced_message.clean_content
+        elif len(referenced_message.embeds) > 0:
+            embed = referenced_message.embeds[0]
+            if embed.description:
+                content = embed.description
+            elif embed.title:
+                content = embed.title
+            else:
+                # reply data is useless
+                return
+
+        self.payload.event.reply.content = content
 
         self.payload.event.reply.author = munch.Munch()
         self.payload.event.reply.author.username = referenced_message.author.name
@@ -100,7 +116,19 @@ class ReactionAddEvent(RelayEvent):
         emoji = kwargs.pop("emoji")
         super().__init__("reaction_add", *args, **kwargs)
         self.payload.event.emoji = emoji
-        self.payload.event.content = message.clean_content
+
+        content = ""
+        if message.clean_content:
+            content = message.clean_content
+        elif len(message.embeds) > 0:
+            embed = message.embeds[0]
+            if embed.description:
+                content = embed.description
+            elif embed.title:
+                content = embed.title
+
+        # this might be none still, but kinda rare
+        self.payload.event.content = content
 
 
 class IRCEmbed(discord.Embed):
@@ -122,6 +150,26 @@ class IRCEmbed(discord.Embed):
             if "o" in permissions:
                 label += "@"
         return label
+
+    def fill_mentions(self, channel):
+        if not self.description:
+            raise AttributeError("description field not present")
+
+        new_message = ""
+        mention_string = ""
+        for word in self.description.split(" "):
+            member = channel.guild.get_member_named(word)
+            if member:
+                channel_permissions = channel.permissions_for(member)
+                if channel_permissions.read_messages:
+                    mention = f"{member.mention} "
+                    new_message += mention
+                    mention_string += mention
+                    continue
+            new_message += f"{word} "
+
+        self.description = new_message
+        return mention_string
 
 
 class IRCMessageEmbed(IRCEmbed):
@@ -199,14 +247,11 @@ class DiscordRelay(base.MatchCog):
         if not channel:
             return
 
-        if payload.member.bot:
-            return
-
         if not channel.id in self.listen_channels:
             return
 
         message = await channel.fetch_message(payload.message_id)
-        if not message or not message.content:
+        if not message:
             return
 
         emoji = (
@@ -301,11 +346,12 @@ class IRCReceiver(base.LoopCog):
 
             return
 
-        channel = self._get_channel(data)
+        channel = self.get_channel(data)
         if not channel:
             return
 
-        await channel.send(embed=embed)
+        mentions = embed.fill_mentions(channel)
+        await channel.send(content=mentions, embed=embed)
 
     @staticmethod
     def _add_mentions(message, guild, channel):
@@ -320,7 +366,7 @@ class IRCReceiver(base.LoopCog):
             new_message += f"{word} "
         return new_message
 
-    def _get_channel(self, data):
+    def get_channel(self, data):
         for channel_id in self.listen_channels:
             if channel_id == self.bot.file_config.special.relay.channel_map.get(
                 data.channel.name
@@ -333,12 +379,12 @@ class IRCReceiver(base.LoopCog):
         time = deserialized.event.time
         if not time:
             return
-        if self._time_stale(time):
+        if self.time_stale(time):
             return
 
         return deserialized
 
-    def _time_stale(self, time):
+    def time_stale(self, time):
         time = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f")
         now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
@@ -353,47 +399,3 @@ class IRCReceiver(base.LoopCog):
         if data.event.type == "message":
             return IRCMessageEmbed(data=data)
         return IRCEventEmbed(data=data)
-
-    def process_message(self, data):
-        if data.event.type == "message":
-            return self._format_chat_message(data)
-
-        return self._format_event_message(data)
-
-    def _format_chat_message(self, data):
-        return f"{self.IRC_LOGO} `{self._get_permissions_label(data.author.permissions)}{data.author.nickname}` {data.event.content}"
-
-    def _format_event_message(self, data):
-        permissions_label = self._get_permissions_label(data.author.permissions)
-        if data.event.type == "join":
-            return f"{self.IRC_LOGO} `{permissions_label}{data.author.mask}` has joined {data.channel.name}!"
-
-        elif data.event.type == "part":
-            return f"{self.IRC_LOGO} `{permissions_label}{data.author.mask}` left {data.channel.name}!"
-
-        elif data.event.type == "quit":
-            return f"{self.IRC_LOGO} `{permissions_label}{data.author.mask}` quit ({data.event.content})"
-
-        elif data.event.type == "kick":
-            return f"{self.IRC_LOGO} `{permissions_label}{data.author.mask}` kicked `{data.event.target}` from {data.channel.name}! (reason: *{data.event.content}*)."
-
-        elif data.event.type == "action":
-            # this isnt working well right now
-            return f"{self.IRC_LOGO} `{permissions_label}{data.author.nickname}` {data.event.content}"
-
-        elif data.event.type == "other":
-            if data.event.irc_command.lower() == "mode":
-                return f"{self.IRC_LOGO} `{permissions_label}{data.author.nickname}` sets mode **{data.event.irc_paramlist[1]}** on `{data.event.irc_paramlist[2]}`"
-            else:
-                return f"{self.IRC_LOGO} `{data.author.mask}` did some configuration on {data.channel.name}..."
-
-    @staticmethod
-    def _get_permissions_label(permissions):
-        label = ""
-        if permissions:
-            if "v" in permissions:
-                label += "+"
-            if "o" in permissions:
-                label += "@"
-
-        return label
