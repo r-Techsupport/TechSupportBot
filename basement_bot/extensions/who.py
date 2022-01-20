@@ -101,8 +101,6 @@ class Who(base.BaseCog):
 
         await note.create()
 
-        await ctx.send_confirm_embed("I created that note successfully")
-
         config = await self.bot.get_context_config(ctx)
         role = discord.utils.get(
             ctx.guild.roles, name=config.extensions.who.note_role.value
@@ -111,6 +109,8 @@ class Who(base.BaseCog):
             return
 
         await user.add_roles(role)
+
+        await ctx.send_confirm_embed("I created that note successfully")
 
     @note.command(
         name="clear",
@@ -134,8 +134,6 @@ class Who(base.BaseCog):
         for note in notes:
             await note.delete()
 
-        await ctx.send_confirm_embed("I cleared all the notes for that user")
-
         config = await self.bot.get_context_config(ctx)
         role = discord.utils.get(
             ctx.guild.roles, name=config.extensions.who.note_role.value
@@ -144,6 +142,8 @@ class Who(base.BaseCog):
             return
 
         await user.remove_roles(role)
+
+        await ctx.send_confirm_embed("I cleared all the notes for that user")
 
     @note.command(
         name="all",
