@@ -302,7 +302,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         return message.content.lower() == "yes"
 
     @staticmethod
-    def determine_app_status(application_data):
+    def determine_app_status(application_data, lower=False):
         approved = application_data.get("approved", False)
         reviewed = application_data.get("reviewed", False)
         status = "Pending"
@@ -310,7 +310,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             status = "Approved"
         elif reviewed:
             status = "Denied"
-        return status
+        return status.lower() if lower else status
 
     def generate_embed(self, application_data, new):
         embed = ApplicationEmbed(
@@ -404,15 +404,25 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             await ctx.send_deny_embed("I couldn't find an application with that ID")
             return
 
-        if application_data.get("approved") == True:
+        status = self.determine_app_status(application_data, lower=True)
+
+        if status == "approved":
             await ctx.send_deny_embed("That application is already marked as approved")
             return
 
-        confirmed = await self.bot.confirm(
+        if status == "denied":
+            confirm = await self.bot.confirm(
+                ctx,
+                "That application has been marked as denied. Are you sure you want to approve it?",
+            )
+            if not confirm:
+                return
+
+        confirm = await self.bot.confirm(
             ctx,
             "This will notify the user and approve their application. Are you sure?",
         )
-        if not confirmed:
+        if not confirm:
             return
 
         application_data["approved"] = True
@@ -434,7 +444,13 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             await ctx.send_deny_embed("I couldn't find an application with that ID")
             return
 
-        if application_data.get("approved") == True:
+        status = self.determine_app_status(application_data, lower=True)
+
+        if status == "denied":
+            await ctx.send_deny_embed("That application is already marked as denied")
+            return
+
+        if status == "approved":
             confirm = await self.bot.confirm(
                 ctx,
                 "That application has been marked as approved. Are you sure you want to deny it?",
