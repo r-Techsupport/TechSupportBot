@@ -83,7 +83,7 @@ class Helper(base.BaseCog):
             await ctx.send(embed=embed)
         else:
             embeds = await self.generate_general_embeds(ctx)
-            await self.bot.paginate(ctx, embeds)
+            await ctx.paginate(embeds)
 
     def get_extension_names(self):
         """Gets a list of extension names loaded by bot."""

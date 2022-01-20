@@ -172,8 +172,8 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         factoid = await self.get_factoid_from_query(trigger, ctx.guild)
         if factoid:
             # delete old one
-            should_delete = await self.bot.confirm(
-                ctx, "This factoid already exists. Should I overwrite it?"
+            should_delete = await ctx.confirm(
+                "This factoid already exists. Should I overwrite it?"
             )
             if not should_delete:
                 return
@@ -202,8 +202,8 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             await ctx.send_deny_embed("I couldn't find that factoid")
             return
 
-        should_delete = await self.bot.confirm(
-            ctx, "This will remove the factoid forever. Are you sure?"
+        should_delete = await ctx.confirm(
+            "This will remove the factoid forever. Are you sure?"
         )
         if not should_delete:
             return

@@ -161,7 +161,7 @@ class Grabber(base.BaseCog):
             else:
                 field_counter += 1
 
-        self.bot.task_paginate(ctx, embeds=embeds)
+        ctx.task_paginate(pages=embeds)
 
     @util.with_typing
     @commands.guild_only()

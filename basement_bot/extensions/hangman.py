@@ -192,8 +192,7 @@ class HangmanCog(base.BaseCog):
             # get user who started it
             user = game_data.get("user")
             if getattr(user, "id", 0) == ctx.author.id:
-                should_delete = await self.bot.confirm(
-                    ctx,
+                should_delete = await ctx.confirm(
                     "There is a current game in progress that you started. Would you like to end it?",
                     delete_after=True,
                 )
@@ -296,8 +295,7 @@ class HangmanCog(base.BaseCog):
             await ctx.send_deny_embed("There is no game in progress for this channel")
             return
 
-        should_delete = await self.bot.confirm(
-            ctx,
+        should_delete = await ctx.confirm(
             "Are you sure you want to end the current game?",
             delete_after=True,
         )

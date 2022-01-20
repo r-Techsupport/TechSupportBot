@@ -283,8 +283,7 @@ class Protector(base.MatchCog):
 
         if new_count >= config.extensions.protect.max_warnings.value:
             if not bypass:
-                should_ban = await self.bot.confirm(
-                    ctx,
+                should_ban = await ctx.confirm(
                     f"This user has exceeded the max warnings {config.extensions.protect.max_warnings.value}. Would you like to ban them instead?",
                     delete_after=True,
                 )

@@ -1019,7 +1019,7 @@ class DuckHunt(base.LoopCog):
             else:
                 field_counter += 1
 
-        self.bot.task_paginate(ctx, embeds=embeds)
+        ctx.task_paginate(pages=embeds)
 
     @util.with_typing
     @commands.guild_only()
@@ -1058,7 +1058,7 @@ class DuckHunt(base.LoopCog):
             else:
                 field_counter += 1
 
-        self.bot.task_paginate(ctx, embeds=embeds)
+        ctx.task_paginate(pages=embeds)
 
     def get_user_text(self, duck_user):
         user = self.bot.get_user(int(duck_user.author_id))

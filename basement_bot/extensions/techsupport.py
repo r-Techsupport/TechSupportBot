@@ -306,9 +306,7 @@ class AutoSupport(base.MatchCog):
 class BaseParser(base.MatchCog):
     async def confirm(self, ctx, message, config):
         roles = get_support_roles(ctx, config)
-        confirmed = await self.bot.confirm(
-            ctx, message, bypass=roles, delete_after=True
-        )
+        confirmed = await ctx.confirm(message, bypass=roles, delete_after=True)
         return confirmed
 
 

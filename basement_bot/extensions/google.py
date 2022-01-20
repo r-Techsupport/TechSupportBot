@@ -94,7 +94,7 @@ class Googler(base.BaseCog):
                 else:
                     field_counter += 1
 
-        self.bot.task_paginate(ctx, embeds=embeds)
+        ctx.task_paginate(pages=embeds)
 
     @util.with_typing
     @commands.guild_only()
@@ -127,7 +127,7 @@ class Googler(base.BaseCog):
                 return
             embeds.append(link)
 
-        self.bot.task_paginate(ctx, embeds=embeds)
+        ctx.task_paginate(pages=embeds)
 
     @util.with_typing
     @commands.guild_only()
@@ -161,4 +161,4 @@ class Googler(base.BaseCog):
             if link:
                 links.append(link)
 
-        self.bot.task_paginate(ctx, links)
+        ctx.task_paginate(pages=links)

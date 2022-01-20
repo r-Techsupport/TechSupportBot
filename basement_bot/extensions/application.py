@@ -298,7 +298,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             and m.author.id == user.id
             and isinstance(m.channel, discord.DMChannel),
         )
-        await message.add_reaction(self.bot.CONFIRM_YES_EMOJI)
+        await message.add_reaction(ctx.CONFIRM_YES_EMOJI)
         return message.content.lower() == "yes"
 
     @staticmethod
@@ -411,15 +411,13 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             return
 
         if status == "denied":
-            confirm = await self.bot.confirm(
-                ctx,
+            confirm = await ctx.confirm(
                 "That application has been marked as denied. Are you sure you want to approve it?",
             )
             if not confirm:
                 return
 
-        confirm = await self.bot.confirm(
-            ctx,
+        confirm = await ctx.confirm(
             "This will notify the user and approve their application. Are you sure?",
         )
         if not confirm:
@@ -451,17 +449,16 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             return
 
         if status == "approved":
-            confirm = await self.bot.confirm(
-                ctx,
+            confirm = await ctx.confirm(
                 "That application has been marked as approved. Are you sure you want to deny it?",
             )
             if not confirm:
                 return
 
-        confirmed = await self.bot.confirm(
-            ctx, "This will notify the user and deny their application. Are you sure?"
+        confirm = await ctx.confirm(
+            "This will notify the user and deny their application. Are you sure?"
         )
-        if not confirmed:
+        if not confirm:
             return
 
         application_data["reviewed"] = True

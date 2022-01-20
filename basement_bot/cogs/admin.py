@@ -121,8 +121,7 @@ class AdminControl(base.BaseCog):
             return
 
         if extension_name.lower() in self.bot.get_potential_extensions():
-            confirm = await self.bot.confirm(
-                ctx,
+            confirm = await ctx.confirm(
                 f"Warning! This will replace the current `{extension_name}.py` extension! Are you SURE?",
                 delete_after=True,
             )

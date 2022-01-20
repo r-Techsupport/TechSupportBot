@@ -48,4 +48,4 @@ class Giphy(base.BaseCog):
             url = self.parse_url(url)
             embeds.append(url)
 
-        self.bot.task_paginate(ctx, embeds)
+        ctx.task_paginate(pages=embeds)
