@@ -231,10 +231,12 @@ class DiscordRelay(base.MatchCog):
             return
 
         message = await channel.fetch_message(payload.message_id)
-        if not message:
+        if not message or message.author.bot:
             return
 
-        if message.author.bot:
+        # removes embed-generation events
+        old_content = getattr(payload.cached_message, "content", None)
+        if old_content == message.content:
             return
 
         edit_event = MessageEditEvent(message.author, channel, message=message)
