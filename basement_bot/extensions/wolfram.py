@@ -13,6 +13,7 @@ class Wolfram(base.BaseCog):
     WOLFRAM_ALPHA_LABEL = "`Wolfram|Alpha`"
 
     @util.with_typing
+    @commands.cooldown(3, 60, commands.BucketType.channel)
     @commands.command(
         name="wa",
         aliases=["math", "wolframalpha"],

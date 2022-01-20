@@ -14,6 +14,7 @@ class ISSLocator(base.BaseCog):
     GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
 
     @util.with_typing
+    @commands.cooldown(1, 60, commands.BucketType.channel)
     @commands.command(
         name="iss",
         brief="Finds the ISS",

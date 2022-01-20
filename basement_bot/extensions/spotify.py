@@ -28,6 +28,7 @@ class Spotify(base.BaseCog):
         return response.get("access_token")
 
     @util.with_typing
+    @commands.cooldown(3, 60, commands.BucketType.channel)
     @commands.command(
         brief="Searches Spotify",
         description="Returns Spotify track results",

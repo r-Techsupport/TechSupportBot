@@ -13,6 +13,7 @@ class IPInfo(base.BaseCog):
     API_URL = "https://ipinfo.io"
     IP_ICON_URL = "https://cdn.icon-icons.com/icons2/1858/PNG/512/iconfinder-dedicatedipaddress-4263513_117864.png"
 
+    @commands.cooldown(1, 30, commands.BucketType.channel)
     @commands.command(
         name="ipinfo",
         alias=["ip"],

@@ -25,6 +25,7 @@ class UrbanDictionary(base.BaseCog):
     ICON_URL = "https://cdn.icon-icons.com/icons2/114/PNG/512/dictionary_19159.png"
 
     @util.with_typing
+    @commands.cooldown(3, 60, commands.BucketType.channel)
     @commands.command(
         name="urb",
         aliases=["urbandictionary", "urban"],

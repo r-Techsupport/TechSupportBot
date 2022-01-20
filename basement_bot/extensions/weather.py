@@ -17,6 +17,7 @@ class Weather(base.BaseCog):
         return f"{url}?q={searches}&units=imperial&appid={self.bot.file_config.main.api_keys.open_weather}"
 
     @util.with_typing
+    @commands.cooldown(3, 60, commands.BucketType.channel)
     @commands.command(
         name="we",
         aliases=["weather", "wea"],

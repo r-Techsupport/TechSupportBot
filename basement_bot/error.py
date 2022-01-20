@@ -160,7 +160,7 @@ COMMAND_ERROR_RESPONSE_TEMPLATES = {
     commands.DisabledCommand: ErrorResponse("That command is disabled"),
     # CommandOnCooldown
     commands.CommandOnCooldown: ErrorResponse(
-        "That command is on cooldown for you. Try again in %s seconds",
+        "That command is on cooldown. Try again in %s seconds",
         {"key": "retry_after", "wrapper": int},
     ),
     ExtensionDisabled: ErrorResponse(

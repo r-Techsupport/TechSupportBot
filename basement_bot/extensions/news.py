@@ -79,6 +79,7 @@ class News(base.LoopCog):
     async def wait(self, config, _):
         await aiocron.crontab(config.extensions.news.cron_config.value).next()
 
+    @commands.cooldown(1, 60, commands.BucketType.channel)
     @commands.group(
         brief="Executes a news command",
         description="Executes a news command",
