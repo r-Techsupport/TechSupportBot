@@ -1,47 +1,31 @@
 """The main bot functions.
 """
 import datetime
-import inspect
 import os
-import re
 import sys
 
 import base
 import cogs as builtin_cogs
+import context
 import discord
 import error
-import util
 from discord.ext import commands, ipc
 
 
 # pylint: disable=too-many-public-methods, too-many-instance-attributes
 class BasementBot(base.AdvancedBot):
-    """The main bot object.
-
-    parameters:
-        run_on_init (bool): True if the bot should run on instantiation
-    """
+    """The main bot object."""
 
     IPC_SECRET_ENV_KEY = "IPC_SECRET"
-    CONFIRM_YES_EMOJI = "✅"
-    CONFIRM_NO_EMOJI = "❌"
-    PAGINATE_LEFT_EMOJI = "⬅️"
-    PAGINATE_RIGHT_EMOJI = "➡️"
-    PAGINATE_STOP_EMOJI = "⏹️"
-    PAGINATE_DELETE_EMOJI = "🗑️"
 
+    # pylint: disable=attribute-defined-outside-init
     def __init__(self, *args, **kwargs):
-        run_on_init = kwargs.pop("run_on_init", None)
-
         self.owner = None
         self._startup_time = None
         self.ipc = None
         self.builtin_cogs = []
 
         super().__init__(*args, **kwargs)
-
-        if run_on_init:
-            self.run(self.file_config.main.auth_token)
 
     def run(self, *args, **kwargs):
         """Starts IPC and the event loop and blocks until interrupted."""
@@ -55,7 +39,9 @@ class BasementBot(base.AdvancedBot):
             self.logger.console.debug("No IPC secret found in env - ignoring IPC setup")
 
         try:
-            self.loop.run_until_complete(self.start(*args, **kwargs))
+            self.loop.run_until_complete(
+                self.start(self.file_config.main.auth_token, *args, **kwargs)
+            )
         except (SystemExit, KeyboardInterrupt):
             self.loop.run_until_complete(self.cleanup())
         finally:
@@ -86,8 +72,8 @@ class BasementBot(base.AdvancedBot):
         except Exception as exception:
             await self.logger.warning(f"Could not connect to RabbitMQ: {exception}")
 
-        await self.logger.debug("Loading plugins...")
-        self.load_all_plugins()
+        await self.logger.debug("Loading extensions...")
+        self.load_extensions()
 
         if self.db:
             await self.logger.debug("Syncing Postgres tables...")
@@ -101,6 +87,7 @@ class BasementBot(base.AdvancedBot):
         await self.load_builtin_cog(builtin_cogs.AdminControl)
         await self.load_builtin_cog(builtin_cogs.ConfigControl)
         await self.load_builtin_cog(builtin_cogs.Raw)
+        await self.load_builtin_cog(builtin_cogs.Listener)
 
         if self.ipc:
             await self.load_builtin_cog(builtin_cogs.IPCEndpoints)
@@ -132,11 +119,8 @@ class BasementBot(base.AdvancedBot):
     async def on_ready(self):
         """Callback for when the bot is finished starting up."""
         self._startup_time = datetime.datetime.utcnow()
-
         await self.logger.event("ready")
-
         await self.get_owner()
-
         await self.logger.debug("Online!", send=True)
 
     async def on_message(self, message):
@@ -146,22 +130,37 @@ class BasementBot(base.AdvancedBot):
             message (discord.Message): the message object
         """
         await self.logger.event("message", message=message)
-
         owner = await self.get_owner()
-
         if (
             owner
             and isinstance(message.channel, discord.DMChannel)
             and message.author.id != owner.id
             and not message.author.bot
         ):
-            await self.logger.info(
-                f'PM from `{message.author}`: "{message.content}"', send=True
-            )
+            await self.handle_dm(message)
 
         await self.process_commands(message)
 
-    async def on_error(self, event_method, *args, **kwargs):
+    async def handle_dm(self, message):
+        """Handler for DM messages.
+
+        parameters:
+            message (discord.Message): the message object for the DM
+        """
+        # show attachments in the DM
+        attachment_urls = ", ".join(a.url for a in message.attachments)
+        content_string = f'"{message.content}"' if message.content else ""
+        attachment_string = f"({attachment_urls})" if attachment_urls else ""
+        await self.logger.info(
+            f"PM from `{message.author}`: {content_string} {attachment_string}",
+            send=True,
+        )
+
+    async def get_context(self, message, cls=context.Context):
+        """Wraps the parent context creation with a custom class."""
+        return await super().get_context(message, cls=cls)
+
+    async def on_error(self, event_method, *_args, **_kwargs):
         """Catches non-command errors and sends them to the error logger for processing.
 
         parameters:
@@ -173,7 +172,7 @@ class BasementBot(base.AdvancedBot):
             exception=exception,
         )
 
-    async def on_command_error(self, context, exception):
+    async def on_command_error(self, ctx, exception):
         """Catches command errors and sends them to the error logger for processing.
 
         parameters:
@@ -182,12 +181,12 @@ class BasementBot(base.AdvancedBot):
         """
         if self.extra_events.get("on_command_error", None):
             return
-        if hasattr(context.command, "on_error"):
+        if hasattr(ctx.command, "on_error"):
             return
-        if context.cog:
+        if ctx.cog:
             # pylint: disable=protected-access
             if (
-                commands.Cog._get_overridden_method(context.cog.cog_command_error)
+                commands.Cog._get_overridden_method(ctx.cog.cog_command_error)
                 is not None
             ):
                 return
@@ -205,10 +204,10 @@ class BasementBot(base.AdvancedBot):
 
         error_message = message_template.get_message(exception)
 
-        await context.send(f"{context.author.mention} {error_message}")
+        await ctx.send_deny_embed(error_message)
 
         log_channel = await self.get_log_channel_from_guild(
-            getattr(context, "guild", None), key="logging_channel"
+            getattr(ctx, "guild", None), key="logging_channel"
         )
         await self.logger.error(
             f"Command error: {exception}",
@@ -265,6 +264,14 @@ class BasementBot(base.AdvancedBot):
             call_once (bool): True if the check should be retrieved from the call_once attribute
         """
         await self.logger.debug("Checking if command can run")
+
+        extension_name = self.get_command_extension_name(ctx.command)
+        if extension_name:
+            config = await self.get_context_config(ctx)
+            if not extension_name in config.enabled_extensions:
+                raise error.ExtensionDisabled(
+                    "extension is disabled for this server/context"
+                )
 
         is_bot_admin = await self.is_bot_admin(ctx)
 
@@ -345,218 +352,6 @@ class BasementBot(base.AdvancedBot):
         """
         log_channel = await self.get_log_channel_from_guild(guild, key)
         await getattr(self.logger, log_type)(message, channel=log_channel, **kwargs)
-
-    # pylint: disable=too-many-branches, too-many-arguments
-    async def paginate(self, ctx, embeds, timeout=300, tag_user=False, restrict=False):
-        """Paginates a set of embed objects for users to sort through
-
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
-            embeds (Union[discord.Embed, str][]): the embeds (or URLs to render them) to paginate
-            timeout (int) (seconds): the time to wait before exiting the reaction listener
-            tag_user (bool): True if the context user should be mentioned in the response
-            restrict (bool): True if only the caller can navigate the results
-        """
-        # limit large outputs
-        embeds = embeds[:20]
-
-        for index, embed in enumerate(embeds):
-            if isinstance(embed, discord.Embed):
-                embed.set_footer(text=f"Page {index+1} of {len(embeds)}")
-
-        index = 0
-        get_args = lambda index: {
-            "content": embeds[index]
-            if not isinstance(embeds[index], discord.Embed)
-            else None,
-            "embed": embeds[index]
-            if isinstance(embeds[index], discord.Embed)
-            else None,
-        }
-
-        if tag_user:
-            message = await util.send_with_mention(ctx, **get_args(index))
-        else:
-            message = await ctx.send(**get_args(index))
-
-        if isinstance(ctx.channel, discord.DMChannel):
-            return
-
-        start_time = datetime.datetime.now()
-
-        for unicode_reaction in [
-            self.PAGINATE_LEFT_EMOJI,
-            self.PAGINATE_RIGHT_EMOJI,
-            self.PAGINATE_STOP_EMOJI,
-            self.PAGINATE_DELETE_EMOJI,
-        ]:
-            await message.add_reaction(unicode_reaction)
-
-        await self.logger.debug(f"Starting pagination loop with {len(embeds)} pages")
-        while True:
-            if (datetime.datetime.now() - start_time).seconds > timeout:
-                break
-
-            try:
-                reaction, user = await self.wait_for(
-                    "reaction_add",
-                    timeout=timeout,
-                    check=lambda r, u: not bool(u.bot) and r.message.id == message.id,
-                )
-            # this seems to raise an odd timeout error, for now just catch-all
-            except Exception:
-                break
-
-            if restrict and user.id != ctx.author.id:
-                # this is checked first so it can pass to the deletion
-                pass
-
-            # move forward
-            elif str(reaction) == self.PAGINATE_RIGHT_EMOJI and index < len(embeds) - 1:
-                index += 1
-                await message.edit(**get_args(index))
-
-            # move backward
-            elif str(reaction) == self.PAGINATE_LEFT_EMOJI and index > 0:
-                index -= 1
-                await message.edit(**get_args(index))
-
-            # stop pagination
-            elif str(reaction) == self.PAGINATE_STOP_EMOJI:
-                await self.logger.debug("Stopping pagination message at user request")
-                break
-
-            # delete embed
-            elif str(reaction) == self.PAGINATE_DELETE_EMOJI:
-                await self.logger.debug("Deleting pagination message at user request")
-                await message.delete()
-                break
-
-            try:
-                await reaction.remove(user)
-            except discord.Forbidden:
-                await self.logger.error(
-                    "Could not delete user reaction on pagination message", send=False
-                )
-
-        try:
-            await message.clear_reactions()
-        except discord.NotFound:
-            pass
-
-    def task_paginate(self, *args, **kwargs):
-        """Creates a pagination task from the given args.
-
-        This is useful if you want your command to finish executing when pagination starts.
-        """
-        self.loop.create_task(self.paginate(*args, **kwargs))
-
-    async def confirm(self, ctx, title, timeout=60, delete_after=False, bypass=None):
-        """Waits on a confirm reaction from a given user.
-
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
-            title (str): the message content to which the user reacts
-            timeout (int): the number of seconds before timing out
-            delete_after (bool): True if the confirmation message should be deleted
-            bypass (list[discord.Role]): the list of roles able to confirm (empty by default)
-        """
-        if bypass is None:
-            bypass = []
-
-        message = await util.send_with_mention(ctx, content=title, target=ctx.author)
-        await message.add_reaction(self.CONFIRM_YES_EMOJI)
-        await message.add_reaction(self.CONFIRM_NO_EMOJI)
-
-        result = False
-        while True:
-            try:
-                reaction, user = await self.wait_for(
-                    "reaction_add",
-                    timeout=timeout,
-                    check=lambda r, u: not bool(u.bot) and r.message.id == message.id,
-                )
-            except Exception:
-                break
-
-            member = ctx.guild.get_member(user.id)
-            if not member:
-                pass
-
-            elif user.id != ctx.author.id and not any(
-                role in getattr(member, "roles", []) for role in bypass
-            ):
-                pass
-
-            elif str(reaction) == self.CONFIRM_YES_EMOJI:
-                result = True
-                break
-
-            elif str(reaction) == self.CONFIRM_NO_EMOJI:
-                break
-
-            try:
-                await reaction.remove(user)
-            except discord.Forbidden:
-                await self.logger.error(
-                    "Could not delete user reaction on confirmation message", send=False
-                )
-
-        if delete_after:
-            await message.delete()
-
-        return result
-
-    def sub_mentions_for_usernames(self, content):
-        """Subs a string of Discord mentions with the corresponding usernames.
-
-        parameters:
-            bot (BasementBot): the bot object
-            content (str): the content to parse
-        """
-
-        def get_nick_from_id_match(match):
-            id_ = int(match.group(1))
-            user = self.get_user(id_)
-            return f"@{user.name}" if user else "@user"
-
-        return re.sub(r"<@?!?(\d+)>", get_nick_from_id_match, content)
-
-    def preserialize_object(self, obj):
-        """Provides sane object -> dict transformation for most objects.
-
-        This is primarily used to send Discord.py object data via the IPC server.
-
-        parameters;
-            obj (object): the object to serialize
-        """
-        attributes = inspect.getmembers(obj, lambda a: not inspect.isroutine(a))
-        filtered_attributes = filter(
-            lambda e: not (e[0].startswith("__") and e[0].endswith("__")), attributes
-        )
-
-        data = {}
-        for name, attr in filtered_attributes:
-            # remove single underscores
-            if name.startswith("_"):
-                name = name[1:]
-
-            # if it's not a basic type, stringify it
-            # only catch: nested data is not readily JSON
-            if isinstance(attr, list):
-                attr = [str(element) for element in attr]
-            elif isinstance(attr, dict):
-                attr = {str(key): str(value) for key, value in attr.items()}
-            elif isinstance(attr, int):
-                attr = str(attr)
-            elif isinstance(attr, float):
-                pass
-            else:
-                attr = str(attr)
-
-            data[str(name)] = attr
-
-        return data
 
     @property
     def startup_time(self):

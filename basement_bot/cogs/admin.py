@@ -6,8 +6,17 @@ import sys
 
 import base
 import discord
+import embeds
 import util
 from discord.ext import commands
+
+
+class AdminEmbed(embeds.SaneEmbed):
+    """Base embed for admin commands."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.color = discord.Color.blurple()
 
 
 class AdminControl(base.BaseCog):
@@ -18,68 +27,112 @@ class AdminControl(base.BaseCog):
     GITHUB_API_BASE_URL = "https://api.github.com"
 
     @commands.group(
-        name="plugin",
-        brief="Executes a plugin bot command",
-        description="Executes a plugin bot command",
+        name="extension",
+        brief="Executes an extension bot command",
+        description="Executes an extension bot command",
     )
-    async def plugin_group(self, ctx):
+    async def extension_group(self, ctx):
         # pylint: disable=missing-function-docstring
         pass
 
     @util.with_typing
-    @plugin_group.command(
+    @extension_group.command(
         name="status",
-        description="Gets the status of a plugin by name",
-        usage="[plugin-name]",
+        description="Gets the status of an extension by name",
+        usage="[extension-name]",
     )
-    async def plugin_status(self, ctx, *, plugin_name: str):
-        """Gets the status of the bot plugins.
+    async def extension_status(self, ctx, *, extension_name: str):
+        """Gets the status of an extension.
 
         This is a command and should be accessed via Discord.
 
         parameters:
             ctx (discord.ext.Context): the context object for the message
-            plugin_name (str): the name of the plugin
+            extension_name (str): the name of the extension
         """
-        status_data = ctx.bot.plugin_api.get_status(plugin_name)
-
-        embed = discord.Embed(
-            title=f"Plugin status for `{plugin_name}`",
-            description=status_data.status if status_data else "not found",
+        status = (
+            "loaded"
+            if ctx.bot.extensions.get(
+                f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}"
+            )
+            else "unloaded"
         )
-        await util.send_with_mention(ctx, embed=embed)
+        embed = discord.Embed(
+            title=f"Extension status for `{extension_name}`", description=status
+        )
+        await ctx.send(embed=embed)
 
     @util.with_typing
-    @plugin_group.command(
-        name="load", description="Loads a plugin by name", usage="[plugin-name]"
+    @extension_group.command(
+        name="load", description="Loads an extension by name", usage="[extension-name]"
     )
-    async def load_plugin(self, ctx, *, plugin_name: str):
-        """Loads a plugin by filename.
+    async def load_extension(self, ctx, *, extension_name: str):
+        """Loads an extension by filename.
 
         This is a command and should be accessed via Discord.
 
         parameters:
             ctx (discord.ext.Context): the context object for the message
-            plugin_name (str): the name of the plugin
+            extension_name (str): the name of the extension
         """
-        response = ctx.bot.plugin_api.load_plugin(plugin_name)
-        await util.send_with_mention(ctx, response.message)
+        ctx.bot.load_extension(f"extensions.{extension_name}")
+        await ctx.send_confirm_embed("I've loaded that extension")
 
     @util.with_typing
-    @plugin_group.command(
-        name="unload", description="Unloads a plugin by name", usage="[plugin-name]"
+    @extension_group.command(
+        name="unload",
+        description="Unloads an extension by name",
+        usage="[extension-name]",
     )
-    async def unload_plugin(self, ctx, *, plugin_name: str):
-        """Unloads a plugin by filename.
+    async def unload_extension(self, ctx, *, extension_name: str):
+        """Unloads an extension by filename.
 
         This is a command and should be accessed via Discord.
 
         parameters:
             ctx (discord.ext.Context): the context object for the message
-            plugin_name (str): the name of the plugin
+            extension_name (str): the name of the extension
         """
-        response = ctx.bot.plugin_api.unload_plugin(plugin_name)
-        await util.send_with_mention(ctx, response.message)
+        ctx.bot.unload_extension(f"extensions.{extension_name}")
+        await ctx.send_confirm_embed("I've unloaded that extension")
+
+    @util.with_typing
+    @extension_group.command(
+        name="register",
+        description="Uploads an extension from Discord to be saved on the bot",
+        usage="[extension-name] |python-file-upload|",
+    )
+    async def register_extension(self, ctx, extension_name: str):
+        """Unloads an extension by filename.
+
+        This is a command and should be accessed via Discord.
+
+        parameters:
+            ctx (discord.ext.Context): the context object for the message
+            extension_name (str): the name of the extension
+        """
+        if not ctx.message.attachments:
+            await ctx.send_deny_embed("You did not provide a Python file upload")
+            return
+
+        attachment = ctx.message.attachments[0]
+        if not attachment.filename.endswith(".py"):
+            await ctx.send_deny_embed("I don't recognize your upload as a Python file")
+            return
+
+        if extension_name.lower() in self.bot.get_potential_extensions():
+            confirm = await ctx.confirm(
+                f"Warning! This will replace the current `{extension_name}.py` extension! Are you SURE?",
+                delete_after=True,
+            )
+            if not confirm:
+                return
+
+        fp = await attachment.read()
+        self.bot.register_file_extension(extension_name, fp)
+        await ctx.send_confirm_embed(
+            "I've registered that extension. You can now try loading it"
+        )
 
     @commands.group(
         name="command",
@@ -105,19 +158,15 @@ class AdminControl(base.BaseCog):
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await util.send_with_mention(ctx, f"No such command: `{command_name}`")
+            await ctx.send_deny_embed(f"No such command: `{command_name}`")
             return
 
         if command_.enabled:
-            await util.send_with_mention(
-                ctx, f"Command `{command_name}` is already enabled!"
-            )
+            await ctx.send_deny_embed(f"Command `{command_name}` is already enabled!")
             return
 
         command_.enabled = True
-        await util.send_with_mention(
-            ctx, f"Successfully enabled command: `{command_name}`"
-        )
+        await ctx.send_confirm_embed(f"Successfully enabled command: `{command_name}`")
 
     @util.with_typing
     @command_group.command(
@@ -134,19 +183,15 @@ class AdminControl(base.BaseCog):
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await util.send_with_mention(ctx, f"No such command: `{command_name}`")
+            await ctx.send_deny_embed(f"No such command: `{command_name}`")
             return
 
         if not command_.enabled:
-            await util.send_with_mention(
-                ctx, f"Command `{command_name}` is already disabled!"
-            )
+            await ctx.send_deny_embed(f"Command: `{command_name}` is already disabled!")
             return
 
         command_.enabled = False
-        await util.send_with_mention(
-            ctx, f"Successfully disabled command: `{command_name}`"
-        )
+        await ctx.send_confirm_embed(f"Successfully disabled command: `{command_name}`")
 
     @commands.group(
         name="set",
@@ -171,7 +216,7 @@ class AdminControl(base.BaseCog):
             game_name (str): the name of the game
         """
         await ctx.bot.change_presence(activity=discord.Game(name=game_name))
-        await util.send_with_mention(ctx, f"Successfully set game to: *{game_name}*")
+        await ctx.send_confirm_embed(f"Successfully set game to: *{game_name}*")
 
     @util.with_typing
     @set_group.command(
@@ -187,7 +232,7 @@ class AdminControl(base.BaseCog):
             nick (str): the bot nickname
         """
         await ctx.message.guild.me.edit(nick=nick)
-        await util.send_with_mention(ctx, f"Successfully set nick to: *{nick}*")
+        await ctx.send_confirm_embed(f"Successfully set nick to: *{nick}*")
 
     @commands.group(
         brief="Executes an echo bot command", description="Executes an echo bot command"
@@ -214,10 +259,12 @@ class AdminControl(base.BaseCog):
         """
         channel = self.bot.get_channel(channel_id)
         if not channel:
-            await util.send_with_mention(ctx, "I couldn't find that channel")
+            await ctx.send_deny_embed("I couldn't find that channel")
             return
 
         await channel.send(content=message)
+
+        await ctx.send_confirm_embed("Message sent")
 
     @util.with_typing
     @echo.command(
@@ -237,10 +284,12 @@ class AdminControl(base.BaseCog):
         """
         user = await self.bot.fetch_user(int(user_id))
         if not user:
-            await util.send_with_mention(ctx, "I couldn't find that user")
+            await ctx.send_deny_embed("I couldn't find that user")
             return
 
         await user.send(content=message)
+
+        await ctx.send_confirm_embed("Message sent")
 
     @commands.command(
         name="restart", description="Restarts the bot at the container level"
@@ -253,7 +302,7 @@ class AdminControl(base.BaseCog):
         parameters:
             ctx (discord.ext.Context): the context object for the calling message
         """
-        await util.send_with_mention(ctx, "Shutting down! Cya later!")
+        await ctx.send_confirm_embed("Rebooting! Beep boop!")
         sys.exit()
 
     @commands.command(
@@ -270,12 +319,14 @@ class AdminControl(base.BaseCog):
         """
         guild = discord.utils.get(self.bot.guilds, id=guild_id)
         if not guild:
-            await util.send_with_mention(ctx, "I don't appear to be in that guild")
+            await ctx.send_deny_embed("I don't appear to be in that guild")
             return
 
         await guild.leave()
 
-        await ctx.send(f"I have left the guild: {guild.name} ({guild.id})")
+        await ctx.send_confirm_embed(
+            f"I have left the guild: {guild.name} ({guild.id})"
+        )
 
     @commands.command(name="bot", description="Provides bot info")
     async def get_bot_data(self, ctx):
@@ -286,7 +337,7 @@ class AdminControl(base.BaseCog):
         parameters:
             ctx (discord.ext.Context): the context object for the calling message
         """
-        embed = discord.Embed(title=self.bot.user.name)
+        embed = AdminEmbed(title=self.bot.user.name)
 
         embed.add_field(
             name="Started",
@@ -308,9 +359,8 @@ class AdminControl(base.BaseCog):
         )
 
         embed.set_thumbnail(url=self.bot.user.avatar_url)
-        embed.color = discord.Color.blurple()
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)
 
     @util.with_typing
     @commands.command(
@@ -330,48 +380,44 @@ class AdminControl(base.BaseCog):
             description: the description of the issue
         """
 
-        icon_url = (
-            "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
-        )
+        if not self.bot.file_config.main.api_keys.github:
+            await ctx.send_deny_embed("I don't have a Github API key")
+            return
 
-        oauth_token = self.bot.file_config.main.api_keys.github
-        if not oauth_token:
-            await util.send_with_mention(ctx, "I couldn't authenticate with Github")
+        if (
+            not self.bot.file_config.special.github.username
+            or not self.bot.file_config.special.github.repo
+        ):
+            await ctx.send_deny_embed("I don't have a Github repo configured")
             return
 
         headers = {
-            "Authorization": f"Bearer {oauth_token}",
+            "Authorization": f"Bearer {self.bot.file_config.main.api_keys.github}",
             "Accept": "application/vnd.github.v3+json",
             "Content-Type": "text/plain",
         }
 
-        data = {"title": title, "body": description}
-
-        username = self.bot.file_config.special.github.username
-        repo = self.bot.file_config.special.github.repo
-        if not username or not repo:
-            await util.send_with_mention(ctx, "I couldn't find the repository")
-            return
-
-        response = await util.http_call(
+        response = await self.bot.http_call(
             "post",
-            f"{self.GITHUB_API_BASE_URL}/repos/{username}/{repo}/issues",
+            f"{self.GITHUB_API_BASE_URL}/repos/{self.bot.file_config.special.github.username}/{self.bot.file_config.special.github.repo}/issues",
             headers=headers,
-            data=json.dumps(data),
+            data=json.dumps({"title": title, "body": description}),
         )
 
         status_code = response.get("status_code")
         if status_code != 201:
-            await util.send_with_mention(
-                ctx, f"I was unable to create your issue (status code {status_code})"
+            await ctx.send_deny_embed(
+                f"I was unable to create your issue (status code {status_code})"
             )
             return
 
         issue_url = response.get("html_url")
         number = response.get("number")
 
-        embed = discord.Embed(title="Issue Created")
+        embed = AdminEmbed(title="Issue Created")
         embed.add_field(name=f"Issue #{number}", value=f"{issue_url}")
-        embed.set_thumbnail(url=icon_url)
+        embed.set_thumbnail(
+            url="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+        )
 
-        await util.send_with_mention(ctx, embed=embed)
+        await ctx.send(embed=embed)

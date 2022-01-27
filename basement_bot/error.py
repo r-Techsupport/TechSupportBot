@@ -4,6 +4,10 @@ import munch
 from discord.ext import commands
 
 
+class ExtensionDisabled(commands.errors.CheckFailure):
+    """The exception thrown when an extension is disabled."""
+
+
 # pylint: disable=too-few-public-methods
 class ErrorResponse:
     """Object for generating a custom error message from an exception.
@@ -87,7 +91,7 @@ COMMAND_ERROR_RESPONSE_TEMPLATES = {
     commands.ChannelNotReadable: ErrorResponse(
         'I can\'t read the channel: "%s"', {"key": "argument"}
     ),
-    commands.ChannelNotReadable: ErrorResponse(
+    commands.BadColourArgument: ErrorResponse(
         'I can\'t use the color: "%s"', {"key": "argument"}
     ),
     commands.RoleNotFound: ErrorResponse(
@@ -156,8 +160,11 @@ COMMAND_ERROR_RESPONSE_TEMPLATES = {
     commands.DisabledCommand: ErrorResponse("That command is disabled"),
     # CommandOnCooldown
     commands.CommandOnCooldown: ErrorResponse(
-        "That command is on cooldown for you. Try again in %s seconds",
+        "That command is on cooldown. Try again in %s seconds",
         {"key": "retry_after", "wrapper": int},
+    ),
+    ExtensionDisabled: ErrorResponse(
+        "That extension is disabled for this context/server"
     ),
 }
 

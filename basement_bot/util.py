@@ -4,23 +4,8 @@
 import inspect
 import json
 
-import aiohttp
 import discord
 import munch
-
-
-async def send_with_mention(ctx, content=None, target=None, **kwargs):
-    """Sends a context response with the original author tagged.
-
-    parameters:
-        ctx (discord.ext.Context): the context object
-        content (str): the message to send
-        target (discord.Member): the Discord user to tag
-    """
-    user_mention = target.mention if target else ctx.message.author.mention
-    content = f"{user_mention} {content}" if content else user_mention
-    message = await ctx.send(content=content, **kwargs)
-    return message
 
 
 async def get_json_from_attachments(message, as_string=False, allow_failure=False):
@@ -32,6 +17,9 @@ async def get_json_from_attachments(message, as_string=False, allow_failure=Fals
         as_string (bool): True if the serialized JSON should be returned
         allow_failure (bool): True if an exception should be ignored when parsing attachments
     """
+    if not message.attachments:
+        return None
+
     attachment_jsons = []
     for attachment in message.attachments:
         try:
@@ -44,8 +32,6 @@ async def get_json_from_attachments(message, as_string=False, allow_failure=Fals
 
     if len(attachment_jsons) == 1:
         attachment_jsons = attachment_jsons[0]
-    elif len(attachment_jsons) == 0:
-        attachment_jsons = {}
 
     return (
         json.dumps(attachment_jsons) if as_string else munch.munchify(attachment_jsons)
@@ -53,7 +39,11 @@ async def get_json_from_attachments(message, as_string=False, allow_failure=Fals
 
 
 def generate_embed_from_kwargs(
-    title=None, description=None, all_inline=False, **kwargs
+    title=None,
+    description=None,
+    all_inline=False,
+    cls=None,
+    **kwargs,
 ):
     """Wrapper for generating an embed from a set of key, values.
 
@@ -61,9 +51,13 @@ def generate_embed_from_kwargs(
         title (str): the title for the embed
         description (str): the description for the embed
         all_inline (bool): True if all fields should be added with inline=True
+        cls (discord.Embed): the embed class to use
         kwargs (dict): a set of keyword values to be displayed
     """
-    embed = discord.Embed(title=title, description=description)
+    if not cls:
+        cls = discord.Embed
+
+    embed = cls(title=title, description=description)
     for key, value in kwargs.items():
         embed.add_field(name=key, value=value, inline=all_inline)
     return embed
@@ -80,37 +74,8 @@ def ipc_response(code=200, error=None, payload=None):
     return {"code": code, "error": error, "payload": payload}
 
 
-async def http_call(method, url, *args, **kwargs):
-    """Makes an HTTP request.
-
-    By default this returns JSON/dict with the status code injected.
-
-    parameters:
-        method (str): the HTTP method to use
-        url (str): the URL to call
-        get_raw_response (bool): True if the actual response object should be returned
-    """
-    client = aiohttp.ClientSession()
-
-    method_fn = getattr(client, method.lower())
-
-    get_raw_response = kwargs.pop("get_raw_response", False)
-    response_object = await method_fn(url, *args, **kwargs)
-
-    if get_raw_response:
-        response = response_object
-    else:
-        response_json = await response_object.json()
-        response = munch.munchify(response_json) if response_object else munch.Munch()
-        response["status_code"] = getattr(response_object, "status", None)
-
-    await client.close()
-
-    return response
-
-
 def config_schema_matches(input_config, current_config):
-    """Performs a schema check on an input config.
+    """Performs a schema check on an input guild config.
 
     parameters:
         input_config (dict): the config to be added
@@ -139,18 +104,16 @@ def with_typing(command):
     async def typing_wrapper(*args, **kwargs):
         context = args[1]
 
-        typing_func = getattr(context, "typing", None)
+        typing_func = getattr(context, "trigger_typing", None)
 
         if not typing_func:
             await original_callback(*args, **kwargs)
         else:
             try:
-                async with typing_func():
-                    await original_callback(*args, **kwargs)
+                await typing_func()
             except discord.Forbidden:
-                # sometimes the discord API doesn't like this
-                # proceed without typing
-                await original_callback(*args, **kwargs)
+                pass
+            await original_callback(*args, **kwargs)
 
     # this has to be done so invoke will see the original signature
     typing_wrapper.__signature__ = original_signature
@@ -158,5 +121,43 @@ def with_typing(command):
 
     # calls the internal setter
     command.callback = typing_wrapper
+    command.callback.__module__ = original_callback.__module__
 
     return command
+
+
+def preserialize_object(obj):
+    """Provides sane object -> dict transformation for most objects.
+
+    This is primarily used to send Discord.py object data via the IPC server.
+
+    parameters;
+        obj (object): the object to serialize
+    """
+    attributes = inspect.getmembers(obj, lambda a: not inspect.isroutine(a))
+    filtered_attributes = filter(
+        lambda e: not (e[0].startswith("__") and e[0].endswith("__")), attributes
+    )
+
+    data = {}
+    for name, attr in filtered_attributes:
+        # remove single underscores
+        if name.startswith("_"):
+            name = name[1:]
+
+        # if it's not a basic type, stringify it
+        # only catch: nested data is not readily JSON
+        if isinstance(attr, list):
+            attr = [str(element) for element in attr]
+        elif isinstance(attr, dict):
+            attr = {str(key): str(value) for key, value in attr.items()}
+        elif isinstance(attr, int):
+            attr = str(attr)
+        elif isinstance(attr, float):
+            pass
+        else:
+            attr = str(attr)
+
+        data[str(name)] = attr
+
+    return data

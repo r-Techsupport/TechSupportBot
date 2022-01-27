@@ -2,7 +2,6 @@
 """
 
 import base
-import util
 from discord.ext import commands
 
 
@@ -23,7 +22,7 @@ class Raw(base.BaseCog):
             ctx (discord.ext.Context): the context object for the message
         """
         if not ctx.message.attachments:
-            await util.send_with_mention(ctx, "No Python code found")
+            await ctx.send_deny_embed("No Python code found")
             return
 
         py_code = await ctx.message.attachments[0].read()
@@ -32,10 +31,10 @@ class Raw(base.BaseCog):
         try:
             await self.aexec(py_code)
         except Exception as e:
-            await util.send_with_mention(ctx, f"Error: ```{e}```")
+            await ctx.send_deny_embed(f"Error: ```{e}```")
             return
 
-        await util.send_with_mention(ctx, self.bot.CONFIRM_YES_EMOJI)
+        await ctx.send_confirm_embed("Code executed!")
 
     async def aexec(self, code):
         """Uses exec to define a custom async function, and then awaits it.
