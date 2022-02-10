@@ -43,7 +43,7 @@ class Who(base.BaseCog):
     )
     async def whois_user(self, ctx, user: discord.Member):
         embed = discord.Embed(
-            title=f"User info for {user}",
+            title=f"User info for `{user}`",
             description="**Note: this is a bot account!**" if user.bot else "",
         )
 
@@ -110,7 +110,7 @@ class Who(base.BaseCog):
 
         await user.add_roles(role)
 
-        await ctx.send_confirm_embed("I created that note successfully")
+        await ctx.send_confirm_embed(f"Note created for `{user}`")
 
     @note.command(
         name="clear",
@@ -142,7 +142,7 @@ class Who(base.BaseCog):
 
         await user.remove_roles(role)
 
-        await ctx.send_confirm_embed("I cleared all the notes for that user")
+        await ctx.send_confirm_embed(f"Notes cleared for `{user}`")
 
     @note.command(
         name="all",
@@ -154,7 +154,7 @@ class Who(base.BaseCog):
         notes = await self.get_notes(user, ctx.guild)
 
         if not notes:
-            await ctx.send_deny_embed("There are no notes for that user")
+            await ctx.send_deny_embed(f"There are no notes for `{user}`")
             return
 
         note_output_data = []
