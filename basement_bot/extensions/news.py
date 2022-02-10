@@ -100,4 +100,4 @@ class News(base.LoopCog):
             article = await self.get_random_headline(config)
             url = article.get("url")
 
-        await ctx.send(url)
+        await ctx.send(content=url)

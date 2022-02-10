@@ -59,14 +59,14 @@ class Who(base.BaseCog):
         total_notes = 0
         if user_notes:
             total_notes = len(user_notes)
-            user_notes = user_notes[-3:]
+            user_notes = user_notes[:3]
         embed.set_footer(text=f"{total_notes} total notes")
         embed.color = discord.Color.dark_blue()
 
         for note in user_notes:
             author = ctx.guild.get_member(int(note.author_id)) or "<Not found>"
             embed.add_field(
-                name=f"Note (from {author} at {note.updated})",
+                name=f"Note from {author} ({note.updated.date()})",
                 value=f"*{note.body}*" or "*None*",
                 inline=False,
             )
@@ -180,9 +180,8 @@ class Who(base.BaseCog):
                 self.models.UserNote.user_id == str(user.id)
             )
             .where(self.models.UserNote.guild_id == str(guild.id))
+            .order_by(self.models.UserNote.updated.desc())
             .gino.all()
         )
-
-        user_notes.sort(key=lambda u: u.updated)
 
         return user_notes
