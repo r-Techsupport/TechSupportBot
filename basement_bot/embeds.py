@@ -7,28 +7,36 @@ import discord
 class SaneEmbed(discord.Embed):
     """An embed that is guaranteed to sanely handle validation constraints."""
 
-    def trim(self, inp):
-        """Returns a trimmed value.
+    def add_field(self, *, name, value, inline=True):
+        """Wraps the embed method with trimming."""
+        name = name[:256]
+        value = value[:1024]
+        super().add_field(name=name, value=value, inline=inline)
 
-        parameters:
-            inp (str): the input value to trim
-        """
-        if not isinstance(inp, str):
-            return inp
-        return inp[:256]
+    def set_author(
+        self, *, name, url=discord.Embed.Empty, icon_url=discord.Embed.Empty
+    ):
+        """Wraps the embed method with trimming."""
+        name = name[:256]
+        super().set_author(name=name, url=url, icon_url=icon_url)
 
-    def trim_kwarg(self, kwargs, key):
-        """Trims a specific kwarg.
+    def insert_field_at(self, index, *, name, value, inline=True):
+        """Wraps the embed method with trimming."""
+        name = name[:256]
+        value = value[:1024]
+        super().insert_field_at(index, name=name, value=value, inline=inline)
 
-        parameters:
-            kwargs (dict): the kwargs to reference
-            key (str): the kwargs key that maps to the trimmed value
-        """
-        kwargs[key] = self.trim(kwargs[key])
+    def set_field_at(self, index, *, name, value, inline=True):
+        """Wraps the embed method with trimming."""
+        name = name[:256]
+        value = value[:1024]
+        super().set_field_at(index, name=name, value=value, inline=inline)
 
-    def __setattr__(self, name, value):
-        value = self.trim(value)
-        return super().__setattr__(name, value)
+    def set_footer(self, *, text=discord.Embed.Empty, icon_url=discord.Embed.Empty):
+        """Wraps the embed method with trimming."""
+        if isinstance(text, str):
+            text = text[:2048]
+        super().set_footer(text=text, icon_url=icon_url)
 
 
 class ConfirmEmbed(SaneEmbed):
