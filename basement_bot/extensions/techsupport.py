@@ -570,7 +570,7 @@ class SpeccyParser(BaseParser):
         embed = self.add_yikes_color(embed, response_data)
 
         embed.set_footer(
-            text="Note: any issues described here may not be related to your issue at hand"
+            text="Note: any issues described here may be unrelated to your current issue"
         )
 
         return embed

@@ -2,7 +2,6 @@ import datetime
 import io
 import json
 import uuid
-from typing import Type
 
 import aiocron
 import base

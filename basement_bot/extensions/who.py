@@ -125,10 +125,12 @@ class Who(base.BaseCog):
             await ctx.send_deny_embed("There are no notes for that user")
             return
 
-        await ctx.confirm(
+        confirm = await ctx.confirm(
             f"Are you sure you want to clear {len(notes)} notes?",
             delete_after=True,
         )
+        if not confirm:
+            return
 
         for note in notes:
             await note.delete()
