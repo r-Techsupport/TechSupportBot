@@ -6,7 +6,6 @@ from xml.dom.minidom import Attr
 import base
 import discord
 import munch
-from attr import Attribute
 from discord.ext import commands
 
 
