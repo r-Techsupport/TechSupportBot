@@ -46,11 +46,11 @@ class MessageEmbed(ListenEmbed):
 
         self.description = message.clean_content
         if message.embeds:
-            self.description = f"{self.description} ({len(message.embeds)} embed(s))"
+            self.description = f"{self.description} (includes embed)"
 
         if message.attachments:
             self.add_field(
-                name="Attachments", value=" , ".join(a.url for a in message.attachments)
+                name="Attachments", value=" ".join(a.url for a in message.attachments)
             )
 
         self.set_footer(text=f"#{message.channel.name} - {message.guild}")
