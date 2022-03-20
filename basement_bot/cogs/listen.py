@@ -314,18 +314,32 @@ class Listener(base.BaseCog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        """Handles message events and routes them to their destinations.
+        """Listens to message events.
 
         parameters:
             message (discord.Message): the message that triggered the event
         """
         if message.author.bot:
             return
-
         if isinstance(message.channel, discord.DMChannel):
             return
-
         destinations = await self.get_destinations(message.channel)
         for dst in destinations:
             embed = MessageEmbed(message=message)
             await dst.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_extension_event(self, payload):
+        """Listens for custom extension-based events.
+
+        parameters:
+            payload (dict): the data associated with the event
+        """
+        if not isinstance(getattr(payload, "embed", None), discord.Embed):
+            return
+        if not isinstance(getattr(payload, "channel", None), discord.TextChannel):
+            return
+
+        destinations = await self.get_destinations(payload.channel)
+        for dst in destinations:
+            await dst.send(embed=payload.embed)
