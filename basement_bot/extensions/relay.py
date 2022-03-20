@@ -344,7 +344,6 @@ class IRCReceiver(base.LoopCog):
                 if not channel:
                     continue
                 await channel.send(embed=embed)
-
             return
 
         channel = self.get_channel(data)
