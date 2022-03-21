@@ -45,7 +45,7 @@ class IPCEndpoints(base.BaseCog):
                 payload[extension] = (
                     "loaded"
                     if self.bot.extensions.get(
-                        f"{self.bot.EXTENSIONS_DIR_NAME}.{data.extension_name}"
+                        f"{self.bot.EXTENSIONS_DIR_NAME}.{extension}"
                     )
                     else "unloaded"
                 )

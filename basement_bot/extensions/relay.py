@@ -6,7 +6,6 @@ from xml.dom.minidom import Attr
 import base
 import discord
 import munch
-from attr import Attribute
 from discord.ext import commands
 
 
@@ -345,7 +344,6 @@ class IRCReceiver(base.LoopCog):
                 if not channel:
                     continue
                 await channel.send(embed=embed)
-
             return
 
         channel = self.get_channel(data)
@@ -354,6 +352,8 @@ class IRCReceiver(base.LoopCog):
 
         mentions = embed.fill_mentions(channel)
         await channel.send(content=mentions, embed=embed)
+
+        self.bot.dispatch("extension_event", munch.Munch(channel=channel, embed=embed))
 
     @staticmethod
     def _add_mentions(message, guild, channel):

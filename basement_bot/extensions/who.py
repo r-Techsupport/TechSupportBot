@@ -49,10 +49,13 @@ class Who(base.BaseCog):
 
         embed.set_thumbnail(url=user.avatar_url)
 
-        embed.add_field(name="Created at", value=user.created_at)
-        embed.add_field(name="Joined at", value=user.joined_at)
-        embed.add_field(name="Nickname", value=user.nick, inline=False)
+        embed.add_field(name="Created at", value=user.created_at.replace(microsecond=0))
+        embed.add_field(name="Joined at", value=user.joined_at.replace(microsecond=0))
         embed.add_field(name="Status", value=user.status)
+        embed.add_field(name="Nickname", value=user.nick)
+        embed.add_field(
+            name="Roles", value=", ".join(role.name for role in user.roles[1:])
+        )
 
         user_notes = await self.get_notes(user, ctx.guild)
 
@@ -125,10 +128,12 @@ class Who(base.BaseCog):
             await ctx.send_deny_embed("There are no notes for that user")
             return
 
-        await ctx.confirm(
+        confirm = await ctx.confirm(
             f"Are you sure you want to clear {len(notes)} notes?",
             delete_after=True,
         )
+        if not confirm:
+            return
 
         for note in notes:
             await note.delete()
