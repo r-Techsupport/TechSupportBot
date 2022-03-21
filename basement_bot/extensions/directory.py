@@ -196,6 +196,10 @@ class ChannelDirectory(base.BaseCog):
         if user.bot:
             return
 
+        config = await self.bot.get_context_config(guild=reaction.message.guild)
+        if not self.extension_enabled(config):
+            return
+
         if not reaction.message.id in self.message_ids:
             return
 
@@ -208,6 +212,10 @@ class ChannelDirectory(base.BaseCog):
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, user):
         if user.bot:
+            return
+
+        config = await self.bot.get_context_config(guild=reaction.message.guild)
+        if not self.extension_enabled(config):
             return
 
         if not reaction.message.id in self.message_ids:

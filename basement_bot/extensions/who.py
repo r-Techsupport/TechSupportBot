@@ -28,7 +28,7 @@ def setup(bot):
         default=None,
     )
 
-    bot.add_cog(Who(bot=bot, models=[UserNote]))
+    bot.add_cog(Who(bot=bot, models=[UserNote], extension_name="who"))
     bot.add_extension_config("who", config)
 
 
@@ -190,3 +190,30 @@ class Who(base.BaseCog):
         )
 
         return user_notes
+
+    # re-adds note role back to joining users
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        config = await self.bot.get_context_config(guild=member.guild)
+        if not self.extension_enabled(config):
+            return
+
+        role = discord.utils.get(
+            member.guild.roles, name=config.extensions.who.note_role.value
+        )
+        if not role:
+            return
+
+        user_notes = await self.get_notes(member, member.guild)
+        if not user_notes:
+            return
+
+        await member.add_roles(role)
+
+        await self.bot.guild_log(
+            member.guild,
+            "logging_channel",
+            "warning",
+            f"Found noted user with ID {member.id} joining - re-adding role",
+            send=True,
+        )

@@ -152,6 +152,14 @@ class Protector(base.MatchCog):
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
+        guild = self.bot.get_guild(payload.guild_id)
+        if not guild:
+            return
+
+        config = await self.bot.get_context_config(guild=guild)
+        if not self.extension_enabled(config):
+            return
+
         channel = self.bot.get_channel(payload.channel_id)
         if not channel:
             return
@@ -161,7 +169,6 @@ class Protector(base.MatchCog):
             return
 
         ctx = await self.bot.get_context(message)
-        config = await self.bot.get_context_config(ctx)
         matched = await self.match(config, ctx, message.content)
         if not matched:
             return

@@ -329,7 +329,7 @@ class Listener(base.BaseCog):
             await dst.send(embed=embed)
 
     @commands.Cog.listener()
-    async def on_extension_event(self, payload):
+    async def on_extension_listener_event(self, payload):
         """Listens for custom extension-based events.
 
         parameters:

@@ -353,7 +353,9 @@ class IRCReceiver(base.LoopCog):
         mentions = embed.fill_mentions(channel)
         await channel.send(content=mentions, embed=embed)
 
-        self.bot.dispatch("extension_event", munch.Munch(channel=channel, embed=embed))
+        self.bot.dispatch(
+            "extension_listener_event", munch.Munch(channel=channel, embed=embed)
+        )
 
     @staticmethod
     def _add_mentions(message, guild, channel):
