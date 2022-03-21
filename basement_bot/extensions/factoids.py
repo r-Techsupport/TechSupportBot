@@ -8,6 +8,7 @@ import aiocron
 import base
 import discord
 import expiringdict
+import munch
 import util
 import yaml
 from discord.ext import commands
@@ -235,7 +236,7 @@ class FactoidManager(base.MatchCog):
         content = factoid.message if not embed else None
 
         try:
-            await ctx.send(
+            message = await ctx.send(
                 content=content,
                 embed=embed,
                 targets=ctx.message.mentions or [ctx.author],
@@ -255,9 +256,9 @@ class FactoidManager(base.MatchCog):
                 "Could not send factoid",
                 exception=e,
             )
-            await ctx.send(factoid.message)
+            message = await ctx.send(factoid.message)
 
-        await self.dispatch_relay_factoid(config, ctx, factoid.message)
+        self.dispatch(ctx.author, message, factoid)
 
         if ctx.message.mentions or ctx.message.reference:
             await self.process_response_event(ctx, factoid)
@@ -324,19 +325,11 @@ class FactoidManager(base.MatchCog):
             )
             await event.create()
 
-    async def dispatch_relay_factoid(self, config, ctx, message):
-        relay_cog = self.bot.cogs.get("DiscordRelay")
-        if not relay_cog:
-            return
-
-        if not ctx.channel.id in self.bot.extension_states.get("relay", {}).get(
-            "channels", []
-        ):
-            return
-
-        ctx.message.content = message
-
-        await relay_cog.response(config, ctx, message, "")
+    def dispatch(self, author, message, factoid):
+        self.bot.dispatch(
+            "factoid_event",
+            munch.Munch(author=author, message=message, factoid=factoid),
+        )
 
     async def kickoff_jobs(self):
         # get cronjobs from database
@@ -392,9 +385,7 @@ class FactoidManager(base.MatchCog):
                 continue
 
             message = await channel.send(content=content, embed=embed)
-            ctx = await self.bot.get_context(message)
-            config = await self.bot.get_context_config(ctx)
-            await self.dispatch_relay_factoid(config, ctx, factoid.message)
+            self.dispatch(channel.guild.get_member(self.bot.user.id), message, factoid)
 
     @commands.group(
         brief="Executes a factoid command",

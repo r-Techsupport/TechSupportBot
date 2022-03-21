@@ -6,6 +6,7 @@ import uuid
 import aiocron
 import base
 import discord
+import munch
 import yaml
 from discord.ext import commands
 
@@ -155,6 +156,10 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
         collection = self.bot.mongo[self.COLLECTION_NAME]
         await collection.insert_one(application_data)
+
+        self.bot.dispatch(
+            "extension_listener_event", munch.Munch(channel=ctx.channel, embed=embed)
+        )
 
     async def execute(self, config, guild):
         if not config.extensions.application.reminder_on.value:
