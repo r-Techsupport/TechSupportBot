@@ -5,7 +5,6 @@ import datetime
 
 import base
 import discord
-import embeds
 import expiringdict
 from discord.ext import commands
 
@@ -27,7 +26,7 @@ class ListenChannel(commands.Converter):
         return channel
 
 
-class ListenEmbed(embeds.SaneEmbed):
+class ListenEmbed(discord.Embed):
     """Base embed for listen events."""
 
     def __init__(self, *args, **kwargs):
@@ -56,7 +55,7 @@ class MessageEmbed(ListenEmbed):
         self.set_footer(text=f"#{message.channel.name} - {message.guild}")
 
 
-class InfoEmbed(embeds.SaneEmbed):
+class InfoEmbed(discord.Embed):
     """Embed for providing info about listener jobs."""
 
     def __init__(self, *args, **kwargs):

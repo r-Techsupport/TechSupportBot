@@ -6,12 +6,11 @@ import sys
 
 import base
 import discord
-import embeds
 import util
 from discord.ext import commands
 
 
-class AdminEmbed(embeds.SaneEmbed):
+class AdminEmbed(discord.Embed):
     """Base embed for admin commands."""
 
     def __init__(self, *args, **kwargs):
