@@ -74,6 +74,8 @@ class News(base.LoopCog):
             f"Sending news headline to #{channel.name}",
             send=True,
         )
+        if url.endswith("/"):
+            url = url[:-1]
         await channel.send(url)
 
     async def wait(self, config, _):
@@ -100,4 +102,6 @@ class News(base.LoopCog):
             article = await self.get_random_headline(config)
             url = article.get("url")
 
+        if url.endswith("/"):
+            url = url[:-1]
         await ctx.send(content=url)

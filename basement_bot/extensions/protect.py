@@ -279,7 +279,7 @@ class Protector(base.MatchCog):
     async def handle_warn(self, ctx, user, reason, bypass=False):
         if not bypass:
             can_execute = await self.can_execute(ctx, user)
-            if not can_execute:
+            if can_execute:
                 return
 
         warnings = await self.get_warnings(user, ctx.guild)
@@ -318,7 +318,7 @@ class Protector(base.MatchCog):
     async def handle_unwarn(self, ctx, user, reason, bypass=False):
         if not bypass:
             can_execute = await self.can_execute(ctx, user)
-            if not can_execute:
+            if can_execute:
                 return
 
         warnings = await self.get_warnings(user, ctx.guild)
@@ -328,7 +328,7 @@ class Protector(base.MatchCog):
 
         await self.clear_warnings(user, ctx.guild)
 
-        embed = await self.generate_user_modified_embed(user, "UNWARNED", reason)
+        embed = await self.generate_user_modified_embed(user, "unwarn", reason)
         await ctx.send(embed=embed)
 
     async def handle_ban(self, ctx, user, reason, bypass=False):
@@ -379,10 +379,11 @@ class Protector(base.MatchCog):
 
     async def generate_user_modified_embed(self, user, action, reason):
         embed = discord.Embed(
-            title=f"{action.upper()}: {user}", description=f"Reason: {reason}"
+            title="Chat Protection", description=f"{action.upper()} `{user}`"
         )
+        embed.set_footer(text=f"Reason: {reason}")
         embed.set_thumbnail(url=user.avatar_url)
-        embed.color = discord.Color.red()
+        embed.color = discord.Color.gold()
 
         return embed
 
@@ -463,15 +464,10 @@ class Protector(base.MatchCog):
 
         embed = discord.Embed(description=url)
 
-        if len(content) > 256:
-            content = content[:256]
-
         embed.title = url
-        embed.description = content.replace("\n", " ")
+        embed.description = content[0:100].replace("\n", " ")
         embed.set_author(name=f"Paste by {ctx.author}", icon_url=ctx.author.avatar_url)
-        embed.set_footer(
-            text="This embed was generated because your message was too long"
-        )
+        embed.set_footer(text="Note: long messages are automatically pasted")
         embed.color = discord.Color.blue()
 
         return embed
@@ -611,7 +607,7 @@ class Protector(base.MatchCog):
 
         await user.remove_roles(role)
 
-        embed = await self.generate_user_modified_embed(user, "umuted", reason)
+        embed = await self.generate_user_modified_embed(user, "unmuted", reason)
 
         await ctx.send(embed=embed)
 
