@@ -53,12 +53,11 @@ class Who(base.BaseCog):
         embed.add_field(name="Joined at", value=user.joined_at.replace(microsecond=0))
         embed.add_field(name="Status", value=user.status)
         embed.add_field(name="Nickname", value=user.nick)
-        embed.add_field(
-            name="Roles", value=", ".join(role.name for role in user.roles[1:])
-        )
+
+        role_string = ", ".join(role.name for role in user.roles[1:])
+        embed.add_field(name="Roles", value=role_string or "No roles")
 
         user_notes = await self.get_notes(user, ctx.guild)
-
         total_notes = 0
         if user_notes:
             total_notes = len(user_notes)
