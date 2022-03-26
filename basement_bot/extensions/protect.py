@@ -279,7 +279,7 @@ class Protector(base.MatchCog):
     async def handle_warn(self, ctx, user, reason, bypass=False):
         if not bypass:
             can_execute = await self.can_execute(ctx, user)
-            if can_execute:
+            if not can_execute:
                 return
 
         warnings = await self.get_warnings(user, ctx.guild)
@@ -318,7 +318,7 @@ class Protector(base.MatchCog):
     async def handle_unwarn(self, ctx, user, reason, bypass=False):
         if not bypass:
             can_execute = await self.can_execute(ctx, user)
-            if can_execute:
+            if not can_execute:
                 return
 
         warnings = await self.get_warnings(user, ctx.guild)
