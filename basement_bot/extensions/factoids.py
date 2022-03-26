@@ -64,6 +64,13 @@ def setup(bot):
         description="The list of channel ID's to listen for factoid response events",
         default=[],
     )
+    config.add(
+        key="linx_url",
+        datatype="str",
+        title="Linx API URL",
+        description="The URL to an optional Linx (github.com/andreimarcu/linx-server) API for pastebinning factoid-all responses",
+        default=None,
+    )
 
     bot.add_cog(
         FactoidManager(
@@ -594,12 +601,64 @@ class FactoidManager(base.MatchCog):
         brief="List all factoids",
         description="Shows an embed with all the factoids",
     )
-    async def all_(self, ctx):
+    async def all_(self, ctx, flag=None):
         factoids = await self.get_all_factoids(ctx.guild, hide=True)
         if not factoids:
             await ctx.send_deny_embed("No factoids found!")
             return
 
+        flag = flag.lower() if flag else flag
+        config = await self.bot.get_context_config(ctx)
+        if flag == "file" or not config.extensions.factoids.linx_url.value:
+            await self.send_factoids_as_file(ctx, factoids)
+            return
+
+        try:
+            html = await self.generate_html(ctx, factoids)
+            headers = {
+                "Content-Type": "text/plain",
+            }
+            response = await self.bot.http_call(
+                "put",
+                config.extensions.factoids.linx_url.value,
+                headers=headers,
+                data=io.StringIO(html),
+                get_raw_response=True,
+            )
+            url = await response.text()
+            filename = url.split("/")[-1]
+            url = url.replace(filename, f"selif/{filename}")
+            await ctx.send_confirm_embed(url)
+        except Exception as e:
+            await self.send_factoids_as_file(ctx, factoids)
+            await self.bot.guild_log(
+                ctx.guild,
+                "logging_channel",
+                "error",
+                "Could not render/send all-factoid HTML",
+                exception=e,
+            )
+
+    async def generate_html(self, ctx, factoids):
+        list_items = ""
+        for factoid in factoids:
+            embed_text = " (embed)" if factoid.embed_config else ""
+            list_items += (
+                f"<li><code>{factoid.text}{embed_text} - {factoid.message}</code></li>"
+            )
+        body_contents = f"<ul>{list_items}</ul>"
+        output = f"""
+        <!DOCTYPE html>
+        <html>
+        <body>
+        <h3>Factoids for {ctx.guild.name}</h3>
+        {body_contents}
+        </body>
+        </html>
+        """
+        return output
+
+    async def send_factoids_as_file(self, ctx, factoids):
         output_data = []
         for factoid in factoids:
             data = {"message": factoid.message, "embed": bool(factoid.embed_config)}
