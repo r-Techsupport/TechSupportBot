@@ -28,6 +28,8 @@ main:
         news:
         wolfram:
         open_weather:
+        spotify_client:
+        spotify_key:
         github:
     logging:
         queue_enabled: True

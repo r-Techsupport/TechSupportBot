@@ -129,7 +129,6 @@ class BasementBot(base.AdvancedBot):
         parameters:
             message (discord.Message): the message object
         """
-        await self.logger.event("message", message=message)
         owner = await self.get_owner()
         if (
             owner

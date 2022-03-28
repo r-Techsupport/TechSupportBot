@@ -65,6 +65,18 @@ class BaseCog(commands.Cog):
     async def preconfig(self):
         """Preconfigures the environment before starting the cog."""
 
+    def extension_enabled(self, config):
+        """Checks if an extension is currently enabled for a given config.
+
+        parameters:
+            config (dict): the context/guild config
+        """
+        if config is None:
+            config = {}
+        if self.no_guild or self.extension_name in config.get("enabled_extensions", []):
+            return True
+        return False
+
 
 class MatchCog(BaseCog):
     """
@@ -91,9 +103,7 @@ class MatchCog(BaseCog):
         if not config:
             return
 
-        if not self.no_guild and not self.extension_name in config.get(
-            "enabled_extensions", []
-        ):
+        if not self.extension_enabled(config):
             return
 
         result = await self.match(config, ctx, message.content)

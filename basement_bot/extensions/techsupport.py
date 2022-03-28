@@ -54,6 +54,27 @@ def setup(bot):
         description="True if auto tech support should be enabled",
         default=True,
     )
+    config.add(
+        key="speccy",
+        datatype="bool",
+        title="Speccy parser toggle",
+        description="True if Speccy parsing should be enabled",
+        default=True,
+    )
+    config.add(
+        key="hwinfo",
+        datatype="bool",
+        title="HWinfo parser toggle",
+        description="True if HWinfo parsing should be enabled",
+        default=True,
+    )
+    config.add(
+        key="cdi",
+        datatype="bool",
+        title="CDI parser toggle",
+        description="True if CDI parsing should be enabled",
+        default=True,
+    )
 
     bot.add_cog(CDIParser(bot=bot, extension_name="techsupport"))
     bot.add_cog(
@@ -99,18 +120,18 @@ class AutoSupport(base.MatchCog):
         self.user_records = munch.Munch()
 
     async def match(self, config, ctx, content):
+        for val in [
+            config.extensions.techsupport.auto_support.value,
+            config.extensions.techsupport.speccy,
+        ]:
+            if val in [True, "True", "true"]:
+                return False
+
         # check if message is in a support channel
         if not str(ctx.channel.id) in config.extensions.techsupport.channels.value:
             await self.bot.logger.debug(
                 "Channel not in tech support channels - ignoring auto-support"
             )
-            return False
-
-        if not config.extensions.techsupport.auto_support.value in [
-            True,
-            "True",
-            "true",
-        ]:
             return False
 
         # check if the user is not a helper
@@ -322,6 +343,9 @@ class CDIParser(BaseParser):
         if not ctx.message.attachments:
             return False
 
+        if not config.extensions.techsupport.cdi.value in [True, "True", "true"]:
+            return False
+
         attachment = ctx.message.attachments[0]
 
         if attachment.filename.lower().endswith(".txt"):
@@ -433,6 +457,9 @@ class SpeccyParser(BaseParser):
 
     async def match(self, config, ctx, content):
         if not ctx.guild:
+            return False
+
+        if not config.extensions.techsupport.speccy.value in [True, "True", "true"]:
             return False
 
         matches = re.findall(self.URL_PATTERN, content, re.MULTILINE)
@@ -569,6 +596,10 @@ class SpeccyParser(BaseParser):
 
         embed = self.add_yikes_color(embed, response_data)
 
+        embed.set_footer(
+            text="Note: any issues described here may be unrelated to your current issue"
+        )
+
         return embed
 
     @staticmethod
@@ -704,11 +735,14 @@ class HWInfoParser(BaseParser):
         "https://cdn.icon-icons.com/icons2/39/PNG/128/hwinfo_info_hardare_6211.png"
     )
 
-    async def match(self, _, ctx, __):
+    async def match(self, config, ctx, __):
         if not ctx.guild:
             return False
 
         if not ctx.message.attachments:
+            return False
+
+        if not config.extensions.techsupport.speccy.value in [True, "True", "true"]:
             return False
 
         attachment = ctx.message.attachments[0]

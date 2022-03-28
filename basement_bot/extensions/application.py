@@ -2,11 +2,11 @@ import datetime
 import io
 import json
 import uuid
-from typing import Type
 
 import aiocron
 import base
 import discord
+import munch
 import yaml
 from discord.ext import commands
 
@@ -96,7 +96,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
     COLLECTION_NAME = "applications_extension"
     STALE_APPLICATION_DAYS = 30
-    MAX_REMINDER_FIELDS = 2
+    MAX_REMINDER_FIELDS = 10
 
     async def preconfig(self):
         if not self.COLLECTION_NAME in await self.bot.mongo.list_collection_names():
@@ -134,7 +134,8 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         application_data = {
             "id": str(uuid.uuid4()),
             "responses": application_payload["responses"],
-            "user": str(user.id),
+            "user_id": str(user.id),
+            "username": str(user),
             "approved": False,
             "reviewed": False,
             "yayers": [],
@@ -155,6 +156,10 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
         collection = self.bot.mongo[self.COLLECTION_NAME]
         await collection.insert_one(application_data)
+
+        self.bot.dispatch(
+            "extension_listener_event", munch.Munch(channel=ctx.channel, embed=embed)
+        )
 
     async def execute(self, config, guild):
         if not config.extensions.application.reminder_on.value:
@@ -192,27 +197,23 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             else "This reminder was triggered manually"
         )
 
-        fields = 0
         for app in applications:
             # remove this until voting implemented
             app = self.clean_file_data(app)
 
-            if fields < self.MAX_REMINDER_FIELDS:
+            if len(embed.fields) < self.MAX_REMINDER_FIELDS:
                 id = app.get("id")
                 if not id:
                     continue
-                try:
-                    user_id = int(app.get("user"))
-                except TypeError:
-                    user_id = 0
-                user = guild.get_member(user_id)
-                if not user:
+                username = app.get("username")
+                if not username:
                     continue
-                embed.add_field(name=user, value=id, inline=False)
-                fields += 1
+                embed.add_field(name=username, value=id, inline=False)
 
         description = f"Pending applications: {len(applications)}"
-        remaining = len(applications) - fields
+        remaining = (
+            (len(applications) - len(embed.fields)) if len(embed.fields) != 0 else 0
+        )
 
         file = None
         if remaining > 0:
@@ -417,8 +418,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             if not confirm:
                 return
 
+        username = application_data.get("username", "the user")
         confirm = await ctx.confirm(
-            "This will notify the user and approve their application. Are you sure?",
+            f"This will attempt to notify `{username}` and approve their application",
         )
         if not confirm:
             return
@@ -455,8 +457,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             if not confirm:
                 return
 
+        username = application_data.get("username", "the user")
         confirm = await ctx.confirm(
-            "This will notify the user and deny their application. Are you sure?"
+            f"This will attempt to notify `{username}` and deny their application",
         )
         if not confirm:
             return
@@ -488,7 +491,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             )
 
         try:
-            user_id = int(application_data.get("user"))
+            user_id = int(application_data.get("user_id"))
         except TypeError:
             user_id = None
 
@@ -496,7 +499,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         message_content = (
             f"I've {status} that application and notified `{user}`!"
             if user
-            else f"I've {status} that application, but could not find the original user"
+            else f"I've {status} that application, but the applicant has left the server"
         )
         await ctx.send_confirm_embed(message_content)
 

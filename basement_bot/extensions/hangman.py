@@ -258,7 +258,7 @@ class HangmanCog(base.BaseCog):
 
         if game.failed:
             embed.color = discord.Color.red()
-            footer_text = "Game over! The word was `{game.word}`!"
+            footer_text = f"Game over! The word was `{game.word}`!"
         elif game.finished:
             embed.color = discord.Color.green()
             footer_text = "Word guessed! Nice job!"

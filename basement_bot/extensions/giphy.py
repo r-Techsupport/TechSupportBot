@@ -1,5 +1,3 @@
-import random
-
 import base
 import util
 from discord.ext import commands

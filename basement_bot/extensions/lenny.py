@@ -42,4 +42,4 @@ class Lenny(base.BaseCog):
         description="Returns a randomly chosen Lenny face ( ͡° ͜ʖ ͡°)",
     )
     async def lenny(self, ctx):
-        await ctx.send(random.choice(self.LENNYS_SELECTION))
+        await ctx.send(content=random.choice(self.LENNYS_SELECTION))

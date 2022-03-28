@@ -2,7 +2,6 @@ import random
 
 import base
 import discord
-import util
 from discord.ext import commands
 
 

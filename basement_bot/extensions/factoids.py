@@ -1,12 +1,14 @@
 import asyncio
-import collections
 import datetime
 import io
 import json
+import uuid
 
+import aiocron
 import base
 import discord
 import expiringdict
+import munch
 import util
 import yaml
 from discord.ext import commands
@@ -16,20 +18,28 @@ def setup(bot):
     class Factoid(bot.db.Model):
         __tablename__ = "factoids"
 
-        pk = bot.db.Column(bot.db.Integer, primary_key=True)
+        factoid_id = bot.db.Column(bot.db.Integer, primary_key=True)
         text = bot.db.Column(bot.db.String)
-        channel = bot.db.Column(bot.db.String)
         guild = bot.db.Column(bot.db.String)
         message = bot.db.Column(bot.db.String)
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
         embed_config = bot.db.Column(bot.db.String, default=None)
-        loop_config = bot.db.Column(bot.db.String, default=None)
         hidden = bot.db.Column(bot.db.Boolean, default=False)
+
+    class FactoidCron(bot.db.Model):
+        __tablename__ = "factoid_cron"
+
+        job_id = bot.db.Column(bot.db.Integer, primary_key=True)
+        factoid = bot.db.Column(
+            bot.db.Integer, bot.db.ForeignKey("factoids.factoid_id")
+        )
+        channel = bot.db.Column(bot.db.String)
+        cron = bot.db.Column(bot.db.String)
 
     class FactoidResponseEvent(bot.db.Model):
         __tablename__ = "factoid_responses"
 
-        pk = bot.db.Column(bot.db.Integer, primary_key=True)
+        event_id = bot.db.Column(bot.db.Integer, primary_key=True)
         ref_content = bot.db.Column(bot.db.String)
         text = bot.db.Column(bot.db.String)
         message = bot.db.Column(bot.db.String)
@@ -54,10 +64,19 @@ def setup(bot):
         description="The list of channel ID's to listen for factoid response events",
         default=[],
     )
+    config.add(
+        key="linx_url",
+        datatype="str",
+        title="Linx API URL",
+        description="The URL to an optional Linx (github.com/andreimarcu/linx-server) API for pastebinning factoid-all responses",
+        default=None,
+    )
 
     bot.add_cog(
         FactoidManager(
-            bot=bot, models=[Factoid, FactoidResponseEvent], extension_name="factoids"
+            bot=bot,
+            models=[Factoid, FactoidCron, FactoidResponseEvent],
+            extension_name="factoids",
         )
     )
     bot.add_extension_config("factoids", config)
@@ -104,7 +123,7 @@ class LoopEmbed(discord.Embed):
         self.color = discord.Color.blurple()
 
 
-class FactoidManager(base.MatchCog, base.LoopCog):
+class FactoidManager(base.MatchCog):
 
     LOOP_UPDATE_MINUTES = 10
 
@@ -112,14 +131,10 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         self.factoid_cache = expiringdict.ExpiringDict(
             max_len=100, max_age_seconds=1200
         )
-
-    async def loop_preconfig(self):
-        self.loop_jobs = collections.defaultdict(dict)
+        # this sets a hard time limit on repeated cronjob DB calls
+        self.cronjob_cache = expiringdict.ExpiringDict(max_len=100, max_age_seconds=300)
         await self.bot.logger.info("Loading factoid jobs", send=True)
-        await self.load_jobs()
-        self.loop_cache_update_time = datetime.datetime.utcnow() + datetime.timedelta(
-            minutes=self.LOOP_UPDATE_MINUTES
-        )
+        await self.kickoff_jobs()
 
     async def get_all_factoids(self, guild=None, hide=False):
         if guild and not hide:
@@ -228,7 +243,7 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         content = factoid.message if not embed else None
 
         try:
-            await ctx.send(
+            message = await ctx.send(
                 content=content,
                 embed=embed,
                 targets=ctx.message.mentions or [ctx.author],
@@ -248,9 +263,9 @@ class FactoidManager(base.MatchCog, base.LoopCog):
                 "Could not send factoid",
                 exception=e,
             )
-            await ctx.send(factoid.message)
+            message = await ctx.send(factoid.message)
 
-        await self.dispatch_relay_factoid(config, ctx, factoid.message)
+        self.dispatch(ctx.author, message, factoid)
 
         if ctx.message.mentions or ctx.message.reference:
             await self.process_response_event(ctx, factoid)
@@ -317,136 +332,67 @@ class FactoidManager(base.MatchCog, base.LoopCog):
             )
             await event.create()
 
-    async def dispatch_relay_factoid(self, config, ctx, message):
-        relay_cog = self.bot.cogs.get("DiscordRelay")
-        if not relay_cog:
-            return
-
-        # add to the relay plugin queue if it's loaded
-        if not ctx.channel.id in self.bot.extension_states.get("relay", {}).get(
-            "channels", []
-        ):
-            return
-
-        ctx.message.content = message
-
-        await relay_cog.response(config, ctx, message, "")
-
-    async def load_jobs(self):
-        factoids = await self.get_all_factoids()
-
-        if not factoids:
-            return
-
-        factoid_cache = collections.defaultdict(set)
-        for factoid in factoids:
-            factoid_set = factoid_cache[int(factoid.guild)]
-            factoid_set.add(factoid.text)
-            self.configure_job(factoid)
-
-        # remove jobs for deleted factoids
-        for guild_id in factoid_cache.keys():
-            for looped_factoid_key in self.loop_jobs[guild_id].keys():
-                if not looped_factoid_key in factoid_cache[guild_id]:
-                    del self.loop_jobs[guild_id][looped_factoid_key]
-
-    def configure_job(self, factoid):
-        guild_loop_jobs = self.loop_jobs[int(factoid.guild)]
-
-        old_loop_config = guild_loop_jobs.get(factoid.text, {})
-
-        if not factoid.loop_config:
-            # delete stale job
-            if old_loop_config:
-                del guild_loop_jobs[factoid.text]
-            return
-
-        loop_config = {}
-        sleep_duration = None
-        try:
-            loop_config = json.loads(factoid.loop_config)
-            sleep_duration = int(loop_config.get("sleep_duration"))
-        except Exception:
-            return
-
-        new_finish_time = datetime.datetime.utcnow() + datetime.timedelta(
-            minutes=sleep_duration
+    def dispatch(self, author, message, factoid):
+        self.bot.dispatch(
+            "factoid_event",
+            munch.Munch(author=author, message=message, factoid=factoid),
         )
-        if not old_loop_config or sleep_duration != int(
-            old_loop_config.get("sleep_duration", -1)
-        ):
-            # there is no previous loop config
-            # OR
-            # the new sleep duration is different than the old one in the job
-            # therefore restart the waiting
-            loop_config["finish_time"] = new_finish_time
-        else:
-            loop_config["finish_time"] = old_loop_config.get(
-                "finish_time", new_finish_time
-            )
 
-        guild_loop_jobs[factoid.text] = loop_config
+    async def kickoff_jobs(self):
+        # get cronjobs from database
+        jobs = await self.models.FactoidCron.query.gino.all()
+        for job in jobs:
+            self.bot.loop.create_task(self.cronjob(job))
 
-    async def execute(self, config, guild):
-        compare_time = datetime.datetime.utcnow()
+    async def cronjob(self, job):
+        runtime_id = uuid.uuid4()
+        self.cronjob_cache[runtime_id] = job
+        job_id = job.job_id
 
-        if compare_time > self.loop_cache_update_time:
-            await self.load_jobs()
-            self.loop_cache_update_time = (
-                datetime.datetime.utcnow()
-                + datetime.timedelta(minutes=self.LOOP_UPDATE_MINUTES)
-            )
+        while True:
+            job = self.cronjob_cache.get(runtime_id)
+            if not job:
+                from_db = await self.models.FactoidCron.query.where(
+                    self.models.FactoidCron.job_id == job_id
+                ).gino.first()
+                if not from_db:
+                    # this factoid job has been deleted from the DB
+                    # TODO: log this event
+                    return
+                job = from_db
+                self.cronjob_cache[runtime_id] = job
 
-        for factoid_key, loop_config in self.loop_jobs.get(guild.id, {}).items():
-            finish_time = loop_config.get("finish_time")
-            if not finish_time or compare_time < finish_time:
+            # TODO: pass exception to guild log interface
+            try:
+                await aiocron.crontab(job.cron).next()
+            except Exception as e:
+                await self.bot.logger.error(
+                    f"Could not await cron completion", exception=e
+                )
+                await asyncio.sleep(300)
+
+            factoid = await self.models.Factoid.query.where(
+                self.models.Factoid.factoid_id == job.factoid
+            ).gino.first()
+            if not factoid:
+                await self.bot.logger.warning(
+                    "Could not find factoid referenced by job - will retry after waiting"
+                )
                 continue
 
-            channel = None
-            sleep_duration = None
-            factoid = await self.get_factoid_from_query(factoid_key, guild)
-
+            # get_embed accepts job as a factoid object
             embed = self.get_embed_from_factoid(factoid)
             content = factoid.message if not embed else None
 
-            try:
-                sleep_duration = int(loop_config.get("sleep_duration"))
-            except Exception:
+            channel = self.bot.get_channel(int(job.channel))
+            if not channel:
+                await self.bot.logger.warning(
+                    "Could not find channel to send factoid cronjob - will retry after waiting"
+                )
                 continue
 
-            for channel_id in loop_config.get("channel_ids", []):
-                try:
-                    channel = guild.get_channel(int(channel_id))
-                    # update time of next message
-                    loop_config[
-                        "finish_time"
-                    ] = datetime.datetime.utcnow() + datetime.timedelta(
-                        minutes=sleep_duration
-                    )
-
-                    await self.bot.guild_log(
-                        guild,
-                        "logging_channel",
-                        "info",
-                        f"Sending looped factoid: {factoid_key} in #{channel.name}",
-                        send=True,
-                    )
-                    message = await channel.send(content=content, embed=embed)
-                    context = await self.bot.get_context(message)
-                    await self.dispatch_relay_factoid(config, context, factoid.message)
-                except Exception as e:
-                    await self.bot.guild_log(
-                        guild,
-                        "logging_channel",
-                        "error",
-                        f"Could not send looped factoid: {factoid_key} in #{channel.name}",
-                        exception=e,
-                        critical=True,
-                    )
-
-    # main clock for looping
-    async def wait(self, _, __):
-        await asyncio.sleep(60)
+            message = await channel.send(content=content, embed=embed)
+            self.dispatch(channel.guild.get_member(self.bot.user.id), message, factoid)
 
     @commands.group(
         brief="Executes a factoid command",
@@ -491,118 +437,6 @@ class FactoidManager(base.MatchCog, base.LoopCog):
     @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
-        brief="Loops a factoid",
-        description="Loops a pre-existing factoid",
-        usage="[factoid-name] [sleep_duration (minutes)] [channel_id] [channel_id_2] ...",
-    )
-    async def loop(
-        self,
-        ctx,
-        factoid_name: str,
-        sleep_duration: int,
-        *channel_ids: commands.Greedy[int],
-    ):
-        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
-        if not factoid:
-            await ctx.send_deny_embed("I couldn't find that factoid")
-            return
-
-        if factoid.loop_config:
-            await ctx.send_confirm_embed("Deleting previous loop configuration...")
-
-        new_loop_config = json.dumps(
-            {"sleep_duration": sleep_duration, "channel_ids": channel_ids}
-        )
-        await factoid.update(loop_config=new_loop_config).apply()
-
-        await ctx.send_confirm_embed(
-            f"Successfully saved loop config for {factoid_name}"
-        )
-
-    @util.with_typing
-    @commands.check(has_manage_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Removes a factoid's loop config",
-        description="De-loops a pre-existing factoid",
-        usage="[factoid-name]",
-    )
-    async def deloop(self, ctx, factoid_name: str):
-        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
-        if not factoid:
-            await ctx.send_deny_embed("I couldn't find that factoid")
-            return
-
-        if not factoid.loop_config:
-            await ctx.send_deny_embed("There is no loop config for that factoid")
-            return
-
-        await factoid.update(loop_config=None).apply()
-
-        await ctx.send_confirm_embed("Loop config deleted")
-
-    @util.with_typing
-    @commands.check(has_manage_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Displays loop config",
-        description="Retrieves and displays the loop config for a specific factoid",
-        usage="[factoid-name]",
-    )
-    async def job(self, ctx, factoid_name: str):
-        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
-
-        if not factoid:
-            await ctx.send_deny_embed("I couldn't find that factoid")
-            return
-
-        if not factoid.loop_config:
-            await ctx.send_deny_embed("There is no loop config for that factoid")
-            return
-
-        try:
-            loop_config = json.loads(factoid.loop_config)
-        except Exception:
-            await ctx.send_deny_embed(
-                "I couldn't process the JSON for that loop config"
-            )
-            return
-
-        embed_label = ""
-        if factoid.embed_config:
-            embed_label = "(embed)"
-
-        embed = LoopEmbed(
-            title=f"Loop config for {factoid_name} {embed_label}",
-            description=f'"{factoid.message}"',
-        )
-
-        sleep_duration = loop_config.get("sleep_duration", "???")
-        embed.add_field(
-            name="Sleep duration", value=f"{sleep_duration} minute(s)", inline=False
-        )
-
-        channel_ids = loop_config.get("channel_ids", [])
-        # check this shit out
-        channels = [
-            "#" + getattr(ctx.guild.get_channel(int(channel_id)), "name", "Unknown")
-            for channel_id in channel_ids
-        ]
-        embed.add_field(name="Channels", value=", ".join(channels), inline=False)
-
-        embed.add_field(
-            name="Next execution (UTC)",
-            value=self.loop_jobs.get(ctx.guild.id, {})
-            .get(factoid_name, {})
-            .get("finish_time", "Unknown"),  # get-er-done
-        )
-
-        await ctx.send(embed=embed)
-
-    @util.with_typing
-    @commands.check(has_manage_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
         name="json",
         brief="Gets embed JSON",
         description="Gets embed JSON for a factoid",
@@ -628,31 +462,134 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         await ctx.send(file=json_file)
 
     @util.with_typing
+    @commands.check(has_manage_factoids_role)
+    @commands.guild_only()
+    @factoid.command(
+        brief="Loops a factoid",
+        description="Loops a pre-existing factoid",
+        usage="[factoid-name] [cron_config] [channel]",
+    )
+    async def loop(
+        self,
+        ctx,
+        factoid_name: str,
+        cron_config: str,
+        channel: discord.TextChannel,
+    ):
+        # check if loop already exists
+        job = (
+            await self.models.FactoidCron.join(self.models.Factoid)
+            .select()
+            .where(self.models.FactoidCron.channel == str(channel.id))
+            .where(self.models.Factoid.text == factoid_name)
+            .gino.first()
+        )
+        if job:
+            await ctx.send_deny_embed("That factoid is already looping in this channel")
+            return
+
+        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
+        if not factoid:
+            await ctx.send_deny_embed("That factoid does not exist")
+            return
+
+        # TODO: validate cron before passing to DB
+        job = self.models.FactoidCron(
+            factoid=factoid.factoid_id, channel=str(channel.id), cron=cron_config
+        )
+        await job.create()
+
+        self.bot.loop.create_task(self.cronjob(job))
+
+        await ctx.send_confirm_embed("Factoid loop created")
+
+    @util.with_typing
+    @commands.check(has_manage_factoids_role)
+    @commands.guild_only()
+    @factoid.command(
+        brief="Removes a factoid's loop config",
+        description="De-loops a pre-existing factoid",
+        usage="[factoid-name] [channel]",
+    )
+    async def deloop(self, ctx, factoid_name: str, channel: discord.TextChannel):
+        job = (
+            await self.models.FactoidCron.query.where(
+                self.models.FactoidCron.channel == str(channel.id)
+            )
+            .where(self.models.Factoid.text == factoid_name)
+            .gino.first()
+        )
+        if not job:
+            await ctx.send_deny_embed("That job does not exist")
+            return
+
+        await job.delete()
+
+        await ctx.send_confirm_embed(
+            "Loop job deleted (please wait some time to see changes)"
+        )
+
+    @util.with_typing
+    @commands.check(has_manage_factoids_role)
+    @commands.guild_only()
+    @factoid.command(
+        brief="Displays loop config",
+        description="Retrieves and displays the loop config for a specific factoid",
+        usage="[factoid-name] [channel]",
+    )
+    async def job(self, ctx, factoid_name: str, channel: discord.TextChannel):
+        job = (
+            await self.models.FactoidCron.join(self.models.Factoid)
+            .select()
+            .where(self.models.FactoidCron.channel == str(channel.id))
+            .where(self.models.Factoid.text == factoid_name)
+            .gino.first()
+        )
+        if not job:
+            await ctx.send_deny_embed("That job does not exist")
+            return
+
+        embed_label = ""
+        if job.embed_config:
+            embed_label = "(embed)"
+
+        embed = LoopEmbed(
+            title=f"Loop config for {factoid_name} {embed_label}",
+            description=f'"{job.message}"',
+        )
+
+        embed.add_field(name="Channel", value=f"#{channel.name}")
+        embed.add_field(name="Cron config", value=job.cron)
+
+        await ctx.send(embed=embed)
+
+    @util.with_typing
     @commands.guild_only()
     @factoid.command(
         brief="Lists loop jobs",
-        description="Lists all the currently cached loop jobs",
+        description="Lists all the currently registered loop jobs",
     )
     async def jobs(self, ctx):
-        all_jobs = self.loop_jobs.get(ctx.guild.id, {})
-
-        if not all_jobs:
+        jobs = (
+            await self.models.FactoidCron.join(self.models.Factoid)
+            .select()
+            .where(self.models.Factoid.guild == str(ctx.guild.id))
+            .gino.all()
+        )
+        if not jobs:
             await ctx.send_deny_embed(
-                f"There are no currently running factoid loops (next cache update: {self.loop_cache_update_time} UTC)",
+                "There are no registered factoid loop jobs for this guild"
             )
             return
 
-        embed_kwargs = {}
-        for factoid_name, loop_config in all_jobs.items():
-            finish_time = loop_config.get("finish_time", "???")
-            embed_kwargs[factoid_name] = f"Next execution: {finish_time} UTC"
-
-        embed = util.generate_embed_from_kwargs(
-            title="Running factoid loops",
-            description=f"Next cache update: {self.loop_cache_update_time} UTC",
-            cls=LoopEmbed,
-            **embed_kwargs,
-        )
+        embed = LoopEmbed(title=f"Factoid loop jobs for {ctx.guild.name}")
+        for job in jobs[:10]:
+            channel = self.bot.get_channel(int(job.channel))
+            if not channel:
+                continue
+            embed.add_field(
+                name=f"{job.text} - #{channel.name}", value=job.cron, inline=False
+            )
 
         await ctx.send(embed=embed)
 
@@ -664,12 +601,64 @@ class FactoidManager(base.MatchCog, base.LoopCog):
         brief="List all factoids",
         description="Shows an embed with all the factoids",
     )
-    async def all_(self, ctx):
+    async def all_(self, ctx, flag=None):
         factoids = await self.get_all_factoids(ctx.guild, hide=True)
         if not factoids:
             await ctx.send_deny_embed("No factoids found!")
             return
 
+        flag = flag.lower() if flag else flag
+        config = await self.bot.get_context_config(ctx)
+        if flag == "file" or not config.extensions.factoids.linx_url.value:
+            await self.send_factoids_as_file(ctx, factoids)
+            return
+
+        try:
+            html = await self.generate_html(ctx, factoids)
+            headers = {
+                "Content-Type": "text/plain",
+            }
+            response = await self.bot.http_call(
+                "put",
+                config.extensions.factoids.linx_url.value,
+                headers=headers,
+                data=io.StringIO(html),
+                get_raw_response=True,
+            )
+            url = await response.text()
+            filename = url.split("/")[-1]
+            url = url.replace(filename, f"selif/{filename}")
+            await ctx.send_confirm_embed(url)
+        except Exception as e:
+            await self.send_factoids_as_file(ctx, factoids)
+            await self.bot.guild_log(
+                ctx.guild,
+                "logging_channel",
+                "error",
+                "Could not render/send all-factoid HTML",
+                exception=e,
+            )
+
+    async def generate_html(self, ctx, factoids):
+        list_items = ""
+        for factoid in factoids:
+            embed_text = " (embed)" if factoid.embed_config else ""
+            list_items += (
+                f"<li><code>{factoid.text}{embed_text} - {factoid.message}</code></li>"
+            )
+        body_contents = f"<ul>{list_items}</ul>"
+        output = f"""
+        <!DOCTYPE html>
+        <html>
+        <body>
+        <h3>Factoids for {ctx.guild.name}</h3>
+        {body_contents}
+        </body>
+        </html>
+        """
+        return output
+
+    async def send_factoids_as_file(self, ctx, factoids):
         output_data = []
         for factoid in factoids:
             data = {"message": factoid.message, "embed": bool(factoid.embed_config)}

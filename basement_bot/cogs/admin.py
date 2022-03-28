@@ -6,12 +6,11 @@ import sys
 
 import base
 import discord
-import embeds
 import util
 from discord.ext import commands
 
 
-class AdminEmbed(embeds.SaneEmbed):
+class AdminEmbed(discord.Embed):
     """Base embed for admin commands."""
 
     def __init__(self, *args, **kwargs):
@@ -60,6 +59,12 @@ class AdminControl(base.BaseCog):
         embed = discord.Embed(
             title=f"Extension status for `{extension_name}`", description=status
         )
+
+        if status == "loaded":
+            embed.color = discord.Color.green()
+        else:
+            embed.color = discord.Color.gold()
+
         await ctx.send(embed=embed)
 
     @util.with_typing

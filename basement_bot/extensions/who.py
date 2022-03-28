@@ -28,7 +28,7 @@ def setup(bot):
         default=None,
     )
 
-    bot.add_cog(Who(bot=bot, models=[UserNote]))
+    bot.add_cog(Who(bot=bot, models=[UserNote], extension_name="who"))
     bot.add_extension_config("who", config)
 
 
@@ -43,30 +43,32 @@ class Who(base.BaseCog):
     )
     async def whois_user(self, ctx, user: discord.Member):
         embed = discord.Embed(
-            title=f"User info for {user}",
+            title=f"User info for `{user}`",
             description="**Note: this is a bot account!**" if user.bot else "",
         )
 
         embed.set_thumbnail(url=user.avatar_url)
 
-        embed.add_field(name="Created at", value=user.created_at)
-        embed.add_field(name="Joined at", value=user.joined_at)
-        embed.add_field(name="Nickname", value=user.nick, inline=False)
+        embed.add_field(name="Created at", value=user.created_at.replace(microsecond=0))
+        embed.add_field(name="Joined at", value=user.joined_at.replace(microsecond=0))
         embed.add_field(name="Status", value=user.status)
+        embed.add_field(name="Nickname", value=user.nick)
+
+        role_string = ", ".join(role.name for role in user.roles[1:])
+        embed.add_field(name="Roles", value=role_string or "No roles")
 
         user_notes = await self.get_notes(user, ctx.guild)
-
         total_notes = 0
         if user_notes:
             total_notes = len(user_notes)
-            user_notes = user_notes[-3:]
+            user_notes = user_notes[:3]
         embed.set_footer(text=f"{total_notes} total notes")
         embed.color = discord.Color.dark_blue()
 
         for note in user_notes:
             author = ctx.guild.get_member(int(note.author_id)) or "<Not found>"
             embed.add_field(
-                name=f"Note (from {author} at {note.updated})",
+                name=f"Note from {author} ({note.updated.date()})",
                 value=f"*{note.body}*" or "*None*",
                 inline=False,
             )
@@ -110,7 +112,7 @@ class Who(base.BaseCog):
 
         await user.add_roles(role)
 
-        await ctx.send_confirm_embed("I created that note successfully")
+        await ctx.send_confirm_embed(f"Note created for `{user}`")
 
     @note.command(
         name="clear",
@@ -125,10 +127,12 @@ class Who(base.BaseCog):
             await ctx.send_deny_embed("There are no notes for that user")
             return
 
-        await ctx.confirm(
+        confirm = await ctx.confirm(
             f"Are you sure you want to clear {len(notes)} notes?",
             delete_after=True,
         )
+        if not confirm:
+            return
 
         for note in notes:
             await note.delete()
@@ -142,7 +146,7 @@ class Who(base.BaseCog):
 
         await user.remove_roles(role)
 
-        await ctx.send_confirm_embed("I cleared all the notes for that user")
+        await ctx.send_confirm_embed(f"Notes cleared for `{user}`")
 
     @note.command(
         name="all",
@@ -154,7 +158,7 @@ class Who(base.BaseCog):
         notes = await self.get_notes(user, ctx.guild)
 
         if not notes:
-            await ctx.send_deny_embed("There are no notes for that user")
+            await ctx.send_deny_embed(f"There are no notes for `{user}`")
             return
 
         note_output_data = []
@@ -180,9 +184,35 @@ class Who(base.BaseCog):
                 self.models.UserNote.user_id == str(user.id)
             )
             .where(self.models.UserNote.guild_id == str(guild.id))
+            .order_by(self.models.UserNote.updated.desc())
             .gino.all()
         )
 
-        user_notes.sort(key=lambda u: u.updated)
-
         return user_notes
+
+    # re-adds note role back to joining users
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        config = await self.bot.get_context_config(guild=member.guild)
+        if not self.extension_enabled(config):
+            return
+
+        role = discord.utils.get(
+            member.guild.roles, name=config.extensions.who.note_role.value
+        )
+        if not role:
+            return
+
+        user_notes = await self.get_notes(member, member.guild)
+        if not user_notes:
+            return
+
+        await member.add_roles(role)
+
+        await self.bot.guild_log(
+            member.guild,
+            "logging_channel",
+            "warning",
+            f"Found noted user with ID {member.id} joining - re-adding role",
+            send=True,
+        )

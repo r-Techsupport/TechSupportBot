@@ -6,7 +6,6 @@ from xml.dom.minidom import Attr
 import base
 import discord
 import munch
-from attr import Attribute
 from discord.ext import commands
 
 
@@ -101,6 +100,17 @@ class MessageEvent(RelayEvent):
         self.payload.event.reply.author.discriminator = (
             referenced_message.author.discriminator
         )
+
+
+class FactoidEvent(RelayEvent):
+    def __init__(self, *args, **kwargs):
+        message = kwargs.pop("message")
+        factoid = kwargs.pop("factoid")
+        super().__init__("message", *args, **kwargs)
+        self.message = message
+        self.payload.event.content = factoid.message
+        self.payload.event.attachments = []
+        self.payload.event.reply = munch.Munch()
 
 
 class MessageEditEvent(RelayEvent):
@@ -218,8 +228,6 @@ class DiscordRelay(base.MatchCog):
         self.listen_channels = list(
             self.bot.file_config.special.relay.channel_map.values()
         )
-        self.bot.extension_states.relay = munch.Munch()
-        self.bot.extension_states.relay.channels = self.listen_channels
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
@@ -299,6 +307,16 @@ class DiscordRelay(base.MatchCog):
                 exception=e,
             )
 
+    @commands.Cog.listener()
+    async def on_factoid_event(self, payload):
+        message_event = FactoidEvent(
+            payload.author,
+            payload.message.channel,
+            message=payload.message,
+            factoid=payload.factoid,
+        )
+        await self.publish(message_event.to_json(), payload.message.channel.guild)
+
 
 class IRCReceiver(base.LoopCog):
 
@@ -345,7 +363,6 @@ class IRCReceiver(base.LoopCog):
                 if not channel:
                     continue
                 await channel.send(embed=embed)
-
             return
 
         channel = self.get_channel(data)
@@ -354,6 +371,10 @@ class IRCReceiver(base.LoopCog):
 
         mentions = embed.fill_mentions(channel)
         await channel.send(content=mentions, embed=embed)
+
+        self.bot.dispatch(
+            "extension_listener_event", munch.Munch(channel=channel, embed=embed)
+        )
 
     @staticmethod
     def _add_mentions(message, guild, channel):

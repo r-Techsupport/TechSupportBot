@@ -76,6 +76,10 @@ class Rules(base.BaseCog):
         usage="[number]",
     )
     async def get_rule(self, ctx, number: int):
+        if number < 1:
+            await ctx.send_deny_embed("That rule number is invalid")
+            return
+
         rules_data = await self.bot.mongo[self.COLLECTION_NAME].find_one(
             {"guild_id": {"$eq": str(ctx.guild.id)}}
         )
