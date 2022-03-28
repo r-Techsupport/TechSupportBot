@@ -6,6 +6,7 @@ import uuid
 import aiocron
 import base
 import discord
+import embeds
 import munch
 import yaml
 from discord.ext import commands
@@ -121,11 +122,20 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         if not application_payload.get("responses"):
             raise ValueError("received empty responses from application webhook")
 
-        user = ctx.guild.get_member_named(application_payload.get("username"))
+        username = application_payload.get("username")
+        user = ctx.guild.get_member_named(username)
         if not user:
-            raise ValueError("user associated with application could not be found")
+            return await self.handle_error_embed(
+                f"Could not find {username} in server - ignoring application"
+            )
 
-        confirmed = await self.confirm_with_user(ctx, user)
+        try:
+            confirmed = await self.confirm_with_user(ctx, user)
+        except discord.Forbidden:
+            return await self.handle_error_embed(
+                f"Could not confirm application: {user} has direct messages blocked"
+            )
+
         if not confirmed:
             raise RuntimeError(
                 "user associated with application has denied making application"
@@ -156,7 +166,13 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
         collection = self.bot.mongo[self.COLLECTION_NAME]
         await collection.insert_one(application_data)
+        self.bot.dispatch(
+            "extension_listener_event", munch.Munch(channel=ctx.channel, embed=embed)
+        )
 
+    async def handle_error_embed(self, ctx, message):
+        embed = embeds.DenyEmbed(message)
+        await ctx.channel.send(embed=embed)
         self.bot.dispatch(
             "extension_listener_event", munch.Munch(channel=ctx.channel, embed=embed)
         )
