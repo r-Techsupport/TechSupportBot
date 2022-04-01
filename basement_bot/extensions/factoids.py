@@ -197,7 +197,6 @@ class FactoidManager(base.MatchCog):
         # finally, add new entry
         factoid = self.models.Factoid(
             text=trigger,
-            channel=kwargs.get("channel"),
             guild=kwargs.get("guild"),
             message=kwargs.get("message"),
             embed_config=kwargs.get("embed_config"),
@@ -415,7 +414,6 @@ class FactoidManager(base.MatchCog):
         await self.add_factoid(
             ctx,
             trigger=factoid_name,
-            channel=str(ctx.message.channel.id),
             guild=str(ctx.guild.id),
             message=message,
             embed_config=embed_config,
