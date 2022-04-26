@@ -1,0 +1,50 @@
+main:
+    auth_token:
+    admins:
+        ids: []
+        roles: []
+    postgres:
+        user:
+        password:
+        name:
+        host:
+        port: 5432
+    mongodb:
+        user:
+        password:
+        name:
+        host:
+        port: 27017
+    rabbitmq:
+        user:
+        password:
+        host:
+        vhost: "/"
+        port: 5672
+    api_keys:
+        google_cse:
+        google:
+        giphy:
+        news:
+        wolfram:
+        open_weather:
+        spotify_client:
+        spotify_key:
+        github:
+    logging:
+        queue_enabled: True
+        block_discord_send: False
+        queue_wait_seconds: 3
+    disabled_extensions: ["kanye"]
+    default_prefix: "."
+    cache:
+        guild_config_cache_length: 100
+        guild_config_cache_seconds: 30
+        http_cache_length: 100
+        http_cache_seconds: 600
+
+# Special things
+special:
+    github:
+        username:
+        repo:
