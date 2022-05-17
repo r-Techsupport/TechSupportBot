@@ -1,3 +1,5 @@
+# All handling of factoids, both sending and managing
+
 import asyncio
 import datetime
 import io
@@ -13,8 +15,8 @@ import util
 import yaml
 from discord.ext import commands
 
-
 def setup(bot):
+    #defining database tables
     class Factoid(bot.db.Model):
         __tablename__ = "factoids"
 
@@ -48,7 +50,7 @@ def setup(bot):
         server_name = bot.db.Column(bot.db.String)
         responder = bot.db.Column(bot.db.String)
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
-
+    #dealing with the config.yml file located in ../
     config = bot.ExtensionConfig()
     config.add(
         key="manage_roles",
@@ -81,7 +83,7 @@ def setup(bot):
     )
     bot.add_extension_config("factoids", config)
 
-
+#looping through the config and loading every role
 async def has_manage_factoids_role(ctx):
     config = await ctx.bot.get_context_config(ctx)
     factoid_roles = []
@@ -93,7 +95,7 @@ async def has_manage_factoids_role(ctx):
 
     if not factoid_roles:
         raise commands.CommandError("no factoid management roles found")
-
+#Checking against the user to see if they have the roles specified in the config
     if not any(
         factoid_role in getattr(ctx.author, "roles", [])
         for factoid_role in factoid_roles
@@ -102,7 +104,7 @@ async def has_manage_factoids_role(ctx):
 
     return True
 
-
+#factoids must not contain user mentions to prevent ping spam/ill intent
 async def no_mentions(ctx):
     if (
         ctx.message.mention_everyone
@@ -122,7 +124,7 @@ class LoopEmbed(discord.Embed):
         super().__init__(*args, **kwargs)
         self.color = discord.Color.blurple()
 
-
+#factoid delete, remember, and scheduling
 class FactoidManager(base.MatchCog):
 
     LOOP_UPDATE_MINUTES = 10
@@ -136,6 +138,7 @@ class FactoidManager(base.MatchCog):
         await self.bot.logger.info("Loading factoid jobs", send=True)
         await self.kickoff_jobs()
 
+    #getting factoids for the selected guild
     async def get_all_factoids(self, guild=None, hide=False):
         if guild and not hide:
             factoids = await self.models.Factoid.query.where(
@@ -146,6 +149,7 @@ class FactoidManager(base.MatchCog):
                 await self.models.Factoid.query.where(
                     self.models.Factoid.guild == str(guild.id)
                 )
+                #hiding hidden factoids
                 .where(self.models.Factoid.hidden == False)
                 .gino.all()
             )
@@ -160,6 +164,7 @@ class FactoidManager(base.MatchCog):
     def get_cache_key(self, query, guild):
         return f"{guild.id}_{query}"
 
+#locating a specific factoid 
     async def get_factoid_from_query(self, query, guild):
         cache_key = self.get_cache_key(query, guild)
         factoid = self.factoid_cache.get(cache_key)
@@ -179,7 +184,7 @@ class FactoidManager(base.MatchCog):
         embed_config = json.loads(factoid.embed_config)
 
         return discord.Embed.from_dict(embed_config)
-
+#factoid remember
     async def add_factoid(self, ctx, **kwargs):
         trigger = kwargs.get("trigger")
 
@@ -205,6 +210,7 @@ class FactoidManager(base.MatchCog):
 
         try:
             del self.factoid_cache[self.get_cache_key(trigger, ctx.guild)]
+            #if it can't find where it is, then don't continue
         except KeyError:
             pass
 
@@ -230,23 +236,27 @@ class FactoidManager(base.MatchCog):
     async def response(self, config, ctx, content, _):
         if not ctx.guild:
             return
-
+        #copy the arguments starting with index one, and reference the first argument
         query = content[1:].split(" ")[0]
-
+        
         factoid = await self.get_factoid_from_query(query, ctx.guild)
         if not factoid:
             return
 
         embed = self.get_embed_from_factoid(factoid)
-
+        # if the json doesn't include non embed argument, then don't send anything
+        #otherwise send message text with embed
         content = factoid.message if not embed else None
 
         try:
+            #define the message and send it
             message = await ctx.send(
                 content=content,
                 embed=embed,
+            #if nobody pinged, ping the author, if somebody mentioned, ping the author and the mention
                 targets=ctx.message.mentions or [ctx.author],
             )
+            #log it  in the logging channel with type info and generic content
             await self.bot.guild_log(
                 ctx.guild,
                 "logging_channel",
@@ -254,6 +264,7 @@ class FactoidManager(base.MatchCog):
                 f"Sending factoid: {query} (triggered by {ctx.author} in #{ctx.channel.name})",
                 send=True,
             )
+            #if something breaks, also log it
         except Exception as e:
             await self.bot.guild_log(
                 ctx.guild,
@@ -262,12 +273,14 @@ class FactoidManager(base.MatchCog):
                 "Could not send factoid",
                 exception=e,
             )
+            #I(arc) dunno why this is here
             message = await ctx.send(factoid.message)
 
         self.dispatch(ctx.author, message, factoid)
 
         if ctx.message.mentions or ctx.message.reference:
             await self.process_response_event(ctx, factoid)
+
 
     async def process_response_event(self, ctx, factoid):
         config = await self.bot.get_context_config(ctx)
@@ -276,9 +289,9 @@ class FactoidManager(base.MatchCog):
             in config.extensions.factoids.response_listen_channels.value
         ):
             return
-
+#how many users are found to reference in the response
         found = 0
-
+#make sure the users are not a bot
         users = {}
         for user in ctx.message.mentions:
             if user.bot:
@@ -286,7 +299,7 @@ class FactoidManager(base.MatchCog):
             if user.id == ctx.author.id:
                 continue
             users[user] = None
-
+#if the message has a ping, and the ping is *not* the author, add 1 to the found count and add the user to the list of users referenced
         if (
             ctx.message.reference
             and ctx.message.reference.cached_message
@@ -296,21 +309,22 @@ class FactoidManager(base.MatchCog):
                 ctx.message.reference.cached_message.author
             ] = ctx.message.reference.cached_message
             found += 1
-
+#looking for up to 100 users to mention
         async for message in ctx.channel.history(limit=100):
+            #if it thinks it found a user but it's *not* in the users dict, don't even continue looking
             if found >= len(users):
                 break
-
+            # if the author is already in the list of users, then don't add them
             if not message.author in users:
                 continue
 
             saved_message = users.get(message.author)
             if saved_message:
                 continue
-
+#adding the author to the list of messages
             users[message.author] = message
             found += 1
-
+#logging that the above was done
         await self.bot.guild_log(
             ctx.guild,
             "logging_channel",
@@ -318,7 +332,7 @@ class FactoidManager(base.MatchCog):
             f"Processing factoid response event",
             send=True,
         )
-
+#more logging
         for user, message in users.items():
             event = self.models.FactoidResponseEvent(
                 ref_content=message.content,
@@ -399,11 +413,12 @@ class FactoidManager(base.MatchCog):
     )
     async def factoid(self, ctx):
         pass
-
+    #while typing, see if they have roles, make sure it's got a mention, keep it in the same guild
     @util.with_typing
     @commands.check(has_manage_factoids_role)
     @commands.check(no_mentions)
     @commands.guild_only()
+    #updating the description for this command
     @factoid.command(
         brief="Creates a factoid",
         description="Creates a custom factoid with a specified name",
@@ -636,7 +651,7 @@ class FactoidManager(base.MatchCog):
                 "Could not render/send all-factoid HTML",
                 exception=e,
             )
-
+# listing factoids in an html format
     async def generate_html(self, ctx, factoids):
         list_items = ""
         for factoid in factoids:
@@ -655,7 +670,7 @@ class FactoidManager(base.MatchCog):
         </html>
         """
         return output
-
+#making a yaml file with the factoids
     async def send_factoids_as_file(self, ctx, factoids):
         output_data = []
         for factoid in factoids:
@@ -668,7 +683,7 @@ class FactoidManager(base.MatchCog):
         )
 
         await ctx.send(file=yaml_file)
-
+#hide a factoid if the user has kick perms
     @util.with_typing
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
