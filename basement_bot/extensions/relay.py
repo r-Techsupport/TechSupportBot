@@ -167,15 +167,17 @@ class IRCEmbed(discord.Embed):
 
         new_message = ""
         mention_string = ""
-        for word in self.description.split(" "):
-            member = channel.guild.get_member_named(word)
-            if member:
-                channel_permissions = channel.permissions_for(member)
-                if channel_permissions.read_messages:
-                    mention = f"{member.mention} "
-                    new_message += mention
-                    mention_string += mention
-                    continue
+        for word in self.description.split():
+            if word.startswith("@"):
+                name = word[1:]
+                member = channel.guild.get_member_named(name)
+                if member:
+                    channel_permissions = channel.permissions_for(member)
+                    if channel_permissions.read_messages:
+                        mention = f"{member.mention} "
+                        new_message += mention
+                        mention_string += mention
+                        continue
             new_message += f"{word} "
 
         self.description = new_message
