@@ -42,23 +42,6 @@ Update the `config.yml` file as such:
 ```
 The `user`, `password`, and `name` fields should be updated as you see fit. It does not matter what you choose, but this info will be relevant when setting up `mongodb`.
 
-### Deploying MongoDB in a Docker container
-
-See the official instructions [here](https://hub.docker.com/_/mongo) for more info.
-
-Install `mongosh` on the host.
-
-
-Download and start the `mongo` container:
-```
-docker run --name mongo -d mongo:4.4.18
-```
-
-Connect to the `mongodb` container for configuration:
-```
-docker exec -it mongo-example mongo
-```
-
 From inside the `mongodb` shell:
 ```
 use admin
@@ -76,11 +59,6 @@ exit
 ```
 Close the `mongodb` shell. 
 
-Find the ip address of the `mongodb` container:
-```
-docker inspect mongodb | grep IPAddress
-```
-The address returned should then be entered into the `host` line for `mongodb` in `config.yml`
 
 ## Production
 
