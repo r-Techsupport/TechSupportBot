@@ -41,7 +41,7 @@ def setup(bot):
         key="max_wait",
         datatype="int",
         title="Max wait (hours)",
-        description="The minimum number of hours to wait between duck events",
+        description="The maximum number of hours to wait between duck events",
         default=4,
     )
     config.add(
