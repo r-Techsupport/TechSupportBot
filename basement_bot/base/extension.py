@@ -3,7 +3,7 @@
 import glob
 import os
 
-import botlog
+import botlogging
 import munch
 import yaml
 from discord.ext import commands
@@ -39,7 +39,7 @@ class ExtensionConfig:
 
 
 class ExtensionsBot(commands.Bot):
-    """Parent bot object that supports basic file config."""
+    """Parent bot object that supports extensions and basic file config."""
 
     CONFIG_PATH = "./config.yml"
     EXTENSIONS_DIR_NAME = "extensions"
@@ -58,12 +58,19 @@ class ExtensionsBot(commands.Bot):
             command_prefix=prefix, intents=intents, allowed_mentions=allowed_mentions
         )
 
-        self.logger = botlog.BotLogger(
-            bot=self,
-            name=self.__class__.__name__,
-            queue_wait=self.file_config.main.logging.queue_wait_seconds,
-            send=not self.file_config.main.logging.block_discord_send,
-        )
+        if self.file_config.main.logging.queue_enabled:
+            self.logger = botlogging.DelayedLogger(
+                bot=self,
+                name=self.__class__.__name__,
+                send=not self.file_config.main.logging.block_discord_send,
+                wait_time=self.file_config.main.logging.queue_wait_seconds,
+            )
+        else:
+            self.logger = botlogging.BotLogger(
+                bot=self,
+                name=self.__class__.__name__,
+                send=not self.file_config.main.logging.block_discord_send,
+            )
 
     def run(self, *args, **kwargs):
         """Runs the bot, but uses the file config auth token instead of args."""

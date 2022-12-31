@@ -11,10 +11,14 @@ def setup(bot):
 
 
 class RollEmbed(discord.Embed):
+
+    ICON_URL = "https://cdn.icon-icons.com/icons2/1465/PNG/512/678gamedice_100992.png"
+
     def __init__(self, *args, **kwargs):
         roll = kwargs.pop("roll")
         super().__init__(*args, **kwargs)
         self.title = "RNG Roller"
+        self.set_thumbnail(url=self.ICON_URL)
         self.description = f"You rolled a {roll}!"
         self.color = discord.Color.gold()
 

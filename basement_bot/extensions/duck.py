@@ -5,6 +5,7 @@ import random
 
 import base
 import discord
+import embeds
 import util
 from discord import Color as embed_colors
 from discord.ext import commands
@@ -901,12 +902,12 @@ class DuckHunt(base.LoopCog):
         choice_ = random.choice(random.choices([True, False], weights=weights, k=1000))
         if not choice_:
             cooldowns[message.author.id] = datetime.datetime.now()
-
-            failure_message = self.generate_failure_message(message)
-
             self.bot.loop.create_task(
                 message.channel.send(
-                    f"{message.author.mention} {failure_message} ... Try again in {config.extensions.duck.cooldown.value} seconds"
+                    content=message.author.mention,
+                    embed=embeds.DenyEmbed(
+                        message=f"Try again in {config.extensions.duck.cooldown.value} seconds"
+                    ),
                 )
             )
 

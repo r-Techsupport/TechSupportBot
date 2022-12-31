@@ -1,19 +1,19 @@
 
 FROM python:3.9-alpine as builder
 
-COPY Pipfile* /tmp/
-
 RUN apk update && \
     apk add --no-cache \
     postgresql-dev \
     gcc \
     musl-dev
 
+WORKDIR /var/BasementBot
+COPY Pipfile.lock .
+
 RUN pip install pipenv && \
-    cd /tmp && pipenv lock --requirements > requirements.txt && \
+    pipenv requirements > /tmp/requirements.txt && \
     pip install --no-cache-dir -r /tmp/requirements.txt
 
-WORKDIR /var/BasementBot
 COPY . .
 COPY config.yml basement_bot
 
