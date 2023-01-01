@@ -106,6 +106,7 @@ class Context(commands.Context):
                 embed.set_footer(text=f"Page {index+1} of {len(pages)}")
 
         index = 0
+        # pylint: disable=unnecessary-lambda-assignment
         get_args = lambda index: {
             "content": pages[index]
             if not isinstance(pages[index], discord.Embed)

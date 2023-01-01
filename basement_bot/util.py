@@ -161,3 +161,55 @@ def preserialize_object(obj):
         data[str(name)] = attr
 
     return data
+
+
+def get_object_diff(before, after, attrs_to_check):
+    """Finds differences in before, after object pairs.
+
+    before (obj): the before object
+    after (obj): the after object
+    attrs_to_check (list): the attributes to compare
+    """
+    result = {}
+
+    for attr in attrs_to_check:
+        after_value = getattr(after, attr, None)
+        if not after_value:
+            continue
+
+        before_value = getattr(before, attr, None)
+        if not before_value:
+            continue
+
+        if before_value != after_value:
+            result[attr] = munch.munchify(
+                {"before": before_value, "after": after_value}
+            )
+
+    return result
+
+
+def add_diff_fields(embed, diff):
+    """Adds fields to an embed based on diff data.
+
+    parameters:
+        embed (discord.Embed): the embed object
+        diff (dict): the diff data for an object
+    """
+    for attr, diff_data in diff.items():
+        attru = attr.upper()
+        if isinstance(diff_data.before, list):
+            action = (
+                "added" if len(diff_data.before) < len(diff_data.after) else "removed"
+            )
+            list_diff = set(diff_data.after) ^ set(diff_data.before)
+
+            embed.add_field(
+                name=f"{attru} {action}", value=",".join(str(o) for o in list_diff)
+            )
+            continue
+
+        embed.add_field(name=f"{attru} (before)", value=diff_data.before)
+        embed.add_field(name=f"{attru} (after)", value=diff_data.after)
+
+    return embed
