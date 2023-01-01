@@ -126,14 +126,14 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         user = ctx.guild.get_member_named(username)
         if not user:
             return await self.handle_error_embed(
-                f"Could not find {username} in server - ignoring application"
+                ctx, f"Could not find {username} in server - ignoring application"
             )
 
         try:
             confirmed = await self.confirm_with_user(ctx, user)
         except discord.Forbidden:
             return await self.handle_error_embed(
-                f"Could not confirm application: {user} has direct messages blocked"
+                ctx, f"Could not confirm application: {user} has direct messages blocked"
             )
 
         if not confirmed:
