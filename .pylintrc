@@ -30,7 +30,7 @@ limit-inference-results=100
 # usually to register additional checkers.
 load-plugins=
 
-# Pickle collected datafor later comparisons.
+# Pickle collected data for later comparisons.
 persistent=yes
 
 # Specify a configuration file.
