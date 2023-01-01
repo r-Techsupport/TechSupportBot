@@ -196,12 +196,14 @@ class LoopCog(BaseCog):
         await self._handle_preconfig(self.loop_preconfig)
 
         if self.no_guild:
-            await self.bot.logger.debug("Creating loop task for guild with no ID")
+            await self.bot.logger.debug("Creating global loop task")
             self.bot.loop.create_task(self._loop_execute(None))
             return
 
         for guild in self.bot.guilds:
             await self.register_new_tasks(guild)
+
+        self.bot.loop.create_task(self._track_new_channels())
 
     async def _track_new_channels(self):
         """Periodifically kicks off new per-channel tasks based on updated channels config."""
@@ -292,12 +294,10 @@ class LoopCog(BaseCog):
                         await self.execute(config, guild)
                 except Exception as e:
                     # always try to wait even when execute fails
-                    await self.bot.logger.debug("Checking config for log channel")
-                    channel = config.get("logging_channel")
                     await self.bot.logger.error(
                         f"Loop cog execute error: {self.__class__.__name__}!",
                         exception=e,
-                        channel=channel,
+                        channel=getattr(config, "logging_channel", None),
                     )
 
             try:

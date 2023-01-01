@@ -31,6 +31,8 @@ main:
         spotify_client:
         spotify_key:
         github:
+        battlenet_client:
+        battlenet_key:
     logging:
         queue_enabled: True
         block_discord_send: False

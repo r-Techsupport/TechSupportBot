@@ -126,19 +126,19 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         user = ctx.guild.get_member_named(username)
         if not user:
             return await self.handle_error_embed(
-                f"Could not find {username} in server - ignoring application"
+                ctx, f"Could not find {username} in server - ignoring application"
             )
 
         try:
             confirmed = await self.confirm_with_user(ctx, user)
         except discord.Forbidden:
             return await self.handle_error_embed(
-                f"Could not confirm application: {user} has direct messages blocked"
+                ctx, f"Could not confirm application: {user} has direct messages blocked"
             )
 
         if not confirmed:
-            raise RuntimeError(
-                "user associated with application has denied making application"
+            return await self.handle_error_embed(
+                ctx, f"{user} has denied making application"
             )
 
         application_data = {
@@ -170,11 +170,12 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             "extension_listener_event", munch.Munch(channel=ctx.channel, embed=embed)
         )
 
-    async def handle_error_embed(self, ctx, message):
-        embed = embeds.DenyEmbed(message)
-        await ctx.channel.send(embed=embed)
-        self.bot.dispatch(
-            "extension_listener_event", munch.Munch(channel=ctx.channel, embed=embed)
+    async def handle_error_embed(self, ctx, messageSend):
+        await ctx.channel.send(
+            content="",
+            embed=embeds.DenyEmbed(
+                message=messageSend
+            ),
         )
 
     async def execute(self, config, guild):
