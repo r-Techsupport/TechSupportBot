@@ -6,10 +6,10 @@ BasementBot is a Dockerized Discord bot. Written on top of the [Python Discord A
 
 Note: *this bot requires at minimum a MongoDB connection to maintain guild settings. If you wish to not use a MongoDB connection, check the base module for bots that don't rely on MongoDB.* **Some extensions also rely on postgres (factoids and more) and rabbitmq.**
 
-* Create a `config.yaml` file from the `config.default.yaml` file in the repo.
-* In the `config.yaml` file set `auth_token` to your Discord developer `token` (see [here](https://discordapp.com/developers/docs/topics/oauth2))
-* In the `config.yaml` file set MongoDB connection settings (username, password, host, port, etc)
-* (Optional) set any other `config.yaml` variables. Some included extensions won't work without the correct API keys.
+* Create a `config.yml` file from the `config.default.yml` file in the repo.
+* In the `config.yml` file set `auth_token` to your Discord developer `token` (see [here](https://discordapp.com/developers/docs/topics/oauth2))
+* In the `config.yml` file set MongoDB connection settings (username, password, host, port, etc)
+* (Optional) set any other `config.yml` variables. Some included extensions won't work without the correct API keys.
 
 ## MongoDB deployment
 ### Deploying directly onto the host
