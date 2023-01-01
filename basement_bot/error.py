@@ -35,22 +35,32 @@ class ErrorResponse:
                 # abort message formatting
                 self.message_format = None
 
-    def get_message(self, exception=None):
-        """Gets a message from a given exception.
+    def default_message(self, exception=None):
+        """Handles default message generation.
 
-        If no exception is provided, gets the default message.
+        parameters:
+            exception (Exception): the exception to reference
+        """
+        return (
+            f"{self.DEFAULT_MESSAGE}: *{exception}*"
+            if exception
+            else self.DEFAULT_MESSAGE
+        )
+
+    def get_message(self, exception=None):
+        """Gets a response message from a given exception.
 
         parameters:
             exception (Exception): the exception to reference
         """
         if not self.message_format:
-            return self.DEFAULT_MESSAGE
+            return self.default_message(exception=exception)
 
         values = []
         for lookup in self.lookups:
             value = getattr(exception, lookup.key, None)
             if not value:
-                return self.DEFAULT_MESSAGE
+                return self.default_message(exception=exception)
 
             if lookup.get("wrapper"):
                 try:
@@ -63,7 +73,7 @@ class ErrorResponse:
         return self.message_format % tuple(values)
 
 
-COMMAND_ERROR_RESPONSE_TEMPLATES = {
+COMMAND_ERROR_RESPONSES = {
     # ConversionError
     commands.ConversionError: ErrorResponse(
         "Could not convert argument to: `%s`", {"key": "converter"}
