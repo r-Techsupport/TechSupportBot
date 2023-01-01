@@ -203,7 +203,7 @@ class LoopCog(BaseCog):
         for guild in self.bot.guilds:
             await self.register_new_tasks(guild)
 
-    self.bot.loop.create_task(self._track_new_channels())
+        self.bot.loop.create_task(self._track_new_channels())
 
     async def _track_new_channels(self):
         """Periodifically kicks off new per-channel tasks based on updated channels config."""
