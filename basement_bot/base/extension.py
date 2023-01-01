@@ -14,7 +14,7 @@ class ExtensionConfig:
 
     # pylint: disable=too-few-public-methods
     def __init__(self):
-        self.data = munch.Munch()
+        self.data = munch.DefaultMunch(None)
 
     # pylint: disable=too-many-arguments
     def add(self, key, datatype, title, description, default):
@@ -49,8 +49,8 @@ class ExtensionsBot(commands.Bot):
     ExtensionConfig = ExtensionConfig
 
     def __init__(self, prefix=".", intents=None, allowed_mentions=None):
-        self.extension_configs = munch.Munch()
-        self.extension_states = munch.Munch()
+        self.extension_configs = munch.DefaultMunch(None)
+        self.extension_states = munch.DefaultMunch(None)
         self.file_config = None
         self.load_file_config()
 
