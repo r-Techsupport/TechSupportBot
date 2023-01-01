@@ -162,12 +162,13 @@ class IRCEmbed(discord.Embed):
         return label
 
     def fill_mentions(self, channel):
-        if not self.description:
+        description = self.description # pylint: disable=E0203
+        if not description:
             raise AttributeError("description field not present")
 
         new_message = ""
         mention_string = ""
-        for word in self.description.split(" "):
+        for word in description.split(" "):
             member = channel.guild.get_member_named(word)
             if member:
                 channel_permissions = channel.permissions_for(member)
