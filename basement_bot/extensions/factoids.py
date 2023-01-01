@@ -1,5 +1,6 @@
-# All handling of factoids, both sending and managing
-
+"""
+This extension manages everything needed for the factoid command and all factoid calls (EG: ?factoid)
+"""
 import asyncio
 import datetime
 import io
@@ -16,7 +17,9 @@ import yaml
 from discord.ext import commands
 
 def setup(bot):
-    #defining database tables
+    """
+    define database tables, register in config, as a cog, and a extension
+    """
     class Factoid(bot.db.Model):
         __tablename__ = "factoids"
 
@@ -83,8 +86,10 @@ def setup(bot):
     )
     bot.add_extension_config("factoids", config)
 
-#looping through the config and loading every role
 async def has_manage_factoids_role(ctx):
+"""
+see if the user that queried has the perms to manage roles
+"""
     config = await ctx.bot.get_context_config(ctx)
     factoid_roles = []
     for name in config.extensions.factoids.manage_roles.value:
@@ -104,8 +109,10 @@ async def has_manage_factoids_role(ctx):
 
     return True
 
-#factoids must not contain user mentions to prevent ping spam/ill intent
 async def no_mentions(ctx):
+    """
+    ensure the remembered factoid does not contain any mass pings
+    """
     if (
         ctx.message.mention_everyone
         or ctx.message.role_mentions
@@ -124,8 +131,10 @@ class LoopEmbed(discord.Embed):
         super().__init__(*args, **kwargs)
         self.color = discord.Color.blurple()
 
-#factoid delete, remember, and scheduling
 class FactoidManager(base.MatchCog):
+    """
+    delete, remember, fetch, and listen for factoid calls
+    """
 
     LOOP_UPDATE_MINUTES = 10
 
@@ -133,12 +142,12 @@ class FactoidManager(base.MatchCog):
         self.factoid_cache = expiringdict.ExpiringDict(
             max_len=100, max_age_seconds=1200
         )
-        # this sets a hard time limit on repeated cronjob DB calls
+        # set a  a hard time limit on repeated cronjob DB calls
         self.cronjob_cache = expiringdict.ExpiringDict(max_len=100, max_age_seconds=300)
         await self.bot.logger.info("Loading factoid jobs", send=True)
         await self.kickoff_jobs()
 
-    #getting factoids for the selected guild
+    
     async def get_all_factoids(self, guild=None, hide=False):
         if guild and not hide:
             factoids = await self.models.Factoid.query.where(
@@ -164,8 +173,10 @@ class FactoidManager(base.MatchCog):
     def get_cache_key(self, query, guild):
         return f"{guild.id}_{query}"
 
-#locating a specific factoid 
     async def get_factoid_from_query(self, query, guild):
+    """
+    search db for factoid, including flag (EG: ?help)
+    """
         cache_key = self.get_cache_key(query, guild)
         factoid = self.factoid_cache.get(cache_key)
         if not factoid:
@@ -184,7 +195,7 @@ class FactoidManager(base.MatchCog):
         embed_config = json.loads(factoid.embed_config)
 
         return discord.Embed.from_dict(embed_config)
-#factoid remember
+
     async def add_factoid(self, ctx, **kwargs):
         trigger = kwargs.get("trigger")
 
@@ -273,7 +284,7 @@ class FactoidManager(base.MatchCog):
                 "Could not send factoid",
                 exception=e,
             )
-            #I(arc) dunno why this is here
+            #finally, send the message
             message = await ctx.send(factoid.message)
 
         self.dispatch(ctx.author, message, factoid)
@@ -352,7 +363,9 @@ class FactoidManager(base.MatchCog):
         )
 
     async def kickoff_jobs(self):
-        # get cronjobs from database
+        """
+        get a list of all cronjobs and start them
+        """
         jobs = await self.models.FactoidCron.query.gino.all()
         for job in jobs:
             self.bot.loop.create_task(self.cronjob(job))
@@ -413,7 +426,6 @@ class FactoidManager(base.MatchCog):
     )
     async def factoid(self, ctx):
         pass
-    #while typing, see if they have roles, make sure it's got a mention, keep it in the same guild
     @util.with_typing
     @commands.check(has_manage_factoids_role)
     @commands.check(no_mentions)
@@ -651,7 +663,7 @@ class FactoidManager(base.MatchCog):
                 "Could not render/send all-factoid HTML",
                 exception=e,
             )
-# listing factoids in an html format
+
     async def generate_html(self, ctx, factoids):
         list_items = ""
         for factoid in factoids:
@@ -670,7 +682,7 @@ class FactoidManager(base.MatchCog):
         </html>
         """
         return output
-#making a yaml file with the factoids
+
     async def send_factoids_as_file(self, ctx, factoids):
         output_data = []
         for factoid in factoids:
@@ -683,7 +695,6 @@ class FactoidManager(base.MatchCog):
         )
 
         await ctx.send(file=yaml_file)
-#hide a factoid if the user has kick perms
     @util.with_typing
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
