@@ -208,7 +208,7 @@ class DataBot(ExtensionsBot):
                 self.http_cache[cache_key] = response_object
             log_message = f"Making HTTP {method.upper()} request to URL: {cache_key}"
 
-        await self.logger.info(log_message, send=True)
+        await self.logger.info(log_message)
 
         if get_raw_response:
             response = response_object
