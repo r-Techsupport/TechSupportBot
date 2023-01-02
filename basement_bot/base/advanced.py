@@ -635,6 +635,8 @@ class AdvancedBot(DataBot):
     async def on_guild_channel_update(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_update"""
         config_ = await self.get_context_config(guild=before.guild)
+        return # Disable this cause fuck
+        
         if str(before.id) in config_.get("private_channels", []):
             return
 
