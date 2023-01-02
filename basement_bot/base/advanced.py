@@ -420,6 +420,9 @@ class AdvancedBot(DataBot):
         if str(channel_id) in config_.get("private_channels", []):
             return
 
+	if len(message.clean_content) > 1000:
+            return
+
         embed = discord.Embed()
         embed.add_field(name="Content", value=message.content or "None")
         embed.add_field(name="Author", value=message.author)
@@ -481,6 +484,12 @@ class AdvancedBot(DataBot):
 
         config_ = await self.get_context_config(guild=guild)
         if str(channel_id) in config_.get("private_channels", []):
+            return
+
+        if len(before.clean_content) > 1000:
+            return
+
+        if len(after.clean_content) > 1000:
             return
 
         attrs = ["content", "embeds"]
