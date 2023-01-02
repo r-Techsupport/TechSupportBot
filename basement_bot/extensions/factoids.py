@@ -87,9 +87,9 @@ def setup(bot):
     bot.add_extension_config("factoids", config)
 
 async def has_manage_factoids_role(ctx):
-"""
-see if the user that queried has the perms to manage roles
-"""
+    """
+    see if the user that queried has the perms to manage roles
+    """
     config = await ctx.bot.get_context_config(ctx)
     factoid_roles = []
     for name in config.extensions.factoids.manage_roles.value:
@@ -174,9 +174,9 @@ class FactoidManager(base.MatchCog):
         return f"{guild.id}_{query}"
 
     async def get_factoid_from_query(self, query, guild):
-    """
-    search db for factoid, including flag (EG: ?help)
-    """
+        """
+         search db for factoid, including flag (EG: ?help)
+        """
         cache_key = self.get_cache_key(query, guild)
         factoid = self.factoid_cache.get(cache_key)
         if not factoid:
