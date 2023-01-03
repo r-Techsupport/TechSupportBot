@@ -22,7 +22,7 @@ munch = "==2.5.0"
 pyyaml = "==6.0"
 emoji = "==0.5.4"
 inflect = "==4.1.0"
-discord-ext-ipc = "==2.0.0"
+discord-ext-ipc = "==2.1.1"
 expiringdict = "==1.2.1"
 
 [requires]

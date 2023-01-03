@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "524ad67492e41cceee6bd96b017607a09e3f5c12b282d0dcfda3dd2d58a84b12"
+            "sha256": "a206fadd57e3e5f9acaed96c35dcad32eb903c10e6f35630f664c304559f73da"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -166,11 +166,11 @@
         },
         "discord-ext-ipc": {
             "hashes": [
-                "sha256:812e2a13ba616c71c4cfa13cdebd5c9cad6c3a33029a6f705268f4b36c2e4ccc",
-                "sha256:df5ee363c7317ecafce99a908c730aaae8df07841bf4f39dd0c42b8ded104f12"
+                "sha256:71729cfabfe6eafdc1ca97b7618ea3988e1ff58031af19b073bab69bec6feae4",
+                "sha256:cb3056398016d70bc22928241d8c891959c70bf8c03ac0c5dcbffc5c22e86474"
             ],
             "index": "pypi",
-            "version": "==2.0.0"
+            "version": "==2.1.1"
         },
         "discord.py": {
             "hashes": [
