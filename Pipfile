@@ -13,7 +13,6 @@ aiounittest = "==1.4.2"
 
 [packages]
 "discord.py" = "==1.7.3"
-botlogging = "==1.0.1"
 motor = "==3.1.1"
 gino = "==1.0.1"
 aiocron = "==1.3"
