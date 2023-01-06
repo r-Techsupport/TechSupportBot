@@ -23,7 +23,7 @@ pyyaml = "==6.0"
 emoji = "==0.5.4"
 inflect = "==4.1.0"
 discord-ext-ipc = "==2.1.1"
-expiringdict = "==1.2.1"
+expiringdict = "==1.2.2"
 
 [requires]
 python_version = "3.9"
