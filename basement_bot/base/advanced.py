@@ -15,7 +15,10 @@ from .data import DataBot
 
 
 class AdvancedBot(DataBot):
-    """Advanced extension bot with most base features, including per-guild config and event logging."""
+    """
+    Advanced extension bot with most base features,
+    including per-guild config and event logging.
+    """
 
     GUILD_CONFIG_COLLECTION = "guild_config"
     CONFIG_RECEIVE_WARNING_TIME_MS = 1000
@@ -105,7 +108,8 @@ class AdvancedBot(DataBot):
 
         if time_taken > self.CONFIG_RECEIVE_WARNING_TIME_MS:
             await self.logger.warning(
-                f"Context config receive time = {time_taken} ms (over {self.CONFIG_RECEIVE_WARNING_TIME_MS} threshold)",
+                f"Context config receive time = {time_taken} ms \
+                (over {self.CONFIG_RECEIVE_WARNING_TIME_MS} threshold)",
                 send=True,
             )
 
@@ -165,7 +169,8 @@ class AdvancedBot(DataBot):
             if not extension_config and extension_config_from_data:
                 should_update = True
                 await self.logger.debug(
-                    f"Found extension {extension_name} not in config with ID {config_object.guild_id}"
+                    f"Found extension {extension_name} not \
+                    in config with ID {config_object.guild_id}"
                 )
                 config_object.extensions[
                     extension_name
@@ -325,7 +330,9 @@ class AdvancedBot(DataBot):
         await self.process_commands(message)
 
     async def on_command(self, ctx):
-        """See: https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.on_command"""
+        """
+        See: https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.on_command
+        """
         config_ = await self.get_context_config(ctx)
         if str(ctx.channel.id) in config_.get("private_channels", []):
             return
@@ -443,7 +450,9 @@ class AdvancedBot(DataBot):
         )
 
     async def on_bulk_message_delete(self, messages):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_bulk_message_delete"""
+        """
+        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_bulk_message_delete
+        """
         guild = getattr(messages[0].channel, "guild", None)
         channel_id = getattr(messages[0].channel, "id", None)
 
@@ -565,14 +574,17 @@ class AdvancedBot(DataBot):
             guild, key="guild_events_channel"
         )
         await self.logger.info(
-            f"Reaction removed from message with ID {reaction.message.id} by user with ID {user.id}",
+            f"Reaction removed from message with ID {reaction.message.id} \
+            by user with ID {user.id}",
             embed=embed,
             send=True,
             channel=log_channel,
         )
 
     async def on_reaction_clear(self, message, reactions):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_clear"""
+        """
+        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_clear
+        """
         guild = getattr(message.channel, "guild", None)
         channel_id = getattr(message.channel, "id", None)
 
@@ -602,7 +614,9 @@ class AdvancedBot(DataBot):
         )
 
     async def on_guild_channel_delete(self, channel):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_delete"""
+        """
+        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_delete
+        """
         embed = discord.Embed()
         embed.add_field(name="Channel Name", value=channel.name)
         embed.add_field(name="Server", value=channel.guild.name)
@@ -618,7 +632,9 @@ class AdvancedBot(DataBot):
         )
 
     async def on_guild_channel_create(self, channel):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_create"""
+        """
+        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_create
+        """
         embed = discord.Embed()
         embed.add_field(name="Channel Name", value=channel.name)
         embed.add_field(name="Server", value=channel.guild.name)
@@ -633,10 +649,10 @@ class AdvancedBot(DataBot):
         )
 
     async def on_guild_channel_update(self, before, after):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_update"""
+        """
+        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_update
+        """
         config_ = await self.get_context_config(guild=before.guild)
-        return # Disable this cause fuck
-        
         if str(before.id) in config_.get("private_channels", []):
             return
 
@@ -666,7 +682,10 @@ class AdvancedBot(DataBot):
         )
 
     async def on_guild_channel_pins_update(self, channel, _last_pin):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_pins_update"""
+        """
+        See:
+        https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_pins_update
+        """
         config_ = await self.get_context_config(guild=channel.guild)
         if str(channel.id) in config_.get("private_channels", []):
             return
@@ -679,14 +698,18 @@ class AdvancedBot(DataBot):
             channel.guild, key="guild_events_channel"
         )
         await self.logger.info(
-            f"Channel pins updated in channel with ID {channel.id} in guild with ID {channel.guild.id}",
+            f"Channel pins updated in channel with ID {channel.id} \
+            in guild with ID {channel.guild.id}",
             embed=embed,
             send=True,
             channel=log_channel,
         )
 
     async def on_guild_integrations_update(self, guild):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_integrations_update"""
+        """
+        See:
+        https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_integrations_update
+        """
         embed = discord.Embed()
         embed.add_field(name="Server", value=guild)
         log_channel = await self.get_log_channel_from_guild(
@@ -783,7 +806,9 @@ class AdvancedBot(DataBot):
         )
 
     async def on_guild_update(self, before, after):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_update"""
+        """
+        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_update
+        """
         diff = util.get_object_diff(
             before,
             after,
@@ -873,7 +898,9 @@ class AdvancedBot(DataBot):
         )
 
     async def on_guild_emojis_update(self, guild, before, _):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_emojis_update"""
+        """
+        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_emojis_update
+        """
         embed = discord.Embed()
         embed.add_field(name="Server", value=before.name)
 
