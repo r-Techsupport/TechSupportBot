@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "34fe6f22c0b7d352f2c7e07de437cfe652cff475c88281f971706b721e747a1d"
+            "sha256": "d3878547908f978345a478383de318aac6220216285e4b8c1d553aab88294fda"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -26,11 +26,11 @@
         },
         "aiocron": {
             "hashes": [
-                "sha256:7f7c343b5bb18695206714f038726e3795e6dfa69affcc25abe17838d51be69c",
-                "sha256:f20b29ba8207d789b44ecb516ef084fa84d3e02dde1c82fa4009c90b072b63c7"
+                "sha256:48546513faf2eb7901e65a64eba7b653c80106ed00ed9ca3419c3d10b6555a01",
+                "sha256:b6313214c311b62aa2220e872b94139b648631b3103d062ef29e5d3230ddce6d"
             ],
             "index": "pypi",
-            "version": "==1.3"
+            "version": "==1.8"
         },
         "aiohttp": {
             "hashes": [
@@ -861,7 +861,7 @@
                 "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc",
                 "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"
             ],
-            "markers": "python_full_version < '3.11.0a7'",
+            "markers": "python_version < '3.11'",
             "version": "==2.0.1"
         },
         "tomlkit": {
