@@ -43,4 +43,4 @@ class DelayedLogger(logger.BotLogger):
                     await coro
                 await asyncio.sleep(self.wait_time)
             except:
-                a = 1
+                pass
