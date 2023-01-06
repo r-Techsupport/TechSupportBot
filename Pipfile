@@ -20,7 +20,7 @@ aio-pika = "==8.3.0"
 munch = "==2.5.0"
 pyyaml = "==6.0"
 emoji = "==0.5.4"
-inflect = "==4.1.0"
+inflect = "==6.0.2"
 discord-ext-ipc = "==2.1.1"
 expiringdict = "==1.2.2"
 
