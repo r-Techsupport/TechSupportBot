@@ -24,9 +24,17 @@ class LogEmbed(discord.Embed):
         ctx = kwargs.pop("context")
         super().__init__(*args, **kwargs)
 
-        content = ctx.message.content[:256] if ctx.message.content else "None"
-
+        content = ctx.message.content[:1024] if ctx.message.content else "None"
         self.add_field(name="Content", value=content, inline=False)
+        if len(ctx.message.content) > 1024:
+            content1 = ctx.message.content[1025:2048] if ctx.message.content else "None"
+            self.add_field(name="Content(Continue)", value=content1, inline=False)
+        if len(ctx.message.content) > 2048:
+            content2 = ctx.message.content[2049:3072] if ctx.message.content else "None"
+            self.add_field(name="Content(Continue)", value=content2, inline=False)
+        if len(ctx.message.content) > 3072:
+            content3 = ctx.message.content[3073:4096] if ctx.message.content else "None"
+            self.add_field(name="Content(Continue)", value=content3, inline=False)
 
         if ctx.message.attachments:
             self.add_field(

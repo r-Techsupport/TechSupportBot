@@ -13,17 +13,16 @@ aiounittest = "==1.4.2"
 
 [packages]
 "discord.py" = "==1.7.3"
-botlogging = "==1.0.1"
 motor = "==3.1.1"
 gino = "==1.0.1"
-aiocron = "==1.3"
+aiocron = "==1.8"
 aio-pika = "==8.3.0"
 munch = "==2.5.0"
 pyyaml = "==6.0"
 emoji = "==0.5.4"
-inflect = "==4.1.0"
-discord-ext-ipc = "==2.0.0"
-expiringdict = "==1.2.1"
+inflect = "==6.0.2"
+discord-ext-ipc = "==2.1.1"
+expiringdict = "==1.2.2"
 
 [requires]
 python_version = "3.9"

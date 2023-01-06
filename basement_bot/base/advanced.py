@@ -346,7 +346,7 @@ class AdvancedBot(DataBot):
             ctx.guild, key="logging_channel"
         )
 
-        sliced_content = f"Command detected: `{ctx.message.content[:100]}`"
+        sliced_content = ctx.message.content[:100]
         message = f"Command detected: {sliced_content}"
 
         await self.logger.info(
