@@ -14,8 +14,8 @@ from discord.ext import commands
 
 def setup(bot):
     """
-    Method to setup the bot, and configure different applications of control
-    to the application feature on this bot.
+    Method to setup the bot, and configure different management role config options for
+    the promotion application framework.
     """
     #For the webhook id to add to discord
     config = bot.ExtensionConfig()
@@ -26,7 +26,7 @@ def setup(bot):
         description="The ID of the webhook that posts the application data",
         default=None,
     )
-    #To manage the roles that can mange the applications
+    #To configure the roles that can manage the applications
     config.add(
         key="manage_roles",
         datatype="list",
@@ -107,14 +107,14 @@ class NoPendingApplications(Exception):
 
 
 class ApplicationManager(base.MatchCog, base.LoopCog):
-    """Class to mangae the application extention of the bot, including getting data and status."""
+    """Class to manage the application extension of the bot, including getting data and status."""
 
     COLLECTION_NAME = "applications_extension"
     STALE_APPLICATION_DAYS = 30
     MAX_REMINDER_FIELDS = 10
 
     async def preconfig(self):
-        """Method to perconfig the application."""
+        """Method to run on first time, used to create mongo collections"""
         if not self.COLLECTION_NAME in await self.bot.mongo.list_collection_names():
             await self.bot.mongo.create_collection(self.COLLECTION_NAME)
 
@@ -273,7 +273,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
     @staticmethod
     def clean_file_data(application_data):
-        """Method to delete file data after an application."""
+        """Method to delete db data after an application."""
         try:
             del application_data["_id"]
             del application_data["yayers"]
@@ -328,7 +328,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         return returned_applications
 
     async def confirm_with_user(self, ctx, user):
-        """Method to confrim application with the user through direct message."""
+        """Method to confirm application with the user through direct message."""
         embed = ApplicationEmbed(
             description=f"I received an application on the server `{ctx.guild.name}`. \
                 Did you make this application? Please reply with `yes` or `no`",
@@ -346,7 +346,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
     @staticmethod
     def determine_app_status(application_data, lower=False):
-        """Method to determine the application status of approve or denied."""
+        """Method to determine the current application status (approved or denied)"""
         approved = application_data.get("approved", False)
         reviewed = application_data.get("reviewed", False)
         status = "Pending"
@@ -405,7 +405,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         usage="[application-id]",
     )
     async def get_app(self, ctx, application_id: str):
-        """Method to pull application through the id."""
+        """Method to fetch application by ID"""
         collection = self.bot.mongo[self.COLLECTION_NAME]
         application_data = await collection.find_one({"id": {"$eq": application_id}})
         if not application_data:
@@ -527,7 +527,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         description="Sends an application reminder to the configured channel",
     )
     async def remind(self, ctx):
-        """Method for reminding of pending applications."""
+        """Method for reminding the configured role about pending applications"""
         config = await self.bot.get_context_config(ctx)
         try:
             await self.send_reminder(config, ctx.guild, automated=False)
