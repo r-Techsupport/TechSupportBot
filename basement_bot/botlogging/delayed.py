@@ -37,7 +37,10 @@ class DelayedLogger(logger.BotLogger):
 
     async def __run(self):
         while True:
-            coro = await self.__send_queue.get()
-            if coro:
-                await coro
-            await asyncio.sleep(self.wait_time)
+            try:
+                coro = await self.__send_queue.get()
+                if coro:
+                    await coro
+                await asyncio.sleep(self.wait_time)
+            except:
+                pass
