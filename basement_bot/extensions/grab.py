@@ -1,3 +1,4 @@
+"""Module for the grab extension in the discord bot."""
 import datetime
 import random
 
@@ -8,7 +9,9 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Setup the config for the grab extension in the config file."""
     class Grab(bot.db.Model):
+        """Class for setting up the config file."""
         __tablename__ = "grabs"
 
         pk = bot.db.Column(bot.db.Integer, primary_key=True)
@@ -40,6 +43,7 @@ def setup(bot):
 
 
 async def invalid_channel(ctx):
+    """Method to return if there is used in an invalid channel."""
     config = await ctx.bot.get_context_config(ctx)
 
     if ctx.channel.id in config.extensions.grab.blocked_channels.value:
@@ -50,6 +54,7 @@ async def invalid_channel(ctx):
 
 
 class Grabber(base.BaseCog):
+    """Class to for the grab extenstions to work."""
 
     HAS_CONFIG = False
     SEARCH_LIMIT = 20
@@ -64,6 +69,7 @@ class Grabber(base.BaseCog):
         usage="[message-id]",
     )
     async def grab_user(self, ctx, message: discord.Message):
+        """Method to grab the user specified."""
         if message.author.bot:
             await ctx.send_deny_embed("Ain't gonna catch me slipping!")
             return
@@ -96,6 +102,7 @@ class Grabber(base.BaseCog):
         description="Executes a grabs command",
     )
     async def grabs(self, ctx):
+        """Method to make command for grabbing a user."""
         pass
 
     @util.with_typing
@@ -108,6 +115,7 @@ class Grabber(base.BaseCog):
         usage="@user",
     )
     async def all_grabs(self, ctx, user_to_grab: discord.Member):
+        """Method to grab a discord member."""
         is_nsfw = ctx.channel.is_nsfw()
 
         config = await self.bot.get_context_config(ctx)
@@ -121,7 +129,7 @@ class Grabber(base.BaseCog):
         ).where(self.models.Grab.guild == str(ctx.guild.id))
 
         if not is_nsfw:
-            query = query.where(self.models.Grab.nsfw == False)
+            query = query.where(self.models.Grab.nsfw is False)
 
         grabs = await query.gino.all()
 
@@ -169,10 +177,12 @@ class Grabber(base.BaseCog):
     @grabs.command(
         name="random",
         brief="Returns a random grab",
-        description="Returns a random grabbed message for a user (note: NSFW messages are filtered by channel settings)",
+        description="Returns a random grabbed message for a user \
+            (note: NSFW messages are filtered by channel settings)",
         usage="@user",
     )
     async def random_grab(self, ctx, user_to_grab: discord.Member):
+        """Method to grab a random user in discord."""
         config = await self.bot.get_context_config(ctx)
 
         if user_to_grab.bot:
@@ -192,7 +202,7 @@ class Grabber(base.BaseCog):
         ).where(self.models.Grab.guild == str(ctx.guild.id))
 
         if not ctx.channel.is_nsfw():
-            query = query.where(self.models.Grab.nsfw == False)
+            query = query.where(self.models.Grab.nsfw is False)
 
         grabs = await query.gino.all()
 
