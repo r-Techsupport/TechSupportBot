@@ -183,6 +183,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
         collection = self.bot.mongo[self.COLLECTION_NAME]
         await collection.insert_one(application_data)
+        # For handeling a connection to IRC in the applcation channel
         self.bot.dispatch(
             "extension_listener_event", munch.Munch(channel=ctx.channel, embed=embed)
         )
@@ -195,6 +196,11 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
                 message=message_send
             ),
         )
+        # For handeling a connection to IRC in the applcation channel
+        self.bot.dispatch(
+            "extension_listener_event", munch.Munch(channel=ctx.channel, embed=embed)
+        )
+
 
     async def execute(self, config, guild):
         """Method to excute the reminder for pending applications."""
