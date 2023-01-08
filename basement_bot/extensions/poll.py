@@ -1,3 +1,4 @@
+"""Module for the poll extension for the discord bot."""
 import asyncio
 import io
 import json
@@ -11,11 +12,13 @@ from discord.reaction import Reaction
 
 
 def setup(bot):
+    """Adding the poll and recation to the config file."""
     bot.add_cog(ReactionPoller(bot=bot))
     bot.add_cog(StrawPoller(bot=bot))
 
 
 class PollEmbed(discord.Embed):
+    """Class for the poll embed for discord."""
     def __init__(self, *args, **kwargs):
         thumbnail_url = kwargs.pop("thumbnail_url")
         super().__init__(*args, **kwargs)
@@ -24,7 +27,9 @@ class PollEmbed(discord.Embed):
 
 
 class PollGenerator(base.BaseCog):
+    """Class to make the poll generator for the extension."""
     async def validate_data(self, ctx, request_body, strawpoll=False):
+        """Method to validate data from the poll."""
         # probably shouldn't touch this
         max_options = len(self.OPTION_EMOJIS) if not strawpoll else 10
 
@@ -36,7 +41,7 @@ class PollGenerator(base.BaseCog):
         if not question:
             await ctx.send_deny_embed("I did not find a poll question (`question` key)")
             return None
-        elif not isinstance(question, str):
+        if not isinstance(question, str):
             await ctx.send_deny_embed(
                 "I need the poll question to be a string (`question` key)"
             )
@@ -47,7 +52,7 @@ class PollGenerator(base.BaseCog):
                 "I need the poll options to be a list (`question` key)"
             )
             return None
-        elif len(options) < 2 or len(options) > max_options:
+        if len(options) < 2 or len(options) > max_options:
             await ctx.send_deny_embed(
                 f"I need between 2 and {max_options} options! (`options` key)"
             )
@@ -68,6 +73,7 @@ class PollGenerator(base.BaseCog):
 
 
 class ReactionPoller(PollGenerator):
+    """Class to add reactions to the poll generator."""
 
     OPTION_EMOJIS = ["one", "two", "three", "four", "five"]
     STOP_EMOJI = "\u26D4"
@@ -78,6 +84,7 @@ class ReactionPoller(PollGenerator):
     }
 
     async def preconfig(self):
+        """Method to preconfig the poll."""
         self.option_emojis = [
             emoji.emojize(f":{emoji_text}:", use_aliases=True)
             for emoji_text in self.OPTION_EMOJIS
@@ -88,6 +95,7 @@ class ReactionPoller(PollGenerator):
         description="Executes a poll command",
     )
     async def poll(self, ctx):
+        """Method to create the poll command."""
         pass
 
     @util.with_typing
@@ -96,6 +104,7 @@ class ReactionPoller(PollGenerator):
         description="Shows what JSON to upload to generate a poll",
     )
     async def example(self, ctx):
+        """Method to show an example of a poll."""
         json_file = discord.File(
             io.StringIO(json.dumps(self.EXAMPLE_DATA, indent=4)),
             filename="poll_example.json",
@@ -111,6 +120,7 @@ class ReactionPoller(PollGenerator):
         usage="|json-upload|",
     )
     async def generate(self, ctx):
+        """Method to generate the poll for discord."""
         request_body = await util.get_json_from_attachments(ctx.message)
         if not request_body:
             await ctx.send_deny_embed("I couldn't find any data in your upload")
@@ -179,6 +189,7 @@ class ReactionPoller(PollGenerator):
         await ctx.send(embed=embed)
 
     async def wait_for_results(self, ctx, message, timeout, options):
+        """Method to wait on results from the poll from other users."""
         option_emojis = self.option_emojis[: len(options)]
         await asyncio.sleep(timeout)
 
@@ -220,6 +231,7 @@ class ReactionPoller(PollGenerator):
 
 
 class StrawPoller(PollGenerator):
+    """Class to create a straw poll from discord."""
 
     EXAMPLE_DATA = {
         "question": "Best ice cream?",
@@ -232,6 +244,7 @@ class StrawPoller(PollGenerator):
         description="Executes a strawpoll command",
     )
     async def strawpoll(self, ctx):
+        """Method to give an exmaple poll with json."""
         pass
 
     @util.with_typing
@@ -240,6 +253,7 @@ class StrawPoller(PollGenerator):
         description="Shows what JSON to upload to generate a poll",
     )
     async def example(self, ctx):
+        """Method that contains the example file for a poll."""
         json_file = discord.File(
             io.StringIO(json.dumps(self.EXAMPLE_DATA, indent=4)),
             filename="poll_example.json",
@@ -253,6 +267,7 @@ class StrawPoller(PollGenerator):
         usage="|json-upload|",
     )
     async def generate(self, ctx):
+        """Method to generate the poll form the discord command."""
         request_body = await util.get_json_from_attachments(ctx.message)
         if not request_body:
             await ctx.send_deny_embed("I couldn't find any data in your upload")
