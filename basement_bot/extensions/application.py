@@ -190,15 +190,16 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
     async def handle_error_embed(self, ctx, message_send):
         """Method to handle if an application recieved an error."""
+        embed_send=embeds.DenyEmbed(
+            message=message_send
+        )
         await ctx.channel.send(
             content="",
-            embed=embeds.DenyEmbed(
-                message=message_send
-            ),
+            embed=embed_send
         )
         # For handeling a connection to IRC in the applcation channel
         self.bot.dispatch(
-            "extension_listener_event", munch.Munch(channel=ctx.channel, embed=embed)
+            "extension_listener_event", munch.Munch(channel=ctx.channel, embed=embed_send)
         )
 
 
