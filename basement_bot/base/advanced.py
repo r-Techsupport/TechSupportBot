@@ -512,7 +512,7 @@ class AdvancedBot(DataBot):
             name="Server",
             value=guild,
         )
-        embed.set_footer(text=f"Author ID: {message.author.id}")
+        embed.set_footer(text=f"Author ID: {before.author.id}")
 
         log_channel = await self.get_log_channel_from_guild(
             guild, key="guild_events_channel"
