@@ -218,7 +218,7 @@ def add_diff_fields(embed, diff):
         if len(diff_data.before) > 3072 and len(diff_data.after) <= 1800:
             embed.add_field(name=f"{attru} (before continue)", value=diff_data.before[3073:4096])
 
-        #expanding the after data to 4096 characters    
+        #expanding the after data to 4096 characters
         embed.add_field(name=f"{attru} (after)", value=diff_data.after[:1024])
         if len(diff_data.after) > 1024:
             embed.add_field(name=f"{attru} (after continue)", value=diff_data.after[1025:2048])
