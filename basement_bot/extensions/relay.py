@@ -220,8 +220,8 @@ class IRCEventEmbed(IRCEmbed):
         )
         self.description = self.generate_event_message()
 
-    def generate_event_message(self): #Maybe edit to a switch statement. 
-        """Method to generate the event message from IRC."""
+    def generate_event_message(self): #Maybe edit to a switch statement.
+    """Method to generate the event message from IRC."""
         permissions_label = self.get_permissions_label(self.data.author.permissions)
         if self.data.event.type == "join":
             return f"`{permissions_label}{self.data.author.mask}` \
@@ -246,7 +246,8 @@ class IRCEventEmbed(IRCEmbed):
             else: #Pylint doesn't like this else R1705
                 return f"`{self.data.author.mask}` did some \
                     configuration on {self.data.channel.name}..."
-        #Needs a return for the function itself maybe? (return f"`{self.data.author.nickname}` could not send message.")
+        #Needs a return for the function itself 
+        #maybe? (return f"`{self.data.author.nickname}` could not send message.")
 
 class DiscordRelay(base.MatchCog):
     """Class for discord relay."""
