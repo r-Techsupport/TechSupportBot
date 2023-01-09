@@ -221,7 +221,7 @@ class IRCEventEmbed(IRCEmbed):
         self.description = self.generate_event_message()
 
     def generate_event_message(self): #Maybe edit to a switch statement.
-    """Method to generate the event message from IRC."""
+        """Method to generate the event message from IRC."""
         permissions_label = self.get_permissions_label(self.data.author.permissions)
         if self.data.event.type == "join":
             return f"`{permissions_label}{self.data.author.mask}` \
