@@ -403,7 +403,7 @@ class Protector(base.MatchCog):
                     f"Your top role is not high enough to do that to `{target}`"
                 )
                 return False
-        except:
+        except AttributeError:
             return True
 
     async def send_alert(self, config, ctx, message):
