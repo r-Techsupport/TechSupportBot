@@ -405,6 +405,7 @@ class Protector(base.MatchCog):
                 return False
         except AttributeError:
             return True
+        return True
 
     async def send_alert(self, config, ctx, message):
         try:
