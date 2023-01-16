@@ -1,3 +1,4 @@
+"""Module for the wyr extension for the discord bot."""
 import uuid
 from random import choice
 
@@ -8,30 +9,36 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Adding the would you rather configuration to the config file."""
     bot.add_cog(WouldYouRather(bot=bot))
 
 
 class Question:
-    def __init__(self, a, b):
-        self.a = a
-        self.b = b
+    """Class for the wyr question."""
+    def __init__(self, option_a, option_b):
+        self.option_a = option_a
+        self.option_b = option_b
         self.id = uuid.uuid4()
 
     def get_question(self):
-        return f"Would you rather: {self.a} **OR** {self.b}?"
+        """Method for setting up a question."""
+        return f"Would you rather: {self.option_a} **OR** {self.option_b}?"
 
     def generate_embed(self):
-        description = f"{self.a}, or {self.b}?"
+        """Method for generating the embed for a wyr question."""
+        description = f"{self.option_a}, or {self.option_b}?"
         embed = discord.Embed(title="Would you rather...", description=description)
         embed.color = discord.Color.blurple()
         return embed
 
 
 class WouldYouRather(base.BaseCog):
+    """Class to create a would you rather scenario."""
 
     HAS_CONFIG = False
 
     async def preconfig(self):
+        """Method to preconfig the wyr scenario."""
         self.last = None
 
     QUESTIONS = [
@@ -213,8 +220,10 @@ class WouldYouRather(base.BaseCog):
         Question("go snorkeling on a reef", "camping by a lake"),
         Question("have an elephant-sized cat", "a cat-sized elephant"),
         Question(
-            "be able to jump into any picture and instantly be in that place and time but able to return",
-            "would you rather be able to take pictures of the future, just stand in a place think of a time in the future and take a picture",
+            "be able to jump into any picture and instantly be in that place and \
+                time but able to return",
+            "would you rather be able to take pictures of the future, just stand \
+                in a place think of a time in the future and take a picture",
         ),
         Question("play outdoors", "indoors"),
         Question("eat broccoli flavored ice cream", "meat flavored cookies"),
@@ -314,7 +323,7 @@ class WouldYouRather(base.BaseCog):
             "have an extremely popular podcast",
         ),
         Question(
-            "be able to talk to animals and have them understand you, but you can’t understand them,",
+            "able to talk to animals and have them understand you, but you can’t understand them,",
             "would you rather be able to understand what animals say but they can’t understand you",
         ),
         Question("eat smores", "cupcakes"),
@@ -526,6 +535,7 @@ class WouldYouRather(base.BaseCog):
         description="Creates a random Would You Rather question",
     )
     async def wyr(self, ctx):
+        """Method to call the wyr command."""
         while True:
             question = choice(self.QUESTIONS)
             if self.last != question.id:
