@@ -354,7 +354,10 @@ class Protector(base.MatchCog):
             if not can_execute:
                 return
 
-        await ctx.guild.unban(user, reason=reason)
+        try:
+            await ctx.guild.unban(user, reason=reason)
+        except discord.NotFound:
+            await ctx.send("This user is not banned, or does not exist")
 
         embed = await self.generate_user_modified_embed(user, "unban", reason)
 
@@ -394,12 +397,14 @@ class Protector(base.MatchCog):
         if target.id == self.bot.user.id:
             await ctx.send_deny_embed("It would be silly to do that to myself")
             return False
-        if target.top_role >= ctx.author.top_role:
-            await ctx.send_deny_embed(
-                f"Your top role is not high enough to do that to `{target}`"
-            )
-            return False
-        return True
+        try:
+            if target.top_role >= ctx.author.top_role:
+                await ctx.send_deny_embed(
+                    f"Your top role is not high enough to do that to `{target}`"
+                )
+                return False
+        except:
+            return True
 
     async def send_alert(self, config, ctx, message):
         try:
