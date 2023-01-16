@@ -357,7 +357,8 @@ class Protector(base.MatchCog):
         try:
             await ctx.guild.unban(user, reason=reason)
         except discord.NotFound:
-            await ctx.send("This user is not banned, or does not exist")
+            await ctx.send_deny_embed("This user is not banned, or does not exist")
+            return
 
         embed = await self.generate_user_modified_embed(user, "unban", reason)
 
@@ -394,6 +395,9 @@ class Protector(base.MatchCog):
         return f"{guild.id}_{user.id}_{trigger}"
 
     async def can_execute(self, ctx, target):
+        if target.id == ctx.author.id:
+            await ctx.send_deny_embed("You cannot do that to yourself")
+            return False
         if target.id == self.bot.user.id:
             await ctx.send_deny_embed("It would be silly to do that to myself")
             return False
