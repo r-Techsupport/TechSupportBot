@@ -427,11 +427,8 @@ class AdvancedBot(DataBot):
         if str(channel_id) in config_.get("private_channels", []):
             return
 
-        if len(message.clean_content) > 1000:
-            return
-
         embed = discord.Embed()
-        embed.add_field(name="Content", value=message.content or "None")
+        embed.add_field(name="Content", value=message.content[:1024] or "None")
         if len(message.content) > 1024:
             embed.add_field(name = "\a", value=message.content[1025:2048])
         if len(message.content) > 2048:
