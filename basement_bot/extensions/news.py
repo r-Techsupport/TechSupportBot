@@ -126,7 +126,7 @@ class News(base.LoopCog):
         url = None
         while not url:
             article = await self.get_random_headline(
-                config.extensions.news.country.value, category.value
+                config.extensions.news.country.value, category
             )
             url = article.get("url")
 
