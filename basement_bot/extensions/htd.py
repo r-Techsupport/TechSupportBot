@@ -110,11 +110,10 @@ class Htd(base.BaseCog):
             else:
                 # assume the input is detected as an int
                 num_base = 10
-            print("conv str to int: val: {}, base: {}".format(val, num_base))
             # special handling is needed for floats
             if "." in ref_val:
                 return int(float(val))
-            
+
             return int(val, num_base)
 
 
@@ -204,7 +203,6 @@ class Htd(base.BaseCog):
             except ValueError:
                 embed = discord.Embed(color=discord.Color.red(
                 ), title="Unable to convert value, are you sure it's valid?")
-                #raise
 
             return embed
 
@@ -213,7 +211,7 @@ class Htd(base.BaseCog):
             Function that treats a list like an equation, so [1, "+", 1] would return two.\
              The list must have 3 items
             """
-            print("Perform op on list: {}".format(parsed_list))
+
             first_val = convert_str_to_int(parsed_list[0])
             second_val = convert_str_to_int(parsed_list[2])
             if parsed_list[1] == "+":
@@ -244,9 +242,8 @@ class Htd(base.BaseCog):
             try:
                 calced_val = str(perform_op_on_list(parsed_list))
                 await ctx.send(embed=gen_embed_from_val(calced_val, True))
-            except:
+            except ValueError:
                 await ctx.send_deny_embed("Unable to perform calculation, are you sure that \
                 equation is valid?")
-                #raise
         else:
             await ctx.send(embed=gen_embed_from_val(val_to_convert))
