@@ -1,3 +1,4 @@
+"""Module for the mock extension for the discord bot."""
 import base
 import discord
 import util
@@ -5,10 +6,12 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Adding mock config to the config file"""
     bot.add_cog(Mocker(bot=bot))
 
 
 class MockEmbed(discord.Embed):
+    """Class to setup the mock embed for discord."""
     def __init__(self, *args, **kwargs):
         message = kwargs.pop("message")
         user = kwargs.pop("user")
@@ -22,6 +25,7 @@ class MockEmbed(discord.Embed):
 
     @staticmethod
     def mock_string(string):
+        """Method to define the mock string for discord."""
         mock = ""
         i = True
         for char in string:
@@ -35,6 +39,7 @@ class MockEmbed(discord.Embed):
 
 
 class Mocker(base.BaseCog):
+    """Class to set up the mocking command."""
 
     SEARCH_LIMIT = 20
 
@@ -47,6 +52,7 @@ class Mocker(base.BaseCog):
         usage="@user",
     )
     async def mock(self, ctx, user_to_mock: discord.Member):
+        """Method on how to mock the user for discord."""
         if not user_to_mock:
             await ctx.send_deny_embed("You must tag a user if you want to mock them!")
             return
