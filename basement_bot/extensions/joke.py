@@ -1,3 +1,4 @@
+"""Module for the joke extension for the discord bot."""
 import base
 import discord
 import util
@@ -5,12 +6,13 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Method to add the joke extension to the config file."""
     config = bot.ExtensionConfig()
     config.add(
         key="pc_jokes",
         datatype="bool",
         title="Politically correct jokes only",
-        description="True if only politically correct jokes should be shown (non-racist/non-sexist)",
+        description="True only politically correct jokes should be shown (non-racist/non-sexist)",
         default=True,
     )
     bot.add_cog(Joker(bot=bot))
@@ -18,15 +20,18 @@ def setup(bot):
 
 
 class Joker(base.BaseCog):
+    """Class to make up the joke extension."""
 
     API_URL = "https://v2.jokeapi.dev/joke/Any"
 
     async def call_api(self, ctx, config):
+        """Method to call the api to get the joke from."""
         url = self.build_url(ctx, config)
         response = await self.bot.http_call("get", url, get_raw_response=True)
         return response
 
     def build_url(self, ctx, config):
+        """Method to filter out non-wanted jokes."""
         blacklist_flags = []
         if not ctx.channel.is_nsfw():
             blacklist_flags.extend(["explicit", "nsfw"])
@@ -39,6 +44,7 @@ class Joker(base.BaseCog):
         return url
 
     def generate_embed(self, joke_text):
+        """Method to generate the embed to send to discord for displaying joke."""
         embed = discord.Embed(description=joke_text)
         embed.set_author(name="Joke", icon_url=self.bot.user.avatar_url)
         embed.color = discord.Color.random()
@@ -53,6 +59,7 @@ class Joker(base.BaseCog):
         usage="",
     )
     async def joke(self, ctx):
+        """Method to call to get all the joke together."""
         config = await self.bot.get_context_config(ctx)
         response = await self.call_api(ctx, config)
         text = await response.text()
