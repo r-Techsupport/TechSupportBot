@@ -425,7 +425,6 @@ class Protector(base.MatchCog):
         if target.id == ctx.author.id:
             await ctx.send_deny_embed("You cannot do that to yourself")
             return False
-            
         if target.id == self.bot.user.id:
             await ctx.send_deny_embed("It would be silly to do that to myself")
             return False
