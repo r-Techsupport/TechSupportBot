@@ -1,3 +1,4 @@
+"""Module for the urban dictionary extension for the discord bot."""
 import base
 import discord
 import util
@@ -5,6 +6,7 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Adding the configuration of the urban extension to the config file."""
     config = bot.ExtensionConfig()
     config.add(
         key="max_responses",
@@ -19,6 +21,7 @@ def setup(bot):
 
 
 class UrbanDictionary(base.BaseCog):
+    """Class for setting up the urban dictionary extension."""
 
     BASE_URL = "http://api.urbandictionary.com/v0/define?term="
     SEE_MORE_URL = "https://www.urbandictionary.com/define.php?term="
@@ -34,6 +37,7 @@ class UrbanDictionary(base.BaseCog):
         usage="[query]",
     )
     async def urban(self, ctx, *, query: str):
+        """Method to get a call from the urban dictionary API."""
         response = await self.bot.http_call("get", f"{self.BASE_URL}{query}")
         definitions = response.get("list")
 
