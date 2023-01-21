@@ -1,3 +1,4 @@
+"""Module for the directory extension for the discord bot."""
 import datetime
 
 import base
@@ -8,7 +9,9 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Method to add the directory to the config."""
     class DirectoryExistence(bot.db.Model):
+        """Class to add the directory to the config."""
         __tablename__ = "directoryexistence"
         guild_id = bot.db.Column(bot.db.String, primary_key=True)
         last_message = bot.db.Column(bot.db.String, default=None)
@@ -26,7 +29,8 @@ def setup(bot):
         datatype="str",
         title="Directory embed message",
         description="The message to display in the directory embed",
-        default="Once selecting a channel, you will be given the role to access it. You can come back here to remove the role or add more roles at any time",
+        default="Once selecting a channel, you will be given the role to access it. \
+            You can come back here to remove the role or add more roles at any time",
     )
     config.add(
         key="channel_role_map",
@@ -41,6 +45,7 @@ def setup(bot):
 
 
 class ChannelDirectory(base.BaseCog):
+    """Class for the directy of the discord."""
 
     # I refuse to install num2word
     OPTION_EMOJIS = [
@@ -60,6 +65,7 @@ class ChannelDirectory(base.BaseCog):
     DIR_ICON_URL = "https://cdn.icon-icons.com/icons2/1585/PNG/512/3709735-application-contact-directory-phonebook-storage_108083.png"
 
     async def preconfig(self):
+        """Method to preconfig the directory."""
         self.message_ids = set()
         self.option_map = {}
 
@@ -72,6 +78,7 @@ class ChannelDirectory(base.BaseCog):
             self.bot.loop.create_task(self.run_setup(guild))
 
     async def run_setup(self, guild):
+        """Method to setup the guild for the bot."""
         config = await self.bot.get_context_config(guild=guild)
 
         channel_id = config.extensions.directory.channel.value
@@ -128,7 +135,8 @@ class ChannelDirectory(base.BaseCog):
                     guild,
                     "logging_channel",
                     "error",
-                    "Could not determine last message ID for directory plugin from saved data (this is rare)",
+                    "Could not determine last message ID for directory plugin \
+                        from saved data (this is rare)",
                     exception=e,
                 )
                 return
@@ -155,6 +163,7 @@ class ChannelDirectory(base.BaseCog):
         self.message_ids.add(new_message.id)
 
     async def send_embed(self, config, channel_map, guild, directory_channel):
+        """Method to send the embed into the directory channel."""
         embed = discord.Embed(
             title="Channel Directory",
             description=config.extensions.directory.embed_message.value,
@@ -193,6 +202,7 @@ class ChannelDirectory(base.BaseCog):
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
+        """Method to set up a recation for the discord bot."""
         if user.bot:
             return
 
@@ -211,6 +221,7 @@ class ChannelDirectory(base.BaseCog):
 
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, user):
+        """Method to remove a reaction by the user."""
         if user.bot:
             return
 
@@ -232,6 +243,7 @@ class ChannelDirectory(base.BaseCog):
         description="Executes a directory command",
     )
     async def directory(self, ctx):
+        """Method of the directory."""
         pass
 
     @util.with_typing
@@ -242,4 +254,5 @@ class ChannelDirectory(base.BaseCog):
         description="Reruns the directory setup for the current guild",
     )
     async def rerun(self, ctx):
+        """Method to rerun the directory setup."""
         await self.run_setup(ctx.guild)

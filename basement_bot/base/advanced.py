@@ -427,17 +427,21 @@ class AdvancedBot(DataBot):
         if str(channel_id) in config_.get("private_channels", []):
             return
 
-        if len(message.clean_content) > 1000:
-            return
-
         embed = discord.Embed()
-        embed.add_field(name="Content", value=message.content or "None")
+        embed.add_field(name="Content", value=message.content[:1024] or "None")
+        if len(message.content) > 1024:
+            embed.add_field(name = "\a", value=message.content[1025:2048])
+        if len(message.content) > 2048:
+            embed.add_field(name = "\a", value=message.content[2049:3072])
+        if len(message.content) > 3072:
+            embed.add_field(name = "\a", value=message.content[3073:4096])
         embed.add_field(name="Author", value=message.author)
         embed.add_field(
             name="Channel",
             value=getattr(message.channel, "name", "DM"),
         )
         embed.add_field(name="Server", value=getattr(guild, "name", "None"))
+        embed.set_footer(text=f"Author ID: {message.author.id}")
 
         log_channel = await self.get_log_channel_from_guild(
             guild, key="guild_events_channel"
@@ -495,12 +499,6 @@ class AdvancedBot(DataBot):
         if str(channel_id) in config_.get("private_channels", []):
             return
 
-        if len(before.clean_content) > 1000:
-            return
-
-        if len(after.clean_content) > 1000:
-            return
-
         attrs = ["content", "embeds"]
         diff = util.get_object_diff(before, after, attrs)
         embed = discord.Embed()
@@ -511,6 +509,7 @@ class AdvancedBot(DataBot):
             name="Server",
             value=guild,
         )
+        embed.set_footer(text=f"Author ID: {before.author.id}")
 
         log_channel = await self.get_log_channel_from_guild(
             guild, key="guild_events_channel"

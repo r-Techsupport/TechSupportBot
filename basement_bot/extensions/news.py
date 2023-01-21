@@ -117,7 +117,7 @@ class News(base.LoopCog):
     )
     async def news(self, ctx):
         """Method to set up the news command."""
-        pass
+        print(f"News command called in channel {ctx.channel}")
 
     @news.command(
         name="random",
@@ -125,14 +125,19 @@ class News(base.LoopCog):
         description="Gets a random news headline",
         usage="[category] (optional)",
     )
-    async def random(self, ctx, category: Category = None):
+    async def random(self, ctx, category = None):
         """Method to define the random to get a news."""
+        if category == None:
+            category = random.choice(list(Category)).value
+        else:
+            category.lower()
+  
         config = await self.bot.get_context_config(ctx)
 
         url = None
         while not url:
             article = await self.get_random_headline(
-                config.extensions.news.country.value, category.value
+                config.extensions.news.country.value, category
             )
             url = article.get("url")
 
