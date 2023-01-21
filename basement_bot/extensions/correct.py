@@ -1,3 +1,4 @@
+"""Module for the correct command on the discord bot."""
 import base
 import discord
 import util
@@ -5,10 +6,12 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Method to add correct to the config."""
     bot.add_cog(Corrector(bot=bot))
 
 
 class CorrectEmbed(discord.Embed):
+    """Method to create the correct embed for the discord bot."""
     def __init__(self, *args, **kwargs):
         new_content = kwargs.pop("new_content")
         super().__init__(*args, **kwargs)
@@ -18,6 +21,7 @@ class CorrectEmbed(discord.Embed):
 
 
 class Corrector(base.BaseCog):
+    """Class for the correct command for the discord bot."""
 
     SEARCH_LIMIT = 50
 
@@ -30,6 +34,7 @@ class Corrector(base.BaseCog):
         usage="[to_replace] [replacement]",
     )
     async def correct(self, ctx, to_replace: str, replacement: str):
+        """Method for the correct command for the discord bot."""
         new_content = None
 
         prefix = await self.bot.get_prefix(ctx.message)
