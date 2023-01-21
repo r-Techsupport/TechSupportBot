@@ -1,3 +1,4 @@
+"""Module for the conch command in discord bot."""
 import random
 
 import base
@@ -6,10 +7,12 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Method to add conch to the config in discord bot."""
     bot.add_cog(MagicConch(bot=bot))
 
 
 class ConchEmbed(discord.Embed):
+    """Class to create the conch embed for the bot."""
 
     PIC_URL = "https://i.imgur.com/vdvGrsR.png"
 
@@ -20,6 +23,7 @@ class ConchEmbed(discord.Embed):
 
 
 class MagicConch(base.BaseCog):
+    """Class to create the conch command for discord bot."""
 
     RESPONSES = [
         "As I see it, yes.",
@@ -52,6 +56,7 @@ class MagicConch(base.BaseCog):
         usage="[question]",
     )
     async def ask_question(self, ctx, *, question: commands.clean_content()):
+        """Method for how the conch command works for the bot."""
         # we don't actually care about the question
         response = random.choice(self.RESPONSES)
         if not question.endswith("?"):
