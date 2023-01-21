@@ -1,19 +1,23 @@
+"""Module for giphy extension in the bot."""
 import base
 import util
 from discord.ext import commands
 
 
 def setup(bot):
+    """Method to add giphy to the config."""
     bot.add_cog(Giphy(bot=bot))
 
 
 class Giphy(base.BaseCog):
+    """Class for the giphy extension."""
 
     GIPHY_URL = "http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"
     SEARCH_LIMIT = 10
 
     @staticmethod
     def parse_url(url):
+        """Method to parse the url. """
         index = url.find("?cid=")
         return url[:index]
 
@@ -26,6 +30,7 @@ class Giphy(base.BaseCog):
         usage="[query]",
     )
     async def giphy(self, ctx, *, query: str):
+        """Method to send giphy to discord."""
         response = await self.bot.http_call(
             "get",
             self.GIPHY_URL.format(
