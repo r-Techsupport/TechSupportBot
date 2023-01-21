@@ -1,3 +1,4 @@
+"""Module for the google extension for the discord bot."""
 import base
 import discord
 import util
@@ -5,6 +6,7 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Adding google extension config to the config file."""
     config = bot.ExtensionConfig()
     config.add(
         key="max_responses",
@@ -19,6 +21,7 @@ def setup(bot):
 
 
 class GoogleEmbed(discord.Embed):
+    """Class for the google embed for discord."""
 
     ICON_URL = (
         "https://cdn.icon-icons.com/icons2/673/PNG/512/Google_icon-icons.com_60497.png"
@@ -31,11 +34,13 @@ class GoogleEmbed(discord.Embed):
 
 
 class Googler(base.BaseCog):
+    """Class for the google extension for the discord bot."""
 
     GOOGLE_URL = "https://www.googleapis.com/customsearch/v1"
     YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=10"
 
     async def get_items(self, url, data):
+        """Method to get an item from google's api. """
         response = await self.bot.http_call("get", url, params=data, use_cache=True)
         return response.get("items")
 
@@ -46,6 +51,7 @@ class Googler(base.BaseCog):
         description="Executes a Google command",
     )
     async def google(self, ctx):
+        """Method to add command to search google."""
         pass
 
     @util.with_typing
@@ -57,6 +63,7 @@ class Googler(base.BaseCog):
         usage="[query]",
     )
     async def search(self, ctx, *, query: str):
+        """Method for searching results on google."""
         data = {
             "cx": self.bot.file_config.main.api_keys.google_cse,
             "q": query,
@@ -106,6 +113,7 @@ class Googler(base.BaseCog):
         usage="[query]",
     )
     async def images(self, ctx, *, query: str):
+        """Method to get an image from a google search."""
         data = {
             "cx": self.bot.file_config.main.api_keys.google_cse,
             "q": query,
@@ -140,6 +148,7 @@ class Googler(base.BaseCog):
         usage="[query]",
     )
     async def youtube(self, ctx, *, query: str):
+        """Method to get the youtube link form searching google."""
         items = await self.get_items(
             self.YOUTUBE_URL,
             data={
