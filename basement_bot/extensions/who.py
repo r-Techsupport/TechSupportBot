@@ -1,15 +1,18 @@
+"""Module for the who extension for the discord bot."""
 import datetime
 import io
 
+import yaml
 import base
 import discord
 import util
-import yaml
 from discord.ext import commands
 
 
 def setup(bot):
+    """Adding the who configuration to the config file."""
     class UserNote(bot.db.Model):
+        """Class to set up the config file."""
         __tablename__ = "usernote"
 
         pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
@@ -33,6 +36,7 @@ def setup(bot):
 
 
 class Who(base.BaseCog):
+    """Class to set up who for the extension."""
 
     # whois command
     @commands.command(
@@ -42,6 +46,7 @@ class Who(base.BaseCog):
         usage="@user",
     )
     async def whois_user(self, ctx, user: discord.Member):
+        """Method to set up the embed for the user."""
         embed = discord.Embed(
             title=f"User info for `{user}`",
             description="**Note: this is a bot account!**" if user.bot else "",
@@ -81,6 +86,7 @@ class Who(base.BaseCog):
         description="Executes a note command",
     )
     async def note(self, ctx):
+        """Method for the note command."""
         pass
 
     @note.command(
@@ -90,6 +96,7 @@ class Who(base.BaseCog):
         usage="@user [note]",
     )
     async def set_note(self, ctx, user: discord.Member, *, body: str):
+        """Method to set a note on a user."""
         if ctx.author.id == user.id:
             await ctx.send_deny_embed("You cannot add a note for yourself")
             return
@@ -121,6 +128,7 @@ class Who(base.BaseCog):
         usage="@user",
     )
     async def clear_notes(self, ctx, user: discord.Member):
+        """Method to clear notes on a user."""
         notes = await self.get_notes(user, ctx.guild)
 
         if not notes:
@@ -155,6 +163,7 @@ class Who(base.BaseCog):
         usage="@user",
     )
     async def all_notes(self, ctx, user: discord.Member):
+        """Method to get all notes for a user."""
         notes = await self.get_notes(user, ctx.guild)
 
         if not notes:
@@ -179,6 +188,7 @@ class Who(base.BaseCog):
         await ctx.send(file=yaml_file)
 
     async def get_notes(self, user, guild):
+        """Method to get current notes on the user."""
         user_notes = (
             await self.models.UserNote.query.where(
                 self.models.UserNote.user_id == str(user.id)
@@ -193,6 +203,7 @@ class Who(base.BaseCog):
     # re-adds note role back to joining users
     @commands.Cog.listener()
     async def on_member_join(self, member):
+        """Method to get the member on joining the guild."""
         config = await self.bot.get_context_config(guild=member.guild)
         if not self.extension_enabled(config):
             return

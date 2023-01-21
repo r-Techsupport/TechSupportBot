@@ -1,3 +1,4 @@
+"""Module to add the location of the ISS to the bot."""
 import base
 import discord
 import util
@@ -5,10 +6,12 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Add the ISS locator to the config file."""
     bot.add_cog(ISSLocator(bot=bot))
 
 
 class ISSLocator(base.BaseCog):
+    """Class to locate the ISS at its current position."""
 
     ISS_URL = "http://api.open-notify.org/iss-now.json"
     GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
@@ -21,6 +24,7 @@ class ISSLocator(base.BaseCog):
         description="Returns the location of the International Space Station (ISS)",
     )
     async def iss(self, ctx):
+        """Method to get the coordinates of the ISS currently."""
         # get ISS coordinates
         response = await self.bot.http_call("get", self.ISS_URL)
         if not response:
