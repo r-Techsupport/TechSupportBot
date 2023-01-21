@@ -15,7 +15,6 @@ RUN pip install pipenv && \
     pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY . .
-COPY config.yml basement_bot
 
 FROM python:3.9-alpine
 RUN apk add --no-cache \

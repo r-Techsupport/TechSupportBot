@@ -1,13 +1,16 @@
+"""Module for the translate extension for the discord bot."""
 import base
 import util
 from discord.ext import commands
 
 
 def setup(bot):
+    """Adding the configuration of the translate extension to the config file."""
     bot.add_cog(Translator(bot=bot))
 
 
 class Translator(base.BaseCog):
+    """Class to set up the translate extension."""
 
     HAS_CONFIG = False
 
@@ -21,6 +24,7 @@ class Translator(base.BaseCog):
         usage='"[message (in quotes)]" [src language code (en)] [dest language code (es)]',
     )
     async def translate(self, ctx, message, src: str, dest: str):
+        """Method to translate a message from one language to another."""
         response = await self.bot.http_call(
             "get",
             self.API_URL.format(message, src, dest),
