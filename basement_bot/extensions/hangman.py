@@ -1,3 +1,4 @@
+"""Module for the hangman extension for the bot."""
 import datetime
 import uuid
 
@@ -8,6 +9,7 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Add hangman extension to the config file."""
     config = bot.ExtensionConfig()
     config.add(
         key="hangman_roles",
@@ -22,6 +24,7 @@ def setup(bot):
 
 
 class HangmanGame:
+    """Class for the game hangman."""
 
     HANG_PICS = [
         """
@@ -94,6 +97,7 @@ class HangmanGame:
         self.id = uuid.uuid4()
 
     def draw_word_state(self):
+        """Method to draw the word on the embed."""
         state = ""
         for letter in self.word:
             value = letter if letter.lower() in self.guesses else "_"
@@ -102,9 +106,11 @@ class HangmanGame:
         return state
 
     def draw_hang_state(self):
+        """Method to draw the current state of the game."""
         return self.HANG_PICS[self.step]
 
     def guess(self, letter):
+        """Method to define a guess."""
         found = True
         if len(letter) > 1:
             raise ValueError("guess must be letter")
@@ -119,6 +125,7 @@ class HangmanGame:
 
     @property
     def finished(self):
+        """Method to finish the game of hangman."""
         if self.step < 0 or self.step >= self.FINAL_STEP:
             return True
         if all(letter in self.guesses for letter in self.word):
@@ -127,11 +134,13 @@ class HangmanGame:
 
     @property
     def failed(self):
+        """Method in case the game wasn't successful."""
         if self.step >= self.FINAL_STEP:
             return True
         return False
 
     def guessed(self, letter):
+        """Method to know if a guess has already been guessed."""
         if len(letter) > 1:
             raise ValueError("guess must be letter")
         if letter.lower() in self.guesses:
@@ -140,6 +149,7 @@ class HangmanGame:
 
 
 async def can_stop_game(ctx):
+    """Method to stop the game of hangman at any time."""
     cog = ctx.bot.get_cog("HangmanCog")
     if not cog:
         raise AttributeError("could not find hangman cog when checking game states")
@@ -167,7 +177,9 @@ async def can_stop_game(ctx):
 
 
 class HangmanCog(base.BaseCog):
+    """Class to define the hangman game."""
     async def preconfig(self):
+        """Method to preconfig the game."""
         self.games = {}
 
     @commands.guild_only()
@@ -175,6 +187,7 @@ class HangmanCog(base.BaseCog):
         name="hangman", description="Runs a hangman command", aliases=["hm"]
     )
     async def hangman(self, ctx):
+        """Method to use the command to start the hangman game."""
         pass
 
     @hangman.command(
@@ -183,6 +196,7 @@ class HangmanCog(base.BaseCog):
         usage="[word]",
     )
     async def start_game(self, ctx, word: str):
+        """Method to start the hangman game and delete the original message."""
         # delete the message so the word is not seen
         await ctx.message.delete()
 
@@ -193,7 +207,7 @@ class HangmanCog(base.BaseCog):
             user = game_data.get("user")
             if getattr(user, "id", 0) == ctx.author.id:
                 should_delete = await ctx.confirm(
-                    "There is a current game in progress that you started. Would you like to end it?",
+                    "There is a current game in progress. Would you like to end it?",
                     delete_after=True,
                 )
                 if not should_delete:
@@ -221,6 +235,7 @@ class HangmanCog(base.BaseCog):
         usage="[letter]",
     )
     async def guess(self, ctx, letter: str):
+        """Method to define a guess on the hangman game."""
         if len(letter) > 1 or not letter.isalpha():
             await ctx.send_deny_embed("You can only guess a letter")
             return
@@ -247,6 +262,7 @@ class HangmanCog(base.BaseCog):
         await ctx.send(content=content)
 
     async def generate_game_embed(self, ctx, game):
+        """Method to make the game into an embed."""
         hangman_drawing = game.draw_hang_state()
         hangman_word = game.draw_word_state()
 
@@ -272,6 +288,7 @@ class HangmanCog(base.BaseCog):
 
     @hangman.command(name="redraw", description="Redraws the current hangman game")
     async def redraw(self, ctx):
+        """Method to redraw the current status of the hangman game."""
         game_data = self.games.get(ctx.channel.id)
         if not game_data:
             await ctx.send_deny_embed("There is no game in progress for this channel")
@@ -290,6 +307,7 @@ class HangmanCog(base.BaseCog):
     @commands.check(can_stop_game)
     @hangman.command(name="stop", description="Stops the current channel game")
     async def stop(self, ctx):
+        """Method to determine if the game is finished and stop the game."""
         game_data = self.games.get(ctx.channel.id)
         if not game_data:
             await ctx.send_deny_embed("There is no game in progress for this channel")

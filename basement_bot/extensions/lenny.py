@@ -1,3 +1,4 @@
+"""Module to add the extension lenny to the discord bot."""
 import random
 
 import base
@@ -6,10 +7,12 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Adding lenny to the config file."""
     bot.add_cog(Lenny(bot=bot))
 
 
 class Lenny(base.BaseCog):
+    """Class for lenny extension."""
 
     LENNYS_SELECTION = [
         "( ͡° ͜ʖ ͡°)",
@@ -42,4 +45,5 @@ class Lenny(base.BaseCog):
         description="Returns a randomly chosen Lenny face ( ͡° ͜ʖ ͡°)",
     )
     async def lenny(self, ctx):
+        """Method for a discord command to return a funny lenny face."""
         await ctx.send(content=random.choice(self.LENNYS_SELECTION))

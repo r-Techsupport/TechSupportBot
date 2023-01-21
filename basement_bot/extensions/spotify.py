@@ -1,3 +1,4 @@
+"""Module for the Spotify extension of the discord bot."""
 import aiohttp
 import base
 import util
@@ -5,15 +6,18 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Adding the Spotify configuration to the config file."""
     bot.add_cog(Spotify(bot=bot))
 
 
 class Spotify(base.BaseCog):
+    """Class for setting up the Spotify extension."""
 
     AUTH_URL = "https://accounts.spotify.com/api/token"
     API_URL = "https://api.spotify.com/v1/search"
 
     async def get_oauth_token(self):
+        """Method to get an oauth token for the Spotify API."""
         data = {"grant_type": "client_credentials"}
         response = await self.bot.http_call(
             "post",
@@ -35,6 +39,7 @@ class Spotify(base.BaseCog):
         usage="[query]",
     )
     async def spotify(self, ctx, *, query: str):
+        """Method to return a song from the Spotify API."""
         oauth_token = await self.get_oauth_token()
         if not oauth_token:
             await ctx.send_deny_embed("I couldn't authenticate with Spotify")
