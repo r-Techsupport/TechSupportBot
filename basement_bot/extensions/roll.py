@@ -1,3 +1,4 @@
+"""Module for the roll extension for the discord bot."""
 import random
 
 import base
@@ -7,10 +8,12 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Adding the roll configuration to the config file."""
     bot.add_cog(Roller(bot=bot))
 
 
 class RollEmbed(discord.Embed):
+    """Class to create the roll embed."""
 
     ICON_URL = "https://cdn.icon-icons.com/icons2/1465/PNG/512/678gamedice_100992.png"
 
@@ -24,6 +27,7 @@ class RollEmbed(discord.Embed):
 
 
 class Roller(base.BaseCog):
+    """Class for the roll command for the extension."""
     @util.with_typing
     @commands.command(
         name="roll",
@@ -32,5 +36,6 @@ class Roller(base.BaseCog):
         usage="[minimum] [maximum] (defaults to 1-100)",
     )
     async def roll(self, ctx, min: int = 1, max: int = 100):
+        """Method to define the roll command for the extension."""
         embed = RollEmbed(roll=random.randint(min, max))
         await ctx.send(embed=embed)
