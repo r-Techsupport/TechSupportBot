@@ -129,7 +129,7 @@ class Grabber(base.BaseCog):
         ).where(self.models.Grab.guild == str(ctx.guild.id))
 
         if not is_nsfw:
-            query = query.where(self.models.Grab.nsfw is False)
+            query = query.where(self.models.Grab.nsfw == False)
 
         grabs = await query.gino.all()
 
