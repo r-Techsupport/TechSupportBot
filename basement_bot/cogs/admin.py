@@ -4,11 +4,10 @@
 import json
 import sys
 
-import discord
-from discord.ext import commands
-
 import base
+import discord
 import util
+from discord.ext import commands
 
 
 class AdminEmbed(discord.Embed):

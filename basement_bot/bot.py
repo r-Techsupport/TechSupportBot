@@ -2,11 +2,10 @@
 """
 import os
 
-from discord.ext import ipc
-
 import base
 import cogs as builtin_cogs
 import context
+from discord.ext import ipc
 
 
 # pylint: disable=too-many-public-methods, too-many-instance-attributes

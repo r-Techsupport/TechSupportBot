@@ -2,11 +2,10 @@ import asyncio
 import enum
 
 import aiohttp
-import discord
-from discord.ext import commands
-
 import base
+import discord
 import util
+from discord.ext import commands
 
 
 def setup(bot):

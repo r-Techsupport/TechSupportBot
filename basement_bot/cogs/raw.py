@@ -1,9 +1,8 @@
 """Module for custom help commands.
 """
 
-from discord.ext import commands
-
 import base
+from discord.ext import commands
 
 
 class Raw(base.BaseCog):

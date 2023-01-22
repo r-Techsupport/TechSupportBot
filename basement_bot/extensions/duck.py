@@ -3,13 +3,12 @@ import datetime
 import functools
 import random
 
-import discord
-from discord import Color as embed_colors
-from discord.ext import commands
-
 import base
+import discord
 import embeds
 import util
+from discord import Color as embed_colors
+from discord.ext import commands
 
 
 def setup(bot):

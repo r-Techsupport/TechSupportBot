@@ -1,10 +1,9 @@
 """Module for custom help commands.
 """
 
+import base
 import discord
 from discord.ext import commands
-
-import base
 
 
 class HelpEmbed(discord.Embed):

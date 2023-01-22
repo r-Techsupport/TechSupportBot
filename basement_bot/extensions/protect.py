@@ -2,13 +2,12 @@ import datetime
 import io
 import re
 
+import base
 import discord
 import expiringdict
 import munch
-from discord.ext import commands
-
-import base
 import util
+from discord.ext import commands
 
 
 def setup(bot):

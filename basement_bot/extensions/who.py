@@ -2,12 +2,11 @@
 import datetime
 import io
 
+import base
 import discord
+import util
 import yaml
 from discord.ext import commands
-
-import base
-import util
 
 
 def setup(bot):

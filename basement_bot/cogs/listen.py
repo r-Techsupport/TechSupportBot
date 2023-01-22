@@ -3,11 +3,10 @@
 
 import datetime
 
+import base
 import discord
 import expiringdict
 from discord.ext import commands
-
-import base
 
 
 class ListenChannel(commands.Converter):

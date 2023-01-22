@@ -1,9 +1,8 @@
 import asyncio
 
+import base
 import discord
 from discord.ext import commands
-
-import base
 
 
 def setup(bot):

@@ -2,13 +2,12 @@ import asyncio
 import io
 import json
 
+import base
 import discord
 import emoji
+import util
 from discord.ext import commands
 from discord.reaction import Reaction
-
-import base
-import util
 
 
 def setup(bot):

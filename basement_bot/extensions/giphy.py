@@ -1,8 +1,7 @@
 """Module for giphy extension in the bot."""
-from discord.ext import commands
-
 import base
 import util
+from discord.ext import commands
 
 
 def setup(bot):

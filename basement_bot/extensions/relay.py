@@ -3,11 +3,10 @@ import uuid
 from multiprocessing.sharedctypes import Value
 from xml.dom.minidom import Attr
 
+import base
 import discord
 import munch
 from discord.ext import commands
-
-import base
 
 
 def setup(bot):

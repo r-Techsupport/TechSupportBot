@@ -2,9 +2,8 @@ import enum
 import random
 
 import aiocron
-from discord.ext import commands
-
 import base
+from discord.ext import commands
 
 
 def setup(bot):

@@ -5,13 +5,12 @@ import json
 import uuid
 
 import aiocron
+import base
 import discord
+import embeds
 import munch
 import yaml
 from discord.ext import commands
-
-import base
-import embeds
 
 
 def setup(bot):

@@ -1,7 +1,6 @@
 """Module for the hello extension for the bot."""
-from discord.ext import commands
-
 import base
+from discord.ext import commands
 
 
 def setup(bot):

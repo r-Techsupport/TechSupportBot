@@ -1,10 +1,9 @@
 """Module for the conch command in discord bot."""
 import random
 
+import base
 import discord
 from discord.ext import commands
-
-import base
 
 
 def setup(bot):

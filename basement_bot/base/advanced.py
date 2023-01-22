@@ -5,12 +5,11 @@ import sys
 import time
 
 import discord
+import error
 import expiringdict
 import munch
-from discord.ext import commands
-
-import error
 import util
+from discord.ext import commands
 
 from .data import DataBot
 

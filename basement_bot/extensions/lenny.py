@@ -1,10 +1,9 @@
 """Module to add the extension lenny to the discord bot."""
 import random
 
-from discord.ext import commands
-
 import base
 import util
+from discord.ext import commands
 
 
 def setup(bot):

@@ -5,11 +5,10 @@ import datetime
 import io
 import json
 
-import discord
-from discord.ext import commands
-
 import base
+import discord
 import util
+from discord.ext import commands
 
 
 class ConfigControl(base.BaseCog):
