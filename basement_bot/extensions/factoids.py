@@ -440,7 +440,7 @@ class FactoidManager(base.MatchCog):
     )
     async def factoid(self, ctx):
         """Method to make the command for the factoid."""
-        pass
+        print(f"Factoid command called in channel {ctx.channel}")
     @util.with_typing
     @commands.check(has_manage_factoids_role)
     @commands.check(no_mentions)
