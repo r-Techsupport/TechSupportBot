@@ -3,11 +3,10 @@
 import glob
 import os
 
+import botlogging
 import munch
 import yaml
 from discord.ext import commands
-
-import botlogging
 
 
 class ExtensionConfig:
