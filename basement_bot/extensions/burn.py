@@ -1,10 +1,11 @@
 """Module for the burn command on discord bot."""
 import random
 
-import base
 import discord
-import util
 from discord.ext import commands
+
+import base
+import util
 
 
 def setup(bot):
@@ -14,6 +15,7 @@ def setup(bot):
 
 class BurnEmbed(discord.Embed):
     """Method to create the burn command discord embed."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title = "Burn Alert!"

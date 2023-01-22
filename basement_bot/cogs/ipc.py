@@ -1,9 +1,10 @@
 """Module for IPC endpoints.
 """
 
+from discord.ext import ipc
+
 import base
 import util
-from discord.ext import ipc
 
 
 class IPCEndpoints(base.BaseCog):

@@ -3,10 +3,11 @@ import uuid
 from multiprocessing.sharedctypes import Value
 from xml.dom.minidom import Attr
 
-import base
 import discord
 import munch
 from discord.ext import commands
+
+import base
 
 
 def setup(bot):
@@ -162,7 +163,7 @@ class IRCEmbed(discord.Embed):
         return label
 
     def fill_mentions(self, channel):
-        description = self.description # pylint: disable=E0203
+        description = self.description  # pylint: disable=E0203
         if not description:
             raise AttributeError("description field not present")
 

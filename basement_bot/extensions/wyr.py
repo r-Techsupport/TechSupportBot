@@ -2,10 +2,11 @@
 import uuid
 from random import choice
 
-import base
 import discord
-import util
 from discord.ext import commands
+
+import base
+import util
 
 
 def setup(bot):
@@ -15,6 +16,7 @@ def setup(bot):
 
 class Question:
     """Class for the wyr question."""
+
     def __init__(self, option_a, option_b):
         self.option_a = option_a
         self.option_b = option_b

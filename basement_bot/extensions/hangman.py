@@ -2,10 +2,11 @@
 import datetime
 import uuid
 
-import base
 import discord
-import util
 from discord.ext import commands
+
+import base
+import util
 
 
 def setup(bot):
@@ -178,6 +179,7 @@ async def can_stop_game(ctx):
 
 class HangmanCog(base.BaseCog):
     """Class to define the hangman game."""
+
     async def preconfig(self):
         """Method to preconfig the game."""
         self.games = {}

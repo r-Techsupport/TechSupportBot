@@ -1,7 +1,8 @@
 """Module for giphy extension in the bot."""
+from discord.ext import commands
+
 import base
 import util
-from discord.ext import commands
 
 
 def setup(bot):
@@ -17,7 +18,7 @@ class Giphy(base.BaseCog):
 
     @staticmethod
     def parse_url(url):
-        """Method to parse the url. """
+        """Method to parse the url."""
         index = url.find("?cid=")
         return url[:index]
 

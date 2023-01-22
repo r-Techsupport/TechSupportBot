@@ -1,6 +1,7 @@
 """Module for the hello extension for the bot."""
-import base
 from discord.ext import commands
+
+import base
 
 
 def setup(bot):
@@ -10,6 +11,7 @@ def setup(bot):
 
 class Greeter(base.BaseCog):
     """Class for the greeter command."""
+
     @commands.command(
         name="hello",
         brief="Says hello to the bot",

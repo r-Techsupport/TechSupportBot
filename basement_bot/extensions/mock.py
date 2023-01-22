@@ -1,8 +1,9 @@
 """Module for the mock extension for the discord bot."""
-import base
 import discord
-import util
 from discord.ext import commands
+
+import base
+import util
 
 
 def setup(bot):
@@ -12,6 +13,7 @@ def setup(bot):
 
 class MockEmbed(discord.Embed):
     """Class to setup the mock embed for discord."""
+
     def __init__(self, *args, **kwargs):
         message = kwargs.pop("message")
         user = kwargs.pop("user")

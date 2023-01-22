@@ -1,17 +1,20 @@
 """Module for the directory extension for the discord bot."""
 import datetime
 
-import base
 import discord
 import emoji
-import util
 from discord.ext import commands
+
+import base
+import util
 
 
 def setup(bot):
     """Method to add the directory to the config."""
+
     class DirectoryExistence(bot.db.Model):
         """Class to add the directory to the config."""
+
         __tablename__ = "directoryexistence"
         guild_id = bot.db.Column(bot.db.String, primary_key=True)
         last_message = bot.db.Column(bot.db.String, default=None)

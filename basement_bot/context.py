@@ -4,8 +4,9 @@
 import datetime
 
 import discord
-import embeds
 from discord.ext import commands
+
+import embeds
 
 
 class Context(commands.Context):

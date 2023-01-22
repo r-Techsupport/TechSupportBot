@@ -3,8 +3,9 @@
 import logging
 import os
 
-import bot
 import discord
+
+import bot
 
 MODULE_LOG_LEVELS = {
     "discord": logging.INFO,

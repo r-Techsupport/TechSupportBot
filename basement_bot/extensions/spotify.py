@@ -1,8 +1,9 @@
 """Module for the Spotify extension of the discord bot."""
 import aiohttp
+from discord.ext import commands
+
 import base
 import util
-from discord.ext import commands
 
 
 def setup(bot):

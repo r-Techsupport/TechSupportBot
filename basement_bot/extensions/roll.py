@@ -1,10 +1,11 @@
 """Module for the roll extension for the discord bot."""
 import random
 
-import base
 import discord
-import util
 from discord.ext import commands
+
+import base
+import util
 
 
 def setup(bot):
@@ -28,6 +29,7 @@ class RollEmbed(discord.Embed):
 
 class Roller(base.BaseCog):
     """Class for the roll command for the extension."""
+
     @util.with_typing
     @commands.command(
         name="roll",

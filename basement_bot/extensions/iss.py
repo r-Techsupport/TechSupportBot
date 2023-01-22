@@ -1,8 +1,9 @@
 """Module to add the location of the ISS to the bot."""
-import base
 import discord
-import util
 from discord.ext import commands
+
+import base
+import util
 
 
 def setup(bot):

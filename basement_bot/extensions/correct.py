@@ -1,8 +1,9 @@
 """Module for the correct command on the discord bot."""
-import base
 import discord
-import util
 from discord.ext import commands
+
+import base
+import util
 
 
 def setup(bot):
@@ -12,6 +13,7 @@ def setup(bot):
 
 class CorrectEmbed(discord.Embed):
     """Method to create the correct embed for the discord bot."""
+
     def __init__(self, *args, **kwargs):
         new_content = kwargs.pop("new_content")
         super().__init__(*args, **kwargs)

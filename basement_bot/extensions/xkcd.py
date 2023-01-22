@@ -1,10 +1,11 @@
 """Module for the xkcd extension for the discord bot."""
 import random
 
-import base
 import discord
-import util
 from discord.ext import commands
+
+import base
+import util
 
 
 def setup(bot):

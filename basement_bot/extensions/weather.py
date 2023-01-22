@@ -1,8 +1,9 @@
-import base
 import discord
 import munch
-import util
 from discord.ext import commands
+
+import base
+import util
 
 
 def setup(bot):
