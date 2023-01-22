@@ -6,7 +6,7 @@ RUN apk update && \
     gcc \
     musl-dev
 
-WORKDIR /var/BasementBot
+WORKDIR /var/TechSupportBot
 COPY Pipfile.lock .
 
 RUN pip install pipenv && \
@@ -14,6 +14,6 @@ RUN pip install pipenv && \
     pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY . .
-COPY config.yml basement_bot
+COPY config.yml techsupport_bot
 
-CMD python3 -u basement_bot/main.py
+CMD python3 -u techsupport_bot/main.py

@@ -3,8 +3,8 @@ version: '3'
 services:
 
     bot:
-        image: ${BASEMENT_BOT_IMAGE_TAG:-effprime/basement-bot:prod}
-        container_name: ${BASEMENT_BOT_CONTAINER_NAME:-basement_bot}
+        image: ${TECHSUPPORT_BOT_IMAGE_TAG:-rtechsupport/techsupport-bot:prod}
+        container_name: ${TECHSUPPORT_BOT_CONTAINER_NAME:-techsupport_bot}
         environment:
             - DEBUG=0
             - IPC_SECRET=${IPC_SECRET}
@@ -14,7 +14,7 @@ services:
             - ${IPC_PORT:-8765}:8765
             - ${IPC_MULTICAST_PORT:-20000}:20000
         volumes:
-            - ${BASEMENT_BOT_HOST_CONFIG_PATH:-./config.yml}:/var/basement_bot/config.yml
+            - ${TECHSUPPORT_BOT_HOST_CONFIG_PATH:-./config.yml}:/var/techsupport_bot/config.yml
         networks:
             - ipc
             - default
