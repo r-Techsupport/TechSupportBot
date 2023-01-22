@@ -5,8 +5,9 @@ import datetime
 import logging
 import traceback
 
-import botlogging.embed as embed_lib
 import discord
+
+import botlogging.embed as embed_lib
 
 
 class BotLogger:
