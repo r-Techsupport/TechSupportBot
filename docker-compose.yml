@@ -11,8 +11,8 @@ services:
         restart: unless-stopped
         stop_signal: SIGINT
         ports:
-            - 8765:8765
-            - 20000:20000
+            - "127.0.0.1:8765:8765"
+            - "127.0.0.1:20000:20000"
         volumes:
             - ./config.yml:/var/basement_bot/config.yml
         networks:
@@ -32,11 +32,11 @@ services:
             RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
         ports:
-            - 4369:4369
-            - 5671:5671
-            - 5672:5672
-            - 15672:15672
-            - 25672:25672
+            - "127.0.0.1:4369:4369"
+            - "127.0.0.1:5671:5671"
+            - "127.0.0.1:5672:5672"
+            - "127.0.0.1:15672:15672"
+            - "127.0.0.1:25672:25672"
         networks:
             - all
         restart: unless-stopped
@@ -46,7 +46,7 @@ services:
         container_name: postgres
         restart: unless-stopped
         ports:
-            - "5432:5432"
+            - "127.0.0.1:5432:5432"
         volumes:
             - ./DBs/postgres:/var/lib/postgresql/data/
         environment:
@@ -62,7 +62,7 @@ services:
         volumes:
             - ./DBs/mongo:/data/db
         ports:
-            - 27017:27017
+            - "127.0.0.1:27017:27017"
         environment:
             - MONGO_INITDB_ROOT_PASSWORD=${MONGO_DB_PASSWORD}
             - MONGO_INITDB_ROOT_USERNAME=${MONGO_DB_USER}
