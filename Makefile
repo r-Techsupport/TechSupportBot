@@ -42,7 +42,7 @@ restart:
 	docker-compose restart
 
 logs:
-	docker logs basement_bot -f
+	docker logs discordBot -f
 
 establish_config:
 	@if [ ! -f "./config.yml" ]; then\
