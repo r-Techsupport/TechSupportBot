@@ -41,7 +41,7 @@ services:
             - all
         restart: unless-stopped
 
-    postgres_db:
+    postgres:
         image: postgres:12.0-alpine
         container_name: postgres
         restart: unless-stopped
