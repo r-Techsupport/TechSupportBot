@@ -208,6 +208,12 @@ def add_diff_fields(embed, diff):
                 name=f"{attru} {action}", value=",".join(str(o) for o in list_diff)
             )
             continue
+        
+        #Return update for anything that isn't a string.
+        if (diff_data.before != str):
+            embed.add_field(name=f"{attru} (before)", value=diff_data.before)
+            embed.add_field(name=f"{attru} (before)", value=diff_data.after)
+            return embed
 
         #expanding the before data up to 4096 characters
         embed.add_field(name=f"{attru} (before)", value=diff_data.before[:1024])
