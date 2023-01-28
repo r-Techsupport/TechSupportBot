@@ -1,3 +1,4 @@
+"""Module for the burn command on discord bot."""
 import random
 
 import base
@@ -7,10 +8,12 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Method to add burn command to config."""
     bot.add_cog(Burn(bot=bot))
 
 
 class BurnEmbed(discord.Embed):
+    """Method to create the burn command discord embed."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title = "Burn Alert!"
@@ -18,6 +21,7 @@ class BurnEmbed(discord.Embed):
 
 
 class Burn(base.BaseCog):
+    """Class for Burn command on the discord bot."""
 
     SEARCH_LIMIT = 50
     PHRASES = [
@@ -37,6 +41,7 @@ class Burn(base.BaseCog):
         usage="@user",
     )
     async def burn(self, ctx, user_to_match: discord.Member):
+        """Method to apply the burn command on discord bot."""
         matched_message = None
 
         prefix = await self.bot.get_prefix(ctx.message)
