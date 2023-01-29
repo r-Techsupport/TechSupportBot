@@ -1,3 +1,4 @@
+"""Module for the news extension for the discord bot."""
 import enum
 import random
 
@@ -7,6 +8,7 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Adding the news config to the config file."""
     config = bot.ExtensionConfig()
     config.add(
         key="channel",
@@ -42,6 +44,7 @@ def setup(bot):
 
 
 class Category(enum.Enum):
+    """Class to set up categories for the news."""
     BUSINESS = "business"
     ENTERTAINMENT = "entertainment"
     GENERAL = "general"
@@ -52,10 +55,12 @@ class Category(enum.Enum):
 
 
 class News(base.LoopCog):
+    """Class to set up the news extension for the discord bot."""
 
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
 
     async def get_headlines(self, country_code, category=None):
+        """Method to get the headline for the news command."""
         url = self.API_URL.format(
             self.bot.file_config.main.api_keys.news,
             country_code,
@@ -72,10 +77,12 @@ class News(base.LoopCog):
         return articles
 
     async def get_random_headline(self, country_code, category=None):
+        """Method to get a random headline for the news command."""
         articles = await self.get_headlines(country_code, category)
         return random.choice(articles)
 
     async def execute(self, config, guild):
+        """Method to execute the news command."""
         channel = guild.get_channel(int(config.extensions.news.channel.value))
         if not channel:
             return
@@ -100,6 +107,7 @@ class News(base.LoopCog):
         await channel.send(url)
 
     async def wait(self, config, _):
+        """Method to define the wait time for the news api pull."""
         await aiocron.crontab(config.extensions.news.cron_config.value).next()
 
     @commands.cooldown(1, 30, commands.BucketType.channel)
@@ -108,6 +116,7 @@ class News(base.LoopCog):
         description="Executes a news command",
     )
     async def news(self, ctx):
+        """Method to set up the news command."""
         print(f"News command called in channel {ctx.channel}")
 
     @news.command(
@@ -116,15 +125,19 @@ class News(base.LoopCog):
         description="Gets a random news headline",
         usage="[category] (optional)",
     )
-    async def random(self, ctx, category: Category = None):
+    async def random(self, ctx, category = None):
+        """Method to define the random to get a news."""
         if category == None:
-            category = random.choice(list(Category))
+            category = random.choice(list(Category)).value
+        else:
+            category.lower()
+  
         config = await self.bot.get_context_config(ctx)
 
         url = None
         while not url:
             article = await self.get_random_headline(
-                config.extensions.news.country.value, category.value
+                config.extensions.news.country.value, category
             )
             url = article.get("url")
 
