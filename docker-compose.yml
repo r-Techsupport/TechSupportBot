@@ -27,7 +27,7 @@ services:
         container_name: rabbitmq
         hostname: rabbitmq
         volumes:
-            - ./DBs/rabbitmq/:/var/lib/rabbitmq/
+            - ../DBs/rabbitmq/:/var/lib/rabbitmq/
         environment:
             RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
             RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
@@ -48,7 +48,7 @@ services:
         ports:
             - "127.0.0.1:5432:5432"
         volumes:
-            - ./DBs/postgres:/var/lib/postgresql/data/
+            - ../DBs/postgres:/var/lib/postgresql/data/
         environment:
             - POSTGRES_USER=${POSTGRES_DB_USER}
             - POSTGRES_PASS=${POSTGRES_DB_PASSWORD}
@@ -60,7 +60,7 @@ services:
         image: mongo:4.4
         container_name: mongodb
         volumes:
-            - ./DBs/mongo:/data/db
+            - ../DBs/mongo:/data/db
         ports:
             - "127.0.0.1:27017:27017"
         environment:
