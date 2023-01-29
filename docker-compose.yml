@@ -19,7 +19,7 @@ services:
             - all
         depends_on:
             - rabbitmq
-            - postgres_db
+            - postgres
             - mongodb
 
     rabbitmq:
