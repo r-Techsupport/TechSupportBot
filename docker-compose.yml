@@ -1,24 +1,78 @@
-version: '3'
+version: '3.5'
 
 services:
-
-    bot:
-        image: ${BASEMENT_BOT_IMAGE_TAG:-effprime/basement-bot:prod}
-        container_name: ${BASEMENT_BOT_CONTAINER_NAME:-basement_bot}
+    discordBot:
+        image: effprime/basement-bot:prod
+        build: .
+        container_name: discordBot
         environment:
             - DEBUG=0
-            - IPC_SECRET=${IPC_SECRET}
-        restart: always
+            #- IPC_SECRET=$(IPC_SECRET)
+        restart: unless-stopped
         stop_signal: SIGINT
         ports:
-            - ${IPC_PORT:-8765}:8765
-            - ${IPC_MULTICAST_PORT:-20000}:20000
+            - "127.0.0.1:8765:8765"
+            - "127.0.0.1:20000:20000"
         volumes:
-            - ${BASEMENT_BOT_HOST_CONFIG_PATH:-./config.yml}:/var/basement_bot/config.yml
+            - ./config.yml:/var/basement_bot/config.yml
         networks:
-            - ipc
-            - default
-        
-networks: 
-    ipc:
-        external: true
+            - all
+        depends_on:
+            - rabbitmq
+            - postgres_db
+            - mongodb
+
+    rabbitmq:
+        image: rabbitmq:3.8.5-management
+        container_name: rabbitmq
+        hostname: rabbitmq
+        volumes:
+            - ./DBs/rabbitmq/:/var/lib/rabbitmq/
+        environment:
+            RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+        ports:
+            - "127.0.0.1:4369:4369"
+            - "127.0.0.1:5671:5671"
+            - "127.0.0.1:5672:5672"
+            - "127.0.0.1:15672:15672"
+            - "127.0.0.1:25672:25672"
+        networks:
+            - all
+        restart: unless-stopped
+
+    postgres:
+        image: postgres:12.0-alpine
+        container_name: postgres
+        restart: unless-stopped
+        ports:
+            - "127.0.0.1:5432:5432"
+        volumes:
+            - ./DBs/postgres:/var/lib/postgresql/data/
+        environment:
+            - POSTGRES_USER=${POSTGRES_DB_USER}
+            - POSTGRES_PASS=${POSTGRES_DB_PASSWORD}
+            - POSTGRES_DB=${POSTGRES_DB_NAME}
+        networks:
+            - all
+
+    mongodb:
+        image: mongo:4.4
+        container_name: mongodb
+        volumes:
+            - ./DBs/mongo:/data/db
+        ports:
+            - "127.0.0.1:27017:27017"
+        environment:
+            - MONGO_INITDB_ROOT_PASSWORD=${MONGO_DB_PASSWORD}
+            - MONGO_INITDB_ROOT_USERNAME=${MONGO_DB_USER}
+        restart: unless-stopped
+        networks:
+            - all
+
+networks:
+  all:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.0.0/24
