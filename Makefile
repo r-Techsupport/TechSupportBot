@@ -1,19 +1,18 @@
 image = effprime/basement-bot
-dev-image = $(image):dev
-prod-image = $(image):prod
-drun = docker run --rm -v $(shell pwd):/var/BasementBot -t $(dev-image) python3 -m
+full-image = $(image):prod
+drun = docker run --rm -v $(shell pwd):/var/BasementBot -t $(full-image) python3 -m
 main_dir = basement_bot
 
 make sync:
 	python3 -m pipenv sync -d
 
 check-format:
-	$(drun) black --check $(main_dir)
-	$(drun) isort --check-only ./$(main_dir)
+	black --check ./
+	isort --check-only ./
 
 format:
-	$(drun) black $(main_dir)
-	$(drun) isort ./$(main_dir)
+	black ./
+	isort ./
 
 lint:
 	$(drun) pylint basement_bot/*.py basement_bot/base/*.py basement_bot/cogs/*.py
@@ -22,31 +21,28 @@ lint:
 test:
 	$(drun) pytest --disable-warnings
 
-dev:
+build:
 	make establish_config
-	docker build -t $(dev-image) -f Dockerfile.dev .
+	docker build -t $(full-image) -f Dockerfile .
 
-prod:
-	make establish_config
-	docker build -t $(prod-image) -f Dockerfile .
+start:
+	docker-compose up -d
 
-upd:
-	docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
+update:
+	docker-compose down
+	docker-compose up -d --build
 
-upp:
-	docker-compose -f docker-compose.yml up -d
+clean:
+	docker system prune --volumes -a
 
 down:
 	docker-compose down
-
-reboot:
-	make down && make dev && make upd && make logs
 
 restart:
 	docker-compose restart
 
 logs:
-	docker logs basement_bot -f
+	docker logs discordBot -f
 
 establish_config:
 	@if [ ! -f "./config.yml" ]; then\
