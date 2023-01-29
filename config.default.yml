@@ -7,18 +7,18 @@ main:
         user:
         password:
         name:
-        host:
+        host: postgres
         port: 5432
     mongodb:
         user:
         password:
         name:
-        host:
+        host: mongodb
         port: 27017
     rabbitmq:
         user:
         password:
-        host:
+        host: rabbitmq
         vhost: "/"
         port: 5672
     api_keys:
