@@ -2,3 +2,4 @@
 config.yml
 *.pyc
 .vscode
+DBs/
