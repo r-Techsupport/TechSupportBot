@@ -12,12 +12,13 @@ import munch
 import yaml
 from discord.ext import commands
 
+
 def setup(bot):
     """
     Method to setup the bot, and configure different management role config options for
     the promotion application framework.
     """
-    #For the webhook id to add to discord
+    # For the webhook id to add to discord
     config = bot.ExtensionConfig()
     config.add(
         key="webhook_id",
@@ -26,7 +27,7 @@ def setup(bot):
         description="The ID of the webhook that posts the application data",
         default=None,
     )
-    #To configure the roles that can manage the applications
+    # To configure the roles that can manage the applications
     config.add(
         key="manage_roles",
         datatype="list",
@@ -34,7 +35,7 @@ def setup(bot):
         description="The list of roles required to manage applications",
         default=["Applications"],
     )
-    #To ping roles when an application is recieved
+    # To ping roles when an application is recieved
     config.add(
         key="ping_roles",
         datatype="list",
@@ -42,7 +43,7 @@ def setup(bot):
         description="The list of roles that are pinged on new applications",
         default=["Applications"],
     )
-    #for a reminder on recieved applications
+    # for a reminder on recieved applications
     config.add(
         key="reminder_on",
         datatype="bool",
@@ -50,7 +51,7 @@ def setup(bot):
         description="True if the bot should periodically remind of pending applications",
         default=False,
     )
-    #The syntax for how reminders should work
+    # The syntax for how reminders should work
     config.add(
         key="reminder_cron_config",
         datatype="string",
@@ -58,7 +59,7 @@ def setup(bot):
         description="The cron syntax for automatic application reminders",
         default="0 17 * * *",
     )
-    #The list of approved roles to give when an apllication is approved
+    # The list of approved roles to give when an apllication is approved
     config.add(
         key="approve_roles",
         datatype="list",
@@ -95,6 +96,7 @@ async def has_manage_applications_role(ctx):
 
 class ApplicationEmbed(discord.Embed):
     """Class to change the color and title of the embed to discord."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title = "Application Manager"
@@ -103,6 +105,7 @@ class ApplicationEmbed(discord.Embed):
 
 class NoPendingApplications(Exception):
     """Class for what happens when no applications are recieved."""
+
     pass
 
 
@@ -150,7 +153,8 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             confirmed = await self.confirm_with_user(ctx, user)
         except discord.Forbidden:
             return await self.handle_error_embed(
-                ctx, f"Could not confirm application: {user} has direct messages blocked"
+                ctx,
+                f"Could not confirm application: {user} has direct messages blocked",
             )
 
         if not confirmed:
@@ -190,18 +194,13 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
     async def handle_error_embed(self, ctx, message_send):
         """Method to handle if an application recieved an error."""
-        embed_send=embeds.DenyEmbed(
-            message=message_send
-        )
-        await ctx.channel.send(
-            content="",
-            embed=embed_send
-        )
+        embed_send = embeds.DenyEmbed(message=message_send)
+        await ctx.channel.send(content="", embed=embed_send)
         # For handeling a connection to IRC in the applcation channel
         self.bot.dispatch(
-            "extension_listener_event", munch.Munch(channel=ctx.channel, embed=embed_send)
+            "extension_listener_event",
+            munch.Munch(channel=ctx.channel, embed=embed_send),
         )
-
 
     async def execute(self, config, guild):
         """Method to excute the reminder for pending applications."""
@@ -229,7 +228,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         try:
             webhook = await self.bot.fetch_webhook(webhook_id)
         except discord.NotFound as exc:
-            raise RuntimeError("application webhook not found from configured ID") from exc
+            raise RuntimeError(
+                "application webhook not found from configured ID"
+            ) from exc
 
         applications = await self.get_applications(guild, status="pending")
         if not applications:
