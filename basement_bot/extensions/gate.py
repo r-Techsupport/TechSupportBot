@@ -1,3 +1,4 @@
+"""Module for defining the gate extension for the bot."""
 import asyncio
 
 import base
@@ -6,6 +7,7 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Setup to add the gate config to the config file."""
     config = bot.ExtensionConfig()
     config.add(
         key="channel",
@@ -55,6 +57,7 @@ def setup(bot):
 
 
 class WelcomeEmbed(discord.Embed):
+    """Class to welcome a user to the discord, then delete the message."""
     def __init__(self, *args, **kwargs):
         welcome_message = kwargs.pop("welcome_message")
         delete_wait = kwargs.pop("delete_wait")
@@ -66,13 +69,16 @@ class WelcomeEmbed(discord.Embed):
 
 
 class ServerGate(base.MatchCog):
+    """Class to get the server gate from config."""
     async def match(self, config, ctx, _):
+        """Method to match the gate channel."""
         if not config.extensions.gate.channel.value:
             return False
 
         return ctx.channel.id == int(config.extensions.gate.channel.value)
 
     async def response(self, config, ctx, content, _):
+        """Method for a response from the gate extension."""
         prefix = await self.bot.get_prefix(ctx.message)
 
         is_admin = await self.bot.is_bot_admin(ctx)
@@ -89,7 +95,7 @@ class ServerGate(base.MatchCog):
                     ctx.guild,
                     "logging_channel",
                     "warning",
-                    f"No roles to give user in gate plugin channel - ignoring message",
+                    "No roles to give user in gate plugin channel - ignoring message",
                     send=True,
                 )
                 return
@@ -108,6 +114,7 @@ class ServerGate(base.MatchCog):
             )
 
     async def get_roles(self, config, ctx):
+        """Method to get a role from the author. """
         roles = []
         for role_name in config.extensions.gate.roles.value:
             role = discord.utils.get(ctx.guild.roles, name=role_name)
@@ -126,6 +133,7 @@ class ServerGate(base.MatchCog):
         description="Executes a gate command",
     )
     async def gate_command(self, ctx):
+        """Method to create the command for gate extension."""
         pass
 
     @commands.has_permissions(manage_messages=True)
@@ -136,6 +144,7 @@ class ServerGate(base.MatchCog):
         description="Generates the configured gate intro message",
     )
     async def intro_message(self, ctx):
+        """Method to add a message to the gate channel."""
         config = await self.bot.get_context_config(ctx)
 
         if ctx.channel.id != int(config.extensions.gate.channel.value):
