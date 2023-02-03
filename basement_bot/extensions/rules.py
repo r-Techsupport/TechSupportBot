@@ -114,7 +114,7 @@ class Rules(base.BaseCog):
             embed.color = discord.Color.gold()
 
             if first:
-                await ctx.send(embed=embed, 
+                await ctx.send(embed=embed,
                                targets=ctx.message.mentions or [ctx.author])
                 first = False
             else:
