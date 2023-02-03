@@ -4,128 +4,77 @@
 
 BasementBot is a Dockerized Discord bot. Written on top of the [Python Discord API](https://pycord.readthedocs.io/en/latest/api.html), it provides the loading and unloading of custom extensions to extend and scale the bot as much as you want.
 
-# Setup
-
-Note: *this bot requires at minimum a MongoDB connection to maintain guild settings. If you wish to not use a MongoDB connection, check the base module for bots that don't rely on MongoDB.* **Some extensions also rely on postgres (factoids and more) and rabbitmq.**
-
-* Create a `config.yml` file from the `config.default.yml` file in the repo.
-* In the `config.yml` file set `auth_token` to your Discord developer `token` (see [here](https://discordapp.com/developers/docs/topics/oauth2))
-* In the `config.yml` file set MongoDB connection settings (username, password, host, port, etc)
-* (Optional) set any other `config.yml` variables. Some included extensions won't work without the correct API keys.
-
-## MongoDB deployment
-### Deploying directly onto the host
-Note: MongoDB 5.0 x86_64 and later require a CPU that supports the AVX instruction set, it's recommended to use version 4.4.
-See [here](https://www.mongodb.com/docs/manual/administration/install-on-linux/) for an installation guide.
-
-It's assumed that the bot is being deployed into a Docker container, as such extra configuration is necessary.
-Edit the `mongod` config located at `/etc/mongod.conf` to allow the Docker container's IP address:
+# Deployment Guide
+## External setup
+You will need to create a discord bot and get the token to be able to use this application. To get your bot created and obtain your token, follow these steps:
+1. Go to https://discord.com/developers/applications, sign into your discord account if needed
+2. Click on "New Application", name it, then click "Create"
+3. On the side menu, go to "Bot" and click "Add bot"
+4. Under bot, click "Reset Token", type in 2FA code if prompted, and write down the token. Keep this token secret, you should never share it.
+5. Make sure you turn on all the "Privileged Gateway Intents", which are currently "Presence", "Message Content", and "Server Members"
+6. To have the bot join your server, go to "OAuth2", "URL Generator". Select "bot" under "Scopes", then select "Administrator". The link to join will be at the bottom of the page.
+## Configuration setup
+You will need to create and config 2 files to get this system running.  
+First, you will need to create the template config files from the default.  
+Start by cloning the repo, `git clone git@github.com:r-Techsupport/TechSupportBot.git`.  
+Then do the following:  
+```bash
+cd TechSupportBot
+cp default.env .env
+cp config.default.yml config.yml
 ```
-# network interfaces
-net:
-  port: 27017
-  bindIp: 127.0.0.1,172.17.0.1
-```
-
-Edit `docker-compose.yml` to include the below under `bot`:
-```
-        extra_hosts:
-            - "host.docker.internal:host-gateway"
-```
-
-Update the `config.yml` file as such:
-```
-    mongodb:
-        user: user
-        password: password
-        name: dbname
-        host: "host.docker.internal"
-        port: 27017
-```
-The `user`, `password`, and `name` fields should be updated as you see fit. It does not matter what you choose, but this info will be relevant when setting up `mongodb`.
-
-From inside the `mongodb` shell:
-```
-use admin
-```
-Switch to the `admin` db, allowing us to create a database admin user for the bot.
-
-```
-db.createUser({	user: "user", pwd: "password", roles:[{role: "userAdminAnyDatabase" , db:"admin"}]})
-```
-Create an admin user for the bot to connect as, remember to set `user`
- and `password` to the values you specified in `config.yml`.
-
-```
-exit
-```
-Close the `mongodb` shell. 
-
-
-## Production
-
-* Build the prod image:
-    ```
-    make prod
-    ```
-
-* Run the Docker image using a `docker-compose.yml` configuration (see repo):
-    ```
-    make upp
-    ```
-
-* Check the logs to verify things are working:
-    ```
-    make logs
-    ```
-
-* Run Discord commands with the prefix you set in the `.env` file (defaults to `.`)
-
-## Development
-
-* Build the dev image:
-    ```
-    make dev
-    ```
-
-* Spin up the dev containers:
-    ```
-    make upd
-    ```
+### .env file
+The first file we will edit is the .env file. This is where you will store database information.  
+You will need to create a username and password for mongodb, postgres, and rabbitmq. These credentials do not have to be different.  
+You will also need to create a db name for postgres. This works best when it is all lowercase, but it is not strictly required.  
+The IPC_SECRET item can be left blank.  
+When filling in the information, do not include spaces or quotes. Just put the content directly after the equals sign.  
+You will need all of this information again, so make sure to keep note of it.  
+### config.yml
+This is the configuration file for the bot itself.  
+First, configure the token and admin ID. The token is the discord token you got earlier. Put this token in quotes following the `auth_token:` line. Example: `auth_token: "abcd_totally_real_token"`  
+For the admin ID, get your user ID by right clicking on your name, either on the side bar or after you sent a message, and clicking "Copy ID". Put your ID in single quotes in the array.  
+#### postgres
+For postgres, you will need the username, password, and DB name you created previously. Enter it exactly as found in your .env file.  
+Do not change the port or host.  
+#### mongodb
+For mongodb, you will need the username and password you created previously. You will also need to create a DB name here. Enter the username and password exactly as found in your .env file. Just like postgres, the DB name works best with all lowercase, but it is not a requirement.  
+Do not change the port or host.  
+#### rabbitmq
+For rabbitmq, you will only need the username and password you created previously. Enter it exactly as found in your .env file.  
+Do not change the host, vhost, or port.  
+#### Additional configuration
+All the additional configuration is optional, and is not required to start the bot. This includes all API keys. The default settings everywhere else work, but can be changed later if desired.
+## Final tasks
+The only thing left to do is run `make start`. This will build the container, download the databases, and starts all the containers.
 
 # Makefile
 
 The Makefile offers shortcut commands for development.
 
 * `sync` makes an updated pipenv virtual environment.
-* `check-format` checks the formatting without changing files.
-* `format` checks formatting and changes files.
+* `check-format` checks the formatting without changing files. Required black and isort be installed on your computer.
+* `format` checks formatting and changes files. Required black and isort be installed on your computer.
 * `lint` runs pylint.
-* `test` runs unit tests.
-* `dev` builds the dev Docker image.
-* `prod` builds the prod Docker image.
-* `upd` spins up the development bot container.
-* `upp` spins up the production bot container.
+* `test` runs unit tests. (Currently none)
+* `build` builds the Docker image.
+* `start` starts the entire system, databases and all. This can also be used as a fast update, as it won't force a full rebuild.
+* `update` stops all the containers, builds a fresh build of the bot, and starts all containers.
+* `clean` removes all unused docker assets, including volumes. This may be destructive.
 * `down` brings down the bot container.
-* `reboot` restarts the dev container.
-* `restart` restarts the bot container.
-* `logs` shows the main container logs.
+* `restart` restarts the bot and all databases.
+* `logs` shows the bot logs.
+* `establish_config` creates a config.yml file if it doesn't exist.
 
 # Making extensions
 
 On startup, the bot will load all extension files in the `basement_bot/extensions/` directory. These files hold commands for the bot to use with its prefix. Each command is an async function decorated as a `command`, and each file must have an entrypoint function called `setup`, which tells the loading process how to add the extension file.
-
 A (very) simple example:
-
 ```python
 import base
 from discord.ext import commands
-
-
 def setup(bot):
     bot.process_extension_setup(cogs=[Greeter])
-
-
 class Greeter(base.BaseCog):
     @commands.command(
         name="hello",
@@ -139,5 +88,4 @@ class Greeter(base.BaseCog):
         for emoji in emojis:
             await ctx.message.add_reaction(emoji)
 ```
-
 Extensions can be configured per-guild with settings saved on MongoDB. There are several extensions included in the main repo, so please reference them for more advanced examples.
