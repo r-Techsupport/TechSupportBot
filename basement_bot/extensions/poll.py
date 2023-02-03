@@ -68,7 +68,6 @@ class PollGenerator(base.BaseCog):
 
 
 class ReactionPoller(PollGenerator):
-
     OPTION_EMOJIS = ["one", "two", "three", "four", "five"]
     STOP_EMOJI = "\u26D4"
     EXAMPLE_DATA = {
@@ -220,7 +219,6 @@ class ReactionPoller(PollGenerator):
 
 
 class StrawPoller(PollGenerator):
-
     EXAMPLE_DATA = {
         "question": "Best ice cream?",
         "options": ["Chocolate", "Vanilla", "Strawberry", "Cookie Dough", "Other..."],
