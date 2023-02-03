@@ -76,14 +76,13 @@ class Rules(base.BaseCog):
         usage="[number]",
     )
     async def get_rule(self, ctx, content: str):
-
         numbers = []
 
         numbers.extend([int(num) for num in content.split(',')])
 
         for number in numbers:
 
-            if number < 1: 
+            if number < 1:
                 await ctx.send_deny_embed("That rule number is invalid")
                 return
 
@@ -91,16 +90,14 @@ class Rules(base.BaseCog):
                 {"guild_id": {"$eq": str(ctx.guild.id)}}
             )
 
-            if not rules_data or not rules_data.get("rules"): 
+            if not rules_data or not rules_data.get("rules"):
                 await ctx.send_deny_embed("There are no rules for this server")
                 return
-            
             rules = rules_data.get("rules")
 
             try:
                 rule = rules[number - 1]
-            
-            except IndexError: 
+            except IndexError:
                 rule = None
 
             if not rule:
