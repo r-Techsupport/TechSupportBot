@@ -75,37 +75,46 @@ class Rules(base.BaseCog):
         description="Gets a rule by number for the current server",
         usage="[number]",
     )
-    async def get_rule(self, ctx, number: int):
-        if number < 1:
-            await ctx.send_deny_embed("That rule number is invalid")
-            return
+    async def get_rule(self, ctx, content: str):
 
-        rules_data = await self.bot.mongo[self.COLLECTION_NAME].find_one(
-            {"guild_id": {"$eq": str(ctx.guild.id)}}
-        )
-        if not rules_data or not rules_data.get("rules"):
-            await ctx.send_deny_embed("There are no rules for this server")
-            return
+        numbers = []
 
-        rules = rules_data.get("rules")
+        numbers.extend([int(num) for num in content.split(',')])
 
-        try:
-            rule = rules[number - 1]
-        except IndexError:
-            rule = None
+        for number in numbers:
 
-        if not rule:
-            await ctx.send_deny_embed("That rule number doesn't exist")
-            return
+            if number < 1: 
+                await ctx.send_deny_embed("That rule number is invalid")
+                return
 
-        embed = RuleEmbed(
-            title=f"Rule {number}", description=rule.get("description", "None")
-        )
+            rules_data = await self.bot.mongo[self.COLLECTION_NAME].find_one(
+                {"guild_id": {"$eq": str(ctx.guild.id)}}
+            )
 
-        embed.set_thumbnail(url=self.RULE_ICON_URL)
-        embed.color = discord.Color.gold()
+            if not rules_data or not rules_data.get("rules"): 
+                await ctx.send_deny_embed("There are no rules for this server")
+                return
+            
+            rules = rules_data.get("rules")
 
-        await ctx.send(embed=embed)
+            try:
+                rule = rules[number - 1]
+            
+            except IndexError: 
+                rule = None
+
+            if not rule:
+                await ctx.send_deny_embed(f"Rule number {number} doesn't exist")
+                return
+
+            embed = RuleEmbed(
+                title=f"Rule {number}", description=rule.get("description", "None")
+            )
+
+            embed.set_thumbnail(url=self.RULE_ICON_URL)
+            embed.color = discord.Color.gold()
+
+            await ctx.send(embed=embed)
 
     @commands.guild_only()
     @rule_group.command(
