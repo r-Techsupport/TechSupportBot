@@ -76,6 +76,8 @@ class Rules(base.BaseCog):
         usage="[number]",
     )
     async def get_rule(self, ctx, content: str):
+        first = True
+
         numbers = []
 
         numbers.extend([int(num) for num in content.split(',')])
@@ -111,7 +113,13 @@ class Rules(base.BaseCog):
             embed.set_thumbnail(url=self.RULE_ICON_URL)
             embed.color = discord.Color.gold()
 
-            await ctx.send(embed=embed)
+            if first:
+                await ctx.send(embed=embed, 
+                               targets=ctx.message.mentions or [ctx.author])
+                first = False
+            else:
+                await ctx.send(embed=embed,
+                               mention_author=False)
 
     @commands.guild_only()
     @rule_group.command(
