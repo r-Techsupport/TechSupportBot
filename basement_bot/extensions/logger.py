@@ -1,3 +1,4 @@
+"""Module for the logger extension for the discord bot."""
 import datetime
 
 import base
@@ -6,6 +7,7 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Adding the logger extension to the config file to get info."""
     config = bot.ExtensionConfig()
     config.add(
         key="channel_map",
@@ -20,6 +22,7 @@ def setup(bot):
 
 
 class LogEmbed(discord.Embed):
+    """Class to set up logging embed for discord bot."""
     def __init__(self, *args, **kwargs):
         ctx = kwargs.pop("context")
         super().__init__(*args, **kwargs)
@@ -64,12 +67,15 @@ class LogEmbed(discord.Embed):
 
 
 class Logger(base.MatchCog):
+    """Class for the logger to make it to discord."""
     async def match(self, config, ctx, _):
+        """Method to match the logging channel to the map."""
         if not str(ctx.channel.id) in config.extensions.logger.channel_map.value:
             return False
         return True
 
     async def response(self, config, ctx, _, __):
+        """Method to generate the response from the logger."""
         mapped_id = config.extensions.logger.channel_map.value.get(str(ctx.channel.id))
         if not mapped_id:
             return
