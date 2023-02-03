@@ -1,3 +1,4 @@
+"""Module for the kanye extension for the discord bot."""
 import asyncio
 import random
 
@@ -8,6 +9,7 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Adding the config for kanye to the config file."""
     config = bot.ExtensionConfig()
     config.add(
         key="channel",
@@ -36,6 +38,7 @@ def setup(bot):
 
 
 class KanyeEmbed(discord.Embed):
+    """Class for the Kanye embed for discord."""
 
     KANYE_PICS = [
         "https://i.imgur.com/ITmTXGz.jpg",
@@ -55,14 +58,17 @@ class KanyeEmbed(discord.Embed):
 
 
 class KanyeQuotes(base.LoopCog):
+    """Class to get the Kanye quotes from the api."""
 
     API_URL = "https://api.kanye.rest"
 
     async def get_quote(self):
+        """Method to get the quote from the api."""
         response = await self.bot.http_call("get", self.API_URL)
         return response.get("quote")
 
     async def execute(self, config, guild):
+        """Method to execute and give the quote to discord."""
         quote = await self.get_quote()
         embed = KanyeEmbed(quote=quote)
 
@@ -73,6 +79,7 @@ class KanyeQuotes(base.LoopCog):
         await channel.send(embed=embed)
 
     async def wait(self, config, _):
+        """Method to only wait a max amount of time from the api."""
         await asyncio.sleep(
             random.randint(
                 config.extensions.kanye.min_wait.value * 3600,
@@ -87,6 +94,7 @@ class KanyeQuotes(base.LoopCog):
         description="Gets a random Kanye West quote from the Kanye West API",
     )
     async def kanye(self, ctx):
+        """Method to call the command on discord."""
         quote = await self.get_quote()
         embed = KanyeEmbed(quote=quote)
 
