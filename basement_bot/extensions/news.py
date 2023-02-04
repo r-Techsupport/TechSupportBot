@@ -125,13 +125,14 @@ class News(base.LoopCog):
         description="Gets a random news headline",
         usage="[category] (optional)",
     )
+
     async def random(self, ctx, category = None):
         """Method to define the random to get a news."""
         if category == None:
             category = random.choice(list(Category)).value
         else:
             category.lower()
-  
+
         config = await self.bot.get_context_config(ctx)
 
         url = None
