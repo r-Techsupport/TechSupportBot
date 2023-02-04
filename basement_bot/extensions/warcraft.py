@@ -1,3 +1,4 @@
+"""Module for the warcraft extension of the discord bot."""
 import asyncio
 import enum
 
@@ -9,6 +10,7 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Adding the warcraft configuration to the config file."""
     config = bot.ExtensionConfig()
     config.add(
         key="region",
@@ -44,6 +46,7 @@ def setup(bot):
 
 
 class WarcraftEmbed(discord.Embed):
+    """Class for the Warcraft embed for discord."""
 
     ICON_URL = "https://cdn.icon-icons.com/icons2/1381/PNG/512/sakuradungeon_93641.png"
 
@@ -54,17 +57,20 @@ class WarcraftEmbed(discord.Embed):
 
 
 class Region(enum.Enum):
+    """Class to define the region."""
     US = "us"
     EU = "eu"
 
 
 class BattleNet(base.LoopCog):
+    """Class for the battlenet token."""
 
     RETAIL_NAMESPACE = "dynamic-us"
     CLASSIC_NAMESPACE = "dynamic-classic-us"
     OAUTH_URL = "oauth.battle.net/token"
 
     async def get_oauth_token(self):
+        """Method to get the oauth token for battlenet API."""
         data = {"grant_type": "client_credentials"}
         response = await self.bot.http_call(
             "post",
@@ -78,35 +84,42 @@ class BattleNet(base.LoopCog):
         return response.get("access_token")
 
     def build_base_url(self, region):
+        """Method for the blizzard api."""
         return f"https://{region}.api.blizzard.com/data/wow"
 
     async def get_realm_id(self, token, region, namespace, realm_name):
+        """Method to get the realm id."""
         headers = {"Authorization": f"Bearer {token}"}
         response = await self.bot.http_call(
             "get",
-            f"{self.build_base_url(region)}/realm/{realm_name.lower()}?namespace={namespace}&locale=en_US",
+            f"{self.build_base_url(region)}/realm/{realm_name.lower()}\
+                ?namespace={namespace}&locale=en_US",
             headers=headers,
         )
         return response.get("id")
 
     async def get_realm_data(self, region, namespace, realm_name):
+        """Method to get the realm data for the bot."""
         token = await self.get_oauth_token()
         realm_id = await self.get_realm_id(token, region, namespace, realm_name)
         response = await self.bot.http_call(
             "get",
-            f"{self.build_base_url(region)}/connected-realm/{realm_id}?namespace={namespace}&locale=en_US",
+            f"{self.build_base_url(region)}/connected-realm/{realm_id}\
+                ?namespace={namespace}&locale=en_US",
             headers={"Authorization": f"Bearer {token}"},
         )
         return response
 
 
 class WarcraftCommands(BattleNet):
+    """Class for the Warcraft commands for the Warcraft extension."""
     @commands.group(
         name="wowc",
         brief="Executes a WoW classic command",
         description="Executes a WoW classic command",
     )
     async def wowc(self, ctx):
+        """Method for the command wowc."""
         pass
 
     @util.with_typing
@@ -117,6 +130,7 @@ class WarcraftCommands(BattleNet):
         usage="[realm-name]",
     )
     async def classic_realm(self, ctx, *, realm_name):
+        """Method to get the classic realm name."""
         await self.handle_realm_request(ctx, realm_name, classic=True)
 
     @commands.group(
@@ -125,6 +139,7 @@ class WarcraftCommands(BattleNet):
         description="Executes a WoW command",
     )
     async def wow(self, ctx):
+        """Method to execute the wow command."""
         pass
 
     @util.with_typing
@@ -135,9 +150,11 @@ class WarcraftCommands(BattleNet):
         usage="[realm-name]",
     )
     async def retail_realm(self, ctx, *, realm_name):
+        """Method to get the retail realm for Warcraft."""
         await self.handle_realm_request(ctx, realm_name)
 
     async def handle_realm_request(self, ctx, realm_name, classic=False):
+        """Method to handle realm request for Warcraft."""
         namespace = self.RETAIL_NAMESPACE if not classic else self.CLASSIC_NAMESPACE
 
         config = await self.bot.get_context_config(ctx)
@@ -175,20 +192,25 @@ class WarcraftCommands(BattleNet):
 
 
 class RealmAlerts(BattleNet, base.LoopCog):
+    """Class for realm alerts for the Warcraft extension."""
 
     POLL_TIME_SECONDS = 300
     ON_START = True
 
     async def preconfig(self):
+        """Method to preconfig the realm state."""
         self.realm_state = {}
 
     async def wait(self, config, _):
+        """Method to wait for the alert polling."""
         await self.bot.logger.debug(
-            f"Sleeping for {self.POLL_TIME_SECONDS} seconds before resuming Warcraft realm alert polling"
+            f"Sleeping for {self.POLL_TIME_SECONDS} \
+                seconds before resuming Warcraft realm alert polling"
         )
         await asyncio.sleep(self.POLL_TIME_SECONDS)
 
     async def execute(self, _config, _guild):
+        """Method to execute the Warcraft command."""
         destinations = {}
         found_realms = set()
 
@@ -230,14 +252,14 @@ class RealmAlerts(BattleNet, base.LoopCog):
                 continue
 
             realm = str(realm).lower()
-            pk = f"{realm},{region}"
-            if destinations.get(pk) is None:
-                destinations[pk] = [channel]
+            pk_ = f"{realm},{region}"
+            if destinations.get(pk_) is None:
+                destinations[pk_] = [channel]
             else:
-                destinations[pk].append(channel)
+                destinations[pk_].append(channel)
 
-        for pk, channels in destinations.items():
-            vals = str(pk).split(",")
+        for pk_, channels in destinations.items():
+            vals = str(pk_).split(",")
             realm_name = vals[0]
             region = vals[1]
 
@@ -269,6 +291,7 @@ class RealmAlerts(BattleNet, base.LoopCog):
             await self.send_alert(realm_name, diff, channels)
 
     def build_realm_diff(self, before_data, after_data):
+        """Method to build the realm data before and after into one."""
         # go through every field in the new data
         # if field can't be found in old data, assume no diff due to data corruption
         diff = {}
@@ -292,8 +315,9 @@ class RealmAlerts(BattleNet, base.LoopCog):
         return diff
 
     async def send_alert(self, realm_name, diff, channels):
+        """Method to send an alert to discord from the realm."""
         embed = WarcraftEmbed(
-            title=f"WoW Classic Realm Alert", description=f"Realm: {realm_name.upper()}"
+            title="WoW Classic Realm Alert", description=f"Realm: {realm_name.upper()}"
         )
         for field_name, values in diff.items():
             before = values.get("before")

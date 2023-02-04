@@ -55,12 +55,15 @@ class MagicConch(base.BaseCog):
         description="Asks the Magic Conch (8ball) a question",
         usage="[question]",
     )
-    async def ask_question(self, ctx, *, question: commands.clean_content()):
+    async def ask_question(self, ctx, *, question: commands.clean_content() = None):
         """Method for how the conch command works for the bot."""
         # we don't actually care about the question
         response = random.choice(self.RESPONSES)
+        if question == None:
+            await ctx.send_deny_embed("You need to add a question")
+            return
         if not question.endswith("?"):
             question += "?"
 
-        embed = ConchEmbed(title=question, description=response)
+        embed = ConchEmbed(title=question[:256], description=response)
         await ctx.send(embed=embed)
