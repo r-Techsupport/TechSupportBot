@@ -1,3 +1,4 @@
+"""Module for the hug extention for the bot."""
 import random
 
 import base
@@ -7,10 +8,12 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Method to add hug to the config file."""
     bot.add_cog(Hugger(bot=bot))
 
 
 class Hugger(base.BaseCog):
+    """Class to make the hug command."""
 
     HUGS_SELECTION = [
         "{user_giving_hug} hugs {user_to_hug} forever and ever and ever",
@@ -50,6 +53,7 @@ class Hugger(base.BaseCog):
         await ctx.send(embed=embed, targets=[user_to_hug])
 
     def generate_embed(self, ctx, user_to_hug):
+        """Method to generate the hug embed into discord."""
         hug_text = random.choice(self.HUGS_SELECTION).format(
             user_giving_hug=ctx.author.mention,
             user_to_hug=user_to_hug.mention,

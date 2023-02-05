@@ -232,7 +232,7 @@ class StrawPoller(PollGenerator):
         description="Executes a strawpoll command",
     )
     async def strawpoll(self, ctx):
-        pass
+        print(f"Strawpoll command called in channel {ctx.channel}")
 
     @util.with_typing
     @strawpoll.command(
@@ -273,4 +273,4 @@ class StrawPoller(PollGenerator):
             await ctx.send_deny_embed("Strawpoll did not let me create a poll")
             return
 
-        await ctx.send(f"https://strawpoll.com/{content_id}")
+        await ctx.send_confirm_embed(f"https://strawpoll.com/{content_id}")

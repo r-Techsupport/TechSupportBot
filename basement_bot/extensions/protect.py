@@ -337,6 +337,12 @@ class Protector(base.MatchCog):
             if not can_execute:
                 return
 
+        bans = await ctx.guild.bans()
+        for ban in bans:
+            if user == ban.user:
+                await ctx.send_deny_embed("User is already banned.")
+                return
+
         config = await self.bot.get_context_config(ctx)
         await ctx.guild.ban(
             user,
@@ -354,7 +360,11 @@ class Protector(base.MatchCog):
             if not can_execute:
                 return
 
-        await ctx.guild.unban(user, reason=reason)
+        try:
+            await ctx.guild.unban(user, reason=reason)
+        except discord.NotFound:
+            await ctx.send_deny_embed("This user is not banned, or does not exist")
+            return
 
         embed = await self.generate_user_modified_embed(user, "unban", reason)
 
@@ -391,14 +401,20 @@ class Protector(base.MatchCog):
         return f"{guild.id}_{user.id}_{trigger}"
 
     async def can_execute(self, ctx, target):
+        if target.id == ctx.author.id:
+            await ctx.send_deny_embed("You cannot do that to yourself")
+            return False
         if target.id == self.bot.user.id:
             await ctx.send_deny_embed("It would be silly to do that to myself")
             return False
-        if target.top_role >= ctx.author.top_role:
-            await ctx.send_deny_embed(
-                f"Your top role is not high enough to do that to `{target}`"
-            )
-            return False
+        try:
+            if target.top_role >= ctx.author.top_role:
+                await ctx.send_deny_embed(
+                    f"Your top role is not high enough to do that to `{target}`"
+                )
+                return False
+        except AttributeError:
+            return True
         return True
 
     async def send_alert(self, config, ctx, message):
@@ -480,7 +496,7 @@ class Protector(base.MatchCog):
         description="Bans a user with a given reason",
         usage="@user [reason]",
     )
-    async def ban_user(self, ctx, user: discord.Member, *, reason: str = None):
+    async def ban_user(self, ctx, user: discord.User, *, reason: str = None):
         await self.handle_ban(ctx, user, reason)
 
         config = await self.bot.get_context_config(ctx)

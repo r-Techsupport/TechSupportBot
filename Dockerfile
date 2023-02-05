@@ -1,5 +1,5 @@
 
-FROM python:3.9-alpine as builder
+FROM python:3.10-alpine as builder
 
 RUN apk update && \
     apk add --no-cache \
@@ -15,9 +15,8 @@ RUN pip install pipenv && \
     pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY . .
-COPY config.yml basement_bot
 
-FROM python:3.9-alpine
+FROM python:3.10-alpine
 RUN apk add --no-cache \
     libpq
 WORKDIR /var/basement_bot
