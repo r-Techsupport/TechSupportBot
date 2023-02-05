@@ -14,6 +14,7 @@ def setup(bot):
 
 class BurnEmbed(discord.Embed):
     """Method to create the burn command discord embed."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title = "Burn Alert!"

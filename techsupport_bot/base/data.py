@@ -152,7 +152,6 @@ class DataBot(ExtensionsBot):
         state = True
         async with queue.iterator() as queue_iter:
             async for message in queue_iter:
-
                 if state_func:
                     state = await state_func()
                     if not state:

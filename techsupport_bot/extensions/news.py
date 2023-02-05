@@ -45,6 +45,7 @@ def setup(bot):
 
 class Category(enum.Enum):
     """Class to set up categories for the news."""
+
     BUSINESS = "business"
     ENTERTAINMENT = "entertainment"
     GENERAL = "general"
@@ -125,8 +126,7 @@ class News(base.LoopCog):
         description="Gets a random news headline",
         usage="[category] (optional)",
     )
-
-    async def random(self, ctx, category = None):
+    async def random(self, ctx, category=None):
         """Method to define the random to get a news."""
         if category == None:
             category = random.choice(list(Category)).value

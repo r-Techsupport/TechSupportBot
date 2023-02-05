@@ -19,7 +19,6 @@ class RuleEmbed(discord.Embed):
 
 
 class Rules(base.BaseCog):
-
     RULE_ICON_URL = "https://cdn.icon-icons.com/icons2/907/PNG/512/balance-scale-of-justice_icon-icons.com_70554.png"
     COLLECTION_NAME = "rules_extension"
 
@@ -82,10 +81,9 @@ class Rules(base.BaseCog):
         numbers = []
 
         # Splits content string, and adds each item to number list
-        numbers.extend([int(num) for num in content.split(',')])
+        numbers.extend([int(num) for num in content.split(",")])
 
         for number in numbers:
-
             if number < 1:
                 await ctx.send_deny_embed("That rule number is invalid")
                 return
@@ -117,12 +115,12 @@ class Rules(base.BaseCog):
 
             # Checks if first embed sent
             if first:
-                await ctx.send(embed=embed,
-                               targets=ctx.message.mentions or [ctx.author])
+                await ctx.send(
+                    embed=embed, targets=ctx.message.mentions or [ctx.author]
+                )
                 first = False
             else:
-                await ctx.send(embed=embed,
-                               mention_author=False)
+                await ctx.send(embed=embed, mention_author=False)
 
     @commands.guild_only()
     @rule_group.command(

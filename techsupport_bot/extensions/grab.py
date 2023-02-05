@@ -50,7 +50,6 @@ async def invalid_channel(ctx):
 
 
 class Grabber(base.BaseCog):
-
     HAS_CONFIG = False
     SEARCH_LIMIT = 20
 

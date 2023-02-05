@@ -178,6 +178,7 @@ async def can_stop_game(ctx):
 
 class HangmanCog(base.BaseCog):
     """Class to define the hangman game."""
+
     async def preconfig(self):
         """Method to preconfig the game."""
         self.games = {}

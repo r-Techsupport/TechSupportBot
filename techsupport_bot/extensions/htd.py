@@ -1,11 +1,9 @@
 """
 Convert a value or evalute a mathematical expression to decimal, hex, binary, and ascii encoding
 """
+import base
 import discord
 from discord.ext import commands
-
-import base
-
 
 
 def setup(bot):
@@ -19,18 +17,20 @@ class Htd(base.BaseCog):
     """
     perform calculations on cross-base numbers and convert between them
     """
+
     @commands.command(
         name="htd",
         brief="Convert values to different bases",
         description="Takes a value and returns the value in different bases\
              and encodings (bianary, hex, base 10, and ascii)",
         usage="`htd [value]`\nAccepts numbers in the following formats:\n0x \
-            (hex)\n0b (binary) \nNo prefix (assumed ascii)"
+            (hex)\n0b (binary) \nNo prefix (assumed ascii)",
     )
     async def htd(self, ctx, *, val_to_convert):
         """
         perform calculations on cross base numbers and convert between bases
         """
+
         def split_nicely(str_to_split: str) -> list:
             """
             take an input string, divide it at operators and spaces,\
@@ -74,13 +74,15 @@ class Htd(base.BaseCog):
                         # replace first two items with a concatenation of the
                         # two
                         return_list.append(
-                            mostly_parsed_list[i] + mostly_parsed_list[i + 1])
+                            mostly_parsed_list[i] + mostly_parsed_list[i + 1]
+                        )
                         next(range_to_iter_over)
                         continue
                     # if it's preceeded by another operator, assume negative
                     if mostly_parsed_list[i - 1] in ["+", "-", "*", "/"]:
                         return_list.append(
-                            mostly_parsed_list[i] + mostly_parsed_list[i + 1])
+                            mostly_parsed_list[i] + mostly_parsed_list[i + 1]
+                        )
                         next(range_to_iter_over)
                         continue
 
@@ -116,7 +118,6 @@ class Htd(base.BaseCog):
 
             return int(val, num_base)
 
-
         def gen_embed_from_val(val, return_all=False) -> discord.Embed:
             """
             Take in a value as a string, EG: "0b1011 or "0xf00" and generate a discord embed\
@@ -129,7 +130,7 @@ class Htd(base.BaseCog):
                 "Decimal": 0,
                 "Hexadecimal": "0x0",
                 "Binary": "0b0",
-                "Ascii Encoding": "Something is messed up if you're seeing this"
+                "Ascii Encoding": "Something is messed up if you're seeing this",
             }
 
             def clean_up_hex(str_to_clean: str):
@@ -161,17 +162,17 @@ class Htd(base.BaseCog):
                 input_as["Hexadecimal"] = hex(input_as["Decimal"])
                 input_as["Binary"] = bin(input_as["Decimal"])
 
-
                 # the negative messes with the hacky modulus fix, this area
                 # could probably be improved
                 cleaned_up_hex = clean_up_hex(input_as["Hexadecimal"])
                 input_as["Hexadecimal"] = cleaned_up_hex[0]
 
-
                 try:
-                    input_as["Ascii Encoding"] = "\"" + \
-                        bytes.fromhex(cleaned_up_hex[1]).decode(
-                            "unicode_escape") + "\""
+                    input_as["Ascii Encoding"] = (
+                        '"'
+                        + bytes.fromhex(cleaned_up_hex[1]).decode("unicode_escape")
+                        + '"'
+                    )
                 except BaseException:
                     input_as["Ascii Encoding"] = "Invalid Ascii representation"
                 # remove the detected input type and notate it with a color
@@ -196,13 +197,15 @@ class Htd(base.BaseCog):
                 for key, i in input_as.items():
                     # ensure we're under discord embed length limits
                     if len(str(i)) > 1024 - 3:
-                        i = str(i)[:(1024 - 3)] + "..."
+                        i = str(i)[: (1024 - 3)] + "..."
                     embed.add_field(name=key + ":", value=i, inline=False)
 
             # catch all if something breaks
             except ValueError:
-                embed = discord.Embed(color=discord.Color.red(
-                ), title="Unable to convert value, are you sure it's valid?")
+                embed = discord.Embed(
+                    color=discord.Color.red(),
+                    title="Unable to convert value, are you sure it's valid?",
+                )
 
             return embed
 
@@ -243,7 +246,9 @@ class Htd(base.BaseCog):
                 calced_val = str(perform_op_on_list(parsed_list))
                 await ctx.send(embed=gen_embed_from_val(calced_val, True))
             except ValueError:
-                await ctx.send_deny_embed("Unable to perform calculation, are you sure that \
-                equation is valid?")
+                await ctx.send_deny_embed(
+                    "Unable to perform calculation, are you sure that \
+                equation is valid?"
+                )
         else:
             await ctx.send(embed=gen_embed_from_val(val_to_convert))

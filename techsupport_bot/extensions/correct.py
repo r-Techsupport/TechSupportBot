@@ -12,6 +12,7 @@ def setup(bot):
 
 class CorrectEmbed(discord.Embed):
     """Method to create the correct embed for the discord bot."""
+
     def __init__(self, *args, **kwargs):
         new_content = kwargs.pop("new_content")
         super().__init__(*args, **kwargs)

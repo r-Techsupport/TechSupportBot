@@ -12,6 +12,7 @@ def setup(bot):
 
 class MockEmbed(discord.Embed):
     """Class to setup the mock embed for discord."""
+
     def __init__(self, *args, **kwargs):
         message = kwargs.pop("message")
         user = kwargs.pop("user")

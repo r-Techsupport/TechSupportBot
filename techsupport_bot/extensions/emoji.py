@@ -11,7 +11,6 @@ def setup(bot):
 
 
 class Emojis(base.BaseCog):
-
     SEARCH_LIMIT = 20
     KEY_MAP = {"?": "question", "!": "exclamation"}
 

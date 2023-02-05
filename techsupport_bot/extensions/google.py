@@ -40,7 +40,7 @@ class Googler(base.BaseCog):
     YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=10"
 
     async def get_items(self, url, data):
-        """Method to get an item from google's api. """
+        """Method to get an item from google's api."""
         response = await self.bot.http_call("get", url, params=data, use_cache=True)
         return response.get("items")
 
