@@ -35,7 +35,7 @@ class Rules(base.BaseCog):
     @commands.group(name="rule")
     async def rule_group(self, ctx):
         """Method for the rule group."""
-        pass
+        print(f"Rule command called in channel {ctx.channel}")
 
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
