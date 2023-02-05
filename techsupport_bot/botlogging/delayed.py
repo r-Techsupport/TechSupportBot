@@ -10,7 +10,7 @@ class DelayedLogger(logger.BotLogger):
     """Logging interface that queues log events to be sent over time.
 
     parameters:
-        bot (bot.BasementBot): the bot object
+        bot (bot.TechSupportBot): the bot object
         name (str): the name of the logging channel
         wait_time (float): the time to wait between log sends
         queue_size (int): the max number of queue events

@@ -13,7 +13,7 @@ class BotLogger:
     """Logging interface for Discord bots.
 
     parameters:
-        bot (bot.BasementBot): the bot object
+        bot (bot.TechSupportBot): the bot object
         name (str): the name of the logging channel
     """
 

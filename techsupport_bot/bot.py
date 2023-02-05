@@ -9,7 +9,7 @@ from discord.ext import ipc
 
 
 # pylint: disable=too-many-public-methods, too-many-instance-attributes
-class BasementBot(base.AdvancedBot):
+class TechSupportBot(base.AdvancedBot):
     """The main bot object."""
 
     IPC_SECRET_ENV_KEY = "IPC_SECRET"

@@ -1,4 +1,4 @@
-"""Basement Bot main thread.
+"""TechSupport Bot main thread.
 """
 import logging
 import os
@@ -29,7 +29,7 @@ logging.basicConfig(
 intents = discord.Intents.all()
 intents.members = True
 
-bot_ = bot.BasementBot(
+bot_ = bot.TechSupportBot(
     intents=intents,
     allowed_mentions=discord.AllowedMentions(everyone=False, roles=False),
 )
