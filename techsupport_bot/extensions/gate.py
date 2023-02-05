@@ -79,11 +79,9 @@ class ServerGate(base.MatchCog):
 
     async def response(self, config, ctx, content, _):
         """Method for a response from the gate extension."""
-        prefix = await self.bot.get_prefix(ctx.message)
-
         is_admin = await self.bot.is_bot_admin(ctx)
 
-        if content.startswith(prefix) and is_admin:
+        if is_admin:
             return
 
         await ctx.message.delete()
@@ -134,7 +132,7 @@ class ServerGate(base.MatchCog):
     )
     async def gate_command(self, ctx):
         """Method to create the command for gate extension."""
-        pass
+        print(f"Gate command called in channel {ctx.channel}")
 
     @commands.has_permissions(manage_messages=True)
     @commands.guild_only()
