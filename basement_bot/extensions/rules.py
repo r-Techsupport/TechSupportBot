@@ -76,10 +76,12 @@ class Rules(base.BaseCog):
         usage="[number]",
     )
     async def get_rule(self, ctx, content: str):
+        """Method to get specified rules from rule number/s specified in content."""
         first = True
 
         numbers = []
 
+        # Splits content string, and adds each item to number list
         numbers.extend([int(num) for num in content.split(',')])
 
         for number in numbers:
@@ -113,6 +115,7 @@ class Rules(base.BaseCog):
             embed.set_thumbnail(url=self.RULE_ICON_URL)
             embed.color = discord.Color.gold()
 
+            # Checks if first embed sent
             if first:
                 await ctx.send(embed=embed,
                                targets=ctx.message.mentions or [ctx.author])
