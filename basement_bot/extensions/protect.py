@@ -117,7 +117,6 @@ class ProtectEmbed(discord.Embed):
 
 
 class Protector(base.MatchCog):
-
     ALERT_ICON_URL = "https://cdn.icon-icons.com/icons2/2063/PNG/512/alert_danger_warning_notification_icon_124692.png"
     CLIPBOARD_ICON_URL = (
         "https://icon-icons.com/icons2/203/PNG/128/diagram-30_24487.png"

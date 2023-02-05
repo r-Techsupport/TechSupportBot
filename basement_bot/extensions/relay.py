@@ -18,6 +18,7 @@ def setup(bot):
 
 class RelayEvent:
     """Class for the relay event for the discord bot."""
+
     def __init__(self, type, author, channel):
         self.payload = munch.Munch()
         self.payload.event = munch.Munch()
@@ -57,6 +58,7 @@ class RelayEvent:
 
 class MessageEvent(RelayEvent):
     """Class to send a message event by relay event."""
+
     def __init__(self, *args, **kwargs):
         message = kwargs.pop("message")
         super().__init__("message", *args, **kwargs)
@@ -110,6 +112,7 @@ class MessageEvent(RelayEvent):
 
 class FactoidEvent(RelayEvent):
     """Class to define a factoid event from a relay event."""
+
     def __init__(self, *args, **kwargs):
         message = kwargs.pop("message")
         factoid = kwargs.pop("factoid")
@@ -122,6 +125,7 @@ class FactoidEvent(RelayEvent):
 
 class MessageEditEvent(RelayEvent):
     """Class to edit a message event from a relay event."""
+
     def __init__(self, *args, **kwargs):
         message = kwargs.pop("message")
         super().__init__("message_edit", *args, **kwargs)
@@ -130,6 +134,7 @@ class MessageEditEvent(RelayEvent):
 
 class ReactionAddEvent(RelayEvent):
     """Method to add a reaction event from a relay event."""
+
     def __init__(self, *args, **kwargs):
         message = kwargs.pop("message")
         emoji = kwargs.pop("emoji")
@@ -174,7 +179,7 @@ class IRCEmbed(discord.Embed):
 
     def fill_mentions(self, channel):
         """Method to fill in mentions for the relay message."""
-        description = self.description # pylint: disable=E0203
+        description = self.description  # pylint: disable=E0203
         if not description:
             raise AttributeError("description field not present")
 
@@ -212,6 +217,7 @@ class IRCMessageEmbed(IRCEmbed):
 
 class IRCEventEmbed(IRCEmbed):
     """Class for IRC event embeds."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.set_author(
@@ -220,7 +226,7 @@ class IRCEventEmbed(IRCEmbed):
         )
         self.description = self.generate_event_message()
 
-    def generate_event_message(self): #Maybe edit to a switch statement.
+    def generate_event_message(self):  # Maybe edit to a switch statement.
         """Method to generate the event message from IRC."""
         permissions_label = self.get_permissions_label(self.data.author.permissions)
         if self.data.event.type == "join":
@@ -243,14 +249,16 @@ class IRCEventEmbed(IRCEmbed):
                 return f"`{permissions_label}{self.data.author.nickname}` \
                     sets mode **{self.data.event.irc_paramlist[1]}** on \
                     `{self.data.event.irc_paramlist[2]}`"
-            else: #Pylint doesn't like this else R1705
+            else:  # Pylint doesn't like this else R1705
                 return f"`{self.data.author.mask}` did some \
                     configuration on {self.data.channel.name}..."
-        #Needs a return for the function itself 
-        #maybe? (return f"`{self.data.author.nickname}` could not send message.")
+        # Needs a return for the function itself
+        # maybe? (return f"`{self.data.author.nickname}` could not send message.")
+
 
 class DiscordRelay(base.MatchCog):
     """Class for discord relay."""
+
     async def preconfig(self):
         """Method to preconfig the discord relay."""
         self.listen_channels = list(
@@ -436,7 +444,7 @@ class IRCReceiver(base.LoopCog):
                 data.channel.name
             ):
                 return self.bot.get_channel(int(channel_id))
-        #Need a return statement for the function itself
+        # Need a return statement for the function itself
 
     def deserialize(self, body):
         """Method to deserialize the time of the event."""
@@ -449,7 +457,7 @@ class IRCReceiver(base.LoopCog):
             return
 
         return deserialized
-        #R1710 all need to return an expression
+        # R1710 all need to return an expression
 
     def time_stale(self, time):
         """Method to format the time for the event."""

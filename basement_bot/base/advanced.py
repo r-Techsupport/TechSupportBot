@@ -430,11 +430,11 @@ class AdvancedBot(DataBot):
         embed = discord.Embed()
         embed.add_field(name="Content", value=message.content[:1024] or "None")
         if len(message.content) > 1024:
-            embed.add_field(name = "\a", value=message.content[1025:2048])
+            embed.add_field(name="\a", value=message.content[1025:2048])
         if len(message.content) > 2048:
-            embed.add_field(name = "\a", value=message.content[2049:3072])
+            embed.add_field(name="\a", value=message.content[2049:3072])
         if len(message.content) > 3072:
-            embed.add_field(name = "\a", value=message.content[3073:4096])
+            embed.add_field(name="\a", value=message.content[3073:4096])
         embed.add_field(name="Author", value=message.author)
         embed.add_field(
             name="Channel",

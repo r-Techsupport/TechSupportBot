@@ -58,6 +58,7 @@ class WarcraftEmbed(discord.Embed):
 
 class Region(enum.Enum):
     """Class to define the region."""
+
     US = "us"
     EU = "eu"
 
@@ -113,6 +114,7 @@ class BattleNet(base.LoopCog):
 
 class WarcraftCommands(BattleNet):
     """Class for the Warcraft commands for the Warcraft extension."""
+
     @commands.group(
         name="wowc",
         brief="Executes a WoW classic command",

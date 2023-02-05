@@ -209,25 +209,37 @@ def add_diff_fields(embed, diff):
             )
             continue
 
-        #Checking if content is a string, and not anything else for guild update.
+        # Checking if content is a string, and not anything else for guild update.
         if isinstance(diff_data.before, str):
-        #expanding the before data to 4096 characters
+            # expanding the before data to 4096 characters
             embed.add_field(name=f"{attru} (before)", value=diff_data.before[:1024])
             if len(diff_data.before) > 1024:
-                embed.add_field(name=f"{attru} (before continue)",value=diff_data.before[1025:2048])
+                embed.add_field(
+                    name=f"{attru} (before continue)", value=diff_data.before[1025:2048]
+                )
             if len(diff_data.before) > 2048 and len(diff_data.after) <= 2800:
-                embed.add_field(name=f"{attru} (before continue)",value=diff_data.before[2049:3072])
+                embed.add_field(
+                    name=f"{attru} (before continue)", value=diff_data.before[2049:3072]
+                )
             if len(diff_data.before) > 3072 and len(diff_data.after) <= 1800:
-                embed.add_field(name=f"{attru} (before continue)",value=diff_data.before[3073:4096])
+                embed.add_field(
+                    name=f"{attru} (before continue)", value=diff_data.before[3073:4096]
+                )
 
-            #expanding the after data to 4096 characters
+            # expanding the after data to 4096 characters
             embed.add_field(name=f"{attru} (after)", value=diff_data.after[:1024])
             if len(diff_data.after) > 1024:
-                embed.add_field(name=f"{attru} (after continue)", value=diff_data.after[1025:2048])
+                embed.add_field(
+                    name=f"{attru} (after continue)", value=diff_data.after[1025:2048]
+                )
             if len(diff_data.after) > 2048:
-                embed.add_field(name=f"{attru} (after continue)", value=diff_data.after[2049:3072])
+                embed.add_field(
+                    name=f"{attru} (after continue)", value=diff_data.after[2049:3072]
+                )
             if len(diff_data.after) > 3072:
-                embed.add_field(name=f"{attru} (after continue)", value=diff_data.after[3073:4096])
+                embed.add_field(
+                    name=f"{attru} (after continue)", value=diff_data.after[3073:4096]
+                )
         else:
             embed.add_field(name=f"{attru} (before)", value=diff_data.before or None)
             embed.add_field(name=f"{attru} (after)", value=diff_data.after or None)

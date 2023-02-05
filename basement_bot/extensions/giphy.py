@@ -17,7 +17,7 @@ class Giphy(base.BaseCog):
 
     @staticmethod
     def parse_url(url):
-        """Method to parse the url. """
+        """Method to parse the url."""
         index = url.find("?cid=")
         return url[:index]
 

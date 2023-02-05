@@ -28,6 +28,7 @@ class RollEmbed(discord.Embed):
 
 class Roller(base.BaseCog):
     """Class for the roll command for the extension."""
+
     @util.with_typing
     @commands.command(
         name="roll",

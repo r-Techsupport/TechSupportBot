@@ -58,6 +58,7 @@ def setup(bot):
 
 class WelcomeEmbed(discord.Embed):
     """Class to welcome a user to the discord, then delete the message."""
+
     def __init__(self, *args, **kwargs):
         welcome_message = kwargs.pop("welcome_message")
         delete_wait = kwargs.pop("delete_wait")
@@ -70,6 +71,7 @@ class WelcomeEmbed(discord.Embed):
 
 class ServerGate(base.MatchCog):
     """Class to get the server gate from config."""
+
     async def match(self, config, ctx, _):
         """Method to match the gate channel."""
         if not config.extensions.gate.channel.value:
@@ -112,7 +114,7 @@ class ServerGate(base.MatchCog):
             )
 
     async def get_roles(self, config, ctx):
-        """Method to get a role from the author. """
+        """Method to get a role from the author."""
         roles = []
         for role_name in config.extensions.gate.roles.value:
             role = discord.utils.get(ctx.guild.roles, name=role_name)

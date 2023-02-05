@@ -2,17 +2,19 @@
 import datetime
 import io
 
-import yaml
 import base
 import discord
 import util
+import yaml
 from discord.ext import commands
 
 
 def setup(bot):
     """Adding the who configuration to the config file."""
+
     class UserNote(bot.db.Model):
         """Class to set up the config file."""
+
         __tablename__ = "usernote"
 
         pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
