@@ -269,7 +269,7 @@ class HangmanCog(base.BaseCog):
         prefix = await self.bot.get_prefix(ctx.message)
         embed = discord.Embed(
             title=f"`{hangman_word}`",
-            description=f"Type `{prefix}help hangman` for more info\n\n ```{hangman_drawing}```",
+            description=f"Type `{prefix}help extension hangman` for more info\n\n ```{hangman_drawing}```",
         )
 
         if game.failed:
