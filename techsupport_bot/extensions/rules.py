@@ -16,6 +16,7 @@ def setup(bot):
 
 class RuleEmbed(discord.Embed):
     """Class for setting up the rules embed."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.color = discord.Color.gold()
