@@ -7,7 +7,7 @@ RUN apk update && \
     gcc \
     musl-dev
 
-WORKDIR /var/BasementBot
+WORKDIR /var/TechSupportBot
 COPY Pipfile.lock .
 
 RUN pip install pipenv && \
@@ -19,7 +19,7 @@ COPY . .
 FROM python:3.10-alpine
 RUN apk add --no-cache \
     libpq
-WORKDIR /var/basement_bot
+WORKDIR /var/techsupport_bot
 COPY --from=builder /usr/local /usr/local
-COPY --from=builder /var/BasementBot/basement_bot .
+COPY --from=builder /var/TechSupportBot/techsupport_bot .
 CMD python3 -u main.py

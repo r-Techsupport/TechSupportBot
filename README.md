@@ -1,8 +1,8 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/r-techsupport/techsupportbot/badge)](https://www.codefactor.io/repository/github/r-techsupport/techsupportbot)
 
-# BasementBot
+# TechSupportBot
 
-BasementBot is a Dockerized Discord bot. Written on top of the [Python Discord API](https://pycord.readthedocs.io/en/latest/api.html), it provides the loading and unloading of custom extensions to extend and scale the bot as much as you want.
+TechSupportBot is a Dockerized Discord bot. Written on top of the [Python Discord API](https://pycord.readthedocs.io/en/latest/api.html), it provides the loading and unloading of custom extensions to extend and scale the bot as much as you want.
 
 # Deployment Guide
 ## External setup
@@ -68,7 +68,8 @@ The Makefile offers shortcut commands for development.
 
 # Making extensions
 
-On startup, the bot will load all extension files in the `basement_bot/extensions/` directory. These files hold commands for the bot to use with its prefix. Each command is an async function decorated as a `command`, and each file must have an entrypoint function called `setup`, which tells the loading process how to add the extension file.
+On startup, the bot will load all extension files in the `techsupport_bot/extensions/` directory. These files hold commands for the bot to use with its prefix. Each command is an async function decorated as a `command`, and each file must have an entrypoint function called `setup`, which tells the loading process how to add the extension file.
+
 A (very) simple example:
 ```python
 import base
