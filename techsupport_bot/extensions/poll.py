@@ -19,6 +19,7 @@ def setup(bot):
 
 class PollEmbed(discord.Embed):
     """Class for the poll embed for discord."""
+
     def __init__(self, *args, **kwargs):
         thumbnail_url = kwargs.pop("thumbnail_url")
         super().__init__(*args, **kwargs)
@@ -28,6 +29,7 @@ class PollEmbed(discord.Embed):
 
 class PollGenerator(base.BaseCog):
     """Class to make the poll generator for the extension."""
+
     async def validate_data(self, ctx, request_body, strawpoll=False):
         """Method to validate data from the poll."""
         # probably shouldn't touch this
