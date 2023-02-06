@@ -1,3 +1,4 @@
+"""Module for the weather extension for the discord bot."""
 import base
 import discord
 import munch
@@ -6,11 +7,15 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Adding the weather configuration to the config file."""
     bot.add_cog(Weather(bot=bot))
 
 
 class Weather(base.BaseCog):
+    """Class to set up the weather extension for the discord bot."""
+
     def get_url(self, args):
+        """Method to get the API for the weather command."""
         filtered_args = filter(bool, args)
         searches = ",".join(map(str, filtered_args))
         url = "http://api.openweathermap.org/data/2.5/weather"
@@ -28,6 +33,7 @@ class Weather(base.BaseCog):
     async def weather(
         self, ctx, city_name: str, state_code: str = None, country_code: str = None
     ):
+        """Method to define the weather for the command."""
         response = await self.bot.http_call(
             "get", self.get_url([city_name, state_code, country_code])
         )
@@ -40,6 +46,7 @@ class Weather(base.BaseCog):
         await ctx.send(embed=embed)
 
     def generate_embed(self, response):
+        """Method to generate the embed for the weather command."""
         try:
             embed = discord.Embed(
                 title=f"Weather for {response.name} ({response.sys.country})"
@@ -51,13 +58,13 @@ class Weather(base.BaseCog):
             embed.add_field(name="Description", value=descriptions, inline=False)
 
             embed.add_field(
-                name=f"Temp (F)",
+                name="Temp (F)",
                 value=f"{int(response.main.temp)} (feels like {int(response.main.feels_like)})",
                 inline=False,
             )
-            embed.add_field(name=f"Low (F)", value=int(response.main.temp_min))
+            embed.add_field(name="Low (F)", value=int(response.main.temp_min))
             embed.add_field(
-                name=f"High (F)",
+                name="High (F)",
                 value=int(response.main.temp_max),
             )
             embed.add_field(name="Humidity", value=f"{int(response.main.humidity)} %")
