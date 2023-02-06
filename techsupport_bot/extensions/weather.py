@@ -13,6 +13,7 @@ def setup(bot):
 
 class Weather(base.BaseCog):
     """Class to set up the weather extension for the discord bot."""
+
     def get_url(self, args):
         """Method to get the API for the weather command."""
         filtered_args = filter(bool, args)

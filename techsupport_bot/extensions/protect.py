@@ -13,8 +13,10 @@ from discord.ext import commands
 
 def setup(bot):
     """Class to set up the protect options in the config file."""
+
     class Warning(bot.db.Model):
         """Class to set up warnings for the config file."""
+
         __tablename__ = "warnings"
         pk = bot.db.Column(bot.db.Integer, primary_key=True)
         user_id = bot.db.Column(bot.db.String)
@@ -114,6 +116,7 @@ def setup(bot):
 
 class ProtectEmbed(discord.Embed):
     """Class to make the embed for the protect command."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title = "Chat Protection"
@@ -241,7 +244,7 @@ class Protector(base.MatchCog):
         """Method to handle alert for the protect extension."""
         await ctx.message.delete()
 
-        reason ="message too long (too many newlines or characters)"
+        reason = "message too long (too many newlines or characters)"
 
         if not config.extensions.protect.linx_url.value:
             await self.send_default_delete_response(config, ctx, content, reason)
