@@ -10,8 +10,10 @@ from discord.ext import commands
 
 def setup(bot):
     """Setup the config for the grab extension in the config file."""
+
     class Grab(bot.db.Model):
         """Class for setting up the config file."""
+
         __tablename__ = "grabs"
 
         pk = bot.db.Column(bot.db.Integer, primary_key=True)
