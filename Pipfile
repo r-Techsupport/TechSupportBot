@@ -4,8 +4,8 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [packages]
-aio-pika = "==8.3.0"
 aiocron = "==1.8"
+aio-pika = "==8.3.0"
 aiounittest = "==1.4.2"
 black = "==22.12.0"
 discord-ext-ipc = "==2.1.1"
@@ -23,4 +23,5 @@ pytest = "==7.2.1"
 pyyaml = "==6.0"
 
 [requires]
-python_version = "3.9"
+python_version = "3.10"
+
