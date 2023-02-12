@@ -1,7 +1,7 @@
-image = effprime/basement-bot
+image = rtechsupport/techsupport-bot
 full-image = $(image):prod
-drun = docker run --rm -v $(shell pwd):/var/BasementBot -t $(full-image) python3 -m
-main_dir = basement_bot
+drun = docker run --rm -v $(shell pwd):/var/TechSupportBot -t $(full-image) python3 -m
+main_dir = techsupport_bot
 
 make sync:
 	python3 -m pipenv sync -d
@@ -15,8 +15,8 @@ format:
 	isort ./
 
 lint:
-	$(drun) pylint basement_bot/*.py basement_bot/base/*.py basement_bot/cogs/*.py
-	# TODO: add basement_bot/plugins/*.py after plugins documented
+	$(drun) pylint techsupport_bot/*.py techsupport_bot/base/*.py techsupport_bot/cogs/*.py
+	# TODO: add techsupport_bot/plugins/*.py after plugins documented
 
 test:
 	$(drun) pytest --disable-warnings
