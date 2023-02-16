@@ -830,6 +830,18 @@ class DuckHunt(base.LoopCog):
             await self.handle_winner(
                 response_message.author, guild, action, duration, channel
             )
+        else:
+            await self.got_away(channel)
+
+    async def got_away(self, channel):
+        """Sends a "got away!" embed when timeout passes"""
+        embed = discord.Embed(
+            title="A duck got away!",
+            description="Then he waddled away, waddle waddle, 'til the very next day",
+        )
+        embed.color = discord.Color.red()
+
+        await channel.send(embed=embed)
 
     async def handle_winner(self, winner, guild, action, duration, channel):
         await self.bot.guild_log(
