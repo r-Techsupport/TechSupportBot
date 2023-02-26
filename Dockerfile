@@ -1,5 +1,5 @@
 
-FROM python:3.9-alpine as builder
+FROM python:3.10-alpine as builder
 
 RUN apk update && \
     apk add --no-cache \
@@ -7,7 +7,7 @@ RUN apk update && \
     gcc \
     musl-dev
 
-WORKDIR /var/BasementBot
+WORKDIR /var/TechSupportBot
 COPY Pipfile.lock .
 
 RUN pip install pipenv && \
@@ -15,12 +15,11 @@ RUN pip install pipenv && \
     pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY . .
-COPY config.yml basement_bot
 
-FROM python:3.9-alpine
+FROM python:3.10-alpine
 RUN apk add --no-cache \
     libpq
-WORKDIR /var/basement_bot
+WORKDIR /var/techsupport_bot
 COPY --from=builder /usr/local /usr/local
-COPY --from=builder /var/BasementBot/basement_bot .
+COPY --from=builder /var/TechSupportBot/techsupport_bot .
 CMD python3 -u main.py
