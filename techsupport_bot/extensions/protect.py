@@ -528,7 +528,7 @@ class Protector(base.MatchCog):
         description="Bans a user with a given reason",
         usage="@user [reason]",
     )
-    async def ban_user(self, ctx, user: discord.Member, *, reason: str = None):
+    async def ban_user(self, ctx, user: discord.User, *, reason: str = None):
         """Method to ban a user from discord."""
         await self.handle_ban(ctx, user, reason)
 
