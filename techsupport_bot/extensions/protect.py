@@ -250,7 +250,7 @@ class Protector(base.MatchCog):
             await self.send_default_delete_response(config, ctx, content, reason)
             return
 
-        linx_embed= await self.create_linx_embed(config, ctx, content)
+        linx_embed = await self.create_linx_embed(config, ctx, content)
         if not linx_embed:
             await self.send_default_delete_response(config, ctx, content, reason)
             await self.send_alert(config, ctx, "Could not convert text to Linx paste")
@@ -512,7 +512,7 @@ class Protector(base.MatchCog):
 
         embed = discord.Embed(description=url)
 
-        embed.add_field(name="Paste Link", value = url)
+        embed.add_field(name="Paste Link", value=url)
         embed.description = content[0:100].replace("\n", " ")
         embed.set_author(name=f"Paste by {ctx.author}", icon_url=ctx.author.avatar_url)
         embed.set_footer(text="Note: long messages are automatically pasted")
