@@ -19,7 +19,7 @@ mock = "==5.0.1"
 motor = "==3.1.1"
 munch = "==2.5.0"
 pylint = "*"
-pytest = "==7.2.1"
+pytest = "==7.2.2"
 pyyaml = "==6.0"
 
 [requires]
