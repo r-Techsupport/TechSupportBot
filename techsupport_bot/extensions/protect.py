@@ -512,7 +512,7 @@ class Protector(base.MatchCog):
 
         embed = discord.Embed(description=url)
 
-        embed.title = url
+        embed.add_field(name="Paste Link", value=url)
         embed.description = content[0:100].replace("\n", " ")
         embed.set_author(name=f"Paste by {ctx.author}", icon_url=ctx.author.avatar_url)
         embed.set_footer(text="Note: long messages are automatically pasted")
