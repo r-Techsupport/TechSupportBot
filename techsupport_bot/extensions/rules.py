@@ -92,6 +92,7 @@ class Rules(base.BaseCog):
         first = True
 
         numbers = []
+        already_done = []
 
         # Splits content string, and adds each item to number list
         numbers.extend([int(num) for num in content.split(",")])
@@ -109,6 +110,8 @@ class Rules(base.BaseCog):
                 await ctx.send_deny_embed("There are no rules for this server")
                 return
             rules = rules_data.get("rules")
+            if number in already_done:
+                continue
 
             try:
                 rule = rules[number - 1]
@@ -117,7 +120,7 @@ class Rules(base.BaseCog):
 
             if not rule:
                 await ctx.send_deny_embed(f"Rule number {number} doesn't exist")
-                return
+                continue
 
             embed = RuleEmbed(
                 title=f"Rule {number}", description=rule.get("description", "None")
@@ -134,6 +137,8 @@ class Rules(base.BaseCog):
                 first = False
             else:
                 await ctx.send(embed=embed, mention_author=False)
+
+            already_done.append(number)
 
     @commands.guild_only()
     @rule_group.command(
