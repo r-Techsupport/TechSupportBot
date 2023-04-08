@@ -201,13 +201,12 @@ async def extension_help(self, ctx, extension_name):
         extension_name (str): the name of the extension to show the help for
     """
 
-    def get_help_embed_for_extension(self, ctx, extension_name, command_prefix):
+    def get_help_embed_for_extension(self, extension_name, command_prefix):
         """Gets the help embed for an extension.
 
         Defined so it doesn't have to be written out twice
 
         parameters:
-            ctx (discord.ext.Context): context of the message
             extension_name (str): the name of the extension to show the help for
             command_prefix (str): passed to the func as it has to be awaited
 
@@ -252,13 +251,13 @@ async def extension_help(self, ctx, extension_name):
         ):
             await ctx.send(
                 embed=get_help_embed_for_extension(
-                    self, ctx, extension_name, await self.bot.get_prefix(ctx.message)
+                    self, extension_name, await self.bot.get_prefix(ctx.message)
                 )
             )
 
     elif len(ctx.message.content.split()) < 2:
         await ctx.send(
             embed=get_help_embed_for_extension(
-                self, ctx, extension_name, await self.bot.get_prefix(ctx.message)
+                self, extension_name, await self.bot.get_prefix(ctx.message)
             )
         )
