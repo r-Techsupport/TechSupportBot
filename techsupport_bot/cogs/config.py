@@ -31,7 +31,9 @@ class ConfigControl(base.BaseCog):
         # Executed if there are no/invalid args supplied
         def get_help_embed(self, ctx, command_prefix):
             # Gets commands, checks if first supplied arg is valid
-            embed = discord.Embed(title="Incorrent/no args provided, correct command usage:")
+            embed = discord.Embed(
+                title="Incorrent/no args provided, correct command usage:"
+            )
 
             for command in self.bot.get_cog(self.qualified_name).walk_commands():
                 if issubclass(command.__class__, commands.Group):
@@ -40,7 +42,9 @@ class ConfigControl(base.BaseCog):
                 if command.full_parent_name == "":
                     syntax = f"{command_prefix}{command.name}"
                 else:
-                    syntax = f"{command_prefix}{command.full_parent_name} {command.name}"
+                    syntax = (
+                        f"{command_prefix}{command.full_parent_name} {command.name}"
+                    )
 
                 embed.color = discord.Color.green()
                 embed.add_field(
@@ -52,13 +56,22 @@ class ConfigControl(base.BaseCog):
             return embed
 
         if len(ctx.message.content.split()) < 2:
-            await ctx.send(embed=get_help_embed(self, ctx, await self.bot.get_prefix(ctx.message)))
-            
-        elif ctx.message.content.split().pop(1) not in [command.name for command in self.bot.get_cog(self.qualified_name).walk_commands()]:
-            if await ctx.confirm("Invalid argument! Show help command?", delete_after=True):
-                await ctx.send(embed=get_help_embed(self, ctx, await self.bot.get_prefix(ctx.message)))
+            await ctx.send(
+                embed=get_help_embed(self, ctx, await self.bot.get_prefix(ctx.message))
+            )
 
-
+        elif ctx.message.content.split().pop(1) not in [
+            command.name
+            for command in self.bot.get_cog(self.qualified_name).walk_commands()
+        ]:
+            if await ctx.confirm(
+                "Invalid argument! Show help command?", delete_after=True, timeout=10
+            ):
+                await ctx.send(
+                    embed=get_help_embed(
+                        self, ctx, await self.bot.get_prefix(ctx.message)
+                    )
+                )
 
     @commands.has_permissions(administrator=True)
     @commands.guild_only()

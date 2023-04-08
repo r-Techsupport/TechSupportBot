@@ -449,7 +449,7 @@ class FactoidManager(base.MatchCog):
     )
     async def factoid(self, ctx):
         """Method to make the command for the factoid."""
-        
+
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
 

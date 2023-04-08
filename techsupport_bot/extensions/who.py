@@ -92,7 +92,7 @@ class Who(base.BaseCog):
 
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
-        
+
         pass
 
     @note.command(

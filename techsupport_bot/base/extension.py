@@ -215,16 +215,13 @@ async def extension_help(self, ctx, extension_name):
         embed = discord.Embed()
         embed.title = f"Extension Commands: `{extension_name}`"
 
-
         for command in self.bot.walk_commands():
-
             command_extension_name = self.bot.get_command_extension_name(command)
             if extension_name != command_extension_name:
                 continue
 
             if issubclass(command.__class__, commands.Group):
                 continue
-
 
             if command.full_parent_name == "":
                 syntax = f"{command_prefix}{command.name}"
@@ -244,11 +241,24 @@ async def extension_help(self, ctx, extension_name):
 
         return embed
 
-
-    if len(ctx.message.content.split()) > 1 and ctx.message.content.split().pop(1) not in [command.name for command in self.bot.get_cog(self.qualified_name).walk_commands()]:
-        if await ctx.confirm("Invalid argument! Show help command?", delete_after=True):
-            await ctx.send(embed=get_help_embed_for_extension(self, ctx, extension_name, await self.bot.get_prefix(ctx.message)))
-
+    if len(ctx.message.content.split()) > 1 and ctx.message.content.split().pop(
+        1
+    ) not in [
+        command.name
+        for command in self.bot.get_cog(self.qualified_name).walk_commands()
+    ]:
+        if await ctx.confirm(
+            "Invalid argument! Show help command?", delete_after=True, timeout=10
+        ):
+            await ctx.send(
+                embed=get_help_embed_for_extension(
+                    self, ctx, extension_name, await self.bot.get_prefix(ctx.message)
+                )
+            )
 
     elif len(ctx.message.content.split()) < 2:
-        await ctx.send(embed=get_help_embed_for_extension(self, ctx, extension_name, await self.bot.get_prefix(ctx.message)))
+        await ctx.send(
+            embed=get_help_embed_for_extension(
+                self, ctx, extension_name, await self.bot.get_prefix(ctx.message)
+            )
+        )

@@ -134,7 +134,7 @@ class ServerGate(base.MatchCog):
     )
     async def gate_command(self, ctx):
         """Method to create the command for gate extension."""
-        
+
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
 

@@ -118,7 +118,7 @@ class News(base.LoopCog):
     )
     async def news(self, ctx):
         """Method to set up the news command."""
-        
+
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
 
