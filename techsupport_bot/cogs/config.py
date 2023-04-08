@@ -35,12 +35,16 @@ class ConfigControl(base.BaseCog):
                 title="Incorrect/no args provided, correct command usage:"
             )
 
+            # Loops through each command in this cog
             for command in self.bot.get_cog(self.qualified_name).walk_commands():
+                
+                
                 if issubclass(command.__class__, commands.Group):
                     continue
 
                 if command.full_parent_name == "":
                     syntax = f"{command_prefix}{command.name}"
+                
                 else:
                     syntax = (
                         f"{command_prefix}{command.full_parent_name} {command.name}"
@@ -55,11 +59,13 @@ class ConfigControl(base.BaseCog):
 
             return embed
 
+        # Checks if no arguments were supplied
         if len(ctx.message.content.split()) < 2:
             await ctx.send(
                 embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
             )
 
+        # Checks whether the first given argument is valid if more than one argument is supplied
         elif ctx.message.content.split().pop(1) not in [
             command.name
             for command in self.bot.get_cog(self.qualified_name).walk_commands()
