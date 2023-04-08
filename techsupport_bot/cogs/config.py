@@ -37,14 +37,12 @@ class ConfigControl(base.BaseCog):
 
             # Loops through each command in this cog
             for command in self.bot.get_cog(self.qualified_name).walk_commands():
-                
-                
                 if issubclass(command.__class__, commands.Group):
                     continue
 
                 if command.full_parent_name == "":
                     syntax = f"{command_prefix}{command.name}"
-                
+
                 else:
                     syntax = (
                         f"{command_prefix}{command.full_parent_name} {command.name}"
