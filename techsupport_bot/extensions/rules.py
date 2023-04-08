@@ -93,6 +93,7 @@ class Rules(base.BaseCog):
 
         numbers = []
         already_done = []
+        errors = []
 
         # Splits content string, and adds each item to number list
         numbers.extend([int(num) for num in content.split(",")])
@@ -119,7 +120,7 @@ class Rules(base.BaseCog):
                 rule = None
 
             if not rule:
-                await ctx.send_deny_embed(f"Rule number {number} doesn't exist")
+                errors.append(number)
                 continue
 
             embed = RuleEmbed(
@@ -139,6 +140,9 @@ class Rules(base.BaseCog):
                 await ctx.send(embed=embed, mention_author=False)
 
             already_done.append(number)
+
+        for error in errors:
+            await ctx.send_deny_embed(f"Rule number {error} doesn't exist")
 
     @commands.guild_only()
     @rule_group.command(
