@@ -251,4 +251,4 @@ async def extension_help(self, ctx, extension_name):
 
 
     elif len(ctx.message.content.split()) < 2:
-            await ctx.send(embed=get_help_embed_for_extension(self, ctx, extension_name, await self.bot.get_prefix(ctx.message)))
+        await ctx.send(embed=get_help_embed_for_extension(self, ctx, extension_name, await self.bot.get_prefix(ctx.message)))
