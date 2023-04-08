@@ -404,6 +404,10 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
     )
     async def application(self, ctx):
         """Method for application."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         pass
 
     @application.command(

@@ -953,11 +953,19 @@ class DuckHunt(base.LoopCog):
 
         return duck_user
 
+
+
+
+
     @commands.group(
         brief="Executes a duck command",
         description="Executes a duck command",
     )
     async def duck(self, ctx):
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         pass
 
     @util.with_typing
