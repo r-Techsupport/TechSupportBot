@@ -246,6 +246,10 @@ class ChannelDirectory(base.BaseCog):
     )
     async def directory(self, ctx):
         """Method of the directory."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         pass
 
     @util.with_typing

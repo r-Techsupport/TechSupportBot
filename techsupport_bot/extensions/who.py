@@ -89,6 +89,10 @@ class Who(base.BaseCog):
     )
     async def note(self, ctx):
         """Method for the note command."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         pass
 
     @note.command(
