@@ -37,7 +37,7 @@ class AdminControl(base.BaseCog):
         def get_help_embed(self, command_prefix):
             # Gets commands, checks if first supplied arg is valid
             embed = discord.Embed(
-                title="Incorrent/no args provided, correct command usage:"
+                title="Incorrect/no args provided, correct command usage:"
             )
 
             for command in self.bot.get_cog(self.qualified_name).walk_commands():
@@ -73,12 +73,8 @@ class AdminControl(base.BaseCog):
                 "Invalid argument! Show help command?", delete_after=True
             ):
                 await ctx.send(
-                    embed=get_help_embed(
-                        self, await self.bot.get_prefix(ctx.message)
-                    )
+                    embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
                 )
-
-        
 
     @util.with_typing
     @extension_group.command(
@@ -197,7 +193,7 @@ class AdminControl(base.BaseCog):
         def get_help_embed(self, command_prefix):
             # Gets commands, checks if first supplied arg is valid
             embed = discord.Embed(
-                title="Incorrent/no args provided, correct command usage:"
+                title="Incorrect/no args provided, correct command usage:"
             )
 
             for command in self.bot.get_cog(self.qualified_name).walk_commands():
@@ -233,11 +229,8 @@ class AdminControl(base.BaseCog):
                 "Invalid argument! Show help command?", delete_after=True
             ):
                 await ctx.send(
-                    embed=get_help_embed(
-                        self, await self.bot.get_prefix(ctx.message)
-                    )
+                    embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
                 )
-        
 
     @util.with_typing
     @command_group.command(
@@ -301,7 +294,7 @@ class AdminControl(base.BaseCog):
         def get_help_embed(self, command_prefix):
             # Gets commands, checks if first supplied arg is valid
             embed = discord.Embed(
-                title="Incorrent/no args provided, correct command usage:"
+                title="Incorrect/no args provided, correct command usage:"
             )
 
             for command in self.bot.get_cog(self.qualified_name).walk_commands():
@@ -337,12 +330,8 @@ class AdminControl(base.BaseCog):
                 "Invalid argument! Show help command?", delete_after=True, timeout=10
             ):
                 await ctx.send(
-                    embed=get_help_embed(
-                        self, await self.bot.get_prefix(ctx.message)
-                    )
+                    embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
                 )
-
-        
 
     @util.with_typing
     @set_group.command(
@@ -386,7 +375,7 @@ class AdminControl(base.BaseCog):
         def get_help_embed(self, command_prefix):
             # Gets commands, checks if first supplied arg is valid
             embed = discord.Embed(
-                title="Incorrent/no args provided, correct command usage:"
+                title="Incorrect/no args provided, correct command usage:"
             )
 
             for command in self.bot.get_cog(self.qualified_name).walk_commands():
@@ -422,11 +411,8 @@ class AdminControl(base.BaseCog):
                 "Invalid argument! Show help command?", delete_after=True
             ):
                 await ctx.send(
-                    embed=get_help_embed(
-                        self, await self.bot.get_prefix(ctx.message)
-                    )
+                    embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
                 )
- 
 
     @util.with_typing
     @echo.command(
