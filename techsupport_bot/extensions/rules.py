@@ -1,3 +1,4 @@
+"""Module for the rules extension of the discord bot."""
 import datetime
 import io
 import json
@@ -9,26 +10,33 @@ from discord.ext import commands
 
 
 def setup(bot):
+    """Adding the rules configuration to the config file."""
     bot.add_cog(Rules(bot=bot))
 
 
 class RuleEmbed(discord.Embed):
+    """Class for setting up the rules embed."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.color = discord.Color.gold()
 
 
 class Rules(base.BaseCog):
+    """Class to define the rules for the extension."""
+
     RULE_ICON_URL = "https://cdn.icon-icons.com/icons2/907/PNG/512/balance-scale-of-justice_icon-icons.com_70554.png"
     COLLECTION_NAME = "rules_extension"
 
     async def preconfig(self):
+        """Method to preconfig the rules."""
         if not self.COLLECTION_NAME in await self.bot.mongo.list_collection_names():
             await self.bot.mongo.create_collection(self.COLLECTION_NAME)
 
     @commands.group(name="rule")
     async def rule_group(self, ctx):
-        pass
+        """Method for the rule group."""
+        print(f"Rule command called in channel {ctx.channel}")
 
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
@@ -39,6 +47,7 @@ class Rules(base.BaseCog):
         usage="|uploaded-json|",
     )
     async def edit_rules(self, ctx):
+        """Method to edit the rules that were set up."""
         collection = self.bot.mongo[self.COLLECTION_NAME]
 
         uploaded_data = await util.get_json_from_attachments(ctx.message)
@@ -129,6 +138,7 @@ class Rules(base.BaseCog):
         description="Gets all the rules for the current server",
     )
     async def get_all_rules(self, ctx):
+        """Method to get all the rules that are set up."""
         rules_data = await self.bot.mongo[self.COLLECTION_NAME].find_one(
             {"guild_id": {"$eq": str(ctx.guild.id)}}
         )
