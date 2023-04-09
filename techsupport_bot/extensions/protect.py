@@ -366,11 +366,11 @@ class Protector(base.MatchCog):
                 return
 
         config = await self.bot.get_context_config(ctx)
-        #await ctx.guild.ban(
-        #    user,
-        #    reason=reason,
-        #    delete_message_days=config.extensions.protect.ban_delete_duration.value,
-        #)
+        await ctx.guild.ban(
+            user,
+            reason=reason,
+            delete_message_days=config.extensions.protect.ban_delete_duration.value,
+        )
 
         embed = await self.generate_user_modified_embed(user, "ban", reason)
 
