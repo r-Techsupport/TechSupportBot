@@ -269,7 +269,8 @@ class FactoidManager(base.MatchCog):
         if not ctx.guild:
             return
         # copy the arguments starting with index one, and reference the first argument
-        query = content[1:].split(" ")[0]
+        # Replaces \n with spaces so factoid can be called even with newlines
+        query = content[1:].replace("\n", " ").split(" ")[0]
         factoid = await self.get_factoid_from_query(query, ctx.guild)
         if not factoid:
             return
