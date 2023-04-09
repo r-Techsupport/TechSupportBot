@@ -366,11 +366,11 @@ class Protector(base.MatchCog):
                 return
 
         config = await self.bot.get_context_config(ctx)
-        await ctx.guild.ban(
-            user,
-            reason=reason,
-            delete_message_days=config.extensions.protect.ban_delete_duration.value,
-        )
+        #await ctx.guild.ban(
+        #    user,
+        #    reason=reason,
+        #    delete_message_days=config.extensions.protect.ban_delete_duration.value,
+        #)
 
         embed = await self.generate_user_modified_embed(user, "ban", reason)
 
@@ -528,7 +528,7 @@ class Protector(base.MatchCog):
         description="Bans a user with a given reason",
         usage="@user [reason]",
     )
-    async def ban_user(self, ctx, user: discord.User, *, reason: str = None):
+    async def ban_user(self, ctx, user: discord.Member, *, reason: str = None):
         """Method to ban a user from discord."""
         await self.handle_ban(ctx, user, reason)
 
@@ -543,7 +543,7 @@ class Protector(base.MatchCog):
         description="Unbans a user with a given reason",
         usage="@user [reason]",
     )
-    async def unban_user(self, ctx, user: discord.User, *, reason: str = None):
+    async def unban_user(self, ctx, user: discord.Member, *, reason: str = None):
         """Method to unban a user from discord."""
         await self.handle_unban(ctx, user, reason)
 
@@ -597,7 +597,7 @@ class Protector(base.MatchCog):
         description="Gets warnings for a user",
         usage="@user",
     )
-    async def get_warnings_command(self, ctx, user: discord.User):
+    async def get_warnings_command(self, ctx, user: discord.Member):
         """Method to get the warnings of a user in discord."""
         warnings = await self.get_warnings(user, ctx.guild)
         if not warnings:
