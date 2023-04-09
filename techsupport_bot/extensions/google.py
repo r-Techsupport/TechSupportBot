@@ -54,7 +54,7 @@ class Googler(base.BaseCog):
         """Method to add command to search google."""
 
         # Executed if there are no/invalid args supplied
-        await base.extension_help(self, ctx, self.__module__[11:])
+        # await base.extension_help(self, ctx, self.__module__[11:])
 
         pass
 
