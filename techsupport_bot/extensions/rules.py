@@ -94,7 +94,12 @@ class Rules(base.BaseCog):
         numbers = []
 
         # Splits content string, and adds each item to number list
-        numbers.extend([int(num) for num in content.split(",")])
+        # Catches ValueError when no number is specified
+        try:
+            numbers.extend([int(num) for num in content.split(",")])
+        except ValueError:
+            await ctx.send_deny_embed("Please specify a rule number!")
+            return
 
         for number in numbers:
             if number < 1:
