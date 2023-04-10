@@ -28,6 +28,53 @@ class ConfigControl(base.BaseCog):
             ctx (discord.ext.Context): the context object for the message
         """
 
+        # Executed if there are no/invalid args supplied
+        def get_help_embed(self, command_prefix):
+            # Gets commands, checks if first supplied arg is valid
+            embed = discord.Embed(
+                title="Incorrect/no args provided, correct command usage:"
+            )
+
+            # Loops through each command in this cog
+            for command in self.bot.get_cog(self.qualified_name).walk_commands():
+                if issubclass(command.__class__, commands.Group):
+                    continue
+
+                if command.full_parent_name == "":
+                    syntax = f"{command_prefix}{command.name}"
+
+                else:
+                    syntax = (
+                        f"{command_prefix}{command.full_parent_name} {command.name}"
+                    )
+
+                embed.color = discord.Color.green()
+                embed.add_field(
+                    name=f"`{syntax} {command.usage or ''}`",
+                    value=command.description or "No description available",
+                    inline=False,
+                )
+
+            return embed
+
+        # Checks if no arguments were supplied
+        if len(ctx.message.content.split()) < 2:
+            await ctx.send(
+                embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
+            )
+
+        # Checks whether the first given argument is valid if more than one argument is supplied
+        elif ctx.message.content.split().pop(1) not in [
+            command.name
+            for command in self.bot.get_cog(self.qualified_name).walk_commands()
+        ]:
+            if await ctx.confirm(
+                "Invalid argument! Show help command?", delete_after=True, timeout=10
+            ):
+                await ctx.send(
+                    embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
+                )
+
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     @config_command.command(

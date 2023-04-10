@@ -4,6 +4,7 @@ import glob
 import os
 
 import botlogging
+import discord
 import munch
 import yaml
 from discord.ext import commands
@@ -190,3 +191,86 @@ class ExtensionsBot(commands.Bot):
 
         with open(f"{self.EXTENSIONS_DIR}/{extension_name}.py", "wb") as file_handle:
             file_handle.write(fp)
+
+
+async def extension_help(self, ctx, extension_name):
+    """Automatically prompts for help if improper syntax for an extension is called.
+
+    The format for extension_name that's used is `self.__module__[11:]`, because
+    all extensions have the value set to extension.<name>, it's the most reliable
+    way to get the extension name regardless of aliases
+
+    parameters:
+        ctx (discord.ext.Context): context of the message
+        extension_name (str): the name of the extension to show the help for
+    """
+
+    def get_help_embed_for_extension(self, extension_name, command_prefix):
+        """Gets the help embed for an extension.
+
+        Defined so it doesn't have to be written out twice
+
+        parameters:
+            extension_name (str): the name of the extension to show the help for
+            command_prefix (str): passed to the func as it has to be awaited
+
+        returns:
+            embed (discord.Embed): Embed containing all commands with their description
+        """
+        embed = discord.Embed()
+        embed.title = f"Extension Commands: `{extension_name}`"
+
+        # Loops through each command in the bots library
+        for command in self.bot.walk_commands():
+            # Gets the command name
+            command_extension_name = self.bot.get_command_extension_name(command)
+
+            # Continues the loop if the command isn't a part of the target extension
+            if extension_name != command_extension_name or issubclass(
+                command.__class__, commands.Group
+            ):
+                continue
+
+            if command.full_parent_name == "":
+                syntax = f"{command_prefix}{command.name}"
+
+            else:
+                syntax = f"{command_prefix}{command.full_parent_name} {command.name}"
+
+            usage = command.usage or ""
+
+            embed.add_field(
+                name=f"`{syntax} {usage}`",
+                value=command.description or "No description available",
+                inline=False,
+            )
+
+        # Default for when no matching commands were found
+        if len(embed.fields) == 0:
+            embed.description = "There are no commands for this extension"
+
+        return embed
+
+    # Checks whether the first given argument is valid if more than one argument is supplied
+    if len(ctx.message.content.split()) > 1 and ctx.message.content.split().pop(
+        1
+    ) not in [
+        command.name
+        for command in self.bot.get_cog(self.qualified_name).walk_commands()
+    ]:
+        if await ctx.confirm(
+            "Invalid argument! Show help command?", delete_after=True, timeout=10
+        ):
+            await ctx.send(
+                embed=get_help_embed_for_extension(
+                    self, extension_name, await self.bot.get_prefix(ctx.message)
+                )
+            )
+
+    # Checks if no arguments were supplied
+    elif len(ctx.message.content.split()) < 2:
+        await ctx.send(
+            embed=get_help_embed_for_extension(
+                self, extension_name, await self.bot.get_prefix(ctx.message)
+            )
+        )
