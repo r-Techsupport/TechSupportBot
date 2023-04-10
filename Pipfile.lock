@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "0b9db1e8554f4cddbf798feeea0ae9cca46eae9c124ebc070d68e864a802ca32"
+            "sha256": "a79b0278d8736d81385c5d0cf09249a7fdbe3257cde2f59c20ae6226eb482ef9"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -80,7 +80,7 @@
                 "sha256:95835a4db6117263305d450f838ccdc3eabd427c0deb32fd617769ad4c989e98",
                 "sha256:9fb93dc871eb9c45a410e29669624790c01b70d27f20d512a22b146c411440ea"
             ],
-            "markers": "python_version >= '3.7' and python_version < '4.0'",
+            "markers": "python_version >= '3.7' and python_version < '4'",
             "version": "==6.6.4"
         },
         "aiounittest": {
@@ -241,7 +241,7 @@
                 "sha256:224e32b03eb46be70e12ef6d64e0be123a64e621ab4c0822ff6d450d52a540b9",
                 "sha256:89141536394f909066cabd112e3e1a37e4e654db00a25308b0f130bc3152eb46"
             ],
-            "markers": "python_version >= '3.7' and python_version < '4.0'",
+            "markers": "python_version >= '3.7' and python_version < '4'",
             "version": "==2.3.0"
         },
         "emoji": {
@@ -367,11 +367,11 @@
         },
         "motor": {
             "hashes": [
-                "sha256:01d93d7c512810dcd85f4d634a7244ba42ff6be7340c869791fe793561e734da",
-                "sha256:a4bdadf8a08ebb186ba16e557ba432aa867f689a42b80f2e9f8b24bbb1604742"
+                "sha256:4bfc65230853ad61af447088527c1197f91c20ee957cfaea3144226907335716",
+                "sha256:80c08477c09e70db4f85c99d484f2bafa095772f1d29b3ccb253270f9041da9a"
             ],
             "index": "pypi",
-            "version": "==3.1.1"
+            "version": "==3.1.2"
         },
         "multidict": {
             "hashes": [
