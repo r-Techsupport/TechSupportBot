@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "a79b0278d8736d81385c5d0cf09249a7fdbe3257cde2f59c20ae6226eb482ef9"
+            "sha256": "81c1020a86d3fa8add809b985a2e343cfbcfdce795f8edc07c0e67ac1db9a19b"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -18,11 +18,11 @@
     "default": {
         "aio-pika": {
             "hashes": [
-                "sha256:36c4742449f1cbcb83165b3733b090cf88f3d2f7f027225eedb8c7f300b05dde",
-                "sha256:c0e2601eda6a1097fe1d33c5f9965a86a27b328ac48914d20c23f675b3ab1797"
+                "sha256:096add8286019832008baa48e7463d7c0c609953011ec4c3e185f5249760e47b",
+                "sha256:48e90b6a901742e8078c306d3a28580a065b16b5178dd50b2399b27b1884b15d"
             ],
             "index": "pypi",
-            "version": "==8.3.0"
+            "version": "==9.0.5"
         },
         "aiocron": {
             "hashes": [
@@ -77,11 +77,11 @@
         },
         "aiormq": {
             "hashes": [
-                "sha256:95835a4db6117263305d450f838ccdc3eabd427c0deb32fd617769ad4c989e98",
-                "sha256:9fb93dc871eb9c45a410e29669624790c01b70d27f20d512a22b146c411440ea"
+                "sha256:b5249b6bc04b21e79ffeb049667b134128e187aaaafd06d84587aead19aeddb2",
+                "sha256:f4d4f3859c044b16c3a221755eca9c0393d283e286f238db343560af9d4b4728"
             ],
-            "markers": "python_version >= '3.7' and python_version < '4'",
-            "version": "==6.6.4"
+            "markers": "python_version >= '3.7' and python_version < '4.0'",
+            "version": "==6.7.4"
         },
         "aiounittest": {
             "hashes": [
@@ -241,7 +241,7 @@
                 "sha256:224e32b03eb46be70e12ef6d64e0be123a64e621ab4c0822ff6d450d52a540b9",
                 "sha256:89141536394f909066cabd112e3e1a37e4e654db00a25308b0f130bc3152eb46"
             ],
-            "markers": "python_version >= '3.7' and python_version < '4'",
+            "markers": "python_version >= '3.7' and python_version < '4.0'",
             "version": "==2.3.0"
         },
         "emoji": {
