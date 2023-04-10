@@ -530,7 +530,13 @@ class Protector(base.MatchCog):
     )
     async def ban_user(self, ctx, user: discord.User, *, reason: str = None):
         """Method to ban a user from discord."""
-        await self.handle_ban(ctx, user, reason)
+
+        # Uses the discord.Member class to get the top role attribute if the
+        # user is a part of the target guild
+        if ctx.guild.get_member(user.id) is not None:
+            await self.handle_ban(ctx, ctx.guild.get_member(user.id), reason)
+        else:
+            await self.handle_ban(ctx, user, reason)
 
         config = await self.bot.get_context_config(ctx)
         await self.send_alert(config, ctx, "Ban command")
@@ -545,7 +551,13 @@ class Protector(base.MatchCog):
     )
     async def unban_user(self, ctx, user: discord.User, *, reason: str = None):
         """Method to unban a user from discord."""
-        await self.handle_unban(ctx, user, reason)
+
+        # Uses the discord.Member class to get the top role attribute if the
+        # user is a part of the target guild
+        if ctx.guild.get_member(user.id) is not None:
+            await self.handle_unban(ctx, ctx.guild.get_member(user.id), reason)
+        else:
+            await self.handle_unban(ctx, user, reason)
 
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
