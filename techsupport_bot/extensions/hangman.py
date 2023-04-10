@@ -189,6 +189,10 @@ class HangmanCog(base.BaseCog):
     )
     async def hangman(self, ctx):
         """Method to use the command to start the hangman game."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         pass
 
     @hangman.command(

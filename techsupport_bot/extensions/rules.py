@@ -36,6 +36,10 @@ class Rules(base.BaseCog):
     @commands.group(name="rule")
     async def rule_group(self, ctx):
         """Method for the rule group."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         print(f"Rule command called in channel {ctx.channel}")
 
     @commands.has_permissions(administrator=True)
