@@ -83,7 +83,7 @@ class Emojis(base.BaseCog):
             )
             return
 
-        await ctx.send(emoji_message)
+        await ctx.send_confirm_embed(emoji_message)
 
     @commands.has_permissions(add_reactions=True)
     @commands.guild_only()
