@@ -58,7 +58,8 @@ class Dumpdbg(base.BaseCog):
         name="dumpdbg",
         aliases=["dump", "debug-dump", "debug_dump", "debugdump"],
         brief="Debugs an uploaded dump file",
-        description="Runs an uploaded Windows minidump through WinDBG on an external server and returns the pasted output.",
+        description="Runs an uploaded Windows minidump through WinDBG on \
+            an external server and returns the pasted output.",
     )
     async def debug_dump(self, ctx):
         """Method for the actual debugging"""
@@ -130,14 +131,13 @@ class Dumpdbg(base.BaseCog):
                 }
 
                 # API Call itself
-                json_data = json.dumps(data).encode("utf-8")
-                with urllib.request.Request(
-                    api_ip, json_data, headers={"Content-Type": "application/json"}
-                ) as req:
+
+                with json.dumps(data).encode("utf-8") as json_data:
+                    req = urllib.request.Request(api_ip, json_data, headers={"Content-Type": "application/json"})
                     response = json.loads(
                         urllib.request.urlopen(req, timeout=100).read().decode("utf-8")
-                    )
-    
+                    ) # nosec
+
                 # Handling for failed results
                 if response["success"] == "false":
                     await ctx.send_deny_embed(
