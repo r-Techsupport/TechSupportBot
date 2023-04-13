@@ -269,7 +269,8 @@ class FactoidManager(base.MatchCog):
         if not ctx.guild:
             return
         # copy the arguments starting with index one, and reference the first argument
-        query = content[1:].split(" ")[0]
+        # Replaces \n with spaces so factoid can be called even with newlines
+        query = content[1:].replace("\n", " ").split(" ")[0]
         factoid = await self.get_factoid_from_query(query, ctx.guild)
         if not factoid:
             return
@@ -449,6 +450,10 @@ class FactoidManager(base.MatchCog):
     )
     async def factoid(self, ctx):
         """Method to make the command for the factoid."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         print(f"Factoid command called in channel {ctx.channel}")
 
     @util.with_typing

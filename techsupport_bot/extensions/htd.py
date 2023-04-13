@@ -30,6 +30,7 @@ class Htd(base.BaseCog):
         """
         perform calculations on cross base numbers and convert between bases
         """
+        val_to_convert.replace("#", "0x")
 
         def split_nicely(str_to_split: str) -> list:
             """

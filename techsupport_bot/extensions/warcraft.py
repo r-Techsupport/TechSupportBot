@@ -122,6 +122,10 @@ class WarcraftCommands(BattleNet):
     )
     async def wowc(self, ctx):
         """Method for the command wowc."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         pass
 
     @util.with_typing
@@ -142,6 +146,10 @@ class WarcraftCommands(BattleNet):
     )
     async def wow(self, ctx):
         """Method to execute the wow command."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         pass
 
     @util.with_typing

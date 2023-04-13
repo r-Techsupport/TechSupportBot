@@ -25,6 +25,10 @@ class XKCD(base.BaseCog):
     )
     async def xkcd(self, ctx):
         """Method to create the command for xkcd."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         pass
 
     @xkcd.command(
