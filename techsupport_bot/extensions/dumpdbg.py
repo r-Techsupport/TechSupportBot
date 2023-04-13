@@ -133,10 +133,12 @@ class Dumpdbg(base.BaseCog):
                 # API Call itself
 
                 with json.dumps(data).encode("utf-8") as json_data:
-                    req = urllib.request.Request(api_ip, json_data, headers={"Content-Type": "application/json"})
+                    req = urllib.request.Request(
+                        api_ip, json_data, headers={"Content-Type": "application/json"}
+                    )
                     response = json.loads(
                         urllib.request.urlopen(req, timeout=100).read().decode("utf-8")
-                    ) # nosec
+                    )
 
                 # Handling for failed results
                 if response["success"] == "false":
