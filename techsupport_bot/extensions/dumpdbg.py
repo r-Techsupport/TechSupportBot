@@ -64,43 +64,54 @@ class Dumpdbg(base.BaseCog):
     async def debug_dump(self, ctx):
         """Method for the actual debugging"""
 
-        # -> Message checks <-
+        async def get_files(ctx, permitted_roles):
+            # Gets files from passed message and checks if they are valid .dmp files
+            #
+            # Params:
+            #  -> ctx (discord.Context) = The message to check
+            #  -> permitted_roles (list) = Roles that can call this command
+            #
+            # Returns:
+            #  -> Valid_URLs (list) = The list of valid .dmp CDN links
+
+            # Checks if attachments were supplied
+            if len(ctx.message.attachments) == 0:
+                await ctx.send_deny_embed("No file supplied!")
+                return []
+
+            # -> Getting valid dump files <-
+
+            valid_URLs = []  # File CDN URLs to PUT to the API for parsing
+
+            # Checks attachments for dump files, disregards 0 byte dumps
+            for attachment in ctx.message.attachments:
+                if attachment.filename.endswith(".dmp"):
+                    # Disregards any empty dumps
+                    if attachment.size == 0:
+                        await ctx.send(
+                            embed=DumpdbgEmbed(
+                                title="Invalid dump detected (Size 0)",
+                                description=f"Dump number {dump_valid}, skipping...",
+                            )
+                        )
+                        continue
+
+                    valid_URLs.append(attachment.url)
+            return valid_URLs
 
         config = await self.bot.get_context_config(guild=ctx.guild)
         api_ip = config.extensions.Dumpdbg.api_ip.value
         permitted_roles = config.extensions.Dumpdbg.roles.value
 
+        # -> Message checks <-
+
         # Checks if the user has any permitted roles
         if not any(role.name in permitted_roles for role in ctx.message.author.roles):
             return
 
-        # Checks if attachments were supplied
-        if len(ctx.message.attachments) == 0:
-            await ctx.send_deny_embed("No file supplied!")
-            return
+        valid_URLs = await get_files(ctx, permitted_roles)
 
-        # -> Getting valid dump files <-
-
-        valid_URLs = []  # File CDN URLs to PUT to the API for parsing
-        dump_valid = 0  # Number of valid files
-
-        # Checks attachments for dump files, disregards 0 byte dumps
-        for attachment in ctx.message.attachments:
-            if attachment.filename.endswith(".dmp"):
-                # Disregards any empty dumps
-                if attachment.size == 0:
-                    await ctx.send(
-                        embed=DumpdbgEmbed(
-                            title="Invalid dump detected (Size 0)",
-                            description=f"Dump number {dump_valid}, skipping...",
-                        )
-                    )
-                    continue
-
-                dump_valid += 1
-                valid_URLs.append(attachment.url)
-
-        if dump_valid == 0:
+        if len(valid_URLs) == 0:
             await ctx.send_deny_embed("No valid dumps detected!")
             return
 
@@ -134,7 +145,7 @@ class Dumpdbg(base.BaseCog):
                     )
                     response = json.loads(
                         urllib.request.urlopen(req, timeout=100).read().decode("utf-8")
-                    )
+                    )  # nosec B310
                 else:
                     raise ValueError("API endpoint not HTTP/HTTPS")
 
