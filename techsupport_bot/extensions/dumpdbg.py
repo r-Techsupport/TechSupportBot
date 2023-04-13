@@ -17,7 +17,7 @@ def setup(bot):
         datatype="str",
         title="DBG Server IP",
         description="IP For the server running WinDBG accessed via an API",
-        default="0.0.0.0",
+        default="",
     )
     config.add(
         key="roles",
@@ -91,7 +91,7 @@ class Dumpdbg(base.BaseCog):
                     await ctx.send(
                         embed=DumpdbgEmbed(
                             title="Invalid dump detected (Size 0)",
-                            description=f"Dump number {dump_no}, skipping...",
+                            description=f"Dump number {dump_valid}, skipping...",
                         )
                     )
                     continue
@@ -112,6 +112,10 @@ class Dumpdbg(base.BaseCog):
             await ctx.send_deny_embed("No API key found!")
             return
 
+        if not api_ip.startswith("http"):
+            await ctx.send_deny_embed("Please make sure API endpoint is HTTP/HTTPS!")
+            return
+
         # -> API call(s) <-
 
         # Try except used because the API key can be present in the request URL,
@@ -121,19 +125,19 @@ class Dumpdbg(base.BaseCog):
 
             for dump_url in valid_URLs:
                 data = {
-                    "key": self.bot.file_config.main.api_keys.dumpdbg_api,
+                    "key": KEY,
                     "url": dump_url,
                 }
 
                 # API Call itself
                 json_data = json.dumps(data).encode("utf-8")
-                req = urllib.request.Request(
+                with urllib.request.Request(
                     api_ip, json_data, headers={"Content-Type": "application/json"}
-                )
-                response = json.loads(
-                    urllib.request.urlopen(req, timeout=100).read().decode("utf-8")
-                )
-
+                ) as req:
+                    response = json.loads(
+                        urllib.request.urlopen(req, timeout=100).read().decode("utf-8")
+                    )
+    
                 # Handling for failed results
                 if response["success"] == "false":
                     await ctx.send_deny_embed(
