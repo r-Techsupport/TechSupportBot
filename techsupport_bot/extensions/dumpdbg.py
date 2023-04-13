@@ -42,15 +42,6 @@ class DumpdbgEmbed(discord.Embed):
 class Dumpdbg(base.BaseCog):
     """Class for the dump debugger on the discord bot."""
 
-    async def call_api(self, protocol, url, data):
-        """Method to get the results from the api.
-        Params:
-        -> protocol (str): Http protocol to use for the call
-        -> url (str): URL to send the request to
-        -> data (dict): Data to send"""
-        response = await self.bot.http_call(protocol, url, params=data, use_cache=True)
-        return response
-
     @util.with_typing
     @commands.guild_only()
     @commands.cooldown(1, 60, commands.BucketType.channel)
@@ -64,12 +55,11 @@ class Dumpdbg(base.BaseCog):
     async def debug_dump(self, ctx):
         """Method for the actual debugging"""
 
-        async def get_files(ctx, permitted_roles):
+        async def get_files(ctx):
             # Gets files from passed message and checks if they are valid .dmp files
             #
             # Params:
             #  -> ctx (discord.Context) = The message to check
-            #  -> permitted_roles (list) = Roles that can call this command
             #
             # Returns:
             #  -> Valid_URLs (list) = The list of valid .dmp CDN links
@@ -82,16 +72,18 @@ class Dumpdbg(base.BaseCog):
             # -> Getting valid dump files <-
 
             valid_URLs = []  # File CDN URLs to PUT to the API for parsing
+            dump_no = 0  # Used for error message
 
             # Checks attachments for dump files, disregards 0 byte dumps
             for attachment in ctx.message.attachments:
                 if attachment.filename.endswith(".dmp"):
-                    # Disregards any empty dumps
+                    dump_no += 1
+                    #  Disregards any empty dumps
                     if attachment.size == 0:
                         await ctx.send(
                             embed=DumpdbgEmbed(
                                 title="Invalid dump detected (Size 0)",
-                                description=f"Dump number {dump_valid}, skipping...",
+                                description=f"Skipping dump number {dump_no}...",
                             )
                         )
                         continue
