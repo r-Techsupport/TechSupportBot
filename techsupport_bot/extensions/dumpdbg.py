@@ -113,10 +113,6 @@ class Dumpdbg(base.BaseCog):
             await ctx.send_deny_embed("No API key found!")
             return
 
-        if not api_ip.startswith("http"):
-            await ctx.send_deny_embed("Please make sure API endpoint is HTTP/HTTPS!")
-            return
-
         # -> API call(s) <-
 
         # Try except used because the API key can be present in the request URL,
@@ -131,14 +127,16 @@ class Dumpdbg(base.BaseCog):
                 }
 
                 # API Call itself
-
-                with json.dumps(data).encode("utf-8") as json_data:
+                json_data = json.dumps(data).encode("utf-8")
+                if api_ip.startswith("http"):
                     req = urllib.request.Request(
                         api_ip, json_data, headers={"Content-Type": "application/json"}
                     )
                     response = json.loads(
                         urllib.request.urlopen(req, timeout=100).read().decode("utf-8")
                     )
+                else:
+                    raise ValueError("API endpoint not HTTP/HTTPS")
 
                 # Handling for failed results
                 if response["success"] == "false":
@@ -176,4 +174,3 @@ class Dumpdbg(base.BaseCog):
         except Exception as e:
             await ctx.send_deny_embed("Exception thrown from command!")
             print(f"Dumpdbg API exception thrown! Exception: {e}")
-            return
