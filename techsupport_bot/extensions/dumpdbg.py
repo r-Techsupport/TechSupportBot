@@ -66,7 +66,6 @@ class Dumpdbg(base.BaseCog):
 
             # Checks if attachments were supplied
             if len(ctx.message.attachments) == 0:
-                await ctx.send_deny_embed("No file supplied!")
                 return []
 
             # -> Getting valid dump files <-
@@ -101,7 +100,9 @@ class Dumpdbg(base.BaseCog):
         if not any(role.name in permitted_roles for role in ctx.message.author.roles):
             return
 
-        valid_URLs = await get_files(ctx, permitted_roles)
+        await ctx.message.add_reaction("⏱️")
+
+        valid_URLs = await get_files(ctx)
 
         if len(valid_URLs) == 0:
             await ctx.send_deny_embed("No valid dumps detected!")
@@ -118,29 +119,29 @@ class Dumpdbg(base.BaseCog):
 
         # -> API call(s) <-
 
-        # Try except used because the API key can be present in the request URL,
-        # this is addressed by making sure it isn't posted to a public channel.
-        try:
-            result_urls = []  # Used to get the string for the returned message
+        result_urls = []  # Used to get the string for the returned message
 
-            for dump_url in valid_URLs:
-                data = {
-                    "key": KEY,
-                    "url": dump_url,
-                }
+        for dump_url in valid_URLs:
+            data = {
+                "key": KEY,
+                "url": dump_url,
+            }
 
-                # API Call itself
-                json_data = json.dumps(data).encode("utf-8")
-                if api_ip.startswith("http"):
-                    req = urllib.request.Request(
-                        api_ip, json_data, headers={"Content-Type": "application/json"}
-                    )
-                    response = json.loads(
-                        urllib.request.urlopen(req, timeout=100).read().decode("utf-8")
-                    )  # nosec B310
-                else:
-                    raise ValueError("API endpoint not HTTP/HTTPS")
+            # API Call itself
+            json_data = json.dumps(data).encode("utf-8")
 
+            # Makes sure api endpoint isn't file:// etc (B310)
+            if not api_ip.startswith("http"):
+                raise ValueError("API endpoint not HTTP/HTTPS")
+
+            req = urllib.request.Request(
+                api_ip, json_data, headers={"Content-Type": "application/json"}
+            )
+
+            # fmt: off
+            with urllib.request.urlopen(req, timeout=100) as response_undecoded:  # nosec B310
+
+                response = json.loads(response_undecoded.read().decode("utf-8"))
                 # Handling for failed results
                 if response["success"] == "false":
                     await ctx.send_deny_embed(
@@ -153,27 +154,24 @@ class Dumpdbg(base.BaseCog):
 
                 # Handling for succesful results
                 result_urls.append(response["url"])
+            # fmt: on
 
-            # -> Message returning <-
-            # Converted to str outside of bottom code because f-strings can't contain backslashes
-            result_urls = "\n".join(result_urls)
+        # -> Message returning <-
+        # Converted to str outside of bottom code because f-strings can't contain backslashes
+        result_urls = "\n".join(result_urls)
 
-            # Formatting for several files because it looks prettier
-            if len(result_urls) == 1:
-                await ctx.send(
-                    embed=DumpdbgEmbed(
-                        title="Dump succesfully debugged! \nResult links:",
-                        description=result_urls,
-                    )
+        # Formatting for several files because it looks prettier
+        if len(result_urls) == 1:
+            await ctx.send(
+                embed=DumpdbgEmbed(
+                    title="Dump succesfully debugged! \nResult links:",
+                    description=result_urls,
                 )
-            else:
-                await ctx.send(
-                    embed=DumpdbgEmbed(
-                        title="Dumps succesfully debugged! \nResult links:",
-                        description=result_urls,
-                    )
+            )
+        else:
+            await ctx.send(
+                embed=DumpdbgEmbed(
+                    title="Dumps succesfully debugged! \nResult links:",
+                    description=result_urls,
                 )
-
-        except Exception as e:
-            await ctx.send_deny_embed("Exception thrown from command!")
-            print(f"Dumpdbg API exception thrown! Exception: {e}")
+            )
