@@ -70,7 +70,7 @@ class Dumpdbg(base.BaseCog):
 
             # -> Getting valid dump files <-
 
-            valid_URLs = []  # File CDN URLs to PUT to the API for parsing
+            valid_URLs = []  # File CDN URLs to PUT to the API for debugging
             dump_no = 0  # Used for error message
 
             # Checks attachments for dump files, disregards 0 byte dumps
@@ -139,6 +139,8 @@ class Dumpdbg(base.BaseCog):
             )
 
             # fmt: off
+            # Formatting disabled because black. is dumb and keeps separating
+            # the bypass from its line
             with urllib.request.urlopen(req, timeout=100) as response_undecoded:  # nosec B310
 
                 response = json.loads(response_undecoded.read().decode("utf-8"))
