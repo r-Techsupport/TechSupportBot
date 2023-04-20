@@ -10,13 +10,13 @@ from discord.ext import commands
 
 
 def setup(bot):
-    """Method to add burn command to config."""
+    """Method to add the dumpdbg command to config."""
     config = bot.ExtensionConfig()
     config.add(
-        key="api_ip",
+        key="api_endpoint",
         datatype="str",
-        title="DBG Server IP",
-        description="IP For the server running WinDBG accessed via an API",
+        title="DBG Server API address",
+        description="Endpoint for WinDBG server",
         default="",
     )
     config.add(
@@ -44,7 +44,7 @@ class Dumpdbg(base.BaseCog):
 
     @util.with_typing
     @commands.guild_only()
-    @commands.cooldown(1, 60, commands.BucketType.channel)
+    # @commands.cooldown(1, 60, commands.BucketType.channel)
     @commands.command(
         name="dumpdbg",
         aliases=["dump", "debug-dump", "debug_dump", "debugdump"],
@@ -91,7 +91,7 @@ class Dumpdbg(base.BaseCog):
             return valid_URLs
 
         config = await self.bot.get_context_config(guild=ctx.guild)
-        api_ip = config.extensions.Dumpdbg.api_ip.value
+        api_endpoint = config.extensions.Dumpdbg.api_endpoint.value
         permitted_roles = config.extensions.Dumpdbg.roles.value
 
         # -> Message checks <-
@@ -100,20 +100,22 @@ class Dumpdbg(base.BaseCog):
         if not any(role.name in permitted_roles for role in ctx.message.author.roles):
             return
 
-        await ctx.message.add_reaction("⏱️")
-
         valid_URLs = await get_files(ctx)
 
         if len(valid_URLs) == 0:
             await ctx.send_deny_embed("No valid dumps detected!")
             return
 
+        # Reaction to indicate a succesful request
+        await ctx.message.add_reaction("⏱️")
+
         # -> API checks <-
 
         # Makes sure the API key was suplied
-        try:
-            KEY = self.bot.file_config.main.api_keys.dumpdbg_api
-        except AttributeError:
+
+        KEY = self.bot.file_config.main.api_keys.dumpdbg_api
+
+        if KEY == None or KEY == "":
             await ctx.send_deny_embed("No API key found!")
             return
 
@@ -130,12 +132,12 @@ class Dumpdbg(base.BaseCog):
             # API Call itself
             json_data = json.dumps(data).encode("utf-8")
 
-            # Makes sure api endpoint isn't file:// etc (B310)
-            if not api_ip.startswith("http"):
-                raise ValueError("API endpoint not HTTP/HTTPS")
-
+            # Makes sure api endpoint doesn't use file:// etc (Codefactor B310)
+            if not api_endpoint.lower().startswith("http"):
+                await ctx.send_deny_embed("API endpoint not HTTP/HTTPS")
+                return
             req = urllib.request.Request(
-                api_ip, json_data, headers={"Content-Type": "application/json"}
+                api_endpoint, json_data, headers={"Content-Type": "application/json"}
             )
 
             # fmt: off
