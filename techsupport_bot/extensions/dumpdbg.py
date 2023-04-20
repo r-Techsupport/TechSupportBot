@@ -115,7 +115,7 @@ class Dumpdbg(base.BaseCog):
 
         KEY = self.bot.file_config.main.api_keys.dumpdbg_api
 
-        if KEY == None or KEY == "":
+        if KEY in (None, ""):
             await ctx.send_deny_embed("No API key found!")
             return
 
