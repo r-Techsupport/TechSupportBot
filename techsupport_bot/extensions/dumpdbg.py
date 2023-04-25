@@ -44,7 +44,7 @@ class Dumpdbg(base.BaseCog):
 
     @util.with_typing
     @commands.guild_only()
-    # @commands.cooldown(1, 60, commands.BucketType.channel)
+    @commands.cooldown(1, 60, commands.BucketType.channel)
     @commands.command(
         name="dumpdbg",
         aliases=["dump", "debug-dump", "debug_dump", "debugdump"],
