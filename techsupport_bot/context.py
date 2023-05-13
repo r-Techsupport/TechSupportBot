@@ -1,12 +1,12 @@
 """Module for defining custom contexts.
 """
 
+import asyncio
 import datetime
 
 import discord
 import embeds
 from discord.ext import commands
-import asyncio
 
 
 class Context(commands.Context):

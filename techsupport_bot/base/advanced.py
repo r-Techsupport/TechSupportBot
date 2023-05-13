@@ -34,7 +34,7 @@ class AdvancedBot(DataBot):
             max_len=self.file_config.main.cache.guild_config_cache_length,
             max_age_seconds=self.file_config.main.cache.guild_config_cache_seconds,
         )
-        
+
     async def start(self, *args, **kwargs):
         self.guild_config_lock = asyncio.Lock()
         await super().start(*args, **kwargs)

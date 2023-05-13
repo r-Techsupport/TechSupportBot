@@ -1,11 +1,11 @@
 """TechSupport Bot main thread.
 """
+import asyncio
 import logging
 import os
 
 import bot
 import discord
-import asyncio
 
 MODULE_LOG_LEVELS = {
     "discord": logging.INFO,

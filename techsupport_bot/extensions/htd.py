@@ -6,11 +6,11 @@ import discord
 from discord.ext import commands
 
 
-await def setup(bot):
+async def setup(bot):
     """
     boilerplate to load htd class
     """
-    async bot.add_cog(Htd(bot=bot))
+    await bot.add_cog(Htd(bot=bot))
 
 
 class Htd(base.BaseCog):

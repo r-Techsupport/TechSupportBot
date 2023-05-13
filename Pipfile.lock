@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "424d767a58ee31fc14f96810d7212933cc8d394f45c2f260ced332cbdf990733"
+            "sha256": "cb55f9a059fe5438b3ce227cf170d5fbc2927405376c6c8e8027d2bd308f576c"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -338,11 +338,11 @@
         },
         "discord.py": {
             "hashes": [
-                "sha256:38fc52a784727b8e5e5749267089400035b187a009028eddfabeb182abcc6d52",
-                "sha256:b9944056bcb5711b2d04088848fd004466cf117c15c84fa798bf55470f28275f"
+                "sha256:792bdcfe71cfe013c446cf379b2e83e08b5050604322ad6fb592864e63511abd",
+                "sha256:f9df95795c6f52c5db43b7ab43634993e12ef233288636a759166dd9c134d077"
             ],
             "index": "pypi",
-            "version": "==2.2.2"
+            "version": "==2.2.3"
         },
         "dnspython": {
             "hashes": [
@@ -931,7 +931,7 @@
                 "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc",
                 "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"
             ],
-            "markers": "python_version < '3.11'",
+            "markers": "python_full_version < '3.11.0a7'",
             "version": "==2.0.1"
         },
         "tomlkit": {
@@ -946,7 +946,6 @@
                 "sha256:5cb5f4a79139d699607b3ef622a1dedafa84e115ab0024e0d9c044a9479ca7cb",
                 "sha256:fb33085c39dd998ac16d1431ebc293a8b3eedd00fd4a32de0ff79002c19511b4"
             ],
-            "markers": "python_version < '3.10'",
             "version": "==4.5.0"
         },
         "tzdata": {
@@ -1042,7 +1041,6 @@
                 "sha256:fbec11614dba0424ca72f4e8ba3c420dba07b4a7c206c8c8e4e73f2e98f4c559",
                 "sha256:fd69666217b62fa5d7c6aa88e507493a34dec4fa20c5bd925e4bc12fce586639"
             ],
-            "markers": "python_version < '3.11'",
             "version": "==1.15.0"
         },
         "yarl": {

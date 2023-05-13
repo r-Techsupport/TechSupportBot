@@ -3,11 +3,11 @@
 
 import inspect
 import json
+from functools import wraps
 
 import discord
 import munch
 
-from functools import wraps
 
 async def get_json_from_attachments(message, as_string=False, allow_failure=False):
     """Returns concatted JSON from a message's attachments.

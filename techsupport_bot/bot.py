@@ -1,13 +1,14 @@
 """The main bot functions.
 """
+import asyncio
 import os
 
 import base
+import botlogging
 import cogs as builtin_cogs
 import context
 from discord.ext import ipc
-import asyncio
-import botlogging
+
 
 # pylint: disable=too-many-public-methods, too-many-instance-attributes
 class TechSupportBot(base.AdvancedBot):
@@ -25,11 +26,11 @@ class TechSupportBot(base.AdvancedBot):
 
     async def start(self, *args, **kwargs):
         """Starts IPC and the event loop and blocks until interrupted."""
-        
+
         if isinstance(self.logger, botlogging.DelayedLogger):
             self.logger.register_queue()
             asyncio.create_task(self.logger.run())
-        
+
         if os.getenv(self.IPC_SECRET_ENV_KEY):
             self.logger.console.debug("Setting up IPC server")
             self.ipc = ipc.Server(
