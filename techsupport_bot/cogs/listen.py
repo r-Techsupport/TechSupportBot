@@ -41,7 +41,7 @@ class MessageEmbed(ListenEmbed):
     def __init__(self, *args, **kwargs):
         message = kwargs.pop("message")
         super().__init__(*args, **kwargs)
-        self.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+        self.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
 
         self.description = message.clean_content
         if message.embeds:

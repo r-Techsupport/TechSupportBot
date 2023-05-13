@@ -153,7 +153,7 @@ class Grabber(base.BaseCog):
                 field_counter == config.extensions.grab.per_page.value
                 or index == len(list(grabs)) - 1
             ):
-                embed.set_thumbnail(url=user_to_grab.avatar.url)
+                embed.set_thumbnail(url=user_to_grab.display_avatar.url)
                 embed.color = discord.Color.orange()
                 embeds.append(embed)
                 field_counter = 1
@@ -209,6 +209,6 @@ class Grabber(base.BaseCog):
 
         embed.color = discord.Color.orange()
 
-        embed.set_thumbnail(url=user_to_grab.avatar.url)
+        embed.set_thumbnail(url=user_to_grab.display_avatar.url)
 
         await ctx.send(embed=embed)

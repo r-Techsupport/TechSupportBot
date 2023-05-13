@@ -61,7 +61,7 @@ class LogEmbed(discord.Embed):
             inline=False,
         )
 
-        self.set_thumbnail(url=ctx.author.avatar.url)
+        self.set_thumbnail(url=ctx.author.display_avatar.url)
         self.color = discord.Color.greyple()
 
         self.timestamp = datetime.datetime.utcnow()
