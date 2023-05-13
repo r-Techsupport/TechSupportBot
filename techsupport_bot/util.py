@@ -7,6 +7,7 @@ import json
 import discord
 import munch
 
+from functools import wraps
 
 async def get_json_from_attachments(message, as_string=False, allow_failure=False):
     """Returns concatted JSON from a message's attachments.
@@ -100,27 +101,30 @@ def with_typing(command):
     """
     original_callback = command.callback
 
-    async def typing_wrapper(ctx, *args, **kwargs):
-        print(args)
-        print(kwargs)
+    @wraps(original_callback)
+    async def typing_wrapper(*args, **kwargs):
         context = args[1]
 
-        typing_func = getattr(context, "typing", None)
+        typing_func = getattr(context, "trigger_typing", None)
 
         if not typing_func:
-            await original_callback(ctx, *args, **kwargs)
+            await original_callback(*args, **kwargs)
         else:
             try:
                 async with typing_func():
-                    await original_callback(ctx, *args, **kwargs)
+                    await original_callback(*args, **kwargs)
             except discord.Forbidden:
-                await original_callback(ctx, *args, **kwargs)
+                await original_callback(*args, **kwargs)
 
+    # this has to be done so invoke will see the original signature
     typing_wrapper.__name__ = command.name
+
+    # calls the internal setter
     command.callback = typing_wrapper
     command.callback.__module__ = original_callback.__module__
 
     return command
+
 
 def preserialize_object(obj):
     """Provides sane object -> dict transformation for most objects.
