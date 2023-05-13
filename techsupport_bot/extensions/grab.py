@@ -209,6 +209,6 @@ class Grabber(base.BaseCog):
 
         embed.color = discord.Color.orange()
 
-        embed.set_thumbnail(url=user_to_grab.avatar_url)
+        embed.set_thumbnail(url=user_to_grab.avatar.url)
 
         await ctx.send(embed=embed)
