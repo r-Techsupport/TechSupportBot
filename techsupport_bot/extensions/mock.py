@@ -21,7 +21,7 @@ class MockEmbed(discord.Embed):
         mock_string = self.mock_string(message)
         self.title = f'"{mock_string}"'
         self.description = user.name
-        self.set_thumbnail(url=user.avatar_url)
+        self.set_thumbnail(url=user.avatar.url)
         self.color = discord.Color.greyple()
 
     @staticmethod
