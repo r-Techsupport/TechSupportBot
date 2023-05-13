@@ -226,7 +226,7 @@ class Htd(base.BaseCog):
                 return first_val * second_val
             if parsed_list[1] == "/":
                 return int(first_val / second_val)
-            raise Exception("Invalid equation")
+            raise SyntaxError("Invalid equation")
 
         # figure out whether or not the input is an equation
         is_equation = False
