@@ -10,7 +10,7 @@ class DelayedLogger(logger.BotLogger):
     """Logging interface that queues log events to be sent over time.
 
     parameters:
-        bot (bot.BasementBot): the bot object
+        bot (bot.TechSupportBot): the bot object
         name (str): the name of the logging channel
         wait_time (float): the time to wait between log sends
         queue_size (int): the max number of queue events
@@ -35,9 +35,7 @@ class DelayedLogger(logger.BotLogger):
         await self.__send_queue.put(super().error(message, *args, **kwargs))
 
     def register_queue(self):
-        self.__send_queue = asyncio.Queue(
-            loop=asyncio.get_event_loop(), maxsize=self.queue_size
-        )
+        self.__send_queue = asyncio.Queue(maxsize=self.queue_size)
 
     async def run(self):
         while True:
@@ -45,3 +43,4 @@ class DelayedLogger(logger.BotLogger):
             if coro:
                 await coro
             await asyncio.sleep(self.wait_time)
+
