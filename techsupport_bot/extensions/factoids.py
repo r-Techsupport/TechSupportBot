@@ -160,7 +160,7 @@ class FactoidManager(base.MatchCog):
         )
         # set a  a hard time limit on repeated cronjob DB calls
         self.cronjob_cache = expiringdict.ExpiringDict(max_len=100, max_age_seconds=300)
-        #await self.bot.logger.info("Loading factoid jobs", send=True)
+        # await self.bot.logger.info("Loading factoid jobs", send=True)
         await self.kickoff_jobs()
 
     async def get_all_factoids(self, guild=None, hide=False):

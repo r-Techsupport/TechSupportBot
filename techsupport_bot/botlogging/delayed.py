@@ -43,4 +43,3 @@ class DelayedLogger(logger.BotLogger):
             if coro:
                 await coro
             await asyncio.sleep(self.wait_time)
-

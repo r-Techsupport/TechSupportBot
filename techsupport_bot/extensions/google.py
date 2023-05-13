@@ -90,9 +90,7 @@ class Googler(base.BaseCog):
                 link = item.get("link")
                 snippet = item.get("snippet", "<Details Unknown>").replace("\n", "")
                 embed = (
-                    GoogleEmbed(
-                        title=f"Results for {query}"
-                    )
+                    GoogleEmbed(title=f"Results for {query}")
                     if field_counter == 1
                     else embed
                 )
