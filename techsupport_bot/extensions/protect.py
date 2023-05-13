@@ -418,7 +418,7 @@ class Protector(base.MatchCog):
             title="Chat Protection", description=f"{action.upper()} `{user}`"
         )
         embed.set_footer(text=f"Reason: {reason}")
-        embed.set_thumbnail(url=user.avatar_url)
+        embed.set_thumbnail(url=user.avatar.url)
         embed.color = discord.Color.gold()
 
         return embed
@@ -514,7 +514,7 @@ class Protector(base.MatchCog):
 
         embed.add_field(name="Paste Link", value=url)
         embed.description = content[0:100].replace("\n", " ")
-        embed.set_author(name=f"Paste by {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_author(name=f"Paste by {ctx.author}", icon_url=ctx.author.avatar.url)
         embed.set_footer(text="Note: long messages are automatically pasted")
         embed.color = discord.Color.blue()
 
@@ -620,7 +620,7 @@ class Protector(base.MatchCog):
         for warning in warnings:
             embed.add_field(name=warning.time, value=warning.reason, inline=False)
 
-        embed.set_thumbnail(url=user.avatar_url)
+        embed.set_thumbnail(url=user.avatar.url)
 
         embed.color = discord.Color.red()
 
