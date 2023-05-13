@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "0a52f84b7d280c6f29c39716e2add90ae556d7b2c719fca1fdafc2d3a0f3be97"
+            "sha256": "1bdcd974696c7abaf5406a30b0140d8367c30ca3711407ba9aa1bf2042a2ca5c"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -353,10 +353,10 @@
         },
         "emoji": {
             "hashes": [
-                "sha256:a2986c21e4aba6b9870df40ef487a17be863cb7778dcf1c01e25917b7cd210bb"
+                "sha256:60652d3a2dcee5b8af8acb097c31776fb6d808027aeb7221830f72cdafefc174"
             ],
             "index": "pypi",
-            "version": "==2.2.0"
+            "version": "==0.5.4"
         },
         "exceptiongroup": {
             "hashes": [
@@ -1042,7 +1042,6 @@
                 "sha256:fbec11614dba0424ca72f4e8ba3c420dba07b4a7c206c8c8e4e73f2e98f4c559",
                 "sha256:fd69666217b62fa5d7c6aa88e507493a34dec4fa20c5bd925e4bc12fce586639"
             ],
-            "markers": "python_version < '3.11'",
             "version": "==1.15.0"
         },
         "yarl": {
