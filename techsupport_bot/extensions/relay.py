@@ -37,7 +37,7 @@ class RelayEvent:
         self.payload.author.top_role = str(author.top_role)
 
         self.payload.author.permissions = munch.Munch()
-        discord_permissions = author.permissions_in(channel)
+        discord_permissions = author.permissions_for(channel)
         self.payload.author.permissions.kick = discord_permissions.kick_members
         self.payload.author.permissions.ban = discord_permissions.ban_members
         self.payload.author.permissions.unban = discord_permissions.ban_members
