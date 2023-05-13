@@ -8,9 +8,11 @@ import discord
 import util
 from discord.ext import commands
 
+
 async def setup(bot):
     """Adding the rules configuration to the config file."""
     await bot.add_cog(Rules(bot=bot))
+
 
 class RuleEmbed(discord.Embed):
     """Class for setting up the rules embed."""
