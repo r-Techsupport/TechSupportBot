@@ -11,10 +11,10 @@ from discord.ext import commands
 from discord.reaction import Reaction
 
 
-def setup(bot):
+async def setup(bot):
     """Adding the poll and recation to the config file."""
-    bot.add_cog(ReactionPoller(bot=bot))
-    bot.add_cog(StrawPoller(bot=bot))
+    await bot.add_cog(ReactionPoller(bot=bot))
+    await bot.add_cog(StrawPoller(bot=bot))
 
 
 class PollEmbed(discord.Embed):
@@ -98,6 +98,10 @@ class ReactionPoller(PollGenerator):
     )
     async def poll(self, ctx):
         """Method to create the poll command."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         pass
 
     @util.with_typing
@@ -247,6 +251,10 @@ class StrawPoller(PollGenerator):
     )
     async def strawpoll(self, ctx):
         """Method to give an exmaple poll with json."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         print(f"Strawpoll command called in channel {ctx.channel}")
 
     @util.with_typing

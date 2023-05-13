@@ -6,11 +6,11 @@ import discord
 from discord.ext import commands
 
 
-def setup(bot):
+await def setup(bot):
     """
     boilerplate to load htd class
     """
-    bot.add_cog(Htd(bot=bot))
+    async bot.add_cog(Htd(bot=bot))
 
 
 class Htd(base.BaseCog):
@@ -30,6 +30,7 @@ class Htd(base.BaseCog):
         """
         perform calculations on cross base numbers and convert between bases
         """
+        val_to_convert.replace("#", "0x")
 
         def split_nicely(str_to_split: str) -> list:
             """

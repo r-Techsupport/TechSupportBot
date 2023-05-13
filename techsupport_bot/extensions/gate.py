@@ -6,7 +6,7 @@ import discord
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Setup to add the gate config to the config file."""
     config = bot.ExtensionConfig()
     config.add(
@@ -52,7 +52,7 @@ def setup(bot):
         default="agree",
     )
 
-    bot.add_cog(ServerGate(bot=bot, extension_name="gate"))
+    await bot.add_cog(ServerGate(bot=bot, extension_name="gate"))
     bot.add_extension_config("gate", config)
 
 
@@ -134,6 +134,10 @@ class ServerGate(base.MatchCog):
     )
     async def gate_command(self, ctx):
         """Method to create the command for gate extension."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         print(f"Gate command called in channel {ctx.channel}")
 
     @commands.has_permissions(manage_messages=True)

@@ -7,7 +7,7 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     class Grab(bot.db.Model):
         __tablename__ = "grabs"
 
@@ -35,7 +35,7 @@ def setup(bot):
         default=[],
     )
 
-    bot.add_cog(Grabber(bot=bot, models=[Grab]))
+    await bot.add_cog(Grabber(bot=bot, models=[Grab]))
     bot.add_extension_config("grab", config)
 
 

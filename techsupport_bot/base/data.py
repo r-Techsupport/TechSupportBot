@@ -110,7 +110,7 @@ class DataBot(ExtensionsBot):
         await self.logger.debug("Obtaining RabbitMQ robust instance")
 
         connection = await aio_pika.connect_robust(
-            self.generate_rabbit_url(), loop=self.loop
+            self.generate_rabbit_url()
         )
 
         return connection

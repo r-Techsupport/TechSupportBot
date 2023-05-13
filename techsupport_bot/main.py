@@ -5,6 +5,7 @@ import os
 
 import bot
 import discord
+import asyncio
 
 MODULE_LOG_LEVELS = {
     "discord": logging.INFO,
@@ -33,4 +34,4 @@ bot_ = bot.TechSupportBot(
     intents=intents,
     allowed_mentions=discord.AllowedMentions(everyone=False, roles=False),
 )
-bot_.run()
+asyncio.run(bot_.start())

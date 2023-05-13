@@ -5,7 +5,7 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Method to add the joke extension to the config file."""
     config = bot.ExtensionConfig()
     config.add(
@@ -15,7 +15,7 @@ def setup(bot):
         description="True only politically correct jokes should be shown (non-racist/non-sexist)",
         default=True,
     )
-    bot.add_cog(Joker(bot=bot))
+    await bot.add_cog(Joker(bot=bot))
     bot.add_extension_config("joke", config)
 
 

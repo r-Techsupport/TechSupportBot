@@ -8,7 +8,7 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Method to add the directory to the config."""
 
     class DirectoryExistence(bot.db.Model):
@@ -42,7 +42,7 @@ def setup(bot):
         default={},
     )
 
-    bot.add_cog(ChannelDirectory(bot=bot, models=[DirectoryExistence]))
+    await bot.add_cog(ChannelDirectory(bot=bot, models=[DirectoryExistence]))
     bot.add_extension_config("directory", config)
 
 
@@ -77,7 +77,7 @@ class ChannelDirectory(base.BaseCog):
         ]
 
         for guild in self.bot.guilds:
-            self.bot.loop.create_task(self.run_setup(guild))
+            asyncio.create_task(self.run_setup(guild))
 
     async def run_setup(self, guild):
         """Method to setup the guild for the bot."""
@@ -246,6 +246,10 @@ class ChannelDirectory(base.BaseCog):
     )
     async def directory(self, ctx):
         """Method of the directory."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         pass
 
     @util.with_typing

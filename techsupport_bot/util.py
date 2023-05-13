@@ -99,27 +99,24 @@ def with_typing(command):
         command (discord.ext.commands.Command): the command object to modify
     """
     original_callback = command.callback
-    original_signature = inspect.signature(original_callback)
 
     async def typing_wrapper(*args, **kwargs):
+        print(args)
+        print(kwargs)
         context = args[1]
 
-        typing_func = getattr(context, "trigger_typing", None)
+        typing_func = getattr(context, "typing", None)
 
         if not typing_func:
             await original_callback(*args, **kwargs)
         else:
             try:
-                await typing_func()
+                async with typing_func():
+                    await original_callback(*args, **kwargs)
             except discord.Forbidden:
-                pass
-            await original_callback(*args, **kwargs)
+                await original_callback(*args, **kwargs)
 
-    # this has to be done so invoke will see the original signature
-    typing_wrapper.__signature__ = original_signature
     typing_wrapper.__name__ = command.name
-
-    # calls the internal setter
     command.callback = typing_wrapper
     command.callback.__module__ = original_callback.__module__
 

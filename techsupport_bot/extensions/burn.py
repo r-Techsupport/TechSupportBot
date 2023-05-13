@@ -7,9 +7,9 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Method to add burn command to config."""
-    bot.add_cog(Burn(bot=bot))
+    await bot.add_cog(Burn(bot=bot))
 
 
 class BurnEmbed(discord.Embed):

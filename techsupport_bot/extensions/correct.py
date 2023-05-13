@@ -5,9 +5,9 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Method to add correct to the config."""
-    bot.add_cog(Corrector(bot=bot))
+    await bot.add_cog(Corrector(bot=bot))
 
 
 class CorrectEmbed(discord.Embed):

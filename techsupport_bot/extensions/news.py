@@ -7,7 +7,7 @@ import base
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding the news config to the config file."""
     config = bot.ExtensionConfig()
     config.add(
@@ -39,7 +39,7 @@ def setup(bot):
         default=None,
     )
 
-    bot.add_cog(News(bot=bot, extension_name="news"))
+    await bot.add_cog(News(bot=bot, extension_name="news"))
     bot.add_extension_config("news", config)
 
 
@@ -118,6 +118,10 @@ class News(base.LoopCog):
     )
     async def news(self, ctx):
         """Method to set up the news command."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         print(f"News command called in channel {ctx.channel}")
 
     @news.command(

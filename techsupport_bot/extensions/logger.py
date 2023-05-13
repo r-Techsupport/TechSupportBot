@@ -6,7 +6,7 @@ import discord
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding the logger extension to the config file to get info."""
     config = bot.ExtensionConfig()
     config.add(
@@ -17,7 +17,7 @@ def setup(bot):
         default={},
     )
 
-    bot.add_cog(Logger(bot=bot, extension_name="logger"))
+    await bot.add_cog(Logger(bot=bot, extension_name="logger"))
     bot.add_extension_config("logger", config)
 
 

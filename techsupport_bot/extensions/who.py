@@ -9,7 +9,7 @@ import yaml
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding the who configuration to the config file."""
 
     class UserNote(bot.db.Model):
@@ -33,7 +33,7 @@ def setup(bot):
         default=None,
     )
 
-    bot.add_cog(Who(bot=bot, models=[UserNote], extension_name="who"))
+    await bot.add_cog(Who(bot=bot, models=[UserNote], extension_name="who"))
     bot.add_extension_config("who", config)
 
 
@@ -89,6 +89,10 @@ class Who(base.BaseCog):
     )
     async def note(self, ctx):
         """Method for the note command."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         pass
 
     @note.command(

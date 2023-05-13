@@ -38,7 +38,7 @@ class BaseCog(commands.Cog):
         for model in models:
             self.models[model.__name__] = model
 
-        self.bot.loop.create_task(self._preconfig())
+        asyncio.create_task(self._preconfig())
 
     async def _handle_preconfig(self, handler):
         """Wrapper for performing preconfig on an extension.
@@ -56,7 +56,7 @@ class BaseCog(commands.Cog):
                 f"Cog preconfig error: {handler.__name__}!", exception=e
             )
             if not self.KEEP_COG_ON_FAILURE:
-                self.bot.remove_cog(self)
+                await self.bot.remove_cog(self)
 
     async def _preconfig(self):
         """Blocks the preconfig until the bot is ready."""
@@ -159,7 +159,7 @@ class LoopCog(BaseCog):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bot.loop.create_task(self._loop_preconfig())
+        asyncio.create_task(self._loop_preconfig())
         self.channels = {}
 
     async def register_new_tasks(self, guild):
@@ -184,12 +184,12 @@ class LoopCog(BaseCog):
                 await self.bot.logger.debug(
                     f"Creating loop task for channel with ID {channel.id}"
                 )
-                self.bot.loop.create_task(self._loop_execute(guild, channel))
+                asyncio.create_task(self._loop_execute(guild, channel))
         else:
             await self.bot.logger.debug(
                 f"Creating loop task for guild with ID {guild.id}"
             )
-            self.bot.loop.create_task(self._loop_execute(guild))
+            asyncio.create_task(self._loop_execute(guild))
 
     async def _loop_preconfig(self):
         """Blocks the loop_preconfig until the bot is ready."""
@@ -197,13 +197,13 @@ class LoopCog(BaseCog):
 
         if self.no_guild:
             await self.bot.logger.debug("Creating global loop task")
-            self.bot.loop.create_task(self._loop_execute(None))
+            asyncio.create_task(self._loop_execute(None))
             return
 
         for guild in self.bot.guilds:
             await self.register_new_tasks(guild)
 
-        self.bot.loop.create_task(self._track_new_channels())
+        asyncio.create_task(self._track_new_channels())
 
     async def _track_new_channels(self):
         """Periodifically kicks off new per-channel tasks based on updated channels config."""
