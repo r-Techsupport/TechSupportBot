@@ -10,6 +10,7 @@ jobs:
   check-line-endings:
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v3
     - name: Check for CRLF line endings
       run: |
         for file in $(git ls-files); do
