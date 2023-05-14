@@ -1,7 +1,5 @@
 """Module for the dumpdbg command on discord bot."""
 import json
-import urllib.parse
-import urllib.request
 
 import base
 import discord
@@ -136,29 +134,25 @@ class Dumpdbg(base.BaseCog):
             if not api_endpoint.lower().startswith("http"):
                 await ctx.send_deny_embed("API endpoint not HTTP/HTTPS")
                 return
-            req = urllib.request.Request(
-                api_endpoint, json_data, headers={"Content-Type": "application/json"}
+
+            response = await self.bot.http_call(
+                "post",
+                api_endpoint,
+                data=json_data,
+                headers={"Content-Type": "application/json"},
             )
 
-            # fmt: off
-            # Formatting disabled because black. is dumb and keeps separating
-            # the bypass from its line
-            with urllib.request.urlopen(req, timeout=100) as response_undecoded:  # nosec B310
+            # Handling for failed results
+            if response["success"] == "false":
+                await ctx.send_deny_embed(
+                    f"Something went wrong with debugging! Error: {response['error']}"
+                )
+                await self.logger.error(
+                    f"Dumpdbg API responded with the error `{response['error']}`"
+                )
+                return
 
-                response = json.loads(response_undecoded.read().decode("utf-8"))
-                # Handling for failed results
-                if response["success"] == "false":
-                    await ctx.send_deny_embed(
-                        f"Something went wrong with debugging! Error: {response['error']}"
-                    )
-                    await self.logger.error(
-                        f"Dumpdbg API responded with the error `{response['error']}`"
-                    )
-                    return
-
-                # Handling for succesful results
-                result_urls.append(response["url"])
-            # fmt: on
+            result_urls.append(response["url"])
 
         # -> Message returning <-
         # Converted to str outside of bottom code because f-strings can't contain backslashes
