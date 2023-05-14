@@ -359,8 +359,7 @@ class Protector(base.MatchCog):
             if not can_execute:
                 return
 
-        bans = await ctx.guild.bans()
-        for ban in bans:
+        async for ban in ctx.guild.bans(limit=1000):
             if user == ban.user:
                 await ctx.send_deny_embed("User is already banned.")
                 return
