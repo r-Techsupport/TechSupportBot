@@ -4,9 +4,9 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding the configuration of the translate extension to the config file."""
-    bot.add_cog(Translator(bot=bot))
+    await bot.add_cog(Translator(bot=bot))
 
 
 class Translator(base.BaseCog):

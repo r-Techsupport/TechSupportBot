@@ -5,9 +5,9 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Method to add ipinfo to the config file."""
-    bot.add_cog(IPInfo(bot=bot))
+    await bot.add_cog(IPInfo(bot=bot))
 
 
 class IPInfo(base.BaseCog):

@@ -6,8 +6,8 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
-    bot.add_cog(Emojis(bot=bot))
+async def setup(bot):
+    await bot.add_cog(Emojis(bot=bot))
 
 
 class Emojis(base.BaseCog):
@@ -65,7 +65,8 @@ class Emojis(base.BaseCog):
         description="Executes a emoji command",
     )
     async def emoji(self, ctx):
-        pass
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
 
     @util.with_typing
     @emoji.command(
@@ -82,7 +83,7 @@ class Emojis(base.BaseCog):
             )
             return
 
-        await ctx.send(emoji_message)
+        await ctx.send_confirm_embed(emoji_message)
 
     @commands.has_permissions(add_reactions=True)
     @commands.guild_only()

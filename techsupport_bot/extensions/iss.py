@@ -5,9 +5,9 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Add the ISS locator to the config file."""
-    bot.add_cog(ISSLocator(bot=bot))
+    await bot.add_cog(ISSLocator(bot=bot))
 
 
 class ISSLocator(base.BaseCog):

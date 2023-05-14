@@ -17,7 +17,7 @@ import yaml
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """
     define database tables, register in config, as a cog, and a extension
     """
@@ -87,7 +87,7 @@ def setup(bot):
         default=None,
     )
 
-    bot.add_cog(
+    await bot.add_cog(
         FactoidManager(
             bot=bot,
             models=[Factoid, FactoidCron, FactoidResponseEvent],
@@ -158,7 +158,7 @@ class FactoidManager(base.MatchCog):
         self.factoid_cache = expiringdict.ExpiringDict(
             max_len=100, max_age_seconds=1200
         )
-        # set a  a hard time limit on repeated cronjob DB calls
+        # set a hard time limit on repeated cronjob DB calls
         self.cronjob_cache = expiringdict.ExpiringDict(max_len=100, max_age_seconds=300)
         await self.bot.logger.info("Loading factoid jobs", send=True)
         await self.kickoff_jobs()
@@ -269,7 +269,8 @@ class FactoidManager(base.MatchCog):
         if not ctx.guild:
             return
         # copy the arguments starting with index one, and reference the first argument
-        query = content[1:].split(" ")[0]
+        # Replaces \n with spaces so factoid can be called even with newlines
+        query = content[1:].replace("\n", " ").split(" ")[0]
         factoid = await self.get_factoid_from_query(query, ctx.guild)
         if not factoid:
             return
@@ -390,7 +391,7 @@ class FactoidManager(base.MatchCog):
         """
         jobs = await self.models.FactoidCron.query.gino.all()
         for job in jobs:
-            self.bot.loop.create_task(self.cronjob(job))
+            asyncio.create_task(self.cronjob(job))
 
     async def cronjob(self, job):
         """Run a cron job for a factoid."""
@@ -449,6 +450,10 @@ class FactoidManager(base.MatchCog):
     )
     async def factoid(self, ctx):
         """Method to make the command for the factoid."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         print(f"Factoid command called in channel {ctx.channel}")
 
     @util.with_typing
@@ -553,7 +558,7 @@ class FactoidManager(base.MatchCog):
         )
         await job.create()
 
-        self.bot.loop.create_task(self.cronjob(job))
+        asyncio.create_task(self.cronjob(job))
 
         await ctx.send_confirm_embed("Factoid loop created")
 

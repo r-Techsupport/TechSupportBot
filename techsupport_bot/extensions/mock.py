@@ -5,9 +5,9 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding mock config to the config file"""
-    bot.add_cog(Mocker(bot=bot))
+    await bot.add_cog(Mocker(bot=bot))
 
 
 class MockEmbed(discord.Embed):
@@ -21,7 +21,7 @@ class MockEmbed(discord.Embed):
         mock_string = self.mock_string(message)
         self.title = f'"{mock_string}"'
         self.description = user.name
-        self.set_thumbnail(url=user.avatar_url)
+        self.set_thumbnail(url=user.display_avatar.url)
         self.color = discord.Color.greyple()
 
     @staticmethod
