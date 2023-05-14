@@ -1,4 +1,5 @@
 """Module for the directory extension for the discord bot."""
+import asyncio
 import datetime
 
 import base

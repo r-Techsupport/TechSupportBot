@@ -62,12 +62,19 @@ class TechSupportBot(base.AdvancedBot):
         except Exception as exception:
             await self.logger.warning(f"Could not connect to RabbitMQ: {exception}")
 
-        await self.logger.debug("Loading extensions...")
-        await self.load_extensions()
-
         if self.db:
             await self.logger.debug("Syncing Postgres tables...")
             await self.db.gino.create_all()
+
+        if self.ipc:
+            await self.load_builtin_cog(builtin_cogs.IPCEndpoints)
+
+        await self.logger.debug("Logging into Discord...")
+        await super().start(self.file_config.main.auth_token, *args, **kwargs)
+
+    async def setup_hook(self):
+        await self.logger.debug("Loading extensions...")
+        await self.load_extensions()
 
         await self.logger.debug("Loading Help commands...")
         self.remove_command("help")
@@ -78,12 +85,6 @@ class TechSupportBot(base.AdvancedBot):
         await self.load_builtin_cog(builtin_cogs.ConfigControl)
         await self.load_builtin_cog(builtin_cogs.Raw)
         await self.load_builtin_cog(builtin_cogs.Listener)
-
-        if self.ipc:
-            await self.load_builtin_cog(builtin_cogs.IPCEndpoints)
-
-        await self.logger.debug("Logging into Discord...")
-        await super().start(self.file_config.main.auth_token, *args, **kwargs)
 
     async def load_builtin_cog(self, cog):
         """Loads a cog as a builtin.

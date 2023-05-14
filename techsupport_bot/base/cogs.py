@@ -48,7 +48,8 @@ class BaseCog(commands.Cog):
         parameters:
             handler (asyncio.coroutine): the preconfig handler
         """
-        # await self.bot.wait_until_ready()
+        await self.bot.wait_until_ready()
+
         try:
             await handler()
         except Exception as e:
