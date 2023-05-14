@@ -5,7 +5,7 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding the configuration of the urban extension to the config file."""
     config = bot.ExtensionConfig()
     config.add(
@@ -16,7 +16,7 @@ def setup(bot):
         default=1,
     )
 
-    bot.add_cog(UrbanDictionary(bot=bot))
+    await bot.add_cog(UrbanDictionary(bot=bot))
     bot.add_extension_config("urban", config)
 
 

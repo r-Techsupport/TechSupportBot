@@ -8,9 +8,9 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding the would you rather configuration to the config file."""
-    bot.add_cog(WouldYouRather(bot=bot))
+    await bot.add_cog(WouldYouRather(bot=bot))
 
 
 class Question:

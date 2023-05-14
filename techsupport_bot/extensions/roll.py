@@ -7,9 +7,9 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding the roll configuration to the config file."""
-    bot.add_cog(Roller(bot=bot))
+    await bot.add_cog(Roller(bot=bot))
 
 
 class RollEmbed(discord.Embed):

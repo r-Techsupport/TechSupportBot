@@ -6,8 +6,8 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
-    bot.add_cog(Emojis(bot=bot))
+async def setup(bot):
+    await bot.add_cog(Emojis(bot=bot))
 
 
 class Emojis(base.BaseCog):

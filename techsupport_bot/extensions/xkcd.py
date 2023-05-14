@@ -3,13 +3,12 @@ import random
 
 import base
 import discord
-import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding the xkcd configuration to the config file."""
-    bot.add_cog(XKCD(bot=bot))
+    await bot.add_cog(XKCD(bot=bot))
 
 
 class XKCD(base.BaseCog):

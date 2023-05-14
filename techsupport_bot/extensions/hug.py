@@ -7,9 +7,9 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Method to add hug to the config file."""
-    bot.add_cog(Hugger(bot=bot))
+    await bot.add_cog(Hugger(bot=bot))
 
 
 class Hugger(base.BaseCog):

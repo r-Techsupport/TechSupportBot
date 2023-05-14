@@ -6,7 +6,7 @@ import discord
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Setup to add the gate config to the config file."""
     config = bot.ExtensionConfig()
     config.add(
@@ -52,7 +52,7 @@ def setup(bot):
         default="agree",
     )
 
-    bot.add_cog(ServerGate(bot=bot, extension_name="gate"))
+    await bot.add_cog(ServerGate(bot=bot, extension_name="gate"))
     bot.add_extension_config("gate", config)
 
 

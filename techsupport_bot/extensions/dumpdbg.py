@@ -7,7 +7,7 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Method to add the dumpdbg command to config."""
     config = bot.ExtensionConfig()
     config.add(
@@ -25,7 +25,7 @@ def setup(bot):
         default=["super op"],
     )
 
-    bot.add_cog(Dumpdbg(bot=bot))
+    await bot.add_cog(Dumpdbg(bot=bot))
     bot.add_extension_config("Dumpdbg", config)
 
 

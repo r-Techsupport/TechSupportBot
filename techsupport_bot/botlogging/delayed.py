@@ -18,10 +18,9 @@ class DelayedLogger(logger.BotLogger):
 
     def __init__(self, *args, **kwargs):
         self.wait_time = kwargs.pop("wait_time", 1)
-        self.__send_queue = asyncio.Queue(maxsize=kwargs.pop("queue_size", 1000))
+        self.queue_size = kwargs.pop("queue_size", 1000)
+        self.__send_queue = None
         super().__init__(*args, **kwargs)
-
-        self.bot.loop.create_task(self.__run())
 
     async def info(self, message, *args, **kwargs):
         await self.__send_queue.put(super().info(message, *args, **kwargs))
@@ -35,12 +34,15 @@ class DelayedLogger(logger.BotLogger):
     async def error(self, message, *args, **kwargs):
         await self.__send_queue.put(super().error(message, *args, **kwargs))
 
-    async def __run(self):
-        while True:
-            try:
+    def register_queue(self):
+        self.__send_queue = asyncio.Queue(maxsize=self.queue_size)
+
+    async def run(self):
+        try:
+            while True:
                 coro = await self.__send_queue.get()
                 if coro:
                     await coro
                 await asyncio.sleep(self.wait_time)
-            except:
-                pass
+        except:
+            pass

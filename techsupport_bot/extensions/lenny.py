@@ -6,9 +6,9 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding lenny to the config file."""
-    bot.add_cog(Lenny(bot=bot))
+    await bot.add_cog(Lenny(bot=bot))
 
 
 class Lenny(base.BaseCog):
