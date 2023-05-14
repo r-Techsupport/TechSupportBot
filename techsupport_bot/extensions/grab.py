@@ -7,7 +7,7 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     class Grab(bot.db.Model):
         __tablename__ = "grabs"
 
@@ -35,7 +35,7 @@ def setup(bot):
         default=[],
     )
 
-    bot.add_cog(Grabber(bot=bot, models=[Grab]))
+    await bot.add_cog(Grabber(bot=bot, models=[Grab]))
     bot.add_extension_config("grab", config)
 
 
@@ -153,7 +153,7 @@ class Grabber(base.BaseCog):
                 field_counter == config.extensions.grab.per_page.value
                 or index == len(list(grabs)) - 1
             ):
-                embed.set_thumbnail(url=user_to_grab.avatar_url)
+                embed.set_thumbnail(url=user_to_grab.display_avatar.url)
                 embed.color = discord.Color.orange()
                 embeds.append(embed)
                 field_counter = 1
@@ -209,6 +209,6 @@ class Grabber(base.BaseCog):
 
         embed.color = discord.Color.orange()
 
-        embed.set_thumbnail(url=user_to_grab.avatar_url)
+        embed.set_thumbnail(url=user_to_grab.display_avatar.url)
 
         await ctx.send(embed=embed)

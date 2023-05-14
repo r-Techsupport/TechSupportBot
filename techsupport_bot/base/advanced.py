@@ -28,12 +28,16 @@ class AdvancedBot(DataBot):
         self.owner = None
         self.__startup_time = None
         self.guild_config_collection = None
-        self.guild_config_lock = asyncio.Lock()
+        self.guild_config_lock = None
         super().__init__(*args, prefix=self.get_prefix, **kwargs)
         self.guild_config_cache = expiringdict.ExpiringDict(
             max_len=self.file_config.main.cache.guild_config_cache_length,
             max_age_seconds=self.file_config.main.cache.guild_config_cache_seconds,
         )
+
+    async def start(self, *args, **kwargs):
+        self.guild_config_lock = asyncio.Lock()
+        await super().start(*args, **kwargs)
 
     async def get_prefix(self, message):
         """Gets the appropriate prefix for a command.

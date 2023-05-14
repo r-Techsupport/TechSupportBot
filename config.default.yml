@@ -33,6 +33,7 @@ main:
         github:
         battlenet_client:
         battlenet_key:
+        openai:
         dumpdbg_api:
     logging:
         queue_enabled: True

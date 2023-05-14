@@ -11,7 +11,7 @@ from discord import Color as embed_colors
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     class DuckUser(bot.db.Model):
         __tablename__ = "duckusers"
 
@@ -66,7 +66,7 @@ def setup(bot):
         default=50,
     )
 
-    bot.add_cog(DuckHunt(bot=bot, models=[DuckUser], extension_name="duck"))
+    await bot.add_cog(DuckHunt(bot=bot, models=[DuckUser], extension_name="duck"))
     bot.add_extension_config("duck", config)
 
 
@@ -899,7 +899,7 @@ class DuckHunt(base.LoopCog):
             - cooldowns.get(message.author.id, datetime.datetime.now())
         ).seconds < config.extensions.duck.cooldown.value:
             cooldowns[message.author.id] = datetime.datetime.now()
-            self.bot.loop.create_task(
+            asyncio.create_task(
                 message.author.send(
                     f"I said to wait {config.extensions.duck.cooldown.value} seconds! Resetting timer..."
                 )
@@ -913,7 +913,7 @@ class DuckHunt(base.LoopCog):
         choice_ = random.choice(random.choices([True, False], weights=weights, k=1000))
         if not choice_:
             cooldowns[message.author.id] = datetime.datetime.now()
-            self.bot.loop.create_task(
+            asyncio.create_task(
                 message.channel.send(
                     content=message.author.mention,
                     embed=embeds.DenyEmbed(

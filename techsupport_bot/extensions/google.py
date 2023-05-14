@@ -5,7 +5,7 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding google extension config to the config file."""
     config = bot.ExtensionConfig()
     config.add(
@@ -16,7 +16,7 @@ def setup(bot):
         default=1,
     )
 
-    bot.add_cog(Googler(bot=bot))
+    await bot.add_cog(Googler(bot=bot))
     bot.add_extension_config("google", config)
 
 
@@ -90,9 +90,7 @@ class Googler(base.BaseCog):
                 link = item.get("link")
                 snippet = item.get("snippet", "<Details Unknown>").replace("\n", "")
                 embed = (
-                    GoogleEmbed(
-                        title=f"Results for {query}", value="https://google.com"
-                    )
+                    GoogleEmbed(title=f"Results for {query}")
                     if field_counter == 1
                     else embed
                 )

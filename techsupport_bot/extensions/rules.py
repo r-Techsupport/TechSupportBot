@@ -9,9 +9,9 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding the rules configuration to the config file."""
-    bot.add_cog(Rules(bot=bot))
+    await bot.add_cog(Rules(bot=bot))
 
 
 class RuleEmbed(discord.Embed):

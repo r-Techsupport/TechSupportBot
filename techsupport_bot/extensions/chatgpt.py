@@ -5,8 +5,8 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
-    bot.add_cog(ChatGPT(bot=bot))
+async def setup(bot):
+    await bot.add_cog(ChatGPT(bot=bot))
 
 
 class ChatGPT(base.BaseCog):
@@ -18,7 +18,31 @@ class ChatGPT(base.BaseCog):
             max_age_seconds=3600,
         )
 
-    @util.with_typing
+    def get_system_prompt(self):
+        return [
+            {
+                "role": "system",
+                "content": "The following questions are being asked via a Discord bot. Please try to keep messages informative but concise. For example, in code responses please try to not have a lot of newlines if unnecessary. The max message size should always be under 2000 characters or it will get clipped.",
+            }
+        ]
+
+    async def call_api(self, ctx, api_key, prompt):
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        data = {
+            "model": "gpt-3.5-turbo",
+            "messages": self.get_system_prompt()
+            + self.history.get(ctx.author.id, [])
+            + [{"role": "user", "content": prompt}],
+        }
+        response = await self.bot.http_call(
+            "post", self.API_URL, headers=headers, json=data
+        )
+        return response
+
+    # @util.with_typing
     @commands.cooldown(3, 60, commands.BucketType.channel)
     @commands.command(
         brief="Prompts ChatGPT",
@@ -31,20 +55,7 @@ class ChatGPT(base.BaseCog):
             await ctx.send_deny_embed("I couldn't find the OpenAI API key")
             return
 
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-
-        history = self.history.get(ctx.author.id, [])
-        data = {
-            "model": "gpt-3.5-turbo",
-            "messages": history + [{"role": "user", "content": prompt}],
-        }
-        response = await self.bot.http_call(
-            "post", self.API_URL, headers=headers, json=data
-        )
-
+        response = await self.call_api(ctx, api_key, prompt)
         choices = response.get("choices", [])
         if not choices:
             await ctx.send_deny_embed("I couldn't figure out what to say!")
@@ -65,7 +76,7 @@ class ChatGPT(base.BaseCog):
                 {"role": "assistant", "content": content}
             )
 
-        await ctx.send(content=content)
+        await ctx.send(content=content[:2000])
 
     @commands.group(
         brief="Executes a ChatGPT util command",
@@ -108,19 +119,9 @@ class ChatGPT(base.BaseCog):
         for i in range(0, len(history), 2):
             prompt = history[i].get("content", "Unknown").strip()
             resp = history[i + 1].get("content", "Unknown").strip()
-            description = f"""
-            Prompt
-            ```
-            {prompt}
-            ```
-            Message
-            ```
-            {resp}
-            ```
-            """[
-                :2000
-            ]
-            embed = discord.Embed(title="ChatGPT History", description=description)
+            embed = discord.Embed(title="ChatGPT History")
+            embed.add_field(name="Prompt", value=prompt[:255])
+            embed.add_field(name="Response", value=resp[:255])
             embeds.append(embed)
 
         ctx.task_paginate(pages=embeds)

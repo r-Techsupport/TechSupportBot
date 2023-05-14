@@ -4,8 +4,8 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
-    bot.add_cog(Embedder(bot=bot))
+async def setup(bot):
+    await bot.add_cog(Embedder(bot=bot))
 
 
 class Embedder(base.BaseCog):
