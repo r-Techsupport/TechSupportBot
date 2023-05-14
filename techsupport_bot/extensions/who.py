@@ -9,7 +9,7 @@ import yaml
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding the who configuration to the config file."""
 
     class UserNote(bot.db.Model):
@@ -33,7 +33,7 @@ def setup(bot):
         default=None,
     )
 
-    bot.add_cog(Who(bot=bot, models=[UserNote], extension_name="who"))
+    await bot.add_cog(Who(bot=bot, models=[UserNote], extension_name="who"))
     bot.add_extension_config("who", config)
 
 
@@ -54,7 +54,7 @@ class Who(base.BaseCog):
             description="**Note: this is a bot account!**" if user.bot else "",
         )
 
-        embed.set_thumbnail(url=user.avatar_url)
+        embed.set_thumbnail(url=user.display_avatar.url)
 
         embed.add_field(name="Created at", value=user.created_at.replace(microsecond=0))
         embed.add_field(name="Joined at", value=user.joined_at.replace(microsecond=0))

@@ -74,7 +74,7 @@ A (very) simple example:
 ```python
 import base
 from discord.ext import commands
-def setup(bot):
+async def setup(bot):
     bot.process_extension_setup(cogs=[Greeter])
 class Greeter(base.BaseCog):
     @commands.command(

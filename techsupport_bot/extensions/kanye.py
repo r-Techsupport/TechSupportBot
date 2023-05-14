@@ -8,7 +8,7 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding the config for kanye to the config file."""
     config = bot.ExtensionConfig()
     config.add(
@@ -33,7 +33,7 @@ def setup(bot):
         default=48,
     )
 
-    bot.add_cog(KanyeQuotes(bot=bot, extension_name="kanye"))
+    await bot.add_cog(KanyeQuotes(bot=bot, extension_name="kanye"))
     bot.add_extension_config("kanye", config)
 
 

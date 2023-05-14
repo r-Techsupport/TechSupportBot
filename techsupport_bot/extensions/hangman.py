@@ -8,7 +8,7 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Add hangman extension to the config file."""
     config = bot.ExtensionConfig()
     config.add(
@@ -19,7 +19,7 @@ def setup(bot):
         default=[],
     )
 
-    bot.add_cog(HangmanCog(bot=bot))
+    await bot.add_cog(HangmanCog(bot=bot))
     bot.add_extension_config("hangman", config)
 
 

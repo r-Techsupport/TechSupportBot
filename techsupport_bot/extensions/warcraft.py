@@ -9,7 +9,7 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding the warcraft configuration to the config file."""
     config = bot.ExtensionConfig()
     config.add(
@@ -40,9 +40,9 @@ def setup(bot):
         description="The ID of the channel to which realm alerts are sent",
         default=None,
     )
+    await bot.add_cog(WarcraftCommands(bot=bot))
+    await bot.add_cog(RealmAlerts(bot=bot, extension_name="warcraft", no_guild=True))
     bot.add_extension_config("warcraft", config)
-    bot.add_cog(WarcraftCommands(bot=bot))
-    bot.add_cog(RealmAlerts(bot=bot, extension_name="warcraft", no_guild=True))
 
 
 class WarcraftEmbed(discord.Embed):
