@@ -152,7 +152,6 @@ class Dumpdbg(base.BaseCog):
                     f"Dumpdbg API responded with the error `{response['error']}`"
                 )
                 return
-            print(response["success"])
             result_urls.append(response["url"])
 
         # -> Message returning <-
