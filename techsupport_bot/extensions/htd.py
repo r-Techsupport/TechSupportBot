@@ -255,4 +255,6 @@ class Htd(base.BaseCog):
             if embed != "":
                 await ctx.send(embed=embed)
             else:
-                await ctx.send_deny_embed("Unable to convert value, are you sure it's valid?")
+                await ctx.send_deny_embed(
+                    "Unable to convert value, are you sure it's valid?"
+                )
