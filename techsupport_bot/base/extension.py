@@ -279,7 +279,7 @@ async def extension_help(self, ctx, extension_name):
                     )
                 )
 
-        # Checks if no arguments were supplied
+    # Checks if no arguments were supplied
     elif len(ctx.message.content.split()) == 1:
         await ctx.send(
             embed=get_help_embed_for_extension(
