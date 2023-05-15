@@ -1,8 +1,10 @@
 """The main bot functions.
 """
+import asyncio
 import os
 
 import base
+import botlogging
 import cogs as builtin_cogs
 import context
 from discord.ext import ipc
@@ -22,8 +24,13 @@ class TechSupportBot(base.AdvancedBot):
 
         super().__init__(*args, **kwargs)
 
-    def run(self, *args, **kwargs):
+    async def start(self, *args, **kwargs):
         """Starts IPC and the event loop and blocks until interrupted."""
+
+        if isinstance(self.logger, botlogging.DelayedLogger):
+            self.logger.register_queue()
+            asyncio.create_task(self.logger.run())
+
         if os.getenv(self.IPC_SECRET_ENV_KEY):
             self.logger.console.debug("Setting up IPC server")
             self.ipc = ipc.Server(
@@ -33,18 +40,6 @@ class TechSupportBot(base.AdvancedBot):
         else:
             self.logger.console.debug("No IPC secret found in env - ignoring IPC setup")
 
-        try:
-            self.loop.run_until_complete(
-                self.start(self.file_config.main.auth_token, *args, **kwargs)
-            )
-        except (SystemExit, KeyboardInterrupt):
-            self.loop.run_until_complete(self.cleanup())
-        finally:
-            self.loop.close()
-
-    # pylint: disable=too-many-statements
-    async def start(self, *args, **kwargs):
-        """Sets up config and connections then starts the actual bot."""
         # this is required for the bot
         await self.logger.debug("Connecting to MongoDB...")
         self.mongo = self.get_mongo_ref()
@@ -67,28 +62,29 @@ class TechSupportBot(base.AdvancedBot):
         except Exception as exception:
             await self.logger.warning(f"Could not connect to RabbitMQ: {exception}")
 
-        await self.logger.debug("Loading extensions...")
-        self.load_extensions()
-
         if self.db:
             await self.logger.debug("Syncing Postgres tables...")
             await self.db.gino.create_all()
-
-        await self.logger.debug("Loading Help commands...")
-        self.remove_command("help")
-        help_cog = builtin_cogs.Helper(self)
-        self.add_cog(help_cog)
-
-        await self.load_builtin_cog(builtin_cogs.AdminControl)
-        await self.load_builtin_cog(builtin_cogs.ConfigControl)
-        await self.load_builtin_cog(builtin_cogs.Raw)
-        await self.load_builtin_cog(builtin_cogs.Listener)
 
         if self.ipc:
             await self.load_builtin_cog(builtin_cogs.IPCEndpoints)
 
         await self.logger.debug("Logging into Discord...")
-        await super().start(*args, **kwargs)
+        await super().start(self.file_config.main.auth_token, *args, **kwargs)
+
+    async def setup_hook(self):
+        await self.logger.debug("Loading extensions...")
+        await self.load_extensions()
+
+        await self.logger.debug("Loading Help commands...")
+        self.remove_command("help")
+        help_cog = builtin_cogs.Helper(self)
+        await self.add_cog(help_cog)
+
+        await self.load_builtin_cog(builtin_cogs.AdminControl)
+        await self.load_builtin_cog(builtin_cogs.ConfigControl)
+        await self.load_builtin_cog(builtin_cogs.Raw)
+        await self.load_builtin_cog(builtin_cogs.Listener)
 
     async def load_builtin_cog(self, cog):
         """Loads a cog as a builtin.
@@ -98,7 +94,7 @@ class TechSupportBot(base.AdvancedBot):
         """
         try:
             cog = cog(self)
-            self.add_cog(cog)
+            await self.add_cog(cog)
             self.builtin_cogs.append(cog.qualified_name)
         except Exception as exception:
             await self.logger.warning(

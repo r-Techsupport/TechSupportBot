@@ -9,9 +9,9 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding the rules configuration to the config file."""
-    bot.add_cog(Rules(bot=bot))
+    await bot.add_cog(Rules(bot=bot))
 
 
 class RuleEmbed(discord.Embed):
@@ -36,6 +36,10 @@ class Rules(base.BaseCog):
     @commands.group(name="rule")
     async def rule_group(self, ctx):
         """Method for the rule group."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         print(f"Rule command called in channel {ctx.channel}")
 
     @commands.has_permissions(administrator=True)
@@ -90,7 +94,12 @@ class Rules(base.BaseCog):
         numbers = []
 
         # Splits content string, and adds each item to number list
-        numbers.extend([int(num) for num in content.split(",")])
+        # Catches ValueError when no number is specified
+        try:
+            numbers.extend([int(num) for num in content.split(",")])
+        except ValueError:
+            await ctx.send_deny_embed("Please specify a rule number!")
+            return
 
         for number in numbers:
             if number < 1:

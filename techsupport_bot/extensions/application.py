@@ -13,7 +13,7 @@ import yaml
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """
     Method to setup the bot, and configure different management role config options for
     the promotion application framework.
@@ -67,7 +67,7 @@ def setup(bot):
         description="The list of role names to give someone once they are approved",
         default=[],
     )
-    bot.add_cog(ApplicationManager(bot=bot, extension_name="application"))
+    await bot.add_cog(ApplicationManager(bot=bot, extension_name="application"))
     bot.add_extension_config("application", config)
 
 
@@ -404,6 +404,10 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
     )
     async def application(self, ctx):
         """Method for application."""
+
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
+
         pass
 
     @application.command(

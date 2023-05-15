@@ -11,7 +11,7 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Class to set up the protect options in the config file."""
 
     class Warning(bot.db.Model):
@@ -110,7 +110,7 @@ def setup(bot):
         default=50,
     )
 
-    bot.add_cog(Protector(bot=bot, models=[Warning], extension_name="protect"))
+    await bot.add_cog(Protector(bot=bot, models=[Warning], extension_name="protect"))
     bot.add_extension_config("protect", config)
 
 
@@ -242,6 +242,9 @@ class Protector(base.MatchCog):
 
     async def handle_length_alert(self, config, ctx, content):
         """Method to handle alert for the protect extension."""
+        attachments = []
+        if ctx.message.attachments:
+            attachments = [await attch.to_file() for attch in ctx.message.attachments]
         await ctx.message.delete()
 
         reason = "message too long (too many newlines or characters)"
@@ -256,7 +259,7 @@ class Protector(base.MatchCog):
             await self.send_alert(config, ctx, "Could not convert text to Linx paste")
             return
 
-        await ctx.send(embed=linx_embed)
+        await ctx.send(embed=linx_embed, files=attachments[:10])
 
     async def handle_mass_mention_alert(self, config, ctx, content):
         """Method for handling mass mentions in an alert."""
@@ -359,8 +362,7 @@ class Protector(base.MatchCog):
             if not can_execute:
                 return
 
-        bans = await ctx.guild.bans()
-        for ban in bans:
+        async for ban in ctx.guild.bans(limit=None):
             if user == ban.user:
                 await ctx.send_deny_embed("User is already banned.")
                 return
@@ -418,7 +420,7 @@ class Protector(base.MatchCog):
             title="Chat Protection", description=f"{action.upper()} `{user}`"
         )
         embed.set_footer(text=f"Reason: {reason}")
-        embed.set_thumbnail(url=user.avatar_url)
+        embed.set_thumbnail(url=user.display_avatar.url)
         embed.color = discord.Color.gold()
 
         return embed
@@ -514,7 +516,9 @@ class Protector(base.MatchCog):
 
         embed.add_field(name="Paste Link", value=url)
         embed.description = content[0:100].replace("\n", " ")
-        embed.set_author(name=f"Paste by {ctx.author}", icon_url=ctx.author.avatar_url)
+        embed.set_author(
+            name=f"Paste by {ctx.author}", icon_url=ctx.author.display_avatar.url
+        )
         embed.set_footer(text="Note: long messages are automatically pasted")
         embed.color = discord.Color.blue()
 
@@ -530,7 +534,13 @@ class Protector(base.MatchCog):
     )
     async def ban_user(self, ctx, user: discord.User, *, reason: str = None):
         """Method to ban a user from discord."""
-        await self.handle_ban(ctx, user, reason)
+
+        # Uses the discord.Member class to get the top role attribute if the
+        # user is a part of the target guild
+        if ctx.guild.get_member(user.id) is not None:
+            await self.handle_ban(ctx, ctx.guild.get_member(user.id), reason)
+        else:
+            await self.handle_ban(ctx, user, reason)
 
         config = await self.bot.get_context_config(ctx)
         await self.send_alert(config, ctx, "Ban command")
@@ -545,7 +555,13 @@ class Protector(base.MatchCog):
     )
     async def unban_user(self, ctx, user: discord.User, *, reason: str = None):
         """Method to unban a user from discord."""
-        await self.handle_unban(ctx, user, reason)
+
+        # Uses the discord.Member class to get the top role attribute if the
+        # user is a part of the target guild
+        if ctx.guild.get_member(user.id) is not None:
+            await self.handle_unban(ctx, ctx.guild.get_member(user.id), reason)
+        else:
+            await self.handle_unban(ctx, user, reason)
 
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
@@ -608,7 +624,7 @@ class Protector(base.MatchCog):
         for warning in warnings:
             embed.add_field(name=warning.time, value=warning.reason, inline=False)
 
-        embed.set_thumbnail(url=user.avatar_url)
+        embed.set_thumbnail(url=user.display_avatar.url)
 
         embed.color = discord.Color.red()
 

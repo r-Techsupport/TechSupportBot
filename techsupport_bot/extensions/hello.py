@@ -3,9 +3,9 @@ import base
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Add the hello greeter to the config file."""
-    bot.add_cog(Greeter(bot=bot))
+    await bot.add_cog(Greeter(bot=bot))
 
 
 class Greeter(base.BaseCog):

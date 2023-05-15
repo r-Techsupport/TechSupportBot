@@ -1,0 +1,24 @@
+name: Check Line Endings
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  check-line-endings:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Check for CRLF line endings
+      run: |
+        for file in $(git ls-files); do
+          if grep -q $'\r$' "$file"; then
+            echo "$file has faulty file endings"
+          fi
+        done
+        if git grep -I --name-only $'\r'; then
+          echo "CRLF line endings detected"
+          exit 1
+        fi

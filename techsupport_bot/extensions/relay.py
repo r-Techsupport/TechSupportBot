@@ -10,10 +10,10 @@ import munch
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Method to add relay and IRC to the config file."""
-    bot.add_cog(DiscordRelay(bot=bot, no_guild=True, extension_name="relay"))
-    bot.add_cog(IRCReceiver(bot=bot, no_guild=True, extension_name="relay"))
+    await bot.add_cog(DiscordRelay(bot=bot, no_guild=True, extension_name="relay"))
+    await bot.add_cog(IRCReceiver(bot=bot, no_guild=True, extension_name="relay"))
 
 
 class RelayEvent:
@@ -37,7 +37,7 @@ class RelayEvent:
         self.payload.author.top_role = str(author.top_role)
 
         self.payload.author.permissions = munch.Munch()
-        discord_permissions = author.permissions_in(channel)
+        discord_permissions = channel.permissions_for(author)
         self.payload.author.permissions.kick = discord_permissions.kick_members
         self.payload.author.permissions.ban = discord_permissions.ban_members
         self.payload.author.permissions.unban = discord_permissions.ban_members

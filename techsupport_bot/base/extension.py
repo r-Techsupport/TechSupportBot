@@ -1,9 +1,11 @@
 """Module for defining the extensions bot methods."""
 
+import asyncio
 import glob
 import os
 
 import botlogging
+import discord
 import munch
 import yaml
 from discord.ext import commands
@@ -65,6 +67,7 @@ class ExtensionsBot(commands.Bot):
                 send=not self.file_config.main.logging.block_discord_send,
                 wait_time=self.file_config.main.logging.queue_wait_seconds,
             )
+
         else:
             self.logger = botlogging.BotLogger(
                 bot=self,
@@ -117,7 +120,7 @@ class ExtensionsBot(commands.Bot):
                     f"Config key {error_key} from {section}.{subsection} not supplied"
                 )
 
-    def get_potential_extensions(self):
+    async def get_potential_extensions(self):
         """Gets the current list of extensions in the defined directory."""
         self.logger.console.info(f"Searching {self.EXTENSIONS_DIR} for extensions")
         return [
@@ -126,14 +129,14 @@ class ExtensionsBot(commands.Bot):
             if os.path.isfile(f) and not f.endswith("__init__.py")
         ]
 
-    def load_extensions(self, graceful=True):
+    async def load_extensions(self, graceful=True):
         """Loads all extensions currently in the extensions directory.
 
         parameters:
             graceful (bool): True if extensions should gracefully fail to load
         """
         self.logger.console.debug("Retrieving extensions")
-        for extension_name in self.get_potential_extensions():
+        for extension_name in await self.get_potential_extensions():
             if extension_name in self.file_config.main.disabled_extensions:
                 self.logger.console.debug(
                     f"{extension_name} is disabled on startup - ignoring load"
@@ -141,7 +144,9 @@ class ExtensionsBot(commands.Bot):
                 continue
 
             try:
-                self.load_extension(f"{self.EXTENSIONS_DIR_NAME}.{extension_name}")
+                await self.load_extension(
+                    f"{self.EXTENSIONS_DIR_NAME}.{extension_name}"
+                )
             except Exception as exception:
                 self.logger.console.error(
                     f"Failed to load extension {extension_name}: {exception}"
@@ -171,7 +176,7 @@ class ExtensionsBot(commands.Bot):
         extension_name = command.module.split(".")[1]
         return extension_name
 
-    def register_file_extension(self, extension_name, fp):
+    async def register_file_extension(self, extension_name, fp):
         """Offers an interface for loading an extension from an external source.
 
         This saves the external file data to the OS, without any validation.
@@ -184,9 +189,92 @@ class ExtensionsBot(commands.Bot):
             raise NameError("Invalid extension name")
 
         try:
-            self.unload_extension(f"{self.EXTENSIONS_DIR_NAME}.{extension_name}")
+            await self.unload_extension(f"{self.EXTENSIONS_DIR_NAME}.{extension_name}")
         except commands.errors.ExtensionNotLoaded:
             pass
 
         with open(f"{self.EXTENSIONS_DIR}/{extension_name}.py", "wb") as file_handle:
             file_handle.write(fp)
+
+
+async def extension_help(self, ctx, extension_name):
+    """Automatically prompts for help if improper syntax for an extension is called.
+
+    The format for extension_name that's used is `self.__module__[11:]`, because
+    all extensions have the value set to extension.<name>, it's the most reliable
+    way to get the extension name regardless of aliases
+
+    parameters:
+        ctx (discord.ext.Context): context of the message
+        extension_name (str): the name of the extension to show the help for
+    """
+
+    def get_help_embed_for_extension(self, extension_name, command_prefix):
+        """Gets the help embed for an extension.
+
+        Defined so it doesn't have to be written out twice
+
+        parameters:
+            extension_name (str): the name of the extension to show the help for
+            command_prefix (str): passed to the func as it has to be awaited
+
+        returns:
+            embed (discord.Embed): Embed containing all commands with their description
+        """
+        embed = discord.Embed()
+        embed.title = f"Extension Commands: `{extension_name}`"
+
+        # Loops through each command in the bots library
+        for command in self.bot.walk_commands():
+            # Gets the command name
+            command_extension_name = self.bot.get_command_extension_name(command)
+
+            # Continues the loop if the command isn't a part of the target extension
+            if extension_name != command_extension_name or issubclass(
+                command.__class__, commands.Group
+            ):
+                continue
+
+            if command.full_parent_name == "":
+                syntax = f"{command_prefix}{command.name}"
+
+            else:
+                syntax = f"{command_prefix}{command.full_parent_name} {command.name}"
+
+            usage = command.usage or ""
+
+            embed.add_field(
+                name=f"`{syntax} {usage}`",
+                value=command.description or "No description available",
+                inline=False,
+            )
+
+        # Default for when no matching commands were found
+        if len(embed.fields) == 0:
+            embed.description = "There are no commands for this extension"
+
+        return embed
+
+    # Checks whether the first given argument is valid if more than one argument is supplied
+    if len(ctx.message.content.split()) > 1 and ctx.message.content.split().pop(
+        1
+    ) not in [
+        command.name
+        for command in self.bot.get_cog(self.qualified_name).walk_commands()
+    ]:
+        if await ctx.confirm(
+            "Invalid argument! Show help command?", delete_after=True, timeout=10
+        ):
+            await ctx.send(
+                embed=get_help_embed_for_extension(
+                    self, extension_name, await self.bot.get_prefix(ctx.message)
+                )
+            )
+
+    # Checks if no arguments were supplied
+    elif len(ctx.message.content.split()) < 2:
+        await ctx.send(
+            embed=get_help_embed_for_extension(
+                self, extension_name, await self.bot.get_prefix(ctx.message)
+            )
+        )

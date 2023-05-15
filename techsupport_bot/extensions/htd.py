@@ -6,11 +6,11 @@ import discord
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """
     boilerplate to load htd class
     """
-    bot.add_cog(Htd(bot=bot))
+    await bot.add_cog(Htd(bot=bot))
 
 
 class Htd(base.BaseCog):
@@ -226,7 +226,7 @@ class Htd(base.BaseCog):
                 return first_val * second_val
             if parsed_list[1] == "/":
                 return int(first_val / second_val)
-            raise Exception("Invalid equation")
+            raise SyntaxError("Invalid equation")
 
         # figure out whether or not the input is an equation
         is_equation = False

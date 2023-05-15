@@ -5,9 +5,9 @@ import util
 from discord.ext import commands
 
 
-def setup(bot):
+async def setup(bot):
     """Adding the wolfram configuration to the config file."""
-    bot.add_cog(Wolfram(bot=bot))
+    await bot.add_cog(Wolfram(bot=bot))
 
 
 class WolframEmbed(discord.Embed):
