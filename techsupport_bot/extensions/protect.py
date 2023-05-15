@@ -242,6 +242,9 @@ class Protector(base.MatchCog):
 
     async def handle_length_alert(self, config, ctx, content):
         """Method to handle alert for the protect extension."""
+        attachments = []
+        if ctx.message.attachments:
+            attachments = [await attch.to_file() for attch in ctx.message.attachments]
         await ctx.message.delete()
 
         reason = "message too long (too many newlines or characters)"
@@ -256,7 +259,7 @@ class Protector(base.MatchCog):
             await self.send_alert(config, ctx, "Could not convert text to Linx paste")
             return
 
-        await ctx.send(embed=linx_embed)
+        await ctx.send(embed=linx_embed, files=attachments[:10])
 
     async def handle_mass_mention_alert(self, config, ctx, content):
         """Method for handling mass mentions in an alert."""
