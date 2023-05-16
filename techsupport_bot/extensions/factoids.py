@@ -444,7 +444,7 @@ class FactoidManager(base.MatchCog):
                         ctx.guild,
                         "logging_channel",
                         "error",
-                        f"Could not await cron job completion",
+                        "Could not await cron job completion",
                         exception=e,
                     )
                 await asyncio.sleep(300)
