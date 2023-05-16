@@ -620,7 +620,7 @@ class FactoidManager(base.MatchCog):
         )
 
         embed.add_field(name="Channel", value=f"#{channel.name}")
-        embed.add_field(name="Cron config", value=job.cron)
+        embed.add_field(name="Cron config", value=f"`{job.cron}`")
 
         await ctx.send(embed=embed)
 
@@ -650,7 +650,7 @@ class FactoidManager(base.MatchCog):
             if not channel:
                 continue
             embed.add_field(
-                name=f"{job.text} - #{channel.name}", value=job.cron, inline=False
+                name=f"{job.text} - #{channel.name}", value=f"`{job.cron}`", inline=False
             )
 
         await ctx.send(embed=embed)
