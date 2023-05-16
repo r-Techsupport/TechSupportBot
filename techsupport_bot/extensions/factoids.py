@@ -435,13 +435,6 @@ class FactoidManager(base.MatchCog):
                 await self.bot.logger.error(
                     "Could not await cron completion", exception=e
                 )
-                await self.bot.guild_log(
-                    ctx.guild,
-                    "logging_channel",
-                    "error",
-                    f"Could not await cron job completion",
-                    exception=e,
-                )
                 await asyncio.sleep(300)
 
             factoid = await self.models.Factoid.query.where(
