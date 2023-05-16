@@ -405,7 +405,7 @@ class FactoidManager(base.MatchCog):
         for job in jobs:
             asyncio.create_task(self.cronjob(job))
 
-    async def cronjob(self, job):
+    async def cronjob(self, job, ctx=""):
         """Run a cron job for a factoid."""
         runtime_id = uuid.uuid4()
         self.cronjob_cache[runtime_id] = job
@@ -419,12 +419,16 @@ class FactoidManager(base.MatchCog):
                 ).gino.first()
                 if not from_db:
                     # This factoid job has been deleted from the DB
-                    await self.bot.guild_log(
-                        ctx.guild,
-                        "logging_channel",
-                        "error",
-                        f"Cron job {job} has failed - factoid has been deleted from the DB",
+                    await self.bot.logger.warnning(
+                        f"Cron job {job} has failed - factoid has been deleted from the DB"
                     )
+                    if ctx:
+                        await self.bot.guild_log(
+                            ctx.guild,
+                            "logging_channel",
+                            "error",
+                            f"Cron job {job} has failed - factoid has been deleted from the DB",
+                        )
                     return
                 job = from_db
                 self.cronjob_cache[runtime_id] = job
@@ -435,6 +439,14 @@ class FactoidManager(base.MatchCog):
                 await self.bot.logger.error(
                     "Could not await cron completion", exception=e
                 )
+                if ctx:
+                    await self.bot.guild_log(
+                        ctx.guild,
+                        "logging_channel",
+                        "error",
+                        f"Could not await cron job completion",
+                        exception=e,
+                    )
                 await asyncio.sleep(300)
 
             factoid = await self.models.Factoid.query.where(
@@ -575,7 +587,7 @@ class FactoidManager(base.MatchCog):
         )
         await job.create()
 
-        asyncio.create_task(self.cronjob(job))
+        asyncio.create_task(self.cronjob(job, ctx))
 
         await ctx.send_confirm_embed("Factoid loop created")
 
