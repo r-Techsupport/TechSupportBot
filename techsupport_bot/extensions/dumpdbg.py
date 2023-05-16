@@ -55,13 +55,14 @@ class Dumpdbg(base.BaseCog):
         """Method for the actual debugging"""
 
         async def get_files(ctx):
-            # Gets files from passed message and checks if they are valid .dmp files
-            #
-            # Params:
-            #  -> ctx (discord.Context) = The message to check
-            #
-            # Returns:
-            #  -> Valid_URLs (list) = The list of valid .dmp CDN links
+            """Gets files from passed message and checks if they are valid .dmp files
+            
+             Params:
+               -> ctx (discord.Context) = The message to check
+            
+             Returns:
+               -> Valid_URLs (list) = The list of valid .dmp CDN links
+            """
 
             # Checks if attachments were supplied
             if len(ctx.message.attachments) == 0:
@@ -148,7 +149,7 @@ class Dumpdbg(base.BaseCog):
                 await ctx.send_deny_embed(
                     f"Something went wrong with debugging! Api response: `{response['error']}`"
                 )
-                await self.bot.logger.error(
+                await self.bot.logger.warning(
                     f"Dumpdbg API responded with the error `{response['error']}`"
                 )
                 return
