@@ -47,20 +47,22 @@ class Dumpdbg(base.BaseCog):
         name="dumpdbg",
         aliases=["dump", "debug-dump", "debug_dump", "debugdump"],
         brief="Debugs an uploaded dump file",
-        description="Runs an uploaded Windows minidump through WinDBG on \
+        description="Runs an attached Windows minidump (.dmp) files through WinDBG on \
             an external server and returns the pasted output.",
+        usage="|attached-dump-files|",
     )
     async def debug_dump(self, ctx):
         """Method for the actual debugging"""
 
         async def get_files(ctx):
-            # Gets files from passed message and checks if they are valid .dmp files
-            #
-            # Params:
-            #  -> ctx (discord.Context) = The message to check
-            #
-            # Returns:
-            #  -> Valid_URLs (list) = The list of valid .dmp CDN links
+            """Gets files from passed message and checks if they are valid .dmp files
+
+            Params:
+              -> ctx (discord.Context) = The message to check
+
+            Returns:
+              -> Valid_URLs (list) = The list of valid .dmp CDN links
+            """
 
             # Checks if attachments were supplied
             if len(ctx.message.attachments) == 0:
@@ -101,7 +103,7 @@ class Dumpdbg(base.BaseCog):
         valid_URLs = await get_files(ctx)
 
         if len(valid_URLs) == 0:
-            await ctx.send_deny_embed("No valid dumps detected!")
+            await ctx.send_deny_embed("No valid attached dump files detected!")
             return
 
         # Reaction to indicate a succesful request
@@ -143,33 +145,31 @@ class Dumpdbg(base.BaseCog):
             )
 
             # Handling for failed results
-            if response["success"] == "false":
+            if response["success"] is False:
                 await ctx.send_deny_embed(
-                    f"Something went wrong with debugging! Error: {response['error']}"
+                    f"Something went wrong with debugging! Api response: `{response['error']}`"
                 )
-                await self.logger.error(
+                await self.bot.logger.warning(
                     f"Dumpdbg API responded with the error `{response['error']}`"
                 )
                 return
-
             result_urls.append(response["url"])
 
         # -> Message returning <-
         # Converted to str outside of bottom code because f-strings can't contain backslashes
-        result_urls = "\n".join(result_urls)
 
         # Formatting for several files because it looks prettier
         if len(result_urls) == 1:
             await ctx.send(
                 embed=DumpdbgEmbed(
                     title="Dump succesfully debugged! \nResult links:",
-                    description=result_urls,
+                    description="\n".join(result_urls),
                 )
             )
         else:
             await ctx.send(
                 embed=DumpdbgEmbed(
                     title="Dumps succesfully debugged! \nResult links:",
-                    description=result_urls,
+                    description="\n".join(result_urls),
                 )
             )
