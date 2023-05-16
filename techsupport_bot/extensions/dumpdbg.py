@@ -56,12 +56,12 @@ class Dumpdbg(base.BaseCog):
 
         async def get_files(ctx):
             """Gets files from passed message and checks if they are valid .dmp files
-            
-             Params:
-               -> ctx (discord.Context) = The message to check
-            
-             Returns:
-               -> Valid_URLs (list) = The list of valid .dmp CDN links
+
+            Params:
+              -> ctx (discord.Context) = The message to check
+
+            Returns:
+              -> Valid_URLs (list) = The list of valid .dmp CDN links
             """
 
             # Checks if attachments were supplied
