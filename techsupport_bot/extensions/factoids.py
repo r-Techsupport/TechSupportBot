@@ -118,7 +118,9 @@ async def has_manage_factoids_role(ctx):
         factoid_roles.append(factoid_role)
 
     if not factoid_roles:
-        raise commands.CommandError("No factoid management roles found in the config file")
+        raise commands.CommandError(
+            "No factoid management roles found in the config file"
+        )
     # Checking against the user to see if they have the roles specified in the config
     if not any(
         factoid_role in getattr(ctx.author, "roles", [])
@@ -314,7 +316,7 @@ class FactoidManager(base.MatchCog):
                 "Could not send factoid",
                 exception=e,
             )
-            # Sends the raw factoid instead of the embed 
+            # Sends the raw factoid instead of the embed
             message = await ctx.send(factoid.message)
 
         self.dispatch(ctx.author, message, factoid)
@@ -418,7 +420,7 @@ class FactoidManager(base.MatchCog):
                 if not from_db:
                     # This factoid job has been deleted from the DB
                     await self.bot.guild_log(
-                    ctx.guild,
+                        ctx.guild,
                         "logging_channel",
                         "error",
                         f"Cron job {job} has failed - factoid has been deleted from the DB",
@@ -431,14 +433,14 @@ class FactoidManager(base.MatchCog):
                 await aiocron.crontab(job.cron).next()
             except Exception as e:
                 await self.bot.logger.error(
-                "Could not await cron completion", exception=e
+                    "Could not await cron completion", exception=e
                 )
                 await self.bot.guild_log(
                     ctx.guild,
                     "logging_channel",
                     "error",
                     f"Could not await cron job completion",
-                    exception=e
+                    exception=e,
                 )
                 await asyncio.sleep(300)
 
@@ -674,7 +676,9 @@ class FactoidManager(base.MatchCog):
             if not channel:
                 continue
             embed.add_field(
-                name=f"{job.text} - #{channel.name}", value=f"`{job.cron}`", inline=False
+                name=f"{job.text} - #{channel.name}",
+                value=f"`{job.cron}`",
+                inline=False,
             )
 
         await ctx.send(embed=embed)
