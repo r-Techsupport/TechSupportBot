@@ -255,24 +255,32 @@ async def extension_help(self, ctx, extension_name):
 
         return embed
 
-    # Checks whether the first given argument is valid if more than one argument is supplied
-    if len(ctx.message.content.split()) > 1 and ctx.message.content.split().pop(
-        1
-    ) not in [
-        command.name
-        for command in self.bot.get_cog(self.qualified_name).walk_commands()
-    ]:
-        if await ctx.confirm(
-            "Invalid argument! Show help command?", delete_after=True, timeout=10
-        ):
-            await ctx.send(
-                embed=get_help_embed_for_extension(
-                    self, extension_name, await self.bot.get_prefix(ctx.message)
-                )
-            )
+    # Checks whether the first given argument is valid if an argument is supplied
+    if len(ctx.message.content.split()) > 1:
+        arg = ctx.message.content.split().pop(1)
+        valid_commands = []
+        valid_args = []
+        # Loops through each command for said extension
+        for command in self.bot.get_cog(self.qualified_name).walk_commands():
+            valid_commands.append(command.name)
+            valid_args.append(command.aliases)
 
-    # Checks if no arguments were supplied
-    elif len(ctx.message.content.split()) < 2:
+        # Flatmaps nested lists, because aliases are returned as lists.
+        valid_args = [item for sublist in valid_args for item in sublist]
+
+        # If argument isn't a valid command or alias, wait for confirmation to show help page
+        if arg not in valid_args and arg not in valid_commands:
+            if await ctx.confirm(
+                "Invalid argument! Show help command?", delete_after=True, timeout=10
+            ):
+                await ctx.send(
+                    embed=get_help_embed_for_extension(
+                        self, extension_name, await self.bot.get_prefix(ctx.message)
+                    )
+                )
+
+    # Executed if no arguments were supplied
+    elif len(ctx.message.content.split()) == 1:
         await ctx.send(
             embed=get_help_embed_for_extension(
                 self, extension_name, await self.bot.get_prefix(ctx.message)

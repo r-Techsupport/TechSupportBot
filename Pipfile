@@ -7,7 +7,7 @@ verify_ssl = true
 aiocron = "==1.8"
 aio-pika = "==9.0.7"
 aiounittest = "==1.4.2"
-black = "==22.12.0"
+black = "==23.3.0"
 discord-ext-ipc = "==2.1.1"
 "discord.py" = "==2.2.3"
 emoji = "==0.5.4"
