@@ -60,4 +60,3 @@ function onSubmit(e) {
 
     UrlFetchApp.fetch(POST_URL, options);
 };
- 
