@@ -59,7 +59,7 @@ class Grabber(base.BaseCog):
         name="grab",
         brief="Grabs a user's message",
         description="Grabs a message by ID and saves it",
-        usage="[message-id]",
+        usage="Username or user ID",
     )
     async def grab_user(self, ctx, user_to_grab: discord.Member):
         if user_to_grab.bot:
