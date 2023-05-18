@@ -481,8 +481,9 @@ class AdminControl(base.BaseCog):
         await ctx.send_confirm_embed("Message sent")
 
     @commands.command(
-        name="restart", description="Restarts the bot at the container level",
-        aliases=["reboot"]
+        name="restart",
+        description="Restarts the bot at the container level",
+        aliases=["reboot"],
     )
     async def restart(self, ctx):
         """Restarts the bot.
