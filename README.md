@@ -75,7 +75,7 @@ A (very) simple example:
 import base
 from discord.ext import commands
 async def setup(bot):
-    bot.process_extension_setup(cogs=[Greeter])
+    await bot.add_cog(Greeter(bot=bot))
 class Greeter(base.BaseCog):
     @commands.command(
         name="hello",
