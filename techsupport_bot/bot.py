@@ -1,7 +1,6 @@
 """The main bot functions.
 """
 import asyncio
-import os
 
 import base
 import botlogging
