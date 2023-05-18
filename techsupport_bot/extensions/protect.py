@@ -649,7 +649,7 @@ class Protector(base.MatchCog):
 
         Parameters:
         user: The discord.Member to be timed out. Required
-        duration: A string (# [s|m|h|d]) that declares how long. 
+        duration: A string (# [s|m|h|d]) that declares how long.
             Max time is 28 days by discord API. Defaults to 1 hour
         reason: A reason for the action. Defaults to none.
         """
