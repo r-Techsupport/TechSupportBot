@@ -16,6 +16,7 @@ async def setup(bot):
     await bot.add_cog(Embedder(bot=bot))
     bot.add_extension_config("embed", config)
 
+
 async def has_embed_role(ctx):
     """
     Check if the user is allowed to run embed commands or not
@@ -32,8 +33,7 @@ async def has_embed_role(ctx):
         raise commands.CommandError("no embed management roles found")
     # Checking against the user to see if they have the roles specified in the config
     if not any(
-        embed_role in getattr(ctx.author, "roles", [])
-        for embed_role in embed_roles
+        embed_role in getattr(ctx.author, "roles", []) for embed_role in embed_roles
     ):
         raise commands.MissingAnyRole(embed_roles)
 
