@@ -40,12 +40,17 @@ async def setup(bot):
 
 
 async def invalid_channel(ctx):
+    """
+    A method to check channels against the whitelist
+    If the channel is not in the whitelist, the command execution is halted
+
+    This is expected to be used in a @commands.check call
+    """
     config = await ctx.bot.get_context_config(ctx)
     if str(ctx.channel.id) in config.extensions.grab.allowed_channels.value:
         return True
-    else:
-        await ctx.send_deny_embed("Grabs are disabled for this channel")
-        raise Exception
+    await ctx.send_deny_embed("Grabs are disabled for this channel")
+    raise Exception
 
 
 class Grabber(base.BaseCog):
@@ -62,6 +67,13 @@ class Grabber(base.BaseCog):
         usage="Username or user ID",
     )
     async def grab_user(self, ctx, user_to_grab: discord.Member):
+        """
+        This is the grab by user function. Accessible by .grab
+        This will only search for 20 messages
+
+        Parameters:
+        user_to_grab: discord.Member. The user to search for grabs from
+        """
         if user_to_grab.bot:
             await ctx.send_deny_embed("Ain't gonna catch me slipping!")
             return
