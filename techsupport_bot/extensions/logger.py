@@ -74,7 +74,10 @@ class Logger(base.MatchCog):
     async def match(self, config, ctx, _):
         """Method to match the logging channel to the map."""
         if isinstance(ctx.channel, discord.Thread):
-            if not str(ctx.channel.parent_id) in config.extensions.logger.channel_map.value:
+            if (
+                not str(ctx.channel.parent_id)
+                in config.extensions.logger.channel_map.value
+            ):
                 return False
         else:
             if not str(ctx.channel.id) in config.extensions.logger.channel_map.value:
@@ -84,9 +87,13 @@ class Logger(base.MatchCog):
     async def response(self, config, ctx, _, __):
         """Method to generate the response from the logger."""
         if isinstance(ctx.channel, discord.Thread):
-            mapped_id = config.extensions.logger.channel_map.value.get(str(ctx.channel.parent_id))
+            mapped_id = config.extensions.logger.channel_map.value.get(
+                str(ctx.channel.parent_id)
+            )
         else:
-            mapped_id = config.extensions.logger.channel_map.value.get(str(ctx.channel.id))
+            mapped_id = config.extensions.logger.channel_map.value.get(
+                str(ctx.channel.id)
+            )
         if not mapped_id:
             return
 
