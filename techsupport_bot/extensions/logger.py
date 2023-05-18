@@ -111,4 +111,8 @@ class Logger(base.MatchCog):
             )
             return
 
-        await channel.send(embed=LogEmbed(context=ctx))
+        attachments = []
+        if ctx.message.attachments:
+            attachments = [await attch.to_file() for attch in ctx.message.attachments]
+
+        await channel.send(embed=LogEmbed(context=ctx), files=attachments[:10])
