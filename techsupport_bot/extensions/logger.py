@@ -40,14 +40,6 @@ class LogEmbed(discord.Embed):
             content3 = ctx.message.content[3073:4096] if ctx.message.content else "None"
             self.add_field(name="Content(Continue)", value=content3, inline=False)
 
-        if ctx.message.attachments:
-            self.add_field(
-                name="Attachments",
-                value=" ".join(
-                    attachment.url for attachment in ctx.message.attachments
-                ),
-            )
-
         self.add_field(
             name="Channel",
             value=(f"{ctx.channel.name} ({ctx.channel.mention})") or "Unknown",
