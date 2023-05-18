@@ -203,10 +203,8 @@ class Htd(base.BaseCog):
 
             # catch all if something breaks
             except ValueError:
-                embed = discord.Embed(
-                    color=discord.Color.red(),
-                    title="Unable to convert value, are you sure it's valid?",
-                )
+                # Handled when returned
+                return ""
 
             return embed
 
@@ -252,4 +250,11 @@ class Htd(base.BaseCog):
                 equation is valid?"
                 )
         else:
-            await ctx.send(embed=gen_embed_from_val(val_to_convert))
+            embed = gen_embed_from_val(val_to_convert)
+            # Done for deny_embed usage consistency
+            if embed != "":
+                await ctx.send(embed=embed)
+            else:
+                await ctx.send_deny_embed(
+                    "Unable to convert value, are you sure it's valid?"
+                )
