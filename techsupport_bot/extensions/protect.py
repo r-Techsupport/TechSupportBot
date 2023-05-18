@@ -718,6 +718,10 @@ class Protector(base.MatchCog):
         if not can_execute:
             return
 
+        if user.timed_out_until is None:
+            await ctx.send_deny_embed("That user is not timed out")
+            return
+
         await user.timeout(None)
 
         embed = await self.generate_user_modified_embed(user, "unmuted", reason)
