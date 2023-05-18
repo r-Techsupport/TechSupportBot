@@ -649,7 +649,8 @@ class Protector(base.MatchCog):
 
         Parameters:
         user: The discord.Member to be timed out. Required
-        duration: A string (# [s|m|h|d]) that declares how long. Max time is 28 days by discord API. Defaults to 1 hour
+        duration: A string (# [s|m|h|d]) that declares how long. 
+            Max time is 28 days by discord API. Defaults to 1 hour
         reason: A reason for the action. Defaults to none.
         """
         can_execute = await self.can_execute(ctx, user)
@@ -681,13 +682,13 @@ class Protector(base.MatchCog):
                     raise ValueError("Invalid duration")
             else:
                 delta_duration = timedelta(hours=1)
-        except ValueError:
-            raise ValueError("Invalid duration")
+        except ValueError as exc:
+            raise ValueError("Invalid duration") from exc
 
         # Checks to ensure time is valid and within the scope of the API
         if delta_duration > timedelta(days=28):
             raise ValueError("Timeout duration cannot be more than 28 days")
-        elif delta_duration < timedelta(seconds=1):
+        if delta_duration < timedelta(seconds=1):
             raise ValueError("Timeout duration cannot be less than 1 second")
 
         # Timeout the user and send messages to both the invocation channel, and the protect log
