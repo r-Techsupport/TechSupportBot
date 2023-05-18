@@ -70,7 +70,6 @@ async def setup(bot):
     bot.add_extension_config("duck", config)
 
 
-
 class DuckHunt(base.LoopCog):
     DUCK_PIC_URL = "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
     BEFRIEND_URL = "https://cdn.icon-icons.com/icons2/603/PNG/512/heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
@@ -196,8 +195,8 @@ class DuckHunt(base.LoopCog):
         await channel.send(embed=embed)
 
     def pick_quote(self) -> str:
-        QUOTES_FILE ="extensions/duckQuotes.txt"
-        with open(QUOTES_FILE, 'r') as file:
+        QUOTES_FILE = "extensions/duckQuotes.txt"
+        with open(QUOTES_FILE, "r") as file:
             lines = file.readlines()
             random_line = random.choice(lines)
             return random_line.strip()
@@ -234,10 +233,10 @@ class DuckHunt(base.LoopCog):
         if not choice_:
             cooldowns[message.author.id] = datetime.datetime.now()
             quote = self.pick_quote()
-            embed=embeds.DenyEmbed(
-                        message=quote
-                    )
-            embed.set_footer(text=f"Try again in {config.extensions.duck.cooldown.value} seconds")
+            embed = embeds.DenyEmbed(message=quote)
+            embed.set_footer(
+                text=f"Try again in {config.extensions.duck.cooldown.value} seconds"
+            )
             asyncio.create_task(
                 message.channel.send(
                     content=message.author.mention,
