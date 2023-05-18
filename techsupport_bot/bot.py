@@ -53,7 +53,6 @@ class TechSupportBot(base.AdvancedBot):
             await self.logger.debug("Syncing Postgres tables...")
             await self.db.gino.create_all()
 
-
         await self.logger.debug("Logging into Discord...")
         await super().start(self.file_config.main.auth_token, *args, **kwargs)
 

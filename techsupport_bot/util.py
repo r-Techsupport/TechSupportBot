@@ -64,7 +64,6 @@ def generate_embed_from_kwargs(
     return embed
 
 
-
 def config_schema_matches(input_config, current_config):
     """Performs a schema check on an input guild config.
 
