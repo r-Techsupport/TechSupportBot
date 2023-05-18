@@ -532,7 +532,8 @@ class AdvancedBot(DataBot):
 
         if isinstance(reaction.message.channel, discord.DMChannel):
             await self.logger.info(
-                f"PM from `{user}`: added {reaction.emoji} reaction to message {reaction.message.content} in DMs",
+                f"PM from `{user}`: added {reaction.emoji} reaction \
+                    to message {reaction.message.content} in DMs",
                 send=True,
             )
             return
@@ -568,7 +569,8 @@ class AdvancedBot(DataBot):
 
         if isinstance(reaction.message.channel, discord.DMChannel):
             await self.logger.info(
-                f"PM from `{user}`: removed {reaction.emoji} reaction to message {reaction.message.content} in DMs",
+                f"PM from `{user}`: removed {reaction.emoji} reaction \
+                    to message {reaction.message.content} in DMs",
                 send=True,
             )
             return
