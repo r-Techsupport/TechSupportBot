@@ -126,7 +126,7 @@ class AdminControl(base.BaseCog):
             ctx (discord.ext.Context): the context object for the message
             extension_name (str): the name of the extension
         """
-        ctx.bot.load_extension(f"extensions.{extension_name}")
+        await ctx.bot.load_extension(f"extensions.{extension_name}")
         await ctx.send_confirm_embed("I've loaded that extension")
 
     @util.with_typing
@@ -144,7 +144,7 @@ class AdminControl(base.BaseCog):
             ctx (discord.ext.Context): the context object for the message
             extension_name (str): the name of the extension
         """
-        ctx.bot.unload_extension(f"extensions.{extension_name}")
+        await ctx.bot.unload_extension(f"extensions.{extension_name}")
         await ctx.send_confirm_embed("I've unloaded that extension")
 
     @util.with_typing
@@ -481,7 +481,9 @@ class AdminControl(base.BaseCog):
         await ctx.send_confirm_embed("Message sent")
 
     @commands.command(
-        name="restart", description="Restarts the bot at the container level"
+        name="restart",
+        description="Restarts the bot at the container level",
+        aliases=["reboot"],
     )
     async def restart(self, ctx):
         """Restarts the bot.
