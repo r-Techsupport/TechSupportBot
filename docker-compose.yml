@@ -7,6 +7,7 @@ services:
         container_name: discordBot
         environment:
             - DEBUG=0
+            - TZ=UTC
             #- IPC_SECRET=$(IPC_SECRET)
         restart: unless-stopped
         stop_signal: SIGINT
