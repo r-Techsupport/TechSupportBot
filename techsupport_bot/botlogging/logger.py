@@ -148,6 +148,7 @@ class BotLogger:
                 type(exception), exception, exception.__traceback__
             )
         )
+        exception_string = exception_string.replace("```", "{CODE_BLOCK}")
         exception_string = exception_string[:1992]
 
         embed = kwargs.get("embed", embed_lib.ErrorEmbed(message))
