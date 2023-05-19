@@ -64,17 +64,6 @@ def generate_embed_from_kwargs(
     return embed
 
 
-def ipc_response(code=200, error=None, payload=None):
-    """Makes a response object for an IPC client.
-
-    parameters:
-        code (int): the HTTP-like status code
-        error (str): the response error message
-        payload (dict): the optional data payload
-    """
-    return {"code": code, "error": error, "payload": payload}
-
-
 def config_schema_matches(input_config, current_config):
     """Performs a schema check on an input guild config.
 
@@ -128,8 +117,6 @@ def with_typing(command):
 
 def preserialize_object(obj):
     """Provides sane object -> dict transformation for most objects.
-
-    This is primarily used to send Discord.py object data via the IPC server.
 
     parameters;
         obj (object): the object to serialize
