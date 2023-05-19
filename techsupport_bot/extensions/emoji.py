@@ -1,3 +1,5 @@
+from unicodedata import lookup
+
 import base
 import discord
 import emoji
@@ -17,14 +19,12 @@ class Emojis(base.BaseCog):
     @classmethod
     def emoji_from_char(cls, char):
         if char.isalpha():
-            return emoji.emojize(
-                f":regional_indicator_symbol_letter_{char.lower()}:", use_aliases=True
-            )
+            return lookup(f"REGIONAL INDICATOR SYMBOL LETTER {char.upper()}")
         if char.isnumeric():
             char = inflect.engine().number_to_words(char)
-            return emoji.emojize(f":{char}:", use_aliases=True)
+            return emoji.emojize(f":{char}:", language="alias")
         if cls.KEY_MAP.get(char):
-            return emoji.emojize(f":{cls.KEY_MAP[char]}:", use_aliases=True)
+            return emoji.emojize(f":{cls.KEY_MAP[char]}:", language="alias")
 
     @classmethod
     def emoji_message_from_string(cls, string):
