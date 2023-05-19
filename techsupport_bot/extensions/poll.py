@@ -88,7 +88,7 @@ class ReactionPoller(PollGenerator):
     async def preconfig(self):
         """Method to preconfig the poll."""
         self.option_emojis = [
-            emoji.emojize(f":{emoji_text}:", use_aliases=True)
+            emoji.emojize(f":{emoji_text}:", language="alias")
             for emoji_text in self.OPTION_EMOJIS
         ]
 
