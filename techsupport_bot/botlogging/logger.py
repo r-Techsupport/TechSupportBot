@@ -149,7 +149,6 @@ class BotLogger:
             )
         )
         exception_string = exception_string.replace("```", "{CODE_BLOCK}")
-        exception_string = exception_string[:1991]
 
         embed = kwargs.get("embed", embed_lib.ErrorEmbed(message))
         embed.timestamp = kwargs.get("time", datetime.datetime.utcnow())
@@ -171,9 +170,14 @@ class BotLogger:
             self.console.warning("Could not determine Discord target to send ERROR log")
             return
 
+        send_errors = [
+            exception_string[i : i + 1990]
+            for i in range(0, len(exception_string), 1990)
+        ]
         try:
             await target.send(content=content, embed=embed)
-            await target.send(f"```py\n{exception_string}```")
+            for str in send_errors:
+                await target.send(f"```py\n{str}```")
         except discord.Forbidden:
             pass
 
