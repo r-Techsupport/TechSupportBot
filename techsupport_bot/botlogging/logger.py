@@ -149,7 +149,7 @@ class BotLogger:
             )
         )
         exception_string = exception_string.replace("```", "{CODE_BLOCK}")
-        exception_string = exception_string[:1992]
+        exception_string = exception_string[:1991]
 
         embed = kwargs.get("embed", embed_lib.ErrorEmbed(message))
         embed.timestamp = kwargs.get("time", datetime.datetime.utcnow())
