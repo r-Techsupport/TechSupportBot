@@ -21,7 +21,7 @@ class Embedder(base.BaseCog):
             await ctx.send_deny_embed("Please provide a JSON file for your embeds")
             return
 
-        request_body = await ctx.get_json_from_attachments(ctx.message)
+        request_body = await util.get_json_from_attachments(ctx.message)
         if not request_body:
             await ctx.send_deny_embed("I couldn't find any data in your upload")
             return
