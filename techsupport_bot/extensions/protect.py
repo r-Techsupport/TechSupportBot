@@ -142,7 +142,7 @@ class Protector(base.MatchCog):
         """Method to match roles for the protect command."""
         # exit the match based on exclusion parameters
         if not str(ctx.channel.id) in config.extensions.protect.channels.value:
-            await self.bot.logger.info(
+            await self.bot.logger.debug(
                 "Channel not in protected channels - ignoring protect check"
             )
             return False
