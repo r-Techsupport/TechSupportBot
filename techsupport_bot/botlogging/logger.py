@@ -176,8 +176,8 @@ class BotLogger:
         ]
         try:
             await target.send(content=content, embed=embed)
-            for str in send_errors:
-                await target.send(f"```py\n{str}```")
+            for partial_exception in send_errors:
+                await target.send(f"```py\n{partial_exception}```")
         except discord.Forbidden:
             pass
 
