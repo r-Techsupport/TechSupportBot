@@ -2,6 +2,7 @@
 import datetime
 import io
 import re
+from datetime import timedelta
 
 import base
 import discord
@@ -630,41 +631,86 @@ class Protector(base.MatchCog):
 
         await ctx.send(embed=embed)
 
-    @commands.has_permissions(kick_members=True)
-    @commands.bot_has_permissions(kick_members=True)
+    @commands.has_permissions(moderate_members=True)
+    @commands.bot_has_permissions(moderate_members=True)
     @commands.command(
         name="mute",
         brief="Mutes a user",
-        description="Assigns the Muted role to a user (you need to create/configure this role)",
-        usage="@user",
+        description="Times out a user for the specified duration",
+        usage="@user [time] [reason]",
+        aliases=["timeout"],
     )
-    async def mute(self, ctx, user: discord.Member, *, reason: str = None):
-        """Method to mute a user in discord."""
+    async def mute(
+        self, ctx, user: discord.Member, duration: str = None, *, reason: str = None
+    ):
+        """
+        Method to mute a user in discord using the native timeout.
+        This should be run via discord
+
+        Parameters:
+        user: The discord.Member to be timed out. Required
+        duration: A string (# [s|m|h|d]) that declares how long.
+            Max time is 28 days by discord API. Defaults to 1 hour
+        reason: A reason for the action. Defaults to none.
+        """
         can_execute = await self.can_execute(ctx, user)
         if not can_execute:
             return
 
-        role = discord.utils.get(ctx.guild.roles, name="Muted")
-        if not role:
-            await ctx.send_deny_embed("The `Muted` role does not exist")
+        # The API prevents administrators from being timed out. Check it here
+        if user.guild_permissions.administrator:
+            await ctx.send_deny_embed(
+                "Someone with the `administrator` permissions cannot be timed out"
+            )
             return
 
-        await user.add_roles(role)
+        # Complex way to generate duration from shorthand time
+        delta_duration = None
+        try:
+            if duration:
+                num = int(duration[:-1])  # Extract numerical value
+                unit = duration[-1]  # Extract unit (d, h, m, s)
+                if unit == "d":
+                    delta_duration = timedelta(days=num)
+                elif unit == "h":
+                    delta_duration = timedelta(hours=num)
+                elif unit == "m":
+                    delta_duration = timedelta(minutes=num)
+                elif unit == "s":
+                    delta_duration = timedelta(seconds=num)
+                else:
+                    raise ValueError("Invalid duration")
+            else:
+                delta_duration = timedelta(hours=1)
+        except ValueError as exc:
+            raise ValueError("Invalid duration") from exc
 
-        embed = await self.generate_user_modified_embed(user, "muted", reason)
+        # Checks to ensure time is valid and within the scope of the API
+        if delta_duration > timedelta(days=28):
+            raise ValueError("Timeout duration cannot be more than 28 days")
+        if delta_duration < timedelta(seconds=1):
+            raise ValueError("Timeout duration cannot be less than 1 second")
+
+        # Timeout the user and send messages to both the invocation channel, and the protect log
+        await user.timeout(delta_duration, reason=reason)
+
+        embed = await self.generate_user_modified_embed(
+            user, f"muted for {delta_duration}", reason
+        )
 
         await ctx.send(embed=embed)
 
         config = await self.bot.get_context_config(ctx)
         await self.send_alert(config, ctx, "Mute command")
 
-    @commands.has_permissions(kick_members=True)
-    @commands.bot_has_permissions(kick_members=True)
+    @commands.has_permissions(moderate_members=True)
+    @commands.bot_has_permissions(moderate_members=True)
     @commands.command(
         name="unmute",
         brief="Unutes a user",
-        description="Removes the Muted role from a user (you need to create/configure this role)",
+        description="Removes a timeout from the user",
         usage="@user",
+        aliases=["untimeout"],
     )
     async def unmute(self, ctx, user: discord.Member, reason: str = None):
         """Method to unmute a user in discord."""
@@ -672,12 +718,11 @@ class Protector(base.MatchCog):
         if not can_execute:
             return
 
-        role = discord.utils.get(ctx.guild.roles, name="Muted")
-        if not role:
-            await ctx.send_deny_embed("The `Muted` role does not exist")
+        if user.timed_out_until is None:
+            await ctx.send_deny_embed("That user is not timed out")
             return
 
-        await user.remove_roles(role)
+        await user.timeout(None)
 
         embed = await self.generate_user_modified_embed(user, "unmuted", reason)
 
