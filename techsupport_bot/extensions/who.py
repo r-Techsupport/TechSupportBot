@@ -32,6 +32,13 @@ async def setup(bot):
         description="The name of the role to be added when a note is added to a user",
         default=None,
     )
+    config.add(
+        key="note_bypass",
+        datatype="list",
+        title="Note bypass list",
+        description="A list of roles that shouldn't have notes set or the note roll assigned",
+        default=["Moderator"],
+    )
 
     await bot.add_cog(Who(bot=bot, models=[UserNote], extension_name="who"))
     bot.add_extension_config("who", config)
@@ -114,13 +121,29 @@ class Who(base.BaseCog):
             body=body,
         )
 
+        config = await self.bot.get_context_config(ctx)
+
+        # Check to make sure notes are allowed to be assigned
+        for name in config.extensions.who.note_bypass.value:
+            role_check = discord.utils.get(ctx.guild.roles, name=name)
+            if not role_check:
+                continue
+            if role_check in getattr(user, "roles", []):
+                await ctx.send_deny_embed(
+                    f"You cannot assign notes to `{user}` because they have `{role_check}` role"
+                )
+                return
+
         await note.create()
 
-        config = await self.bot.get_context_config(ctx)
         role = discord.utils.get(
             ctx.guild.roles, name=config.extensions.who.note_role.value
         )
+
         if not role:
+            await ctx.send_confirm_embed(
+                f"Note created for `{user}`, but no note role is configured so no role was added"
+            )
             return
 
         await user.add_roles(role)
