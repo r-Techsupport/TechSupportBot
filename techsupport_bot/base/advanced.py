@@ -530,6 +530,14 @@ class AdvancedBot(DataBot):
         guild = getattr(reaction.message.channel, "guild", None)
         channel_id = getattr(reaction.message.channel, "id", None)
 
+        if isinstance(reaction.message.channel, discord.DMChannel):
+            await self.logger.info(
+                f"PM from `{user}`: added {reaction.emoji} reaction \
+                    to message {reaction.message.content} in DMs",
+                send=True,
+            )
+            return
+
         config_ = await self.get_context_config(guild=guild)
         if str(channel_id) in config_.get("private_channels", []):
             return
@@ -558,6 +566,14 @@ class AdvancedBot(DataBot):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_remove"""
         guild = getattr(reaction.message.channel, "guild", None)
         channel_id = getattr(reaction.message.channel, "id", None)
+
+        if isinstance(reaction.message.channel, discord.DMChannel):
+            await self.logger.info(
+                f"PM from `{user}`: removed {reaction.emoji} reaction \
+                    to message {reaction.message.content} in DMs",
+                send=True,
+            )
+            return
 
         config_ = await self.get_context_config(guild=guild)
         if str(channel_id) in config_.get("private_channels", []):
