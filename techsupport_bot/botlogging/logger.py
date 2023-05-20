@@ -88,7 +88,6 @@ class BotLogger:
             target = await self.bot.get_owner()
 
         if not target:
-            # pylint: disable=logging-fstring-interpolation
             self.console.warning(
                 f"Could not determine Discord target to send {console.__name__} log"
             )

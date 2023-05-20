@@ -8,11 +8,9 @@ import cogs as builtin_cogs
 import context
 
 
-# pylint: disable=too-many-public-methods, too-many-instance-attributes
 class TechSupportBot(base.AdvancedBot):
     """The main bot object."""
 
-    # pylint: disable=attribute-defined-outside-init
     def __init__(self, *args, **kwargs):
         self._startup_time = None
         self.builtin_cogs = []

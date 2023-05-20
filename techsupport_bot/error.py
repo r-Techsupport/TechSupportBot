@@ -8,7 +8,6 @@ class ExtensionDisabled(commands.errors.CheckFailure):
     """The exception thrown when an extension is disabled."""
 
 
-# pylint: disable=too-few-public-methods
 class ErrorResponse:
     """Object for generating a custom error message from an exception.
 

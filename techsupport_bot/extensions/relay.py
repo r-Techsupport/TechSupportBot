@@ -179,7 +179,7 @@ class IRCEmbed(discord.Embed):
 
     def fill_mentions(self, channel):
         """Method to fill in mentions for the relay message."""
-        description = self.description  # pylint: disable=E0203
+        description = self.description
         if not description:
             raise AttributeError("description field not present")
 
@@ -249,7 +249,7 @@ class IRCEventEmbed(IRCEmbed):
                 return f"`{permissions_label}{self.data.author.nickname}` \
                     sets mode **{self.data.event.irc_paramlist[1]}** on \
                     `{self.data.event.irc_paramlist[2]}`"
-            else:  # Pylint doesn't like this else R1705
+            else:
                 return f"`{self.data.author.mask}` did some \
                     configuration on {self.data.channel.name}..."
         # Needs a return for the function itself

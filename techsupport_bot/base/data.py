@@ -166,7 +166,6 @@ class DataBot(ExtensionsBot):
 
         await channel.close()
 
-    # pylint: disable=too-many-locals
     async def http_call(self, method, url, *args, **kwargs):
         """Makes an HTTP request.
 

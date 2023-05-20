@@ -126,7 +126,6 @@ class Helper(base.BaseCog):
         for extension_name in extension_names:
             extension_name_text += f"- `{extension_name}`\n"
 
-        # pylint: disable=no-member
         command_prefix = await self.bot.get_prefix(ctx.message)
         embed = HelpEmbed(
             title=f"Use `{command_prefix}{self.help_command.name} {self.extension_help_command.name} <extension_name>` to see extension commands",

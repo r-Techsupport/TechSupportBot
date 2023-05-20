@@ -68,7 +68,11 @@ disable=E0401,
         W0703,
         C0103,
         W0406,
-        R0914
+        R0914,
+        W0201,
+        R0912,
+        R0911,
+        R0913
         
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -500,5 +504,5 @@ valid-metaclass-classmethod-first-arg=cls
 
 # Exceptions that will emit a warning when being caught. Defaults to
 # "BaseException, Exception".
-overgeneral-exceptions=BaseException,
-                       Exception
+overgeneral-exceptions=builtins.BaseException,
+                       builtins.Exception

@@ -31,8 +31,6 @@ class AdminControl(base.BaseCog):
         description="Executes an extension bot command",
     )
     async def extension_group(self, ctx):
-        # pylint: disable=missing-function-docstring
-
         # Executed if there are no/invalid args supplied
         def get_help_embed(self, command_prefix):
             # Gets commands, checks if first supplied arg is valid
@@ -191,8 +189,6 @@ class AdminControl(base.BaseCog):
         description="Executes a commands bot command",
     )
     async def command_group(self, ctx):
-        # pylint: disable=missing-function-docstring
-
         # Executed if there are no/invalid args supplied
         def get_help_embed(self, command_prefix):
             # Gets commands, checks if first supplied arg is valid
@@ -296,8 +292,6 @@ class AdminControl(base.BaseCog):
         description="Executes a `set X` bot command",
     )
     async def set_group(self, ctx):
-        # pylint: disable=missing-function-docstring
-
         # Executed if there are no/invalid args supplied
         def get_help_embed(self, command_prefix):
             # Gets commands, checks if first supplied arg is valid
@@ -381,8 +375,6 @@ class AdminControl(base.BaseCog):
         brief="Executes an echo bot command", description="Executes an echo bot command"
     )
     async def echo(self, ctx):
-        # pylint: disable=missing-function-docstring
-
         # Executed if there are no/invalid args supplied
         def get_help_embed(self, command_prefix):
             # Gets commands, checks if first supplied arg is valid
