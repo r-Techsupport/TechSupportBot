@@ -51,7 +51,7 @@ class PollGenerator(base.BaseCog):
 
         if not isinstance(options, list):
             await ctx.send_deny_embed(
-                "I need the poll options to be a list (`question` key)"
+                "I need the poll options to be a list (`options` key)"
             )
             return None
         if len(options) < 2 or len(options) > max_options:
