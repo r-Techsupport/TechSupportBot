@@ -26,7 +26,7 @@ async def setup(bot):
     )
 
     await bot.add_cog(Dumpdbg(bot=bot))
-    bot.add_extension_config("Dumpdbg", config)
+    bot.add_extension_config("dumpdbg", config)
 
 
 class DumpdbgEmbed(discord.Embed):
@@ -91,8 +91,8 @@ class Dumpdbg(base.BaseCog):
             return valid_URLs
 
         config = await self.bot.get_context_config(guild=ctx.guild)
-        api_endpoint = config.extensions.Dumpdbg.api_endpoint.value
-        permitted_roles = config.extensions.Dumpdbg.roles.value
+        api_endpoint = config.extensions.dumpdbg.api_endpoint.value
+        permitted_roles = config.extensions.dumpdbg.roles.value
 
         # -> Message checks <-
 
