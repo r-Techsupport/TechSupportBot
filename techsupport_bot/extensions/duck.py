@@ -77,8 +77,10 @@ class DuckHunt(base.LoopCog):
     """Class for the actual duck commands"""
 
     DUCK_PIC_URL = "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
-    BEFRIEND_URL = "https://cdn.icon-icons.com/icons2/603/PNG/512/"+\
-    "heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
+    BEFRIEND_URL = (
+        "https://cdn.icon-icons.com/icons2/603/PNG/512/"
+        + "heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
+    )
     KILL_URL = "https://cdn.icon-icons.com/icons2/1919/PNG/512/huntingtarget_122049.png"
     ON_START = False
     CHANNELS_KEY = "hunt_channels"
@@ -230,8 +232,8 @@ class DuckHunt(base.LoopCog):
             cooldowns[message.author.id] = datetime.datetime.now()
             asyncio.create_task(
                 message.author.send(
-                    f"I said to wait {config.extensions.duck.cooldown.value}"\
-                    +"seconds! Resetting timer..."
+                    f"I said to wait {config.extensions.duck.cooldown.value}"
+                    + "seconds! Resetting timer..."
                 )
             )
             return False
