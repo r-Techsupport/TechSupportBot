@@ -40,14 +40,6 @@ class LogEmbed(discord.Embed):
             content3 = ctx.message.content[3073:4096] if ctx.message.content else "None"
             self.add_field(name="Content(Continue)", value=content3, inline=False)
 
-        if ctx.message.attachments:
-            self.add_field(
-                name="Attachments",
-                value=" ".join(
-                    attachment.url for attachment in ctx.message.attachments
-                ),
-            )
-
         self.add_field(
             name="Channel",
             value=(f"{ctx.channel.name} ({ctx.channel.mention})") or "Unknown",
@@ -73,13 +65,27 @@ class Logger(base.MatchCog):
 
     async def match(self, config, ctx, _):
         """Method to match the logging channel to the map."""
-        if not str(ctx.channel.id) in config.extensions.logger.channel_map.value:
-            return False
+        if isinstance(ctx.channel, discord.Thread):
+            if (
+                not str(ctx.channel.parent_id)
+                in config.extensions.logger.channel_map.value
+            ):
+                return False
+        else:
+            if not str(ctx.channel.id) in config.extensions.logger.channel_map.value:
+                return False
         return True
 
     async def response(self, config, ctx, _, __):
         """Method to generate the response from the logger."""
-        mapped_id = config.extensions.logger.channel_map.value.get(str(ctx.channel.id))
+        if isinstance(ctx.channel, discord.Thread):
+            mapped_id = config.extensions.logger.channel_map.value.get(
+                str(ctx.channel.parent_id)
+            )
+        else:
+            mapped_id = config.extensions.logger.channel_map.value.get(
+                str(ctx.channel.id)
+            )
         if not mapped_id:
             return
 
@@ -97,4 +103,8 @@ class Logger(base.MatchCog):
             )
             return
 
-        await channel.send(embed=LogEmbed(context=ctx))
+        attachments = []
+        if ctx.message.attachments:
+            attachments = [await attch.to_file() for attch in ctx.message.attachments]
+
+        await channel.send(embed=LogEmbed(context=ctx), files=attachments[:10])
