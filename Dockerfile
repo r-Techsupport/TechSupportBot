@@ -1,5 +1,5 @@
 
-FROM python:3.10-alpine as builder
+FROM python:3.11-alpine as builder
 
 RUN apk update && \
     apk add --no-cache \
@@ -16,7 +16,7 @@ RUN pip install pipenv && \
 
 COPY . .
 
-FROM python:3.10-alpine
+FROM python:3.11-alpine
 RUN apk add --no-cache \
     libpq
 WORKDIR /var/techsupport_bot
