@@ -296,6 +296,9 @@ class DuckHunt(base.LoopCog):
 
         speed_records = [record.speed_record for record in query]
 
+        if not speed_records:
+            return None
+
         return float(min(speed_records, key=float))
 
     @commands.group(
@@ -402,6 +405,9 @@ class DuckHunt(base.LoopCog):
         This outputs an embed shows the current speed record holder and their time
         """
         record_time = await self.get_global_record(ctx.guild.id)
+        if record_time is None:
+            await ctx.send_deny_embed("It appears nobody has partcipated in the duck hunt")
+            return
         record_user = (
             await self.models.DuckUser.query.where(
                 self.models.DuckUser.speed_record == record_time
