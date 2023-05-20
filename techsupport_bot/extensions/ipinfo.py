@@ -19,7 +19,7 @@ class IPInfo(base.BaseCog):
     @commands.cooldown(1, 30, commands.BucketType.channel)
     @commands.command(
         name="ipinfo",
-        alias=["ip"],
+        aliases=["ip"],
         brief="Gets IP info",
         description="Gets IP info (geodata) from a given IP",
     )
