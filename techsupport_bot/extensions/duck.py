@@ -413,7 +413,7 @@ class DuckHunt(base.LoopCog):
         embed = discord.Embed(title="Duck Speed Record")
         embed.color = embed_colors.green()
         embed.add_field(name="Time", value=f"{str(record_time)} seconds")
-        embed.add_field(name="User", value=f"<@{record_user.author_id}>")
+        embed.add_field(name="Record Holder", value=f"<@{record_user.author_id}>")
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
         await ctx.send(embed=embed)
