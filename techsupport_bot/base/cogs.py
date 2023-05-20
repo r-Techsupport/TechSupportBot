@@ -250,7 +250,7 @@ class LoopCog(BaseCog):
                         await self.bot.logger.debug(
                             f"Found new channel with ID {channel.id} in loop config - starting task"
                         )
-                        self.bot.loop.create_task(self._loop_execute(guild, channel))
+                        asyncio.create_task(self._loop_execute(guild, channel))
 
                     new_registered_channels.append(channel)
 

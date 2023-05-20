@@ -86,7 +86,7 @@ async def setup(bot):
         key="linx_url",
         datatype="str",
         title="Linx API URL",
-        description="The URL to an optional Linx (github.com/andreimarcu/linx-server)API for pastebinning factoid-all responses",
+        description="The URL to an optional Linx API for pastebinning large messages",
         default=None,
     )
     config.add(

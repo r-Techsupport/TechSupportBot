@@ -2,7 +2,7 @@
 
 # TechSupportBot
 
-TechSupportBot is a Dockerized Discord bot. Written on top of the [Python Discord API](https://pycord.readthedocs.io/en/latest/api.html), it provides the loading and unloading of custom extensions to extend and scale the bot as much as you want.
+TechSupportBot is a Dockerized Discord bot. Written on top of the [Python Discord API](https://discordpy.readthedocs.io/en/stable/), it provides the loading and unloading of custom extensions to extend and scale the bot as much as you want.
 
 # Deployment Guide
 ## External setup
@@ -74,7 +74,7 @@ A (very) simple example:
 import base
 from discord.ext import commands
 async def setup(bot):
-    bot.process_extension_setup(cogs=[Greeter])
+    await bot.add_cog(Greeter(bot=bot))
 class Greeter(base.BaseCog):
     @commands.command(
         name="hello",

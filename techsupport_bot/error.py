@@ -90,10 +90,10 @@ COMMAND_ERROR_RESPONSES = {
         'I couldn\'t find the message: "%s"', {"key": "argument"}
     ),
     commands.MemberNotFound: ErrorResponse(
-        'I coudn\'t find the server member: "%s"', {"key": "argument"}
+        'I couldn\'t find the server member: "%s"', {"key": "argument"}
     ),
     commands.UserNotFound: ErrorResponse(
-        'I coudn\'t find the user: "%s"', {"key": "argument"}
+        'I couldn\'t find the user: "%s"', {"key": "argument"}
     ),
     commands.ChannelNotFound: ErrorResponse(
         'I couldn\'t find the channel: "%s"', {"key": "argument"}
