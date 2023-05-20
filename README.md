@@ -27,7 +27,6 @@ cp config.default.yml config.yml
 The first file we will edit is the .env file. This is where you will store database information.  
 You will need to create a username and password for mongodb, postgres, and rabbitmq. These credentials do not have to be different.  
 You will also need to create a db name for postgres. This works best when it is all lowercase, but it is not strictly required.  
-The IPC_SECRET item can be left blank.  
 When filling in the information, do not include spaces or quotes. Just put the content directly after the equals sign.  
 You will need all of this information again, so make sure to keep note of it.  
 ### config.yml
