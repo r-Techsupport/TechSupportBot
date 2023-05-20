@@ -1,3 +1,6 @@
+"""
+Module for defining the grabs extension
+"""
 import datetime
 import random
 
@@ -8,7 +11,11 @@ from discord.ext import commands
 
 
 async def setup(bot):
+    """Setup to add Grab to the config file"""
+
     class Grab(bot.db.Model):
+        """Template for a Grab"""
+
         __tablename__ = "grabs"
 
         pk = bot.db.Column(bot.db.Integer, primary_key=True)
@@ -54,6 +61,8 @@ async def invalid_channel(ctx):
 
 
 class Grabber(base.BaseCog):
+    """Class for the actual commands"""
+
     HAS_CONFIG = False
     SEARCH_LIMIT = 20
 
@@ -64,7 +73,7 @@ class Grabber(base.BaseCog):
         name="grab",
         brief="Grabs a user's message",
         description="Grabs a message by ID and saves it",
-        usage="Username or user ID",
+        usage="[username-or-user-ID]",
     )
     async def grab_user(self, ctx, user_to_grab: discord.Member):
         """
@@ -123,7 +132,9 @@ class Grabber(base.BaseCog):
         description="Executes a grabs command",
     )
     async def grabs(self, ctx):
-        pass
+        """Makes the .grab command group"""
+        # Executed if there are no/invalid args supplied
+        await base.extension_help(self, ctx, self.__module__[11:])
 
     @util.with_typing
     @commands.guild_only()
@@ -132,9 +143,10 @@ class Grabber(base.BaseCog):
         name="all",
         brief="Returns grabs for a user",
         description="Returns all grabbed messages for a user",
-        usage="@user",
+        usage="[user]",
     )
     async def all_grabs(self, ctx, user_to_grab: discord.Member):
+        """Lists all grabs for an user"""
         is_nsfw = ctx.channel.is_nsfw()
 
         config = await self.bot.get_context_config(ctx)
@@ -196,11 +208,12 @@ class Grabber(base.BaseCog):
     @grabs.command(
         name="random",
         brief="Returns a random grab",
-        description="Returns a random grabbed message for a user (note: NSFW messages are filtered by channel settings)",
-        usage="@user",
+        description="Returns a random grabbed message for a user "
+        + "(note: NSFW messages are filtered by channel settings)",
+        usage="[user]",
     )
     async def random_grab(self, ctx, user_to_grab: discord.Member):
-        config = await self.bot.get_context_config(ctx)
+        """Gets a random grab from an user"""
 
         if user_to_grab.bot:
             await ctx.send_deny_embed("Ain't gonna catch me slipping!")
@@ -240,3 +253,47 @@ class Grabber(base.BaseCog):
         embed.set_thumbnail(url=user_to_grab.display_avatar.url)
 
         await ctx.send(embed=embed)
+
+    @util.with_typing
+    @commands.has_permissions(kick_members=True)
+    @commands.guild_only()
+    @commands.check(invalid_channel)
+    @grabs.command(
+        name="delete",
+        brief="Deleted a specific grab",
+        description="Deleted a specific grab from a user by the message",
+        usage="[user] [message]",
+    )
+    async def delete_grab(self, ctx, target_user: discord.Member, message: str):
+        """Deletes a specific grab from an user"""
+
+        # Gets all grabs
+        grabs = (
+            await self.models.Grab.query.where(
+                self.models.Grab.author_id == str(target_user.id)
+            )
+            .where(self.models.Grab.guild == str(ctx.guild.id))
+            .gino.all()
+        )
+
+        # Queries the grab containing the message
+        query = (
+            self.models.Grab.query.where(
+                self.models.Grab.author_id == str(target_user.id)
+            )
+            .where(self.models.Grab.guild == str(ctx.guild.id))
+            .where(self.models.Grab.message == message)
+        )
+
+        grab = await query.gino.all()
+
+        if not grab:
+            await ctx.send_deny_embed(f"Grab `{message}` not found for {target_user}")
+            return
+        try:
+            await grab[0].delete()
+
+        except IndexError:
+            raise commands.CommandError("Couldn't delete the grab!")
+
+        await ctx.send_confirm_embed("Grab succesfully deleted!")
