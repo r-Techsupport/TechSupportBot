@@ -769,7 +769,10 @@ class FactoidManager(base.MatchCog):
                 continue
 
             if factoid.text not in aliases:  # If not aliased
-                list_items += f"<li><code>{factoid.text}{embed_text} - {factoid.message}</code></li>"
+                list_items += (
+                    f"<li><code>{factoid.text}{embed_text}"
+                    + f" - {factoid.message}</code></li>"
+                )
             else:  # If aliased
                 list_items += (
                     f"<li><code>{factoid.text}{embed_text} [{', '.join(aliases[factoid.text])}]"
