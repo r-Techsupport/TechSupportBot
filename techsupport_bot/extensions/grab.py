@@ -283,6 +283,6 @@ class Grabber(base.BaseCog):
             await grab[0].delete()
 
         except IndexError:
-            raise commands.CommandError("Couldn't delete the grab!")
+            raise commands.CommandError("Couldn't delete the grab!") from IndexError
 
         await ctx.send_confirm_embed("Grab succesfully deleted!")
