@@ -56,8 +56,7 @@ async def invalid_channel(ctx):
     config = await ctx.bot.get_context_config(ctx)
     if str(ctx.channel.id) in config.extensions.grab.allowed_channels.value:
         return True
-    await ctx.send_deny_embed("Grabs are disabled for this channel")
-    raise Exception
+    raise commands.CommandError("Grabs are disabled for this channel")
 
 
 class Grabber(base.BaseCog):
@@ -267,25 +266,15 @@ class Grabber(base.BaseCog):
     async def delete_grab(self, ctx, target_user: discord.Member, message: str):
         """Deletes a specific grab from an user"""
 
-        # Gets all grabs
-        grabs = (
+        # Gets the target grab by the message
+        grab = (
             await self.models.Grab.query.where(
                 self.models.Grab.author_id == str(target_user.id)
             )
             .where(self.models.Grab.guild == str(ctx.guild.id))
+            .where(self.models.Grab.message == message)
             .gino.all()
         )
-
-        # Queries the grab containing the message
-        query = (
-            self.models.Grab.query.where(
-                self.models.Grab.author_id == str(target_user.id)
-            )
-            .where(self.models.Grab.guild == str(ctx.guild.id))
-            .where(self.models.Grab.message == message)
-        )
-
-        grab = await query.gino.all()
 
         if not grab:
             await ctx.send_deny_embed(f"Grab `{message}` not found for {target_user}")
