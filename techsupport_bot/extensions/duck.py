@@ -1,3 +1,4 @@
+"""Module for the duck extension"""
 import asyncio
 import datetime
 import functools
@@ -5,13 +6,15 @@ import random
 
 import base
 import discord
-import embeds
+import embeds as stock_embeds
 import util
 from discord import Color as embed_colors
 from discord.ext import commands
 
 
 async def setup(bot):
+    """Method to add duck into the config file"""
+
     class DuckUser(bot.db.Model):
         __tablename__ = "duckusers"
 
@@ -71,16 +74,21 @@ async def setup(bot):
 
 
 class DuckHunt(base.LoopCog):
+    """Class for the actual duck commands"""
+
     DUCK_PIC_URL = "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
-    BEFRIEND_URL = "https://cdn.icon-icons.com/icons2/603/PNG/512/heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
+    BEFRIEND_URL = "https://cdn.icon-icons.com/icons2/603/PNG/512/"+\
+    "heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
     KILL_URL = "https://cdn.icon-icons.com/icons2/1919/PNG/512/huntingtarget_122049.png"
     ON_START = False
     CHANNELS_KEY = "hunt_channels"
 
     async def loop_preconfig(self):
+        """Preconfig for cooldowns"""
         self.cooldowns = {}
 
     async def wait(self, config, _):
+        """Method for the duck loop"""
         await asyncio.sleep(
             random.randint(
                 config.extensions.duck.min_wait.value * 3600,
@@ -89,6 +97,7 @@ class DuckHunt(base.LoopCog):
         )
 
     async def execute(self, config, guild, channel):
+        """Method for sending the duck"""
         if not channel:
             await self.bot.guild_log(
                 guild,
@@ -154,6 +163,7 @@ class DuckHunt(base.LoopCog):
         await channel.send(embed=embed)
 
     async def handle_winner(self, winner, guild, action, duration, channel):
+        """Method to add the handle DB values of the winner"""
         await self.bot.guild_log(
             guild,
             "logging_channel",
@@ -195,13 +205,15 @@ class DuckHunt(base.LoopCog):
         await channel.send(embed=embed)
 
     def pick_quote(self) -> str:
+        """Method for picking a random quote for the miss message"""
         QUOTES_FILE = "extensions/duckQuotes.txt"
-        with open(QUOTES_FILE, "r") as file:
+        with open(QUOTES_FILE, "r", encoding="utf-8") as file:
             lines = file.readlines()
             random_line = random.choice(lines)
             return random_line.strip()
 
     def message_check(self, config, channel, message):
+        """Method to check if 'bef' or 'bang' was typed"""
         # ignore other channels
         if message.channel.id != channel.id:
             return False
@@ -218,7 +230,8 @@ class DuckHunt(base.LoopCog):
             cooldowns[message.author.id] = datetime.datetime.now()
             asyncio.create_task(
                 message.author.send(
-                    f"I said to wait {config.extensions.duck.cooldown.value} seconds! Resetting timer..."
+                    f"I said to wait {config.extensions.duck.cooldown.value}"\
+                    +"seconds! Resetting timer..."
                 )
             )
             return False
@@ -233,7 +246,7 @@ class DuckHunt(base.LoopCog):
         if not choice_:
             cooldowns[message.author.id] = datetime.datetime.now()
             quote = self.pick_quote()
-            embed = embeds.DenyEmbed(message=quote)
+            embed = stock_embeds.DenyEmbed(message=quote)
             embed.set_footer(
                 text=f"Try again in {config.extensions.duck.cooldown.value} seconds"
             )
@@ -247,6 +260,7 @@ class DuckHunt(base.LoopCog):
         return choice_
 
     async def get_duck_user(self, user_id, guild_id):
+        """Method to get the duck winner"""
         duck_user = (
             await self.models.DuckUser.query.where(
                 self.models.DuckUser.author_id == str(user_id)
@@ -262,6 +276,8 @@ class DuckHunt(base.LoopCog):
         description="Executes a duck command",
     )
     async def duck(self, ctx):
+        """Method to make the initial duck command"""
+
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
 
@@ -273,6 +289,7 @@ class DuckHunt(base.LoopCog):
         usage="@user (defaults to yourself)",
     )
     async def stats(self, ctx, *, user: discord.Member = None):
+        """Method for viewing duck stats"""
         if not user:
             user = ctx.message.author
 
@@ -302,6 +319,7 @@ class DuckHunt(base.LoopCog):
         description="Gets duck friendship scores for all users",
     )
     async def friends(self, ctx):
+        """Method for viewing top friend counts"""
         duck_users = (
             await self.models.DuckUser.query.order_by(
                 -self.models.DuckUser.befriend_count
@@ -345,6 +363,7 @@ class DuckHunt(base.LoopCog):
         description="Gets duck kill scores for all users",
     )
     async def killers(self, ctx):
+        """Method for viewing top killer counts"""
         duck_users = (
             await self.models.DuckUser.query.order_by(-self.models.DuckUser.kill_count)
             .where(self.models.DuckUser.kill_count > 0)
@@ -378,6 +397,7 @@ class DuckHunt(base.LoopCog):
         ctx.task_paginate(pages=embeds)
 
     def get_user_text(self, duck_user):
+        """Method to get the user for the top commands"""
         user = self.bot.get_user(int(duck_user.author_id))
         if user:
             user_text = f"{user.display_name}"
