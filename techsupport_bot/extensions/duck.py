@@ -406,7 +406,9 @@ class DuckHunt(base.LoopCog):
         """
         record_time = await self.get_global_record(ctx.guild.id)
         if record_time is None:
-            await ctx.send_deny_embed("It appears nobody has partcipated in the duck hunt")
+            await ctx.send_deny_embed(
+                "It appears nobody has partcipated in the duck hunt"
+            )
             return
         record_user = (
             await self.models.DuckUser.query.where(
