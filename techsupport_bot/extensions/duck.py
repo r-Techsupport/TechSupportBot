@@ -156,6 +156,16 @@ class DuckHunt(base.LoopCog):
         await channel.send(embed=embed)
 
     async def handle_winner(self, winner, guild, action, raw_duration, channel):
+        """
+        This is a function to update the database based on a winner
+
+        Parameters:
+        winner -> A discord.Member object for the winner
+        guild -> A discord.Guild object for the guild the winner is a part of
+        action -> A string, either "befriended" or "killed", depending on the action
+        raw_duration -> A datetime object of the time since the duck spawned
+        channel -> The channel in which the duck game happened in
+        """
         await self.bot.guild_log(
             guild,
             "logging_channel",
@@ -204,7 +214,8 @@ class DuckHunt(base.LoopCog):
         if duration_exact < duck_user.speed_record:
             footer_string += f"New personal record: {duration_exact} seconds."
             if duration_exact < global_record:
-                footer_string += f"\nNew global record! Previous global record: {global_record} seconds"
+                footer_string += f"\nNew global record! \
+                    Previous global record: {global_record} seconds"
             await duck_user.update(speed_record=duration_exact).apply()
         embed.set_footer(text=footer_string)
 
@@ -356,7 +367,8 @@ class DuckHunt(base.LoopCog):
             embed = (
                 discord.Embed(
                     title="Duck Friendships",
-                    description=f"Global speed record: {str(await self.get_global_record(ctx.guild.id))} seconds",
+                    description=f"Global speed record:\
+                         {str(await self.get_global_record(ctx.guild.id))} seconds",
                 )
                 if field_counter == 1
                 else embed
@@ -401,7 +413,7 @@ class DuckHunt(base.LoopCog):
 
         embed = discord.Embed(title="Duck Speed Record")
         embed.color = embed_colors.green()
-        embed.add_field(name="Time", value=f"str(record_time) seconds")
+        embed.add_field(name="Time", value=f"{str(record_time)} seconds")
         embed.add_field(name="User", value=f"<@{record_user.author_id}>")
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
@@ -431,7 +443,8 @@ class DuckHunt(base.LoopCog):
             embed = (
                 discord.Embed(
                     title="Duck Kills",
-                    description=f"Global speed record: {str(await self.get_global_record(ctx.guild.id))} seconds",
+                    description=f"Global speed record:\
+                          {str(await self.get_global_record(ctx.guild.id))} seconds",
                 )
                 if field_counter == 1
                 else embed
