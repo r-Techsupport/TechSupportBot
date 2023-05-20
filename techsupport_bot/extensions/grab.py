@@ -28,10 +28,10 @@ async def setup(bot):
         default=3,
     )
     config.add(
-        key="blocked_channels",
+        key="allowed_channels",
         datatype="list",
-        title="List of blocked channels",
-        description="The list of channels to disable the grabs plugin",
+        title="List of allowed channels",
+        description="The list of channels to enable the grabs plugin",
         default=[],
     )
 
@@ -40,13 +40,17 @@ async def setup(bot):
 
 
 async def invalid_channel(ctx):
+    """
+    A method to check channels against the whitelist
+    If the channel is not in the whitelist, the command execution is halted
+
+    This is expected to be used in a @commands.check call
+    """
     config = await ctx.bot.get_context_config(ctx)
-
-    if ctx.channel.id in config.extensions.grab.blocked_channels.value:
-        await ctx.send_deny_embed("Grabs are disabled for this channel")
-        return False
-
-    return True
+    if str(ctx.channel.id) in config.extensions.grab.allowed_channels.value:
+        return True
+    await ctx.send_deny_embed("Grabs are disabled for this channel")
+    raise Exception
 
 
 class Grabber(base.BaseCog):
@@ -60,18 +64,42 @@ class Grabber(base.BaseCog):
         name="grab",
         brief="Grabs a user's message",
         description="Grabs a message by ID and saves it",
-        usage="[message-id]",
+        usage="Username or user ID",
     )
-    async def grab_user(self, ctx, message: discord.Message):
-        if message.author.bot:
+    async def grab_user(self, ctx, user_to_grab: discord.Member):
+        """
+        This is the grab by user function. Accessible by .grab
+        This will only search for 20 messages
+
+        Parameters:
+        user_to_grab: discord.Member. The user to search for grabs from
+        """
+        if user_to_grab.bot:
             await ctx.send_deny_embed("Ain't gonna catch me slipping!")
+            return
+
+        if user_to_grab == ctx.author:
+            await ctx.send_deny_embed("You can't do this to yourself")
+            return
+
+        grab_message = None
+
+        async for message in ctx.channel.history(limit=self.SEARCH_LIMIT):
+            if message.author == user_to_grab:
+                grab_message = message.content
+                break
+
+        if not grab_message:
+            await ctx.send_deny_embed(
+                f"Could not find a recent message from user {user_to_grab}"
+            )
             return
 
         grab = (
             await self.models.Grab.query.where(
-                self.models.Grab.author_id == str(message.author.id),
+                self.models.Grab.author_id == str(user_to_grab.id),
             )
-            .where(self.models.Grab.message == message.content)
+            .where(self.models.Grab.message == grab_message)
             .gino.first()
         )
 
@@ -80,15 +108,15 @@ class Grabber(base.BaseCog):
             return
 
         grab = self.models.Grab(
-            author_id=str(message.author.id),
+            author_id=str(user_to_grab.id),
             channel=str(ctx.channel.id),
             guild=str(ctx.guild.id),
-            message=message.clean_content,
+            message=grab_message,
             nsfw=ctx.channel.is_nsfw(),
         )
         await grab.create()
 
-        await ctx.send_confirm_embed(f"Successfully saved: '*{message.clean_content}*'")
+        await ctx.send_confirm_embed(f"Successfully saved: '*{grab_message}*'")
 
     @commands.group(
         brief="Executes a grabs command",
