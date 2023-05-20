@@ -134,7 +134,6 @@ class DuckHunt(base.LoopCog):
         await message.delete()
 
         if response_message:
-            # duration = (datetime.datetime.now() - start_time).seconds
             raw_duration = datetime.datetime.now() - start_time
             action = (
                 "befriended" if response_message.content.lower() == "bef" else "killed"
