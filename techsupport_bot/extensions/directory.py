@@ -73,7 +73,7 @@ class ChannelDirectory(base.BaseCog):
         self.option_map = {}
 
         self.option_emojis = [
-            emoji.emojize(f":{emoji_text}:", use_aliases=True)
+            emoji.emojize(f":{emoji_text}:", language="alias")
             for emoji_text in self.OPTION_EMOJIS
         ]
 

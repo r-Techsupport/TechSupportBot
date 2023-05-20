@@ -5,12 +5,45 @@ from discord.ext import commands
 
 
 async def setup(bot):
+    config = bot.ExtensionConfig()
+    config.add(
+        key="embed_roles",
+        datatype="list",
+        title="Allowed embed roles",
+        description="The list of role names able to use the embed commands",
+        default=[],
+    )
     await bot.add_cog(Embedder(bot=bot))
+    bot.add_extension_config("embed", config)
+
+
+async def has_embed_role(ctx):
+    """
+    Check if the user is allowed to run embed commands or not
+    """
+    config = await ctx.bot.get_context_config(ctx)
+    embed_roles = []
+    for name in config.extensions.embed.embed_roles.value:
+        embed_role = discord.utils.get(ctx.guild.roles, name=name)
+        if not embed_role:
+            continue
+        embed_roles.append(embed_role)
+
+    if not embed_roles:
+        raise commands.CommandError("no embed management roles found")
+    # Checking against the user to see if they have the roles specified in the config
+    if not any(
+        embed_role in getattr(ctx.author, "roles", []) for embed_role in embed_roles
+    ):
+        raise commands.MissingAnyRole(embed_roles)
+
+    return True
 
 
 class Embedder(base.BaseCog):
     @util.with_typing
     @commands.has_permissions(manage_messages=True)
+    @commands.check(has_embed_role)
     @commands.command(
         brief="Generates a list of embeds",
         description="Generates a list of embeds defined by an uploaded JSON file (see: https://discord.com/developers/docs/resources/channel#embed-object)",
