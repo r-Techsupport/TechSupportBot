@@ -34,6 +34,7 @@ async def setup(bot):
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
         embed_config = bot.db.Column(bot.db.String, default=None)
         hidden = bot.db.Column(bot.db.Boolean, default=False)
+        alias = bot.db.Column(bot.db.String, default=None)
 
     class FactoidCron(bot.db.Model):
         """define the factoid scheduler."""
@@ -244,6 +245,7 @@ class FactoidManager(base.MatchCog):
             guild=kwargs.get("guild"),
             message=kwargs.get("message"),
             embed_config=kwargs.get("embed_config"),
+            alias=kwargs.get("alias"),
         )
         await factoid.create()
 
@@ -284,6 +286,13 @@ class FactoidManager(base.MatchCog):
         factoid = await self.get_factoid_from_query(query, ctx.guild)
         if not factoid:
             return
+
+        if factoid.alias not in ["", None]:
+            factoid = await self.get_factoid_from_query(factoid.alias, ctx.guild)
+            if not factoid:
+                raise commands.CommandError(
+                    "I couldn't find the alias this factoid is tied to"
+                )
 
         embed = self.get_embed_from_factoid(factoid)
         # if the json doesn't include non embed argument, then don't send anything
@@ -418,7 +427,7 @@ class FactoidManager(base.MatchCog):
                 ).gino.first()
                 if not from_db:
                     # This factoid job has been deleted from the DB
-                    await self.bot.logger.warnning(
+                    await self.bot.logger.warning(
                         f"Cron job {job} has failed - factoid has been deleted from the DB"
                     )
                     if ctx:
@@ -490,6 +499,7 @@ class FactoidManager(base.MatchCog):
     # updating the description for this command
     @factoid.command(
         brief="Creates a factoid",
+        aliases=["add"],
         description="Creates a factoid with a specified name",
         usage="[factoid-name] [factoid-output] |optional-embed-json-upload|",
     )
@@ -502,6 +512,7 @@ class FactoidManager(base.MatchCog):
             guild=str(ctx.guild.id),
             message=message,
             embed_config=embed_config,
+            alias="",
         )
 
     @util.with_typing
@@ -509,6 +520,7 @@ class FactoidManager(base.MatchCog):
     @commands.guild_only()
     @factoid.command(
         brief="Deletes a factoid",
+        aliases=["delete", "remove"],
         description="Deletes a factoid permanently, including extra config",
         usage="[factoid-name]",
     )
@@ -736,12 +748,34 @@ class FactoidManager(base.MatchCog):
 
     async def generate_html(self, ctx, factoids):
         """Method to generate a link for html in a factoid."""
+
+        # Gets a dict of aliases where
+        # Aliased_factoid = ["list_of_aliases"]
+        aliases = {}
+        for factoid in factoids:
+            if factoid.alias not in [None, ""]:
+                # Append to aliases
+                if factoid.alias in aliases:
+                    aliases[factoid.alias].append(factoid.text)
+                    continue
+
+                aliases[factoid.alias] = [factoid.text]
+
         list_items = ""
         for factoid in factoids:
             embed_text = " (embed)" if factoid.embed_config else ""
-            list_items += (
-                f"<li><code>{factoid.text}{embed_text} - {factoid.message}</code></li>"
-            )
+            # Skips aliases
+            if factoid.alias not in [None, ""]:
+                continue
+
+            if factoid.text not in aliases:  # If not aliased
+                list_items += f"<li><code>{factoid.text}{embed_text} - {factoid.message}</code></li>"
+            else:  # If aliased
+                list_items += (
+                    f"<li><code>{factoid.text}{embed_text} [{', '.join(aliases[factoid.text])}]"
+                    + f" - {factoid.message}</code></li>"
+                )
+
         body_contents = f"<ul>{list_items}</ul>"
         output = f"""
         <!DOCTYPE html>
@@ -821,3 +855,58 @@ class FactoidManager(base.MatchCog):
         await factoid.update(hidden=False).apply()
 
         await ctx.send_confirm_embed("That factoid is now unhidden")
+
+    @util.with_typing
+    @commands.has_permissions(kick_members=True)
+    @commands.guild_only()
+    @factoid.command(
+        brief="Adds a factoid alias",
+        description="Adds an alternate way to call a factoid",
+        usage="[alias-name] [factoid-name]",
+    )
+    async def alias(
+        self,
+        ctx,
+        factoid_name: str,
+        alias_name: str,
+    ):
+        """Method to hide the factoid from the 'all' list."""
+        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
+        if not factoid:
+            await ctx.send_deny_embed("I couldn't find that factoid")
+            return
+
+        # if await self.get_factoid_from_query(factoid_name, ctx.guild):
+        #    await ctx.send_deny_embed("That factoid is already hidden")
+        #    return
+
+        # first check if key already exists
+        alias_entry = await self.get_factoid_from_query(alias_name, ctx.guild)
+        if alias_entry:
+            # delete old one
+            should_delete = await ctx.confirm(
+                "This alias already exists. Should I overwrite it?"
+            )
+            if not should_delete:
+                return
+            await alias_entry.delete()
+
+        # finally, add new entry
+        alias_entry = self.models.Factoid(
+            text=alias_name,
+            guild=str(ctx.guild.id),
+            message="",
+            embed_config="",
+            alias=factoid_name,
+        )
+        await alias_entry.create()
+
+        try:
+            del self.factoid_cache[self.get_cache_key(alias_name, ctx.guild)]
+            # if it can't find where it is, then don't continue
+        except KeyError:
+            pass
+
+        await ctx.send_confirm_embed(
+            f"Successfully added the alias `{alias_name}` for `{factoid_name}`"
+        )
