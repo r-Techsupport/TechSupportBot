@@ -9,6 +9,8 @@ import discord
 import util
 from discord.ext import commands
 
+import git
+
 
 class AdminEmbed(discord.Embed):
     """Base embed for admin commands."""
@@ -548,7 +550,33 @@ class AdminControl(base.BaseCog):
             value=", ".join(f"{guild.name} ({guild.id})" for guild in self.bot.guilds),
             inline=False,
         )
+        
+        # Get the repository
+        repo = git.Repo(search_parent_directories=True)
 
+        # Get the current commit
+        commit = repo.head.commit
+
+        # Get the short commit hash
+        commit_hash = commit.hexsha[:7]
+
+        # Get the commit message
+        commit_message = commit.message.splitlines()[0].strip()
+
+        # Get the current branch name
+        branch_name = repo.active_branch.name
+
+        # Get the repository name
+        repo_name = repo.remotes.origin.url.split("/")[-1].replace(".git", "")
+
+        # Check for local working differences
+        has_differences = repo.is_dirty()
+
+        embed.add_field(
+            name="Version Info",
+            value=f"Currently working on {repo_name}/{branch_name}\nCode from {commit_hash} - {commit_message}\nChanges made: {has_differences}"
+        )
+        
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
         await ctx.send(embed=embed)
