@@ -2,6 +2,7 @@
 """
 
 import json
+import re
 import sys
 
 import base
@@ -9,8 +10,6 @@ import discord
 import git
 import util
 from discord.ext import commands
-
-import re
 
 
 class AdminEmbed(discord.Embed):
@@ -568,7 +567,9 @@ class AdminControl(base.BaseCog):
             branch_name = repo.active_branch.name
 
             # Extract the repository owner and repository name
-            match = re.search(r'github.com[:/](.*?)/(.*?)(?:.git)?$', repo.remotes.origin.url)
+            match = re.search(
+                r"github.com[:/](.*?)/(.*?)(?:.git)?$", repo.remotes.origin.url
+            )
             if match:
                 repo_owner = match.group(1)
                 repo_name = match.group(2)
