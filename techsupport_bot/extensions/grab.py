@@ -254,7 +254,7 @@ class Grabber(base.BaseCog):
         await ctx.send(embed=embed)
 
     @util.with_typing
-    @commands.has_permissions(kick_members=True)
+    @commands.has_permissions(administrator=True)
     @commands.guild_only()
     @commands.check(invalid_channel)
     @grabs.command(
