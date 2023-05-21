@@ -18,8 +18,10 @@ COPY . .
 
 FROM python:3.11-alpine
 RUN apk add --no-cache \
-    libpq
-WORKDIR /var/techsupport_bot
+    libpq \
+    git
+WORKDIR /var/TechSupportBot
 COPY --from=builder /usr/local /usr/local
-COPY --from=builder /var/TechSupportBot/techsupport_bot .
+COPY --from=builder /var/TechSupportBot/. .
+WORKDIR /var/TechSupportBot/techsupport_bot
 CMD python3 -u main.py
