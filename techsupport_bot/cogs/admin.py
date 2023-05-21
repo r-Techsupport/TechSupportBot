@@ -2,10 +2,12 @@
 """
 
 import json
+import re
 import sys
 
 import base
 import discord
+import git
 import util
 from discord.ext import commands
 
@@ -548,6 +550,47 @@ class AdminControl(base.BaseCog):
             value=", ".join(f"{guild.name} ({guild.id})" for guild in self.bot.guilds),
             inline=False,
         )
+        try:
+            # Get the repository
+            repo = git.Repo(search_parent_directories=True)
+
+            # Get the current commit
+            commit = repo.head.commit
+
+            # Get the short commit hash
+            commit_hash = commit.hexsha[:7]
+
+            # Get the commit message
+            commit_message = commit.message.splitlines()[0].strip()
+
+            # Get the current branch name
+            branch_name = repo.active_branch.name
+
+            # Extract the repository owner and repository name
+            match = re.search(
+                r"github.com[:/](.*?)/(.*?)(?:.git)?$", repo.remotes.origin.url
+            )
+            if match:
+                repo_owner = match.group(1)
+                repo_name = match.group(2)
+            else:
+                repo_owner = ""
+                repo_name = ""
+
+            # Check for local working differences
+            has_differences = repo.is_dirty()
+
+            embed.add_field(
+                name="Version Info",
+                value=f"Currently working on {repo_owner}/{repo_name}/{branch_name}\n\
+                    Code from {commit_hash} - {commit_message}\n\
+                    Changes made: {has_differences}",
+            )
+        except Exception as exc:
+            embed.add_field(
+                name="Version Info",
+                value=f"There was an error getting version info: {exc}",
+            )
 
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
