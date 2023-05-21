@@ -870,8 +870,8 @@ class FactoidManager(base.MatchCog):
     async def alias(
         self,
         ctx,
-        factoid_name: str,
         alias_name: str,
+        factoid_name: str,
     ):
         """Method to hide the factoid from the 'all' list."""
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
