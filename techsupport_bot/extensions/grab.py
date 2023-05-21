@@ -254,7 +254,6 @@ class Grabber(base.BaseCog):
         await ctx.send(embed=embed)
 
     @util.with_typing
-    @commands.has_permissions(administrator=True)
     @commands.guild_only()
     @commands.check(invalid_channel)
     @grabs.command(
@@ -265,7 +264,8 @@ class Grabber(base.BaseCog):
     )
     async def delete_grab(self, ctx, target_user: discord.Member, message: str):
         """Deletes a specific grab from an user"""
-
+        if not ctx.message.author.id == target_user.id and not ctx.message.author.guild_permissions.administrator:
+            return
         # Gets the target grab by the message
         grab = (
             await self.models.Grab.query.where(
