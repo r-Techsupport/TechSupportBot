@@ -264,10 +264,14 @@ class Grabber(base.BaseCog):
     )
     async def delete_grab(self, ctx, target_user: discord.Member, message: str):
         """Deletes a specific grab from an user"""
+        # Stop execution is the invoker isn't the target or an admin
         if (
             not ctx.message.author.id == target_user.id
             and not ctx.message.author.guild_permissions.administrator
         ):
+            await ctx.send_deny_embed(
+                "You don't have sufficient permissions to do this!"
+            )
             return
         # Gets the target grab by the message
         grab = (
