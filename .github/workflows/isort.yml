@@ -18,7 +18,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install isort
+        ISORT_VERSION=$(sed -nE 's/isort = "==(.*)"/\1/p' Pipfile)
+        pip install isort==$ISORT_VERSION
     - name: Analysing the code with isort
       run: |
         isort --check-only $(git rev-parse --show-toplevel)/
