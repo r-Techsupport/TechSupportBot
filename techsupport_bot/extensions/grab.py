@@ -264,7 +264,10 @@ class Grabber(base.BaseCog):
     )
     async def delete_grab(self, ctx, target_user: discord.Member, message: str):
         """Deletes a specific grab from an user"""
-        if not ctx.message.author.id == target_user.id and not ctx.message.author.guild_permissions.administrator:
+        if (
+            not ctx.message.author.id == target_user.id
+            and not ctx.message.author.guild_permissions.administrator
+        ):
             return
         # Gets the target grab by the message
         grab = (
