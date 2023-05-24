@@ -3,6 +3,7 @@ import asyncio
 import datetime
 import functools
 import random
+from datetime import timedelta
 
 import base
 import discord
@@ -251,6 +252,9 @@ class DuckHunt(base.LoopCog):
             embed = stock_embeds.DenyEmbed(message=quote)
             embed.set_footer(
                 text=f"Try again in {config.extensions.duck.cooldown.value} seconds"
+            )
+            asyncio.create_task(
+                message.author.timeout(timedelta(seconds=10), reason="Missed a duck")
             )
             asyncio.create_task(
                 message.channel.send(
