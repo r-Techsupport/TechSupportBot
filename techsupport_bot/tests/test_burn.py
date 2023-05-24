@@ -1,3 +1,8 @@
+"""
+This is a file to test the extensions/burn.py file
+This contains 7 unit tests
+"""
+
 from unittest.mock import AsyncMock
 
 import discord
