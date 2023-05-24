@@ -6,7 +6,7 @@ class MockMessage:
     """
     This is the MockMessage class
     
-    Currently implemented variables and methord:
+    Currently implemented variables and methods:
     content -> The string containing the content of the message
     author -> The MockMember object who create the message
     """

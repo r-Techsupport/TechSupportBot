@@ -6,7 +6,7 @@ class MockContext:
     """
     This is the MockContext class
     
-    Currently implemented variables and methord:
+    Currently implemented variables and methods:
     channel -> The MockChannel object for the current context
     """
     def __init__(self, channel=None):

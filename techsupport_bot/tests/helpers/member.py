@@ -6,7 +6,7 @@ class MockMember:
     """
     This is the MockMember class
     
-    Currently implemented variables and methord:
+    Currently implemented variables and methods:
     id -> An integer containing the ID of the fake user
     """
     def __init__(self, id=None):
