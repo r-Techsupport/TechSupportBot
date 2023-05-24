@@ -1,6 +1,8 @@
 """
 This is a file to test the extensions/burn.py file
 This contains 7 unit tests
+4 tests handle the expected postive outcome
+3 tests handle negative outcomes/error handling
 """
 
 from unittest.mock import AsyncMock
