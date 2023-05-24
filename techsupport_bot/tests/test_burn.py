@@ -1,41 +1,20 @@
-from functools import wraps
 from unittest.mock import AsyncMock
 
 import discord
 import mock
 import pytest
-from discord.ext import commands
 from extensions import Burn
 from mock import patch
 
-
-class MockMember:
-    def __init__(self, id=None):
-        self.id = id
-
-
-class MockContext:
-    def __init__(self, channel=None):
-        self.channel = channel
-
-
-class MockChannel:
-    def __init__(self, history=None):
-        self.message_history = history
-
-    async def history(self, limit):
-        for message in self.message_history:
-            yield message
-
-
-class MockMessage:
-    def __init__(self, content=None, author=None):
-        self.content = content
-        self.author = author
+from .helpers import MockChannel, MockContext, MockMember, MockMessage
 
 
 @mock.patch("asyncio.create_task", return_value=None)
 def test_generate_burn_embed(async_patch):
+    """
+    This is a test to ensure that the generate burn embed function is working correctly
+    It looks to ensure that the color, title, and description are formatted correctly
+    """
     burn = Burn("1")
     burn.PHRASES = ["Test Phrase"]
     embed = burn.generate_burn_embed()
@@ -47,6 +26,9 @@ def test_generate_burn_embed(async_patch):
 @pytest.mark.asyncio
 @mock.patch("asyncio.create_task", return_value=None)
 async def test_get_message(async_patch):
+    """
+    This is a test to check if get_message works when a valid message is found in the history
+    """
     burn = Burn("1")
     # Setup discord env
     member_to_burn = MockMember()
@@ -62,6 +44,10 @@ async def test_get_message(async_patch):
 @pytest.mark.asyncio
 @mock.patch("asyncio.create_task", return_value=None)
 async def test_get_message_late_in_list(async_patch):
+    """
+    This is a test to see if get_message works when a valid message
+        is found in the history, but only after other messages are sent as well
+    """
     burn = Burn("1")
     # Setup discord env
     member_to_burn = MockMember()
@@ -84,6 +70,10 @@ async def test_get_message_late_in_list(async_patch):
 @pytest.mark.asyncio
 @mock.patch("asyncio.create_task", return_value=None)
 async def test_get_message_only_prefix(async_patch):
+    """
+    This is a test to see if get_message returns None when
+        the only message from the burned member is a bot command
+    """
     burn = Burn("1")
     # Setup discord env
     member_to_burn = MockMember()
@@ -99,6 +89,10 @@ async def test_get_message_only_prefix(async_patch):
 @pytest.mark.asyncio
 @mock.patch("asyncio.create_task", return_value=None)
 async def test_get_message_no_burn_messages(async_patch):
+    """
+    This is a test to ensure that get_message returns None when
+        no messages from the burned member are in the history
+    """
     burn = Burn("1")
     # Setup discord env
     member_to_burn = MockMember()
@@ -124,6 +118,10 @@ async def test_get_message_no_burn_messages(async_patch):
 @pytest.mark.asyncio
 @mock.patch("asyncio.create_task", return_value=None)
 async def test_handle_burn(async_patch):
+    """
+    This is a test to ensure that handle_burn works correctly when a valid message can be found
+    It cheks to ensure that the reactions are added correctly, and that the send function was called
+    """
     burn = Burn("1")
     # Setup discord env
     member_to_burn = MockMember()
@@ -147,6 +145,9 @@ async def test_handle_burn(async_patch):
 @pytest.mark.asyncio
 @mock.patch("asyncio.create_task", return_value=None)
 async def test_handle_burn_no_message(async_patch):
+    """
+    This is a test to ensure that the send_deny_embed function is called if no message can be found
+    """
     burn = Burn("1")
     # Setup discord env
     context = MockContext()
@@ -154,4 +155,6 @@ async def test_handle_burn_no_message(async_patch):
 
     await burn.handle_burn(context, None, None)
 
-    context.send_deny_embed.assert_called_once()
+    context.send_deny_embed.assert_called_once_with(
+        "I could not a find a message to reply to"
+    )
