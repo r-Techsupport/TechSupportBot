@@ -441,11 +441,13 @@ class Protector(base.MatchCog):
             await ctx.send_deny_embed("It would be silly to do that to myself")
             return False
         # Check to see if target has a role. Will allow banning on Users outside of server
-        if not hasattr(target,"top_role"):
+        if not hasattr(target, "top_role"):
             return True
         # Check to see if the Bot can ban the target
         if ctx.guild.me.top_role < target.top_role:
-            await ctx.send_deny_embed(f"Bot does not have enough premissions to ban `{target}`")
+            await ctx.send_deny_embed(
+                f"Bot does not have enough premissions to ban `{target}`"
+            )
             return False
         # Check to see if author top role is higher than targets
         if target.top_role >= ctx.author.top_role:
