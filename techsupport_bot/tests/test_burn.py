@@ -15,7 +15,12 @@ from extensions import Burn, setup
 from .helpers import MockBot, MockChannel, MockContext, MockMember, MockMessage
 
 
+# pylint-disable: too-many-instance-attributes
 class FakeDiscordEnv:
+    """
+    Class to setup the mock discord environment for the burn tests
+    """
+
     def __init__(self):
         self.bot = MockBot()
         self.member_to_burn = MockMember(id=1)
