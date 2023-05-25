@@ -1,7 +1,7 @@
 """
 This is a file to test the extensions/burn.py file
-This contains 9 unit tests
-6 tests handle the expected postive outcome
+This contains 11 unit tests
+8 tests handle the expected postive outcome
 3 tests handle negative outcomes/error handling
 """
 
@@ -68,6 +68,57 @@ async def test_get_message(_):
     member_to_burn = MockMember()
     message_to_burn = MockMessage(content="words", author=member_to_burn)
     message_history = [message_to_burn]
+    channel = MockChannel(history=message_history)
+    context = MockContext(channel=channel)
+
+    returned_message = await burn.get_message(context, ".", member_to_burn)
+    assert returned_message == message_to_burn
+
+
+@pytest.mark.asyncio
+@mock.patch("asyncio.create_task", return_value=None)
+async def test_get_message_multiple_messages(_):
+    """
+    This is a test to check if get_message works when a valid message is found in the history, if
+        there is more than 1 message from the member to burn in the history
+    """
+    burn = Burn("1")
+    # Setup discord env
+    member_to_burn = MockMember()
+    random_member = MockMember()
+    random_message = MockMessage(content="by someone else", author=random_member)
+    message_to_burn = MockMessage(content="words", author=member_to_burn)
+    other_message = MockMessage(content="words", author=member_to_burn)
+    message_history = [
+        random_message,
+        message_to_burn,
+        random_message,
+        random_message,
+        random_message,
+        other_message,
+    ]
+    channel = MockChannel(history=message_history)
+    context = MockContext(channel=channel)
+
+    returned_message = await burn.get_message(context, ".", member_to_burn)
+    assert returned_message == message_to_burn
+
+
+@pytest.mark.asyncio
+@mock.patch("asyncio.create_task", return_value=None)
+async def test_get_message_prefix_non_prefix(_):
+    """
+    This is a test to check if get_message works when a valid message is found in the history, if
+        there is more than 1 message from the member to burn in the history, but only 1 without the prefix
+    """
+    burn = Burn("1")
+    # Setup discord env
+    member_to_burn = MockMember()
+    random_member = MockMember()
+    random_message = MockMessage(content="by someone else", author=random_member)
+    prefix_member_message = MockMessage(content=".words", author=member_to_burn)
+    message_to_burn = MockMessage(content="words", author=member_to_burn)
+    message_history = [random_message, prefix_member_message, message_to_burn]
     channel = MockChannel(history=message_history)
     context = MockContext(channel=channel)
 
