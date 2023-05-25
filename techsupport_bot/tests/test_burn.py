@@ -109,7 +109,8 @@ async def test_get_message_multiple_messages(_):
 async def test_get_message_prefix_non_prefix(_):
     """
     This is a test to check if get_message works when a valid message is found in the history, if
-        there is more than 1 message from the member to burn in the history, but only 1 without the prefix
+        there is more than 1 message from the member to burn in the history, 
+        but only 1 without the prefix
     """
     burn = Burn("1")
     # Setup discord env
