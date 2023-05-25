@@ -11,5 +11,6 @@ class MockBot:
     id -> An integer containing the ID of the bot
     """
 
+    # pylint: disable=redefined-builtin
     def __init__(self, id=None):
         self.id = id
