@@ -29,11 +29,13 @@ def test_generate_burn_embed(async_patch):
     assert embed.title == "Burn Alert!"
     assert embed.description == "🔥🔥🔥 Test Phrase 🔥🔥🔥"
 
+
 @mock.patch("asyncio.create_task", return_value=None)
 def test_generate_burn_embed_all_phrases(async_patch):
     """
     This is a test to ensure that the generate burn embed function is working correctly
     This specifically looks at the description for every phrase in the PHRASES array
+    This looks at the length of the description as well to ensure that the phrases aren't too long
     """
     burn = Burn("1")
     test_phrases = burn.PHRASES
@@ -41,6 +43,7 @@ def test_generate_burn_embed_all_phrases(async_patch):
         burn.PHRASES = [phrase]
         embed = burn.generate_burn_embed()
         assert embed.description == f"🔥🔥🔥 {phrase} 🔥🔥🔥"
+        assert len(embed.description) <= 4096
 
 
 @pytest.mark.asyncio

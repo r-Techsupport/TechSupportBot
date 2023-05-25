@@ -38,7 +38,9 @@ class Burn(base.BaseCog):
         embed.description = f"🔥🔥🔥 {message} 🔥🔥🔥"
         return embed
 
-    async def handle_burn(self, ctx, user: discord.Member, message: discord.Message) -> None:
+    async def handle_burn(
+        self, ctx, user: discord.Member, message: discord.Message
+    ) -> None:
         """The core logic to handle the burn command
 
         Args:
@@ -59,7 +61,9 @@ class Burn(base.BaseCog):
         embed = self.generate_burn_embed()
         await ctx.send(embed=embed, targets=[user])
 
-    async def get_message(self, ctx, prefix: str, user: discord.Member) -> discord.Message:
+    async def get_message(
+        self, ctx, prefix: str, user: discord.Member
+    ) -> discord.Message:
         """Gets a message from the channel history to burn
 
         Args:
