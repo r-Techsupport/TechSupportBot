@@ -50,7 +50,8 @@ class Burn(base.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
             user (discord.Member): The user that was called in the burn command
-            message (discord.Message): The message to react to. Will be None if no message could be found
+            message (discord.Message): The message to react to.
+                Will be None if no message could be found
 
         Error handling:
             No message found: send_deny_embed

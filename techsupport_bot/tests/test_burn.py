@@ -11,7 +11,6 @@ import discord
 import mock
 import pytest
 from extensions import Burn
-from mock import patch
 
 from .helpers import MockChannel, MockContext, MockMember, MockMessage
 

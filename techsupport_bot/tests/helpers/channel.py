@@ -26,7 +26,7 @@ class MockChannel:
         Yields:
             str : This represents a single message in the history
         """
-        if(limit == 0):
+        if limit == 0:
             return
         for message in self.message_history:
             yield message
