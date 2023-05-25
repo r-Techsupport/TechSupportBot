@@ -61,7 +61,9 @@ def test_generate_burn_embed(_):
     It looks to ensure that the color, title, and description are formatted correctly
     """
     discord_env = FakeDiscordEnv()
+
     discord_env.burn.PHRASES = ["Test Phrase"]
+
     embed = discord_env.burn.generate_burn_embed()
     assert embed.color == discord.Color.red()
     assert embed.title == "Burn Alert!"
@@ -76,6 +78,7 @@ def test_generate_burn_embed_all_phrases(_):
     This looks at the length of the description as well to ensure that the phrases aren't too long
     """
     discord_env = FakeDiscordEnv()
+
     test_phrases = discord_env.burn.PHRASES
     for phrase in test_phrases:
         discord_env.burn.PHRASES = [phrase]
@@ -214,7 +217,7 @@ async def test_get_message_no_burn_messages(_):
 async def test_handle_burn(_):
     """
     This is a test to ensure that handle_burn works correctly when a valid message can be found
-    It cheks to ensure that the reactions are added correctly, and that the send function was called
+    It checks to ensure that the reactions are added correctly, and that the send function was called
     """
     discord_env = FakeDiscordEnv()
 
