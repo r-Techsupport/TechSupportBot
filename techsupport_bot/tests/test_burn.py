@@ -17,7 +17,7 @@ from .helpers import MockChannel, MockContext, MockMember, MockMessage
 
 
 @mock.patch("asyncio.create_task", return_value=None)
-def test_generate_burn_embed(async_patch):
+def test_generate_burn_embed(_):
     """
     This is a test to ensure that the generate burn embed function is working correctly
     It looks to ensure that the color, title, and description are formatted correctly
@@ -31,7 +31,7 @@ def test_generate_burn_embed(async_patch):
 
 
 @mock.patch("asyncio.create_task", return_value=None)
-def test_generate_burn_embed_all_phrases(async_patch):
+def test_generate_burn_embed_all_phrases(_):
     """
     This is a test to ensure that the generate burn embed function is working correctly
     This specifically looks at the description for every phrase in the PHRASES array
@@ -48,7 +48,7 @@ def test_generate_burn_embed_all_phrases(async_patch):
 
 @pytest.mark.asyncio
 @mock.patch("asyncio.create_task", return_value=None)
-async def test_get_message(async_patch):
+async def test_get_message(_):
     """
     This is a test to check if get_message works when a valid message is found in the history
     """
@@ -66,7 +66,7 @@ async def test_get_message(async_patch):
 
 @pytest.mark.asyncio
 @mock.patch("asyncio.create_task", return_value=None)
-async def test_get_message_late_in_list(async_patch):
+async def test_get_message_late_in_list(_):
     """
     This is a test to see if get_message works when a valid message
         is found in the history, but only after other messages are sent as well
@@ -92,7 +92,7 @@ async def test_get_message_late_in_list(async_patch):
 
 @pytest.mark.asyncio
 @mock.patch("asyncio.create_task", return_value=None)
-async def test_get_message_only_prefix(async_patch):
+async def test_get_message_only_prefix(_):
     """
     This is a test to see if get_message returns None when
         the only message from the burned member is a bot command
@@ -111,7 +111,7 @@ async def test_get_message_only_prefix(async_patch):
 
 @pytest.mark.asyncio
 @mock.patch("asyncio.create_task", return_value=None)
-async def test_get_message_no_burn_messages(async_patch):
+async def test_get_message_no_burn_messages(_):
     """
     This is a test to ensure that get_message returns None when
         no messages from the burned member are in the history
@@ -140,7 +140,7 @@ async def test_get_message_no_burn_messages(async_patch):
 
 @pytest.mark.asyncio
 @mock.patch("asyncio.create_task", return_value=None)
-async def test_handle_burn(async_patch):
+async def test_handle_burn(_):
     """
     This is a test to ensure that handle_burn works correctly when a valid message can be found
     It cheks to ensure that the reactions are added correctly, and that the send function was called
@@ -167,7 +167,7 @@ async def test_handle_burn(async_patch):
 
 @pytest.mark.asyncio
 @mock.patch("asyncio.create_task", return_value=None)
-async def test_handle_burn_no_message(async_patch):
+async def test_handle_burn_no_message(_):
     """
     This is a test to ensure that the send_deny_embed function is called if no message can be found
     """

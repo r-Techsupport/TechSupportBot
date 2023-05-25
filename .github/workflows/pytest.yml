@@ -22,5 +22,5 @@ jobs:
         pipenv install
     - name: Analysing the code with black
       run: |
-        cd techsupprt_bot
+        cd techsupport_bot
         python3.11 -m pytest tests/ --disable-warnings
