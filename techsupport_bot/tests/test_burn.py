@@ -1,7 +1,7 @@
 """
 This is a file to test the extensions/burn.py file
-This contains 7 unit tests
-4 tests handle the expected postive outcome
+This contains 8 unit tests
+5 tests handle the expected postive outcome
 3 tests handle negative outcomes/error handling
 """
 
@@ -28,6 +28,19 @@ def test_generate_burn_embed(async_patch):
     assert embed.color == discord.Color.red()
     assert embed.title == "Burn Alert!"
     assert embed.description == "🔥🔥🔥 Test Phrase 🔥🔥🔥"
+
+@mock.patch("asyncio.create_task", return_value=None)
+def test_generate_burn_embed_all_phrases(async_patch):
+    """
+    This is a test to ensure that the generate burn embed function is working correctly
+    This specifically looks at the description for every phrase in the PHRASES array
+    """
+    burn = Burn("1")
+    test_phrases = burn.PHRASES
+    for phrase in test_phrases:
+        burn.PHRASES = [phrase]
+        embed = burn.generate_burn_embed()
+        assert embed.description == f"🔥🔥🔥 {phrase} 🔥🔥🔥"
 
 
 @pytest.mark.asyncio
