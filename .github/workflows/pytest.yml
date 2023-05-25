@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  blackCheck:
+  PyTests:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -18,7 +18,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install pipenv
+        pipenv lock -r > /tmp/requirements.txt
+        pip install -r /tmp/requirements.txt
     - name: Running pytest
       run: |
         cd techsupport_bot
