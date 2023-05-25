@@ -225,8 +225,8 @@ class DuckHunt(base.LoopCog):
         if duration_exact < duck_user.speed_record:
             footer_string += f"New personal record: {duration_exact} seconds."
             if duration_exact < global_record:
-                footer_string += f"\nNew global record! \
-                    Previous global record: {global_record} seconds"
+                footer_string += "\nNew global record!"
+                footer_string += f" Previous global record: {global_record} seconds"
             await duck_user.update(speed_record=duration_exact).apply()
         embed.set_footer(text=footer_string)
 
