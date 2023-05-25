@@ -13,4 +13,4 @@ class MockMember:
 
     # pylint: disable=redefined-builtin
     def __init__(self, id=None):
-        self.id = id  
+        self.id = id

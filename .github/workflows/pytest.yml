@@ -18,9 +18,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pipenv
-        pipenv lock -r > /tmp/requirements.txt
-        pip install -r /tmp/requirements.txt
+        pip install -r requirements.txt
     - name: Running pytest
       run: |
         cd techsupport_bot
