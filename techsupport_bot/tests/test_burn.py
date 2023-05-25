@@ -217,7 +217,8 @@ async def test_get_message_no_burn_messages(_):
 async def test_handle_burn(_):
     """
     This is a test to ensure that handle_burn works correctly when a valid message can be found
-    It checks to ensure that the reactions are added correctly, and that the send function was called
+    It checks to ensure that the reactions are added correctly,
+        and that the send function was called
     """
     discord_env = FakeDiscordEnv()
 
