@@ -432,20 +432,29 @@ class Protector(base.MatchCog):
 
     async def can_execute(self, ctx, target):
         """Method to not execute on admin users."""
+        # Check to see if you are banning yourself
         if target.id == ctx.author.id:
             await ctx.send_deny_embed("You cannot do that to yourself")
             return False
+        # Check to see if you are banning the bot
         if target.id == self.bot.user.id:
             await ctx.send_deny_embed("It would be silly to do that to myself")
             return False
-        try:
-            if target.top_role >= ctx.author.top_role:
-                await ctx.send_deny_embed(
-                    f"Your top role is not high enough to do that to `{target}`"
-                )
-                return False
-        except AttributeError:
+        # Check to see if target has a role. Will allow banning on Users outside of server
+        if not hasattr(target, "top_role"):
             return True
+        # Check to see if the Bot can ban the target
+        if ctx.guild.me.top_role < target.top_role:
+            await ctx.send_deny_embed(
+                f"Bot does not have enough premissions to ban `{target}`"
+            )
+            return False
+        # Check to see if author top role is higher than targets
+        if target.top_role >= ctx.author.top_role:
+            await ctx.send_deny_embed(
+                f"Your top role is not high enough to do that to `{target}`"
+            )
+            return False
         return True
 
     async def send_alert(self, config, ctx, message):
