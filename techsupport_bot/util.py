@@ -189,7 +189,7 @@ def add_diff_fields(embed, diff):
             action = (
                 "added" if len(diff_data.before) < len(diff_data.after) else "removed"
             )
-            list_diff = set(diff_data.after) ^ set(diff_data.before)
+            list_diff = set(repr(diff_data.after)) ^ set(repr(diff_data.before))
 
             embed.add_field(
                 name=f"{attru} {action}", value=",".join(str(o) for o in list_diff)
