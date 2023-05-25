@@ -11,5 +11,6 @@ class MockMember:
     id -> An integer containing the ID of the fake user
     """
 
+    # pylint: disable=redefined-builtin
     def __init__(self, id=None):
-        self.id = id  # pylint: disable=redefined-builtin
+        self.id = id  
