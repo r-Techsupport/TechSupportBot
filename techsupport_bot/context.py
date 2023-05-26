@@ -95,7 +95,7 @@ class Context(commands.Context):
         pagination_view.data = pages
         asyncio.create_task(pagination_view.send(ctx=self))
 
-    async def confirm(self, message, timeout=60, delete_after=False, bypass=None):
+    async def confirm(self, message, timeout=60, delete_after=True, bypass=None):
         """Waits on a confirm reaction from a given user.
 
         parameters:
