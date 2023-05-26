@@ -19,7 +19,7 @@ lint:
 	# TODO: add techsupport_bot/plugins/*.py after plugins documented
 
 test:
-	PYTHONPATH=./techsupport_bot pytest techsupport_bot/tests/ --disable-warnings -W ignore::DeprecationWarning
+	PYTHONPATH=./techsupport_bot pytest techsupport_bot/tests/ -p no:warnings
 
 build:
 	make establish_config
