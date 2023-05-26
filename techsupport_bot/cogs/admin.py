@@ -179,6 +179,7 @@ class AdminControl(base.BaseCog):
                 delete_after=True,
             )
             if not confirm:
+                ctx.send_deny_embed(f"{extension_name}.py was not replaced")
                 return
 
         fp = await attachment.read()
