@@ -260,16 +260,23 @@ class FactoidManager(base.MatchCog):
         """Method to delete a factoid."""
         factoid = await self.get_factoid_from_query(trigger, ctx.guild)
         if not factoid:
-            await ctx.send_deny_embed("I couldn't find that factoid")
+            await ctx.send_deny_embed(f"I couldn't find the factoid *{trigger}*")
             return
 
         should_delete = await ctx.confirm(
             "This will remove the factoid forever. Are you sure?"
         )
         if not should_delete:
+            await ctx.send_deny_embed(f"Factoid: *{trigger}* was not deleted")
             return
 
         await factoid.delete()
+        try:
+            del self.factoid_cache[self.get_cache_key(trigger, ctx.guild)]
+            # If it can't find where it is, then don't continue
+        except KeyError:
+            pass
+        await ctx.send_confirm_embed(f"Successfully deleted factoid *{trigger}*")
 
     async def match(self, config, __, content):
         """Method to match the factoid with the correct start."""
@@ -516,7 +523,6 @@ class FactoidManager(base.MatchCog):
     async def forget(self, ctx, factoid_name: str):
         """Method to forget a factoid."""
         await self.delete_factoid(ctx, factoid_name)
-        await ctx.send_confirm_embed(f"Successfully deleted factoid: *{factoid_name}*")
 
     @util.with_typing
     @commands.check(has_manage_factoids_role)
@@ -770,7 +776,7 @@ class FactoidManager(base.MatchCog):
         await ctx.send(file=yaml_file)
 
     @util.with_typing
-    @commands.has_permissions(kick_members=True)
+    @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
         brief="Hides a factoid",
@@ -797,7 +803,7 @@ class FactoidManager(base.MatchCog):
         await ctx.send_confirm_embed("That factoid is now hidden")
 
     @util.with_typing
-    @commands.has_permissions(kick_members=True)
+    @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
         brief="Unhides a factoid",
