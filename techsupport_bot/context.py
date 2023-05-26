@@ -220,19 +220,17 @@ class PaginateView(discord.ui.View):
         await self.update_message()
 
     @discord.ui.button(label="⏹️", style=discord.ButtonStyle.danger, row=1)
-    async def trash_button(
-        self, interaction: discord.Interaction, _: discord.ui.Button
-    ):
-        """This declares the trash button, and what should happen when it's pressed"""
+    async def stop_button(self, interaction: discord.Interaction, _: discord.ui.Button):
+        """This declares the stop button, and what should happen when it's pressed"""
         await interaction.response.defer()
         self.clear_items()
         await self.update_message()
 
     @discord.ui.button(label="🗑️", style=discord.ButtonStyle.danger, row=1)
-    async def delete_button(
+    async def trash_button(
         self, interaction: discord.Interaction, _: discord.ui.Button
     ):
-        """This declares the delete button, and what should happen when it's pressed"""
+        """This declares the trash button, and what should happen when it's pressed"""
         await interaction.response.defer()
         await self.message.delete()
 
