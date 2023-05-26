@@ -14,10 +14,6 @@ class Context(commands.Context):
 
     CONFIRM_YES_EMOJI = "✅"
     CONFIRM_NO_EMOJI = "❌"
-    PAGINATE_LEFT_EMOJI = "⬅️"
-    PAGINATE_RIGHT_EMOJI = "➡️"
-    PAGINATE_STOP_EMOJI = "⏹️"
-    PAGINATE_DELETE_EMOJI = "🗑️"
 
     def construct_mention_string(self, targets):
         """Builds a string of mentions from a list of users.
@@ -91,98 +87,14 @@ class Context(commands.Context):
         message = await self.send(embed=embed, targets=targets or [])
         return message
 
-    # pylint: disable=too-many-branches, too-many-arguments
-    async def paginate(self, pages, timeout=300):
-        """Paginates a set of embed objects for users to sort through
-
-        parameters:
-            pages (Union[discord.Embed, str][]): the pages (or URLs to render them) to paginate
-            timeout (int) (seconds): the time to wait before exiting the reaction listener
-        """
-        # limit large outputs
-        pages = pages[:20]
-
-        for index, embed in enumerate(pages):
-            if isinstance(embed, discord.Embed):
-                embed.set_footer(text=f"Page {index+1} of {len(pages)}")
-
-        index = 0
-        # pylint: disable=unnecessary-lambda-assignment
-        get_args = lambda index: {
-            "content": pages[index]
-            if not isinstance(pages[index], discord.Embed)
-            else None,
-            "embed": pages[index] if isinstance(pages[index], discord.Embed) else None,
-        }
-
-        message = await self.send(**get_args(index))
-
-        if isinstance(self.channel, discord.DMChannel):
-            return
-
-        start_time = datetime.datetime.now()
-
-        for unicode_reaction in [
-            self.PAGINATE_LEFT_EMOJI,
-            self.PAGINATE_RIGHT_EMOJI,
-            self.PAGINATE_STOP_EMOJI,
-            self.PAGINATE_DELETE_EMOJI,
-        ]:
-            await message.add_reaction(unicode_reaction)
-
-        while True:
-            if (datetime.datetime.now() - start_time).seconds > timeout:
-                break
-
-            try:
-                reaction, user = await self.bot.wait_for(
-                    "reaction_add",
-                    timeout=timeout,
-                    check=lambda r, u: not bool(u.bot) and r.message.id == message.id,
-                )
-            # this seems to raise an odd timeout error, for now just catch-all
-            except Exception:
-                break
-
-            if user.id != self.author.id:
-                # this is checked first so it can pass to the deletion
-                pass
-
-            # move forward
-            elif str(reaction) == self.PAGINATE_RIGHT_EMOJI and index < len(pages) - 1:
-                index += 1
-                await message.edit(**get_args(index))
-
-            # move backward
-            elif str(reaction) == self.PAGINATE_LEFT_EMOJI and index > 0:
-                index -= 1
-                await message.edit(**get_args(index))
-
-            # stop pagination
-            elif str(reaction) == self.PAGINATE_STOP_EMOJI:
-                break
-
-            # delete embed
-            elif str(reaction) == self.PAGINATE_DELETE_EMOJI:
-                await message.delete()
-                break
-
-            try:
-                await reaction.remove(user)
-            except discord.Forbidden:
-                pass
-
-        try:
-            await message.clear_reactions()
-        except discord.NotFound:
-            pass
-
-    def task_paginate(self, *args, **kwargs):
+    def task_paginate(self, pages: list):
         """Creates a pagination task from the given args.
 
         This is useful if you want your command to finish executing when pagination starts.
         """
-        asyncio.create_task(self.paginate(*args, **kwargs))
+        pagination_view = PaginateView()
+        pagination_view.data = pages
+        asyncio.create_task(pagination_view.send(ctx=self))
 
     async def confirm(self, message, timeout=60, delete_after=False, bypass=None):
         """Waits on a confirm reaction from a given user.
@@ -239,3 +151,105 @@ class Context(commands.Context):
             await message.delete()
 
         return result
+
+
+class PaginateView(discord.ui.View):
+    """The custom paginate view class
+    This holds all the buttons and how the pages should work
+    """
+
+    current_page: int = 1
+    data = None
+    currCtx = None
+    timeout = 60
+
+    def add_page_numbers(self):
+        """A simple function to add page numbers to embed footer"""
+        for index, embed in enumerate(self.data):
+            if isinstance(embed, discord.Embed):
+                embed.set_footer(text=f"Page {index+1} of {len(self.data)}")
+
+    async def send(self, ctx):
+        """The initial send function. This does any one time actions and sends page 1"""
+        self.currCtx = ctx
+        self.update_buttons()
+        if isinstance(self.data[0], discord.Embed):
+            self.add_page_numbers()
+        self.message = await ctx.send(view=self)
+        if len(self.data) == 1:
+            self.remove_item(self.prev_button)
+            self.remove_item(self.next_button)
+        await self.update_message()
+
+    async def update_message(self):
+        """The redraws the message with the new page"""
+        self.update_buttons()
+        if isinstance(self.data[self.current_page - 1], discord.Embed):
+            await self.message.edit(embed=self.data[self.current_page - 1], view=self)
+        else:
+            await self.message.edit(content=self.data[self.current_page - 1], view=self)
+
+    def update_buttons(self):
+        """This disables buttons if there are no more pages forward/backward"""
+        if self.current_page == 1:
+            self.prev_button.disabled = True
+            self.prev_button.style = discord.ButtonStyle.gray
+        else:
+            self.prev_button.disabled = False
+            self.prev_button.style = discord.ButtonStyle.primary
+
+        if self.current_page == len(self.data):
+            self.next_button.disabled = True
+            self.next_button.style = discord.ButtonStyle.gray
+        else:
+            self.next_button.disabled = False
+            self.next_button.style = discord.ButtonStyle.primary
+
+    @discord.ui.button(label="<", style=discord.ButtonStyle.primary, row=1)
+    async def prev_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        """This declares the previous button, and what should happen when it's pressed"""
+        await interaction.response.defer()
+        self.current_page -= 1
+        await self.update_message()
+
+    @discord.ui.button(label=">", style=discord.ButtonStyle.primary, row=1)
+    async def next_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        """This declares the next button, and what should happen when it's pressed"""
+        await interaction.response.defer()
+        self.current_page += 1
+        await self.update_message()
+
+    @discord.ui.button(label="⏹️", style=discord.ButtonStyle.danger, row=1)
+    async def trash_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        """This declares the trash button, and what should happen when it's pressed"""
+        self.clear_items()
+        await self.update_message()
+
+    @discord.ui.button(label="🗑️", style=discord.ButtonStyle.danger, row=1)
+    async def delete_button(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        """This declares the delete button, and what should happen when it's pressed"""
+        await self.message.delete()
+
+    async def interaction_check(self, interaction):
+        """This checks to ensure that only the original author can press the button
+        If the original author didn't press, it sends an ephemeral message
+        """
+        if interaction.user != self.currCtx.author:
+            await interaction.response.send_message(
+                "Only the original author can control this!", ephemeral=True
+            )
+            return False
+        return True
+
+    async def on_timeout(self):
+        """This deletes the buttons after the 60 second timeout has elapsed"""
+        self.clear_items()
+        await self.update_message()
