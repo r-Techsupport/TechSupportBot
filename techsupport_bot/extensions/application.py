@@ -485,7 +485,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             f"This will attempt to notify `{username}` and approve their application",
         )
         if not confirm:
-            await ctx.send_deny_embed(f"The application was not approved and `{username}` was not notified")
+            await ctx.send_deny_embed(
+                f"The application was not approved and `{username}` was not notified"
+            )
             return
 
         application_data["approved"] = True
@@ -527,7 +529,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             f"This will attempt to notify `{username}` and deny their application",
         )
         if not confirm:
-            await ctx.send_deny_embed(f"The application was not denied and `{username}` was not notified")
+            await ctx.send_deny_embed(
+                f"The application was not denied and `{username}` was not notified"
+            )
             return
 
         application_data["reviewed"] = True
