@@ -206,18 +206,14 @@ class PaginateView(discord.ui.View):
             self.next_button.style = discord.ButtonStyle.primary
 
     @discord.ui.button(label="<", style=discord.ButtonStyle.primary, row=1)
-    async def prev_button(
-        self, interaction: discord.Interaction, _: discord.ui.Button
-    ):
+    async def prev_button(self, interaction: discord.Interaction, _: discord.ui.Button):
         """This declares the previous button, and what should happen when it's pressed"""
         await interaction.response.defer()
         self.current_page -= 1
         await self.update_message()
 
     @discord.ui.button(label=">", style=discord.ButtonStyle.primary, row=1)
-    async def next_button(
-        self, interaction: discord.Interaction, _: discord.ui.Button
-    ):
+    async def next_button(self, interaction: discord.Interaction, _: discord.ui.Button):
         """This declares the next button, and what should happen when it's pressed"""
         await interaction.response.defer()
         self.current_page += 1
