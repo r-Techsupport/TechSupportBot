@@ -2,7 +2,6 @@
 """
 
 import asyncio
-import datetime
 
 import discord
 import embeds
@@ -162,6 +161,7 @@ class PaginateView(discord.ui.View):
     data = None
     currCtx = None
     timeout = 60
+    message = ""
 
     def add_page_numbers(self):
         """A simple function to add page numbers to embed footer"""
@@ -207,7 +207,7 @@ class PaginateView(discord.ui.View):
 
     @discord.ui.button(label="<", style=discord.ButtonStyle.primary, row=1)
     async def prev_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, _: discord.ui.Button
     ):
         """This declares the previous button, and what should happen when it's pressed"""
         await interaction.response.defer()
@@ -216,7 +216,7 @@ class PaginateView(discord.ui.View):
 
     @discord.ui.button(label=">", style=discord.ButtonStyle.primary, row=1)
     async def next_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, _: discord.ui.Button
     ):
         """This declares the next button, and what should happen when it's pressed"""
         await interaction.response.defer()
@@ -225,17 +225,19 @@ class PaginateView(discord.ui.View):
 
     @discord.ui.button(label="⏹️", style=discord.ButtonStyle.danger, row=1)
     async def trash_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, _: discord.ui.Button
     ):
         """This declares the trash button, and what should happen when it's pressed"""
+        await interaction.response.defer()
         self.clear_items()
         await self.update_message()
 
     @discord.ui.button(label="🗑️", style=discord.ButtonStyle.danger, row=1)
     async def delete_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self, interaction: discord.Interaction, _: discord.ui.Button
     ):
         """This declares the delete button, and what should happen when it's pressed"""
+        await interaction.response.defer()
         await self.message.delete()
 
     async def interaction_check(self, interaction):
