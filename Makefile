@@ -25,6 +25,10 @@ build:
 	make establish_config
 	docker build -t $(full-image) -f Dockerfile .
 
+rebuild:
+	make build
+	make start
+
 start:
 	docker-compose up -d
 
@@ -37,6 +41,12 @@ clean:
 
 down:
 	docker-compose down
+
+reset:
+	make down
+	make clean
+	make build
+	make start
 
 restart:
 	docker-compose restart

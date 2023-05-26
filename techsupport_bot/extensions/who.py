@@ -169,6 +169,7 @@ class Who(base.BaseCog):
             delete_after=True,
         )
         if not confirm:
+            await ctx.send_deny_embed(f"Notes for `{user}` were not cleared")
             return
 
         for note in notes:

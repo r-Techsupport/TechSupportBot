@@ -216,6 +216,7 @@ class HangmanCog(base.BaseCog):
                     delete_after=True,
                 )
                 if not should_delete:
+                    await ctx.send_deny_embed("The current game was not ended")
                     return
                 del self.games[ctx.channel.id]
             else:
@@ -325,6 +326,7 @@ class HangmanCog(base.BaseCog):
         )
 
         if not should_delete:
+            await ctx.send_deny_embed("The current game was not ended")
             return
 
         game = game_data.get("game")
