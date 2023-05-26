@@ -25,6 +25,7 @@ async def setup(bot):
         befriend_count = bot.db.Column(bot.db.Integer, default=0)
         kill_count = bot.db.Column(bot.db.Integer, default=0)
         updated = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+        speed_record = bot.db.Column(bot.db.Float, default=80.0)
 
     config = bot.ExtensionConfig()
     config.add(
@@ -145,12 +146,12 @@ class DuckHunt(base.LoopCog):
         await message.delete()
 
         if response_message:
-            duration = (datetime.datetime.now() - start_time).seconds
+            raw_duration = datetime.datetime.now() - start_time
             action = (
                 "befriended" if response_message.content.lower() == "bef" else "killed"
             )
             await self.handle_winner(
-                response_message.author, guild, action, duration, channel
+                response_message.author, guild, action, raw_duration, channel
             )
         else:
             await self.got_away(channel)
@@ -165,14 +166,28 @@ class DuckHunt(base.LoopCog):
 
         await channel.send(embed=embed)
 
-    async def handle_winner(self, winner, guild, action, duration, channel):
-        """Method to add the handle DB values of the winner"""
+    async def handle_winner(self, winner, guild, action, raw_duration, channel):
+        """
+        This is a function to update the database based on a winner
+
+        Parameters:
+        winner -> A discord.Member object for the winner
+        guild -> A discord.Guild object for the guild the winner is a part of
+        action -> A string, either "befriended" or "killed", depending on the action
+        raw_duration -> A datetime object of the time since the duck spawned
+        channel -> The channel in which the duck game happened in
+        """
         await self.bot.guild_log(
             guild,
             "logging_channel",
             "info",
             f"Duck {action} by {winner} in #{channel.name}",
             send=True,
+        )
+
+        duration_seconds = raw_duration.seconds
+        duration_exact = float(
+            str(raw_duration.seconds) + "." + str(raw_duration.microseconds)
         )
 
         duck_user = await self.get_duck_user(winner.id, guild.id)
@@ -182,6 +197,7 @@ class DuckHunt(base.LoopCog):
                 guild_id=str(guild.id),
                 befriend_count=0,
                 kill_count=0,
+                speed_record=80.0,
             )
             await duck_user.create()
 
@@ -194,7 +210,7 @@ class DuckHunt(base.LoopCog):
 
         embed = discord.Embed(
             title=f"Duck {action}!",
-            description=f"{winner.mention} {action} the duck in {duration} seconds!",
+            description=f"{winner.mention} {action} the duck in {duration_seconds} seconds!",
         )
         embed.color = (
             embed_colors.blurple() if action == "befriended" else embed_colors.red()
@@ -204,6 +220,15 @@ class DuckHunt(base.LoopCog):
         embed.set_thumbnail(
             url=self.BEFRIEND_URL if action == "befriended" else self.KILL_URL
         )
+        global_record = await self.get_global_record(guild.id)
+        footer_string = ""
+        if duration_exact < duck_user.speed_record:
+            footer_string += f"New personal record: {duration_exact} seconds."
+            if duration_exact < global_record:
+                footer_string += "\nNew global record!"
+                footer_string += f" Previous global record: {global_record} seconds"
+            await duck_user.update(speed_record=duration_exact).apply()
+        embed.set_footer(text=footer_string)
 
         await channel.send(embed=embed)
 
@@ -277,6 +302,24 @@ class DuckHunt(base.LoopCog):
 
         return duck_user
 
+    async def get_global_record(self, guild_id):
+        """
+        This is a function to get the current global speed record in a given guild
+
+        Parametrs:
+        guild_id -> The ID of the guild in question
+        """
+        query = await self.models.DuckUser.query.where(
+            self.models.DuckUser.guild_id == str(guild_id)
+        ).gino.all()
+
+        speed_records = [record.speed_record for record in query]
+
+        if not speed_records:
+            return None
+
+        return float(min(speed_records, key=float))
+
     @commands.group(
         brief="Executes a duck command",
         description="Executes a duck command",
@@ -314,6 +357,10 @@ class DuckHunt(base.LoopCog):
         embed.color = embed_colors.green()
         embed.add_field(name="Friends", value=duck_user.befriend_count)
         embed.add_field(name="Kills", value=duck_user.kill_count)
+        footer_string = f"Speed record: {str(duck_user.speed_record)} seconds"
+        if duck_user.speed_record == await self.get_global_record(ctx.guild.id):
+            footer_string += "\nYou hold the current global record!"
+        embed.set_footer(text=footer_string)
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
         await ctx.send(embed=embed)
@@ -343,7 +390,13 @@ class DuckHunt(base.LoopCog):
         embeds = []
         for index, duck_user in enumerate(duck_users):
             embed = (
-                discord.Embed(title="Duck Friendships") if field_counter == 1 else embed
+                discord.Embed(
+                    title="Duck Friendships",
+                    description=f"Global speed record:\
+                         {str(await self.get_global_record(ctx.guild.id))} seconds",
+                )
+                if field_counter == 1
+                else embed
             )
 
             embed.set_thumbnail(url=self.DUCK_PIC_URL)
@@ -361,6 +414,40 @@ class DuckHunt(base.LoopCog):
                 field_counter += 1
 
         ctx.task_paginate(pages=embeds)
+
+    @util.with_typing
+    @commands.guild_only()
+    @duck.command(
+        brief="Get the record holder",
+        description="Gets the current speed record holder, and their time",
+    )
+    async def record(self, ctx):
+        """
+        This is a command and should be run via discord
+
+        This outputs an embed shows the current speed record holder and their time
+        """
+        record_time = await self.get_global_record(ctx.guild.id)
+        if record_time is None:
+            await ctx.send_deny_embed(
+                "It appears nobody has partcipated in the duck hunt"
+            )
+            return
+        record_user = (
+            await self.models.DuckUser.query.where(
+                self.models.DuckUser.speed_record == record_time
+            )
+            .where(self.models.DuckUser.guild_id == str(ctx.guild.id))
+            .gino.first()
+        )
+
+        embed = discord.Embed(title="Duck Speed Record")
+        embed.color = embed_colors.green()
+        embed.add_field(name="Time", value=f"{str(record_time)} seconds")
+        embed.add_field(name="Record Holder", value=f"<@{record_user.author_id}>")
+        embed.set_thumbnail(url=self.DUCK_PIC_URL)
+
+        await ctx.send(embed=embed)
 
     @util.with_typing
     @commands.guild_only()
@@ -384,7 +471,15 @@ class DuckHunt(base.LoopCog):
         field_counter = 1
         embeds = []
         for index, duck_user in enumerate(duck_users):
-            embed = discord.Embed(title="Duck Kills") if field_counter == 1 else embed
+            embed = (
+                discord.Embed(
+                    title="Duck Kills",
+                    description=f"Global speed record:\
+                          {str(await self.get_global_record(ctx.guild.id))} seconds",
+                )
+                if field_counter == 1
+                else embed
+            )
 
             embed.set_thumbnail(url=self.DUCK_PIC_URL)
             embed.color = embed_colors.green()
