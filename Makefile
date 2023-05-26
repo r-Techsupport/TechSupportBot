@@ -19,7 +19,7 @@ lint:
 	# TODO: add techsupport_bot/plugins/*.py after plugins documented
 
 test:
-	$(drun) pytest --disable-warnings
+	PYTHONPATH=./techsupport_bot pytest techsupport_bot/tests/ -p no:warnings
 
 build:
 	make establish_config
