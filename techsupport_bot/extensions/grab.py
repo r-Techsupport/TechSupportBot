@@ -262,7 +262,7 @@ class Grabber(base.BaseCog):
         description="Deleted a specific grab from a user by the message",
         usage="[user] [message]",
     )
-    async def delete_grab(self, ctx, target_user: discord.Member, message: str):
+    async def delete_grab(self, ctx, target_user: discord.Member, *, message: str):
         """Deletes a specific grab from an user"""
         # Stop execution if the invoker isn't the target or an admin
         if (
