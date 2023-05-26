@@ -235,6 +235,7 @@ class FactoidManager(base.MatchCog):
                 "This factoid already exists. Should I overwrite it?"
             )
             if not should_delete:
+                await ctx.send_deny_embed(f"The factoid *{trigger}* was not removed")
                 return
             await factoid.delete()
 
