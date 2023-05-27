@@ -1,23 +1,13 @@
 """
 This is a file to test the extensions/conch.py file
-This contains 4 tests
+This contains 3 tests
 """
 
-import discord
 import mock
-from extensions import MagicConch
 from hypothesis import given
 from hypothesis.strategies import text
 
-from .helpers import MockBot
-
-
-class FakeDiscordEnv:
-    """Class to setup the mock discord environment for the conch tests"""
-
-    def __init__(self):
-        self.bot = MockBot()
-        self.conch = MagicConch(self.bot)
+from . import config_for_tests
 
 
 @given(text())
@@ -25,7 +15,7 @@ def test_format_question(question):
     """Property test to ensure the question is cropped correcty, never altered,
     and always ends in a question mark"""
     with mock.patch("asyncio.create_task", return_value=None):
-        discord_env = FakeDiscordEnv()
+        discord_env = config_for_tests.FakeDiscordEnv()
         new_question = discord_env.conch.format_question(question)
         assert new_question.endswith("?")
         assert len(new_question) <= 256
@@ -36,7 +26,7 @@ def test_format_question(question):
 @mock.patch("asyncio.create_task", return_value=None)
 def test_format_question_no_mark(_):
     """Test to ensure that format question adds a question mark if needed"""
-    discord_env = FakeDiscordEnv()
+    discord_env = config_for_tests.FakeDiscordEnv()
     new_question = discord_env.conch.format_question("This is a question")
     assert new_question == "This is a question?"
 
@@ -45,6 +35,6 @@ def test_format_question_no_mark(_):
 def test_format_question_yes_mark(_):
     """Test to ensure that the format question doesn't add a
     question mark when the question ends with a question mark"""
-    discord_env = FakeDiscordEnv()
+    discord_env = config_for_tests.FakeDiscordEnv()
     new_question = discord_env.conch.format_question("This is a question?")
     assert new_question == "This is a question?"
