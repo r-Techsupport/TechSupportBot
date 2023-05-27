@@ -224,7 +224,7 @@ class FactoidManager(base.MatchCog):
 
         return discord.Embed.from_dict(embed_config)
 
-    async def add_factoid(self, ctx, confirm_bypass=False, **kwargs):
+    async def add_factoid(self, ctx, **kwargs):
         """Method to add a factoid."""
         trigger = kwargs.get("trigger")
         message = "added"  # Changed ot modified
@@ -299,10 +299,10 @@ class FactoidManager(base.MatchCog):
         if factoid.alias in ["", None]:
             await ctx.send_confirm_embed(f"Successfully deleted factoid `{trigger}`")
 
-    async def handle_cache(self, config, factoid_name):
+    async def handle_cache(self, ctx, factoid_name):
         """Deletes factoid from cache"""
         try:
-            del self.factoid_cache[self.get_cache_key(new_name, ctx.guild)]
+            del self.factoid_cache[self.get_cache_key(factoid_name, ctx.guild)]
             # If it can't find where it is, then don't continue
         except KeyError:
             pass
@@ -868,7 +868,7 @@ class FactoidManager(base.MatchCog):
                 f"I couldn't find the new parent {replacement_name}, picking new parent at random"
             )
             new_name = alias_list[0]
-        
+
         # If it wasn't specified, select new at random (separate because of formatting)
         else:
             new_name = alias_list[0]
