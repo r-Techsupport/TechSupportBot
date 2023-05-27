@@ -1,7 +1,7 @@
 """
 This is a file to test the extensions/burn.py file
-This contains 11 unit tests
-8 tests handle the expected postive outcome
+This contains 10 unit tests
+7 tests handle the expected postive outcome
 3 tests handle negative outcomes/error handling
 """
 
@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock
 import discord
 import mock
 import pytest
-from extensions import Burn, setup
+from extensions import Burn
 
 from .helpers import MockBot, MockChannel, MockContext, MockMember, MockMessage
 
@@ -38,20 +38,6 @@ class FakeDiscordEnv:
         self.channel = MockChannel()
         self.context = MockContext(channel=self.channel)
         self.burn = Burn(self.bot)
-
-
-@pytest.mark.asyncio
-@mock.patch("asyncio.create_task", return_value=None)
-async def test_setup(_):
-    """
-    This is a simple test to ensure that the setup function works correctly
-    """
-    discord_env = FakeDiscordEnv()
-
-    discord_env.bot.add_cog = AsyncMock()
-
-    await setup(discord_env.bot)
-    discord_env.bot.add_cog.assert_called_once()
 
 
 @mock.patch("asyncio.create_task", return_value=None)

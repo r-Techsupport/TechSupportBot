@@ -11,17 +11,6 @@ async def setup(bot):
     await bot.add_cog(MagicConch(bot=bot))
 
 
-class ConchEmbed(discord.Embed):
-    """Class to create the conch embed for the bot."""
-
-    PIC_URL = "https://i.imgur.com/vdvGrsR.png"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.set_thumbnail(url=self.PIC_URL)
-        self.color = discord.Color.blurple()
-
-
 class MagicConch(base.BaseCog):
     """Class to create the conch command for discord bot."""
 
@@ -47,6 +36,20 @@ class MagicConch(base.BaseCog):
         "Yes – definitely.",
         "You may rely on it.",
     ]
+    PIC_URL = "https://i.imgur.com/vdvGrsR.png"
+
+    def generate_embed(self, question: str) -> discord.Embed:
+        response = random.choice(self.RESPONSES)
+        embed = discord.Embed(title=question, description=response)
+        embed.set_thumbnail(url=self.PIC_URL)
+        embed.color = discord.Color.blurple()
+        return embed
+
+    def format_question(self, question: str) -> str:
+        question = question[:255]
+        if not question.endswith("?"):
+            question += "?"
+        return question
 
     @commands.command(
         name="conch",
@@ -58,12 +61,10 @@ class MagicConch(base.BaseCog):
     async def ask_question(self, ctx, *, question: commands.clean_content() = None):
         """Method for how the conch command works for the bot."""
         # we don't actually care about the question
-        response = random.choice(self.RESPONSES)
+
         if question == None:
             await ctx.send_deny_embed("You need to add a question")
             return
-        if not question.endswith("?"):
-            question += "?"
-
-        embed = ConchEmbed(title=question[:256], description=response)
+        formatted_question = self.format_question(question)
+        embed = self.generate_embed(formatted_question)
         await ctx.send(embed=embed)
