@@ -299,6 +299,14 @@ class FactoidManager(base.MatchCog):
         if factoid.alias in ["", None]:
             await ctx.send_confirm_embed(f"Successfully deleted factoid `{trigger}`")
 
+    async def handle_cache(self, config, factoid_name):
+        """Deletes factoid from cache"""
+        try:
+            del self.factoid_cache[self.get_cache_key(new_name, ctx.guild)]
+            # If it can't find where it is, then don't continue
+        except KeyError:
+            pass
+
     async def match(self, config, __, content):
         """Method to match the factoid with the correct start."""
         return content.startswith(config.extensions.factoids.prefix.value)
@@ -820,10 +828,12 @@ class FactoidManager(base.MatchCog):
         usage="[target-name] [optional-]",
     )
     async def dealias(self, ctx, target_name: str, replacement_name=None):
+        """Method to add the dealias command"""
+
         # Makes sure factoid exists
         factoid = await self.get_factoid_from_query(target_name, ctx.guild)
         if not factoid:
-            await ctx.send_deny_enbed(f"Factoid `{query}` not found!")
+            await ctx.send_deny_enbed(f"Factoid `{target_name}` not found!")
 
         # Handling for aliases (They just get deleted)
         if factoid.alias not in ["", None]:
@@ -852,24 +862,22 @@ class FactoidManager(base.MatchCog):
         if replacement_name in alias_list:
             new_name = replacement_name
 
-        # If it wasn't specified, select new at random
+        # If it was specified but not found, select new at random
+        elif replacement_name:
+            await ctx.send_deny_embed(
+                f"I couldn't find the new parent {replacement_name}, picking new parent at random"
+            )
+            new_name = alias_list[0]
+        
+        # If it wasn't specified, select new at random (separate because of formatting)
         else:
-            if replacement_name:
-                await ctx.send_deny_embed(
-                    f"I couldn't find the new parent {replacement_name}, picking new parent at random"
-                )
             new_name = alias_list[0]
 
         # Removes previous instance of alias if it exists
         bff = await self.get_factoid_from_query(new_name, ctx.guild)
         if bff:
             await bff.delete()
-        # Cache handling
-        try:
-            del self.factoid_cache[self.get_cache_key(new_name, ctx.guild)]
-            # If it can't find where it is, then don't continue
-        except KeyError:
-            pass
+        await self.handle_cache(ctx, new_name)
 
         # Adds a new factoid that is a parent
         await self.add_factoid(
@@ -1158,14 +1166,7 @@ class FactoidManager(base.MatchCog):
                     # Removes previous instance of alias
                     _ = await self.get_factoid_from_query(aliases[0].text, ctx.guild)
                     await _.delete()
-                    # Cache handling
-                    try:
-                        del self.factoid_cache[
-                            self.get_cache_key(aliases[0], ctx.guild)
-                        ]
-                        # If it can't find where it is, then don't continue
-                    except KeyError:
-                        pass
+                    await self.handle_cache(ctx, aliases[0].text)
 
                     # Adds a new parent factoid with the original contents
                     await self.add_factoid(
@@ -1185,14 +1186,7 @@ class FactoidManager(base.MatchCog):
                             continue
                         # Updates the existing aliases to point to the new parent
                         await alias.update(alias=aliases[0].text).apply()
-                        # Cache handling
-                        try:
-                            del self.factoid_cache[
-                                self.get_cache_key(alias.text, ctx.guild)
-                            ]
-                            # If it can't find where it is, then don't continue
-                        except KeyError:
-                            pass
+                        await self.handle_cache(ctx, alias.text)
 
             await alias_entry.delete()
 
@@ -1206,13 +1200,7 @@ class FactoidManager(base.MatchCog):
         )
         await alias_entry.create()
 
-        # Cache handling
-        try:
-            del self.factoid_cache[self.get_cache_key(alias_name, ctx.guild)]
-            # if it can't find where it is, then don't continue
-        except KeyError:
-            pass
-
+        await self.handle_cache(alias_name)
         await ctx.send_confirm_embed(
             f"Successfully added the alias `{alias_name}` for `{factoid.text}`"
         )
