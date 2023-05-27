@@ -257,7 +257,9 @@ class FactoidManager(base.MatchCog):
                     f"The factoid `{trigger}` already exists. Should I overwrite it?"
                 )
                 if not should_delete:
-                    await ctx.send_deny_embed(f"The factoid *{trigger}* was not removed")
+                    await ctx.send_deny_embed(
+                        f"The factoid *{trigger}* was not removed"
+                    )
                     return
                 message = "Modified"
 
@@ -281,7 +283,6 @@ class FactoidManager(base.MatchCog):
         """Method to delete a factoid."""
         factoid = await self.get_factoid_from_query(trigger, ctx.guild)
         if not factoid:
-
             await ctx.send_deny_embed(f"I couldn't find the factoid `{trigger}`")
             return
 
@@ -294,15 +295,7 @@ class FactoidManager(base.MatchCog):
                 await ctx.send_deny_embed(f"Factoid: `{trigger}` was not deleted")
                 return
 
-
         await factoid.delete()
-        try:
-            del self.factoid_cache[self.get_cache_key(trigger, ctx.guild)]
-            # If it can't find where it is, then don't continue
-        except KeyError:
-            pass
-        await ctx.send_confirm_embed(f"Successfully deleted factoid *{trigger}*")
-
         await self.handle_cache(ctx, trigger)
 
         # Don't send the confirmation message if this is an alias either
