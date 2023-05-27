@@ -1,6 +1,5 @@
 import discord
 import mock
-import pytest
 from extensions import MagicConch
 from hypothesis import given
 from hypothesis.strategies import text
