@@ -29,7 +29,7 @@ def rand_history(draw: Callable):
 
 
 class FakeDiscordEnv:
-    """Class to setup the mock discord environment for the correct tests"""
+    """Class to setup the mock discord environment for all the tests"""
 
     def __init__(self):
         # bot objects
