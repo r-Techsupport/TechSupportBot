@@ -653,7 +653,6 @@ class FactoidManager(base.MatchCog):
             await ctx.send_deny_embed("That factoid is already looping in this channel")
             return
 
-
         # TODO: Get regex to check cron syntax
         job = self.models.FactoidCron(
             factoid=factoid.factoid_id, channel=str(channel.id), cron=cron_config
@@ -1113,10 +1112,15 @@ class FactoidManager(base.MatchCog):
             await ctx.send_deny_embed("I couldn't find that factoid")
             return
 
-
         # Gets all current aliases to prevent circular aliases
         rec_chk = []
-        rec_chk_ = await self.models.Factoid.query.where(self.models.Factoid.alias == alias_name).where(self.models.Factoid.guild == str(ctx.guild.id)).gino.all()
+        rec_chk_ = (
+            await self.models.Factoid.query.where(
+                self.models.Factoid.alias == alias_name
+            )
+            .where(self.models.Factoid.guild == str(ctx.guild.id))
+            .gino.all()
+        )
         for alias in rec_chk_:
             rec_chk.append(alias.text)
 
@@ -1137,8 +1141,10 @@ class FactoidManager(base.MatchCog):
         # Firstly check if the new entry already exists
         alias_entry = await self.get_factoid_from_query(alias_name, ctx.guild)
         if alias_entry.alias == factoid.text:
-            await ctx.send_deny_embed(f"`{factoid.text}` already has `{alias_entry.text}` set "
-            +"as an alias!")
+            await ctx.send_deny_embed(
+                f"`{factoid.text}` already has `{alias_entry.text}` set "
+                + "as an alias!"
+            )
             return
 
         if alias_entry:
