@@ -1,4 +1,8 @@
-"""Module for the conch command in discord bot."""
+"""
+Module for the conch command on the discord bot.
+This module has unit tests
+This modules requires no config, no databases, and no APIs
+"""
 import random
 
 import base
@@ -40,6 +44,15 @@ class MagicConch(base.BaseCog):
     PIC_URL = "https://i.imgur.com/vdvGrsR.png"
 
     def format_question(self, question: str) -> str:
+        """This formats a question properly. It will crop it if needed, and add a "?" to the end
+
+        Args:
+            question (str): The original question passed from the user
+
+        Returns:
+            str: The final formatted questions. Will always be 256 or less in length,
+                and end with a "?"
+        """
         question = question[:255]
         if not question.endswith("?"):
             question += "?"
@@ -54,8 +67,6 @@ class MagicConch(base.BaseCog):
     )
     async def ask_question(self, ctx, *, question: commands.clean_content() = None):
         """Method for how the conch command works for the bot."""
-        # we don't actually care about the question
-
         if question == None:
             await ctx.send_deny_embed("You need to add a question")
             return

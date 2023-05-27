@@ -1,5 +1,5 @@
 """
-Module for the burn command on discord bot.
+Module for the burn command on the discord bot.
 This module has unit tests
 This modules requires no config, no databases, and no APIs
 """

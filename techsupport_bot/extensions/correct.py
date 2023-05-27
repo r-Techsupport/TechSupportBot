@@ -1,4 +1,8 @@
-"""Module for the correct command on the discord bot."""
+"""
+Module for the correct command on the discord bot.
+This module has unit tests
+This modules requires no config, no databases, and no APIs
+"""
 import base
 import discord
 import util
@@ -17,9 +21,27 @@ class Corrector(base.BaseCog):
     def prepare_message(
         self, old_content: str, to_replace: str, replacement: str
     ) -> str:
+        """This corrects a message based on input
+
+        Args:
+            old_content (str): The old content of the message to be corrected
+            to_replace (str): What substring of the message needs to be replaced
+            replacement (str): What string to replace to_replace with
+
+        Returns:
+            str: The corrected content
+        """
         return old_content.replace(to_replace, f"**{replacement}**")
 
     async def handle_correct(self, ctx, to_replace: str, replacement: str) -> None:
+        """This is the main processing for the correct command
+
+        Args:
+            ctx (commands.Context): The context where the command was run
+            to_replace (str): What substring is being asked to find a message with
+            replacement (str): If a message with to_replace is found,
+                this is what it will be replaced with
+        """
         prefix = await self.bot.get_prefix(ctx.message)
         message_to_correct = await auxiliary.search_channel_for_message(
             channel=ctx.channel,

@@ -1,3 +1,7 @@
+"""
+This is a file to test the base/auxiliary.py file
+This contains 13 tests
+"""
 import random
 from typing import Callable
 
@@ -57,7 +61,7 @@ class FakeDiscordEnv:
 
 @pytest.mark.asyncio
 async def test_searching_only_content():
-    """Test to ensure that a message can be found at all"""
+    """Test to ensure that content searching works"""
     discord_env = FakeDiscordEnv()
     discord_env.channel.message_history = [discord_env.message_no_prefix_person2]
     assert (
@@ -70,7 +74,7 @@ async def test_searching_only_content():
 
 @pytest.mark.asyncio
 async def test_searching_only_member():
-    """Test to ensure that a message can be found at all"""
+    """Test to ensure that member searching works"""
     discord_env = FakeDiscordEnv()
     discord_env.channel.message_history = [discord_env.message_no_prefix_person2]
     assert (
@@ -83,7 +87,7 @@ async def test_searching_only_member():
 
 @pytest.mark.asyncio
 async def test_searching_content_and_member():
-    """Test to ensure that a message can be found at all"""
+    """Test to ensure that member and content searching works together"""
     discord_env = FakeDiscordEnv()
     discord_env.channel.message_history = [discord_env.message_no_prefix_person2]
     assert (
@@ -98,7 +102,7 @@ async def test_searching_content_and_member():
 
 @pytest.mark.asyncio
 async def test_searching_ignore_prefix():
-    """Test to ensure that bot commands are ignored"""
+    """Test to ensure that a given prefix is ignored"""
     discord_env = FakeDiscordEnv()
     discord_env.channel.message_history = [discord_env.message_prefix_person1]
     assert (
@@ -111,7 +115,7 @@ async def test_searching_ignore_prefix():
 
 @pytest.mark.asyncio
 async def test_searching_keep_prefix():
-    """Test to ensure that bot commands are ignored"""
+    """Test to ensure that a given prefix is found"""
     discord_env = FakeDiscordEnv()
     discord_env.channel.message_history = [discord_env.message_prefix_person1]
     assert (
@@ -124,7 +128,7 @@ async def test_searching_keep_prefix():
 
 @pytest.mark.asyncio
 async def test_searching_ignores_bot():
-    """Test to ensure that bot messages are ignpred"""
+    """Test to ensure that bot messages are ignored"""
     discord_env = FakeDiscordEnv()
     discord_env.channel.message_history = [discord_env.message_from_bot]
     assert (
@@ -137,7 +141,7 @@ async def test_searching_ignores_bot():
 
 @pytest.mark.asyncio
 async def test_searching_finds_bot():
-    """Test to ensure that bot messages are ignpred"""
+    """Test to ensure that bot messages are found"""
     discord_env = FakeDiscordEnv()
     discord_env.channel.message_history = [discord_env.message_from_bot]
     assert (
@@ -150,10 +154,7 @@ async def test_searching_finds_bot():
 
 @pytest.mark.asyncio
 async def test_searching_member_multiple_messages():
-    """
-    This is a test to check if get_message works when a valid message is found in the history, if
-        there is more than 1 message from the member to burn in the history
-    """
+    """Test to ensure that the most recent message is picked, if multiple match the critera"""
     discord_env = FakeDiscordEnv()
 
     message_history = [
@@ -176,10 +177,7 @@ async def test_searching_member_multiple_messages():
 
 @pytest.mark.asyncio
 async def test_searching_by_member_not_first_message():
-    """
-    This is a test to see if get_message works when a valid message
-        is found in the history, but only after other messages are sent as well
-    """
+    """Test to ensure that the first message is not always picked"""
     discord_env = FakeDiscordEnv()
 
     message_history = [
@@ -200,10 +198,7 @@ async def test_searching_by_member_not_first_message():
 
 @pytest.mark.asyncio
 async def test_searching_by_nothing_returns_first_message():
-    """
-    This is a test to see if get_message works when a valid message
-        is found in the history, but only after other messages are sent as well
-    """
+    """Test to ensure that searching with no critera will always return the first message"""
     discord_env = FakeDiscordEnv()
 
     message_history = [
@@ -255,6 +250,7 @@ def test_generate_embed(title, description):
 
 
 def test_generate_embed_with_url():
+    """Test to ensure that the URL property is added correctly"""
     embed = auxiliary.generate_basic_embed(
         title="A", description="A", color=discord.Color.random(), url="https://a.com"
     )
