@@ -173,6 +173,14 @@ class FactoidManager(base.MatchCog):
         await self.bot.logger.info("Loading factoid jobs", send=True)
         await self.kickoff_jobs()
 
+    async def handle_cache(self, ctx, factoid_name):
+        """Deletes factoid from cache"""
+        try:
+            del self.factoid_cache[self.get_cache_key(factoid_name, ctx.guild)]
+            # If it can't find where it is, then don't continue
+        except KeyError:
+            pass
+
     async def get_all_factoids(self, guild=None, hide=False):
         """Method to get all the factoids from a command."""
         # Gets list of factoids for current guild
@@ -263,11 +271,7 @@ class FactoidManager(base.MatchCog):
         )
         await factoid.create()
 
-        try:
-            del self.factoid_cache[self.get_cache_key(trigger, ctx.guild)]
-            # If it can't find where it is, then don't continue
-        except KeyError:
-            pass
+        await self.handle_cache(ctx, trigger)
 
         await ctx.send_confirm_embed(f"Successfully {message} factoid `{trigger}`")
 
@@ -289,23 +293,11 @@ class FactoidManager(base.MatchCog):
 
         await factoid.delete()
 
-        try:
-            del self.factoid_cache[self.get_cache_key(trigger, ctx.guild)]
-            # If it can't find where it is, then don't continue
-        except KeyError:
-            pass
+        await self.handle_cache(ctx, trigger)
 
         # Don't send the confirmation message if this is an alias either
         if factoid.alias in ["", None]:
             await ctx.send_confirm_embed(f"Successfully deleted factoid `{trigger}`")
-
-    async def handle_cache(self, ctx, factoid_name):
-        """Deletes factoid from cache"""
-        try:
-            del self.factoid_cache[self.get_cache_key(factoid_name, ctx.guild)]
-            # If it can't find where it is, then don't continue
-        except KeyError:
-            pass
 
     async def match(self, config, __, content):
         """Method to match the factoid with the correct start."""
@@ -897,19 +889,11 @@ class FactoidManager(base.MatchCog):
                 continue
             # Updates the existing aliases to point to the new parent
             await alias.update(alias=new_name).apply()
-            try:
-                del self.factoid_cache[self.get_cache_key(alias.text, ctx.guild)]
-                # If it can't find where it is, then don't continue
-            except KeyError:
-                pass
+            await self.handle_cache(ctx, alias.text)
 
         # Finally delete the parent
         await factoid.delete()
-        try:
-            del self.factoid_cache[self.get_cache_key(target_name, ctx.guild)]
-            # If it can't find where it is, then don't continue
-        except KeyError:
-            pass
+        await self.handle_cache(ctx, target_name)
 
     @util.with_typing
     @commands.guild_only()
