@@ -199,7 +199,7 @@ def test_generate_embed(title, description):
         title=title, description=description, color=discord.Color.random()
     )
     assert embed.title == title
-    assert embed.description in description
+    assert embed.description == description
     assert isinstance(embed.color, discord.Color)
 
 
