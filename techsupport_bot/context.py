@@ -160,7 +160,7 @@ class PaginateView(discord.ui.View):
     current_page: int = 1
     data = None
     currCtx = None
-    timeout = 60
+    timeout = 120
     message = ""
 
     def add_page_numbers(self):
@@ -219,14 +219,14 @@ class PaginateView(discord.ui.View):
         self.current_page += 1
         await self.update_message()
 
-    @discord.ui.button(label="⏹️", style=discord.ButtonStyle.danger, row=1)
+    @discord.ui.button(emoji="🛑", style=discord.ButtonStyle.danger, row=1)
     async def stop_button(self, interaction: discord.Interaction, _: discord.ui.Button):
         """This declares the stop button, and what should happen when it's pressed"""
         await interaction.response.defer()
         self.clear_items()
         await self.update_message()
 
-    @discord.ui.button(label="🗑️", style=discord.ButtonStyle.danger, row=1)
+    @discord.ui.button(emoji="🗑️", style=discord.ButtonStyle.danger, row=1)
     async def trash_button(
         self, interaction: discord.Interaction, _: discord.ui.Button
     ):
