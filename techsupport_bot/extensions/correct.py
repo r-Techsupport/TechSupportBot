@@ -2,6 +2,7 @@
 import base
 import discord
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -13,25 +14,6 @@ async def setup(bot):
 class Corrector(base.BaseCog):
     """Class for the correct command for the discord bot."""
 
-    SEARCH_LIMIT = 50
-
-    def generate_embed(self, content: str) -> discord.Embed:
-        embed = discord.Embed(
-            title="Correction!", description=f"{content} :white_check_mark:"
-        )
-        embed.color = discord.Color.green()
-        return embed
-
-    async def find_message(
-        self, ctx: commands.Context, prefix: str, to_replace: str
-    ) -> discord.Message:
-        async for message in ctx.channel.history(limit=self.SEARCH_LIMIT):
-            if message.author.bot or message.content.startswith(prefix):
-                continue
-
-            if to_replace in message.content:
-                return message
-
     def prepare_message(
         self, old_content: str, to_replace: str, replacement: str
     ) -> str:
@@ -39,7 +21,12 @@ class Corrector(base.BaseCog):
 
     async def handle_correct(self, ctx, to_replace: str, replacement: str) -> None:
         prefix = await self.bot.get_prefix(ctx.message)
-        message_to_correct = await self.find_message(ctx, prefix, to_replace)
+        message_to_correct = await auxiliary.search_channel_for_message(
+            channel=ctx.channel,
+            prefix=prefix,
+            content_to_match=to_replace,
+            allow_bot=False,
+        )
         if not message_to_correct:
             await ctx.send_deny_embed("I couldn't find any message to correct")
             return
@@ -47,7 +34,11 @@ class Corrector(base.BaseCog):
         updated_message = self.prepare_message(
             message_to_correct.content, to_replace, replacement
         )
-        embed = self.generate_embed(updated_message)
+        embed = auxiliary.generate_basic_embed(
+            title="Correction!",
+            description=f"{updated_message} :white_check_mark:",
+            color=discord.Color.green(),
+        )
         await ctx.send(embed=embed, targets=[message_to_correct.author])
 
     @util.with_typing

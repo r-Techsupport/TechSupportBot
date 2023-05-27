@@ -3,6 +3,7 @@ import random
 
 import base
 import discord
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -38,13 +39,6 @@ class MagicConch(base.BaseCog):
     ]
     PIC_URL = "https://i.imgur.com/vdvGrsR.png"
 
-    def generate_embed(self, question: str) -> discord.Embed:
-        response = random.choice(self.RESPONSES)
-        embed = discord.Embed(title=question, description=response)
-        embed.set_thumbnail(url=self.PIC_URL)
-        embed.color = discord.Color.blurple()
-        return embed
-
     def format_question(self, question: str) -> str:
         question = question[:255]
         if not question.endswith("?"):
@@ -66,5 +60,10 @@ class MagicConch(base.BaseCog):
             await ctx.send_deny_embed("You need to add a question")
             return
         formatted_question = self.format_question(question)
-        embed = self.generate_embed(formatted_question)
+        embed = auxiliary.generate_basic_embed(
+            title=formatted_question,
+            description=random.choice(self.RESPONSES),
+            color=discord.Color.blurple(),
+            url=self.PIC_URL,
+        )
         await ctx.send(embed=embed)
