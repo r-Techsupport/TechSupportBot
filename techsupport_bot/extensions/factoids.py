@@ -300,7 +300,9 @@ class FactoidManager(base.MatchCog):
 
         # Don't send the confirmation message if this is an alias either
         if factoid.alias in ["", None]:
-            await ctx.send_confirm_embed(f"Successfully deleted factoid `{trigger}`")
+            await ctx.send_confirm_embed(
+                f"Successfully deleted the factoid `{trigger}`"
+            )
 
     async def match(self, config, __, content):
         """Method to match the factoid with the correct start."""
@@ -948,7 +950,7 @@ class FactoidManager(base.MatchCog):
             url = url.replace(filename, f"selif/{filename}")
             await ctx.send_confirm_embed(url)
         except Exception as e:
-            await self.send_factoids_as_file(ctx, factoids)
+            await self.send_factoids_as_file(ctx, factoids, aliases)
             await self.bot.guild_log(
                 ctx.guild,
                 "logging_channel",
@@ -1187,7 +1189,7 @@ class FactoidManager(base.MatchCog):
         )
         await alias_entry.create()
 
-        await self.handle_cache(alias_name)
+        await self.handle_cache(ctx, alias_name)
         await ctx.send_confirm_embed(
             f"Successfully added the alias `{alias_name}` for `{factoid.text}`"
         )
