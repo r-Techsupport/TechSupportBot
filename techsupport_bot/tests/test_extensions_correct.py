@@ -34,7 +34,7 @@ class Test_PrepareMessage:
             assert new_content == "m**bbbb**ssag**bbbb**"
 
     def test_prepare_message_partial(self):
-        """Test to ensure that replacement works if multiple 
+        """Test to ensure that replacement works if multiple
         parts of the message need to be replaced"""
         with mock.patch("asyncio.create_task", return_value=None):
             discord_env = config_for_tests.FakeDiscordEnv()

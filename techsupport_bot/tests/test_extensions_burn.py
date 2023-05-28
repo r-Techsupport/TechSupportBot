@@ -19,7 +19,7 @@ class Test_Phrases:
         """
         This is a test to ensure that the generate burn embed function is working correctly
         This specifically looks at the description for every phrase in the PHRASES array
-        This looks at the length of the description as well to ensure that 
+        This looks at the length of the description as well to ensure that
             the phrases aren't too long
         """
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -66,7 +66,7 @@ class Test_HandleBurn:
     @mock.patch("asyncio.create_task", return_value=None)
     async def test_handle_burn_no_message(self, _):
         """
-        This is a test to ensure that the send_deny_embed 
+        This is a test to ensure that the send_deny_embed
             function is called if no message can be found
         """
         discord_env = config_for_tests.FakeDiscordEnv()
