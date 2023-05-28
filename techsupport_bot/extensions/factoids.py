@@ -244,7 +244,7 @@ class FactoidManager(base.MatchCog):
         if factoid:
             # Handling for aliases
 
-            if factoid.alias not in ["", None] and kwargs.get("confirm_bypass"):
+            if factoid.alias not in ["", None]:
                 # Gets the factoid that the alias is tied to
                 factoid = await self.get_factoid_from_query(factoid.alias, ctx.guild)
 
@@ -1144,14 +1144,13 @@ class FactoidManager(base.MatchCog):
 
         # Firstly check if the new entry already exists
         alias_entry = await self.get_factoid_from_query(alias_name, ctx.guild)
-        if alias_entry.alias == factoid.text:
+        if alias_entry and alias_entry.alias == factoid.text:
             await ctx.send_deny_embed(
                 f"`{factoid.text}` already has `{alias_entry.text}` set "
                 + "as an alias!"
             )
             return
 
-        if alias_entry:
             # Prompt to delete the old one
             should_delete = await ctx.confirm(
                 f"The entry `{alias_name}` already exists. Should I overwrite it?"
