@@ -21,6 +21,6 @@ class MockBot:
         """A mock function to get the prefix of the bot"""
         return "."
 
-    def wait_until_ready():
+    def wait_until_ready(self):
         """A mock wait on ready function"""
         return True
