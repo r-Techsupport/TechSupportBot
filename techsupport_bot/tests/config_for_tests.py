@@ -1,5 +1,13 @@
+"""
+This includes config for all unit tests
+Currently includes:
+
+A PREFIX variable, to assign the prefix to use for tests
+A rand_history strategy, for property tests that need a message history
+A FakeDiscordEnv for creating a discord environment 100% out of mock ojects
+"""
+
 import random
-from typing import Callable
 
 from extensions import Burn, Corrector, MagicConch
 from hypothesis.strategies import composite, integers, text
@@ -10,7 +18,7 @@ PREFIX = "."
 
 
 @composite
-def rand_history(draw: Callable):
+def rand_history(draw):
     """This is a custom strategy to generate a random message history
     This history, returned as an array, will be 1 to 50 messages of random content
     Some will be by a bot, some will not
