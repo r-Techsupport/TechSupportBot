@@ -562,7 +562,10 @@ class FactoidManager(base.MatchCog):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         # Removes the target factoid
 
-        if factoid and factoid.alias not in ["", None]:
+        if not factoid:
+            await ctx.send_deny_embed("I couldn't find that factoid")
+
+        if factoid.alias not in ["", None]:
             factoid = await self.get_factoid_from_query(factoid.alias, ctx.guild)
 
         await self.delete_factoid(ctx, factoid.text)
@@ -782,8 +785,10 @@ class FactoidManager(base.MatchCog):
 
         # Checks if the factoid exists
         factoid = await self.get_factoid_from_query(query, ctx.guild)
+
         if not factoid:
-            await ctx.send_deny_embed(f"Factoid `{query}` not found!")
+            await ctx.send_deny_embed(f"I couldn't find the factoid `{query}`")
+            return
 
         # Handling if the query is an alias
         if factoid.alias not in ["", None]:
@@ -813,7 +818,6 @@ class FactoidManager(base.MatchCog):
         embed.add_field(name="Aliases", value=alias_list[:-2])
         embed.add_field(name="Embed", value=bool(factoid.embed_config))
         embed.add_field(name="Contents", value=factoid.message)
-        embed.add_field(name="Date of creation", value=factoid.time)
 
         await ctx.send(embed=embed)
 
@@ -830,7 +834,7 @@ class FactoidManager(base.MatchCog):
         # Makes sure factoid exists
         factoid = await self.get_factoid_from_query(target_name, ctx.guild)
         if not factoid:
-            await ctx.send_deny_enbed(f"Factoid `{target_name}` not found!")
+            await ctx.send_deny_embed(f"Factoid `{target_name}` not found!")
 
         # Handling for aliases (They just get deleted, no parent handling needs to be done)
         if factoid.alias not in ["", None]:
@@ -1033,7 +1037,7 @@ class FactoidManager(base.MatchCog):
     @commands.guild_only()
     @factoid.command(
         brief="Hides a factoid",
-        description="Hides a factoid from showingb in the all response",
+        description="Hides a factoid from showing in the all response",
         usage="[factoid-name]",
     )
     async def hide(
