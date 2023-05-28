@@ -477,6 +477,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
                 "That application has been marked as denied. Are you sure you want to approve it?",
             )
             if not confirm:
+                await ctx.send_deny_embed("Application was not approved")
                 return
 
         username = application_data.get("username", "the user")
@@ -484,6 +485,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             f"This will attempt to notify `{username}` and approve their application",
         )
         if not confirm:
+            await ctx.send_deny_embed(
+                f"The application was not approved and `{username}` was not notified"
+            )
             return
 
         application_data["approved"] = True
@@ -517,6 +521,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
                 "That application has been marked as approved. Are you sure you want to deny it?",
             )
             if not confirm:
+                await ctx.send_deny_embed("Application was not denied")
                 return
 
         username = application_data.get("username", "the user")
@@ -524,6 +529,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             f"This will attempt to notify `{username}` and deny their application",
         )
         if not confirm:
+            await ctx.send_deny_embed(
+                f"The application was not denied and `{username}` was not notified"
+            )
             return
 
         application_data["reviewed"] = True

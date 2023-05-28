@@ -64,17 +64,6 @@ def generate_embed_from_kwargs(
     return embed
 
 
-def ipc_response(code=200, error=None, payload=None):
-    """Makes a response object for an IPC client.
-
-    parameters:
-        code (int): the HTTP-like status code
-        error (str): the response error message
-        payload (dict): the optional data payload
-    """
-    return {"code": code, "error": error, "payload": payload}
-
-
 def config_schema_matches(input_config, current_config):
     """Performs a schema check on an input guild config.
 
@@ -128,8 +117,6 @@ def with_typing(command):
 
 def preserialize_object(obj):
     """Provides sane object -> dict transformation for most objects.
-
-    This is primarily used to send Discord.py object data via the IPC server.
 
     parameters;
         obj (object): the object to serialize
@@ -202,7 +189,7 @@ def add_diff_fields(embed, diff):
             action = (
                 "added" if len(diff_data.before) < len(diff_data.after) else "removed"
             )
-            list_diff = set(diff_data.after) ^ set(diff_data.before)
+            list_diff = set(repr(diff_data.after)) ^ set(repr(diff_data.before))
 
             embed.add_field(
                 name=f"{attru} {action}", value=",".join(str(o) for o in list_diff)

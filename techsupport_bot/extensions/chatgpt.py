@@ -99,6 +99,7 @@ class ChatGPT(base.BaseCog):
 
         confirm = await ctx.confirm(f"Clear {len(history)} messages?")
         if not confirm:
+            await ctx.send_deny_embed("Chat history was not cleared")
             return
 
         await ctx.send_confirm_embed("Chat history cleared!")

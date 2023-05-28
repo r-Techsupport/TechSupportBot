@@ -55,7 +55,7 @@ class HangmanGame:
         +---+
         |   |
         O   |
-        /|  |
+       /|   |
             |
             |
         =========""",
@@ -63,7 +63,7 @@ class HangmanGame:
         +---+
         |   |
         O   |
-        /|\ |
+       /|\  |
             |
             |
         =========""",
@@ -71,16 +71,16 @@ class HangmanGame:
         +---+
         |   |
         O   |
-        /|\ |
-        /   |
+       /|\  |
+       /    |
             |
         =========""",
         """
         +---+
         |   |
         O   |
-        /|\ |
-        / \ |
+       /|\  |
+       / \  |
             |
         =========""",
     ]
@@ -216,6 +216,7 @@ class HangmanCog(base.BaseCog):
                     delete_after=True,
                 )
                 if not should_delete:
+                    await ctx.send_deny_embed("The current game was not ended")
                     return
                 del self.games[ctx.channel.id]
             else:
@@ -264,6 +265,7 @@ class HangmanCog(base.BaseCog):
         content = f"Found `{letter}`" if correct else f"Letter `{letter}` not in word"
         if game.finished:
             content = f"{content} - game finished! The word was {game.word}"
+            del self.games[ctx.channel.id]
         await ctx.send(content=content)
 
     async def generate_game_embed(self, ctx, game):
@@ -324,6 +326,7 @@ class HangmanCog(base.BaseCog):
         )
 
         if not should_delete:
+            await ctx.send_deny_embed("The current game was not ended")
             return
 
         game = game_data.get("game")
