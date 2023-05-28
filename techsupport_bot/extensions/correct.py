@@ -18,21 +18,6 @@ async def setup(bot):
 class Corrector(base.BaseCog):
     """Class for the correct command for the discord bot."""
 
-    def prepare_message(
-        self, old_content: str, to_replace: str, replacement: str
-    ) -> str:
-        """This corrects a message based on input
-
-        Args:
-            old_content (str): The old content of the message to be corrected
-            to_replace (str): What substring of the message needs to be replaced
-            replacement (str): What string to replace to_replace with
-
-        Returns:
-            str: The corrected content
-        """
-        return old_content.replace(to_replace, f"**{replacement}**")
-
     async def handle_correct(self, ctx, to_replace: str, replacement: str) -> None:
         """This is the main processing for the correct command
 
@@ -62,6 +47,21 @@ class Corrector(base.BaseCog):
             color=discord.Color.green(),
         )
         await ctx.send(embed=embed, targets=[message_to_correct.author])
+
+    def prepare_message(
+        self, old_content: str, to_replace: str, replacement: str
+    ) -> str:
+        """This corrects a message based on input
+
+        Args:
+            old_content (str): The old content of the message to be corrected
+            to_replace (str): What substring of the message needs to be replaced
+            replacement (str): What string to replace to_replace with
+
+        Returns:
+            str: The corrected content
+        """
+        return old_content.replace(to_replace, f"**{replacement}**")
 
     @util.with_typing
     @commands.guild_only()
