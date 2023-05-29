@@ -94,7 +94,7 @@ def with_typing(command):
     async def typing_wrapper(*args, **kwargs):
         context = args[1]
 
-        typing_func = getattr(context, "trigger_typing", None)
+        typing_func = getattr(context, "typing", None)
 
         if not typing_func:
             await original_callback(*args, **kwargs)

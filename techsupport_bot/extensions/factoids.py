@@ -34,6 +34,7 @@ async def setup(bot):
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
         embed_config = bot.db.Column(bot.db.String, default=None)
         hidden = bot.db.Column(bot.db.Boolean, default=False)
+        alias = bot.db.Column(bot.db.String, default=None)
 
     class FactoidCron(bot.db.Model):
         """define the factoid scheduler."""
@@ -172,6 +173,14 @@ class FactoidManager(base.MatchCog):
         await self.bot.logger.info("Loading factoid jobs", send=True)
         await self.kickoff_jobs()
 
+    async def handle_cache(self, ctx, factoid_name):
+        """Deletes factoid from cache"""
+        try:
+            del self.factoid_cache[self.get_cache_key(factoid_name, ctx.guild)]
+            # If it can't find where it is, then don't continue
+        except KeyError:
+            pass
+
     async def get_all_factoids(self, guild=None, hide=False):
         """Method to get all the factoids from a command."""
         # Gets list of factoids for current guild
@@ -226,17 +235,34 @@ class FactoidManager(base.MatchCog):
     async def add_factoid(self, ctx, **kwargs):
         """Method to add a factoid."""
         trigger = kwargs.get("trigger")
+        message = "added"  # Changed ot modified
 
         # First check if key already exists
         factoid = await self.get_factoid_from_query(trigger, ctx.guild)
+
+        # Handling for the factoid already existing
         if factoid:
-            # Delete old one
-            should_delete = await ctx.confirm(
-                "This factoid already exists. Should I overwrite it?"
-            )
-            if not should_delete:
-                await ctx.send_deny_embed(f"The factoid *{trigger}* was not removed")
-                return
+            # Handling for aliases
+
+            if factoid.alias not in ["", None]:
+                # Gets the factoid that the alias is tied to
+                factoid = await self.get_factoid_from_query(factoid.alias, ctx.guild)
+
+                trigger = factoid.text
+
+            # Makes sure dealias doesn't confirm twice
+            if not kwargs.get("confirm_bypass"):
+                # Delete old one
+                should_delete = await ctx.confirm(
+                    f"The factoid `{trigger}` already exists. Should I overwrite it?"
+                )
+                if not should_delete:
+                    await ctx.send_deny_embed(
+                        f"The factoid `{trigger}` was not removed"
+                    )
+                    return
+                message = "Modified"
+
             await factoid.delete()
 
         # Finally, add new entry
@@ -245,38 +271,38 @@ class FactoidManager(base.MatchCog):
             guild=kwargs.get("guild"),
             message=kwargs.get("message"),
             embed_config=kwargs.get("embed_config"),
+            alias=kwargs.get("alias"),
         )
         await factoid.create()
 
-        try:
-            del self.factoid_cache[self.get_cache_key(trigger, ctx.guild)]
-            # If it can't find where it is, then don't continue
-        except KeyError:
-            pass
+        await self.handle_cache(ctx, trigger)
 
-        await ctx.send_confirm_embed(f"Successfully added factoid *{trigger}*")
+        await ctx.send_confirm_embed(f"Successfully {message} factoid `{trigger}`")
 
     async def delete_factoid(self, ctx, trigger):
         """Method to delete a factoid."""
         factoid = await self.get_factoid_from_query(trigger, ctx.guild)
         if not factoid:
-            await ctx.send_deny_embed(f"I couldn't find the factoid *{trigger}*")
+            await ctx.send_deny_embed(f"I couldn't find the factoid `{trigger}`")
             return
 
-        should_delete = await ctx.confirm(
-            "This will remove the factoid forever. Are you sure?"
-        )
-        if not should_delete:
-            await ctx.send_deny_embed(f"Factoid: *{trigger}* was not deleted")
-            return
+        # Don't confirm if this is an alias, only the parent needs confirmation
+        if factoid.alias in ["", None]:
+            should_delete = await ctx.confirm(
+                f"This will remove the factoid `{trigger}` forever. Are you sure?"
+            )
+            if not should_delete:
+                await ctx.send_deny_embed(f"Factoid: `{trigger}` was not deleted")
+                return
 
         await factoid.delete()
-        try:
-            del self.factoid_cache[self.get_cache_key(trigger, ctx.guild)]
-            # If it can't find where it is, then don't continue
-        except KeyError:
-            pass
-        await ctx.send_confirm_embed(f"Successfully deleted factoid *{trigger}*")
+        await self.handle_cache(ctx, trigger)
+
+        # Don't send the confirmation message if this is an alias either
+        if factoid.alias in ["", None]:
+            await ctx.send_confirm_embed(
+                f"Successfully deleted the factoid `{trigger}`"
+            )
 
     async def match(self, config, __, content):
         """Method to match the factoid with the correct start."""
@@ -292,6 +318,13 @@ class FactoidManager(base.MatchCog):
         factoid = await self.get_factoid_from_query(query, ctx.guild)
         if not factoid:
             return
+
+        if factoid.alias not in ["", None]:
+            factoid = await self.get_factoid_from_query(factoid.alias, ctx.guild)
+            if not factoid:
+                raise commands.CommandError(
+                    "I couldn't find the alias this factoid is tied to"
+                )
 
         embed = self.get_embed_from_factoid(factoid)
         # if the json doesn't include non embed argument, then don't send anything
@@ -426,7 +459,7 @@ class FactoidManager(base.MatchCog):
                 ).gino.first()
                 if not from_db:
                     # This factoid job has been deleted from the DB
-                    await self.bot.logger.warnning(
+                    await self.bot.logger.warning(
                         f"Cron job {job} has failed - factoid has been deleted from the DB"
                     )
                     if ctx:
@@ -498,6 +531,7 @@ class FactoidManager(base.MatchCog):
     # updating the description for this command
     @factoid.command(
         brief="Creates a factoid",
+        aliases=["add"],
         description="Creates a factoid with a specified name",
         usage="[factoid-name] [factoid-output] |optional-embed-json-upload|",
     )
@@ -510,6 +544,7 @@ class FactoidManager(base.MatchCog):
             guild=str(ctx.guild.id),
             message=message,
             embed_config=embed_config,
+            alias=None,
         )
 
     @util.with_typing
@@ -517,12 +552,36 @@ class FactoidManager(base.MatchCog):
     @commands.guild_only()
     @factoid.command(
         brief="Deletes a factoid",
+        aliases=["delete", "remove"],
         description="Deletes a factoid permanently, including extra config",
         usage="[factoid-name]",
     )
     async def forget(self, ctx, factoid_name: str):
         """Method to forget a factoid."""
-        await self.delete_factoid(ctx, factoid_name)
+
+        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
+        # Removes the target factoid
+
+        if not factoid:
+            await ctx.send_deny_embed(f"Factoid `{factoid_name}` not found!")
+            return
+
+        if factoid.alias not in ["", None]:
+            factoid = await self.get_factoid_from_query(factoid.alias, ctx.guild)
+
+        await self.delete_factoid(ctx, factoid.text)
+
+        # Removes associated aliases as well
+        aliases = (
+            await self.models.Factoid.query.where(
+                self.models.Factoid.alias == factoid.text
+            )
+            .where(self.models.Factoid.guild == str(ctx.guild.id))
+            .gino.all()
+        )
+
+        for alias in aliases:
+            await self.delete_factoid(ctx, alias.text)
 
     @util.with_typing
     @commands.check(has_manage_factoids_role)
@@ -538,8 +597,13 @@ class FactoidManager(base.MatchCog):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
 
         if not factoid:
-            await ctx.send_deny_embed("I couldn't find that factoid")
+            await ctx.send_deny_embed(f"Factoid `{factoid_name}` not found!")
             return
+
+        # Handling if the call is an alias
+        if factoid.alias not in ["", None]:
+            factoid = await self.get_factoid_from_query(factoid.alias, ctx.guild)
+            factoid_name = factoid.text
 
         if not factoid.embed_config:
             await ctx.send_deny_embed("There is no embed config for that factoid")
@@ -560,7 +624,7 @@ class FactoidManager(base.MatchCog):
     @factoid.command(
         brief="Loops a factoid",
         description="Loops a pre-existing factoid",
-        usage="[factoid-name] [cron_config] [channel]",
+        usage="[factoid-name] [cron-config] [channel]",
     )
     async def loop(
         self,
@@ -570,6 +634,17 @@ class FactoidManager(base.MatchCog):
         channel: discord.TextChannel,
     ):
         """Method to define how the loop of a factoid will work."""
+
+        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
+
+        if not factoid:
+            await ctx.send_deny_embed("That factoid does not exist")
+            return
+
+        if factoid.alias not in ["", None]:
+            factoid = await self.get_factoid_from_query(factoid.alias, ctx.guild)
+            factoid_name = factoid.text
+
         # Check if loop already exists
         job = (
             await self.models.FactoidCron.join(self.models.Factoid)
@@ -580,11 +655,6 @@ class FactoidManager(base.MatchCog):
         )
         if job:
             await ctx.send_deny_embed("That factoid is already looping in this channel")
-            return
-
-        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
-        if not factoid:
-            await ctx.send_deny_embed("That factoid does not exist")
             return
 
         # TODO: Get regex to check cron syntax
@@ -607,6 +677,11 @@ class FactoidManager(base.MatchCog):
     )
     async def deloop(self, ctx, factoid_name: str, channel: discord.TextChannel):
         """Method to deloop the loop that was created."""
+
+        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
+        if factoid.alias not in ["", None]:
+            factoid = await self.get_factoid_from_query(factoid.alias, ctx.guild)
+            factoid_name = factoid.text
         job = (
             await self.models.FactoidCron.query.where(
                 self.models.FactoidCron.channel == str(channel.id)
@@ -697,6 +772,141 @@ class FactoidManager(base.MatchCog):
     @util.with_typing
     @commands.guild_only()
     @factoid.command(
+        brief="Gets information about a factoid",
+        aliases=["aliases"],
+        description="Returns information about a factoid (or the parent if it's an alias)",
+        usage="[factoid-name]",
+    )
+    async def info(
+        self,
+        ctx,
+        query: str,
+    ):
+        """Method to add the aliases command"""
+
+        # Checks if the factoid exists
+        factoid = await self.get_factoid_from_query(query, ctx.guild)
+
+        if not factoid:
+            await ctx.send_deny_embed(f"I couldn't find the factoid `{query}`")
+            return
+
+        # Handling if the query is an alias
+        if factoid.alias not in ["", None]:
+            factoid = (
+                await self.models.Factoid.query.where(
+                    self.models.Factoid.text == factoid.alias
+                )
+                .where(self.models.Factoid.guild == str(ctx.guild.id))
+                .gino.first()
+            )
+
+        embed = discord.Embed(title=f"Info about `{factoid.text}`")
+
+        # Parses list of aliases into a neat string
+        aliases = (
+            await self.models.Factoid.query.where(
+                self.models.Factoid.alias == factoid.text
+            )
+            .where(self.models.Factoid.guild == str(ctx.guild.id))
+            .gino.all()
+        )
+        # Awkward formatting to save an if statement
+        alias_list = "" if aliases else "None, "
+        for alias in aliases:
+            alias_list += f"`{alias.text}`, "
+
+        # Adds all firleds to the embed
+        embed.add_field(name="Aliases", value=alias_list[:-2])
+        embed.add_field(name="Embed", value=bool(factoid.embed_config))
+        embed.add_field(name="Contents", value=factoid.message)
+        embed.add_field(name="Date of creation", value=factoid.time)
+
+        await ctx.send(embed=embed)
+
+    @util.with_typing
+    @commands.guild_only()
+    @factoid.command(
+        brief="Deletes only an alias",
+        description="Removes an alias from the group. Will never delete the actual factoid.",
+        usage="[factoid-name] [optional-new-parent]",
+    )
+    async def dealias(self, ctx, target_name: str, replacement_name=None):
+        """Method to add the dealias command"""
+
+        # Makes sure factoid exists
+        factoid = await self.get_factoid_from_query(target_name, ctx.guild)
+        if not factoid:
+            await ctx.send_deny_embed(f"Factoid `{target_name}` not found!")
+            return
+
+        # Handling for aliases (They just get deleted, no parent handling needs to be done)
+        if factoid.alias not in ["", None]:
+            await self.delete_factoid(ctx, factoid.text)
+            await ctx.send_confirm_embed(f"Deleted the alias `{factoid.text}`")
+            return
+
+        # Gets list of aliases
+        aliases = (
+            await self.models.Factoid.query.where(
+                self.models.Factoid.alias == factoid.text
+            )
+            .where(self.models.Factoid.guild == str(ctx.guild.id))
+            .gino.all()
+        )
+        # Stop execution if there is no other parent to be assigned
+        if len(aliases) == 0:
+            await ctx.send_deny_embed("There is no other alias assigned to switch to!")
+            return
+
+        # Converts the raw alias list to a list of alias names
+        alias_list = []
+        for alias in aliases:
+            alias_list.append(alias.text)
+
+        # Firstly checks if the replacement name is in the aliast list, if it wasn't specified
+        # it defaults to None, both of which would assign a random value
+        new_name = replacement_name if replacement_name in alias_list else alias_list[0]
+        # If the value is specified (not None) and doesn't match the name, we know
+        # the new entry is randomized
+        if replacement_name and replacement_name != new_name:
+            await ctx.send_deny_embed(
+                f"I couldn't find the new parent `{replacement_name}`, picking new parent at random"
+            )
+
+        # Removes previous instance of alias if it exists
+        bff = await self.get_factoid_from_query(new_name, ctx.guild)
+        if bff:
+            await bff.delete()
+        await self.handle_cache(ctx, new_name)
+
+        # Adds a new factoid that is a parent
+        await self.add_factoid(
+            ctx,
+            confirm_bypass=True,
+            trigger=new_name,
+            guild=str(ctx.guild.id),
+            message=factoid.message,
+            embed_config=factoid.embed_config,
+            alias=None,
+        )
+
+        # Handles remaining aliases
+        for alias in aliases:
+            # Doesn't handle the initial, changed alias
+            if alias.text == new_name:
+                continue
+            # Updates the existing aliases to point to the new parent
+            await alias.update(alias=new_name).apply()
+            await self.handle_cache(ctx, alias.text)
+
+        # Finally delete the parent
+        await factoid.delete()
+        await self.handle_cache(ctx, target_name)
+
+    @util.with_typing
+    @commands.guild_only()
+    @factoid.command(
         name="all",
         aliases=["lsf"],
         brief="List all factoids",
@@ -709,14 +919,26 @@ class FactoidManager(base.MatchCog):
             await ctx.send_deny_embed("No factoids found!")
             return
 
+        # Gets a dict of aliases where
+        # Aliased_factoid = ["list_of_aliases"]
+        aliases = {}
+        for factoid in factoids:
+            if factoid.alias not in [None, ""]:
+                # Append to aliases
+                if factoid.alias in aliases:
+                    aliases[factoid.alias].append(factoid.text)
+                    continue
+
+                aliases[factoid.alias] = [factoid.text]
+
         flag = flag.lower() if flag else flag
         config = await self.bot.get_context_config(ctx)
         if flag == "file" or not config.extensions.factoids.linx_url.value:
-            await self.send_factoids_as_file(ctx, factoids)
+            await self.send_factoids_as_file(ctx, factoids, aliases)
             return
 
         try:
-            html = await self.generate_html(ctx, factoids)
+            html = await self.generate_html(ctx, factoids, aliases)
             headers = {
                 "Content-Type": "text/plain",
             }
@@ -732,7 +954,7 @@ class FactoidManager(base.MatchCog):
             url = url.replace(filename, f"selif/{filename}")
             await ctx.send_confirm_embed(url)
         except Exception as e:
-            await self.send_factoids_as_file(ctx, factoids)
+            await self.send_factoids_as_file(ctx, factoids, aliases)
             await self.bot.guild_log(
                 ctx.guild,
                 "logging_channel",
@@ -741,14 +963,31 @@ class FactoidManager(base.MatchCog):
                 exception=e,
             )
 
-    async def generate_html(self, ctx, factoids):
+    async def generate_html(self, ctx, factoids, aliases):
         """Method to generate a link for html in a factoid."""
+
         list_items = ""
         for factoid in factoids:
             embed_text = " (embed)" if factoid.embed_config else ""
-            list_items += (
-                f"<li><code>{factoid.text}{embed_text} - {factoid.message}</code></li>"
-            )
+
+            # Skips aliases
+            if factoid.alias not in [None, ""]:
+                continue
+
+            # If aliased
+            if factoid.text in aliases:
+                list_items += (
+                    f"<li><code>{factoid.text} [{', '.join(aliases[factoid.text])}]{embed_text}"
+                    + f" - {factoid.message}</code></li>"
+                )
+
+            # If not aliased
+            else:
+                list_items += (
+                    f"<li><code>{factoid.text}{embed_text}"
+                    + f" - {factoid.message}</code></li>"
+                )
+
         body_contents = f"<ul>{list_items}</ul>"
         output = f"""
         <!DOCTYPE html>
@@ -761,11 +1000,27 @@ class FactoidManager(base.MatchCog):
         """
         return output
 
-    async def send_factoids_as_file(self, ctx, factoids):
+    async def send_factoids_as_file(self, ctx, factoids, aliases):
         """Method to send all the factoids as a file."""
+
         output_data = []
         for factoid in factoids:
-            data = {"message": factoid.message, "embed": bool(factoid.embed_config)}
+            # Skips aliases
+            if factoid.alias not in [None, ""]:
+                continue
+
+            # If not aliased
+            if factoid.text in aliases:
+                data = {
+                    "message": factoid.message,
+                    "embed": bool(factoid.embed_config),
+                    "aliases": ", ".join(aliases[factoid.text]),
+                }
+
+            # If aliased
+            else:
+                data = {"message": factoid.message, "embed": bool(factoid.embed_config)}
+
             output_data.append({factoid.text: data})
 
         yaml_file = discord.File(
@@ -789,10 +1044,15 @@ class FactoidManager(base.MatchCog):
         factoid_name: str,
     ):
         """Method to hide the factoid from the 'all' list."""
+
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
+
         if not factoid:
-            await ctx.send_deny_embed("I couldn't find that factoid")
+            await ctx.send_deny_embed(f"Factoid `{factoid_name}` not found!")
             return
+
+        if factoid.alias not in ["", None]:
+            factoid = await self.get_factoid_from_query(factoid.alias, ctx.guild)
 
         if factoid.hidden:
             await ctx.send_deny_embed("That factoid is already hidden")
@@ -818,8 +1078,11 @@ class FactoidManager(base.MatchCog):
         """Method to unhide the factoid that you have hidden."""
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         if not factoid:
-            await ctx.send_deny_embed("I couldn't find that factoid")
+            await ctx.send_deny_embed(f"Factoid `{factoid_name}` not found!")
             return
+
+        if factoid.alias not in ["", None]:
+            factoid = await self.get_factoid_from_query(factoid.alias, ctx.guild)
 
         if not factoid.hidden:
             await ctx.send_deny_embed("That factoid is already unhidden")
@@ -828,3 +1091,130 @@ class FactoidManager(base.MatchCog):
         await factoid.update(hidden=False).apply()
 
         await ctx.send_confirm_embed("That factoid is now unhidden")
+
+    @util.with_typing
+    @commands.check(has_manage_factoids_role)
+    @commands.guild_only()
+    @factoid.command(
+        brief="Adds a factoid alias",
+        description="Adds an alternate way to call a factoid",
+        usage="[factoid-name] [alias-name]",
+    )
+    async def alias(
+        self,
+        ctx,
+        factoid_name: str,
+        alias_name: str,
+    ):
+        """Method to hide the factoid from the 'all' list."""
+
+        # Gets the factoid, checks if it exists
+        factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
+        if not factoid:
+            await ctx.send_deny_embed(f"Factoid `{factoid_name}` not found!")
+            return
+
+        # Gets all current aliases to prevent circular aliases
+        rec_chk = []
+        rec_chk_ = (
+            await self.models.Factoid.query.where(
+                self.models.Factoid.alias == alias_name
+            )
+            .where(self.models.Factoid.guild == str(ctx.guild.id))
+            .gino.all()
+        )
+        for alias in rec_chk_:
+            rec_chk.append(alias.text)
+
+        # Checks if user wants the alias to alias itself
+        if factoid_name == alias_name or factoid_name in rec_chk:
+            await ctx.send_deny_embed("Can't set an alias for itself!")
+            return
+
+        # Gets parent factoid if it's an alias
+        if factoid.alias not in ["", None]:
+            factoid = await self.get_factoid_from_query(factoid.alias, ctx.guild)
+
+            # Prevents recursing aliases because fuck that!
+            if factoid.alias not in ["", None]:
+                await ctx.send_deny_embed("Can't set an alias for an alias!")
+                return
+
+        # Firstly check if the new entry already exists
+        alias_entry = await self.get_factoid_from_query(alias_name, ctx.guild)
+        if alias_entry:
+            if alias_entry.alias == factoid.text:
+                await ctx.send_deny_embed(
+                    f"`{factoid.text}` already has `{alias_entry.text}` set "
+                    + "as an alias!"
+                )
+                return
+
+            # Prompt to delete the old one
+            should_delete = await ctx.confirm(
+                f"The entry `{alias_name}` already exists. Should I overwrite it?"
+            )
+            if not should_delete:
+                await ctx.send_deny_embed(
+                    f"The entry `{alias_entry.text}` was not deleted"
+                )
+                return
+
+            # If the alias entry is the parent
+            if alias_entry.alias in ["", None]:
+                # The first alias becomes the new parent
+                # A more destructive way to do this would be to have the new parent have
+                # the old aliases, but that would delete the previous parent and therefore
+                # be more dangerous.
+
+                aliases = (
+                    await self.models.Factoid.query.where(
+                        self.models.Factoid.alias == alias_entry.text
+                    )
+                    .where(self.models.Factoid.guild == str(ctx.guild.id))
+                    .gino.all()
+                )
+
+                # Don't make new parent if there isn't an alias for it
+                if len(aliases) != 0:
+                    # Removes previous instance of alias
+                    _ = await self.get_factoid_from_query(aliases[0].text, ctx.guild)
+                    await _.delete()
+                    await self.handle_cache(ctx, aliases[0].text)
+
+                    # Adds a new parent factoid with the original contents
+                    await self.add_factoid(
+                        ctx,
+                        confirm_bypass=True,
+                        trigger=aliases[0].text,
+                        guild=str(ctx.guild.id),
+                        message=alias_entry.message,
+                        embed_config=alias_entry.embed_config,
+                        alias=None,
+                    )
+
+                    # Handles remaining aliases
+                    for alias in aliases:
+                        # Doesn't handle the initial, changed alias
+                        if alias.text == aliases[0].text:
+                            continue
+                        # Updates the existing aliases to point to the new parent
+                        await alias.update(alias=aliases[0].text).apply()
+                        await self.handle_cache(ctx, alias.text)
+
+            await alias_entry.delete()
+
+        # Finally, add the new alias
+        alias_entry = self.models.Factoid(
+            text=alias_name,
+            guild=str(ctx.guild.id),
+            message="",
+            embed_config="",
+            alias=factoid.text,
+        )
+        await alias_entry.create()
+
+        await self.handle_cache(ctx, alias_name)
+        await ctx.send_confirm_embed(
+            f"Successfully added the alias `{alias_name}` for `{factoid.text}`"
+        )
