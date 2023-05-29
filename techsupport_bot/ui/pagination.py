@@ -1,14 +1,19 @@
+"""This is a file to house the class for the pagination view
+This allows unlimited pages to be scrolled through"""
+
 import discord
 
 
 class PaginateView(discord.ui.View):
     """The custom paginate view class
-    This holds all the buttons and how the pages should work
+    This holds all the buttons and how the pages should work.
+
+    To use this, call the send function. Everything else is automatic
     """
 
     current_page: int = 1
     data = None
-    currCtx = None
+    ctx = None
     timeout = 120
     message = ""
 
@@ -19,9 +24,14 @@ class PaginateView(discord.ui.View):
                 embed.set_footer(text=f"Page {index+1} of {len(self.data)}")
 
     async def send(self, ctx, data):
-        """The initial send function. This does any one time actions and sends page 1"""
+        """Entry point for PaginateView
+
+        Args:
+            ctx (commands.Context): The context in which the command was run with
+            data (List): A list of pages in order, with [0] being the first page
+        """
         self.data = data
-        self.currCtx = ctx
+        self.ctx = ctx
         self.update_buttons()
         if isinstance(self.data[0], discord.Embed):
             self.add_page_numbers()
@@ -88,7 +98,7 @@ class PaginateView(discord.ui.View):
         """This checks to ensure that only the original author can press the button
         If the original author didn't press, it sends an ephemeral message
         """
-        if interaction.user != self.currCtx.author:
+        if interaction.user != self.ctx.author:
             await interaction.response.send_message(
                 "Only the original author can control this!", ephemeral=True
             )

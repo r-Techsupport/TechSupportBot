@@ -1,7 +1,6 @@
 """Module for defining custom contexts.
 """
 
-import asyncio
 
 import discord
 import embeds
