@@ -563,7 +563,7 @@ class FactoidManager(base.MatchCog):
         # Removes the target factoid
 
         if not factoid:
-            await ctx.send_deny_embed("I couldn't find that factoid")
+            await ctx.send_deny_embed(f"Factoid `{factoid_name}` not found!")
             return
 
         if factoid.alias not in ["", None]:
@@ -597,7 +597,7 @@ class FactoidManager(base.MatchCog):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
 
         if not factoid:
-            await ctx.send_deny_embed("I couldn't find that factoid")
+            await ctx.send_deny_embed(f"Factoid `{factoid_name}` not found!")
             return
 
         # Handling if the call is an alias
@@ -838,6 +838,7 @@ class FactoidManager(base.MatchCog):
         factoid = await self.get_factoid_from_query(target_name, ctx.guild)
         if not factoid:
             await ctx.send_deny_embed(f"Factoid `{target_name}` not found!")
+            return
 
         # Handling for aliases (They just get deleted, no parent handling needs to be done)
         if factoid.alias not in ["", None]:
@@ -863,21 +864,16 @@ class FactoidManager(base.MatchCog):
         for alias in aliases:
             alias_list.append(alias.text)
 
-        # Custom replacement name
-        if replacement_name in alias_list:
-            new_name = replacement_name
-
-        # If the new parent name was specified but not found, select a new one at random
-        elif replacement_name:
+        # Firstly checks if the replacement name is in the aliast list, if it wasn't specified
+        # it defaults to None, both of which would assign a random value
+        new_name = replacement_name if replacement_name in alias_list else alias_list[0]
+        # If the value is specified (not None) and doesn't match the name, we know
+        # the new entry is randomized
+        if replacement_name and replacement_name != new_name:
             await ctx.send_deny_embed(
-                f"I couldn't find the new parent {replacement_name}, picking new parent at random"
+                f"I couldn't find the new parent `{replacement_name}`, picking new parent at random"
             )
-            new_name = alias_list[0]
 
-        # If the new parent wasn't specified, select a new one at random
-        # (separate statements because of formatting)
-        else:
-            new_name = alias_list[0]
 
         # Removes previous instance of alias if it exists
         bff = await self.get_factoid_from_query(new_name, ctx.guild)
@@ -1053,7 +1049,7 @@ class FactoidManager(base.MatchCog):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
 
         if not factoid:
-            await ctx.send_deny_embed("I couldn't find that factoid")
+            await ctx.send_deny_embed(f"Factoid `{factoid_name}` not found!")
             return
 
         if factoid.alias not in ["", None]:
@@ -1083,7 +1079,7 @@ class FactoidManager(base.MatchCog):
         """Method to unhide the factoid that you have hidden."""
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         if not factoid:
-            await ctx.send_deny_embed("I couldn't find that factoid")
+            await ctx.send_deny_embed(f"Factoid `{factoid_name}` not found!")
             return
 
         if factoid.alias not in ["", None]:
@@ -1116,7 +1112,7 @@ class FactoidManager(base.MatchCog):
         # Gets the factoid, checks if it exists
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         if not factoid:
-            await ctx.send_deny_embed("I couldn't find that factoid")
+            await ctx.send_deny_embed(f"Factoid `{factoid_name}` not found!")
             return
 
         # Gets all current aliases to prevent circular aliases
