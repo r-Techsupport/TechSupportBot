@@ -69,6 +69,13 @@ async def setup(bot):
         default={},
     )
     config.add(
+        key="banned_file_extensions",
+        datatype="dict",
+        title="List of banned file types",
+        description="A list of all file extensions to be blocked and have a auto warning issued",
+        default=[],
+    )
+    config.add(
         key="alert_channel",
         datatype="int",
         title="Alert channel ID",
@@ -109,6 +116,13 @@ async def setup(bot):
         title="Max Purge Amount",
         description="The max amount of messages allowed to be purged in one command",
         default=50,
+    )
+    config.add(
+        key="paste_footer_message",
+        datatype="str",
+        title="The linx embed footer",
+        description="The message used on the footer of the large message paste URL",
+        default="Note: Long messages are automatically pasted",
     )
 
     await bot.add_cog(Protector(bot=bot, models=[Warning], extension_name="protect"))
@@ -225,6 +239,14 @@ class Protector(base.MatchCog):
                     if triggered_config.get("delete"):
                         break
 
+        for attachment in ctx.message.attachments:
+            if (
+                attachment.filename.split(".")[-1]
+                in config.extensions.protect.banned_file_extensions.value
+            ):
+                await self.handle_file_extension_alert(config, ctx, attachment.filename)
+                return
+
         if triggered_config:
             await self.handle_string_alert(config, ctx, content, triggered_config)
             if triggered_config.get("delete"):
@@ -268,13 +290,32 @@ class Protector(base.MatchCog):
         await self.handle_warn(ctx, ctx.author, "mass mention", bypass=True)
         await self.send_alert(config, ctx, f"Mass mentions from {ctx.author}")
 
+    async def handle_file_extension_alert(self, config, ctx, filename):
+        """Method for handling suspicious file extensions."""
+        await ctx.message.delete()
+        await self.handle_warn(
+            ctx, ctx.author, "Suspicious file extension", bypass=True
+        )
+        await self.send_alert(
+            config, ctx, f"Suspicious file uploaded by {ctx.author}: {filename}"
+        )
+
     async def handle_string_alert(self, config, ctx, content, filter_config):
         """Method to handle a string alert for the protect extension."""
-        if filter_config.warn:
-            await self.handle_warn(ctx, ctx.author, filter_config.message, bypass=True)
-
+        # If needed, delete the message
         if filter_config.delete:
             await ctx.message.delete()
+
+        # Send only 1 response based on warn, deletion, or neither
+        if filter_config.warn:
+            await self.handle_warn(ctx, ctx.author, filter_config.message, bypass=True)
+        elif filter_config.delete:
+            await self.send_default_delete_response(
+                config, ctx, content, filter_config.message
+            )
+        else:
+            embed = ProtectEmbed(description=filter_config.message)
+            await ctx.send(embed=embed)
 
         await self.send_alert(
             config,
@@ -285,14 +326,6 @@ class Protector(base.MatchCog):
         cache_key = self.get_cache_key(ctx.guild, ctx.author, filter_config.trigger)
         if self.string_alert_cache.get(cache_key):
             return
-
-        if filter_config.delete:
-            await self.send_default_delete_response(
-                config, ctx, content, filter_config.message
-            )
-        else:
-            embed = ProtectEmbed(description=filter_config.message)
-            await ctx.send(embed=embed)
 
         self.string_alert_cache[cache_key] = True
 
@@ -313,23 +346,21 @@ class Protector(base.MatchCog):
             if not bypass:
                 should_ban = await ctx.confirm(
                     f"This user has exceeded the max warnings \
-                        {config.extensions.protect.max_warnings.value}. \
+                        of {config.extensions.protect.max_warnings.value}. \
                         Would you like to ban them instead?",
                     delete_after=True,
                 )
-                if not should_ban:
-                    await ctx.send_deny_embed("No warnings have been set")
+                if should_ban:
+                    await self.handle_ban(
+                        ctx,
+                        user,
+                        f"Over max warning count {new_count}/\
+                            of {config.extensions.protect.max_warnings.value} (final warning: {reason})",
+                        bypass=True,
+                    )
+                    await self.clear_warnings(user, ctx.guild)
                     return
-
-            await self.handle_ban(
-                ctx,
-                user,
-                f"Over max warning count {new_count}/\
-                    {config.extensions.protect.max_warnings.value} (final warning: {reason})",
-                bypass=True,
-            )
-            await self.clear_warnings(user, ctx.guild)
-            return
+            await ctx.send_confirm_embed("User has not been banned")
 
         await self.models.Warning(
             user_id=str(user.id), guild_id=str(ctx.guild.id), reason=reason
@@ -341,7 +372,8 @@ class Protector(base.MatchCog):
 
     async def handle_unwarn(self, ctx, user, reason, bypass=False):
         """Method to handle an unwarn of a user."""
-        if not bypass:
+        # Always allow admins to unwarn other admins
+        if not bypass and not ctx.message.author.guild_permissions.administrator:
             can_execute = await self.can_execute(ctx, user)
             if not can_execute:
                 return
@@ -529,7 +561,7 @@ class Protector(base.MatchCog):
         embed.set_author(
             name=f"Paste by {ctx.author}", icon_url=ctx.author.display_avatar.url
         )
-        embed.set_footer(text="Note: long messages are automatically pasted")
+        embed.set_footer(text=config.extensions.protect.paste_footer_message.value)
         embed.color = discord.Color.blue()
 
         return embed
