@@ -811,7 +811,8 @@ class FactoidManager(base.MatchCog):
             .where(self.models.Factoid.guild == str(ctx.guild.id))
             .gino.all()
         )
-        alias_list = ""
+        # Awkward formatting to save an if statement
+        alias_list = "" if aliases else "None, "
         for alias in aliases:
             alias_list += f"`{alias.text}`, "
 
