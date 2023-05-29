@@ -874,7 +874,6 @@ class FactoidManager(base.MatchCog):
                 f"I couldn't find the new parent `{replacement_name}`, picking new parent at random"
             )
 
-
         # Removes previous instance of alias if it exists
         bff = await self.get_factoid_from_query(new_name, ctx.guild)
         if bff:
