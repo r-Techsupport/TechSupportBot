@@ -818,6 +818,7 @@ class FactoidManager(base.MatchCog):
         embed.add_field(name="Aliases", value=alias_list[:-2])
         embed.add_field(name="Embed", value=bool(factoid.embed_config))
         embed.add_field(name="Contents", value=factoid.message)
+        embed.add_field(name="Date of creation", value=factoid.time)
 
         await ctx.send(embed=embed)
 
