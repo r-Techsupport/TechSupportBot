@@ -72,7 +72,7 @@ class Test_HandleCorrect:
         auxiliary.generate_basic_embed = AsyncMock()
         discord_env.context.send = AsyncMock()
 
-        await discord_env.correct.handle_correct(discord_env.context, "a", "b")
+        await discord_env.correct.correct_command(discord_env.context, "a", "b")
 
         auxiliary.search_channel_for_message.assert_called_once_with(
             channel=discord_env.channel,
@@ -94,7 +94,7 @@ class Test_HandleCorrect:
         discord_env.bot.get_prefix = AsyncMock(return_value=config_for_tests.PREFIX)
         auxiliary.search_channel_for_message = AsyncMock(return_value=None)
         discord_env.context.send_deny_embed = AsyncMock()
-        await discord_env.correct.handle_correct(discord_env.context, "a", "b")
+        await discord_env.correct.correct_command(discord_env.context, "a", "b")
 
         auxiliary.search_channel_for_message.assert_called_once_with(
             channel=discord_env.channel,

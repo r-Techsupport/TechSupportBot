@@ -4,7 +4,10 @@ This contains 13 tests
 """
 
 
+from unittest.mock import AsyncMock
+
 import discord
+import mock
 import pytest
 from base import auxiliary
 from hypothesis import given
@@ -209,3 +212,39 @@ class Test_GenerateBasicEmbed:
             url="https://a.com",
         )
         assert embed.thumbnail.url == "https://a.com"
+
+
+class Test_AddReactions:
+    """Basic tests to test add_list_of_reactions"""
+
+    @pytest.mark.asyncio
+    async def test_with_one_reaction(self):
+        """Test add_list_of_reactions with just 1 emoji"""
+        with mock.patch("asyncio.create_task", return_value=None):
+            discord_env = config_for_tests.FakeDiscordEnv()
+            discord_env.message_person1_noprefix_1.add_reaction = AsyncMock()
+            await auxiliary.add_list_of_reactions(
+                message=discord_env.message_person1_noprefix_1, reactions=["🔥"]
+            )
+            discord_env.message_person1_noprefix_1.add_reaction.assert_awaited_once_with(
+                "🔥"
+            )
+
+    @pytest.mark.asyncio
+    async def test_with_many_reaction(self):
+        """Test add_list_of_reactions with just amny emoji"""
+        with mock.patch("asyncio.create_task", return_value=None):
+            discord_env = config_for_tests.FakeDiscordEnv()
+            discord_env.message_person1_noprefix_1.add_reaction = AsyncMock()
+            await auxiliary.add_list_of_reactions(
+                message=discord_env.message_person1_noprefix_1,
+                reactions=["🔥", "⬅️", "🗑️"],
+            )
+            expected_calls = [
+                mock.call("🔥"),
+                mock.call("⬅️"),
+                mock.call("🗑️"),
+            ]
+        discord_env.message_person1_noprefix_1.add_reaction.assert_has_calls(
+            expected_calls, any_order=False
+        )

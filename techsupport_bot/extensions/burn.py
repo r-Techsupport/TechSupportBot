@@ -47,8 +47,9 @@ class Burn(base.BaseCog):
             await ctx.send_deny_embed("I could not a find a message to reply to")
             return
 
-        for emoji in ["🔥", "🚒", "👨‍🚒"]:
-            await message.add_reaction(emoji)
+        await auxiliary.add_list_of_reactions(
+            message=message, reactions=["🔥", "🚒", "👨‍🚒"]
+        )
 
         embed = auxiliary.generate_basic_embed(
             title="Burn Alert!",
@@ -57,6 +58,23 @@ class Burn(base.BaseCog):
         )
         await ctx.send(embed=embed, targets=[user])
 
+    async def burn_command(
+        self, ctx: commands.Context, user_to_match: discord.Member
+    ) -> None:
+        """This the core logic of the burn command
+        This is a command and should be accessed via discord
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+            user_to_match (discord.Member): The user in which to burn
+        """
+        prefix = await self.bot.get_prefix(ctx.message)
+        message = await auxiliary.search_channel_for_message(
+            channel=ctx.channel, prefix=prefix, member_to_match=user_to_match
+        )
+
+        await self.handle_burn(ctx, user_to_match, message)
+
     @util.with_typing
     @commands.guild_only()
     @commands.command(
@@ -64,18 +82,11 @@ class Burn(base.BaseCog):
         description="Declares the user's last message as a BURN!",
         usage="@user",
     )
-    async def burn(self, ctx, user_to_match: discord.Member):
-        """The function executed when .burn is run on discord
-        This is a command and should be accessed via discord
+    async def burn(self, ctx: commands.Context, user_to_match: discord.Member):
+        """The only purpose of this function is to accept input from discord
 
         Args:
             ctx (commands.Context): The context in which the command was run
             user_to_match (discord.Member): The user in which to burn
         """
-
-        prefix = await self.bot.get_prefix(ctx.message)
-        message = await auxiliary.search_channel_for_message(
-            channel=ctx.channel, prefix=prefix, member_to_match=user_to_match
-        )
-
-        await self.handle_burn(ctx, user_to_match, message)
+        await self.burn_command(ctx, user_to_match)

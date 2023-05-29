@@ -58,16 +58,14 @@ class MagicConch(base.BaseCog):
             question += "?"
         return question
 
-    @commands.command(
-        name="conch",
-        aliases=["8ball", "8b"],
-        brief="Asks the Magic Conch",
-        description="Asks the Magic Conch (8ball) a question",
-        usage="[question]",
-    )
-    async def ask_question(self, ctx, *, question: commands.clean_content() = None):
-        """Method for how the conch command works for the bot."""
-        if question == None:
+    async def conch_command(self, ctx, question: str = "") -> None:
+        """Method for the core logic of the conch command
+
+        Args:
+            ctx (commands.Context): The context in which the command was run it
+            question (str, optional): The question asked. Defaults to "".
+        """
+        if question == "":
             await ctx.send_deny_embed("You need to add a question")
             return
         formatted_question = self.format_question(question)
@@ -78,3 +76,14 @@ class MagicConch(base.BaseCog):
             url=self.PIC_URL,
         )
         await ctx.send(embed=embed)
+
+    @commands.command(
+        name="conch",
+        aliases=["8ball", "8b"],
+        brief="Asks the Magic Conch",
+        description="Asks the Magic Conch (8ball) a question",
+        usage="[question]",
+    )
+    async def ask_question(self, ctx: commands.Context, *, question: str = ""):
+        """Method for how the conch command works for the bot."""
+        await self.conch_command(ctx, question)

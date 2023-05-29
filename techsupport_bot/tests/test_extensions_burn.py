@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock
 
 import mock
 import pytest
+from base import auxiliary
 
 from . import config_for_tests
 
@@ -44,22 +45,20 @@ class Test_HandleBurn:
 
         message_history = [discord_env.message_person1_noprefix_1]
         discord_env.channel.message_history = message_history
-        discord_env.message_person1_noprefix_1.add_reaction = AsyncMock()
         discord_env.context.send = AsyncMock()
+
+        auxiliary.add_list_of_reactions = AsyncMock()
 
         await discord_env.burn.handle_burn(
             discord_env.context,
             discord_env.person1,
             discord_env.message_person1_noprefix_1,
         )
-        expected_calls = [
-            mock.call("🔥"),
-            mock.call("🚒"),
-            mock.call("👨‍🚒"),
-        ]
-        discord_env.message_person1_noprefix_1.add_reaction.assert_has_calls(
-            expected_calls, any_order=True
+
+        auxiliary.add_list_of_reactions.assert_called_once_with(
+            message=discord_env.message_person1_noprefix_1, reactions=["🔥", "🚒", "👨‍🚒"]
         )
+
         discord_env.context.send.assert_called_once()
 
     @pytest.mark.asyncio
