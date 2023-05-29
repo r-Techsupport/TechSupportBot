@@ -1,6 +1,6 @@
 """
 This is a file to test the base/auxiliary.py file
-This contains 13 tests
+This contains 15 tests
 """
 
 
