@@ -204,7 +204,7 @@ class Protector(base.MatchCog):
         await self.response(config, ctx, message.content, None)
 
     def search_by_text_regex(self, config, content):
-        """Function to search given input by all 
+        """Function to search given input by all
         text and regex rules from the config"""
         triggered_config = None
         for (
