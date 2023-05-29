@@ -82,9 +82,15 @@ async def setup(bot):
         key="linx_url",
         datatype="str",
         title="Linx API URL",
-        description="The URL to an optional Linx (github.com/andreimarcu/linx-server) \
-            API for pastebinning factoid-all responses",
+        description="The URL to an optional Linx API for pastebinning factoid-all responses",
         default=None,
+    )
+    config.add(
+        key="prefix",
+        datatype="str",
+        title="Factoid prefix",
+        description="Prefix for calling factoids",
+        default="?",
     )
 
     await bot.add_cog(
@@ -99,10 +105,11 @@ async def setup(bot):
 
 async def has_manage_factoids_role(ctx):
     """
-    see if the user that queried has the perms to manage roles
+    Checks if the user that queried has the perms to manage roles
     """
     config = await ctx.bot.get_context_config(ctx)
     factoid_roles = []
+    # Gets permitted roles
     for name in config.extensions.factoids.manage_roles.value:
         factoid_role = discord.utils.get(ctx.guild.roles, name=name)
         if not factoid_role:
@@ -110,7 +117,9 @@ async def has_manage_factoids_role(ctx):
         factoid_roles.append(factoid_role)
 
     if not factoid_roles:
-        raise commands.CommandError("no factoid management roles found")
+        raise commands.CommandError(
+            "No factoid management roles found in the config file"
+        )
     # Checking against the user to see if they have the roles specified in the config
     if not any(
         factoid_role in getattr(ctx.author, "roles", [])
@@ -123,7 +132,7 @@ async def has_manage_factoids_role(ctx):
 
 async def no_mentions(ctx):
     """
-    ensure the remembered factoid does not contain any mass pings
+    Makes sure there are no mass pings present
     """
     if (
         ctx.message.mention_everyone
@@ -139,7 +148,7 @@ async def no_mentions(ctx):
 
 
 class LoopEmbed(discord.Embed):
-    """define the class to loop the embed."""
+    """Class for looping the embed"""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -148,13 +157,13 @@ class LoopEmbed(discord.Embed):
 
 class FactoidManager(base.MatchCog):
     """
-    delete, remember, fetch, and listen for factoid calls
+    Delete, remember, fetch, and listen for factoid calls
     """
 
     LOOP_UPDATE_MINUTES = 10
 
     async def preconfig(self):
-        """define the preconfig of the factoid itself"""
+        """Preconfig for factoid jobs"""
         self.factoid_cache = expiringdict.ExpiringDict(
             max_len=100, max_age_seconds=1200
         )
@@ -165,6 +174,7 @@ class FactoidManager(base.MatchCog):
 
     async def get_all_factoids(self, guild=None, hide=False):
         """Method to get all the factoids from a command."""
+        # Gets list of factoids for current guild
         if guild and not hide:
             factoids = await self.models.Factoid.query.where(
                 self.models.Factoid.guild == str(guild.id)
@@ -191,7 +201,7 @@ class FactoidManager(base.MatchCog):
 
     async def get_factoid_from_query(self, query, guild):
         """
-        search db for factoid, including flag (EG: ?help)
+        Search db for factoid, including flag (EG: ?help)
         """
         cache_key = self.get_cache_key(query, guild)
         factoid = self.factoid_cache.get(cache_key)
@@ -217,18 +227,19 @@ class FactoidManager(base.MatchCog):
         """Method to add a factoid."""
         trigger = kwargs.get("trigger")
 
-        # first check if key already exists
+        # First check if key already exists
         factoid = await self.get_factoid_from_query(trigger, ctx.guild)
         if factoid:
-            # delete old one
+            # Delete old one
             should_delete = await ctx.confirm(
                 "This factoid already exists. Should I overwrite it?"
             )
             if not should_delete:
+                await ctx.send_deny_embed(f"The factoid *{trigger}* was not removed")
                 return
             await factoid.delete()
 
-        # finally, add new entry
+        # Finally, add new entry
         factoid = self.models.Factoid(
             text=trigger,
             guild=kwargs.get("guild"),
@@ -239,7 +250,7 @@ class FactoidManager(base.MatchCog):
 
         try:
             del self.factoid_cache[self.get_cache_key(trigger, ctx.guild)]
-            # if it can't find where it is, then don't continue
+            # If it can't find where it is, then don't continue
         except KeyError:
             pass
 
@@ -249,20 +260,27 @@ class FactoidManager(base.MatchCog):
         """Method to delete a factoid."""
         factoid = await self.get_factoid_from_query(trigger, ctx.guild)
         if not factoid:
-            await ctx.send_deny_embed("I couldn't find that factoid")
+            await ctx.send_deny_embed(f"I couldn't find the factoid *{trigger}*")
             return
 
         should_delete = await ctx.confirm(
             "This will remove the factoid forever. Are you sure?"
         )
         if not should_delete:
+            await ctx.send_deny_embed(f"Factoid: *{trigger}* was not deleted")
             return
 
         await factoid.delete()
+        try:
+            del self.factoid_cache[self.get_cache_key(trigger, ctx.guild)]
+            # If it can't find where it is, then don't continue
+        except KeyError:
+            pass
+        await ctx.send_confirm_embed(f"Successfully deleted factoid *{trigger}*")
 
-    async def match(self, _, __, content):
+    async def match(self, config, __, content):
         """Method to match the factoid with the correct start."""
-        return content.startswith("?")
+        return content.startswith(config.extensions.factoids.prefix.value)
 
     async def response(self, config, ctx, content, _):
         """Method to give a response once a factoid is called (or attempted)."""
@@ -296,7 +314,7 @@ class FactoidManager(base.MatchCog):
                 f"Sending factoid: {query} (triggered by {ctx.author} in #{ctx.channel.name})",
                 send=True,
             )
-            # if something breaks, also log it
+            # If something breaks, also log it
         except Exception as e:
             await self.bot.guild_log(
                 ctx.guild,
@@ -305,7 +323,7 @@ class FactoidManager(base.MatchCog):
                 "Could not send factoid",
                 exception=e,
             )
-            # finally, send the message
+            # Sends the raw factoid instead of the embed
             message = await ctx.send(factoid.message)
 
         self.dispatch(ctx.author, message, factoid)
@@ -321,9 +339,9 @@ class FactoidManager(base.MatchCog):
             in config.extensions.factoids.response_listen_channels.value
         ):
             return
-        # how many users are found to reference in the response
+        # How many users are found to reference in the response
         found = 0
-        # make sure the users are not a bot
+        # Makes sure the users are not bots
         users = {}
         for user in ctx.message.mentions:
             if user.bot:
@@ -331,7 +349,7 @@ class FactoidManager(base.MatchCog):
             if user.id == ctx.author.id:
                 continue
             users[user] = None
-        # if the message has a ping, and the ping is *not* the author,
+        # If the message has a ping, and the ping is *not* the author,
         # add 1 to the found count and add the user to the list of users referenced
         if (
             ctx.message.reference
@@ -342,12 +360,13 @@ class FactoidManager(base.MatchCog):
                 ctx.message.reference.cached_message.author
             ] = ctx.message.reference.cached_message
             found += 1
-        # looking for up to 100 users to mention
+        # Looks for up to 100 users to mention
         async for message in ctx.channel.history(limit=100):
-            # if it thinks it found a user but *not* in the users dict, don't even continue looking
+            # If it thinks it found a user but they're *not* in the users dict,
+            # don't even continue looking
             if found >= len(users):
                 break
-            # if the author is already in the list of users, then don't add them
+            # If the author is already in the list of users, then don't add them
             if not message.author in users:
                 continue
 
@@ -393,7 +412,7 @@ class FactoidManager(base.MatchCog):
         for job in jobs:
             asyncio.create_task(self.cronjob(job))
 
-    async def cronjob(self, job):
+    async def cronjob(self, job, ctx=""):
         """Run a cron job for a factoid."""
         runtime_id = uuid.uuid4()
         self.cronjob_cache[runtime_id] = job
@@ -406,19 +425,35 @@ class FactoidManager(base.MatchCog):
                     self.models.FactoidCron.job_id == job_id
                 ).gino.first()
                 if not from_db:
-                    # this factoid job has been deleted from the DB
-                    # TODO: log this event
+                    # This factoid job has been deleted from the DB
+                    await self.bot.logger.warnning(
+                        f"Cron job {job} has failed - factoid has been deleted from the DB"
+                    )
+                    if ctx:
+                        await self.bot.guild_log(
+                            ctx.guild,
+                            "logging_channel",
+                            "error",
+                            f"Cron job {job} has failed - factoid has been deleted from the DB",
+                        )
                     return
                 job = from_db
                 self.cronjob_cache[runtime_id] = job
 
-            # TODO: pass exception to guild log interface
             try:
                 await aiocron.crontab(job.cron).next()
             except Exception as e:
                 await self.bot.logger.error(
                     "Could not await cron completion", exception=e
                 )
+                if ctx:
+                    await self.bot.guild_log(
+                        ctx.guild,
+                        "logging_channel",
+                        "error",
+                        "Could not await cron job completion",
+                        exception=e,
+                    )
                 await asyncio.sleep(300)
 
             factoid = await self.models.Factoid.query.where(
@@ -430,7 +465,7 @@ class FactoidManager(base.MatchCog):
                 )
                 continue
 
-            # get_embed accepts job as a factoid object
+            # Get_embed accepts job as a factoid object
             embed = self.get_embed_from_factoid(factoid)
             content = factoid.message if not embed else None
 
@@ -463,7 +498,7 @@ class FactoidManager(base.MatchCog):
     # updating the description for this command
     @factoid.command(
         brief="Creates a factoid",
-        description="Creates a custom factoid with a specified name",
+        description="Creates a factoid with a specified name",
         usage="[factoid-name] [factoid-output] |optional-embed-json-upload|",
     )
     async def remember(self, ctx, factoid_name: str, *, message: str):
@@ -488,7 +523,6 @@ class FactoidManager(base.MatchCog):
     async def forget(self, ctx, factoid_name: str):
         """Method to forget a factoid."""
         await self.delete_factoid(ctx, factoid_name)
-        await ctx.send_confirm_embed(f"Successfully deleted factoid: *{factoid_name}*")
 
     @util.with_typing
     @commands.check(has_manage_factoids_role)
@@ -511,6 +545,7 @@ class FactoidManager(base.MatchCog):
             await ctx.send_deny_embed("There is no embed config for that factoid")
             return
 
+        # Formats the json to have indents, then sends it to the channel it was called from
         formatted = json.dumps(json.loads(factoid.embed_config), indent=4)
         json_file = discord.File(
             io.StringIO(formatted),
@@ -535,7 +570,7 @@ class FactoidManager(base.MatchCog):
         channel: discord.TextChannel,
     ):
         """Method to define how the loop of a factoid will work."""
-        # check if loop already exists
+        # Check if loop already exists
         job = (
             await self.models.FactoidCron.join(self.models.Factoid)
             .select()
@@ -552,13 +587,13 @@ class FactoidManager(base.MatchCog):
             await ctx.send_deny_embed("That factoid does not exist")
             return
 
-        # TODO: validate cron before passing to DB
+        # TODO: Get regex to check cron syntax
         job = self.models.FactoidCron(
             factoid=factoid.factoid_id, channel=str(channel.id), cron=cron_config
         )
         await job.create()
 
-        asyncio.create_task(self.cronjob(job))
+        asyncio.create_task(self.cronjob(job, ctx))
 
         await ctx.send_confirm_embed("Factoid loop created")
 
@@ -599,6 +634,7 @@ class FactoidManager(base.MatchCog):
     )
     async def job(self, ctx, factoid_name: str, channel: discord.TextChannel):
         """Method to check if a looping job already exists."""
+        # List jobs > Select jobs that have a matching text and channel
         job = (
             await self.models.FactoidCron.join(self.models.Factoid)
             .select()
@@ -620,7 +656,7 @@ class FactoidManager(base.MatchCog):
         )
 
         embed.add_field(name="Channel", value=f"#{channel.name}")
-        embed.add_field(name="Cron config", value=job.cron)
+        embed.add_field(name="Cron config", value=f"`{job.cron}`")
 
         await ctx.send(embed=embed)
 
@@ -632,6 +668,7 @@ class FactoidManager(base.MatchCog):
     )
     async def jobs(self, ctx):
         """Method to pull up the loop jobs."""
+        # List jobs > Select jobs with matching guild id
         jobs = (
             await self.models.FactoidCron.join(self.models.Factoid)
             .select()
@@ -650,7 +687,9 @@ class FactoidManager(base.MatchCog):
             if not channel:
                 continue
             embed.add_field(
-                name=f"{job.text} - #{channel.name}", value=job.cron, inline=False
+                name=f"{job.text} - #{channel.name}",
+                value=f"`{job.cron}`",
+                inline=False,
             )
 
         await ctx.send(embed=embed)
@@ -737,7 +776,7 @@ class FactoidManager(base.MatchCog):
         await ctx.send(file=yaml_file)
 
     @util.with_typing
-    @commands.has_permissions(kick_members=True)
+    @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
         brief="Hides a factoid",
@@ -764,7 +803,7 @@ class FactoidManager(base.MatchCog):
         await ctx.send_confirm_embed("That factoid is now hidden")
 
     @util.with_typing
-    @commands.has_permissions(kick_members=True)
+    @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
         brief="Unhides a factoid",

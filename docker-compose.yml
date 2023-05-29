@@ -14,7 +14,7 @@ services:
             - "127.0.0.1:8765:8765"
             - "127.0.0.1:20000:20000"
         volumes:
-            - ./config.yml:/var/techsupport_bot/config.yml
+            - ./config.yml:/var/TechSupportBot/techsupport_bot/config.yml
         networks:
             - all
         depends_on:
