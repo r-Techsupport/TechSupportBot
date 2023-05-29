@@ -355,7 +355,8 @@ class Protector(base.MatchCog):
                         ctx,
                         user,
                         f"Over max warning count {new_count}/\
-                            of {config.extensions.protect.max_warnings.value} (final warning: {reason})",
+                            of {config.extensions.protect.max_warnings.value}\
+                            (final warning: {reason})",
                         bypass=True,
                     )
                     await self.clear_warnings(user, ctx.guild)
