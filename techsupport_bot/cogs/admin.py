@@ -583,9 +583,9 @@ class AdminControl(base.BaseCog):
 
             embed.add_field(
                 name="Version Info",
-                value=f"Currently working on {repo_owner}/{repo_name}/{branch_name}\n\
-                    Code from {commit_hash} - {commit_message}\n\
-                    Changes made: {has_differences}",
+                value=f"Upstream: `{repo_owner}/{repo_name}/{branch_name}`\n\
+                    Commit: `{commit_hash} - {commit_message}`\n\
+                    Local changes made: `{has_differences}`",
             )
         except Exception as exc:
             embed.add_field(
