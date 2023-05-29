@@ -800,7 +800,7 @@ class Protector(base.MatchCog):
         name="amount",
         aliases=["x"],
         brief="Purges messages by amount",
-        description="Purges the current channel's messages based on amoun",
+        description="Purges the current channel's messages based on amount",
         usage="[amount]",
     )
     async def purge_amount(self, ctx, amount: int = 1):
