@@ -8,6 +8,7 @@ import base
 import discord
 import util
 from discord.ext import commands
+from ui import PaginateView
 
 
 async def setup(bot):
@@ -199,7 +200,7 @@ class Grabber(base.BaseCog):
             else:
                 field_counter += 1
 
-        ctx.task_paginate(pages=embeds)
+        await PaginateView().send(ctx, embeds)
 
     @util.with_typing
     @commands.guild_only()

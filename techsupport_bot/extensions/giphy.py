@@ -2,6 +2,7 @@
 import base
 import util
 from discord.ext import commands
+from ui import PaginateView
 
 
 async def setup(bot):
@@ -51,4 +52,4 @@ class Giphy(base.BaseCog):
             url = self.parse_url(url)
             embeds.append(url)
 
-        ctx.task_paginate(pages=embeds)
+        await PaginateView().send(ctx, embeds)

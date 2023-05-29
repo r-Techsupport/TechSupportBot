@@ -3,6 +3,7 @@ import discord
 import expiringdict
 import util
 from discord.ext import commands
+from ui import PaginateView
 
 
 async def setup(bot):
@@ -125,4 +126,4 @@ class ChatGPT(base.BaseCog):
             embed.add_field(name="Response", value=resp[:255])
             embeds.append(embed)
 
-        ctx.task_paginate(pages=embeds)
+        await PaginateView().send(ctx, embeds)

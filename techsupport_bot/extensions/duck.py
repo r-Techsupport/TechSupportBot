@@ -11,6 +11,7 @@ import embeds as stock_embeds
 import util
 from discord import Color as embed_colors
 from discord.ext import commands
+from ui import PaginateView
 
 
 async def setup(bot):
@@ -413,7 +414,7 @@ class DuckHunt(base.LoopCog):
             else:
                 field_counter += 1
 
-        ctx.task_paginate(pages=embeds)
+        await PaginateView().send(ctx, embeds)
 
     @util.with_typing
     @commands.guild_only()
@@ -495,7 +496,7 @@ class DuckHunt(base.LoopCog):
             else:
                 field_counter += 1
 
-        ctx.task_paginate(pages=embeds)
+        await PaginateView().send(ctx, embeds)
 
     def get_user_text(self, duck_user):
         """Method to get the user for the top commands"""
