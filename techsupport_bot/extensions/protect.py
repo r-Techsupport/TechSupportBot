@@ -8,7 +8,6 @@ import base
 import discord
 import expiringdict
 import munch
-import util
 from discord.ext import commands
 
 
@@ -141,7 +140,10 @@ class ProtectEmbed(discord.Embed):
 class Protector(base.MatchCog):
     """Class for the protector command."""
 
-    ALERT_ICON_URL = "https://cdn.icon-icons.com/icons2/2063/PNG/512/alert_danger_warning_notification_icon_124692.png"
+    ALERT_ICON_URL = (
+        "https://cdn.icon-icons.com/icons2/2063/PNG/512/"
+        + "alert_danger_warning_notification_icon_124692.png"
+    )
     CLIPBOARD_ICON_URL = (
         "https://icon-icons.com/icons2/203/PNG/128/diagram-30_24487.png"
     )
@@ -201,14 +203,9 @@ class Protector(base.MatchCog):
 
         await self.response(config, ctx, message.content, None)
 
-    async def response(self, config, ctx, content, _):
-        """Method to define the response for the protect extension."""
-        # check mass mentions first - return after handling
-        if len(ctx.message.mentions) > config.extensions.protect.max_mentions.value:
-            await self.handle_mass_mention_alert(config, ctx, content)
-            return
-
-        # search the message against keyword strings
+    def search_by_text_regex(self, config, content):
+        """Function to search given input by all 
+        text and regex rules from the config"""
         triggered_config = None
         for (
             keyword,
@@ -228,7 +225,7 @@ class Protector(base.MatchCog):
                     filter_config["trigger"] = keyword
                     triggered_config = filter_config
                     if triggered_config.get("delete"):
-                        break
+                        return triggered_config
             else:
                 if filter_config.get("sensitive"):
                     search_keyword = search_keyword.lower()
@@ -237,7 +234,18 @@ class Protector(base.MatchCog):
                     filter_config["trigger"] = keyword
                     triggered_config = filter_config
                     if triggered_config.get("delete"):
-                        break
+                        return triggered_config
+        return triggered_config
+
+    async def response(self, config, ctx, content, _):
+        """Method to define the response for the protect extension."""
+        # check mass mentions first - return after handling
+        if len(ctx.message.mentions) > config.extensions.protect.max_mentions.value:
+            await self.handle_mass_mention_alert(config, ctx, content)
+            return
+
+        # search the message against keyword strings
+        triggered_config = self.search_by_text_regex(config, content)
 
         for attachment in ctx.message.attachments:
             if (
@@ -343,25 +351,33 @@ class Protector(base.MatchCog):
         config = await self.bot.get_context_config(ctx)
 
         if new_count >= config.extensions.protect.max_warnings.value:
-            if not bypass:
-                should_ban = await ctx.confirm(
+            # This is a little complex, but this is a quick way of doing this
+            # If "bypass" is ever set to true, that means we don't want to ask
+            # In this case, we should assume we want to ban
+            # If bypass is false, we call ctx.confirm, which returns true/false
+            # The response from this indicates if we want to ban or not
+            should_ban = (
+                bypass
+                if bypass
+                else await ctx.confirm(
                     f"This user has exceeded the max warnings \
                         of {config.extensions.protect.max_warnings.value}. \
                         Would you like to ban them instead?",
                     delete_after=True,
                 )
-                if should_ban:
-                    await self.handle_ban(
-                        ctx,
-                        user,
-                        f"Over max warning count {new_count}/\
-                            of {config.extensions.protect.max_warnings.value}\
-                            (final warning: {reason})",
-                        bypass=True,
-                    )
-                    await self.clear_warnings(user, ctx.guild)
-                    return
-            await ctx.send_confirm_embed("User has not been banned")
+            )
+
+            if should_ban:
+                await self.handle_ban(
+                    ctx,
+                    user,
+                    f"Over max warning count {new_count} out "
+                    + f"of {config.extensions.protect.max_warnings.value}"
+                    + f" (final warning: {reason})",
+                    bypass=True,
+                )
+                await self.clear_warnings(user, ctx.guild)
+                return
 
         await self.models.Warning(
             user_id=str(user.id), guild_id=str(ctx.guild.id), reason=reason
@@ -778,7 +794,7 @@ class Protector(base.MatchCog):
     )
     async def purge(self, ctx):
         """Method to purge messages in discord."""
-        pass
+        ...
 
     @purge.command(
         name="amount",
