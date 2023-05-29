@@ -564,6 +564,7 @@ class FactoidManager(base.MatchCog):
 
         if not factoid:
             await ctx.send_deny_embed("I couldn't find that factoid")
+            return
 
         if factoid.alias not in ["", None]:
             factoid = await self.get_factoid_from_query(factoid.alias, ctx.guild)
