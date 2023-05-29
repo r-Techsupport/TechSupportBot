@@ -55,12 +55,14 @@ The Makefile offers shortcut commands for development.
 * `check-format` checks the formatting without changing files. Required black and isort be installed on your computer.
 * `format` checks formatting and changes files. Required black and isort be installed on your computer.
 * `lint` runs pylint.
-* `test` runs unit tests. (Currently none)
+* `test` runs unit tests.
 * `build` builds the Docker image.
+* `rebuild` will build the latest version of the bot, and (if needed) recreate the docker container
 * `start` starts the entire system, databases and all. This can also be used as a fast update, as it won't force a full rebuild.
 * `update` stops all the containers, builds a fresh build of the bot, and starts all containers.
 * `clean` removes all unused docker assets, including volumes. This may be destructive.
 * `down` brings down the bot container.
+* `reset` brings down all the containers, cleans all docker objects, builds a new instance of the bot, and starts all the containers.
 * `restart` restarts the bot and all databases.
 * `logs` shows the bot logs.
 * `establish_config` creates a config.yml file if it doesn't exist.
