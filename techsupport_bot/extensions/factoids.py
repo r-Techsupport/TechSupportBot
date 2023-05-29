@@ -251,7 +251,7 @@ class FactoidManager(base.MatchCog):
                 trigger = factoid.text
 
             # Makes sure dealias doesn't confirm twice
-            if kwargs.get("confirm_bypass"):
+            if not kwargs.get("confirm_bypass"):
                 # Delete old one
                 should_delete = await ctx.confirm(
                     f"The factoid `{trigger}` already exists. Should I overwrite it?"
@@ -1145,12 +1145,13 @@ class FactoidManager(base.MatchCog):
 
         # Firstly check if the new entry already exists
         alias_entry = await self.get_factoid_from_query(alias_name, ctx.guild)
-        if alias_entry and alias_entry.alias == factoid.text:
-            await ctx.send_deny_embed(
-                f"`{factoid.text}` already has `{alias_entry.text}` set "
-                + "as an alias!"
-            )
-            return
+        if alias_entry:
+            if alias_entry.alias == factoid.text:
+                await ctx.send_deny_embed(
+                    f"`{factoid.text}` already has `{alias_entry.text}` set "
+                    + "as an alias!"
+                )
+                return
 
             # Prompt to delete the old one
             should_delete = await ctx.confirm(
