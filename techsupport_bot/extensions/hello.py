@@ -18,6 +18,11 @@ class Greeter(base.BaseCog):
     """Class for the greeter command."""
 
     async def hello_command(self, ctx) -> None:
+        """A simple function to add HEY reactions to the command invocation
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
         await auxiliary.add_list_of_reactions(
             message=ctx.message, reactions=["🇭", "🇪", "🇾"]
         )
