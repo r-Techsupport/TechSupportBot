@@ -57,86 +57,80 @@ class Emojis(base.BaseCog):
         return len(set(string.lower())) == len(string.lower())
 
     @classmethod
-    def generate_emoji_string(cls, string, as_list=False):
+    def generate_emoji_string(cls, string, only_emoji=False):
         """This takes a string and returns a string or list of emojis
 
         Args:
             string (str): The raw string to convert to emoji
-            as_list (bool, optional): Whether to return a string or list. If true, this returns a list of
-                only the unicode without spaces. Defaults to False.
+            only_emoji (bool, optional): Whether to allow non emoji characters in the list
+              Defaults to False.
 
         Returns:
-            str/List: The string or list of emojis
+            List: The string or list of emojis
         """
         emoji_list = []
-        emoji_string = ""
 
         for char in string:
             if char == " ":
-                emoji_string += " "
                 continue
 
             emoji_ = cls.emoji_from_char(char)
             if emoji_:
                 emoji_list.append(emoji_)
-                emoji_string += emoji_ + " "
-            else:
-                emoji_string += char + " "
+            elif not only_emoji:
+                emoji_list.append(char)
 
-        return emoji_list if as_list else emoji_string
+        return emoji_list
 
-    async def emoji_message_command(self, ctx, message: str) -> None:
-        """This handles the core of the message command
-
-        Args:
-            ctx (commands.Context): The context in which the message command was run
-            message (str): The raw message from discord
-        """
-        emoji_message = self.generate_emoji_string(string=message, as_list=False)
-        if not emoji_message:
-            await ctx.send_deny_embed(
-                "I can't get any emoji letters from your message!"
-            )
-            return
-
-        await ctx.send_confirm_embed(emoji_message)
-
-    async def emoji_reaction_command(
-        self, ctx, message: str, react_user: discord.Member
-    ) -> None:
-        """This handles the core of the reaction command
+    async def emoji_commands(
+        self, ctx, message: str, add_reactions: bool, react_user: discord.Member = None
+    ):
+        """A method to handle the core of both emoji message and reaction
 
         Args:
-            ctx (command.Context): The context in which the reaction command was run
-            message (str): The raw message to turn into reactions
-            react_user (discord.Member): The member to find the most recent message ot react to
+            ctx (commands.Context): The context in which the command was run in
+            message (str): The raw message to turn into emojis
+            add_reactions (bool): Whether or not to add reactions or send a message
+            react_user (discord.Member, optional): The member to react to, if applicable. Defaults to None.
         """
         prefix = await self.bot.get_prefix(ctx.message)
 
-        react_message = await auxiliary.search_channel_for_message(
-            channel=ctx.channel, prefix=prefix, member_to_match=react_user
+        # Basic check to ensure the message isn't nothing
+        # Add reactions means everything must be an emoji.
+        # So if add reactions is true, only_emoji must be true
+        emoji_message = self.generate_emoji_string(
+            string=message, only_emoji=add_reactions
         )
-        if not react_message:
-            await ctx.send_deny_embed("No valid messages found to react to!")
-            return
 
-        if not self.check_if_all_unique(message):
-            await ctx.send_deny_embed(
-                "Invalid message! Make sure there are no repeat characters!"
-            )
-            return
-
-        emoji_list = self.generate_emoji_string(string=message, as_list=True)
-
-        if len(emoji_list) == 0:
+        # Ensure there is something to send
+        if len(emoji_message) == 0:
             await ctx.send_deny_embed(
                 "I can't get any emoji letters from your message!"
             )
             return
 
-        await auxiliary.add_list_of_reactions(
-            message=react_message, reactions=emoji_list
-        )
+        # If a user was passed, get the message to react to
+        react_message = None
+        if react_user:
+            react_message = await auxiliary.search_channel_for_message(
+                channel=ctx.channel, prefix=prefix, member_to_match=react_user
+            )
+            if not react_message:
+                await ctx.send_deny_embed("No valid messages found to react to!")
+                return
+
+        # Finally, send the emojis as an embed or a reaction
+        if add_reactions:
+            if not self.check_if_all_unique(message):
+                await ctx.send_deny_embed(
+                    "Invalid message! Make sure there are no repeat characters!"
+                )
+                return
+            await auxiliary.add_list_of_reactions(
+                message=react_message, reactions=emoji_message
+            )
+        else:
+            await ctx.send_confirm_embed(" ".join(emoji_message))
 
     @commands.group(
         brief="Executes an emoji command",
@@ -156,7 +150,7 @@ class Emojis(base.BaseCog):
     async def message(self, ctx, *, message: str):
         """This is a command and should be run via discord
         This is for generating a message of emojis"""
-        await self.emoji_message_command(ctx, message)
+        await self.emoji_commands(ctx, message, False)
 
     @commands.has_permissions(add_reactions=True)
     @commands.guild_only()
@@ -169,4 +163,4 @@ class Emojis(base.BaseCog):
         """This is a command and should be run via discord
         This is for reacting to a message with emojis
         The message must be unique in this command"""
-        await self.emoji_reaction_command(ctx, message, react_user)
+        await self.emoji_commands(ctx, message, True, react_user)
