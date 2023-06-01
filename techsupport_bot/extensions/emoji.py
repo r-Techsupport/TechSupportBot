@@ -43,6 +43,7 @@ class Emojis(base.BaseCog):
             return emoji.emojize(f":{char}:", language="alias")
         if cls.KEY_MAP.get(char):
             return emoji.emojize(f":{cls.KEY_MAP[char]}:", language="alias")
+        return None
 
     def check_if_all_unique(self, string: str):
         """Checks, using the set function, if a string has duplicates or not
