@@ -19,6 +19,8 @@ class Test_Hello:
     @pytest.mark.asyncio
     @mock.patch("asyncio.create_task", return_value=None)
     async def test_hello_command(self, _):
+        """This is a test to ensure that the proper reactions are called,
+        and in the proper order"""
         discord_env = config_for_tests.FakeDiscordEnv()
         auxiliary.add_list_of_reactions = AsyncMock()
         discord_env.context.message = discord_env.message_person1_noprefix_1

@@ -91,7 +91,8 @@ class Emojis(base.BaseCog):
             ctx (commands.Context): The context in which the command was run in
             message (str): The raw message to turn into emojis
             add_reactions (bool): Whether or not to add reactions or send a message
-            react_user (discord.Member, optional): The member to react to, if applicable. Defaults to None.
+            react_user (discord.Member, optional): The member to react to, if applicable.
+                Defaults to None.
         """
         prefix = await self.bot.get_prefix(ctx.message)
 
@@ -144,7 +145,7 @@ class Emojis(base.BaseCog):
     @emoji.command(
         aliases=["msg"],
         brief="Generates an emoji message",
-        description="Creates a regional_indiciator_X emoji message",
+        description="Creates an emoji message",
         usage="[message]",
     )
     async def message(self, ctx, *, message: str):
@@ -156,7 +157,7 @@ class Emojis(base.BaseCog):
     @commands.guild_only()
     @emoji.command(
         brief="Reacts with emojis",
-        description="Creates a regional_indiciator_X emoji reaction for a user's most recent message",
+        description="Creates an emoji reaction for a user's most recent message",
         usage="[message] @user",
     )
     async def reaction(self, ctx, message: str, react_user: discord.Member):
