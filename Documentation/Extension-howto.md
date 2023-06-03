@@ -280,7 +280,9 @@ The arguments to supply:
 - `url` - The endpoint URL to send the request to
 - `data` (kwarg) - Data to send to the API
 - `headers` (kwarg) - Headers to send to the api
-
+    
+The response is returned as a dictionary.
+    
 An example from dumpdbg.py:
 ```py
 response = await self.bot.http_call(
