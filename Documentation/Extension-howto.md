@@ -1,7 +1,7 @@
-This file will show you how to create extensions, what every part of them does.
-
 All extensions should be placed into the extensions folder.
 Note: Docstrings will be excluded in this guide but should always be included when actually coding.
+
+This file will show you how to create extensions, what every part of them does.
 
 # Setup
 
@@ -126,7 +126,7 @@ When making command code, please make the actual decorated functions just refer 
 ## Making embeds
 
 To make embeds, use the `generate_basic_embed` from auxillary.py.
-The arguments:
+The arguments to supply:
 - `title` - The title of the embed
 - `description` - The description of the embed
 - `color` - The color of the embed
@@ -270,6 +270,25 @@ config = await self.bot.get_context_config(guild=ctx.guild)
 Afterwards you can access the values with 
 ```py
 config.extensions.<Ext-name>.<Value-name>.value
+```
+
+## Calling an API
+
+All API calls use the `http_call` method defined in data.py
+The arguments to supply:
+- `method` - The http call method (PUT/POST etc.)
+- `url` - The endpoint URL to send the request to
+- `data` (kwarg) - Data to send to the API
+- `headers` (kwarg) - Headers to send to the api
+
+An example from dumpdbg.py:
+```py
+response = await self.bot.http_call(
+    "post",
+    api_endpoint,
+    data=json_data,
+    headers={"Content-Type": "application/json"},
+)
 ```
 
 
