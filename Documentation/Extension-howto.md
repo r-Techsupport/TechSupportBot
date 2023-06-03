@@ -92,7 +92,7 @@ async def no_mentions(ctx):
 ## DEPRACATED: Embed class
 
 Some extensions have a class for its specific embed, this has been replaced because of its complexity and repetitiveness.
-It's included for the sake of completency, but new code should always use the `generate_basic_embed` from auxillary.py instead of this class.
+It's included for the sake of completency, but new code should always use the `generate_basic_embed` from auxiliary.py instead of this class.
 
 ```py
 class AbcEmbed(discord.Embed):
@@ -125,7 +125,7 @@ When making command code, please make the actual decorated functions just refer 
 
 ## Making embeds
 
-To make embeds, use the `generate_basic_embed` from auxillary.py.
+To make embeds, use the `generate_basic_embed` from auxiliary.py.
 The arguments to supply:
 - `title` - The title of the embed
 - `description` - The description of the embed
