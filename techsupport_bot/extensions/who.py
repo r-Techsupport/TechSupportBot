@@ -24,6 +24,16 @@ async def setup(bot):
         author_id = bot.db.Column(bot.db.String)
         body = bot.db.Column(bot.db.String)
 
+    class Warning(bot.db.Model):
+        """Class to set up warnings for the config file."""
+
+        __tablename__ = "warnings"
+        pk = bot.db.Column(bot.db.Integer, primary_key=True)
+        user_id = bot.db.Column(bot.db.String)
+        guild_id = bot.db.Column(bot.db.String)
+        reason = bot.db.Column(bot.db.String)
+        time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+
     config = bot.ExtensionConfig()
     config.add(
         key="note_role",
@@ -40,7 +50,7 @@ async def setup(bot):
         default=["Moderator"],
     )
 
-    await bot.add_cog(Who(bot=bot, models=[UserNote], extension_name="who"))
+    await bot.add_cog(Who(bot=bot, models=[UserNote, Warning], extension_name="who"))
     bot.add_extension_config("who", config)
 
 
@@ -70,6 +80,22 @@ class Who(base.BaseCog):
 
         role_string = ", ".join(role.name for role in user.roles[1:])
         embed.add_field(name="Roles", value=role_string or "No roles")
+
+        # Gets all warnings for an user and adds them to the embed (Mod only)
+        if ctx.permissions.kick_members:
+            warnings = (
+                await self.models.Warning.query.where(
+                    self.models.Warning.user_id == str(user.id)
+                )
+                .where(self.models.Warning.guild_id == str(ctx.guild.id))
+                .gino.all()
+            )
+            for warning in warnings:
+                embed.add_field(
+                    name=f"**Warning ({warning.time.date()})**",
+                    value=f"*{warning.reason}*",
+                    inline=False,
+                )
 
         user_notes = await self.get_notes(user, ctx.guild)
         total_notes = 0
