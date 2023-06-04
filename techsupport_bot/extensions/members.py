@@ -74,7 +74,7 @@ class Members(base.BaseCog):
     )
     async def members(self, ctx: commands.Context, *, role_name: str):
         """
-        Gets members that habe a role.
+        Gets members that have a role.
 
         Args:
             ctx (commands.Context): The context to send the message to
