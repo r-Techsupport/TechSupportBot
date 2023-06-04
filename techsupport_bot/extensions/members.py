@@ -4,12 +4,11 @@ This is inefficient, awful, stinky, memory consuming, but it is an issue and mig
 """
 import datetime
 import io
-import yaml
 
 import base
 import discord
 import util
-from base import auxiliary
+import yaml
 from discord.ext import commands
 
 
@@ -59,7 +58,8 @@ class Members(base.BaseCog):
         # Actually creates the yaml file
         yaml_file = discord.File(
             io.StringIO(yaml.dump(output_data)),
-            filename=f"members-with-{role_name}-in-{ctx.guild.id}-{datetime.datetime.utcnow()}.yaml",
+            filename=f"members-with-{role_name}-in"
+            +f"-{ctx.guild.id}-{datetime.datetime.utcnow()}.yaml",
         )
 
         await ctx.send(file=yaml_file)
