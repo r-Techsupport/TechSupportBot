@@ -20,7 +20,7 @@ async def setup(bot):
 class Members(base.BaseCog):
     """Class for the Member command on the discord bot."""
 
-    async def Get_members_with_role(
+    async def get_members_with_role(
         self, ctx: commands.Context, member_list: list, role_name: str
     ):
         """
@@ -80,4 +80,4 @@ class Members(base.BaseCog):
             ctx (commands.Context): The context to send the message to
             role_name (str): The role to list the users for
         """
-        await self.Get_members_with_role(ctx, ctx.guild.members, role_name)
+        await self.get_members_with_role(ctx, ctx.guild.members, role_name)
