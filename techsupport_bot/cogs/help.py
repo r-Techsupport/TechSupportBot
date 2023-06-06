@@ -4,7 +4,7 @@
 import base
 import discord
 from discord.ext import commands
-
+import ui
 
 class HelpEmbed(discord.Embed):
     """Base embed for admin commands."""
@@ -83,7 +83,7 @@ class Helper(base.BaseCog):
             await ctx.send(embed=embed)
         else:
             embeds = await self.generate_general_embeds(ctx)
-            await ctx.paginate(embeds)
+            await ui.PaginateView().send(ctx, embeds)
 
     def get_extension_names(self):
         """Gets a list of extension names loaded by bot."""
