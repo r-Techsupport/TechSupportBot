@@ -9,7 +9,9 @@ class MockContext:
 
     Currently implemented variables and methods:
     channel -> The MockChannel object for the current context
+    message -> The MockMessage in which the context was called with
     """
 
-    def __init__(self, channel=None):
+    def __init__(self, channel=None, message=None):
         self.channel = channel
+        self.message = message
