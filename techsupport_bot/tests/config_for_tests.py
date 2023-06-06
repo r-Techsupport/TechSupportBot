@@ -9,7 +9,7 @@ A FakeDiscordEnv for creating a discord environment 100% out of mock ojects
 
 import random
 
-from extensions import Burn, Corrector, MagicConch
+from extensions import Burn, Corrector, Emojis, Greeter, MagicConch
 from hypothesis.strategies import composite, integers, text
 
 from .helpers import MockBot, MockChannel, MockContext, MockMember, MockMessage
@@ -84,3 +84,5 @@ class FakeDiscordEnv:
         self.burn = Burn(self.bot)
         self.correct = Corrector(self.bot)
         self.conch = MagicConch(self.bot)
+        self.emoji = Emojis(self.bot)
+        self.hello = Greeter(self.bot)

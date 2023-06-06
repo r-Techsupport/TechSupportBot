@@ -5,3 +5,5 @@ This allows importing the extensions for tests
 from .burn import *
 from .conch import *
 from .correct import *
+from .emoji import *
+from .hello import *

@@ -5,7 +5,7 @@ verify_ssl = true
 
 [packages]
 aiocron = "==1.8"
-aio-pika = "==9.0.7"
+aio-pika = "==9.1.2"
 aiounittest = "==1.4.2"
 black = "==23.3.0"
 "discord.py" = "==2.2.3"
@@ -13,7 +13,7 @@ emoji = "==2.4.0"
 expiringdict = "==1.2.2"
 gino = "==1.0.1"
 gitpython = "==3.1.31"
-hypothesis = "==6.75.9"
+hypothesis = "==6.76.0"
 inflect = "==6.0.4"
 isort = "==5.12.0"
 mock = "==5.0.2"
