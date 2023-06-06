@@ -513,7 +513,7 @@ class DuckHunt(base.LoopCog):
     @commands.guild_only()
     @duck.command(
         brief="Releases a duck into the wild",
-        description="Returns a befriended duck to its natural habitat. Fly safe!",
+        description="Returns a befriended duck to its natural habitat",
     )
     async def release(self, ctx):
         """Method for releasing a duck"""
@@ -553,7 +553,7 @@ class DuckHunt(base.LoopCog):
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
         await duck_user.update(kill_count=duck_user.kill_count + 1).apply()
         await ctx.send_confirm_embed(
-            f"You monster! You have {duck_user.befriend_count} live"
+            f"You monster! You have {duck_user.befriend_count}"
             + f" ducks left and {duck_user.kill_count} kills to your name."
         )
 
@@ -567,9 +567,7 @@ class DuckHunt(base.LoopCog):
     async def donate(self, ctx, user: discord.Member):
         """Method for donating ducks"""
         if user.bot:
-            await ctx.send_deny_embed(
-                "If it looks like a duck, quacks like a duck, it's a duck!"
-            )
+            await ctx.send_deny_embed("The only ducks I accept are plated with gold!")
             return
         if user.id == ctx.author.id:
             await ctx.send_deny_embed("You can't donate a duck to yourself")
