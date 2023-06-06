@@ -1,5 +1,13 @@
 """
-Module to lint .json files
+Name: Linter
+Info: Validates .json file syntax
+Unit tests: No
+Config: No
+API: None
+Databases: None
+Models: None
+Subcommands: None
+Defines: check_syntax
 """
 import json
 
