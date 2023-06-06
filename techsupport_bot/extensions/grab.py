@@ -6,6 +6,7 @@ import random
 
 import base
 import discord
+import ui
 import util
 from discord.ext import commands
 
@@ -199,7 +200,7 @@ class Grabber(base.BaseCog):
             else:
                 field_counter += 1
 
-        ctx.task_paginate(pages=embeds)
+        await ui.PaginateView().send(ctx, embeds)
 
     @util.with_typing
     @commands.guild_only()
