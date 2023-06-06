@@ -6,7 +6,6 @@ import json
 import base
 import discord
 import util
-from base import auxiliary
 from discord.ext import commands
 
 
