@@ -617,6 +617,11 @@ class DuckHunt(base.LoopCog):
                 "The user has not participated in the duck hunt yet."
             )
             return
+        if not await ctx.confirm(
+            f"Are you sure you want to reset {user.mention}s duck stats?"
+        ):
+            await ctx.send_deny_embed(f"{user.mention}s duck stats were NOT reset.")
+            return
 
         await duck_user.delete()
         await ctx.send_confirm_embed(f"Succesfully reset {user.mention}s duck stats!")
