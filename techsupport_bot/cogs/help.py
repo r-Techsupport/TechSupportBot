@@ -3,8 +3,9 @@
 
 import base
 import discord
-from discord.ext import commands
 import ui
+from discord.ext import commands
+
 
 class HelpEmbed(discord.Embed):
     """Base embed for admin commands."""
