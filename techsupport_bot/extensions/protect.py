@@ -8,7 +8,6 @@ import base
 import discord
 import expiringdict
 import munch
-import util
 from discord.ext import commands
 
 
@@ -69,6 +68,13 @@ async def setup(bot):
         default={},
     )
     config.add(
+        key="banned_file_extensions",
+        datatype="dict",
+        title="List of banned file types",
+        description="A list of all file extensions to be blocked and have a auto warning issued",
+        default=[],
+    )
+    config.add(
         key="alert_channel",
         datatype="int",
         title="Alert channel ID",
@@ -110,6 +116,13 @@ async def setup(bot):
         description="The max amount of messages allowed to be purged in one command",
         default=50,
     )
+    config.add(
+        key="paste_footer_message",
+        datatype="str",
+        title="The linx embed footer",
+        description="The message used on the footer of the large message paste URL",
+        default="Note: Long messages are automatically pasted",
+    )
 
     await bot.add_cog(Protector(bot=bot, models=[Warning], extension_name="protect"))
     bot.add_extension_config("protect", config)
@@ -127,7 +140,10 @@ class ProtectEmbed(discord.Embed):
 class Protector(base.MatchCog):
     """Class for the protector command."""
 
-    ALERT_ICON_URL = "https://cdn.icon-icons.com/icons2/2063/PNG/512/alert_danger_warning_notification_icon_124692.png"
+    ALERT_ICON_URL = (
+        "https://cdn.icon-icons.com/icons2/2063/PNG/512/"
+        + "alert_danger_warning_notification_icon_124692.png"
+    )
     CLIPBOARD_ICON_URL = (
         "https://icon-icons.com/icons2/203/PNG/128/diagram-30_24487.png"
     )
@@ -187,14 +203,9 @@ class Protector(base.MatchCog):
 
         await self.response(config, ctx, message.content, None)
 
-    async def response(self, config, ctx, content, _):
-        """Method to define the response for the protect extension."""
-        # check mass mentions first - return after handling
-        if len(ctx.message.mentions) > config.extensions.protect.max_mentions.value:
-            await self.handle_mass_mention_alert(config, ctx, content)
-            return
-
-        # search the message against keyword strings
+    def search_by_text_regex(self, config, content):
+        """Function to search given input by all
+        text and regex rules from the config"""
         triggered_config = None
         for (
             keyword,
@@ -214,7 +225,7 @@ class Protector(base.MatchCog):
                     filter_config["trigger"] = keyword
                     triggered_config = filter_config
                     if triggered_config.get("delete"):
-                        break
+                        return triggered_config
             else:
                 if filter_config.get("sensitive"):
                     search_keyword = search_keyword.lower()
@@ -223,7 +234,26 @@ class Protector(base.MatchCog):
                     filter_config["trigger"] = keyword
                     triggered_config = filter_config
                     if triggered_config.get("delete"):
-                        break
+                        return triggered_config
+        return triggered_config
+
+    async def response(self, config, ctx, content, _):
+        """Method to define the response for the protect extension."""
+        # check mass mentions first - return after handling
+        if len(ctx.message.mentions) > config.extensions.protect.max_mentions.value:
+            await self.handle_mass_mention_alert(config, ctx, content)
+            return
+
+        # search the message against keyword strings
+        triggered_config = self.search_by_text_regex(config, content)
+
+        for attachment in ctx.message.attachments:
+            if (
+                attachment.filename.split(".")[-1]
+                in config.extensions.protect.banned_file_extensions.value
+            ):
+                await self.handle_file_extension_alert(config, ctx, attachment.filename)
+                return
 
         if triggered_config:
             await self.handle_string_alert(config, ctx, content, triggered_config)
@@ -268,13 +298,32 @@ class Protector(base.MatchCog):
         await self.handle_warn(ctx, ctx.author, "mass mention", bypass=True)
         await self.send_alert(config, ctx, f"Mass mentions from {ctx.author}")
 
+    async def handle_file_extension_alert(self, config, ctx, filename):
+        """Method for handling suspicious file extensions."""
+        await ctx.message.delete()
+        await self.handle_warn(
+            ctx, ctx.author, "Suspicious file extension", bypass=True
+        )
+        await self.send_alert(
+            config, ctx, f"Suspicious file uploaded by {ctx.author}: {filename}"
+        )
+
     async def handle_string_alert(self, config, ctx, content, filter_config):
         """Method to handle a string alert for the protect extension."""
-        if filter_config.warn:
-            await self.handle_warn(ctx, ctx.author, filter_config.message, bypass=True)
-
+        # If needed, delete the message
         if filter_config.delete:
             await ctx.message.delete()
+
+        # Send only 1 response based on warn, deletion, or neither
+        if filter_config.warn:
+            await self.handle_warn(ctx, ctx.author, filter_config.message, bypass=True)
+        elif filter_config.delete:
+            await self.send_default_delete_response(
+                config, ctx, content, filter_config.message
+            )
+        else:
+            embed = ProtectEmbed(description=filter_config.message)
+            await ctx.send(embed=embed)
 
         await self.send_alert(
             config,
@@ -285,14 +334,6 @@ class Protector(base.MatchCog):
         cache_key = self.get_cache_key(ctx.guild, ctx.author, filter_config.trigger)
         if self.string_alert_cache.get(cache_key):
             return
-
-        if filter_config.delete:
-            await self.send_default_delete_response(
-                config, ctx, content, filter_config.message
-            )
-        else:
-            embed = ProtectEmbed(description=filter_config.message)
-            await ctx.send(embed=embed)
 
         self.string_alert_cache[cache_key] = True
 
@@ -310,26 +351,33 @@ class Protector(base.MatchCog):
         config = await self.bot.get_context_config(ctx)
 
         if new_count >= config.extensions.protect.max_warnings.value:
-            if not bypass:
-                should_ban = await ctx.confirm(
+            # This is a little complex, but this is a quick way of doing this
+            # If "bypass" is ever set to true, that means we don't want to ask
+            # In this case, we should assume we want to ban
+            # If bypass is false, we call ctx.confirm, which returns true/false
+            # The response from this indicates if we want to ban or not
+            should_ban = (
+                bypass
+                if bypass
+                else await ctx.confirm(
                     f"This user has exceeded the max warnings \
-                        {config.extensions.protect.max_warnings.value}. \
+                        of {config.extensions.protect.max_warnings.value}. \
                         Would you like to ban them instead?",
                     delete_after=True,
                 )
-                if not should_ban:
-                    await ctx.send_deny_embed("No warnings have been set")
-                    return
-
-            await self.handle_ban(
-                ctx,
-                user,
-                f"Over max warning count {new_count}/\
-                    {config.extensions.protect.max_warnings.value} (final warning: {reason})",
-                bypass=True,
             )
-            await self.clear_warnings(user, ctx.guild)
-            return
+
+            if should_ban:
+                await self.handle_ban(
+                    ctx,
+                    user,
+                    f"Over max warning count {new_count} out "
+                    + f"of {config.extensions.protect.max_warnings.value}"
+                    + f" (final warning: {reason})",
+                    bypass=True,
+                )
+                await self.clear_warnings(user, ctx.guild)
+                return
 
         await self.models.Warning(
             user_id=str(user.id), guild_id=str(ctx.guild.id), reason=reason
@@ -341,7 +389,8 @@ class Protector(base.MatchCog):
 
     async def handle_unwarn(self, ctx, user, reason, bypass=False):
         """Method to handle an unwarn of a user."""
-        if not bypass:
+        # Always allow admins to unwarn other admins
+        if not bypass and not ctx.message.author.guild_permissions.administrator:
             can_execute = await self.can_execute(ctx, user)
             if not can_execute:
                 return
@@ -529,7 +578,7 @@ class Protector(base.MatchCog):
         embed.set_author(
             name=f"Paste by {ctx.author}", icon_url=ctx.author.display_avatar.url
         )
-        embed.set_footer(text="Note: long messages are automatically pasted")
+        embed.set_footer(text=config.extensions.protect.paste_footer_message.value)
         embed.color = discord.Color.blue()
 
         return embed
@@ -745,13 +794,13 @@ class Protector(base.MatchCog):
     )
     async def purge(self, ctx):
         """Method to purge messages in discord."""
-        pass
+        ...
 
     @purge.command(
         name="amount",
         aliases=["x"],
         brief="Purges messages by amount",
-        description="Purges the current channel's messages based on amoun",
+        description="Purges the current channel's messages based on amount",
         usage="[amount]",
     )
     async def purge_amount(self, ctx, amount: int = 1):

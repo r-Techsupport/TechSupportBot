@@ -1,6 +1,7 @@
 """Module for the urban dictionary extension for the discord bot."""
 import base
 import discord
+import ui
 import util
 from discord.ext import commands
 
@@ -81,4 +82,4 @@ class UrbanDictionary(base.BaseCog):
             else:
                 field_counter += 1
 
-        ctx.task_paginate(pages=embeds)
+        await ui.PaginateView().send(ctx, embeds)
