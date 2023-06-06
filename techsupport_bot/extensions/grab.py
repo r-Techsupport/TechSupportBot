@@ -200,7 +200,7 @@ class Grabber(base.BaseCog):
             else:
                 field_counter += 1
 
-        await ui.PaginateView().send(ctx, embeds)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
     @util.with_typing
     @commands.guild_only()

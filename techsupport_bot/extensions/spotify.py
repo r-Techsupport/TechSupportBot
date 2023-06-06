@@ -69,4 +69,4 @@ class Spotify(base.BaseCog):
             await ctx.send_deny_embed("I had trouble parsing the search results")
             return
 
-        await ui.PaginateView().send(ctx, links)
+        await ui.PaginateView().send(ctx.channel, ctx.author, links)

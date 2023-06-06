@@ -105,7 +105,7 @@ class Googler(base.BaseCog):
                 else:
                     field_counter += 1
 
-        await ui.PaginateView().send(ctx, embeds)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
     @util.with_typing
     @commands.guild_only()
@@ -139,7 +139,7 @@ class Googler(base.BaseCog):
                 return
             embeds.append(link)
 
-        await ui.PaginateView().send(ctx, embeds)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
     @util.with_typing
     @commands.cooldown(3, 60, commands.BucketType.channel)
@@ -175,4 +175,4 @@ class Googler(base.BaseCog):
             if link:
                 links.append(link)
 
-        await ui.PaginateView().send(ctx, links)
+        await ui.PaginateView().send(ctx.channel, ctx.author, links)

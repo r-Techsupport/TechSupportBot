@@ -52,4 +52,4 @@ class Giphy(base.BaseCog):
             url = self.parse_url(url)
             embeds.append(url)
 
-        await ui.PaginateView().send(ctx, embeds)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
