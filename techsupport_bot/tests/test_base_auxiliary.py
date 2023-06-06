@@ -68,7 +68,7 @@ class Test_SearchForMessage:
                 prefix=config_for_tests.PREFIX,
                 allow_bot=False,
             )
-            == None
+            is None
         )
 
     @pytest.mark.asyncio
@@ -92,7 +92,7 @@ class Test_SearchForMessage:
             await auxiliary.search_channel_for_message(
                 channel=discord_env.channel, allow_bot=False
             )
-            == None
+            is None
         )
 
     @pytest.mark.asyncio
@@ -185,7 +185,7 @@ class Test_SearchForMessage:
         if found_message is None:
             assert found_message is None
         else:
-            assert found_message.author.bot == False
+            assert found_message.author.bot is False
             assert "a" in found_message.content
             assert not found_message.content.startswith(config_for_tests.PREFIX)
 

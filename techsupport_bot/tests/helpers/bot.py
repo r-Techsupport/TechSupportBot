@@ -17,7 +17,7 @@ class MockBot:
     def __init__(self, id=None):
         self.id = id
 
-    def get_prefix(self, message=None):
+    async def get_prefix(self, message=None):
         """A mock function to get the prefix of the bot"""
         return "."
 
