@@ -1,6 +1,6 @@
 """
 Module for searching members by a role. 
-This is inefficient, awful, stinky, memory consuming, but it is an issue and might as well make it.
+This is inefficient, awful, stinky, memory consuming, consider before using it on large servers.
 """
 import datetime
 import io
@@ -34,31 +34,39 @@ class Members(base.BaseCog):
         # All roles are handled using a shorthand for loop because all
         # `.roles` attributes have lists of role objects, we want the names.
 
-        # Checks if role actually exists
-        if role_name not in [role.name for role in ctx.guild.roles]:
+        role = ""
+        # Gets the role by an id if the supplied name is an id
+        if role_name.isnumeric():
+            role = discord.utils.get(ctx.guild.roles, id=int(role_name))
+
+        # If it couldn't find it, tries to get it by the name instead
+        if not role:
+            role = discord.utils.get(ctx.guild.roles, name=role_name)
+
+        if not role:
             await ctx.send_deny_embed(f"I couldn't find the role `{role_name}`")
             return
 
         # Iterates through members, appends their info to a yaml file
-        output_data = []
+        yaml_output_data = []
         for member in member_list:
-            if role_name in [role.name for role in member.roles]:
+            if discord.utils.get(member.roles, name=role.name):
                 data = {
                     "id": member.id,
                     "roles": ", ".join([role.name for role in member.roles]),
                 }
-                output_data.append({member.name: data})
+                yaml_output_data.append({member.name: data})
 
-        if len(output_data) == 0:
+        if len(yaml_output_data) == 0:
             await ctx.send_deny_embed(
-                f"Noone in this server has the role `{role_name}`"
+                f"Noone in this server has the role `{role.name}`"
             )
             return
 
         # Actually creates the yaml file
         yaml_file = discord.File(
-            io.StringIO(yaml.dump(output_data)),
-            filename=f"members-with-{role_name}-in"
+            io.StringIO(yaml.dump(yaml_output_data)),
+            filename=f"members-with-{role.name}-in"
             + f"-{ctx.guild.id}-{datetime.datetime.utcnow()}.yaml",
         )
 
