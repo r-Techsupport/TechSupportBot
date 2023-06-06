@@ -108,6 +108,8 @@ class Test_BurnCommand:
 
     @pytest.mark.asyncio
     async def test_calls_search_channel(self):
+        """A simple test to ensure that burn_command calls search_channel_for_message
+        with the correct args"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
         auxiliary.search_channel_for_message = AsyncMock()
@@ -125,6 +127,8 @@ class Test_BurnCommand:
 
     @pytest.mark.asyncio
     async def test_calls_handle_burn(self):
+        """A simple test to ensure that burn_command calls handle_burn
+        with the correct args"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
         auxiliary.search_channel_for_message = AsyncMock(

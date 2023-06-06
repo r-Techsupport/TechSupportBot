@@ -73,7 +73,7 @@ class Test_HandleCorrect:
     """Tests to test the handle_correct function"""
 
     @pytest.mark.asyncio
-    async def test_handle_calls_search_for_message(self_):
+    async def test_handle_calls_search_for_message(self):
         """This ensures that the search_channel_for_message function is called,
         with the correct args"""
         # Step 1 - Setup env
@@ -96,7 +96,7 @@ class Test_HandleCorrect:
         )
 
     @pytest.mark.asyncio
-    async def test_handle_calls_prepare_message(self_):
+    async def test_handle_calls_prepare_message(self):
         """This ensures that the prepare_message function is called, with the correct args"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -117,7 +117,7 @@ class Test_HandleCorrect:
         )
 
     @pytest.mark.asyncio
-    async def test_handle_calls_generate_embed(self_):
+    async def test_handle_calls_generate_embed(self):
         """This ensures that the generate_basic_embed function is called, with the correct args"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -136,7 +136,7 @@ class Test_HandleCorrect:
         auxiliary.generate_basic_embed.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_handle_calls_send(self_):
+    async def test_handle_calls_send(self):
         """This ensures that the ctx.send function is called, with the correct args"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()

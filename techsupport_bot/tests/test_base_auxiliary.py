@@ -27,14 +27,11 @@ class Test_SearchForMessage:
 
         # Step 2 - Call the function
         message = await auxiliary.search_channel_for_message(
-                channel=discord_env.channel, content_to_match="message"
-            )
-        
-        # Step 3 - Assert that everything works
-        assert (
-            message
-            == discord_env.message_person2_noprefix_1
+            channel=discord_env.channel, content_to_match="message"
         )
+
+        # Step 3 - Assert that everything works
+        assert message == discord_env.message_person2_noprefix_1
 
     @pytest.mark.asyncio
     async def test_searching_only_member(self):
@@ -45,14 +42,11 @@ class Test_SearchForMessage:
 
         # Step 2 - Call the function
         message = await auxiliary.search_channel_for_message(
-                channel=discord_env.channel, member_to_match=discord_env.person2
-            )
-        
-        # Step 3 - Assert that everything works
-        assert (
-            message
-            == discord_env.message_person2_noprefix_1
+            channel=discord_env.channel, member_to_match=discord_env.person2
         )
+
+        # Step 3 - Assert that everything works
+        assert message == discord_env.message_person2_noprefix_1
 
     @pytest.mark.asyncio
     async def test_searching_content_and_member(self):
@@ -63,16 +57,13 @@ class Test_SearchForMessage:
 
         # Step 2 - Call the function
         message = await auxiliary.search_channel_for_message(
-                channel=discord_env.channel,
-                member_to_match=discord_env.person2,
-                content_to_match="message",
-            )
-        
-        # Step 3 - Assert that everything works
-        assert (
-            message
-            == discord_env.message_person2_noprefix_1
+            channel=discord_env.channel,
+            member_to_match=discord_env.person2,
+            content_to_match="message",
         )
+
+        # Step 3 - Assert that everything works
+        assert message == discord_env.message_person2_noprefix_1
 
     @pytest.mark.asyncio
     async def test_searching_ignore_prefix(self):
@@ -83,16 +74,13 @@ class Test_SearchForMessage:
 
         # Step 2 - Call the function
         message = await auxiliary.search_channel_for_message(
-                channel=discord_env.channel,
-                prefix=config_for_tests.PREFIX,
-                allow_bot=False,
-            )
-        
-        # Step 3 - Assert that everything works
-        assert (
-            message
-            is None
+            channel=discord_env.channel,
+            prefix=config_for_tests.PREFIX,
+            allow_bot=False,
         )
+
+        # Step 3 - Assert that everything works
+        assert message is None
 
     @pytest.mark.asyncio
     async def test_searching_keep_prefix(self):
@@ -103,14 +91,11 @@ class Test_SearchForMessage:
 
         # Step 2 - Call the function
         message = await auxiliary.search_channel_for_message(
-                channel=discord_env.channel, allow_bot=False
-            )
-        
-        # Step 3 - Assert that everything works
-        assert (
-            message
-            == discord_env.message_person1_prefix
+            channel=discord_env.channel, allow_bot=False
         )
+
+        # Step 3 - Assert that everything works
+        assert message == discord_env.message_person1_prefix
 
     @pytest.mark.asyncio
     async def test_searching_ignores_bot(self):
@@ -121,14 +106,11 @@ class Test_SearchForMessage:
 
         # Step 2 - Call the function
         message = await auxiliary.search_channel_for_message(
-                channel=discord_env.channel, allow_bot=False
-            )
-        
-        # Step 3 - Assert that everything works
-        assert (
-            message
-            is None
+            channel=discord_env.channel, allow_bot=False
         )
+
+        # Step 3 - Assert that everything works
+        assert message is None
 
     @pytest.mark.asyncio
     async def test_searching_finds_bot(self):
@@ -139,14 +121,11 @@ class Test_SearchForMessage:
 
         # Step 2 - Call the function
         message = await auxiliary.search_channel_for_message(
-                channel=discord_env.channel, allow_bot=True
-            )
-        
-        # Step 3 - Assert that everything works
-        assert (
-            message
-            == discord_env.message_person3_noprefix
+            channel=discord_env.channel, allow_bot=True
         )
+
+        # Step 3 - Assert that everything works
+        assert message == discord_env.message_person3_noprefix
 
     @pytest.mark.asyncio
     async def test_searching_member_multiple_messages(self):
@@ -165,14 +144,11 @@ class Test_SearchForMessage:
 
         # Step 2 - Call the function
         message = await auxiliary.search_channel_for_message(
-                channel=discord_env.channel, member_to_match=discord_env.person2
-            )
-        
-        # Step 3 - Assert that everything works
-        assert (
-            message
-            == discord_env.message_person2_noprefix_2
+            channel=discord_env.channel, member_to_match=discord_env.person2
         )
+
+        # Step 3 - Assert that everything works
+        assert message == discord_env.message_person2_noprefix_2
 
     @pytest.mark.asyncio
     async def test_searching_by_member_not_first_message(self):
@@ -189,14 +165,11 @@ class Test_SearchForMessage:
 
         # Step 2 - Call the function
         message = await auxiliary.search_channel_for_message(
-                channel=discord_env.channel, member_to_match=discord_env.person2
-            )
-        
-        # Step 3 - Assert that everything works
-        assert (
-            message
-            == discord_env.message_person2_noprefix_2
+            channel=discord_env.channel, member_to_match=discord_env.person2
         )
+
+        # Step 3 - Assert that everything works
+        assert message == discord_env.message_person2_noprefix_2
 
     @pytest.mark.asyncio
     async def test_searching_by_nothing_returns_first_message(self):
@@ -214,12 +187,11 @@ class Test_SearchForMessage:
         discord_env.channel.message_history = message_history
 
         # Step 2 - Call the function
-        message = await auxiliary.search_channel_for_message(channel=discord_env.channel)
-        # Step 3 - Assert that everything works
-        assert (
-            message
-            == discord_env.message_person1_prefix
+        message = await auxiliary.search_channel_for_message(
+            channel=discord_env.channel
         )
+        # Step 3 - Assert that everything works
+        assert message == discord_env.message_person1_prefix
 
     @pytest.mark.asyncio
     @given(config_for_tests.rand_history())
