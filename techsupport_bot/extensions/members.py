@@ -1,6 +1,13 @@
 """
-Module for searching members by a role. 
-This is inefficient, awful, stinky, memory consuming, consider before using it on large servers.
+Name: Members
+Info: Lists all users who have a specified role
+Unit tests: None
+Config: None
+API: None
+Databases: None
+Models: None
+Subcommands: None
+Defines: get_members_with_role
 """
 import datetime
 import io
