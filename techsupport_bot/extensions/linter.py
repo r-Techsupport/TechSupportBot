@@ -1,8 +1,8 @@
 """
 Name: Linter
 Info: Validates .json file syntax
-Unit tests: No
-Config: No
+Unit tests: None
+Config: None
 API: None
 Databases: None
 Models: None
