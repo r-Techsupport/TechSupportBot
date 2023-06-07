@@ -508,3 +508,118 @@ class DuckHunt(base.LoopCog):
             user_text = "<Unknown>"
             user_text_extra = ""
         return f"{user_text}{user_text_extra}"
+
+    @util.with_typing
+    @commands.guild_only()
+    @duck.command(
+        brief="Releases a duck into the wild",
+        description="Returns a befriended duck to its natural habitat",
+    )
+    async def release(self, ctx):
+        """Method for releasing a duck"""
+        duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+
+        if not duck_user:
+            await ctx.send_deny_embed("You have not participated in the duck hunt yet.")
+            return
+
+        if not duck_user or duck_user.befriend_count == 0:
+            await ctx.send_deny_embed("You have no ducks to release.")
+            return
+
+        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+        await ctx.send_confirm_embed(
+            f"Fly safe! You have {duck_user.befriend_count} ducks left."
+        )
+
+    @util.with_typing
+    @commands.guild_only()
+    @duck.command(
+        brief="Kills a caputred duck",
+        description="Adds a duck to your kill count. Why would you even want to do that?!",
+    )
+    async def kill(self, ctx):
+        """Method for killing ducks"""
+        duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+
+        if not duck_user:
+            await ctx.send_deny_embed("You have not participated in the duck hunt yet.")
+            return
+
+        if duck_user.befriend_count == 0:
+            await ctx.send_deny_embed("You have no ducks to kill.")
+            return
+
+        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+        await duck_user.update(kill_count=duck_user.kill_count + 1).apply()
+        await ctx.send_confirm_embed(
+            f"You monster! You have {duck_user.befriend_count}"
+            + f" ducks left and {duck_user.kill_count} kills to your name."
+        )
+
+    @util.with_typing
+    @commands.guild_only()
+    @duck.command(
+        brief="Donates a duck to someone",
+        description="Gives someone the gift of a live duck",
+        usage="[user]",
+    )
+    async def donate(self, ctx, user: discord.Member):
+        """Method for donating ducks"""
+        if user.bot:
+            await ctx.send_deny_embed("The only ducks I accept are plated with gold!")
+            return
+        if user.id == ctx.author.id:
+            await ctx.send_deny_embed("You can't donate a duck to yourself")
+            return
+
+        duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+        if not duck_user:
+            await ctx.send_deny_embed("You have not participated in the duck hunt yet.")
+            return
+
+        if not duck_user or duck_user.befriend_count == 0:
+            await ctx.send_deny_embed("You have no ducks to donate.")
+            return
+        recipee = await self.get_duck_user(user.id, ctx.guild.id)
+        if not recipee:
+            await ctx.send_deny_embed(
+                f"{user.mention} has not participated in the duck hunt yet."
+            )
+            return
+
+        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+        await recipee.update(befriend_count=recipee.befriend_count + 1).apply()
+        await ctx.send_confirm_embed(
+            f"You gave a duck to {user.mention}. "
+            + f"You now have {duck_user.befriend_count} ducks left."
+        )
+
+    @util.with_typing
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    @duck.command(
+        brief="Resets someones duck counts",
+        description="Deleted the database entry of the target",
+        usage="[user]",
+    )
+    async def reset(self, ctx, user: discord.Member):
+        """Method for resetting duck counts"""
+        if user.bot:
+            await ctx.send_deny_embed("You leave my ducks alone!")
+            return
+
+        duck_user = await self.get_duck_user(user.id, ctx.guild.id)
+        if not duck_user:
+            await ctx.send_deny_embed(
+                "The user has not participated in the duck hunt yet."
+            )
+            return
+        if not await ctx.confirm(
+            f"Are you sure you want to reset {user.mention}s duck stats?"
+        ):
+            await ctx.send_deny_embed(f"{user.mention}s duck stats were NOT reset.")
+            return
+
+        await duck_user.delete()
+        await ctx.send_confirm_embed(f"Succesfully reset {user.mention}s duck stats!")
