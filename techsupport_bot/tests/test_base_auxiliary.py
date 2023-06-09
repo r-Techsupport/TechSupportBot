@@ -284,7 +284,7 @@ class Test_ConstructMention:
             assert output == "<@1>"
 
 
-class Test_PrepareDeny:
+class Test_DenyEmbed:
     """Tests for prepare_deny_embed and send_deny_embed"""
 
     def test_prepare_deny(self):
@@ -311,7 +311,7 @@ class Test_PrepareDeny:
             discord_env.channel.send.assert_awaited_once_with(content="", embed="test")
 
 
-class Test_PrepareConfirm:
+class Test_ConfirmEmbed:
     """Tests for prepare_confirm_embed and send_confirm_embed"""
 
     def test_prepare_confirm(self):
