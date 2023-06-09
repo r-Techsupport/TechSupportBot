@@ -400,7 +400,7 @@ class Protector(base.MatchCog):
             else:
                 await ctx.message.add_reaction("✅")
         else:
-            await ctx.send(content=user.mention, embed=embed)
+            await ctx.send(embed=embed)
 
         await self.models.Warning(
             user_id=str(user.id), guild_id=str(ctx.guild.id), reason=reason
