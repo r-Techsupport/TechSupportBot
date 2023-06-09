@@ -113,12 +113,13 @@ class Test_EmojiCommands:
         discord_env = config_for_tests.FakeDiscordEnv()
 
         discord_env.emoji.generate_emoji_string = MagicMock(return_value=[])
-        discord_env.context.send_deny_embed = AsyncMock()
+        auxiliary.send_deny_embed = AsyncMock()
 
         await discord_env.emoji.emoji_commands(discord_env.context, "abcde", False)
 
-        discord_env.context.send_deny_embed.assert_called_once_with(
-            "I can't get any emoji letters from your message!"
+        auxiliary.send_deny_embed.assert_called_once_with(
+            message="I can't get any emoji letters from your message!",
+            channel=discord_env.channel,
         )
 
     @pytest.mark.asyncio
@@ -130,14 +131,14 @@ class Test_EmojiCommands:
         discord_env.emoji.generate_emoji_string = MagicMock(return_value=["1"])
         auxiliary.search_channel_for_message = AsyncMock(return_value=None)
 
-        discord_env.context.send_deny_embed = AsyncMock()
+        auxiliary.send_deny_embed = AsyncMock()
 
         await discord_env.emoji.emoji_commands(
             discord_env.context, "abcde", False, "Fake discord user"
         )
 
-        discord_env.context.send_deny_embed.assert_called_once_with(
-            "No valid messages found to react to!"
+        auxiliary.send_deny_embed.assert_called_once_with(
+            message="No valid messages found to react to!", channel=discord_env.channel
         )
 
     @pytest.mark.asyncio
@@ -149,12 +150,13 @@ class Test_EmojiCommands:
         discord_env.emoji.generate_emoji_string = MagicMock(return_value=["1"])
         discord_env.emoji.check_if_all_unique = MagicMock(return_value=False)
 
-        discord_env.context.send_deny_embed = AsyncMock()
+        auxiliary.send_deny_embed = AsyncMock()
 
         await discord_env.emoji.emoji_commands(discord_env.context, "abcde", True)
 
-        discord_env.context.send_deny_embed.assert_called_once_with(
-            "Invalid message! Make sure there are no repeat characters!"
+        auxiliary.send_deny_embed.assert_called_once_with(
+            message="Invalid message! Make sure there are no repeat characters!",
+            channel=discord_env.channel,
         )
 
     @pytest.mark.asyncio
