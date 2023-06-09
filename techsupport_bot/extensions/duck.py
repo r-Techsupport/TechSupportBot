@@ -574,7 +574,8 @@ class DuckHunt(base.LoopCog):
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
         await duck_user.update(kill_count=duck_user.kill_count + 1).apply()
         await auxiliary.send_confirm_embed(
-            message=f"You monster! You have {duck_user.befriend_count} ducks left and {duck_user.kill_count} kills to your name.",
+            message=f"You monster! You have {duck_user.befriend_count} ducks "
+            + f"left and {duck_user.kill_count} kills to your name.",
             channel=ctx.channel,
         )
 
@@ -623,7 +624,8 @@ class DuckHunt(base.LoopCog):
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
         await recipee.update(befriend_count=recipee.befriend_count + 1).apply()
         await auxiliary.send_confirm_embed(
-            message=f"You gave a duck to {user.mention}. You now have {duck_user.befriend_count} ducks left.",
+            message=f"You gave a duck to {user.mention}. You now "
+            + f"have {duck_user.befriend_count} ducks left.",
             channel=ctx.channel,
         )
 

@@ -909,7 +909,8 @@ class FactoidManager(base.MatchCog):
         # the new entry is randomized
         if replacement_name and replacement_name != new_name:
             await auxiliary.send_deny_embed(
-                message=f"I couldn't find the new parent `{replacement_name}`, picking new parent at random",
+                message=f"I couldn't find the new parent `{replacement_name}`"
+                + ", picking new parent at random",
                 channel=ctx.channel,
             )
 

@@ -158,7 +158,8 @@ class Who(base.BaseCog):
                 continue
             if role_check in getattr(user, "roles", []):
                 await auxiliary.send_deny_embed(
-                    message=f"You cannot assign notes to `{user}` because they have `{role_check}` role",
+                    message=f"You cannot assign notes to `{user}` because "
+                    + f"they have `{role_check}` role",
                     channel=ctx.channel,
                 )
                 return
@@ -171,7 +172,8 @@ class Who(base.BaseCog):
 
         if not role:
             await auxiliary.send_confirm_embed(
-                message=f"Note created for `{user}`, but no note role is configured so no role was added",
+                message=f"Note created for `{user}`, but no note "
+                + "role is configured so no role was added",
                 channel=ctx.channel,
             )
             return

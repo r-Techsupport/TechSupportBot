@@ -154,7 +154,8 @@ class Dumpdbg(base.BaseCog):
             # Handling for failed results
             if response["success"] is False:
                 await auxiliary.send_deny_embed(
-                    message=f"Something went wrong with debugging! Api response: `{response['error']}`",
+                    message="Something went wrong with debugging! "
+                    + f"Api response: `{response['error']}`",
                     channel=ctx.channel,
                 )
                 await self.bot.logger.warning(

@@ -254,40 +254,49 @@ class Test_ConstructMention:
     """A set of test cases to test construct_mention_string"""
 
     def test_no_users(self):
+        """Test that if no users are passed, the mention string is blank"""
         output = auxiliary.construct_mention_string([None])
 
         assert output == ""
 
     def test_one_user(self):
+        """Test that if only 1 user is passed, the mention string contains the proper mention"""
         with mock.patch("asyncio.create_task", return_value=None):
             discord_env = config_for_tests.FakeDiscordEnv()
             output = auxiliary.construct_mention_string([discord_env.person1])
 
-            assert output == "<@1>"
+            assert output == discord_env.person1.mention
 
     def test_two_users(self):
+        """Test that if 2 users are passed, the mention string contains both,
+        and is seperated by a space"""
         with mock.patch("asyncio.create_task", return_value=None):
             discord_env = config_for_tests.FakeDiscordEnv()
             output = auxiliary.construct_mention_string(
                 [discord_env.person1, discord_env.person2]
             )
 
-            assert output == "<@1> <@2>"
+            assert (
+                output == f"{discord_env.person1.mention} {discord_env.person2.mention}"
+            )
 
     def test_mulltiple_same_user(self):
+        """Test that is mutliple of the same user is passed, the mention
+        string only contains the mention once"""
         with mock.patch("asyncio.create_task", return_value=None):
             discord_env = config_for_tests.FakeDiscordEnv()
             output = auxiliary.construct_mention_string(
                 [discord_env.person1, discord_env.person1]
             )
 
-            assert output == "<@1>"
+            assert output == discord_env.person1.mention
 
 
 class Test_DenyEmbed:
     """Tests for prepare_deny_embed and send_deny_embed"""
 
     def test_prepare_deny(self):
+        """Test that the deny embed is working correctly, and that the parameters are correct"""
         auxiliary.generate_basic_embed = MagicMock()
 
         auxiliary.prepare_deny_embed("Test")
@@ -300,6 +309,7 @@ class Test_DenyEmbed:
 
     @pytest.mark.asyncio
     async def test_send_deny(self):
+        """Test that send deny embed sends the right content to the right place"""
         with mock.patch("asyncio.create_task", return_value=None):
             discord_env = config_for_tests.FakeDiscordEnv()
             auxiliary.prepare_deny_embed = MagicMock(return_value="test")
@@ -315,6 +325,7 @@ class Test_ConfirmEmbed:
     """Tests for prepare_confirm_embed and send_confirm_embed"""
 
     def test_prepare_confirm(self):
+        """Test that the confirm embed is working correctly, and that the parameters are correct"""
         auxiliary.generate_basic_embed = MagicMock()
         auxiliary.prepare_confirm_embed("Test")
 
@@ -326,6 +337,7 @@ class Test_ConfirmEmbed:
 
     @pytest.mark.asyncio
     async def test_send_confirm(self):
+        """Test that send confirm embed sends the right content to the right place"""
         with mock.patch("asyncio.create_task", return_value=None):
             discord_env = config_for_tests.FakeDiscordEnv()
             auxiliary.prepare_confirm_embed = MagicMock(return_value="test")
