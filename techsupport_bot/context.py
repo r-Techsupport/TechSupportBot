@@ -8,9 +8,6 @@ from discord.ext import commands
 class Context(commands.Context):
     """Custom context object to provide more functionality."""
 
-    CONFIRM_YES_EMOJI = "✅"
-    CONFIRM_NO_EMOJI = "❌"
-
     def construct_mention_string(self, targets):
         """Builds a string of mentions from a list of users.
 

@@ -350,7 +350,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             and m.author.id == user.id
             and isinstance(m.channel, discord.DMChannel),
         )
-        await message.add_reaction(ctx.CONFIRM_YES_EMOJI)
+        await message.add_reaction("✅")
         return message.content.lower() == "yes"
 
     @staticmethod
