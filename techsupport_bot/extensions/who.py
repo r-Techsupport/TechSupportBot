@@ -4,8 +4,8 @@ import io
 
 import base
 import discord
-import util
 import yaml
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -137,7 +137,9 @@ class Who(base.BaseCog):
     async def set_note(self, ctx, user: discord.Member, *, body: str):
         """Method to set a note on a user."""
         if ctx.author.id == user.id:
-            await ctx.send_deny_embed("You cannot add a note for yourself")
+            await auxiliary.send_deny_embed(
+                message="You cannot add a note for yourself", channel=ctx.channel
+            )
             return
 
         note = self.models.UserNote(
@@ -155,8 +157,9 @@ class Who(base.BaseCog):
             if not role_check:
                 continue
             if role_check in getattr(user, "roles", []):
-                await ctx.send_deny_embed(
-                    f"You cannot assign notes to `{user}` because they have `{role_check}` role"
+                await auxiliary.send_deny_embed(
+                    message=f"You cannot assign notes to `{user}` because they have `{role_check}` role",
+                    channel=ctx.channel,
                 )
                 return
 
@@ -187,7 +190,9 @@ class Who(base.BaseCog):
         notes = await self.get_notes(user, ctx.guild)
 
         if not notes:
-            await ctx.send_deny_embed("There are no notes for that user")
+            await auxiliary.send_deny_embed(
+                message="There are no notes for that user", channel=ctx.channel
+            )
             return
 
         confirm = await ctx.confirm(
@@ -195,7 +200,9 @@ class Who(base.BaseCog):
             delete_after=True,
         )
         if not confirm:
-            await ctx.send_deny_embed(f"Notes for `{user}` were not cleared")
+            await auxiliary.send_deny_embed(
+                message=f"Notes for `{user}` were not cleared", channel=ctx.channel
+            )
             return
 
         for note in notes:
@@ -223,7 +230,9 @@ class Who(base.BaseCog):
         notes = await self.get_notes(user, ctx.guild)
 
         if not notes:
-            await ctx.send_deny_embed(f"There are no notes for `{user}`")
+            await auxiliary.send_deny_embed(
+                message=f"There are no notes for `{user}`", channel=ctx.channel
+            )
             return
 
         note_output_data = []

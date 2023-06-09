@@ -4,7 +4,7 @@ import uuid
 
 import base
 import discord
-import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -216,12 +216,15 @@ class HangmanCog(base.BaseCog):
                     delete_after=True,
                 )
                 if not should_delete:
-                    await ctx.send_deny_embed("The current game was not ended")
+                    await auxiliary.send_deny_embed(
+                        message="The current game was not ended", channel=ctx.channel
+                    )
                     return
                 del self.games[ctx.channel.id]
             else:
-                await ctx.send_deny_embed(
-                    "There is a game in progress for this channel"
+                await auxiliary.send_deny_embed(
+                    message="There is a game in progress for this channel",
+                    channel=ctx.channel,
                 )
                 return
 
@@ -243,18 +246,25 @@ class HangmanCog(base.BaseCog):
     async def guess(self, ctx, letter: str):
         """Method to define a guess on the hangman game."""
         if len(letter) > 1 or not letter.isalpha():
-            await ctx.send_deny_embed("You can only guess a letter")
+            await auxiliary.send_deny_embed(
+                message="You can only guess a letter", channel=ctx.channel
+            )
             return
 
         game_data = self.games.get(ctx.channel.id)
         if not game_data:
-            await ctx.send_deny_embed("There is no game in progress for this channel")
+            await auxiliary.send_deny_embed(
+                message="There is no game in progress for this channel",
+                channel=ctx.channel,
+            )
             return
 
         game = game_data.get("game")
 
         if game.guessed(letter):
-            await ctx.send_deny_embed("That letter has already been guessed")
+            await auxiliary.send_deny_embed(
+                message="That letter has already been guessed", channel=ctx.channel
+            )
             return
 
         correct = game.guess(letter)
@@ -298,7 +308,10 @@ class HangmanCog(base.BaseCog):
         """Method to redraw the current status of the hangman game."""
         game_data = self.games.get(ctx.channel.id)
         if not game_data:
-            await ctx.send_deny_embed("There is no game in progress for this channel")
+            await auxiliary.send_deny_embed(
+                message="There is no game in progress for this channel",
+                channel=ctx.channel,
+            )
             return
 
         old_message = game_data.get("message")
@@ -317,7 +330,9 @@ class HangmanCog(base.BaseCog):
         """Method to determine if the game is finished and stop the game."""
         game_data = self.games.get(ctx.channel.id)
         if not game_data:
-            await ctx.send_deny_embed("There is no game in progress for this channel")
+            await auxiliary.send_deny_embed(
+                "There is no game in progress for this channel", channel=ctx.channel
+            )
             return
 
         should_delete = await ctx.confirm(
@@ -326,7 +341,9 @@ class HangmanCog(base.BaseCog):
         )
 
         if not should_delete:
-            await ctx.send_deny_embed("The current game was not ended")
+            await auxiliary.send_deny_embed(
+                "The current game was not ended", channel=ctx.channel
+            )
             return
 
         game = game_data.get("game")

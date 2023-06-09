@@ -14,6 +14,7 @@ import expiringdict
 import munch
 import util
 import yaml
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -141,8 +142,9 @@ async def no_mentions(ctx):
         or ctx.message.mentions
         or ctx.message.channel_mentions
     ):
-        await ctx.send_deny_embed(
-            "I cannot remember factoids with user/role/channel mentions"
+        await auxiliary.send_deny_embed(
+            message="I cannot remember factoids with user/role/channel mentions",
+            channel=ctx.channel,
         )
         return False
     return True
@@ -257,8 +259,9 @@ class FactoidManager(base.MatchCog):
                     f"The factoid `{trigger}` already exists. Should I overwrite it?"
                 )
                 if not should_delete:
-                    await ctx.send_deny_embed(
-                        f"The factoid `{trigger}` was not removed"
+                    await auxiliary.send_deny_embed(
+                        message=f"The factoid `{trigger}` was not removed",
+                        channel=ctx.channel,
                     )
                     return
                 message = "Modified"
@@ -283,7 +286,9 @@ class FactoidManager(base.MatchCog):
         """Method to delete a factoid."""
         factoid = await self.get_factoid_from_query(trigger, ctx.guild)
         if not factoid:
-            await ctx.send_deny_embed(f"I couldn't find the factoid `{trigger}`")
+            await auxiliary.send_deny_embed(
+                message=f"I couldn't find the factoid `{trigger}`", channel=ctx.channel
+            )
             return
 
         # Don't confirm if this is an alias, only the parent needs confirmation
@@ -292,7 +297,9 @@ class FactoidManager(base.MatchCog):
                 f"This will remove the factoid `{trigger}` forever. Are you sure?"
             )
             if not should_delete:
-                await ctx.send_deny_embed(f"Factoid: `{trigger}` was not deleted")
+                await auxiliary.send_deny_embed(
+                    message=f"Factoid: `{trigger}` was not deleted", channel=ctx.channel
+                )
                 return
 
         await factoid.delete()
@@ -563,7 +570,9 @@ class FactoidManager(base.MatchCog):
         # Removes the target factoid
 
         if not factoid:
-            await ctx.send_deny_embed(f"Factoid `{factoid_name}` not found!")
+            await auxiliary.send_deny_embed(
+                message=f"Factoid `{factoid_name}` not found!", channel=ctx.channel
+            )
             return
 
         if factoid.alias not in ["", None]:
@@ -597,7 +606,9 @@ class FactoidManager(base.MatchCog):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
 
         if not factoid:
-            await ctx.send_deny_embed(f"Factoid `{factoid_name}` not found!")
+            await auxiliary.send_deny_embed(
+                message=f"Factoid `{factoid_name}` not found!", channel=ctx.channel
+            )
             return
 
         # Handling if the call is an alias
@@ -606,7 +617,9 @@ class FactoidManager(base.MatchCog):
             factoid_name = factoid.text
 
         if not factoid.embed_config:
-            await ctx.send_deny_embed("There is no embed config for that factoid")
+            await auxiliary.send_deny_embed(
+                message="There is no embed config for that factoid", channel=ctx.channel
+            )
             return
 
         # Formats the json to have indents, then sends it to the channel it was called from
@@ -638,7 +651,9 @@ class FactoidManager(base.MatchCog):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
 
         if not factoid:
-            await ctx.send_deny_embed("That factoid does not exist")
+            await auxiliary.send_deny_embed(
+                message="That factoid does not exist", channel=ctx.channel
+            )
             return
 
         if factoid.alias not in ["", None]:
@@ -654,7 +669,10 @@ class FactoidManager(base.MatchCog):
             .gino.first()
         )
         if job:
-            await ctx.send_deny_embed("That factoid is already looping in this channel")
+            await auxiliary.send_deny_embed(
+                message="That factoid is already looping in this channel",
+                channel=ctx.channel,
+            )
             return
 
         # TODO: Get regex to check cron syntax
@@ -690,7 +708,9 @@ class FactoidManager(base.MatchCog):
             .gino.first()
         )
         if not job:
-            await ctx.send_deny_embed("That job does not exist")
+            await auxiliary.send_deny_embed(
+                messge="That job does not exist", channel=ctx.channel
+            )
             return
 
         await job.delete()
@@ -718,7 +738,9 @@ class FactoidManager(base.MatchCog):
             .gino.first()
         )
         if not job:
-            await ctx.send_deny_embed("That job does not exist")
+            await auxiliary.send_deny_embed(
+                message="That job does not exist", channel=ctx.channel
+            )
             return
 
         embed_label = ""
@@ -751,8 +773,9 @@ class FactoidManager(base.MatchCog):
             .gino.all()
         )
         if not jobs:
-            await ctx.send_deny_embed(
-                "There are no registered factoid loop jobs for this guild"
+            await auxiliary.send_deny_embed(
+                message="There are no registered factoid loop jobs for this guild",
+                channel=ctx.channel,
             )
             return
 
@@ -788,7 +811,9 @@ class FactoidManager(base.MatchCog):
         factoid = await self.get_factoid_from_query(query, ctx.guild)
 
         if not factoid:
-            await ctx.send_deny_embed(f"I couldn't find the factoid `{query}`")
+            await auxiliary.send_deny_embed(
+                message=f"I couldn't find the factoid `{query}`", channel=ctx.channel
+            )
             return
 
         # Handling if the query is an alias
@@ -837,7 +862,9 @@ class FactoidManager(base.MatchCog):
         # Makes sure factoid exists
         factoid = await self.get_factoid_from_query(target_name, ctx.guild)
         if not factoid:
-            await ctx.send_deny_embed(f"Factoid `{target_name}` not found!")
+            await auxiliary.send_deny_embed(
+                message=f"Factoid `{target_name}` not found!", channel=ctx.channel
+            )
             return
 
         # Handling for aliases (They just get deleted, no parent handling needs to be done)
@@ -856,7 +883,10 @@ class FactoidManager(base.MatchCog):
         )
         # Stop execution if there is no other parent to be assigned
         if len(aliases) == 0:
-            await ctx.send_deny_embed("There is no other alias assigned to switch to!")
+            await auxiliary.send_deny_embed(
+                message="There is no other alias assigned to switch to!",
+                channel=ctx.channel,
+            )
             return
 
         # Converts the raw alias list to a list of alias names
@@ -870,8 +900,9 @@ class FactoidManager(base.MatchCog):
         # If the value is specified (not None) and doesn't match the name, we know
         # the new entry is randomized
         if replacement_name and replacement_name != new_name:
-            await ctx.send_deny_embed(
-                f"I couldn't find the new parent `{replacement_name}`, picking new parent at random"
+            await auxiliary.send_deny_embed(
+                message=f"I couldn't find the new parent `{replacement_name}`, picking new parent at random",
+                channel=ctx.channel,
             )
 
         # Removes previous instance of alias if it exists
@@ -916,7 +947,9 @@ class FactoidManager(base.MatchCog):
         """Method to pull up all the factoids."""
         factoids = await self.get_all_factoids(ctx.guild, hide=True)
         if not factoids:
-            await ctx.send_deny_embed("No factoids found!")
+            await auxiliary.send_deny_embed(
+                message="No factoids found!", channel=ctx.channel
+            )
             return
 
         # Gets a dict of aliases where
@@ -1048,14 +1081,18 @@ class FactoidManager(base.MatchCog):
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
 
         if not factoid:
-            await ctx.send_deny_embed(f"Factoid `{factoid_name}` not found!")
+            await auxiliary.send_deny_embed(
+                message=f"Factoid `{factoid_name}` not found!", channel=ctx.channel
+            )
             return
 
         if factoid.alias not in ["", None]:
             factoid = await self.get_factoid_from_query(factoid.alias, ctx.guild)
 
         if factoid.hidden:
-            await ctx.send_deny_embed("That factoid is already hidden")
+            await auxiliary.send_deny_embed(
+                message="That factoid is already hidden", channel=ctx.channel
+            )
             return
 
         await factoid.update(hidden=True).apply()
@@ -1078,14 +1115,18 @@ class FactoidManager(base.MatchCog):
         """Method to unhide the factoid that you have hidden."""
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         if not factoid:
-            await ctx.send_deny_embed(f"Factoid `{factoid_name}` not found!")
+            await auxiliary.send_deny_embed(
+                message=f"Factoid `{factoid_name}` not found!", channel=ctx.channel
+            )
             return
 
         if factoid.alias not in ["", None]:
             factoid = await self.get_factoid_from_query(factoid.alias, ctx.guild)
 
         if not factoid.hidden:
-            await ctx.send_deny_embed("That factoid is already unhidden")
+            await auxiliary.send_deny_embed(
+                message="That factoid is already unhidden", channel=ctx.channel
+            )
             return
 
         await factoid.update(hidden=False).apply()
@@ -1111,7 +1152,9 @@ class FactoidManager(base.MatchCog):
         # Gets the factoid, checks if it exists
         factoid = await self.get_factoid_from_query(factoid_name, ctx.guild)
         if not factoid:
-            await ctx.send_deny_embed(f"Factoid `{factoid_name}` not found!")
+            await auxiliary.send_deny_embed(
+                message=f"Factoid `{factoid_name}` not found!", channel=ctx.channel
+            )
             return
 
         # Gets all current aliases to prevent circular aliases
@@ -1128,7 +1171,9 @@ class FactoidManager(base.MatchCog):
 
         # Checks if user wants the alias to alias itself
         if factoid_name == alias_name or factoid_name in rec_chk:
-            await ctx.send_deny_embed("Can't set an alias for itself!")
+            await auxiliary.send_deny_embed(
+                message="Can't set an alias for itself!", channel=ctx.channel
+            )
             return
 
         # Gets parent factoid if it's an alias
@@ -1137,16 +1182,18 @@ class FactoidManager(base.MatchCog):
 
             # Prevents recursing aliases because fuck that!
             if factoid.alias not in ["", None]:
-                await ctx.send_deny_embed("Can't set an alias for an alias!")
+                await auxiliary.send_deny_embed(
+                    message="Can't set an alias for an alias!", channel=ctx.channel
+                )
                 return
 
         # Firstly check if the new entry already exists
         alias_entry = await self.get_factoid_from_query(alias_name, ctx.guild)
         if alias_entry:
             if alias_entry.alias == factoid.text:
-                await ctx.send_deny_embed(
-                    f"`{factoid.text}` already has `{alias_entry.text}` set "
-                    + "as an alias!"
+                await auxiliary.send_deny_embed(
+                    message=f"`{factoid.text}` already has `{alias_entry.text}` set as an alias!",
+                    channel=ctx.channel,
                 )
                 return
 
@@ -1155,8 +1202,9 @@ class FactoidManager(base.MatchCog):
                 f"The entry `{alias_name}` already exists. Should I overwrite it?"
             )
             if not should_delete:
-                await ctx.send_deny_embed(
-                    f"The entry `{alias_entry.text}` was not deleted"
+                await auxiliary.send_deny_embed(
+                    message=f"The entry `{alias_entry.text}` was not deleted",
+                    channel=ctx.channel,
                 )
                 return
 

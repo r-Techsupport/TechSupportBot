@@ -10,6 +10,7 @@ import discord
 import embeds
 import munch
 import yaml
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -194,12 +195,12 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
     async def handle_error_embed(self, ctx, message_send):
         """Method to handle if an application recieved an error."""
-        embed_send = embeds.DenyEmbed(message=message_send)
-        await ctx.channel.send(content="", embed=embed_send)
+        embed = auxiliary.prepare_deny_embed(message=message_send)
+        await ctx.channel.send(embed=embed)
         # For handeling a connection to IRC in the applcation channel
         self.bot.dispatch(
             "extension_listener_event",
-            munch.Munch(channel=ctx.channel, embed=embed_send),
+            munch.Munch(channel=ctx.channel, embed=embed),
         )
 
     async def execute(self, config, guild):
@@ -421,7 +422,10 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         collection = self.bot.mongo[self.COLLECTION_NAME]
         application_data = await collection.find_one({"id": {"$eq": application_id}})
         if not application_data:
-            await ctx.send_deny_embed("I couldn't find an application with that ID")
+            await auxiliary.send_deny_embed(
+                message="I couldn't find an application with that ID",
+                channel=ctx.channel,
+            )
             return
 
         embed = self.generate_embed(application_data, new=False)
@@ -439,7 +443,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             ctx.guild, status=status, include_stale=True
         )
         if not applications:
-            await ctx.send_deny_embed("I couldn't find any applications")
+            await auxiliary.send_deny_embed(
+                message="I couldn't find any applications", channel=ctx.channel
+            )
             return
 
         for app in applications:
@@ -463,13 +469,19 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         collection = self.bot.mongo[self.COLLECTION_NAME]
         application_data = await collection.find_one({"id": {"$eq": application_id}})
         if not application_data:
-            await ctx.send_deny_embed("I couldn't find an application with that ID")
+            await auxiliary.send_deny_embed(
+                message="I couldn't find an application with that ID",
+                channel=ctx.channel,
+            )
             return
 
         status = self.determine_app_status(application_data, lower=True)
 
         if status == "approved":
-            await ctx.send_deny_embed("That application is already marked as approved")
+            await auxiliary.send_deny_embed(
+                message="That application is already marked as approved",
+                channel=ctx.channel,
+            )
             return
 
         if status == "denied":
@@ -477,7 +489,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
                 "That application has been marked as denied. Are you sure you want to approve it?",
             )
             if not confirm:
-                await ctx.send_deny_embed("Application was not approved")
+                await auxiliary.send_deny_embed(
+                    message="Application was not approved", channel=ctx.channel
+                )
                 return
 
         username = application_data.get("username", "the user")
@@ -485,8 +499,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             f"This will attempt to notify `{username}` and approve their application",
         )
         if not confirm:
-            await ctx.send_deny_embed(
-                f"The application was not approved and `{username}` was not notified"
+            await auxiliary.send_deny_embed(
+                message=f"The application was not approved and `{username}` was not notified",
+                channel=ctx.channel,
             )
             return
 
@@ -507,13 +522,19 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         collection = self.bot.mongo[self.COLLECTION_NAME]
         application_data = await collection.find_one({"id": {"$eq": application_id}})
         if not application_data:
-            await ctx.send_deny_embed("I couldn't find an application with that ID")
+            await auxiliary.send_deny_embed(
+                message="I couldn't find an application with that ID",
+                channel=ctx.channel,
+            )
             return
 
         status = self.determine_app_status(application_data, lower=True)
 
         if status == "denied":
-            await ctx.send_deny_embed("That application is already marked as denied")
+            await auxiliary.send_deny_embed(
+                message="That application is already marked as denied",
+                channel=ctx.channel,
+            )
             return
 
         if status == "approved":
@@ -521,7 +542,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
                 "That application has been marked as approved. Are you sure you want to deny it?",
             )
             if not confirm:
-                await ctx.send_deny_embed("Application was not denied")
+                await auxiliary.send_deny_embed(
+                    "Application was not denied", channel=ctx.channel
+                )
                 return
 
         username = application_data.get("username", "the user")
@@ -529,8 +552,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             f"This will attempt to notify `{username}` and deny their application",
         )
         if not confirm:
-            await ctx.send_deny_embed(
-                f"The application was not denied and `{username}` was not notified"
+            await auxiliary.send_deny_embed(
+                message=f"The application was not denied and `{username}` was not notified",
+                channel=ctx.channel,
             )
             return
 
@@ -552,7 +576,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         try:
             await self.send_reminder(config, ctx.guild, automated=False)
         except NoPendingApplications:
-            await ctx.send_deny_embed("There are no pending applications")
+            await auxiliary.send_deny_embed(
+                message="There are no pending applications", channel=ctx.channel
+            )
 
     async def post_update(self, ctx, application_data, status, reason=None):
         """Method to update the application after approving or denying."""

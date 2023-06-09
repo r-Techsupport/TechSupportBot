@@ -3,6 +3,7 @@ import base
 import discord
 import ui
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -78,7 +79,9 @@ class Googler(base.BaseCog):
         items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
-            await ctx.send_deny_embed(f"No search results found for: *{query}*")
+            await auxiliary.send_deny_embed(
+                message=f"No search results found for: *{query}*", channel=ctx.channel
+            )
             return
 
         config = await self.bot.get_context_config(guild=ctx.guild)
@@ -126,15 +129,19 @@ class Googler(base.BaseCog):
         items = await self.get_items(self.GOOGLE_URL, data)
 
         if not items:
-            await ctx.send_deny_embed(f"No image search results found for: *{query}*")
+            await auxiliary.send_deny_embed(
+                message=f"No image search results found for: *{query}*",
+                channel=ctx.channel,
+            )
             return
 
         embeds = []
         for item in items:
             link = item.get("link")
             if not link:
-                await ctx.send_deny_embed(
-                    "I had an issue processing Google's response... try again later!",
+                await auxiliary.send_deny_embed(
+                    message="I had an issue processing Google's response... try again later!",
+                    channel=ctx.channel,
                 )
                 return
             embeds.append(link)
@@ -162,7 +169,9 @@ class Googler(base.BaseCog):
         )
 
         if not items:
-            await ctx.send_deny_embed(f"No video results found for: *{query}*")
+            await auxiliary.send_deny_embed(
+                message=f"No video results found for: *{query}*", channel=ctx.channel
+            )
             return
 
         video_id = items[0].get("id", {}).get("videoId")

@@ -6,6 +6,7 @@ import datetime
 import base
 import discord
 import expiringdict
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -254,7 +255,10 @@ class Listener(base.BaseCog):
             dst (ListenChannel): the destination channel ID
         """
         if src.id == dst.id:
-            await ctx.send_deny_embed("Source and destination channels must differ")
+            await auxiliary.send_deny_embed(
+                message="Source and destination channels must differ",
+                channel=ctx.channel,
+            )
             return
 
         destination_data = await self.get_destination_data(src)
@@ -263,11 +267,16 @@ class Listener(base.BaseCog):
         )
 
         if str(dst.id) in destinations:
-            await ctx.send_deny_embed("That source and destination already exist")
+            await auxiliary.send_deny_embed(
+                message="That source and destination already exist", channel=ctx.channel
+            )
             return
 
         if len(destinations) > self.MAX_DESTINATIONS:
-            await ctx.send_deny_embed("There are too many destinations for that source")
+            await auxiliary.send_deny_embed(
+                message="There are too many destinations for that source",
+                channel=ctx.channel,
+            )
             return
 
         destinations.append(str(dst.id))
@@ -289,7 +298,10 @@ class Listener(base.BaseCog):
             dst (ListenChannel): the destination channel ID
         """
         if src.id == dst.id:
-            await ctx.send_deny_embed("Source and destination channels must differ")
+            await auxiliary.send_deny_embed(
+                message="Source and destination channels must differ",
+                channel=ctx.channel,
+            )
             return
 
         destination_data = await self.get_destination_data(src)
@@ -297,8 +309,9 @@ class Listener(base.BaseCog):
             destination_data.get("destinations", []) if destination_data else []
         )
         if str(dst.id) not in destinations:
-            await ctx.send_deny_embed(
-                "That destination is not registered with that source"
+            await auxiliary.send_deny_embed(
+                message="That destination is not registered with that source",
+                channel=ctx.channel,
             )
             return
 
@@ -338,7 +351,10 @@ class Listener(base.BaseCog):
         source_objects = await self.get_all_sources()
 
         if len(source_objects) == 0:
-            await ctx.send_deny_embed("There are currently no registered listeners")
+            await auxiliary.send_deny_embed(
+                message="There are currently no registered listeners",
+                channel=ctx.channel,
+            )
             return
 
         embed = InfoEmbed(

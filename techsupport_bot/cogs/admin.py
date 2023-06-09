@@ -9,6 +9,7 @@ import base
 import discord
 import git
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -165,12 +166,17 @@ class AdminControl(base.BaseCog):
             extension_name (str): the name of the extension
         """
         if not ctx.message.attachments:
-            await ctx.send_deny_embed("You did not provide a Python file upload")
+            await auxiliary.send_deny_embed(
+                message="You did not provide a Python file upload", channel=ctx.channel
+            )
             return
 
         attachment = ctx.message.attachments[0]
         if not attachment.filename.endswith(".py"):
-            await ctx.send_deny_embed("I don't recognize your upload as a Python file")
+            await auxiliary.send_deny_embed(
+                message="I don't recognize your upload as a Python file",
+                channel=ctx.channel,
+            )
             return
 
         if extension_name.lower() in self.bot.get_potential_extensions():
@@ -179,7 +185,9 @@ class AdminControl(base.BaseCog):
                 delete_after=True,
             )
             if not confirm:
-                await ctx.send_deny_embed(f"{extension_name}.py was not replaced")
+                await auxiliary.send_deny_embed(
+                    message=f"{extension_name}.py was not replaced", channel=ctx.channel
+                )
                 return
 
         fp = await attachment.read()
@@ -258,11 +266,16 @@ class AdminControl(base.BaseCog):
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await ctx.send_deny_embed(f"No such command: `{command_name}`")
+            await auxiliary.send_deny_embed(
+                message=f"No such command: `{command_name}`", channel=ctx.channel
+            )
             return
 
         if command_.enabled:
-            await ctx.send_deny_embed(f"Command `{command_name}` is already enabled!")
+            await auxiliary.send_deny_embed(
+                message=f"Command `{command_name}` is already enabled!",
+                channel=ctx.channel,
+            )
             return
 
         command_.enabled = True
@@ -283,11 +296,16 @@ class AdminControl(base.BaseCog):
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await ctx.send_deny_embed(f"No such command: `{command_name}`")
+            await auxiliary.send_deny_embed(
+                message=f"No such command: `{command_name}`", channel=ctx.channel
+            )
             return
 
         if not command_.enabled:
-            await ctx.send_deny_embed(f"Command: `{command_name}` is already disabled!")
+            await auxiliary.send_deny_embed(
+                message=f"Command: `{command_name}` is already disabled!",
+                channel=ctx.channel,
+            )
             return
 
         command_.enabled = False
@@ -451,7 +469,9 @@ class AdminControl(base.BaseCog):
         """
         channel = self.bot.get_channel(channel_id)
         if not channel:
-            await ctx.send_deny_embed("I couldn't find that channel")
+            await auxiliary.send_deny_embed(
+                message="I couldn't find that channel", channel=ctx.channel
+            )
             return
 
         await channel.send(content=message)
@@ -476,7 +496,9 @@ class AdminControl(base.BaseCog):
         """
         user = await self.bot.fetch_user(int(user_id))
         if not user:
-            await ctx.send_deny_embed("I couldn't find that user")
+            await auxiliary.send_deny_embed(
+                message="I couldn't find that user", channel=ctx.channel
+            )
             return
 
         await user.send(content=message)
@@ -513,7 +535,9 @@ class AdminControl(base.BaseCog):
         """
         guild = discord.utils.get(self.bot.guilds, id=guild_id)
         if not guild:
-            await ctx.send_deny_embed("I don't appear to be in that guild")
+            await auxiliary.send_deny_embed(
+                message="I don't appear to be in that guild", channel=ctx.channel
+            )
             return
 
         await guild.leave()
@@ -616,14 +640,18 @@ class AdminControl(base.BaseCog):
         """
 
         if not self.bot.file_config.main.api_keys.github:
-            await ctx.send_deny_embed("I don't have a Github API key")
+            await auxiliary.send_deny_embed(
+                message="I don't have a Github API key", channel=ctx.channel
+            )
             return
 
         if (
             not self.bot.file_config.special.github.username
             or not self.bot.file_config.special.github.repo
         ):
-            await ctx.send_deny_embed("I don't have a Github repo configured")
+            await auxiliary.send_deny_embed(
+                message="I don't have a Github repo configured", channel=ctx.channel
+            )
             return
 
         headers = {
@@ -641,8 +669,9 @@ class AdminControl(base.BaseCog):
 
         status_code = response.get("status_code")
         if status_code != 201:
-            await ctx.send_deny_embed(
-                f"I was unable to create your issue (status code {status_code})"
+            await auxiliary.send_deny_embed(
+                message=f"I was unable to create your issue (status code {status_code})",
+                channel=ctx.channel,
             )
             return
 

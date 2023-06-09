@@ -3,6 +3,7 @@ Convert a value or evalute a mathematical expression to decimal, hex, binary, an
 """
 import base
 import discord
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -245,9 +246,9 @@ class Htd(base.BaseCog):
                 calced_val = str(perform_op_on_list(parsed_list))
                 await ctx.send(embed=gen_embed_from_val(calced_val, True))
             except ValueError:
-                await ctx.send_deny_embed(
-                    "Unable to perform calculation, are you sure that \
-                equation is valid?"
+                await auxiliary.send_deny_embed(
+                    message="Unable to perform calculation, are you sure that equation is valid?",
+                    channel=ctx.channel,
                 )
         else:
             embed = gen_embed_from_val(val_to_convert)
@@ -255,6 +256,7 @@ class Htd(base.BaseCog):
             if embed != "":
                 await ctx.send(embed=embed)
             else:
-                await ctx.send_deny_embed(
-                    "Unable to convert value, are you sure it's valid?"
+                await auxiliary.send_deny_embed(
+                    message="Unable to convert value, are you sure it's valid?",
+                    channel=ctx.channel,
                 )

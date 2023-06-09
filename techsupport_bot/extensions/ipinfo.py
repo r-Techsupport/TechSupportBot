@@ -2,6 +2,7 @@
 import base
 import discord
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -28,7 +29,9 @@ class IPInfo(base.BaseCog):
         response = await self.bot.http_call("get", f"{self.API_URL}/{ip_address}/json")
 
         if not response.get("ip"):
-            await ctx.send_deny_embed("I couldn't find that IP")
+            await auxiliary.send_deny_embed(
+                message="I couldn't find that IP", channel=ctx.channel
+            )
             return
 
         response.pop("readme", None)

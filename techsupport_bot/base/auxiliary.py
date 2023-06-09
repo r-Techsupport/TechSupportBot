@@ -75,3 +75,45 @@ async def add_list_of_reactions(message: discord.Message, reactions: list) -> No
     """
     for emoji in reactions:
         await message.add_reaction(emoji)
+
+
+def construct_mention_string(targets: list) -> str:
+    """Builds a string of mentions from a list of users.
+
+    parameters:
+        targets ([]discord.User): the list of users to mention
+    """
+    constructed = set()
+
+    # construct mention string
+    user_mentions = ""
+    for index, target in enumerate(targets):
+        mid = getattr(target, "id", 0)
+        if mid in constructed:
+            continue
+
+        mention = getattr(target, "mention", None)
+        if not mention:
+            continue
+
+        constructed.add(mid)
+
+        spacer = " " if (index != len(targets) - 1) else ""
+        user_mentions += mention + spacer
+
+    return user_mentions
+
+
+def prepare_deny_embed(message: str) -> discord.Embed:
+    return generate_basic_embed(
+        title="😕 👎",
+        description=message,
+        color=discord.Color.red(),
+    )
+
+
+async def send_deny_embed(
+    message: str, channel: discord.abc.Messageable, author: discord.Member = None
+) -> None:
+    embed = prepare_deny_embed(message)
+    await channel.send(content=construct_mention_string([author]), embed=embed)

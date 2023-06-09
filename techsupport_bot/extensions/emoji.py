@@ -105,8 +105,9 @@ class Emojis(base.BaseCog):
 
         # Ensure there is something to send
         if len(emoji_message) == 0:
-            await ctx.send_deny_embed(
-                "I can't get any emoji letters from your message!"
+            await auxiliary.send_deny_embed(
+                message="I can't get any emoji letters from your message!",
+                channel=ctx.channel,
             )
             return
 
@@ -117,14 +118,17 @@ class Emojis(base.BaseCog):
                 channel=ctx.channel, prefix=prefix, member_to_match=react_user
             )
             if not react_message:
-                await ctx.send_deny_embed("No valid messages found to react to!")
+                await auxiliary.send_deny_embed(
+                    message="No valid messages found to react to!", channel=ctx.channel
+                )
                 return
 
         # Finally, send the emojis as an embed or a reaction
         if add_reactions:
             if not self.check_if_all_unique(message):
-                await ctx.send_deny_embed(
-                    "Invalid message! Make sure there are no repeat characters!"
+                await auxiliary.send_deny_embed(
+                    message="Invalid message! Make sure there are no repeat characters!",
+                    channel=ctx.channel,
                 )
                 return
             await auxiliary.add_list_of_reactions(
