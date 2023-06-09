@@ -114,6 +114,27 @@ def prepare_deny_embed(message: str) -> discord.Embed:
 
 async def send_deny_embed(
     message: str, channel: discord.abc.Messageable, author: discord.Member = None
-) -> None:
+) -> discord.Message:
     embed = prepare_deny_embed(message)
-    await channel.send(content=construct_mention_string([author]), embed=embed)
+    message = await channel.send(
+        content=construct_mention_string([author]), embed=embed
+    )
+    return message
+
+
+def prepare_confirm_embed(message: str) -> discord.Embed:
+    return generate_basic_embed(
+        title="😄 👍",
+        description=message,
+        color=discord.Color.green(),
+    )
+
+
+async def send_confirm_embed(
+    message: str, channel: discord.abc.Messageable, author: discord.Member = None
+) -> discord.Message:
+    embed = prepare_confirm_embed(message)
+    message = await channel.send(
+        content=construct_mention_string([author]), embed=embed
+    )
+    return message

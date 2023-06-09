@@ -170,14 +170,17 @@ class Who(base.BaseCog):
         )
 
         if not role:
-            await ctx.send_confirm_embed(
-                f"Note created for `{user}`, but no note role is configured so no role was added"
+            await auxiliary.send_confirm_embed(
+                message=f"Note created for `{user}`, but no note role is configured so no role was added",
+                channel=ctx.channel,
             )
             return
 
         await user.add_roles(role)
 
-        await ctx.send_confirm_embed(f"Note created for `{user}`")
+        await auxiliary.send_confirm_embed(
+            message=f"Note created for `{user}`", channel=ctx.channel
+        )
 
     @note.command(
         name="clear",
@@ -217,7 +220,9 @@ class Who(base.BaseCog):
 
         await user.remove_roles(role)
 
-        await ctx.send_confirm_embed(f"Notes cleared for `{user}`")
+        await auxiliary.send_confirm_embed(
+            message=f"Notes cleared for `{user}`", channel=ctx.channel
+        )
 
     @note.command(
         name="all",

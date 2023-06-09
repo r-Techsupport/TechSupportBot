@@ -598,7 +598,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             if user
             else f"I've {status} that application, but the applicant has left the server"
         )
-        await ctx.send_confirm_embed(message_content)
+        await auxiliary.send_confirm_embed(message=message_content, channel=ctx.channel)
 
         embed = ApplicationEmbed(
             description=f"Hey, your application in `{ctx.guild.name}` has been {status}!",

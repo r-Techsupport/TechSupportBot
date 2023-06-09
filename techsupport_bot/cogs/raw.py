@@ -39,7 +39,9 @@ class Raw(base.BaseCog):
             )
             return
 
-        await ctx.send_confirm_embed("Code executed!")
+        await auxiliary.send_confirm_embed(
+            message="Code executed!", channel=ctx.channel
+        )
 
     async def aexec(self, code):
         """Uses exec to define a custom async function, and then awaits it.

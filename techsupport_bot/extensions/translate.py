@@ -38,4 +38,4 @@ class Translator(base.BaseCog):
             )
             return
 
-        await ctx.send_confirm_embed(translated)
+        await auxiliary.send_confirm_embed(message=translated, channel=ctx.channel)

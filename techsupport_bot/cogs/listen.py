@@ -282,7 +282,9 @@ class Listener(base.BaseCog):
         destinations.append(str(dst.id))
         await self.update_destinations(src, destinations)
 
-        await ctx.send_confirm_embed("Listening registered!")
+        await auxiliary.send_confirm_embed(
+            message="Listening registered!", channel=ctx.channel
+        )
 
     @listen.command(
         description="Stops a listening job", usage="[src-channel] [dst-channel]"
@@ -318,7 +320,9 @@ class Listener(base.BaseCog):
         destinations.remove(str(dst.id))
         await self.update_destinations(src, destinations)
 
-        await ctx.send_confirm_embed("Listening deregistered!")
+        await auxiliary.send_confirm_embed(
+            message="Listening deregistered!", channel=ctx.channel
+        )
 
     # pylint: disable=attribute-defined-outside-init
     @listen.command(
@@ -335,7 +339,9 @@ class Listener(base.BaseCog):
         await self.bot.mongo[self.COLLECTION_NAME].delete_many({})
         self.destination_cache.clear()
 
-        await ctx.send_confirm_embed("All listeners deregistered!")
+        await auxiliary.send_confirm_embed(
+            message="All listeners deregistered!", channel=ctx.channel
+        )
 
     @listen.command(
         description="Gets listener job registrations",

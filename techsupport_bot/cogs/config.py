@@ -109,7 +109,9 @@ class ConfigControl(base.BaseCog):
                 {"guild_id": config.get("guild_id")}, uploaded_data
             )
 
-            await ctx.send_confirm_embed("I've updated that config")
+            await auxiliary.send_confirm_embed(
+                message="I've updated that config", channel=ctx.channel
+            )
             return
 
         json_config = config.copy()
@@ -164,7 +166,9 @@ class ConfigControl(base.BaseCog):
             {"guild_id": config.get("guild_id")}, config
         )
 
-        await ctx.send_confirm_embed("I've enabled that extension for this guild")
+        await auxiliary.send_confirm_embed(
+            message="I've enabled that extension for this guild", channel=ctx.channel
+        )
 
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
@@ -210,4 +214,6 @@ class ConfigControl(base.BaseCog):
             {"guild_id": config.get("guild_id")}, config
         )
 
-        await ctx.send_confirm_embed("I've disabled that extension for this guild")
+        await auxiliary.send_confirm_embed(
+            message="I've disabled that extension for this guild", channel=ctx.channel
+        )

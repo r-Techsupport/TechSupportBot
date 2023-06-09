@@ -133,7 +133,9 @@ class Grabber(base.BaseCog):
         )
         await grab.create()
 
-        await ctx.send_confirm_embed(f"Successfully saved: '*{grab_message}*'")
+        await auxiliary.send_confirm_embed(
+            message=f"Successfully saved: '*{grab_message}*'", channel=ctx.channel
+        )
 
     @commands.group(
         brief="Executes a grabs command",
@@ -313,4 +315,6 @@ class Grabber(base.BaseCog):
         except IndexError:
             raise commands.CommandError("Couldn't delete the grab!") from IndexError
 
-        await ctx.send_confirm_embed("Grab succesfully deleted!")
+        await auxiliary.send_confirm_embed(
+            message="Grab succesfully deleted!", channel=ctx.channel
+        )

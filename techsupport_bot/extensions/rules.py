@@ -59,7 +59,9 @@ class Rules(base.BaseCog):
         if uploaded_data:
             uploaded_data["guild_id"] = str(ctx.guild.id)
             await collection.replace_one({"guild_id": str(ctx.guild.id)}, uploaded_data)
-            await ctx.send_confirm_embed("I've updated to those rules")
+            await auxiliary.send_confirm_embed(
+                message="I've updated to those rules", channel=ctx.channel
+            )
             return
 
         rules_data = await collection.find_one({"guild_id": {"$eq": str(ctx.guild.id)}})
@@ -167,7 +169,9 @@ class Rules(base.BaseCog):
             {"guild_id": {"$eq": str(ctx.guild.id)}}
         )
         if not rules_data or not rules_data.get("rules"):
-            await ctx.send_confirm_embed("There are no rules for this server")
+            await auxiliary.send_confirm_embed(
+                message="There are no rules for this server", channel=ctx.channel
+            )
             return
 
         embed = RuleEmbed(

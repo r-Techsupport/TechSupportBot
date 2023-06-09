@@ -3,7 +3,6 @@
 
 
 import discord
-import embeds
 from base import auxiliary
 from discord.ext import commands
 
@@ -36,17 +35,6 @@ class Context(commands.Context):
             kwargs["content"] = f"{mention_string} {provided_content}"
 
         message = await super().send(*args, **kwargs)
-        return message
-
-    async def send_confirm_embed(self, content, targets=None):
-        """Sends a confirmation embed.
-
-        parameters:
-            content (str): the base confirmation message
-            targets ([]discord.User): the list of users to mention
-        """
-        embed = embeds.ConfirmEmbed(message=content)
-        message = await self.send(embed=embed, targets=targets or [])
         return message
 
     async def confirm(self, message, timeout=60, delete_after=True, bypass=None):

@@ -135,7 +135,9 @@ class Emojis(base.BaseCog):
                 message=react_message, reactions=emoji_message
             )
         else:
-            await ctx.send_confirm_embed(" ".join(emoji_message))
+            await auxiliary.send_confirm_embed(
+                message=" ".join(emoji_message), channel=ctx.channel
+            )
 
     @commands.group(
         brief="Executes an emoji command",

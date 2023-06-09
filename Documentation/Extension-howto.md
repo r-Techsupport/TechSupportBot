@@ -299,9 +299,9 @@ response = await self.bot.http_call(
 
 To return a message, use `await ctx` with any of the following methods:
 
-- `send_confirm_embed("<message>")` - This sends a green embed with a custom message
 - `send(embed=<embed>)` - This sends a custom embed that has to be defined manually
 
 You can also use `await auxiliary` with any of the following methods:
 
 - `send_deny_embed("<message>")` - This sends a red embed with a custom message
+- `send_confirm_embed("<message>")` - This sends a green embed with a custom message

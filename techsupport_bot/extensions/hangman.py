@@ -350,6 +350,7 @@ class HangmanCog(base.BaseCog):
         word = getattr(game, "word", "???")
 
         del self.games[ctx.channel.id]
-        await ctx.send_confirm_embed(
-            f"That game is now finished. The word was: `{word}`"
+        await auxiliary.send_confirm_embed(
+            message=f"That game is now finished. The word was: `{word}`",
+            channel=ctx.channel,
         )

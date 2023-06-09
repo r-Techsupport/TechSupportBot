@@ -114,7 +114,9 @@ class ChatGPT(base.BaseCog):
             )
             return
 
-        await ctx.send_confirm_embed("Chat history cleared!")
+        await auxiliary.send_confirm_embed(
+            message="Chat history cleared!", channel=ctx.channel
+        )
 
     @util.with_typing
     @gptutil.command(

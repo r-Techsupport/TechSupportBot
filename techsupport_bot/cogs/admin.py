@@ -130,7 +130,9 @@ class AdminControl(base.BaseCog):
             extension_name (str): the name of the extension
         """
         await ctx.bot.load_extension(f"extensions.{extension_name}")
-        await ctx.send_confirm_embed("I've loaded that extension")
+        await auxiliary.send_confirm_embed(
+            message="I've loaded that extension", channel=ctx.channel
+        )
 
     @util.with_typing
     @extension_group.command(
@@ -148,7 +150,9 @@ class AdminControl(base.BaseCog):
             extension_name (str): the name of the extension
         """
         await ctx.bot.unload_extension(f"extensions.{extension_name}")
-        await ctx.send_confirm_embed("I've unloaded that extension")
+        await auxiliary.send_confirm_embed(
+            message="I've unloaded that extension", channel=ctx.channel
+        )
 
     @util.with_typing
     @extension_group.command(
@@ -192,8 +196,9 @@ class AdminControl(base.BaseCog):
 
         fp = await attachment.read()
         await self.bot.register_file_extension(extension_name, fp)
-        await ctx.send_confirm_embed(
-            "I've registered that extension. You can now try loading it"
+        await auxiliary.send_confirm_embed(
+            message="I've registered that extension. You can now try loading it",
+            channel=ctx.channel,
         )
 
     @commands.group(
@@ -279,7 +284,10 @@ class AdminControl(base.BaseCog):
             return
 
         command_.enabled = True
-        await ctx.send_confirm_embed(f"Successfully enabled command: `{command_name}`")
+        await auxiliary.send_confirm_embed(
+            message=f"Successfully enabled command: `{command_name}`",
+            channel=ctx.channel,
+        )
 
     @util.with_typing
     @command_group.command(
@@ -309,7 +317,10 @@ class AdminControl(base.BaseCog):
             return
 
         command_.enabled = False
-        await ctx.send_confirm_embed(f"Successfully disabled command: `{command_name}`")
+        await auxiliary.send_confirm_embed(
+            message=f"Successfully disabled command: `{command_name}`",
+            channel=ctx.channel,
+        )
 
     @commands.group(
         name="set",
@@ -380,7 +391,9 @@ class AdminControl(base.BaseCog):
             game_name (str): the name of the game
         """
         await ctx.bot.change_presence(activity=discord.Game(name=game_name))
-        await ctx.send_confirm_embed(f"Successfully set game to: *{game_name}*")
+        await auxiliary.send_confirm_embed(
+            message=f"Successfully set game to: *{game_name}*", channel=ctx.channel
+        )
 
     @util.with_typing
     @set_group.command(
@@ -396,7 +409,9 @@ class AdminControl(base.BaseCog):
             nick (str): the bot nickname
         """
         await ctx.message.guild.me.edit(nick=nick)
-        await ctx.send_confirm_embed(f"Successfully set nick to: *{nick}*")
+        await auxiliary.send_confirm_embed(
+            message=f"Successfully set nick to: *{nick}*", channel=ctx.channel
+        )
 
     @commands.group(
         brief="Executes an echo bot command", description="Executes an echo bot command"
@@ -476,7 +491,7 @@ class AdminControl(base.BaseCog):
 
         await channel.send(content=message)
 
-        await ctx.send_confirm_embed("Message sent")
+        await auxiliary.send_confirm_embed(message="Message sent", channel=ctx.channel)
 
     @util.with_typing
     @echo.command(
@@ -503,7 +518,7 @@ class AdminControl(base.BaseCog):
 
         await user.send(content=message)
 
-        await ctx.send_confirm_embed("Message sent")
+        await auxiliary.send_confirm_embed(message="Message sent", channel=ctx.channel)
 
     @commands.command(
         name="restart",
@@ -518,7 +533,9 @@ class AdminControl(base.BaseCog):
         parameters:
             ctx (discord.ext.Context): the context object for the calling message
         """
-        await ctx.send_confirm_embed("Rebooting! Beep boop!")
+        await auxiliary.send_confirm_embed(
+            message="Rebooting! Beep boop!", channel=ctx.channel
+        )
         sys.exit()
 
     @commands.command(
@@ -542,8 +559,9 @@ class AdminControl(base.BaseCog):
 
         await guild.leave()
 
-        await ctx.send_confirm_embed(
-            f"I have left the guild: {guild.name} ({guild.id})"
+        await auxiliary.send_confirm_embed(
+            message=f"I have left the guild: {guild.name} ({guild.id})",
+            channel=ctx.channel,
         )
 
     @commands.command(name="bot", description="Provides bot info")

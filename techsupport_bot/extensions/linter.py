@@ -67,4 +67,4 @@ class Lint(base.BaseCog):
             )
             return
 
-        await ctx.send_confirm_embed("Syntax is OK")
+        await auxiliary.send_confirm_embed(message="Syntax is OK", channel=ctx.channel)

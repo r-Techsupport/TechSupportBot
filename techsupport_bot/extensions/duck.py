@@ -7,7 +7,6 @@ from datetime import timedelta
 
 import base
 import discord
-import embeds as stock_embeds
 import ui
 import util
 from base import auxiliary
@@ -544,8 +543,9 @@ class DuckHunt(base.LoopCog):
             return
 
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
-        await ctx.send_confirm_embed(
-            f"Fly safe! You have {duck_user.befriend_count} ducks left."
+        await auxiliary.send_confirm_embed(
+            message=f"Fly safe! You have {duck_user.befriend_count} ducks left.",
+            channel=ctx.channel,
         )
 
     @util.with_typing
@@ -573,9 +573,9 @@ class DuckHunt(base.LoopCog):
 
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
         await duck_user.update(kill_count=duck_user.kill_count + 1).apply()
-        await ctx.send_confirm_embed(
-            f"You monster! You have {duck_user.befriend_count}"
-            + f" ducks left and {duck_user.kill_count} kills to your name."
+        await auxiliary.send_confirm_embed(
+            message=f"You monster! You have {duck_user.befriend_count} ducks left and {duck_user.kill_count} kills to your name.",
+            channel=ctx.channel,
         )
 
     @util.with_typing
@@ -622,9 +622,9 @@ class DuckHunt(base.LoopCog):
 
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
         await recipee.update(befriend_count=recipee.befriend_count + 1).apply()
-        await ctx.send_confirm_embed(
-            f"You gave a duck to {user.mention}. "
-            + f"You now have {duck_user.befriend_count} ducks left."
+        await auxiliary.send_confirm_embed(
+            message=f"You gave a duck to {user.mention}. You now have {duck_user.befriend_count} ducks left.",
+            channel=ctx.channel,
         )
 
     @util.with_typing
@@ -660,4 +660,7 @@ class DuckHunt(base.LoopCog):
             return
 
         await duck_user.delete()
-        await ctx.send_confirm_embed(f"Succesfully reset {user.mention}s duck stats!")
+        await auxiliary.send_confirm_embed(
+            message=f"Succesfully reset {user.mention}s duck stats!",
+            channel=ctx.channel,
+        )

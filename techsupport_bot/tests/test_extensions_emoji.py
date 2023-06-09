@@ -167,11 +167,13 @@ class Test_EmojiCommands:
 
         discord_env.emoji.generate_emoji_string = MagicMock(return_value=["1", "2"])
 
-        discord_env.context.send_confirm_embed = AsyncMock()
+        auxiliary.send_confirm_embed = AsyncMock()
 
         await discord_env.emoji.emoji_commands(discord_env.context, "abcde", False)
 
-        discord_env.context.send_confirm_embed.assert_called_once_with("1 2")
+        auxiliary.send_confirm_embed.assert_called_once_with(
+            message="1 2", channel=discord_env.channel
+        )
 
     @pytest.mark.asyncio
     @mock.patch("asyncio.create_task", return_value=None)

@@ -280,7 +280,9 @@ class FactoidManager(base.MatchCog):
 
         await self.handle_cache(ctx, trigger)
 
-        await ctx.send_confirm_embed(f"Successfully {message} factoid `{trigger}`")
+        await auxiliary.send_confirm_embed(
+            message=f"Successfully {message} factoid `{trigger}`", channel=ctx.channel
+        )
 
     async def delete_factoid(self, ctx, trigger):
         """Method to delete a factoid."""
@@ -307,8 +309,9 @@ class FactoidManager(base.MatchCog):
 
         # Don't send the confirmation message if this is an alias either
         if factoid.alias in ["", None]:
-            await ctx.send_confirm_embed(
-                f"Successfully deleted the factoid `{trigger}`"
+            await auxiliary.send_confirm_embed(
+                message=f"Successfully deleted the factoid `{trigger}`",
+                channel=ctx.channel,
             )
 
     async def match(self, config, __, content):
@@ -683,7 +686,9 @@ class FactoidManager(base.MatchCog):
 
         asyncio.create_task(self.cronjob(job, ctx))
 
-        await ctx.send_confirm_embed("Factoid loop created")
+        await auxiliary.send_confirm_embed(
+            message="Factoid loop created", channel=ctx.channel
+        )
 
     @util.with_typing
     @commands.check(has_manage_factoids_role)
@@ -715,8 +720,9 @@ class FactoidManager(base.MatchCog):
 
         await job.delete()
 
-        await ctx.send_confirm_embed(
-            "Loop job deleted (please wait some time to see changes)"
+        await auxiliary.send_confirm_embed(
+            message="Loop job deleted (please wait some time to see changes)",
+            channel=ctx.channel,
         )
 
     @util.with_typing
@@ -870,7 +876,9 @@ class FactoidManager(base.MatchCog):
         # Handling for aliases (They just get deleted, no parent handling needs to be done)
         if factoid.alias not in ["", None]:
             await self.delete_factoid(ctx, factoid.text)
-            await ctx.send_confirm_embed(f"Deleted the alias `{factoid.text}`")
+            await auxiliary.send_confirm_embed(
+                message=f"Deleted the alias `{factoid.text}`", channel=ctx.channel
+            )
             return
 
         # Gets list of aliases
@@ -985,7 +993,7 @@ class FactoidManager(base.MatchCog):
             url = await response.text()
             filename = url.split("/")[-1]
             url = url.replace(filename, f"selif/{filename}")
-            await ctx.send_confirm_embed(url)
+            await auxiliary.send_confirm_embed(message=url, channel=ctx.channel)
         except Exception as e:
             await self.send_factoids_as_file(ctx, factoids, aliases)
             await self.bot.guild_log(
@@ -1097,7 +1105,9 @@ class FactoidManager(base.MatchCog):
 
         await factoid.update(hidden=True).apply()
 
-        await ctx.send_confirm_embed("That factoid is now hidden")
+        await auxiliary.send_confirm_embed(
+            message="That factoid is now hidden", channel=ctx.channel
+        )
 
     @util.with_typing
     @commands.check(has_manage_factoids_role)
@@ -1131,7 +1141,9 @@ class FactoidManager(base.MatchCog):
 
         await factoid.update(hidden=False).apply()
 
-        await ctx.send_confirm_embed("That factoid is now unhidden")
+        await auxiliary.send_confirm_embed(
+            message="That factoid is now unhidden", channel=ctx.channel
+        )
 
     @util.with_typing
     @commands.check(has_manage_factoids_role)
@@ -1263,6 +1275,7 @@ class FactoidManager(base.MatchCog):
         await alias_entry.create()
 
         await self.handle_cache(ctx, alias_name)
-        await ctx.send_confirm_embed(
-            f"Successfully added the alias `{alias_name}` for `{factoid.text}`"
+        await auxiliary.send_confirm_embed(
+            message=f"Successfully added the alias `{alias_name}` for `{factoid.text}`",
+            channel=ctx.channel,
         )

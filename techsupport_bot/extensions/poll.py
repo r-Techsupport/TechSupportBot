@@ -145,7 +145,9 @@ class ReactionPoller(PollGenerator):
         if not request_body:
             return
 
-        message = await ctx.send_confirm_embed("Poll loading...")
+        message = await auxiliary.send_confirm_embed(
+            message="Poll loading...", channel=ctx.channel
+        )
 
         display_timeout = (
             request_body.timeout
@@ -314,4 +316,6 @@ class StrawPoller(PollGenerator):
             )
             return
 
-        await ctx.send_confirm_embed(f"https://strawpoll.com/{content_id}")
+        await auxiliary.send_confirm_embed(
+            message=f"https://strawpoll.com/{content_id}", channel=ctx.channel
+        )
