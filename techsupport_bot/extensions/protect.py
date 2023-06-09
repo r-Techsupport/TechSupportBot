@@ -385,20 +385,20 @@ class Protector(base.MatchCog):
 
         # Attempt DM for manually initiated, non-banning warns
         if ctx.command == self.bot.get_command("warn"):
+            # Cancel warns in channels invisible to user
+            if user not in ctx.channel.members:
+                await ctx.send_deny_embed(f"{user} cannot see this warning.")
+                return
+
             try:
                 await user.send(embed=embed)
 
             except (discord.HTTPException, discord.Forbidden):
-                await self.bot.logger.error(f"Failed to DM warning to {user}")
+                await self.bot.logger.warning(f"Failed to DM warning to {user}")
 
-                # Do not allow warn if invisible to user
-                if user not in ctx.channel.members:
-                    await ctx.send_deny_embed(f"{user} cannot see this warning.")
-                    return
+            finally:
                 await ctx.send(content=user.mention, embed=embed)
 
-            else:
-                await ctx.message.add_reaction("✅")
         else:
             await ctx.send(embed=embed)
 
