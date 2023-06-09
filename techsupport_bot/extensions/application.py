@@ -7,7 +7,6 @@ import uuid
 import aiocron
 import base
 import discord
-import embeds
 import munch
 import yaml
 from base import auxiliary
