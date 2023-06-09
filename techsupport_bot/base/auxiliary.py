@@ -100,7 +100,7 @@ def construct_mention_string(targets: list) -> str:
 
         spacer = " " if (index != len(targets) - 1) else ""
         user_mentions += mention + spacer
-    
+
     if user_mentions.endswith(" "):
         user_mentions = user_mentions[:-1]
 
@@ -132,7 +132,7 @@ async def send_deny_embed(
     Args:
         message (str): The reason for deny
         channel (discord.abc.Messageable): The channel to send the deny embed to
-        author (discord.Member, optional): The author of the message. 
+        author (discord.Member, optional): The author of the message.
             If this is provided, the author will be mentioned
 
     Returns:
@@ -170,7 +170,7 @@ async def send_confirm_embed(
     Args:
         message (str): The reason for confirm
         channel (discord.abc.Messageable): The channel to send the confirm embed to
-        author (discord.Member, optional): The author of the message. 
+        author (discord.Member, optional): The author of the message.
             If this is provided, the author will be mentioned
 
     Returns:
