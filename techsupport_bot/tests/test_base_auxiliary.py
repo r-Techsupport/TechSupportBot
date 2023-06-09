@@ -1,10 +1,10 @@
 """
 This is a file to test the base/auxiliary.py file
-This contains 15 tests
+This contains 23 tests
 """
 
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import discord
 import mock
@@ -248,3 +248,87 @@ class Test_AddReactions:
         discord_env.message_person1_noprefix_1.add_reaction.assert_has_calls(
             expected_calls, any_order=False
         )
+
+class Test_ConstructMention:
+    """A set of test cases to test construct_mention_string"""
+    def test_no_users(self):
+        output = auxiliary.construct_mention_string([None])
+
+        assert output == ""
+    
+    def test_one_user(self):
+        with mock.patch("asyncio.create_task", return_value=None):
+            discord_env = config_for_tests.FakeDiscordEnv()
+            output = auxiliary.construct_mention_string([discord_env.person1])
+
+            assert output == "<@1>"
+    
+    def test_two_users(self):
+        with mock.patch("asyncio.create_task", return_value=None):
+            discord_env = config_for_tests.FakeDiscordEnv()
+            output = auxiliary.construct_mention_string([discord_env.person1, discord_env.person2])
+
+            assert output == "<@1> <@2>"
+    
+    def test_mulltiple_same_user(self):
+        with mock.patch("asyncio.create_task", return_value=None):
+            discord_env = config_for_tests.FakeDiscordEnv()
+            output = auxiliary.construct_mention_string([discord_env.person1, discord_env.person1])
+
+            assert output == "<@1>"
+
+class Test_PrepareDeny:
+    """Tests for prepare_deny_embed and send_deny_embed"""
+    def test_prepare_deny(self):
+        auxiliary.generate_basic_embed = MagicMock()
+
+        auxiliary.prepare_deny_embed("Test")
+
+        auxiliary.generate_basic_embed.assert_called_once_with(
+            title="😕 👎",
+            description="Test",
+            color=discord.Color.red(),
+        )
+    
+    @pytest.mark.asyncio
+    async def test_send_deny(self):
+        with mock.patch("asyncio.create_task", return_value=None):
+            discord_env = config_for_tests.FakeDiscordEnv()
+            auxiliary.prepare_deny_embed = MagicMock(return_value="test")
+            auxiliary.construct_mention_string = MagicMock(return_value="")
+            discord_env.channel.send = AsyncMock()
+
+            await auxiliary.send_deny_embed("Message", discord_env.channel)
+
+            discord_env.channel.send.assert_awaited_once_with(
+                content="",
+                embed="test"
+            )
+
+
+class Test_PrepareConfirm:
+    """Tests for prepare_confirm_embed and send_confirm_embed"""
+    def test_prepare_confirm(self):
+        auxiliary.generate_basic_embed = MagicMock()
+        auxiliary.prepare_confirm_embed("Test")
+
+        auxiliary.generate_basic_embed.assert_called_once_with(
+            title="😄 👍",
+            description="Test",
+            color=discord.Color.green(),
+        )
+
+    @pytest.mark.asyncio
+    async def test_send_confirm(self):
+        with mock.patch("asyncio.create_task", return_value=None):
+            discord_env = config_for_tests.FakeDiscordEnv()
+            auxiliary.prepare_confirm_embed = MagicMock(return_value="test")
+            auxiliary.construct_mention_string = MagicMock(return_value="")
+            discord_env.channel.send = AsyncMock()
+
+            await auxiliary.send_confirm_embed("Message", discord_env.channel)
+
+            discord_env.channel.send.assert_awaited_once_with(
+                content="",
+                embed="test"
+            )

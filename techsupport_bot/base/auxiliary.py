@@ -100,11 +100,23 @@ def construct_mention_string(targets: list) -> str:
 
         spacer = " " if (index != len(targets) - 1) else ""
         user_mentions += mention + spacer
+    
+    if user_mentions.endswith(" "):
+        user_mentions = user_mentions[:-1]
 
     return user_mentions
 
 
 def prepare_deny_embed(message: str) -> discord.Embed:
+    """Prepares a formatted deny embed
+    This just calls generate_basic_embed with a pre-loaded set of args
+
+    Args:
+        message (str): The reason for deny
+
+    Returns:
+        discord.Embed: The formatted embed
+    """
     return generate_basic_embed(
         title="😕 👎",
         description=message,
@@ -115,6 +127,17 @@ def prepare_deny_embed(message: str) -> discord.Embed:
 async def send_deny_embed(
     message: str, channel: discord.abc.Messageable, author: discord.Member = None
 ) -> discord.Message:
+    """Sends a formatted deny embed to the given channel
+
+    Args:
+        message (str): The reason for deny
+        channel (discord.abc.Messageable): The channel to send the deny embed to
+        author (discord.Member, optional): The author of the message. 
+            If this is provided, the author will be mentioned
+
+    Returns:
+        discord.Message: The message object sent
+    """
     embed = prepare_deny_embed(message)
     message = await channel.send(
         content=construct_mention_string([author]), embed=embed
@@ -123,6 +146,15 @@ async def send_deny_embed(
 
 
 def prepare_confirm_embed(message: str) -> discord.Embed:
+    """Prepares a formatted confirm embed
+    This just calls generate_basic_embed with a pre-loaded set of args
+
+    Args:
+        message (str): The reason for confirm
+
+    Returns:
+        discord.Embed: The formatted embed
+    """
     return generate_basic_embed(
         title="😄 👍",
         description=message,
@@ -133,6 +165,17 @@ def prepare_confirm_embed(message: str) -> discord.Embed:
 async def send_confirm_embed(
     message: str, channel: discord.abc.Messageable, author: discord.Member = None
 ) -> discord.Message:
+    """Sends a formatted deny embed to the given channel
+
+    Args:
+        message (str): The reason for confirm
+        channel (discord.abc.Messageable): The channel to send the confirm embed to
+        author (discord.Member, optional): The author of the message. 
+            If this is provided, the author will be mentioned
+
+    Returns:
+        discord.Message: The message object sent
+    """
     embed = prepare_confirm_embed(message)
     message = await channel.send(
         content=construct_mention_string([author]), embed=embed
