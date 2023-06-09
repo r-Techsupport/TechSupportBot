@@ -483,7 +483,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             await view.wait()
             if view.value is ui.ConfirmResponse.TIMEOUT:
                 return
-            elif view.value is ui.ConfirmResponse.DENIED:
+            if view.value is ui.ConfirmResponse.DENIED:
                 await ctx.send_deny_embed("Application was not approved")
                 return
 
@@ -498,7 +498,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         await view.wait()
         if view.value is ui.ConfirmResponse.TIMEOUT:
             return
-        elif view.value is ui.ConfirmResponse.DENIED:
+        if view.value is ui.ConfirmResponse.DENIED:
             await ctx.send_deny_embed(
                 f"The application was not approved and `{username}` was not notified"
             )
@@ -533,14 +533,15 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         if status == "approved":
             view = ui.Confirm()
             await view.send(
-                message="That application has been marked as approved. Are you sure you want to deny it?",
+                message="That application has been marked as approved. "
+                + "Are you sure you want to deny it?",
                 channel=ctx.channel,
                 author=ctx.author,
             )
             await view.wait()
             if view.value is ui.ConfirmResponse.TIMEOUT:
                 return
-            elif view.value is ui.ConfirmResponse.DENIED:
+            if view.value is ui.ConfirmResponse.DENIED:
                 await ctx.send_deny_embed("Application was not denied")
                 return
 
@@ -555,7 +556,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         await view.wait()
         if view.value is ui.ConfirmResponse.TIMEOUT:
             return
-        elif view.value is ui.ConfirmResponse.DENIED:
+        if view.value is ui.ConfirmResponse.DENIED:
             await ctx.send_deny_embed(
                 f"The application was not denied and `{username}` was not notified"
             )

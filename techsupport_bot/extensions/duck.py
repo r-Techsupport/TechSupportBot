@@ -625,7 +625,7 @@ class DuckHunt(base.LoopCog):
         await view.wait()
         if view.value is ui.ConfirmResponse.TIMEOUT:
             return
-        elif view.value is ui.ConfirmResponse.DENIED:
+        if view.value is ui.ConfirmResponse.DENIED:
             await ctx.send_deny_embed(f"{user.mention}s duck stats were NOT reset.")
             return
 

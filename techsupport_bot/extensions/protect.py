@@ -360,7 +360,9 @@ class Protector(base.MatchCog):
             if not bypass:
                 view = ui.Confirm()
                 await view.send(
-                    message=f"This user has exceeded the max warnings of {config.extensions.protect.max_warnings.value}. Would you like to ban them instead?",
+                    message="This user has exceeded the max warnings of "
+                    + f"{config.extensions.protect.max_warnings.value}. Would "
+                    + "you like to ban them instead?",
                     channel=ctx.channel,
                     author=ctx.author,
                 )

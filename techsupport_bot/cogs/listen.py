@@ -236,7 +236,7 @@ class Listener(base.BaseCog):
         ]:
             view = ui.Confirm()
             await view.send(
-                message=f"Invalid argument! Show help command?",
+                message="Invalid argument! Show help command?",
                 channel=ctx.channel,
                 author=ctx.author,
                 timeout=10,

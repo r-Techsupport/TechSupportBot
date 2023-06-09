@@ -220,7 +220,7 @@ class HangmanCog(base.BaseCog):
                 await view.wait()
                 if view.value is ui.ConfirmResponse.TIMEOUT:
                     return
-                elif view.value is ui.ConfirmResponse.DENIED:
+                if view.value is ui.ConfirmResponse.DENIED:
                     await ctx.send_deny_embed("The current game was not ended")
                     return
 
@@ -335,7 +335,7 @@ class HangmanCog(base.BaseCog):
         await view.wait()
         if view.value is ui.ConfirmResponse.TIMEOUT:
             return
-        elif view.value is ui.ConfirmResponse.DENIED:
+        if view.value is ui.ConfirmResponse.DENIED:
             await ctx.send_deny_embed("The current game was not ended")
             return
 

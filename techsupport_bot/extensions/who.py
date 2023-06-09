@@ -199,7 +199,7 @@ class Who(base.BaseCog):
         await view.wait()
         if view.value is ui.ConfirmResponse.TIMEOUT:
             return
-        elif view.value is ui.ConfirmResponse.DENIED:
+        if view.value is ui.ConfirmResponse.DENIED:
             await ctx.send_deny_embed(f"Notes for `{user}` were not cleared")
             return
 

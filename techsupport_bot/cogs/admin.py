@@ -78,7 +78,7 @@ class AdminControl(base.BaseCog):
         ]:
             view = ui.Confirm()
             await view.send(
-                message=f"Invalid argument! Show help command?",
+                message="Invalid argument! Show help command?",
                 channel=ctx.channel,
                 author=ctx.author,
                 timeout=10,
@@ -184,7 +184,8 @@ class AdminControl(base.BaseCog):
         if extension_name.lower() in self.bot.get_potential_extensions():
             view = ui.Confirm()
             await view.send(
-                message=f"Warning! This will replace the current `{extension_name}.py` extension! Are you SURE?",
+                message=f"Warning! This will replace the current `{extension_name}.py` "
+                + "extension! Are you SURE?",
                 channel=ctx.channel,
                 author=ctx.author,
             )
@@ -192,7 +193,7 @@ class AdminControl(base.BaseCog):
 
             if view.value is ui.ConfirmResponse.TIMEOUT:
                 return
-            elif view.value is ui.ConfirmResponse.DENIED:
+            if view.value is ui.ConfirmResponse.DENIED:
                 await ctx.send_deny_embed(f"{extension_name}.py was not replaced")
                 return
 
@@ -252,7 +253,7 @@ class AdminControl(base.BaseCog):
         ]:
             view = ui.Confirm()
             await view.send(
-                message=f"Invalid argument! Show help command?",
+                message="Invalid argument! Show help command?",
                 channel=ctx.channel,
                 author=ctx.author,
                 timeout=10,
@@ -364,7 +365,7 @@ class AdminControl(base.BaseCog):
         ]:
             view = ui.Confirm()
             await view.send(
-                message=f"Invalid argument! Show help command?",
+                message="Invalid argument! Show help command?",
                 channel=ctx.channel,
                 author=ctx.author,
                 timeout=10,
@@ -456,7 +457,7 @@ class AdminControl(base.BaseCog):
         ]:
             view = ui.Confirm()
             await view.send(
-                message=f"Invalid argument! Show help command?",
+                message="Invalid argument! Show help command?",
                 channel=ctx.channel,
                 author=ctx.author,
                 timeout=10,
