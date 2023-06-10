@@ -381,7 +381,6 @@ class AdvancedBot(DataBot):
         if hasattr(context.command, "on_error"):
             return
         if context.cog:
-            # pylint: disable=protected-access
             if (
                 commands.Cog._get_overridden_method(context.cog.cog_command_error)
                 is not None
