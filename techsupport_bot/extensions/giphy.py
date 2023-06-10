@@ -1,5 +1,6 @@
 """Module for giphy extension in the bot."""
 import base
+import ui
 import util
 from discord.ext import commands
 
@@ -51,4 +52,4 @@ class Giphy(base.BaseCog):
             url = self.parse_url(url)
             embeds.append(url)
 
-        ctx.task_paginate(pages=embeds)
+        await ui.PaginateView().send(ctx, embeds)

@@ -1,6 +1,7 @@
 """Module for the Spotify extension of the discord bot."""
 import aiohttp
 import base
+import ui
 import util
 from discord.ext import commands
 
@@ -68,4 +69,4 @@ class Spotify(base.BaseCog):
             await ctx.send_deny_embed("I had trouble parsing the search results")
             return
 
-        ctx.task_paginate(pages=links)
+        await ui.PaginateView().send(ctx, links)
