@@ -337,7 +337,7 @@ class Protector(base.MatchCog):
 
         self.string_alert_cache[cache_key] = True
 
-    async def handle_warn(self, ctx, user, reason, bypass=False):
+    async def handle_warn(self, ctx, user: discord.Member, reason: str, bypass=False):
         """Method to handle the warn of a user."""
         if not bypass:
             can_execute = await self.can_execute(ctx, user)
@@ -379,13 +379,32 @@ class Protector(base.MatchCog):
                 await self.clear_warnings(user, ctx.guild)
                 return
 
-        await self.models.Warning(
-            user_id=str(user.id), guild_id=str(ctx.guild.id), reason=reason
-        ).create()
         embed = await self.generate_user_modified_embed(
             user, "warn", f"{reason} ({new_count} total warnings)"
         )
-        await ctx.send(embed=embed)
+
+        # Attempt DM for manually initiated, non-banning warns
+        if ctx.command == self.bot.get_command("warn"):
+            # Cancel warns in channels invisible to user
+            if user not in ctx.channel.members:
+                await ctx.send_deny_embed(f"{user} cannot see this warning.")
+                return
+
+            try:
+                await user.send(embed=embed)
+
+            except (discord.HTTPException, discord.Forbidden):
+                await self.bot.logger.warning(f"Failed to DM warning to {user}")
+
+            finally:
+                await ctx.send(content=user.mention, embed=embed)
+
+        else:
+            await ctx.send(embed=embed)
+
+        await self.models.Warning(
+            user_id=str(user.id), guild_id=str(ctx.guild.id), reason=reason
+        ).create()
 
     async def handle_unwarn(self, ctx, user, reason, bypass=False):
         """Method to handle an unwarn of a user."""

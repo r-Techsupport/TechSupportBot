@@ -184,11 +184,11 @@ class Htd(base.BaseCog):
                 if ref_val[:2] == "0b":
                     if not return_all:
                         del input_as["Binary"]
-                    embed.color = discord.Color.teal()
+                    embed.color = discord.Color.green()
                 elif ref_val[:2] == "0x":
                     if not return_all:
                         del input_as["Hexadecimal"]
-                    embed.color = discord.Color.dark_teal()
+                    embed.color = discord.Color.green()
                 else:
                     if not return_all:
                         del input_as["Decimal"]
