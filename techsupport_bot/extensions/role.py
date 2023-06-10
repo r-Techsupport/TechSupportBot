@@ -29,9 +29,33 @@ class RoleGiver(base.BaseCog):
 
     @group.command(name="self")
     async def self_role(self, interaction):
-        #config = await ctx.bot.get_context_config(ctx)
-        roles = ["Trusted", "Helper", "bots", "dev", "asdf"]
+        config = await self.bot.get_context_config(guild=interaction.guild)
+        # roles = ["Trusted", "Helper", "bots", "dev", "asdf"]
+        roles = config.extensions.role.self_assignable_roles.value
+
+        allowed_to_execute = config.extensions.role.allow_self_assign.value
         role_options = self.generate_options(interaction.user, interaction.guild, roles)
+
+        if len(allowed_to_execute) == 0:
+            await interaction.response.send_message(
+                "Nobody is allowed to execute this command", ephemeral=True
+            )
+            return
+
+        for role in allowed_to_execute:
+            real_role = discord.utils.get(interaction.guild.roles, name=role)
+            if real_role not in getattr(interaction.user, "roles", []):
+                await interaction.response.send_message(
+                    "You are not allowed to execute this command", ephemeral=True
+                )
+                return
+
+        if len(role_options) == 0:
+            await interaction.response.send_message(
+                "No self assignable roles are setup", ephemeral=True
+            )
+            return
+
         view = ui.SelectView(role_options)
         await interaction.response.send_message(
             "Hello from two", ephemeral=True, view=view
@@ -42,9 +66,9 @@ class RoleGiver(base.BaseCog):
     def generate_options(self, user, guild, roles):
         options = []
 
-        default = False
-
         for role_name in roles:
+            default = False
+
             # First, get the role
             role = discord.utils.get(guild.roles, name=role_name)
             if not role:
