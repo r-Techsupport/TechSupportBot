@@ -599,6 +599,16 @@ class AdminControl(base.BaseCog):
 
     @util.with_typing
     @commands.command(
+        name="sync",
+        description="Syncs slash commands",
+        usage="",
+    )
+    async def sync_slash_commands(self, ctx):
+        synced = await self.bot.tree.sync()
+        await ctx.send_confirm_embed(f"{len(synced)}")
+
+    @util.with_typing
+    @commands.command(
         name="issue",
         aliases=["ish", "botish", "botissue"],
         description="Creates a Github issue on the configured bot repo",
