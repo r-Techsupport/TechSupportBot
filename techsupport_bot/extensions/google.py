@@ -1,6 +1,7 @@
 """Module for the google extension for the discord bot."""
 import base
 import discord
+import ui
 import util
 from discord.ext import commands
 
@@ -104,7 +105,7 @@ class Googler(base.BaseCog):
                 else:
                     field_counter += 1
 
-        ctx.task_paginate(pages=embeds)
+        await ui.PaginateView().send(ctx, embeds)
 
     @util.with_typing
     @commands.guild_only()
@@ -138,7 +139,7 @@ class Googler(base.BaseCog):
                 return
             embeds.append(link)
 
-        ctx.task_paginate(pages=embeds)
+        await ui.PaginateView().send(ctx, embeds)
 
     @util.with_typing
     @commands.cooldown(3, 60, commands.BucketType.channel)
@@ -174,4 +175,4 @@ class Googler(base.BaseCog):
             if link:
                 links.append(link)
 
-        ctx.task_paginate(pages=links)
+        await ui.PaginateView().send(ctx, links)

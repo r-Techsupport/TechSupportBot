@@ -1,17 +1,22 @@
+"""Module for the duck extension"""
 import asyncio
 import datetime
 import functools
 import random
+from datetime import timedelta
 
 import base
 import discord
-import embeds
+import embeds as stock_embeds
+import ui
 import util
 from discord import Color as embed_colors
 from discord.ext import commands
 
 
 async def setup(bot):
+    """Method to add duck into the config file"""
+
     class DuckUser(bot.db.Model):
         __tablename__ = "duckusers"
 
@@ -21,6 +26,7 @@ async def setup(bot):
         befriend_count = bot.db.Column(bot.db.Integer, default=0)
         kill_count = bot.db.Column(bot.db.Integer, default=0)
         updated = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+        speed_record = bot.db.Column(bot.db.Float, default=80.0)
 
     config = bot.ExtensionConfig()
     config.add(
@@ -71,16 +77,23 @@ async def setup(bot):
 
 
 class DuckHunt(base.LoopCog):
+    """Class for the actual duck commands"""
+
     DUCK_PIC_URL = "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
-    BEFRIEND_URL = "https://cdn.icon-icons.com/icons2/603/PNG/512/heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
+    BEFRIEND_URL = (
+        "https://cdn.icon-icons.com/icons2/603/PNG/512/"
+        + "heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
+    )
     KILL_URL = "https://cdn.icon-icons.com/icons2/1919/PNG/512/huntingtarget_122049.png"
     ON_START = False
     CHANNELS_KEY = "hunt_channels"
 
     async def loop_preconfig(self):
+        """Preconfig for cooldowns"""
         self.cooldowns = {}
 
     async def wait(self, config, _):
+        """Method for the duck loop"""
         await asyncio.sleep(
             random.randint(
                 config.extensions.duck.min_wait.value * 3600,
@@ -89,6 +102,7 @@ class DuckHunt(base.LoopCog):
         )
 
     async def execute(self, config, guild, channel):
+        """Method for sending the duck"""
         if not channel:
             await self.bot.guild_log(
                 guild,
@@ -133,12 +147,12 @@ class DuckHunt(base.LoopCog):
         await message.delete()
 
         if response_message:
-            duration = (datetime.datetime.now() - start_time).seconds
+            raw_duration = datetime.datetime.now() - start_time
             action = (
                 "befriended" if response_message.content.lower() == "bef" else "killed"
             )
             await self.handle_winner(
-                response_message.author, guild, action, duration, channel
+                response_message.author, guild, action, raw_duration, channel
             )
         else:
             await self.got_away(channel)
@@ -153,13 +167,28 @@ class DuckHunt(base.LoopCog):
 
         await channel.send(embed=embed)
 
-    async def handle_winner(self, winner, guild, action, duration, channel):
+    async def handle_winner(self, winner, guild, action, raw_duration, channel):
+        """
+        This is a function to update the database based on a winner
+
+        Parameters:
+        winner -> A discord.Member object for the winner
+        guild -> A discord.Guild object for the guild the winner is a part of
+        action -> A string, either "befriended" or "killed", depending on the action
+        raw_duration -> A datetime object of the time since the duck spawned
+        channel -> The channel in which the duck game happened in
+        """
         await self.bot.guild_log(
             guild,
             "logging_channel",
             "info",
             f"Duck {action} by {winner} in #{channel.name}",
             send=True,
+        )
+
+        duration_seconds = raw_duration.seconds
+        duration_exact = float(
+            str(raw_duration.seconds) + "." + str(raw_duration.microseconds)
         )
 
         duck_user = await self.get_duck_user(winner.id, guild.id)
@@ -169,6 +198,7 @@ class DuckHunt(base.LoopCog):
                 guild_id=str(guild.id),
                 befriend_count=0,
                 kill_count=0,
+                speed_record=80.0,
             )
             await duck_user.create()
 
@@ -181,7 +211,7 @@ class DuckHunt(base.LoopCog):
 
         embed = discord.Embed(
             title=f"Duck {action}!",
-            description=f"{winner.mention} {action} the duck in {duration} seconds!",
+            description=f"{winner.mention} {action} the duck in {duration_seconds} seconds!",
         )
         embed.color = (
             embed_colors.blurple() if action == "befriended" else embed_colors.red()
@@ -191,17 +221,28 @@ class DuckHunt(base.LoopCog):
         embed.set_thumbnail(
             url=self.BEFRIEND_URL if action == "befriended" else self.KILL_URL
         )
+        global_record = await self.get_global_record(guild.id)
+        footer_string = ""
+        if duration_exact < duck_user.speed_record:
+            footer_string += f"New personal record: {duration_exact} seconds."
+            if duration_exact < global_record:
+                footer_string += "\nNew global record!"
+                footer_string += f" Previous global record: {global_record} seconds"
+            await duck_user.update(speed_record=duration_exact).apply()
+        embed.set_footer(text=footer_string)
 
         await channel.send(embed=embed)
 
     def pick_quote(self) -> str:
+        """Method for picking a random quote for the miss message"""
         QUOTES_FILE = "extensions/duckQuotes.txt"
-        with open(QUOTES_FILE, "r") as file:
+        with open(QUOTES_FILE, "r", encoding="utf-8") as file:
             lines = file.readlines()
             random_line = random.choice(lines)
             return random_line.strip()
 
     def message_check(self, config, channel, message):
+        """Method to check if 'bef' or 'bang' was typed"""
         # ignore other channels
         if message.channel.id != channel.id:
             return False
@@ -218,7 +259,8 @@ class DuckHunt(base.LoopCog):
             cooldowns[message.author.id] = datetime.datetime.now()
             asyncio.create_task(
                 message.author.send(
-                    f"I said to wait {config.extensions.duck.cooldown.value} seconds! Resetting timer..."
+                    f"I said to wait {config.extensions.duck.cooldown.value}"
+                    + "seconds! Resetting timer..."
                 )
             )
             return False
@@ -233,9 +275,12 @@ class DuckHunt(base.LoopCog):
         if not choice_:
             cooldowns[message.author.id] = datetime.datetime.now()
             quote = self.pick_quote()
-            embed = embeds.DenyEmbed(message=quote)
+            embed = stock_embeds.DenyEmbed(message=quote)
             embed.set_footer(
                 text=f"Try again in {config.extensions.duck.cooldown.value} seconds"
+            )
+            asyncio.create_task(
+                message.author.timeout(timedelta(seconds=10), reason="Missed a duck")
             )
             asyncio.create_task(
                 message.channel.send(
@@ -247,6 +292,7 @@ class DuckHunt(base.LoopCog):
         return choice_
 
     async def get_duck_user(self, user_id, guild_id):
+        """Method to get the duck winner"""
         duck_user = (
             await self.models.DuckUser.query.where(
                 self.models.DuckUser.author_id == str(user_id)
@@ -257,11 +303,31 @@ class DuckHunt(base.LoopCog):
 
         return duck_user
 
+    async def get_global_record(self, guild_id):
+        """
+        This is a function to get the current global speed record in a given guild
+
+        Parametrs:
+        guild_id -> The ID of the guild in question
+        """
+        query = await self.models.DuckUser.query.where(
+            self.models.DuckUser.guild_id == str(guild_id)
+        ).gino.all()
+
+        speed_records = [record.speed_record for record in query]
+
+        if not speed_records:
+            return None
+
+        return float(min(speed_records, key=float))
+
     @commands.group(
         brief="Executes a duck command",
         description="Executes a duck command",
     )
     async def duck(self, ctx):
+        """Method to make the initial duck command"""
+
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
 
@@ -273,6 +339,7 @@ class DuckHunt(base.LoopCog):
         usage="@user (defaults to yourself)",
     )
     async def stats(self, ctx, *, user: discord.Member = None):
+        """Method for viewing duck stats"""
         if not user:
             user = ctx.message.author
 
@@ -291,6 +358,10 @@ class DuckHunt(base.LoopCog):
         embed.color = embed_colors.green()
         embed.add_field(name="Friends", value=duck_user.befriend_count)
         embed.add_field(name="Kills", value=duck_user.kill_count)
+        footer_string = f"Speed record: {str(duck_user.speed_record)} seconds"
+        if duck_user.speed_record == await self.get_global_record(ctx.guild.id):
+            footer_string += "\nYou hold the current global record!"
+        embed.set_footer(text=footer_string)
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
         await ctx.send(embed=embed)
@@ -302,6 +373,7 @@ class DuckHunt(base.LoopCog):
         description="Gets duck friendship scores for all users",
     )
     async def friends(self, ctx):
+        """Method for viewing top friend counts"""
         duck_users = (
             await self.models.DuckUser.query.order_by(
                 -self.models.DuckUser.befriend_count
@@ -319,7 +391,13 @@ class DuckHunt(base.LoopCog):
         embeds = []
         for index, duck_user in enumerate(duck_users):
             embed = (
-                discord.Embed(title="Duck Friendships") if field_counter == 1 else embed
+                discord.Embed(
+                    title="Duck Friendships",
+                    description=f"Global speed record:\
+                         {str(await self.get_global_record(ctx.guild.id))} seconds",
+                )
+                if field_counter == 1
+                else embed
             )
 
             embed.set_thumbnail(url=self.DUCK_PIC_URL)
@@ -336,7 +414,41 @@ class DuckHunt(base.LoopCog):
             else:
                 field_counter += 1
 
-        ctx.task_paginate(pages=embeds)
+        await ui.PaginateView().send(ctx, embeds)
+
+    @util.with_typing
+    @commands.guild_only()
+    @duck.command(
+        brief="Get the record holder",
+        description="Gets the current speed record holder, and their time",
+    )
+    async def record(self, ctx):
+        """
+        This is a command and should be run via discord
+
+        This outputs an embed shows the current speed record holder and their time
+        """
+        record_time = await self.get_global_record(ctx.guild.id)
+        if record_time is None:
+            await ctx.send_deny_embed(
+                "It appears nobody has partcipated in the duck hunt"
+            )
+            return
+        record_user = (
+            await self.models.DuckUser.query.where(
+                self.models.DuckUser.speed_record == record_time
+            )
+            .where(self.models.DuckUser.guild_id == str(ctx.guild.id))
+            .gino.first()
+        )
+
+        embed = discord.Embed(title="Duck Speed Record")
+        embed.color = embed_colors.green()
+        embed.add_field(name="Time", value=f"{str(record_time)} seconds")
+        embed.add_field(name="Record Holder", value=f"<@{record_user.author_id}>")
+        embed.set_thumbnail(url=self.DUCK_PIC_URL)
+
+        await ctx.send(embed=embed)
 
     @util.with_typing
     @commands.guild_only()
@@ -345,6 +457,7 @@ class DuckHunt(base.LoopCog):
         description="Gets duck kill scores for all users",
     )
     async def killers(self, ctx):
+        """Method for viewing top killer counts"""
         duck_users = (
             await self.models.DuckUser.query.order_by(-self.models.DuckUser.kill_count)
             .where(self.models.DuckUser.kill_count > 0)
@@ -359,7 +472,15 @@ class DuckHunt(base.LoopCog):
         field_counter = 1
         embeds = []
         for index, duck_user in enumerate(duck_users):
-            embed = discord.Embed(title="Duck Kills") if field_counter == 1 else embed
+            embed = (
+                discord.Embed(
+                    title="Duck Kills",
+                    description=f"Global speed record:\
+                          {str(await self.get_global_record(ctx.guild.id))} seconds",
+                )
+                if field_counter == 1
+                else embed
+            )
 
             embed.set_thumbnail(url=self.DUCK_PIC_URL)
             embed.color = embed_colors.green()
@@ -375,9 +496,10 @@ class DuckHunt(base.LoopCog):
             else:
                 field_counter += 1
 
-        ctx.task_paginate(pages=embeds)
+        await ui.PaginateView().send(ctx, embeds)
 
     def get_user_text(self, duck_user):
+        """Method to get the user for the top commands"""
         user = self.bot.get_user(int(duck_user.author_id))
         if user:
             user_text = f"{user.display_name}"
@@ -386,3 +508,118 @@ class DuckHunt(base.LoopCog):
             user_text = "<Unknown>"
             user_text_extra = ""
         return f"{user_text}{user_text_extra}"
+
+    @util.with_typing
+    @commands.guild_only()
+    @duck.command(
+        brief="Releases a duck into the wild",
+        description="Returns a befriended duck to its natural habitat",
+    )
+    async def release(self, ctx):
+        """Method for releasing a duck"""
+        duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+
+        if not duck_user:
+            await ctx.send_deny_embed("You have not participated in the duck hunt yet.")
+            return
+
+        if not duck_user or duck_user.befriend_count == 0:
+            await ctx.send_deny_embed("You have no ducks to release.")
+            return
+
+        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+        await ctx.send_confirm_embed(
+            f"Fly safe! You have {duck_user.befriend_count} ducks left."
+        )
+
+    @util.with_typing
+    @commands.guild_only()
+    @duck.command(
+        brief="Kills a caputred duck",
+        description="Adds a duck to your kill count. Why would you even want to do that?!",
+    )
+    async def kill(self, ctx):
+        """Method for killing ducks"""
+        duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+
+        if not duck_user:
+            await ctx.send_deny_embed("You have not participated in the duck hunt yet.")
+            return
+
+        if duck_user.befriend_count == 0:
+            await ctx.send_deny_embed("You have no ducks to kill.")
+            return
+
+        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+        await duck_user.update(kill_count=duck_user.kill_count + 1).apply()
+        await ctx.send_confirm_embed(
+            f"You monster! You have {duck_user.befriend_count}"
+            + f" ducks left and {duck_user.kill_count} kills to your name."
+        )
+
+    @util.with_typing
+    @commands.guild_only()
+    @duck.command(
+        brief="Donates a duck to someone",
+        description="Gives someone the gift of a live duck",
+        usage="[user]",
+    )
+    async def donate(self, ctx, user: discord.Member):
+        """Method for donating ducks"""
+        if user.bot:
+            await ctx.send_deny_embed("The only ducks I accept are plated with gold!")
+            return
+        if user.id == ctx.author.id:
+            await ctx.send_deny_embed("You can't donate a duck to yourself")
+            return
+
+        duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+        if not duck_user:
+            await ctx.send_deny_embed("You have not participated in the duck hunt yet.")
+            return
+
+        if not duck_user or duck_user.befriend_count == 0:
+            await ctx.send_deny_embed("You have no ducks to donate.")
+            return
+        recipee = await self.get_duck_user(user.id, ctx.guild.id)
+        if not recipee:
+            await ctx.send_deny_embed(
+                f"{user.mention} has not participated in the duck hunt yet."
+            )
+            return
+
+        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+        await recipee.update(befriend_count=recipee.befriend_count + 1).apply()
+        await ctx.send_confirm_embed(
+            f"You gave a duck to {user.mention}. "
+            + f"You now have {duck_user.befriend_count} ducks left."
+        )
+
+    @util.with_typing
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    @duck.command(
+        brief="Resets someones duck counts",
+        description="Deleted the database entry of the target",
+        usage="[user]",
+    )
+    async def reset(self, ctx, user: discord.Member):
+        """Method for resetting duck counts"""
+        if user.bot:
+            await ctx.send_deny_embed("You leave my ducks alone!")
+            return
+
+        duck_user = await self.get_duck_user(user.id, ctx.guild.id)
+        if not duck_user:
+            await ctx.send_deny_embed(
+                "The user has not participated in the duck hunt yet."
+            )
+            return
+        if not await ctx.confirm(
+            f"Are you sure you want to reset {user.mention}s duck stats?"
+        ):
+            await ctx.send_deny_embed(f"{user.mention}s duck stats were NOT reset.")
+            return
+
+        await duck_user.delete()
+        await ctx.send_confirm_embed(f"Succesfully reset {user.mention}s duck stats!")

@@ -1,0 +1,17 @@
+"""
+This is a file to store the fake commands.Context object
+"""
+
+
+class MockContext:
+    """
+    This is the MockContext class
+
+    Currently implemented variables and methods:
+    channel -> The MockChannel object for the current context
+    message -> The MockMessage in which the context was called with
+    """
+
+    def __init__(self, channel=None, message=None):
+        self.channel = channel
+        self.message = message

@@ -3,6 +3,7 @@
 
 import base
 import discord
+import ui
 from discord.ext import commands
 
 
@@ -83,7 +84,7 @@ class Helper(base.BaseCog):
             await ctx.send(embed=embed)
         else:
             embeds = await self.generate_general_embeds(ctx)
-            await ctx.paginate(embeds)
+            await ui.PaginateView().send(ctx, embeds)
 
     def get_extension_names(self):
         """Gets a list of extension names loaded by bot."""
