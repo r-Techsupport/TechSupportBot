@@ -421,7 +421,7 @@ class DuckHunt(base.LoopCog):
             else:
                 field_counter += 1
 
-        await ui.PaginateView().send(ctx, embeds)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
     @util.with_typing
     @commands.guild_only()
@@ -506,7 +506,7 @@ class DuckHunt(base.LoopCog):
             else:
                 field_counter += 1
 
-        await ui.PaginateView().send(ctx, embeds)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
     def get_user_text(self, duck_user):
         """Method to get the user for the top commands"""
@@ -652,9 +652,17 @@ class DuckHunt(base.LoopCog):
                 channel=ctx.channel,
             )
             return
-        if not await ctx.confirm(
-            f"Are you sure you want to reset {user.mention}s duck stats?"
-        ):
+
+        view = ui.Confirm()
+        await view.send(
+            message=f"Are you sure you want to reset {user.mention}s duck stats?",
+            channel=ctx.channel,
+            author=ctx.author,
+        )
+        await view.wait()
+        if view.value is ui.ConfirmResponse.TIMEOUT:
+            return
+        if view.value is ui.ConfirmResponse.DENIED:
             await auxiliary.send_deny_embed(
                 message=f"{user.mention}s duck stats were NOT reset.",
                 channel=ctx.channel,

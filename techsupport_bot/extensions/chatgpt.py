@@ -107,8 +107,16 @@ class ChatGPT(base.BaseCog):
             )
             return
 
-        confirm = await ctx.confirm(f"Clear {len(history)} messages?")
-        if not confirm:
+        view = ui.Confirm()
+        await view.send(
+            message=f"Clear {len(history)} messages?",
+            channel=ctx.channel,
+            author=ctx.author,
+        )
+        await view.wait()
+        if view.value is ui.ConfirmResponse.TIMEOUT:
+            return
+        if view.value is ui.ConfirmResponse.DENIED:
             await auxiliary.send_deny_embed(
                 message="Chat history was not cleared", channel=ctx.channel
             )
@@ -141,4 +149,4 @@ class ChatGPT(base.BaseCog):
             embed.add_field(name="Response", value=resp[:255])
             embeds.append(embed)
 
-        await ui.PaginateView().send(ctx, embeds)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)

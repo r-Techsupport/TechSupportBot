@@ -4,6 +4,7 @@ import io
 
 import base
 import discord
+import ui
 import yaml
 from base import auxiliary
 from discord.ext import commands
@@ -200,11 +201,17 @@ class Who(base.BaseCog):
             )
             return
 
-        confirm = await ctx.confirm(
-            f"Are you sure you want to clear {len(notes)} notes?",
-            delete_after=True,
+        view = ui.Confirm()
+        await view.send(
+            message=f"Are you sure you want to clear {len(notes)} notes?",
+            channel=ctx.channel,
+            author=ctx.author,
         )
-        if not confirm:
+
+        await view.wait()
+        if view.value is ui.ConfirmResponse.TIMEOUT:
+            return
+        if view.value is ui.ConfirmResponse.DENIED:
             await auxiliary.send_deny_embed(
                 message=f"Notes for `{user}` were not cleared", channel=ctx.channel
             )
@@ -217,10 +224,8 @@ class Who(base.BaseCog):
         role = discord.utils.get(
             ctx.guild.roles, name=config.extensions.who.note_role.value
         )
-        if not role:
-            return
-
-        await user.remove_roles(role)
+        if role:
+            await user.remove_roles(role)
 
         await auxiliary.send_confirm_embed(
             message=f"Notes cleared for `{user}`", channel=ctx.channel

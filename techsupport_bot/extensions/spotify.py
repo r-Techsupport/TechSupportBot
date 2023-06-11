@@ -76,4 +76,4 @@ class Spotify(base.BaseCog):
             )
             return
 
-        await ui.PaginateView().send(ctx, links)
+        await ui.PaginateView().send(ctx.channel, ctx.author, links)
