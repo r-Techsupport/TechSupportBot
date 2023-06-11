@@ -9,6 +9,7 @@ import discord
 import expiringdict
 import munch
 import ui
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -392,7 +393,9 @@ class Protector(base.MatchCog):
         if ctx.command == self.bot.get_command("warn"):
             # Cancel warns in channels invisible to user
             if user not in ctx.channel.members:
-                await ctx.send_deny_embed(f"{user} cannot see this warning.")
+                await auxiliary.send_deny_embed(
+                    message=f"{user} cannot see this warning.", channel=ctx.channel
+                )
                 return
 
             try:
@@ -421,7 +424,9 @@ class Protector(base.MatchCog):
 
         warnings = await self.get_warnings(user, ctx.guild)
         if not warnings:
-            await ctx.send_deny_embed("There are no warnings for that user")
+            await auxiliary.send_deny_embed(
+                message="There are no warnings for that user", channel=ctx.channel
+            )
             return
 
         await self.clear_warnings(user, ctx.guild)
@@ -438,7 +443,9 @@ class Protector(base.MatchCog):
 
         async for ban in ctx.guild.bans(limit=None):
             if user == ban.user:
-                await ctx.send_deny_embed("User is already banned.")
+                await auxiliary.send_deny_embed(
+                    message="User is already banned.", channel=ctx.channel
+                )
                 return
 
         config = await self.bot.get_context_config(ctx)
@@ -462,7 +469,10 @@ class Protector(base.MatchCog):
         try:
             await ctx.guild.unban(user, reason=reason)
         except discord.NotFound:
-            await ctx.send_deny_embed("This user is not banned, or does not exist")
+            await auxiliary.send_deny_embed(
+                message="This user is not banned, or does not exist",
+                channel=ctx.channel,
+            )
             return
 
         embed = await self.generate_user_modified_embed(user, "unban", reason)
@@ -507,25 +517,31 @@ class Protector(base.MatchCog):
         """Method to not execute on admin users."""
         # Check to see if you are banning yourself
         if target.id == ctx.author.id:
-            await ctx.send_deny_embed("You cannot do that to yourself")
+            await auxiliary.send_deny_embed(
+                message="You cannot do that to yourself", channel=ctx.channel
+            )
             return False
         # Check to see if you are banning the bot
         if target.id == self.bot.user.id:
-            await ctx.send_deny_embed("It would be silly to do that to myself")
+            await auxiliary.send_deny_embed(
+                message="It would be silly to do that to myself", channel=ctx.channel
+            )
             return False
         # Check to see if target has a role. Will allow banning on Users outside of server
         if not hasattr(target, "top_role"):
             return True
         # Check to see if the Bot can ban the target
         if ctx.guild.me.top_role < target.top_role:
-            await ctx.send_deny_embed(
-                f"Bot does not have enough premissions to ban `{target}`"
+            await auxiliary.send_deny_embed(
+                message=f"Bot does not have enough premissions to ban `{target}`",
+                channel=ctx.channel,
             )
             return False
         # Check to see if author top role is higher than targets
         if target.top_role >= ctx.author.top_role:
-            await ctx.send_deny_embed(
-                f"Your top role is not high enough to do that to `{target}`"
+            await auxiliary.send_deny_embed(
+                message=f"Your top role is not high enough to do that to `{target}`",
+                channel=ctx.channel,
             )
             return False
         return True
@@ -700,7 +716,9 @@ class Protector(base.MatchCog):
         """Method to get the warnings of a user in discord."""
         warnings = await self.get_warnings(user, ctx.guild)
         if not warnings:
-            await ctx.send_deny_embed("There are no warnings for that user")
+            await auxiliary.send_deny_embed(
+                message="There are no warnings for that user", channel=ctx.channel
+            )
             return
 
         embed = discord.Embed(title=f"Warnings for {user}")
@@ -741,8 +759,9 @@ class Protector(base.MatchCog):
 
         # The API prevents administrators from being timed out. Check it here
         if user.guild_permissions.administrator:
-            await ctx.send_deny_embed(
-                "Someone with the `administrator` permissions cannot be timed out"
+            await auxiliary.send_deny_embed(
+                message="Someone with the `administrator` permissions cannot be timed out",
+                channel=ctx.channel,
             )
             return
 
@@ -801,7 +820,9 @@ class Protector(base.MatchCog):
             return
 
         if user.timed_out_until is None:
-            await ctx.send_deny_embed("That user is not timed out")
+            await auxiliary.send_deny_embed(
+                message="That user is not timed out", channel=ctx.channel
+            )
             return
 
         await user.timeout(None)
@@ -848,7 +869,9 @@ class Protector(base.MatchCog):
     async def purge_duration(self, ctx, duration_minutes: int):
         """Method to purge a channel's message up to a time."""
         if duration_minutes < 0:
-            await ctx.send_deny_embed("I can't use that input")
+            await auxiliary.send_deny_embed(
+                message="I can't use that input", channel=ctx.channel
+            )
             return
 
         timestamp = datetime.datetime.utcnow() - datetime.timedelta(

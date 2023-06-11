@@ -3,6 +3,7 @@ import base
 import discord
 import ui
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -45,7 +46,9 @@ class UrbanDictionary(base.BaseCog):
         config = await self.bot.get_context_config(ctx)
 
         if not definitions:
-            await ctx.send_deny_embed(f"No results found for: *{query}*")
+            await auxiliary.send_deny_embed(
+                message=f"No results found for: *{query}*", channel=ctx.channel
+            )
             return
 
         query_no_spaces = query.replace(" ", "%20")

@@ -160,12 +160,13 @@ class Test_HandleCorrect:
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
         auxiliary.search_channel_for_message = AsyncMock(return_value=None)
-        discord_env.context.send_deny_embed = AsyncMock()
+        auxiliary.send_deny_embed = AsyncMock()
 
         # Step 2 - Call the function
         await discord_env.correct.correct_command(discord_env.context, "a", "b")
 
         # Step 3 - Assert that everything works
-        discord_env.context.send_deny_embed.assert_called_once_with(
-            "I couldn't find any message to correct"
+        auxiliary.send_deny_embed.assert_called_once_with(
+            message="I couldn't find any message to correct",
+            channel=discord_env.channel,
         )

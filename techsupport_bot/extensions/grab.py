@@ -8,6 +8,7 @@ import base
 import discord
 import ui
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -84,11 +85,15 @@ class Grabber(base.BaseCog):
         user_to_grab: discord.Member. The user to search for grabs from
         """
         if user_to_grab.bot:
-            await ctx.send_deny_embed("Ain't gonna catch me slipping!")
+            await auxiliary.send_deny_embed(
+                message="Ain't gonna catch me slipping!", channel=ctx.channel
+            )
             return
 
         if user_to_grab == ctx.author:
-            await ctx.send_deny_embed("You can't do this to yourself")
+            await auxiliary.send_deny_embed(
+                message="You can't do this to yourself", channel=ctx.channel
+            )
             return
 
         grab_message = None
@@ -99,8 +104,9 @@ class Grabber(base.BaseCog):
                 break
 
         if not grab_message:
-            await ctx.send_deny_embed(
-                f"Could not find a recent message from user {user_to_grab}"
+            await auxiliary.send_deny_embed(
+                message=f"Could not find a recent message from user {user_to_grab}",
+                channel=ctx.channel,
             )
             return
 
@@ -113,7 +119,9 @@ class Grabber(base.BaseCog):
         )
 
         if grab:
-            await ctx.send_deny_embed("That grab already exists!")
+            await auxiliary.send_deny_embed(
+                message="That grab already exists!", channel=ctx.channel
+            )
             return
 
         grab = self.models.Grab(
@@ -125,7 +133,9 @@ class Grabber(base.BaseCog):
         )
         await grab.create()
 
-        await ctx.send_confirm_embed(f"Successfully saved: '*{grab_message}*'")
+        await auxiliary.send_confirm_embed(
+            message=f"Successfully saved: '*{grab_message}*'", channel=ctx.channel
+        )
 
     @commands.group(
         brief="Executes a grabs command",
@@ -152,7 +162,9 @@ class Grabber(base.BaseCog):
         config = await self.bot.get_context_config(ctx)
 
         if user_to_grab.bot:
-            await ctx.send_deny_embed("Ain't gonna catch me slipping!")
+            await auxiliary.send_deny_embed(
+                message="Ain't gonna catch me slipping!", channel=ctx.channel
+            )
             return
 
         query = self.models.Grab.query.where(
@@ -165,7 +177,9 @@ class Grabber(base.BaseCog):
         grabs = await query.gino.all()
 
         if not grabs:
-            await ctx.send_deny_embed(f"No grabs found for {user_to_grab.name}")
+            await auxiliary.send_deny_embed(
+                message=f"No grabs found for {user_to_grab.name}", channel=ctx.channel
+            )
             return
 
         grabs.sort(reverse=True, key=lambda grab: grab.time)
@@ -216,7 +230,9 @@ class Grabber(base.BaseCog):
         """Gets a random grab from an user"""
 
         if user_to_grab.bot:
-            await ctx.send_deny_embed("Ain't gonna catch me slipping!")
+            await auxiliary.send_deny_embed(
+                message="Ain't gonna catch me slipping!", channel=ctx.channel
+            )
             return
 
         grabs = (
@@ -237,7 +253,9 @@ class Grabber(base.BaseCog):
         grabs = await query.gino.all()
 
         if not grabs:
-            await ctx.send_deny_embed(f"No grabs found for {user_to_grab}")
+            await auxiliary.send_deny_embed(
+                message=f"No grabs found for {user_to_grab}", channel=ctx.channel
+            )
             return
 
         random_index = random.randint(0, len(grabs) - 1)
@@ -270,8 +288,9 @@ class Grabber(base.BaseCog):
             not ctx.message.author.id == target_user.id
             and not ctx.message.author.guild_permissions.administrator
         ):
-            await ctx.send_deny_embed(
-                "You don't have sufficient permissions to do this!"
+            await auxiliary.send_deny_embed(
+                message="You don't have sufficient permissions to do this!",
+                channel=ctx.channel,
             )
             return
         # Gets the target grab by the message
@@ -285,7 +304,10 @@ class Grabber(base.BaseCog):
         )
 
         if not grab:
-            await ctx.send_deny_embed(f"Grab `{message}` not found for {target_user}")
+            await auxiliary.send_deny_embed(
+                message=f"Grab `{message}` not found for {target_user}",
+                channel=ctx.channel,
+            )
             return
         try:
             await grab[0].delete()
@@ -293,4 +315,6 @@ class Grabber(base.BaseCog):
         except IndexError:
             raise commands.CommandError("Couldn't delete the grab!") from IndexError
 
-        await ctx.send_confirm_embed("Grab succesfully deleted!")
+        await auxiliary.send_confirm_embed(
+            message="Grab succesfully deleted!", channel=ctx.channel
+        )

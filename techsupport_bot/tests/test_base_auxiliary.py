@@ -1,10 +1,10 @@
 """
 This is a file to test the base/auxiliary.py file
-This contains 15 tests
+This contains 23 tests
 """
 
 
-from unittest.mock import AsyncMock, call
+from unittest.mock import AsyncMock, MagicMock, call
 
 import discord
 import pytest
@@ -289,3 +289,122 @@ class Test_AddReactions:
         discord_env.message_person1_noprefix_1.add_reaction.assert_has_calls(
             expected_calls, any_order=False
         )
+
+
+class Test_ConstructMention:
+    """A set of test cases to test construct_mention_string"""
+
+    def test_no_users(self):
+        """Test that if no users are passed, the mention string is blank"""
+        # Step 2 - Call the function
+        output = auxiliary.construct_mention_string([None])
+
+        # Step 3 - Assert that everything works
+        assert output == ""
+
+    def test_one_user(self):
+        """Test that if only 1 user is passed, the mention string contains the proper mention"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+
+        # Step 2 - Call the function
+        output = auxiliary.construct_mention_string([discord_env.person1])
+
+        # Step 3 - Assert that everything works
+        assert output == discord_env.person1.mention
+
+    def test_two_users(self):
+        """Test that if 2 users are passed, the mention string contains both,
+        and is seperated by a space"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+
+        # Step 2 - Call the function
+        output = auxiliary.construct_mention_string(
+            [discord_env.person1, discord_env.person2]
+        )
+
+        # Step 3 - Assert that everything works
+        assert output == f"{discord_env.person1.mention} {discord_env.person2.mention}"
+
+    def test_mulltiple_same_user(self):
+        """Test that is mutliple of the same user is passed, the mention
+        string only contains the mention once"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+
+        # Step 2 - Call the function
+        output = auxiliary.construct_mention_string(
+            [discord_env.person1, discord_env.person1]
+        )
+
+        # Step 3 - Assert that everything works
+        assert output == discord_env.person1.mention
+
+
+class Test_DenyEmbed:
+    """Tests for prepare_deny_embed and send_deny_embed"""
+
+    def test_prepare_deny(self):
+        """Test that the deny embed is working correctly, and that the parameters are correct"""
+        # Step 1 - Setup env
+        auxiliary.generate_basic_embed = MagicMock()
+
+        # Step 2 - Call the function
+        auxiliary.prepare_deny_embed("Test")
+
+        # Step 3 - Assert that everything works
+        auxiliary.generate_basic_embed.assert_called_once_with(
+            title="😕 👎",
+            description="Test",
+            color=discord.Color.red(),
+        )
+
+    @pytest.mark.asyncio
+    async def test_send_deny(self):
+        """Test that send deny embed sends the right content to the right place"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        auxiliary.prepare_deny_embed = MagicMock(return_value="test")
+        auxiliary.construct_mention_string = MagicMock(return_value="")
+        discord_env.channel.send = AsyncMock()
+
+        # Step 2 - Call the function
+        await auxiliary.send_deny_embed("Message", discord_env.channel)
+
+        # Step 3 - Assert that everything works
+        discord_env.channel.send.assert_awaited_once_with(content="", embed="test")
+
+
+class Test_ConfirmEmbed:
+    """Tests for prepare_confirm_embed and send_confirm_embed"""
+
+    def test_prepare_confirm(self):
+        """Test that the confirm embed is working correctly, and that the parameters are correct"""
+        # Step 1 - Setup env
+        auxiliary.generate_basic_embed = MagicMock()
+
+        # Step 2 - Call the function
+        auxiliary.prepare_confirm_embed("Test")
+
+        # Step 3 - Assert that everything works
+        auxiliary.generate_basic_embed.assert_called_once_with(
+            title="😄 👍",
+            description="Test",
+            color=discord.Color.green(),
+        )
+
+    @pytest.mark.asyncio
+    async def test_send_confirm(self):
+        """Test that send confirm embed sends the right content to the right place"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        auxiliary.prepare_confirm_embed = MagicMock(return_value="test")
+        auxiliary.construct_mention_string = MagicMock(return_value="")
+        discord_env.channel.send = AsyncMock()
+
+        # Step 2 - Call the function
+        await auxiliary.send_confirm_embed("Message", discord_env.channel)
+
+        # Step 3 - Assert that everything works
+        discord_env.channel.send.assert_awaited_once_with(content="", embed="test")

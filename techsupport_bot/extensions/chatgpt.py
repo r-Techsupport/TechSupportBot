@@ -3,6 +3,7 @@ import discord
 import expiringdict
 import ui
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -53,18 +54,24 @@ class ChatGPT(base.BaseCog):
     async def gpt(self, ctx, *, prompt: str):
         api_key = self.bot.file_config.main.api_keys.openai
         if not api_key:
-            await ctx.send_deny_embed("I couldn't find the OpenAI API key")
+            await auxiliary.send_deny_embed(
+                message="I couldn't find the OpenAI API key", channel=ctx.channel
+            )
             return
 
         response = await self.call_api(ctx, api_key, prompt)
         choices = response.get("choices", [])
         if not choices:
-            await ctx.send_deny_embed("I couldn't figure out what to say!")
+            await auxiliary.send_deny_embed(
+                message="I couldn't figure out what to say!", channel=ctx.channel
+            )
             return
 
         content = choices[0].get("message", {}).get("content")
         if not content:
-            await ctx.send_deny_embed("I couldn't figure out what to say!")
+            await auxiliary.send_deny_embed(
+                message="I couldn't figure out what to say!", channel=ctx.channel
+            )
 
         if not self.history.get(ctx.author.id):
             self.history[ctx.author.id] = [
@@ -95,7 +102,9 @@ class ChatGPT(base.BaseCog):
     async def clear_history(self, ctx):
         history = self.history.pop(ctx.author.id, None)
         if history is None:
-            await ctx.send_deny_embed("No history found")
+            await auxiliary.send_deny_embed(
+                message="No history found", channel=ctx.channel
+            )
             return
 
         view = ui.Confirm()
@@ -108,10 +117,14 @@ class ChatGPT(base.BaseCog):
         if view.value is ui.ConfirmResponse.TIMEOUT:
             return
         if view.value is ui.ConfirmResponse.DENIED:
-            await ctx.send_deny_embed("Chat history was not cleared")
+            await auxiliary.send_deny_embed(
+                message="Chat history was not cleared", channel=ctx.channel
+            )
             return
 
-        await ctx.send_confirm_embed("Chat history cleared!")
+        await auxiliary.send_confirm_embed(
+            message="Chat history cleared!", channel=ctx.channel
+        )
 
     @util.with_typing
     @gptutil.command(
@@ -122,7 +135,9 @@ class ChatGPT(base.BaseCog):
     async def get_history(self, ctx):
         history = self.history.get(ctx.author.id)
         if history is None:
-            await ctx.send_deny_embed("No history found")
+            await auxiliary.send_deny_embed(
+                message="No history found", channel=ctx.channel
+            )
             return
 
         embeds = []

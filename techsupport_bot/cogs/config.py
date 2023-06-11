@@ -9,6 +9,7 @@ import base
 import discord
 import ui
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -107,8 +108,9 @@ class ConfigControl(base.BaseCog):
             # server-side check of guild
             uploaded_data["guild_id"] = str(ctx.guild.id)
             if not util.config_schema_matches(uploaded_data, config):
-                await ctx.send_deny_embed(
-                    "I couldn't match your upload data with the current config schema",
+                await auxiliary.send_deny_embed(
+                    message="I couldn't match your upload data with the current config schema",
+                    channel=ctx.channel,
                 )
                 return
 
@@ -116,7 +118,9 @@ class ConfigControl(base.BaseCog):
                 {"guild_id": config.get("guild_id")}, uploaded_data
             )
 
-            await ctx.send_confirm_embed("I've updated that config")
+            await auxiliary.send_confirm_embed(
+                message="I've updated that config", channel=ctx.channel
+            )
             return
 
         json_config = config.copy()
@@ -150,15 +154,17 @@ class ConfigControl(base.BaseCog):
         if not self.bot.extensions.get(
             f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}"
         ):
-            await ctx.send_deny_embed(
-                "I could not find that extension, or it's not loaded"
+            await auxiliary.send_deny_embed(
+                message="I could not find that extension, or it's not loaded",
+                channel=ctx.channel,
             )
             return
 
         config = await self.bot.get_context_config(ctx, get_from_cache=False)
         if extension_name in config.enabled_extensions:
-            await ctx.send_deny_embed(
-                "That extension is already enabled for this guild"
+            await auxiliary.send_deny_embed(
+                message="That extension is already enabled for this guild",
+                channel=ctx.channel,
             )
             return
 
@@ -169,7 +175,9 @@ class ConfigControl(base.BaseCog):
             {"guild_id": config.get("guild_id")}, config
         )
 
-        await ctx.send_confirm_embed("I've enabled that extension for this guild")
+        await auxiliary.send_confirm_embed(
+            message="I've enabled that extension for this guild", channel=ctx.channel
+        )
 
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
@@ -191,15 +199,17 @@ class ConfigControl(base.BaseCog):
         if not self.bot.extensions.get(
             f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}"
         ):
-            await ctx.send_deny_embed(
-                "I could not find that extension, or it's not loaded"
+            await auxiliary.send_deny_embed(
+                message="I could not find that extension, or it's not loaded",
+                channel=ctx.channel,
             )
             return
 
         config = await self.bot.get_context_config(ctx, get_from_cache=False)
         if not extension_name in config.enabled_extensions:
-            await ctx.send_deny_embed(
-                "That extension is already disabled for this guild"
+            await auxiliary.send_deny_embed(
+                message="That extension is already disabled for this guild",
+                channel=ctx.channel,
             )
             return
 
@@ -213,4 +223,6 @@ class ConfigControl(base.BaseCog):
             {"guild_id": config.get("guild_id")}, config
         )
 
-        await ctx.send_confirm_embed("I've disabled that extension for this guild")
+        await auxiliary.send_confirm_embed(
+            message="I've disabled that extension for this guild", channel=ctx.channel
+        )

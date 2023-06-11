@@ -1,6 +1,7 @@
 """Module for the translate extension for the discord bot."""
 import base
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -32,7 +33,9 @@ class Translator(base.BaseCog):
         translated = response.get("responseData", {}).get("translatedText")
 
         if not translated:
-            await ctx.send_deny_embed("I could not translate your message")
+            await auxiliary.send_deny_embed(
+                message="I could not translate your message", channel=ctx.channel
+            )
             return
 
-        await ctx.send_confirm_embed(translated)
+        await auxiliary.send_confirm_embed(message=translated, channel=ctx.channel)

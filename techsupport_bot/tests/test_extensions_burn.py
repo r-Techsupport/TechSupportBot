@@ -92,14 +92,15 @@ class Test_HandleBurn:
         """
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
-        discord_env.context.send_deny_embed = AsyncMock()
+        auxiliary.send_deny_embed = AsyncMock()
 
         # Step 2 - Call the function
         await discord_env.burn.handle_burn(discord_env.context, None, None)
 
         # Step 3 - Assert that everything works
-        discord_env.context.send_deny_embed.assert_called_once_with(
-            "I could not a find a message to reply to"
+        auxiliary.send_deny_embed.assert_called_once_with(
+            message="I could not a find a message to reply to",
+            channel=discord_env.channel,
         )
 
 
