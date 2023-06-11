@@ -126,4 +126,4 @@ class ChatGPT(base.BaseCog):
             embed.add_field(name="Response", value=resp[:255])
             embeds.append(embed)
 
-        await ui.PaginateView().send(ctx, embeds)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
