@@ -8,6 +8,7 @@ import base
 import discord
 import expiringdict
 import munch
+import ui
 from discord.ext import commands
 
 
@@ -351,21 +352,25 @@ class Protector(base.MatchCog):
         config = await self.bot.get_context_config(ctx)
 
         if new_count >= config.extensions.protect.max_warnings.value:
-            # This is a little complex, but this is a quick way of doing this
-            # If "bypass" is ever set to true, that means we don't want to ask
-            # In this case, we should assume we want to ban
-            # If bypass is false, we call ctx.confirm, which returns true/false
-            # The response from this indicates if we want to ban or not
-            should_ban = (
-                bypass
-                if bypass
-                else await ctx.confirm(
-                    f"This user has exceeded the max warnings \
-                        of {config.extensions.protect.max_warnings.value}. \
-                        Would you like to ban them instead?",
-                    delete_after=True,
+            # Start by assuming we don't want to ban someone
+            should_ban = False
+
+            # If there is no bypass, ask using ui.Confirm
+            # If there is a bypass, assume we want to ban
+            if not bypass:
+                view = ui.Confirm()
+                await view.send(
+                    message="This user has exceeded the max warnings of "
+                    + f"{config.extensions.protect.max_warnings.value}. Would "
+                    + "you like to ban them instead?",
+                    channel=ctx.channel,
+                    author=ctx.author,
                 )
-            )
+                await view.wait()
+                if view.value is ui.ConfirmResponse.CONFIRMED:
+                    should_ban = True
+            else:
+                should_ban = True
 
             if should_ban:
                 await self.handle_ban(

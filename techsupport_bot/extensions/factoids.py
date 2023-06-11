@@ -12,6 +12,7 @@ import base
 import discord
 import expiringdict
 import munch
+import ui
 import util
 import yaml
 from discord.ext import commands
@@ -253,14 +254,22 @@ class FactoidManager(base.MatchCog):
             # Makes sure dealias doesn't confirm twice
             if not kwargs.get("confirm_bypass"):
                 # Delete old one
-                should_delete = await ctx.confirm(
-                    f"The factoid `{trigger}` already exists. Should I overwrite it?"
+
+                view = ui.Confirm()
+                await view.send(
+                    message=f"The factoid `{trigger}` already exists. Should I overwrite it?",
+                    channel=ctx.channel,
+                    author=ctx.author,
                 )
-                if not should_delete:
+                await view.wait()
+                if view.value is ui.ConfirmResponse.TIMEOUT:
+                    return
+                if view.value is ui.ConfirmResponse.DENIED:
                     await ctx.send_deny_embed(
                         f"The factoid `{trigger}` was not removed"
                     )
                     return
+
                 message = "Modified"
 
             await factoid.delete()
@@ -288,10 +297,16 @@ class FactoidManager(base.MatchCog):
 
         # Don't confirm if this is an alias, only the parent needs confirmation
         if factoid.alias in ["", None]:
-            should_delete = await ctx.confirm(
-                f"This will remove the factoid `{trigger}` forever. Are you sure?"
+            view = ui.Confirm()
+            await view.send(
+                message=f"This will remove the factoid `{trigger}` forever. Are you sure?",
+                channel=ctx.channel,
+                author=ctx.author,
             )
-            if not should_delete:
+            await view.wait()
+            if view.value is ui.ConfirmResponse.TIMEOUT:
+                return
+            if view.value is ui.ConfirmResponse.DENIED:
                 await ctx.send_deny_embed(f"Factoid: `{trigger}` was not deleted")
                 return
 
@@ -1151,10 +1166,16 @@ class FactoidManager(base.MatchCog):
                 return
 
             # Prompt to delete the old one
-            should_delete = await ctx.confirm(
-                f"The entry `{alias_name}` already exists. Should I overwrite it?"
+            view = ui.Confirm()
+            await view.send(
+                message=f"The entry `{alias_name}` already exists. Should I overwrite it?",
+                channel=ctx.channel,
+                author=ctx.author,
             )
-            if not should_delete:
+            await view.wait()
+            if view.value is ui.ConfirmResponse.TIMEOUT:
+                return
+            if view.value is ui.ConfirmResponse.DENIED:
                 await ctx.send_deny_embed(
                     f"The entry `{alias_entry.text}` was not deleted"
                 )

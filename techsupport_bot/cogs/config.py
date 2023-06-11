@@ -7,6 +7,7 @@ import json
 
 import base
 import discord
+import ui
 import util
 from discord.ext import commands
 
@@ -68,12 +69,20 @@ class ConfigControl(base.BaseCog):
             command.name
             for command in self.bot.get_cog(self.qualified_name).walk_commands()
         ]:
-            if await ctx.confirm(
-                "Invalid argument! Show help command?", delete_after=True, timeout=10
-            ):
-                await ctx.send(
-                    embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
-                )
+            view = ui.Confirm()
+            await view.send(
+                message="Invalid argument! Show help command?",
+                channel=ctx.channel,
+                author=ctx.author,
+                timeout=10,
+            )
+            await view.wait()
+            if view.value != ui.ConfirmResponse.CONFIRMED:
+                return
+
+            await ctx.send(
+                embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
+            )
 
     @commands.has_permissions(administrator=True)
     @commands.guild_only()

@@ -615,9 +615,17 @@ class DuckHunt(base.LoopCog):
                 "The user has not participated in the duck hunt yet."
             )
             return
-        if not await ctx.confirm(
-            f"Are you sure you want to reset {user.mention}s duck stats?"
-        ):
+
+        view = ui.Confirm()
+        await view.send(
+            message=f"Are you sure you want to reset {user.mention}s duck stats?",
+            channel=ctx.channel,
+            author=ctx.author,
+        )
+        await view.wait()
+        if view.value is ui.ConfirmResponse.TIMEOUT:
+            return
+        if view.value is ui.ConfirmResponse.DENIED:
             await ctx.send_deny_embed(f"{user.mention}s duck stats were NOT reset.")
             return
 

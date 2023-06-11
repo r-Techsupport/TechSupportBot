@@ -1,12 +1,12 @@
 """Module for defining the extensions bot methods."""
 
-import asyncio
 import glob
 import os
 
 import botlogging
 import discord
 import munch
+import ui
 import yaml
 from discord.ext import commands
 
@@ -270,14 +270,22 @@ async def extension_help(self, ctx, extension_name):
 
         # If argument isn't a valid command or alias, wait for confirmation to show help page
         if arg not in valid_args and arg not in valid_commands:
-            if await ctx.confirm(
-                "Invalid argument! Show help command?", delete_after=True, timeout=10
-            ):
-                await ctx.send(
-                    embed=get_help_embed_for_extension(
-                        self, extension_name, await self.bot.get_prefix(ctx.message)
-                    )
+            view = ui.Confirm()
+            await view.send(
+                message="Invalid argument! Show help command?",
+                channel=ctx.channel,
+                author=ctx.author,
+                timeout=10,
+            )
+            await view.wait()
+            if view.value != ui.ConfirmResponse.CONFIRMED:
+                return
+
+            await ctx.send(
+                embed=get_help_embed_for_extension(
+                    self, extension_name, await self.bot.get_prefix(ctx.message)
                 )
+            )
 
     # Executed if no arguments were supplied
     elif len(ctx.message.content.split()) == 1:

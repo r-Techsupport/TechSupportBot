@@ -9,6 +9,7 @@ import base
 import discord
 import embeds
 import munch
+import ui
 import yaml
 from discord.ext import commands
 
@@ -349,7 +350,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             and m.author.id == user.id
             and isinstance(m.channel, discord.DMChannel),
         )
-        await message.add_reaction(ctx.CONFIRM_YES_EMOJI)
+        await message.add_reaction("✅")
         return message.content.lower() == "yes"
 
     @staticmethod
@@ -473,18 +474,31 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             return
 
         if status == "denied":
-            confirm = await ctx.confirm(
-                "That application has been marked as denied. Are you sure you want to approve it?",
+            view = ui.Confirm()
+            await view.send(
+                message="That application has been marked as denied. Are you sure you want to approve it?",
+                channel=ctx.channel,
+                author=ctx.author,
             )
-            if not confirm:
+            await view.wait()
+            if view.value is ui.ConfirmResponse.TIMEOUT:
+                return
+            if view.value is ui.ConfirmResponse.DENIED:
                 await ctx.send_deny_embed("Application was not approved")
                 return
 
         username = application_data.get("username", "the user")
-        confirm = await ctx.confirm(
-            f"This will attempt to notify `{username}` and approve their application",
+
+        view = ui.Confirm()
+        await view.send(
+            message=f"This will attempt to notify `{username}` and approve their application",
+            channel=ctx.channel,
+            author=ctx.author,
         )
-        if not confirm:
+        await view.wait()
+        if view.value is ui.ConfirmResponse.TIMEOUT:
+            return
+        if view.value is ui.ConfirmResponse.DENIED:
             await ctx.send_deny_embed(
                 f"The application was not approved and `{username}` was not notified"
             )
@@ -517,18 +531,32 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             return
 
         if status == "approved":
-            confirm = await ctx.confirm(
-                "That application has been marked as approved. Are you sure you want to deny it?",
+            view = ui.Confirm()
+            await view.send(
+                message="That application has been marked as approved. "
+                + "Are you sure you want to deny it?",
+                channel=ctx.channel,
+                author=ctx.author,
             )
-            if not confirm:
+            await view.wait()
+            if view.value is ui.ConfirmResponse.TIMEOUT:
+                return
+            if view.value is ui.ConfirmResponse.DENIED:
                 await ctx.send_deny_embed("Application was not denied")
                 return
 
         username = application_data.get("username", "the user")
-        confirm = await ctx.confirm(
-            f"This will attempt to notify `{username}` and deny their application",
+
+        view = ui.Confirm()
+        await view.send(
+            message=f"This will attempt to notify `{username}` and deny their application",
+            channel=ctx.channel,
+            author=ctx.author,
         )
-        if not confirm:
+        await view.wait()
+        if view.value is ui.ConfirmResponse.TIMEOUT:
+            return
+        if view.value is ui.ConfirmResponse.DENIED:
             await ctx.send_deny_embed(
                 f"The application was not denied and `{username}` was not notified"
             )

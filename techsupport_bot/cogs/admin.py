@@ -8,6 +8,7 @@ import sys
 import base
 import discord
 import git
+import ui
 import util
 from discord.ext import commands
 
@@ -75,12 +76,19 @@ class AdminControl(base.BaseCog):
             command.name
             for command in self.bot.get_cog(self.qualified_name).walk_commands()
         ]:
-            if await ctx.confirm(
-                "Invalid argument! Show help command?", delete_after=True
-            ):
-                await ctx.send(
-                    embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
-                )
+            view = ui.Confirm()
+            await view.send(
+                message="Invalid argument! Show help command?",
+                channel=ctx.channel,
+                author=ctx.author,
+                timeout=10,
+            )
+            await view.wait()
+            if view.value != ui.ConfirmResponse.CONFIRMED:
+                return
+            await ctx.send(
+                embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
+            )
 
     @util.with_typing
     @extension_group.command(
@@ -174,11 +182,18 @@ class AdminControl(base.BaseCog):
             return
 
         if extension_name.lower() in await self.bot.get_potential_extensions():
-            confirm = await ctx.confirm(
-                f"Warning! This will replace the current `{extension_name}.py` extension! Are you SURE?",
-                delete_after=True,
+            view = ui.Confirm()
+            await view.send(
+                message=f"Warning! This will replace the current `{extension_name}.py` "
+                + "extension! Are you SURE?",
+                channel=ctx.channel,
+                author=ctx.author,
             )
-            if not confirm:
+            await view.wait()
+
+            if view.value is ui.ConfirmResponse.TIMEOUT:
+                return
+            if view.value is ui.ConfirmResponse.DENIED:
                 await ctx.send_deny_embed(f"{extension_name}.py was not replaced")
                 return
 
@@ -236,12 +251,19 @@ class AdminControl(base.BaseCog):
             command.name
             for command in self.bot.get_cog(self.qualified_name).walk_commands()
         ]:
-            if await ctx.confirm(
-                "Invalid argument! Show help command?", delete_after=True
-            ):
-                await ctx.send(
-                    embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
-                )
+            view = ui.Confirm()
+            await view.send(
+                message="Invalid argument! Show help command?",
+                channel=ctx.channel,
+                author=ctx.author,
+                timeout=10,
+            )
+            await view.wait()
+            if view.value != ui.ConfirmResponse.CONFIRMED:
+                return
+            await ctx.send(
+                embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
+            )
 
     @util.with_typing
     @command_group.command(
@@ -341,12 +363,19 @@ class AdminControl(base.BaseCog):
             command.name
             for command in self.bot.get_cog(self.qualified_name).walk_commands()
         ]:
-            if await ctx.confirm(
-                "Invalid argument! Show help command?", delete_after=True, timeout=10
-            ):
-                await ctx.send(
-                    embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
-                )
+            view = ui.Confirm()
+            await view.send(
+                message="Invalid argument! Show help command?",
+                channel=ctx.channel,
+                author=ctx.author,
+                timeout=10,
+            )
+            await view.wait()
+            if view.value != ui.ConfirmResponse.CONFIRMED:
+                return
+            await ctx.send(
+                embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
+            )
 
     @util.with_typing
     @set_group.command(
@@ -426,12 +455,19 @@ class AdminControl(base.BaseCog):
             command.name
             for command in self.bot.get_cog(self.qualified_name).walk_commands()
         ]:
-            if await ctx.confirm(
-                "Invalid argument! Show help command?", delete_after=True, timeout=10
-            ):
-                await ctx.send(
-                    embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
-                )
+            view = ui.Confirm()
+            await view.send(
+                message="Invalid argument! Show help command?",
+                channel=ctx.channel,
+                author=ctx.author,
+                timeout=10,
+            )
+            await view.wait()
+            if view.value != ui.ConfirmResponse.CONFIRMED:
+                return
+            await ctx.send(
+                embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
+            )
 
     @util.with_typing
     @echo.command(

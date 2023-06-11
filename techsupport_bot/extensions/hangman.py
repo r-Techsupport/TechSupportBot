@@ -4,7 +4,7 @@ import uuid
 
 import base
 import discord
-import util
+import ui
 from discord.ext import commands
 
 
@@ -211,13 +211,19 @@ class HangmanCog(base.BaseCog):
             # get user who started it
             user = game_data.get("user")
             if getattr(user, "id", 0) == ctx.author.id:
-                should_delete = await ctx.confirm(
-                    "There is a current game in progress. Would you like to end it?",
-                    delete_after=True,
+                view = ui.Confirm()
+                await view.send(
+                    message="There is a current game in progress. Would you like to end it?",
+                    channel=ctx.channel,
+                    author=ctx.author,
                 )
-                if not should_delete:
+                await view.wait()
+                if view.value is ui.ConfirmResponse.TIMEOUT:
+                    return
+                if view.value is ui.ConfirmResponse.DENIED:
                     await ctx.send_deny_embed("The current game was not ended")
                     return
+
                 del self.games[ctx.channel.id]
             else:
                 await ctx.send_deny_embed(
@@ -320,12 +326,16 @@ class HangmanCog(base.BaseCog):
             await ctx.send_deny_embed("There is no game in progress for this channel")
             return
 
-        should_delete = await ctx.confirm(
-            "Are you sure you want to end the current game?",
-            delete_after=True,
+        view = ui.Confirm()
+        await view.send(
+            message="Are you sure you want to end the current game?",
+            channel=ctx.channel,
+            author=ctx.author,
         )
-
-        if not should_delete:
+        await view.wait()
+        if view.value is ui.ConfirmResponse.TIMEOUT:
+            return
+        if view.value is ui.ConfirmResponse.DENIED:
             await ctx.send_deny_embed("The current game was not ended")
             return
 
