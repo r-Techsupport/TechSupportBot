@@ -8,8 +8,8 @@ import base
 import discord
 import expiringdict
 import munch
-from base import auxiliary
 import ui
+from base import auxiliary
 from discord.ext import commands
 
 

@@ -4,8 +4,8 @@ import uuid
 
 import base
 import discord
-from base import auxiliary
 import ui
+from base import auxiliary
 from discord.ext import commands
 
 

@@ -6,11 +6,8 @@ import datetime
 import base
 import discord
 import expiringdict
-
-from base import auxiliary
-
 import ui
-
+from base import auxiliary
 from discord.ext import commands
 
 

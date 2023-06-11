@@ -1,7 +1,6 @@
 """Module for defining custom contexts.
 """
 
-import discord
 from base import auxiliary
 from discord.ext import commands
 

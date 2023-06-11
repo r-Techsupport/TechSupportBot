@@ -6,7 +6,6 @@ This contains 23 tests
 
 from unittest.mock import AsyncMock, MagicMock, call
 
-
 import discord
 import pytest
 from base import auxiliary
@@ -297,7 +296,7 @@ class Test_ConstructMention:
 
     def test_no_users(self):
         """Test that if no users are passed, the mention string is blank"""
-        # Step 2 - Call the function        
+        # Step 2 - Call the function
         output = auxiliary.construct_mention_string([None])
 
         # Step 3 - Assert that everything works
@@ -326,9 +325,7 @@ class Test_ConstructMention:
         )
 
         # Step 3 - Assert that everything works
-        assert (
-            output == f"{discord_env.person1.mention} {discord_env.person2.mention}"
-        )
+        assert output == f"{discord_env.person1.mention} {discord_env.person2.mention}"
 
     def test_mulltiple_same_user(self):
         """Test that is mutliple of the same user is passed, the mention
