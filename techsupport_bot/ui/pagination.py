@@ -13,7 +13,6 @@ class PaginateView(discord.ui.View):
 
     current_page: int = 1
     data = None
-    ctx = None
     timeout = 120
     message = ""
 
@@ -23,19 +22,20 @@ class PaginateView(discord.ui.View):
             if isinstance(embed, discord.Embed):
                 embed.set_footer(text=f"Page {index+1} of {len(self.data)}")
 
-    async def send(self, ctx, data):
+    async def send(self, channel, author, data):
         """Entry point for PaginateView
 
         Args:
-            ctx (commands.Context): The context in which the command was run with
+            channel (discord.abc.Messageable): The channel to send the pages to
+            author (discord.Member): The author of the pages command
             data (List): A list of pages in order, with [0] being the first page
         """
+        self.author = author
         self.data = data
-        self.ctx = ctx
         self.update_buttons()
         if isinstance(self.data[0], discord.Embed):
             self.add_page_numbers()
-        self.message = await ctx.send(view=self)
+        self.message = await channel.send(view=self)
         if len(self.data) == 1:
             self.remove_item(self.prev_button)
             self.remove_item(self.next_button)
@@ -98,7 +98,7 @@ class PaginateView(discord.ui.View):
         """This checks to ensure that only the original author can press the button
         If the original author didn't press, it sends an ephemeral message
         """
-        if interaction.user != self.ctx.author:
+        if interaction.user != self.author:
             await interaction.response.send_message(
                 "Only the original author can control this!", ephemeral=True
             )
@@ -106,6 +106,6 @@ class PaginateView(discord.ui.View):
         return True
 
     async def on_timeout(self):
-        """This deletes the buttons after the 60 second timeout has elapsed"""
+        """This deletes the buttons after the timeout has elapsed"""
         self.clear_items()
         await self.update_message()

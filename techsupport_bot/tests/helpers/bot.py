@@ -1,6 +1,7 @@
 """
 This is a file to store the fake disord.Bot objection
 """
+from .. import config_for_tests
 
 
 class MockBot:
@@ -19,7 +20,7 @@ class MockBot:
 
     async def get_prefix(self, message=None):
         """A mock function to get the prefix of the bot"""
-        return "."
+        return config_for_tests.PREFIX
 
     def wait_until_ready(self):
         """A mock wait on ready function"""

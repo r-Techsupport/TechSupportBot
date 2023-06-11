@@ -414,7 +414,7 @@ class DuckHunt(base.LoopCog):
             else:
                 field_counter += 1
 
-        await ui.PaginateView().send(ctx, embeds)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
     @util.with_typing
     @commands.guild_only()
@@ -496,7 +496,7 @@ class DuckHunt(base.LoopCog):
             else:
                 field_counter += 1
 
-        await ui.PaginateView().send(ctx, embeds)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
     def get_user_text(self, duck_user):
         """Method to get the user for the top commands"""
