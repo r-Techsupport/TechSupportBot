@@ -173,7 +173,7 @@ class AdminControl(base.BaseCog):
             await ctx.send_deny_embed("I don't recognize your upload as a Python file")
             return
 
-        if extension_name.lower() in self.bot.get_potential_extensions():
+        if extension_name.lower() in await self.bot.get_potential_extensions():
             confirm = await ctx.confirm(
                 f"Warning! This will replace the current `{extension_name}.py` extension! Are you SURE?",
                 delete_after=True,
