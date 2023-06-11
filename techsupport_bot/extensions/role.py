@@ -61,7 +61,12 @@ class RoleGiver(base.BaseCog):
             "Hello from two", ephemeral=True, view=view
         )
         await view.wait()
-        await interaction.channel.send(content=view.select.values)
+        await self.modify_roles(
+            config_roles=roles,
+            new_roles=view.select.values,
+            guild=interaction.guild,
+            user=interaction.user,
+        )
 
     def generate_options(self, user, guild, roles):
         options = []
@@ -81,3 +86,17 @@ class RoleGiver(base.BaseCog):
             # Third, the option to the list with relevant default
             options.append(discord.SelectOption(label=role_name, default=default))
         return options
+
+    async def modify_roles(self, config_roles, new_roles, guild, user):
+        for role_name in config_roles:
+            real_role = discord.utils.get(guild.roles, name=role_name)
+            if not real_role:
+                continue
+
+            user_roles = getattr(user, "roles", [])
+
+            # If the role was requested to be added
+            if real_role.name in new_roles and real_role not in user_roles:
+                await user.add_roles(real_role)
+            elif real_role.name not in new_roles and real_role in user_roles:
+                await user.remove_roles(real_role)
