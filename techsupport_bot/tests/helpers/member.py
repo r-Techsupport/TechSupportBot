@@ -10,8 +10,10 @@ class MockMember:
     Currently implemented variables and methods:
     id -> An integer containing the ID of the fake user
     bot -> Boolean stating if this member is a bot or not
+    mention -> String that is just <@ID>
     """
 
     def __init__(self, id=None, bot=False):
         self.id = id
         self.bot = bot
+        self.mention = f"<@{id}>"

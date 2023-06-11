@@ -3,6 +3,7 @@ import base
 import discord
 import munch
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -40,7 +41,10 @@ class Weather(base.BaseCog):
 
         embed = self.generate_embed(munch.munchify(response))
         if not embed:
-            await ctx.send_deny_embed("I could not find the weather from your search")
+            await auxiliary.send_deny_embed(
+                message="I could not find the weather from your search",
+                channel=ctx.channel,
+            )
             return
 
         await ctx.send(embed=embed)

@@ -66,7 +66,9 @@ class MagicConch(base.BaseCog):
             question (str, optional): The question asked. Defaults to "".
         """
         if question == "":
-            await ctx.send_deny_embed("You need to add a question")
+            await auxiliary.send_deny_embed(
+                message="You need to add a question", channel=ctx.channel
+            )
             return
         formatted_question = self.format_question(question)
         embed = auxiliary.generate_basic_embed(

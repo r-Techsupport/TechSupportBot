@@ -4,6 +4,7 @@ import json
 import base
 import discord
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -103,7 +104,9 @@ class Dumpdbg(base.BaseCog):
         valid_URLs = await get_files(ctx)
 
         if len(valid_URLs) == 0:
-            await ctx.send_deny_embed("No valid attached dump files detected!")
+            await auxiliary.send_deny_embed(
+                message="No valid attached dump files detected!", channel=ctx.channel
+            )
             return
 
         # Reaction to indicate a succesful request
@@ -116,7 +119,9 @@ class Dumpdbg(base.BaseCog):
         KEY = self.bot.file_config.main.api_keys.dumpdbg_api
 
         if KEY in (None, ""):
-            await ctx.send_deny_embed("No API key found!")
+            await auxiliary.send_deny_embed(
+                message="No API key found!", channel=ctx.channel
+            )
             return
 
         # -> API call(s) <-
@@ -134,7 +139,9 @@ class Dumpdbg(base.BaseCog):
 
             # Makes sure api endpoint doesn't use file:// etc (Codefactor B310)
             if not api_endpoint.lower().startswith("http"):
-                await ctx.send_deny_embed("API endpoint not HTTP/HTTPS")
+                await auxiliary.send_deny_embed(
+                    message="API endpoint not HTTP/HTTPS", channel=ctx.channel
+                )
                 return
 
             response = await self.bot.http_call(
@@ -146,8 +153,10 @@ class Dumpdbg(base.BaseCog):
 
             # Handling for failed results
             if response["success"] is False:
-                await ctx.send_deny_embed(
-                    f"Something went wrong with debugging! Api response: `{response['error']}`"
+                await auxiliary.send_deny_embed(
+                    message="Something went wrong with debugging! "
+                    + f"Api response: `{response['error']}`",
+                    channel=ctx.channel,
                 )
                 await self.bot.logger.warning(
                     f"Dumpdbg API responded with the error `{response['error']}`"

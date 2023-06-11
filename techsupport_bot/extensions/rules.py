@@ -6,6 +6,7 @@ import json
 import base
 import discord
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -58,7 +59,9 @@ class Rules(base.BaseCog):
         if uploaded_data:
             uploaded_data["guild_id"] = str(ctx.guild.id)
             await collection.replace_one({"guild_id": str(ctx.guild.id)}, uploaded_data)
-            await ctx.send_confirm_embed("I've updated to those rules")
+            await auxiliary.send_confirm_embed(
+                message="I've updated to those rules", channel=ctx.channel
+            )
             return
 
         rules_data = await collection.find_one({"guild_id": {"$eq": str(ctx.guild.id)}})
@@ -100,12 +103,16 @@ class Rules(base.BaseCog):
         try:
             numbers.extend([int(num) for num in content.split(",")])
         except ValueError:
-            await ctx.send_deny_embed("Please specify a rule number!")
+            await auxiliary.send_deny_embed(
+                message="Please specify a rule number!", channel=ctx.channel
+            )
             return
 
         for number in numbers:
             if number < 1:
-                await ctx.send_deny_embed("That rule number is invalid")
+                await auxiliary.send_deny_embed(
+                    message="That rule number is invalid", channel=ctx.channel
+                )
                 return
 
             rules_data = await self.bot.mongo[self.COLLECTION_NAME].find_one(
@@ -113,7 +120,9 @@ class Rules(base.BaseCog):
             )
 
             if not rules_data or not rules_data.get("rules"):
-                await ctx.send_deny_embed("There are no rules for this server")
+                await auxiliary.send_deny_embed(
+                    message="There are no rules for this server", channel=ctx.channel
+                )
                 return
             rules = rules_data.get("rules")
             if number in already_done:
@@ -144,7 +153,9 @@ class Rules(base.BaseCog):
             already_done.append(number)
 
         for error in errors:
-            await ctx.send_deny_embed(f"Rule number {error} doesn't exist")
+            await auxiliary.send_deny_embed(
+                message=f"Rule number {error} doesn't exist", channel=ctx.channel
+            )
 
     @commands.guild_only()
     @rule_group.command(
@@ -158,7 +169,9 @@ class Rules(base.BaseCog):
             {"guild_id": {"$eq": str(ctx.guild.id)}}
         )
         if not rules_data or not rules_data.get("rules"):
-            await ctx.send_confirm_embed("There are no rules for this server")
+            await auxiliary.send_confirm_embed(
+                message="There are no rules for this server", channel=ctx.channel
+            )
             return
 
         embed = RuleEmbed(

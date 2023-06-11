@@ -8,6 +8,7 @@ A FakeDiscordEnv for creating a discord environment 100% out of mock ojects
 """
 
 import random
+from unittest.mock import patch
 
 from extensions import Burn, Corrector, Emojis, Greeter, MagicConch
 from hypothesis.strategies import composite, integers, text
@@ -80,9 +81,11 @@ class FakeDiscordEnv:
         # context objects
         self.context = MockContext(channel=self.channel)
 
-        # extension objects
-        self.burn = Burn(self.bot)
-        self.correct = Corrector(self.bot)
-        self.conch = MagicConch(self.bot)
-        self.emoji = Emojis(self.bot)
-        self.hello = Greeter(self.bot)
+        # extension objects.
+        # Since these all call setup, we remove async create task when creating them
+        with patch("asyncio.create_task", return_value=None):
+            self.burn = Burn(self.bot)
+            self.correct = Corrector(self.bot)
+            self.conch = MagicConch(self.bot)
+            self.emoji = Emojis(self.bot)
+            self.hello = Greeter(self.bot)

@@ -7,6 +7,7 @@ import base
 import discord
 import emoji
 import util
+from base import auxiliary
 from discord.ext import commands
 from discord.reaction import Reaction
 
@@ -41,22 +42,28 @@ class PollGenerator(base.BaseCog):
         timeout = request_body.get("timeout")
 
         if not question:
-            await ctx.send_deny_embed("I did not find a poll question (`question` key)")
+            await auxiliary.send_deny_embed(
+                message="I did not find a poll question (`question` key)",
+                channel=ctx.channel,
+            )
             return None
         if not isinstance(question, str):
-            await ctx.send_deny_embed(
-                "I need the poll question to be a string (`question` key)"
+            await auxiliary.send_deny_embed(
+                message="I need the poll question to be a string (`question` key)",
+                channel=ctx.channel,
             )
             return None
 
         if not isinstance(options, list):
-            await ctx.send_deny_embed(
-                "I need the poll options to be a list (`options` key)"
+            await auxiliary.send_deny_embed(
+                message="I need the poll options to be a list (`options` key)",
+                channel=ctx.channel,
             )
             return None
         if len(options) < 2 or len(options) > max_options:
-            await ctx.send_deny_embed(
-                f"I need between 2 and {max_options} options! (`options` key)"
+            await auxiliary.send_deny_embed(
+                message=f"I need between 2 and {max_options} options! (`options` key)",
+                channel=ctx.channel,
             )
             return None
 
@@ -129,14 +136,18 @@ class ReactionPoller(PollGenerator):
         """Method to generate the poll for discord."""
         request_body = await util.get_json_from_attachments(ctx.message)
         if not request_body:
-            await ctx.send_deny_embed("I couldn't find any data in your upload")
+            await auxiliary.send_deny_embed(
+                message="I couldn't find any data in your upload", channel=ctx.channel
+            )
             return
 
         request_body = await self.validate_data(ctx, request_body)
         if not request_body:
             return
 
-        message = await ctx.send_confirm_embed("Poll loading...")
+        message = await auxiliary.send_confirm_embed(
+            message="Poll loading...", channel=ctx.channel
+        )
 
         display_timeout = (
             request_body.timeout
@@ -161,15 +172,17 @@ class ReactionPoller(PollGenerator):
             ctx, message, request_body.timeout, request_body.options
         )
         if results is None:
-            await ctx.send_deny_embed(
-                "I ran into an issue grabbing the poll results..."
+            await auxiliary.send_deny_embed(
+                message="I ran into an issue grabbing the poll results...",
+                channel=ctx.channel,
             )
             try:
                 await message.edit(content="*Poll aborted!*", embed=None)
                 await message.clear_reactions()
             except discord.NotFound:
-                await ctx.send_deny_embed(
-                    "I could not find the poll message. It might have been deleted?",
+                await auxiliary.send_deny_embed(
+                    message="I could not find the poll message. It might have been deleted?",
+                    channel=ctx.channel,
                 )
             except discord.Forbidden:
                 pass
@@ -177,8 +190,9 @@ class ReactionPoller(PollGenerator):
 
         total = sum(count for count in results.values())
         if total == 0:
-            await ctx.send_deny_embed(
-                "Nobody voted in the poll, so I won't bother showing any results"
+            await auxiliary.send_deny_embed(
+                message="Nobody voted in the poll, so I won't bother showing any results",
+                channel=ctx.channel,
             )
             return
 
@@ -280,7 +294,9 @@ class StrawPoller(PollGenerator):
         """Method to generate the poll form the discord command."""
         request_body = await util.get_json_from_attachments(ctx.message)
         if not request_body:
-            await ctx.send_deny_embed("I couldn't find any data in your upload")
+            await auxiliary.send_deny_embed(
+                message="I couldn't find any data in your upload", channel=ctx.channel
+            )
             return
 
         request_body = await self.validate_data(ctx, request_body, strawpoll=True)
@@ -295,7 +311,11 @@ class StrawPoller(PollGenerator):
 
         content_id = response.get("content_id")
         if not content_id:
-            await ctx.send_deny_embed("Strawpoll did not let me create a poll")
+            await auxiliary.send_deny_embed(
+                message="Strawpoll did not let me create a poll", channel=ctx.channel
+            )
             return
 
-        await ctx.send_confirm_embed(f"https://strawpoll.com/{content_id}")
+        await auxiliary.send_confirm_embed(
+            message=f"https://strawpoll.com/{content_id}", channel=ctx.channel
+        )
