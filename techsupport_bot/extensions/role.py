@@ -58,7 +58,7 @@ class RoleGiver(base.BaseCog):
 
         view = ui.SelectView(role_options)
         await interaction.response.send_message(
-            "Hello from two", ephemeral=True, view=view
+            content="Select what roles you want below", ephemeral=True, view=view
         )
         await view.wait()
         await self.modify_roles(
