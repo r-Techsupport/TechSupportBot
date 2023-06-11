@@ -1,11 +1,10 @@
 """
 This is a file to test the extensions/correct.py file
-This contains 6 tests
+This contains 9 tests
 """
 
 from unittest.mock import AsyncMock
 
-import mock
 import pytest
 from base import auxiliary
 
@@ -17,54 +16,91 @@ class Test_PrepareMessage:
 
     def test_prepare_message_success(self):
         """Test to ensure that replacement when the entire message needs to be replaced works"""
-        with mock.patch("asyncio.create_task", return_value=None):
-            discord_env = config_for_tests.FakeDiscordEnv()
-            new_content = discord_env.correct.prepare_message(
-                discord_env.message_person2_noprefix_1.content, "message", "bbbb"
-            )
-            assert new_content == "**bbbb**"
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+
+        # Step 2 - Call the function
+        new_content = discord_env.correct.prepare_message(
+            discord_env.message_person2_noprefix_1.content, "message", "bbbb"
+        )
+
+        # Step 3 - Assert that everything works
+        assert new_content == "**bbbb**"
 
     def test_prepare_message_multi(self):
         """Test to ensure that replacement works if multiple parts need to be replaced"""
-        with mock.patch("asyncio.create_task", return_value=None):
-            discord_env = config_for_tests.FakeDiscordEnv()
-            new_content = discord_env.correct.prepare_message(
-                discord_env.message_person2_noprefix_1.content, "e", "bbbb"
-            )
-            assert new_content == "m**bbbb**ssag**bbbb**"
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+
+        # Step 2 - Call the function
+        new_content = discord_env.correct.prepare_message(
+            discord_env.message_person2_noprefix_1.content, "e", "bbbb"
+        )
+
+        # Step 3 - Assert that everything works
+        assert new_content == "m**bbbb**ssag**bbbb**"
 
     def test_prepare_message_partial(self):
         """Test to ensure that replacement works if multiple
         parts of the message need to be replaced"""
-        with mock.patch("asyncio.create_task", return_value=None):
-            discord_env = config_for_tests.FakeDiscordEnv()
-            new_content = discord_env.correct.prepare_message(
-                discord_env.message_person2_noprefix_1.content, "mes", "bbbb"
-            )
-            assert new_content == "**bbbb**sage"
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+
+        # Step 2 - Call the function
+        new_content = discord_env.correct.prepare_message(
+            discord_env.message_person2_noprefix_1.content, "mes", "bbbb"
+        )
+
+        # Step 3 - Assert that everything works
+        assert new_content == "**bbbb**sage"
 
     def test_prepare_message_fail(self):
         """Test to ensure that replacement doesnt change anything if needed
         This should never happen, but test it here anyway"""
-        with mock.patch("asyncio.create_task", return_value=None):
-            discord_env = config_for_tests.FakeDiscordEnv()
-            new_content = discord_env.correct.prepare_message(
-                discord_env.message_person2_noprefix_1.content, "asdf", "bbbb"
-            )
-            assert new_content == "message"
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+
+        # Step 2 - Call the function
+        new_content = discord_env.correct.prepare_message(
+            discord_env.message_person2_noprefix_1.content, "asdf", "bbbb"
+        )
+
+        # Step 3 - Assert that everything works
+        assert new_content == "message"
 
 
 class Test_HandleCorrect:
     """Tests to test the handle_correct function"""
 
     @pytest.mark.asyncio
-    @mock.patch("asyncio.create_task", return_value=None)
-    async def test_handle_correct_positive(self, _):
-        """This ensures that the correct functions are called during a successful correct command"""
+    async def test_handle_calls_search_for_message(self):
+        """This ensures that the search_channel_for_message function is called,
+        with the correct args"""
+        # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
         discord_env.context.message = discord_env.message_person2_noprefix_1
-        discord_env.bot.get_prefix = AsyncMock(return_value=config_for_tests.PREFIX)
-        discord_env.correct.find_message = AsyncMock()
+        discord_env.correct.prepare_message = AsyncMock()
+        auxiliary.search_channel_for_message = AsyncMock()
+        auxiliary.generate_basic_embed = AsyncMock()
+        discord_env.context.send = AsyncMock()
+
+        # Step 2 - Call the function
+        await discord_env.correct.correct_command(discord_env.context, "a", "b")
+
+        # Step 3 - Assert that everything works
+        auxiliary.search_channel_for_message.assert_called_once_with(
+            channel=discord_env.channel,
+            prefix=config_for_tests.PREFIX,
+            content_to_match="a",
+            allow_bot=False,
+        )
+
+    @pytest.mark.asyncio
+    async def test_handle_calls_prepare_message(self):
+        """This ensures that the prepare_message function is called, with the correct args"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        discord_env.context.message = discord_env.message_person2_noprefix_1
         discord_env.correct.prepare_message = AsyncMock()
         auxiliary.search_channel_for_message = AsyncMock(
             return_value=discord_env.message_person2_noprefix_1
@@ -72,36 +108,64 @@ class Test_HandleCorrect:
         auxiliary.generate_basic_embed = AsyncMock()
         discord_env.context.send = AsyncMock()
 
+        # Step 2 - Call the function
         await discord_env.correct.correct_command(discord_env.context, "a", "b")
 
-        auxiliary.search_channel_for_message.assert_called_once_with(
-            channel=discord_env.channel,
-            prefix=config_for_tests.PREFIX,
-            content_to_match="a",
-            allow_bot=False,
-        )
+        # Step 3 - Assert that everything works
         discord_env.correct.prepare_message.assert_called_once_with(
             discord_env.message_person2_noprefix_1.content, "a", "b"
         )
+
+    @pytest.mark.asyncio
+    async def test_handle_calls_generate_embed(self):
+        """This ensures that the generate_basic_embed function is called, with the correct args"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        discord_env.context.message = discord_env.message_person2_noprefix_1
+        discord_env.correct.prepare_message = AsyncMock()
+        auxiliary.search_channel_for_message = AsyncMock(
+            return_value=discord_env.message_person2_noprefix_1
+        )
+        auxiliary.generate_basic_embed = AsyncMock()
+        discord_env.context.send = AsyncMock()
+
+        # Step 2 - Call the function
+        await discord_env.correct.correct_command(discord_env.context, "a", "b")
+
+        # Step 3 - Assert that everything works
         auxiliary.generate_basic_embed.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_handle_calls_send(self):
+        """This ensures that the ctx.send function is called, with the correct args"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        discord_env.context.message = discord_env.message_person2_noprefix_1
+        discord_env.correct.prepare_message = AsyncMock()
+        auxiliary.search_channel_for_message = AsyncMock(
+            return_value=discord_env.message_person2_noprefix_1
+        )
+        auxiliary.generate_basic_embed = AsyncMock()
+        discord_env.context.send = AsyncMock()
+
+        # Step 2 - Call the function
+        await discord_env.correct.correct_command(discord_env.context, "a", "b")
+
+        # Step 3 - Assert that everything works
         discord_env.context.send.assert_called_once()
 
     @pytest.mark.asyncio
-    @mock.patch("asyncio.create_task", return_value=None)
-    async def test_handle_correct_negative(self, _):
+    async def test_handle_no_message_found(self):
         """This test ensures that a deny embed is sent if no message could be found"""
+        # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
-        discord_env.bot.get_prefix = AsyncMock(return_value=config_for_tests.PREFIX)
         auxiliary.search_channel_for_message = AsyncMock(return_value=None)
         discord_env.context.send_deny_embed = AsyncMock()
+
+        # Step 2 - Call the function
         await discord_env.correct.correct_command(discord_env.context, "a", "b")
 
-        auxiliary.search_channel_for_message.assert_called_once_with(
-            channel=discord_env.channel,
-            prefix=config_for_tests.PREFIX,
-            content_to_match="a",
-            allow_bot=False,
-        )
+        # Step 3 - Assert that everything works
         discord_env.context.send_deny_embed.assert_called_once_with(
             "I couldn't find any message to correct"
         )
