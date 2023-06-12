@@ -85,6 +85,7 @@ class Htd(base.BaseCog):
     def perform_op_on_list(self, equation_list: list) -> int:
         """This will compute an equation if passed as a list
         This does not use eval()
+        This expected a list of integers and OPERATORS only
 
         Args:
             equation_list (list): The equation in a list form

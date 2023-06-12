@@ -158,3 +158,62 @@ class Test_ConvertToInt:
 
         # Step 3 - Assert that everything works
         assert output == 1
+
+
+class Test_PerformOperator:
+    """Tests to test perform_op_on_list"""
+
+    def test_single_integer(self):
+        """A test to ensure that a single integer input is not modified"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.perform_op_on_list([1])
+
+        # Step 3 - Assert that everything works
+        assert output == 1
+
+    def test_single_operator(self):
+        """A test to ensure that operations work as expected"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.perform_op_on_list([3, "+", 4])
+
+        # Step 3 - Assert that everything works
+        assert output == 7
+
+    def test_multiple_operator(self):
+        """A test to ensure that multiple operators work"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.perform_op_on_list([3, "+", 4, "-", 5])
+
+        # Step 3 - Assert that everything works
+        assert output == 2
+
+    def test_all_operator(self):
+        """A test to ensure that all operators work"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.perform_op_on_list([3, "+", 4, "-", 5, "*", 6, "/", 2])
+
+        # Step 3 - Assert that everything works
+        assert output == 6
+
+    def test_negative_number(self):
+        """A test to ensure that negative numbers work"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.perform_op_on_list([-3, "+", 4])
+
+        # Step 3 - Assert that everything works
+        assert output == 1
