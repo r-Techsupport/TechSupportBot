@@ -282,3 +282,114 @@ class Test_ConvertList:
 
         # Step 3 - Assert that everything works
         assert output == [5, "+", 5]
+
+
+class Test_IntToHex:
+    """Tests to test integer_to_hexadecimal"""
+
+    def test_simple_hex(self):
+        """This tests to ensure that a basic hex conversion works"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.integer_to_hexadecimal(16)
+
+        # Step 3 - Assert that everything works
+        assert output == "0x10"
+
+    def test_complex_hex(self):
+        """This tests to ensure that a complex hex conversion works"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.integer_to_hexadecimal(847653289450)
+
+        # Step 3 - Assert that everything works
+        assert output == "0xc55c12bdea"
+
+    def test_hex_styling(self):
+        """This tests to ensure that the styling works"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.integer_to_hexadecimal(5)
+
+        # Step 3 - Assert that everything works
+        assert output == "0x05"
+
+    def test_negative_hex(self):
+        """This tests to ensure that the hex maintains it's negative"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.integer_to_hexadecimal(-5)
+
+        # Step 3 - Assert that everything works
+        assert output == "-0x05"
+
+
+class Test_IntToBin:
+    """Tests to test integer_to_binary"""
+
+    def test_simple_bin(self):
+        """This tests to ensure that a basic binary conversion works"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.integer_to_binary(1)
+
+        # Step 3 - Assert that everything works
+        assert output == "0b1"
+
+    def test_complex_bin(self):
+        """This tests to ensure that a complex binary conversion works"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.integer_to_binary(98235671235)
+
+        # Step 3 - Assert that everything works
+        assert output == "0b1011011011111010011010110001011000011"
+
+    def test_negative_hex(self):
+        """This tests to ensure that the binary maintains it's negative"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.integer_to_binary(-5)
+
+        # Step 3 - Assert that everything works
+        assert output == "-0b101"
+
+
+class Test_IntToAscii:
+    """Tests to test integer_to_ascii"""
+
+    def test_simple_ascii(self):
+        """This tests to ensure that a basic ascii conversion works"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.integer_to_ascii(65)
+
+        # Step 3 - Assert that everything works
+        assert output == "A"
+
+    def test_complex_ascii(self):
+        """This tests to ensure that a complex ascii conversion works"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.integer_to_ascii(18946016917865816)
+
+        # Step 3 - Assert that everything works
+        assert output == "COMPLEX"

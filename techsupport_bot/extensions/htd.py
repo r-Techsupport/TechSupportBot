@@ -170,6 +170,7 @@ class Htd(base.BaseCog):
 
     def integer_to_hexadecimal(self, integer: int) -> str:
         """Takes an integer in and returns a string representation in hex
+        This will return in the format of "0x05"
 
         Args:
             integer (int): The integer to convert to hex
