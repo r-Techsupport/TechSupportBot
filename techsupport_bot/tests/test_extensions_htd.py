@@ -393,3 +393,40 @@ class Test_IntToAscii:
 
         # Step 3 - Assert that everything works
         assert output == "COMPLEX"
+
+
+class Test_FormatEmbedField:
+    """Tests to test format_embed_field"""
+
+    def test_short_string(self):
+        """A test to ensure that a short string is not touched"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.format_embed_field("ABCD")
+
+        # Step 3 - Assert that everything works
+        assert output == "ABCD"
+
+    def test_1024_string(self):
+        """A test to ensure that a short string is not touched"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.format_embed_field("A" * 1024)
+
+        # Step 3 - Assert that everything works
+        assert output == "A" * 1024
+
+    def test_long_string(self):
+        """A test to ensure that a short string is not touched"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.format_embed_field("A" * 2024)
+
+        # Step 3 - Assert that everything works
+        assert output == "A" * 1021 + "..."

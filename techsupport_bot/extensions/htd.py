@@ -225,7 +225,7 @@ class Htd(base.BaseCog):
         Returns:
             str: The string output, either left alone or cropped
         """
-        if len(data) < 1024:
+        if len(data) <= 1024:
             return data
         return data[:1021] + "..."
 
