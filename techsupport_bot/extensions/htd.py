@@ -82,7 +82,7 @@ class Htd(base.BaseCog):
 
         return int(val, num_base)
 
-    def perform_op_on_list(self, equation_list: list) -> int: 
+    def perform_op_on_list(self, equation_list: list) -> int:
         """This will compute an equation if passed as a list
         This does not use eval()
 
@@ -313,6 +313,5 @@ class Htd(base.BaseCog):
                 channel=ctx.channel,
             )
             return
-        
+
         await ctx.send(embed=self.custom_embed_generation(val_to_convert, calced_val))
-        
