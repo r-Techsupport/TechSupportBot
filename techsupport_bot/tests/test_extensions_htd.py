@@ -217,3 +217,39 @@ class Test_PerformOperator:
 
         # Step 3 - Assert that everything works
         assert output == 1
+
+class Test_CleanInput:
+    """A set of tests to test clean_input"""
+
+    def test_replacing_hex(self):
+        """A test to ensure that # is replaced with 0x"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.clean_input("#124")
+
+        # Step 3 - Assert that everything works
+        assert output == "0x124"
+    
+    def test_stripping_spaces(self):
+        """A test to ensure that spaces are removed from the string"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.clean_input("5                  +                      5")
+
+        # Step 3 - Assert that everything works
+        assert output == "5+5"
+    
+    def test_stripping_quotes(self):
+        """A test to ensure that quotes are removed from the string"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+
+        # Step 2 - Call the function
+        output = hextodec.clean_input("\"5'")
+
+        # Step 3 - Assert that everything works
+        assert output == "5"
