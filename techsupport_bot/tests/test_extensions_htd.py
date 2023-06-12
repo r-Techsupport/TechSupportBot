@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from extensions import htd
 
@@ -218,6 +218,7 @@ class Test_PerformOperator:
         # Step 3 - Assert that everything works
         assert output == 1
 
+
 class Test_CleanInput:
     """A set of tests to test clean_input"""
 
@@ -231,7 +232,7 @@ class Test_CleanInput:
 
         # Step 3 - Assert that everything works
         assert output == "0x124"
-    
+
     def test_stripping_spaces(self):
         """A test to ensure that spaces are removed from the string"""
         # Step 1 - Setup env
@@ -242,7 +243,7 @@ class Test_CleanInput:
 
         # Step 3 - Assert that everything works
         assert output == "5+5"
-    
+
     def test_stripping_quotes(self):
         """A test to ensure that quotes are removed from the string"""
         # Step 1 - Setup env
@@ -253,3 +254,31 @@ class Test_CleanInput:
 
         # Step 3 - Assert that everything works
         assert output == "5"
+
+
+class Test_ConvertList:
+    """Tests to test convert_list_to_ints"""
+
+    def test_single_int(self):
+        """A test to ensure that just a single int is correctly converted"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+        hextodec.convert_value_to_integer = MagicMock(return_value=5)
+
+        # Step 2 - Call the function
+        output = hextodec.convert_list_to_ints(["5"])
+
+        # Step 3 - Assert that everything works
+        assert output == [5]
+
+    def test_equations(self):
+        """A test to ensure that just a single int is correctly converted"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+        hextodec.convert_value_to_integer = MagicMock(return_value=5)
+
+        # Step 2 - Call the function
+        output = hextodec.convert_list_to_ints(["5", "+", "5"])
+
+        # Step 3 - Assert that everything works
+        assert output == [5, "+", 5]
