@@ -1,11 +1,13 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
-from extensions import htd
+import discord
+from base import auxiliary
+from extensions import Htd
 
 
 def setup_local_extension():
     with patch("asyncio.create_task", return_value=None):
-        return htd.Htd(None)
+        return Htd(None)
 
 
 class Test_SplitNicely:
@@ -430,3 +432,112 @@ class Test_FormatEmbedField:
 
         # Step 3 - Assert that everything works
         assert output == "A" * 1021 + "..."
+
+
+class Test_CustomEmbed:
+    """A set of tests for custom_embed_generation"""
+
+    def test_basic_embed_called(self):
+        """A test to ensure that the basic embed is generated correctly"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+        auxiliary.generate_basic_embed = MagicMock()
+        hextodec.format_embed_field = MagicMock()
+        hextodec.integer_to_hexadecimal = MagicMock()
+        hextodec.integer_to_binary = MagicMock()
+        hextodec.integer_to_ascii = MagicMock()
+
+        # Step 2 - Call the function
+        hextodec.custom_embed_generation("raw", 5)
+
+        # Step 3 - Assert that everything works
+        auxiliary.generate_basic_embed.assert_called_once_with(
+            title="Your conversion results",
+            description="Converting `raw`",
+            color=discord.Color.green(),
+        )
+
+    def test_fields_correct(self):
+        """A test to ensure that the basic embed is generated correctly"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+        fakeembed = MagicMock()
+        fakeembed.add_field = MagicMock()
+        auxiliary.generate_basic_embed = MagicMock(return_value=fakeembed)
+        hextodec.format_embed_field = MagicMock(return_value="value")
+        hextodec.integer_to_hexadecimal = MagicMock()
+        hextodec.integer_to_binary = MagicMock()
+        hextodec.integer_to_ascii = MagicMock()
+
+        # Step 2 - Call the function
+        hextodec.custom_embed_generation("raw", 5)
+
+        # Step 3 - Assert that everything works
+
+        expected_calls = [
+            call(
+                name="Decimal:",
+                value="value",
+                inline=False,
+            ),
+            call(
+                name="Hexadecimal:",
+                value="value",
+                inline=False,
+            ),
+            call(
+                name="Binary:",
+                value="value",
+                inline=False,
+            ),
+            call(
+                name="Ascii encoding:",
+                value="value",
+                inline=False,
+            ),
+        ]
+
+        fakeembed.add_field.assert_has_calls(expected_calls)
+
+    def test_ascii_error(self):
+        """A test to ensure that the basic embed is generated correctly,
+        even if int to ascii has a ValueError"""
+        # Step 1 - Setup env
+        hextodec = setup_local_extension()
+        fakeembed = MagicMock()
+        fakeembed.add_field = MagicMock()
+        auxiliary.generate_basic_embed = MagicMock(return_value=fakeembed)
+        hextodec.format_embed_field = MagicMock(return_value="value")
+        hextodec.integer_to_hexadecimal = MagicMock()
+        hextodec.integer_to_binary = MagicMock()
+        hextodec.integer_to_ascii = MagicMock(side_effect=ValueError)
+
+        # Step 2 - Call the function
+        hextodec.custom_embed_generation("raw", 5)
+
+        # Step 3 - Assert that everything works
+
+        expected_calls = [
+            call(
+                name="Decimal:",
+                value="value",
+                inline=False,
+            ),
+            call(
+                name="Hexadecimal:",
+                value="value",
+                inline=False,
+            ),
+            call(
+                name="Binary:",
+                value="value",
+                inline=False,
+            ),
+            call(
+                name="Ascii encoding:",
+                value="No ascii representation could be made",
+                inline=False,
+            ),
+        ]
+
+        fakeembed.add_field.assert_has_calls(expected_calls)

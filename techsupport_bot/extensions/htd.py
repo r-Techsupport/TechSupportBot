@@ -280,6 +280,8 @@ class Htd(base.BaseCog):
             inline=False,
         )
 
+        print(len(embed.fields))
+
         return embed
 
     async def htd_command(self, ctx: commands.Context, val_to_convert: str) -> None:
@@ -306,7 +308,6 @@ class Htd(base.BaseCog):
             return
 
         # Attempt to parse the given equation and return a single integer answer
-        calced_val = 0
         try:
             calced_val = self.perform_op_on_list(int_list)
         except ValueError:
@@ -316,4 +317,5 @@ class Htd(base.BaseCog):
             )
             return
 
-        await ctx.send(embed=self.custom_embed_generation(val_to_convert, calced_val))
+        embed = self.custom_embed_generation(val_to_convert, calced_val)
+        await ctx.send(embed=embed)
