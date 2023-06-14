@@ -19,6 +19,106 @@ class Htd(base.BaseCog):
     perform calculations on cross-base numbers and convert between them
     """
 
+    OPERATORS = ["+", "-", "*", "/"]
+
+    def split_nicely(self, str_to_split: str) -> list:
+        """Takes an input string of an equation, and
+            returns a list with numbers and operators in seperate parts
+
+        Args:
+            str_to_split (str): The equation to parse
+
+        Returns:
+            list: A list containing strings of the operators and numbers
+        """
+
+        parsed_list: list = []
+        val_buffer = ""
+
+        for character in str_to_split:
+            if character == "-" and not val_buffer:
+                # If the buffer is empty, we have just found either a number or operator
+                # In this case, if the next character is a '-', it must be a negative
+                # in a properly formed equation
+                val_buffer += character
+            elif character in self.OPERATORS:
+                # If the character is an operator, we add the finished character to the list
+                # And then we add the operator to the list
+                parsed_list.append(val_buffer)
+                parsed_list.append(character)
+                val_buffer = ""
+            else:
+                # Otherwise, we add the character to the buffer, as it must be part of a number
+                val_buffer += character
+
+        # At the end of the string, whatever we have left must be the last number in the equation
+        # So, we must append it
+        parsed_list.append(val_buffer)
+
+        return parsed_list
+
+    def convert_value_to_integer(self, val: str) -> int:
+        """Converts a given value as hex, binary, or decimal into an integer type
+
+        Args:
+            val (str): The given value to convert
+
+        Returns:
+            int: The value represeted as an integer
+        """
+
+        if val.replace("-", "").startswith("0x"):
+            # input detected as hex
+            num_base = 16
+        elif val.replace("-", "").startswith("0b"):
+            # input detected as binary
+            num_base = 2
+        else:
+            # assume the input is detected as an int
+            num_base = 10
+        # special handling is needed for floats
+        if "." in val:
+            return int(float(val))
+
+        return int(val, num_base)
+
+    def perform_op_on_list(self, equation_list: list) -> int:
+        """This will compute an equation if passed as a list
+        This does not use eval()
+        This expected a list of integers and OPERATORS only
+
+        Args:
+            equation_list (list): The equation in a list form
+
+        Raises:
+            ValueError: If the operator is not valid, this is raised
+
+        Returns:
+            int: The integer value of the computed equation
+        """
+
+        running_value = equation_list[0]
+        current_operator = ""
+        for index, value in enumerate(equation_list):
+            if index == 0:
+                continue
+            if index % 2 == 1:
+                # Odd position must be an operator
+                current_operator = value
+            else:
+                # Even position, must be a number
+                if current_operator == "+":
+                    running_value = running_value + value
+                elif current_operator == "-":
+                    running_value = running_value - value
+                elif current_operator == "*":
+                    running_value = running_value * value
+                elif current_operator == "/":
+                    running_value = int(running_value / value)
+                else:
+                    raise ValueError("Invalid Equation")
+        return running_value
+
     @commands.command(
         name="htd",
         brief="Convert values to different bases",
@@ -28,235 +128,194 @@ class Htd(base.BaseCog):
             (hex)\n0b (binary) \nNo prefix (assumed ascii)",
     )
     async def htd(self, ctx, *, val_to_convert):
+        """This discord command for .htd
+
+        Args:
+            ctx (commands.Context): The context in which the command was called at
+            val_to_convert (str): The raw conversion request
         """
-        perform calculations on cross base numbers and convert between bases
+        await self.htd_command(ctx, val_to_convert)
+
+    def clean_input(self, input: str) -> str:
+        """A method to clean up input to be better processed by later functions
+        This replaces "#" with "0x" to recoginzed "#" as hex
+        It also removes quotes and spaces
+
+        Args:
+            input (str): The raw input from the user
+
+        Returns:
+            str: The cleaned up string
         """
-        val_to_convert.replace("#", "0x")
+        input = input.replace("#", "0x")
+        input = input.replace("'", "")
+        input = input.replace('"', "")
+        input = input.replace(" ", "")
+        return input
 
-        def split_nicely(str_to_split: str) -> list:
-            """
-            take an input string, divide it at operators and spaces,\
-                 and return a list of neatly formatted divisions
-            """
-            mostly_parsed_list: list = []
-            # everything between control characters
-            val_buffer = []
-            while len(str_to_split) > 0:
-                if str_to_split[0] == " ":
-                    # a space isn't an operator, just a formatting indicator,
-                    #  so we don't want to process it
-                    # dump the value stored in the buffer into the return list
-                    # return_list.append("".join(val_buffer))
-                    # val_buffer.clear()
-                    str_to_split = str_to_split[1:]
+    def convert_list_to_ints(self, raw_list: list) -> list:
+        """This converts the values in an equation list into ints
 
-                elif str_to_split[0] in ["+", "-", "*", "/"]:
-                    # +-*/ are operators, so they're added to the list
-                    if val_buffer:
-                        mostly_parsed_list.append("".join(val_buffer))
-                    val_buffer.clear()
-                    mostly_parsed_list.append(str_to_split[0])
-                    str_to_split = str_to_split[1:]
-                else:
-                    # assume it's part of a value
-                    val_buffer.append(str_to_split[0])
-                    str_to_split = str_to_split[1:]
+        Args:
+            raw_list (list): An equation formatted as a list
 
-            mostly_parsed_list.append("".join(val_buffer))
+        Returns:
+            list: The same list you passed in, but with only ints
+        """
+        for index, value in enumerate(raw_list):
+            if index % 2 == 1:
+                continue
+            raw_list[index] = self.convert_value_to_integer(value)
+        return raw_list
 
-            # because arabic numerals suck and - is both a value indicator and and operand,
-            # some extra parsing needs to be applied
-            return_list = []
-            range_to_iter_over = iter(list(range(len(mostly_parsed_list))))
-            for i in range_to_iter_over:
-                if mostly_parsed_list[i] == "-":
-                    # first value in the list won't have something before it to
-                    # operate against, assume negative
-                    if i == 0:
-                        # replace first two items with a concatenation of the
-                        # two
-                        return_list.append(
-                            mostly_parsed_list[i] + mostly_parsed_list[i + 1]
-                        )
-                        next(range_to_iter_over)
-                        continue
-                    # if it's preceeded by another operator, assume negative
-                    if mostly_parsed_list[i - 1] in ["+", "-", "*", "/"]:
-                        return_list.append(
-                            mostly_parsed_list[i] + mostly_parsed_list[i + 1]
-                        )
-                        next(range_to_iter_over)
-                        continue
+    def integer_to_hexadecimal(self, integer: int) -> str:
+        """Takes an integer in and returns a string representation in hex
+        This will return in the format of "0x05"
 
-                    return_list.append(mostly_parsed_list[i])
-                else:
-                    return_list.append(mostly_parsed_list[i])
+        Args:
+            integer (int): The integer to convert to hex
 
-            return return_list
+        Returns:
+            str: The hexadecimal representation of the input
+        """
+        raw_hex = hex(integer)
+        compare_value = 1
+        if raw_hex.startswith("-"):
+            compare_value = 0
 
-        def convert_str_to_int(val) -> int:
-            """
-            Take a string that's int, hex, or dec and convert it to an int as the int type
-            """
-            # to handle negatives, we selectively figure it out using code n'
-            # stuff
-            ref_val = val
+        if len(raw_hex) % 2 == compare_value:
+            raw_hex = raw_hex.replace("0x", "0x0")
 
-            if ref_val[0] == "-":
-                ref_val = ref_val[1:]
+        return raw_hex
 
-            if ref_val[:2] == "0x" or ref_val[:3] == "-0x":
-                # input detected as hex
-                num_base = 16
-            elif ref_val[:2] == "0b":
-                # input detected as binary
-                num_base = 2
-            else:
-                # assume the input is detected as an int
-                num_base = 10
-            # special handling is needed for floats
-            if "." in ref_val:
-                return int(float(val))
+    def integer_to_binary(self, integer: int) -> str:
+        """Takes an integer in and returns a string representation in binary
 
-            return int(val, num_base)
+        Args:
+            integer (int): The integer to convert to binary
 
-        def gen_embed_from_val(val, return_all=False) -> discord.Embed:
-            """
-            Take in a value as a string, EG: "0b1011 or "0xf00" and generate a discord embed\
-             with the appropriate conversions applied
-            """
-            # Return embed
-            embed = discord.Embed()
-            # calculated values for each
-            input_as = {
-                "Decimal": 0,
-                "Hexadecimal": "0x0",
-                "Binary": "0b0",
-                "Ascii Encoding": "Something is messed up if you're seeing this",
-            }
+        Returns:
+            str: The binary representation of the input
+        """
+        return bin(integer)
 
-            def clean_up_hex(str_to_clean: str):
-                """
-                fromhex doesn't like it when it gets hex as 0x. (EG: `0xff`
-                is wrong, `ff` is right)
-                """
+    def integer_to_ascii(self, integer: int) -> str:
+        """Takes an integer in and returns a string representation in ascii
 
-                cleaned_up_hex = str_to_clean
-                if str_to_clean[0] == "-":
-                    # this is used because fromhex doesn't like 0x
-                    cleaned_up_hex = cleaned_up_hex[3:]
-                    if len(cleaned_up_hex) % 2:
-                        str_to_clean = "-0x0" + cleaned_up_hex
-                else:
-                    cleaned_up_hex = cleaned_up_hex[2:]
-                    if len(cleaned_up_hex) % 2:
-                        str_to_clean = "0x0" + cleaned_up_hex
-                # first item is with 0x, second is not
-                cleaned_up_vals = []
-                cleaned_up_vals.append(str_to_clean)
-                cleaned_up_vals.append(cleaned_up_hex)
-                return cleaned_up_vals
+        Args:
+            integer (int): The integer to convert to ascii
 
-            try:
-                input_as["Decimal"] = convert_str_to_int(val)
-                # Make sure you don't get invalid bytes, EG: 0xF is not a valid
-                # byte and should be represented as 0x0F
-                input_as["Hexadecimal"] = hex(input_as["Decimal"])
-                input_as["Binary"] = bin(input_as["Decimal"])
+        Returns:
+            str: The ascii representation of the input
+        """
+        raw_hex = hex(integer)
+        raw_hex = raw_hex.replace("0x", "")
+        raw_hex = raw_hex.replace("-", "")
+        hex_bytes = str(bytes.fromhex(raw_hex).decode("unicode_escape"))
+        return hex_bytes
 
-                # the negative messes with the hacky modulus fix, this area
-                # could probably be improved
-                cleaned_up_hex = clean_up_hex(input_as["Hexadecimal"])
-                input_as["Hexadecimal"] = cleaned_up_hex[0]
+    def format_embed_field(self, data: str) -> str:
+        """Turns an input string into a formatted string ready to be added to the embed
+        The length of the field cannot be more than 1024, so if the length is greater than
+        1024, we replace the last 3 characters with full stops
 
-                try:
-                    input_as["Ascii Encoding"] = (
-                        '"'
-                        + bytes.fromhex(cleaned_up_hex[1]).decode("unicode_escape")
-                        + '"'
-                    )
-                except BaseException:
-                    input_as["Ascii Encoding"] = "Invalid Ascii representation"
-                # remove the detected input type and notate it with a color
-                ref_val = val
-                if ref_val[0] == "-":
-                    ref_val = ref_val[1:]
+        Args:
+            data (str): The raw input to ormat
 
-                if ref_val[:2] == "0b":
-                    if not return_all:
-                        del input_as["Binary"]
-                    embed.color = discord.Color.green()
-                elif ref_val[:2] == "0x":
-                    if not return_all:
-                        del input_as["Hexadecimal"]
-                    embed.color = discord.Color.green()
-                else:
-                    if not return_all:
-                        del input_as["Decimal"]
-                    embed.color = discord.Color.green()
+        Returns:
+            str: The string output, either left alone or cropped
+        """
+        if len(data) <= 1024:
+            return data
+        return data[:1021] + "..."
 
-                # add all the values to the embed
-                for key, i in input_as.items():
-                    # ensure we're under discord embed length limits
-                    if len(str(i)) > 1024 - 3:
-                        i = str(i)[: (1024 - 3)] + "..."
-                    embed.add_field(name=key + ":", value=i, inline=False)
+    def custom_embed_generation(
+        self, raw_input: str, val_to_convert: int
+    ) -> discord.Embed:
+        """Generates, but does not send, a formatted embed
 
-            # catch all if something breaks
-            except ValueError:
-                # Handled when returned
-                return ""
+        Args:
+            raw_input (str): The raw input from the user, to display in the embed
+            val_to_convert (int): The value to convert from
 
-            return embed
+        Returns:
+            discord.Embed: The formatted embed
+        """
+        embed = auxiliary.generate_basic_embed(
+            title="Your conversion results",
+            description=f"Converting `{raw_input}`",
+            color=discord.Color.green(),
+        )
+        # Start by adding decimal
+        embed.add_field(
+            name="Decimal:",
+            value=self.format_embed_field(str(val_to_convert)),
+            inline=False,
+        )
 
-        def perform_op_on_list(parsed_list) -> int:
-            """
-            Function that treats a list like an equation, so [1, "+", 1] would return two.\
-             The list must have 3 items
-            """
+        # Next, add hex
+        embed.add_field(
+            name="Hexadecimal:",
+            value=self.format_embed_field(self.integer_to_hexadecimal(val_to_convert)),
+            inline=False,
+        )
 
-            first_val = convert_str_to_int(parsed_list[0])
-            second_val = convert_str_to_int(parsed_list[2])
-            if parsed_list[1] == "+":
-                return first_val + second_val
-            if parsed_list[1] == "-":
-                return first_val - second_val
-            if parsed_list[1] == "*":
-                return first_val * second_val
-            if parsed_list[1] == "/":
-                return int(first_val / second_val)
-            raise SyntaxError("Invalid equation")
+        # Next, add binary
+        embed.add_field(
+            name="Binary:",
+            value=self.format_embed_field(self.integer_to_binary(val_to_convert)),
+            inline=False,
+        )
 
-        # figure out whether or not the input is an equation
-        is_equation = False
-        for pos, i in enumerate(val_to_convert):
-            if i in ["+", "*", "/"]:
-                is_equation = True
-            if i == "-" and pos > 0:
-                is_equation = True
-                # this accounts for inputs like "-0xff"
-                # not very efficient, but see if there's any other operators
-                # if it's not 0 than assumed equation
+        try:
+            ascii_value = self.format_embed_field(self.integer_to_ascii(val_to_convert))
+        except ValueError:
+            ascii_value = "No ascii representation could be made"
 
-        if is_equation:
-            # only accounting for one operation, so if there's not 3 arguments,
-            # they messed up
-            parsed_list = split_nicely(val_to_convert)
-            try:
-                calced_val = str(perform_op_on_list(parsed_list))
-                await ctx.send(embed=gen_embed_from_val(calced_val, True))
-            except ValueError:
-                await auxiliary.send_deny_embed(
-                    message="Unable to perform calculation, are you sure that equation is valid?",
-                    channel=ctx.channel,
-                )
-        else:
-            embed = gen_embed_from_val(val_to_convert)
-            # Done for deny_embed usage consistency
-            if embed != "":
-                await ctx.send(embed=embed)
-            else:
-                await auxiliary.send_deny_embed(
-                    message="Unable to convert value, are you sure it's valid?",
-                    channel=ctx.channel,
-                )
+        # Finally, add ascii encoding
+
+        embed.add_field(
+            name="Ascii encoding:",
+            value=ascii_value,
+            inline=False,
+        )
+
+        print(len(embed.fields))
+
+        return embed
+
+    async def htd_command(self, ctx: commands.Context, val_to_convert: str) -> None:
+        """The main logic for the htd command
+
+        Args:
+            ctx (command.Context): The context in which the command was run it
+            val_to_convert (str): The raw user input
+        """
+        val_to_convert = self.clean_input(val_to_convert)
+
+        # Convert the input into a list, splitting on operators and numbers
+        # A non-equation input will have a list size of one
+        parsed_list = self.split_nicely(val_to_convert)
+
+        # Convert the list to all ints
+        try:
+            int_list = self.convert_list_to_ints(parsed_list.copy())
+        except ValueError:
+            await auxiliary.send_deny_embed(
+                message="Unable to convert value, are you sure it's valid?",
+                channel=ctx.channel,
+            )
+            return
+
+        # Attempt to parse the given equation and return a single integer answer
+        try:
+            calced_val = self.perform_op_on_list(int_list)
+        except ValueError:
+            await auxiliary.send_deny_embed(
+                message="Unable to perform calculation, are you sure that equation is valid?",
+                channel=ctx.channel,
+            )
+            return
+
+        embed = self.custom_embed_generation(val_to_convert, calced_val)
+        await ctx.send(embed=embed)
