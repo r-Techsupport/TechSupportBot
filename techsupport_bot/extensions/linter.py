@@ -14,6 +14,7 @@ import json
 import base
 import discord
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -54,12 +55,16 @@ class Lint(base.BaseCog):
         if len(ctx.message.attachments) != 1 or not ctx.message.attachments[
             0
         ].filename.endswith(".json"):
-            await ctx.send_deny_embed("You need to attach a single .json file")
+            await auxiliary.send_deny_embed(
+                message="You need to attach a single .json file", channel=ctx.channel
+            )
             return
 
         res = await self.check_syntax(ctx.message)
         if res:
-            await ctx.send_deny_embed(f"Invalid syntax!\nError thrown: `{res}`")
+            await auxiliary.send_deny_embed(
+                message=f"Invalid syntax!\nError thrown: `{res}`", channel=ctx.channel
+            )
             return
 
-        await ctx.send_confirm_embed("Syntax is OK")
+        await auxiliary.send_confirm_embed(message="Syntax is OK", channel=ctx.channel)

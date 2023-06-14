@@ -35,7 +35,9 @@ class Corrector(base.BaseCog):
             allow_bot=False,
         )
         if not message_to_correct:
-            await ctx.send_deny_embed("I couldn't find any message to correct")
+            await auxiliary.send_deny_embed(
+                message="I couldn't find any message to correct", channel=ctx.channel
+            )
             return
 
         updated_message = self.prepare_message(

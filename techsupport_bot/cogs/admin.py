@@ -8,7 +8,9 @@ import sys
 import base
 import discord
 import git
+import ui
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -75,12 +77,19 @@ class AdminControl(base.BaseCog):
             command.name
             for command in self.bot.get_cog(self.qualified_name).walk_commands()
         ]:
-            if await ctx.confirm(
-                "Invalid argument! Show help command?", delete_after=True
-            ):
-                await ctx.send(
-                    embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
-                )
+            view = ui.Confirm()
+            await view.send(
+                message="Invalid argument! Show help command?",
+                channel=ctx.channel,
+                author=ctx.author,
+                timeout=10,
+            )
+            await view.wait()
+            if view.value != ui.ConfirmResponse.CONFIRMED:
+                return
+            await ctx.send(
+                embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
+            )
 
     @util.with_typing
     @extension_group.command(
@@ -129,7 +138,9 @@ class AdminControl(base.BaseCog):
             extension_name (str): the name of the extension
         """
         await ctx.bot.load_extension(f"extensions.{extension_name}")
-        await ctx.send_confirm_embed("I've loaded that extension")
+        await auxiliary.send_confirm_embed(
+            message="I've loaded that extension", channel=ctx.channel
+        )
 
     @util.with_typing
     @extension_group.command(
@@ -147,7 +158,9 @@ class AdminControl(base.BaseCog):
             extension_name (str): the name of the extension
         """
         await ctx.bot.unload_extension(f"extensions.{extension_name}")
-        await ctx.send_confirm_embed("I've unloaded that extension")
+        await auxiliary.send_confirm_embed(
+            message="I've unloaded that extension", channel=ctx.channel
+        )
 
     @util.with_typing
     @extension_group.command(
@@ -165,27 +178,42 @@ class AdminControl(base.BaseCog):
             extension_name (str): the name of the extension
         """
         if not ctx.message.attachments:
-            await ctx.send_deny_embed("You did not provide a Python file upload")
+            await auxiliary.send_deny_embed(
+                message="You did not provide a Python file upload", channel=ctx.channel
+            )
             return
 
         attachment = ctx.message.attachments[0]
         if not attachment.filename.endswith(".py"):
-            await ctx.send_deny_embed("I don't recognize your upload as a Python file")
+            await auxiliary.send_deny_embed(
+                message="I don't recognize your upload as a Python file",
+                channel=ctx.channel,
+            )
             return
 
-        if extension_name.lower() in self.bot.get_potential_extensions():
-            confirm = await ctx.confirm(
-                f"Warning! This will replace the current `{extension_name}.py` extension! Are you SURE?",
-                delete_after=True,
+        if extension_name.lower() in await self.bot.get_potential_extensions():
+            view = ui.Confirm()
+            await view.send(
+                message=f"Warning! This will replace the current `{extension_name}.py` "
+                + "extension! Are you SURE?",
+                channel=ctx.channel,
+                author=ctx.author,
             )
-            if not confirm:
-                await ctx.send_deny_embed(f"{extension_name}.py was not replaced")
+            await view.wait()
+
+            if view.value is ui.ConfirmResponse.TIMEOUT:
+                return
+            if view.value is ui.ConfirmResponse.DENIED:
+                await auxiliary.send_deny_embed(
+                    message=f"{extension_name}.py was not replaced", channel=ctx.channel
+                )
                 return
 
         fp = await attachment.read()
         await self.bot.register_file_extension(extension_name, fp)
-        await ctx.send_confirm_embed(
-            "I've registered that extension. You can now try loading it"
+        await auxiliary.send_confirm_embed(
+            message="I've registered that extension. You can now try loading it",
+            channel=ctx.channel,
         )
 
     @commands.group(
@@ -236,12 +264,19 @@ class AdminControl(base.BaseCog):
             command.name
             for command in self.bot.get_cog(self.qualified_name).walk_commands()
         ]:
-            if await ctx.confirm(
-                "Invalid argument! Show help command?", delete_after=True
-            ):
-                await ctx.send(
-                    embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
-                )
+            view = ui.Confirm()
+            await view.send(
+                message="Invalid argument! Show help command?",
+                channel=ctx.channel,
+                author=ctx.author,
+                timeout=10,
+            )
+            await view.wait()
+            if view.value != ui.ConfirmResponse.CONFIRMED:
+                return
+            await ctx.send(
+                embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
+            )
 
     @util.with_typing
     @command_group.command(
@@ -258,15 +293,23 @@ class AdminControl(base.BaseCog):
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await ctx.send_deny_embed(f"No such command: `{command_name}`")
+            await auxiliary.send_deny_embed(
+                message=f"No such command: `{command_name}`", channel=ctx.channel
+            )
             return
 
         if command_.enabled:
-            await ctx.send_deny_embed(f"Command `{command_name}` is already enabled!")
+            await auxiliary.send_deny_embed(
+                message=f"Command `{command_name}` is already enabled!",
+                channel=ctx.channel,
+            )
             return
 
         command_.enabled = True
-        await ctx.send_confirm_embed(f"Successfully enabled command: `{command_name}`")
+        await auxiliary.send_confirm_embed(
+            message=f"Successfully enabled command: `{command_name}`",
+            channel=ctx.channel,
+        )
 
     @util.with_typing
     @command_group.command(
@@ -283,15 +326,23 @@ class AdminControl(base.BaseCog):
         """
         command_ = ctx.bot.get_command(command_name)
         if not command_:
-            await ctx.send_deny_embed(f"No such command: `{command_name}`")
+            await auxiliary.send_deny_embed(
+                message=f"No such command: `{command_name}`", channel=ctx.channel
+            )
             return
 
         if not command_.enabled:
-            await ctx.send_deny_embed(f"Command: `{command_name}` is already disabled!")
+            await auxiliary.send_deny_embed(
+                message=f"Command: `{command_name}` is already disabled!",
+                channel=ctx.channel,
+            )
             return
 
         command_.enabled = False
-        await ctx.send_confirm_embed(f"Successfully disabled command: `{command_name}`")
+        await auxiliary.send_confirm_embed(
+            message=f"Successfully disabled command: `{command_name}`",
+            channel=ctx.channel,
+        )
 
     @commands.group(
         name="set",
@@ -341,12 +392,19 @@ class AdminControl(base.BaseCog):
             command.name
             for command in self.bot.get_cog(self.qualified_name).walk_commands()
         ]:
-            if await ctx.confirm(
-                "Invalid argument! Show help command?", delete_after=True, timeout=10
-            ):
-                await ctx.send(
-                    embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
-                )
+            view = ui.Confirm()
+            await view.send(
+                message="Invalid argument! Show help command?",
+                channel=ctx.channel,
+                author=ctx.author,
+                timeout=10,
+            )
+            await view.wait()
+            if view.value != ui.ConfirmResponse.CONFIRMED:
+                return
+            await ctx.send(
+                embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
+            )
 
     @util.with_typing
     @set_group.command(
@@ -362,7 +420,9 @@ class AdminControl(base.BaseCog):
             game_name (str): the name of the game
         """
         await ctx.bot.change_presence(activity=discord.Game(name=game_name))
-        await ctx.send_confirm_embed(f"Successfully set game to: *{game_name}*")
+        await auxiliary.send_confirm_embed(
+            message=f"Successfully set game to: *{game_name}*", channel=ctx.channel
+        )
 
     @util.with_typing
     @set_group.command(
@@ -378,7 +438,9 @@ class AdminControl(base.BaseCog):
             nick (str): the bot nickname
         """
         await ctx.message.guild.me.edit(nick=nick)
-        await ctx.send_confirm_embed(f"Successfully set nick to: *{nick}*")
+        await auxiliary.send_confirm_embed(
+            message=f"Successfully set nick to: *{nick}*", channel=ctx.channel
+        )
 
     @commands.group(
         brief="Executes an echo bot command", description="Executes an echo bot command"
@@ -426,12 +488,19 @@ class AdminControl(base.BaseCog):
             command.name
             for command in self.bot.get_cog(self.qualified_name).walk_commands()
         ]:
-            if await ctx.confirm(
-                "Invalid argument! Show help command?", delete_after=True, timeout=10
-            ):
-                await ctx.send(
-                    embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
-                )
+            view = ui.Confirm()
+            await view.send(
+                message="Invalid argument! Show help command?",
+                channel=ctx.channel,
+                author=ctx.author,
+                timeout=10,
+            )
+            await view.wait()
+            if view.value != ui.ConfirmResponse.CONFIRMED:
+                return
+            await ctx.send(
+                embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
+            )
 
     @util.with_typing
     @echo.command(
@@ -451,12 +520,14 @@ class AdminControl(base.BaseCog):
         """
         channel = self.bot.get_channel(channel_id)
         if not channel:
-            await ctx.send_deny_embed("I couldn't find that channel")
+            await auxiliary.send_deny_embed(
+                message="I couldn't find that channel", channel=ctx.channel
+            )
             return
 
         await channel.send(content=message)
 
-        await ctx.send_confirm_embed("Message sent")
+        await auxiliary.send_confirm_embed(message="Message sent", channel=ctx.channel)
 
     @util.with_typing
     @echo.command(
@@ -476,12 +547,14 @@ class AdminControl(base.BaseCog):
         """
         user = await self.bot.fetch_user(int(user_id))
         if not user:
-            await ctx.send_deny_embed("I couldn't find that user")
+            await auxiliary.send_deny_embed(
+                message="I couldn't find that user", channel=ctx.channel
+            )
             return
 
         await user.send(content=message)
 
-        await ctx.send_confirm_embed("Message sent")
+        await auxiliary.send_confirm_embed(message="Message sent", channel=ctx.channel)
 
     @commands.command(
         name="restart",
@@ -496,7 +569,9 @@ class AdminControl(base.BaseCog):
         parameters:
             ctx (discord.ext.Context): the context object for the calling message
         """
-        await ctx.send_confirm_embed("Rebooting! Beep boop!")
+        await auxiliary.send_confirm_embed(
+            message="Rebooting! Beep boop!", channel=ctx.channel
+        )
         sys.exit()
 
     @commands.command(
@@ -513,13 +588,16 @@ class AdminControl(base.BaseCog):
         """
         guild = discord.utils.get(self.bot.guilds, id=guild_id)
         if not guild:
-            await ctx.send_deny_embed("I don't appear to be in that guild")
+            await auxiliary.send_deny_embed(
+                message="I don't appear to be in that guild", channel=ctx.channel
+            )
             return
 
         await guild.leave()
 
-        await ctx.send_confirm_embed(
-            f"I have left the guild: {guild.name} ({guild.id})"
+        await auxiliary.send_confirm_embed(
+            message=f"I have left the guild: {guild.name} ({guild.id})",
+            channel=ctx.channel,
         )
 
     @commands.command(name="bot", description="Provides bot info")
@@ -616,14 +694,18 @@ class AdminControl(base.BaseCog):
         """
 
         if not self.bot.file_config.main.api_keys.github:
-            await ctx.send_deny_embed("I don't have a Github API key")
+            await auxiliary.send_deny_embed(
+                message="I don't have a Github API key", channel=ctx.channel
+            )
             return
 
         if (
             not self.bot.file_config.special.github.username
             or not self.bot.file_config.special.github.repo
         ):
-            await ctx.send_deny_embed("I don't have a Github repo configured")
+            await auxiliary.send_deny_embed(
+                message="I don't have a Github repo configured", channel=ctx.channel
+            )
             return
 
         headers = {
@@ -641,8 +723,9 @@ class AdminControl(base.BaseCog):
 
         status_code = response.get("status_code")
         if status_code != 201:
-            await ctx.send_deny_embed(
-                f"I was unable to create your issue (status code {status_code})"
+            await auxiliary.send_deny_embed(
+                message=f"I was unable to create your issue (status code {status_code})",
+                channel=ctx.channel,
             )
             return
 

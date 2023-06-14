@@ -4,7 +4,8 @@ import uuid
 
 import base
 import discord
-import util
+import ui
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -211,17 +212,27 @@ class HangmanCog(base.BaseCog):
             # get user who started it
             user = game_data.get("user")
             if getattr(user, "id", 0) == ctx.author.id:
-                should_delete = await ctx.confirm(
-                    "There is a current game in progress. Would you like to end it?",
-                    delete_after=True,
+                view = ui.Confirm()
+                await view.send(
+                    message="There is a current game in progress. Would you like to end it?",
+                    channel=ctx.channel,
+                    author=ctx.author,
                 )
-                if not should_delete:
-                    await ctx.send_deny_embed("The current game was not ended")
+
+                await view.wait()
+                if view.value is ui.ConfirmResponse.TIMEOUT:
                     return
+                if view.value is ui.ConfirmResponse.DENIED:
+                    await auxiliary.send_deny_embed(
+                        message="The current game was not ended", channel=ctx.channel
+                    )
+                    return
+
                 del self.games[ctx.channel.id]
             else:
-                await ctx.send_deny_embed(
-                    "There is a game in progress for this channel"
+                await auxiliary.send_deny_embed(
+                    message="There is a game in progress for this channel",
+                    channel=ctx.channel,
                 )
                 return
 
@@ -243,18 +254,25 @@ class HangmanCog(base.BaseCog):
     async def guess(self, ctx, letter: str):
         """Method to define a guess on the hangman game."""
         if len(letter) > 1 or not letter.isalpha():
-            await ctx.send_deny_embed("You can only guess a letter")
+            await auxiliary.send_deny_embed(
+                message="You can only guess a letter", channel=ctx.channel
+            )
             return
 
         game_data = self.games.get(ctx.channel.id)
         if not game_data:
-            await ctx.send_deny_embed("There is no game in progress for this channel")
+            await auxiliary.send_deny_embed(
+                message="There is no game in progress for this channel",
+                channel=ctx.channel,
+            )
             return
 
         game = game_data.get("game")
 
         if game.guessed(letter):
-            await ctx.send_deny_embed("That letter has already been guessed")
+            await auxiliary.send_deny_embed(
+                message="That letter has already been guessed", channel=ctx.channel
+            )
             return
 
         correct = game.guess(letter)
@@ -298,7 +316,10 @@ class HangmanCog(base.BaseCog):
         """Method to redraw the current status of the hangman game."""
         game_data = self.games.get(ctx.channel.id)
         if not game_data:
-            await ctx.send_deny_embed("There is no game in progress for this channel")
+            await auxiliary.send_deny_embed(
+                message="There is no game in progress for this channel",
+                channel=ctx.channel,
+            )
             return
 
         old_message = game_data.get("message")
@@ -317,22 +338,31 @@ class HangmanCog(base.BaseCog):
         """Method to determine if the game is finished and stop the game."""
         game_data = self.games.get(ctx.channel.id)
         if not game_data:
-            await ctx.send_deny_embed("There is no game in progress for this channel")
+            await auxiliary.send_deny_embed(
+                "There is no game in progress for this channel", channel=ctx.channel
+            )
             return
 
-        should_delete = await ctx.confirm(
-            "Are you sure you want to end the current game?",
-            delete_after=True,
+        view = ui.Confirm()
+        await view.send(
+            message="Are you sure you want to end the current game?",
+            channel=ctx.channel,
+            author=ctx.author,
         )
-
-        if not should_delete:
-            await ctx.send_deny_embed("The current game was not ended")
+        await view.wait()
+        if view.value is ui.ConfirmResponse.TIMEOUT:
+            return
+        if view.value is ui.ConfirmResponse.DENIED:
+            await auxiliary.send_deny_embed(
+                "The current game was not ended", channel=ctx.channel
+            )
             return
 
         game = game_data.get("game")
         word = getattr(game, "word", "???")
 
         del self.games[ctx.channel.id]
-        await ctx.send_confirm_embed(
-            f"That game is now finished. The word was: `{word}`"
+        await auxiliary.send_confirm_embed(
+            message=f"That game is now finished. The word was: `{word}`",
+            channel=ctx.channel,
         )

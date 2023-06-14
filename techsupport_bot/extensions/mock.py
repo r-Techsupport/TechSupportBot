@@ -2,6 +2,7 @@
 import base
 import discord
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -55,7 +56,10 @@ class Mocker(base.BaseCog):
     async def mock(self, ctx, user_to_mock: discord.Member):
         """Method on how to mock the user for discord."""
         if not user_to_mock:
-            await ctx.send_deny_embed("You must tag a user if you want to mock them!")
+            await auxiliary.send_deny_embed(
+                message="You must tag a user if you want to mock them!",
+                channel=ctx.channel,
+            )
             return
 
         if user_to_mock.bot:
@@ -72,7 +76,9 @@ class Mocker(base.BaseCog):
                 break
 
         if not mock_message:
-            await ctx.send_deny_embed(f"No message found for user {user_to_mock}")
+            await auxiliary.send_deny_embed(
+                message=f"No message found for user {user_to_mock}", channel=ctx.channel
+            )
             return
 
         embed = MockEmbed(message=mock_message, user=user_to_mock)

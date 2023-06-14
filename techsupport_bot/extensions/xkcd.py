@@ -3,6 +3,7 @@ import random
 
 import base
 import discord
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -39,27 +40,33 @@ class XKCD(base.BaseCog):
         """Method to get a random xkcd comic."""
         most_recent_comic_data = await self.api_call()
         if most_recent_comic_data.status_code != 200:
-            await ctx.send_deny_embed("I had trouble looking up XKCD's comics")
+            await auxiliary.send_deny_embed(
+                message="I had trouble looking up XKCD's comics", channel=ctx.channel
+            )
             return
 
         max_number = most_recent_comic_data.get("num")
         if not max_number:
-            await ctx.send_deny_embed("I could not determine the max XKCD number")
+            await auxiliary.send_deny_embed(
+                message="I could not determine the max XKCD number", channel=ctx.channel
+            )
             return
 
         comic_number = random.randint(1, max_number)
 
         random_comic_data = await self.api_call(number=comic_number)
         if random_comic_data.status_code != 200:
-            await ctx.send_deny_embed(
-                f"I had trouble calling a random comic (#{comic_number})"
+            await auxiliary.send_deny_embed(
+                message=f"I had trouble calling a random comic (#{comic_number})",
+                channel=ctx.channel,
             )
             return
 
         embed = self.generate_embed(random_comic_data)
         if not embed:
-            await ctx.send_deny_embed(
-                "I had trouble calling getting the correct XKCD info"
+            await auxiliary.send_deny_embed(
+                message="I had trouble calling getting the correct XKCD info",
+                channel=ctx.channel,
             )
             return
 
@@ -76,13 +83,16 @@ class XKCD(base.BaseCog):
         """Method to get a specific number comic from xkcd."""
         comic_data = await self.api_call(number=number)
         if comic_data.status_code != 200:
-            await ctx.send_deny_embed("I had trouble looking up XKCD's comics")
+            await auxiliary.send_deny_embed(
+                message="I had trouble looking up XKCD's comics", channel=ctx.channel
+            )
             return
 
         embed = self.generate_embed(comic_data)
         if not embed:
-            await ctx.send_deny_embed(
-                "I had trouble calling getting the correct XKCD info"
+            await auxiliary.send_deny_embed(
+                message="I had trouble calling getting the correct XKCD info",
+                channel=ctx.channel,
             )
             return
 

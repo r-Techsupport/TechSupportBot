@@ -9,6 +9,7 @@ import error
 import expiringdict
 import munch
 import util
+from base import auxiliary
 from discord.ext import commands
 
 from .data import DataBot
@@ -399,7 +400,7 @@ class AdvancedBot(DataBot):
 
         error_message = message_template.get_message(exception)
 
-        await context.send_deny_embed(error_message)
+        await auxiliary.send_deny_embed(message=error_message, channel=context.channel)
 
         log_channel = await self.get_log_channel_from_guild(
             getattr(context, "guild", None), key="logging_channel"
