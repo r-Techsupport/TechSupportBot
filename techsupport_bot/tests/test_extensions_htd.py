@@ -1,13 +1,16 @@
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import discord
+import pytest
 from base import auxiliary
-from extensions import Htd
+from extensions import htd
+
+from . import config_for_tests
 
 
-def setup_local_extension():
+def setup_local_extension(bot=None):
     with patch("asyncio.create_task", return_value=None):
-        return Htd(None)
+        return htd.Htd(bot)
 
 
 class Test_SplitNicely:
@@ -541,3 +544,173 @@ class Test_CustomEmbed:
         ]
 
         fakeembed.add_field.assert_has_calls(expected_calls)
+
+
+class Test_HTDCommand:
+    """A set of tests to test htd_command"""
+
+    @pytest.mark.asyncio
+    async def test_cleaninput_call(self):
+        """A test to ensure that clean_input is called correctly"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        hextodec = setup_local_extension(discord_env.bot)
+        hextodec.clean_input = MagicMock()
+        hextodec.split_nicely = MagicMock()
+        hextodec.convert_list_to_ints = MagicMock()
+        hextodec.perform_op_on_list = MagicMock()
+        hextodec.custom_embed_generation = MagicMock()
+        auxiliary.send_deny_embed = AsyncMock()
+        discord_env.context.send = AsyncMock()
+
+        # Step 2 - Call the function
+        await hextodec.htd_command(discord_env.context, "     test       ")
+
+        # Step 3 - Assert that everything works
+        hextodec.clean_input.assert_called_once_with("     test       ")
+
+    @pytest.mark.asyncio
+    async def test_splitnicely_call(self):
+        """A test to ensure that split_nicely is called correctly"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        hextodec = setup_local_extension(discord_env.bot)
+        hextodec.clean_input = MagicMock(return_value="clean")
+        hextodec.split_nicely = MagicMock()
+        hextodec.convert_list_to_ints = MagicMock()
+        hextodec.perform_op_on_list = MagicMock()
+        hextodec.custom_embed_generation = MagicMock()
+        auxiliary.send_deny_embed = AsyncMock()
+        discord_env.context.send = AsyncMock()
+
+        # Step 2 - Call the function
+        await hextodec.htd_command(discord_env.context, "test")
+
+        # Step 3 - Assert that everything works
+        hextodec.split_nicely.assert_called_once_with("clean")
+
+    @pytest.mark.asyncio
+    async def test_convertints_call(self):
+        """A test to ensure that convert_list_to_ints is called correctly"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        hextodec = setup_local_extension(discord_env.bot)
+        hextodec.clean_input = MagicMock()
+        hextodec.split_nicely = MagicMock(return_value=["1", "+", "1"])
+        hextodec.convert_list_to_ints = MagicMock()
+        hextodec.perform_op_on_list = MagicMock()
+        hextodec.custom_embed_generation = MagicMock()
+        auxiliary.send_deny_embed = AsyncMock()
+        discord_env.context.send = AsyncMock()
+
+        # Step 2 - Call the function
+        await hextodec.htd_command(discord_env.context, "test")
+
+        # Step 3 - Assert that everything works
+        hextodec.convert_list_to_ints.assert_called_once_with(["1", "+", "1"])
+
+    @pytest.mark.asyncio
+    async def test_convertints_error(self):
+        """A test to ensure that convert_list_to_ints error is handled correctly"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        hextodec = setup_local_extension(discord_env.bot)
+        hextodec.clean_input = MagicMock()
+        hextodec.split_nicely = MagicMock(return_value=["1", "+", "1"])
+        hextodec.convert_list_to_ints = MagicMock(side_effect=ValueError)
+        hextodec.perform_op_on_list = MagicMock()
+        hextodec.custom_embed_generation = MagicMock()
+        auxiliary.send_deny_embed = AsyncMock()
+        discord_env.context.send = AsyncMock()
+
+        # Step 2 - Call the function
+        await hextodec.htd_command(discord_env.context, "test")
+
+        # Step 3 - Assert that everything works
+        auxiliary.send_deny_embed.assert_called_once_with(
+            message="Unable to convert value, are you sure it's valid?",
+            channel=discord_env.context.channel,
+        )
+
+    @pytest.mark.asyncio
+    async def test_performop_call(self):
+        """A test to ensure that perform_op_on_list is called correctly"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        hextodec = setup_local_extension(discord_env.bot)
+        hextodec.clean_input = MagicMock()
+        hextodec.split_nicely = MagicMock()
+        hextodec.convert_list_to_ints = MagicMock(return_value=[1, "+", 1])
+        hextodec.perform_op_on_list = MagicMock()
+        hextodec.custom_embed_generation = MagicMock()
+        auxiliary.send_deny_embed = AsyncMock()
+        discord_env.context.send = AsyncMock()
+
+        # Step 2 - Call the function
+        await hextodec.htd_command(discord_env.context, "test")
+
+        # Step 3 - Assert that everything works
+        hextodec.perform_op_on_list.assert_called_once_with([1, "+", 1])
+
+    @pytest.mark.asyncio
+    async def test_perform_op_error(self):
+        """A test to ensure that perform_op_on_list error is handled correctly"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        hextodec = setup_local_extension(discord_env.bot)
+        hextodec.clean_input = MagicMock()
+        hextodec.split_nicely = MagicMock()
+        hextodec.convert_list_to_ints = MagicMock()
+        hextodec.perform_op_on_list = MagicMock(side_effect=ValueError)
+        hextodec.custom_embed_generation = MagicMock()
+        auxiliary.send_deny_embed = AsyncMock()
+        discord_env.context.send = AsyncMock()
+
+        # Step 2 - Call the function
+        await hextodec.htd_command(discord_env.context, "test")
+
+        # Step 3 - Assert that everything works
+        auxiliary.send_deny_embed.assert_called_once_with(
+            message="Unable to perform calculation, are you sure that equation is valid?",
+            channel=discord_env.context.channel,
+        )
+
+    @pytest.mark.asyncio
+    async def test_customembed_call(self):
+        """A test to ensure that custom_embed_generation is called correctly"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        hextodec = setup_local_extension(discord_env.bot)
+        hextodec.clean_input = MagicMock(return_value="1")
+        hextodec.split_nicely = MagicMock()
+        hextodec.convert_list_to_ints = MagicMock()
+        hextodec.perform_op_on_list = MagicMock(return_value=1)
+        hextodec.custom_embed_generation = MagicMock()
+        auxiliary.send_deny_embed = AsyncMock()
+        discord_env.context.send = AsyncMock()
+
+        # Step 2 - Call the function
+        await hextodec.htd_command(discord_env.context, "test")
+
+        # Step 3 - Assert that everything works
+        hextodec.custom_embed_generation.assert_called_once_with("1", 1)
+
+    @pytest.mark.asyncio
+    async def test_send_call(self):
+        """A test to ensure that perform_op_on_list is called correctly"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        hextodec = setup_local_extension(discord_env.bot)
+        hextodec.clean_input = MagicMock()
+        hextodec.split_nicely = MagicMock()
+        hextodec.convert_list_to_ints = MagicMock()
+        hextodec.perform_op_on_list = MagicMock()
+        hextodec.custom_embed_generation = MagicMock(return_value="Fake Embed")
+        auxiliary.send_deny_embed = AsyncMock()
+        discord_env.context.send = AsyncMock()
+
+        # Step 2 - Call the function
+        await hextodec.htd_command(discord_env.context, "test")
+
+        # Step 3 - Assert that everything works
+        discord_env.context.send.assert_called_once_with(embed="Fake Embed")
