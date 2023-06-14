@@ -1,3 +1,8 @@
+"""
+This is a file to test the extensions/htd.py file
+This contains 46 tests
+"""
+
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import discord
@@ -9,6 +14,15 @@ from . import config_for_tests
 
 
 def setup_local_extension(bot=None):
+    """A simple function to setup an instance of the htd extension
+
+    Args:
+        bot (MockBot, optional): A fake bot object. Should be used if using a
+        fake_discord_env in the test. Defaults to None.
+
+    Returns:
+        HTD: The instance of the htd class
+    """
     with patch("asyncio.create_task", return_value=None):
         return htd.Htd(bot)
 
