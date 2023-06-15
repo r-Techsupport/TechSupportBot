@@ -2,6 +2,7 @@
 import base
 import discord
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -28,15 +29,17 @@ class ISSLocator(base.BaseCog):
         # get ISS coordinates
         response = await self.bot.http_call("get", self.ISS_URL)
         if not response:
-            await ctx.send_deny_embed(
-                "I had trouble calling the ISS API. Maybe it's down?"
+            await auxiliary.send_deny_embed(
+                message="I had trouble calling the ISS API. Maybe it's down?",
+                channel=ctx.channel,
             )
             return
         coordinates = response.get("iss_position", {})
         longitude, latitude = coordinates.get("longitude"), coordinates.get("latitude")
         if not longitude or not latitude:
-            await ctx.send_deny_embed(
-                "I couldn't find the ISS coordinates from the API response"
+            await auxiliary.send_deny_embed(
+                message="I couldn't find the ISS coordinates from the API response",
+                channel=ctx.channel,
             )
             return
 
@@ -46,8 +49,9 @@ class ISSLocator(base.BaseCog):
             "get", self.GEO_URL.format(latitude, longitude)
         )
         if not response:
-            await ctx.send_deny_embed(
-                "I had trouble calling the GEO API. Maybe it's down?"
+            await auxiliary.send_deny_embed(
+                message="I had trouble calling the GEO API. Maybe it's down?",
+                channel=ctx.channel,
             )
             return
         else:

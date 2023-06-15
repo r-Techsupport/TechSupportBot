@@ -1,6 +1,7 @@
 import base
 import discord
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -51,18 +52,24 @@ class Embedder(base.BaseCog):
     )
     async def embed(self, ctx, *, keep_option: str = None):
         if not ctx.message.attachments:
-            await ctx.send_deny_embed("Please provide a JSON file for your embeds")
+            await auxiliary.send_deny_embed(
+                message="Please provide a JSON file for your embeds",
+                channel=ctx.channel,
+            )
             return
 
         request_body = await util.get_json_from_attachments(ctx.message)
         if not request_body:
-            await ctx.send_deny_embed("I couldn't find any data in your upload")
+            await auxiliary.send_deny_embed(
+                message="I couldn't find any data in your upload", channel=ctx.channel
+            )
             return
 
         embeds = await self.process_request(ctx, request_body)
         if not embeds:
-            await ctx.send_deny_embed(
-                "I was unable to generate any embeds from your request"
+            await auxiliary.send_deny_embed(
+                message="I was unable to generate any embeds from your request",
+                channel=ctx.channel,
             )
             return
 

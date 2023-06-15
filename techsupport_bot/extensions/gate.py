@@ -1,8 +1,8 @@
 """Module for defining the gate extension for the bot."""
-import asyncio
 
 import base
 import discord
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -152,7 +152,10 @@ class ServerGate(base.MatchCog):
         config = await self.bot.get_context_config(ctx)
 
         if ctx.channel.id != int(config.extensions.gate.channel.value):
-            await ctx.send_deny_embed("That command is only usable in the gate channel")
+            await auxiliary.send_deny_embed(
+                message="That command is only usable in the gate channel",
+                channel=ctx.channel,
+            )
             return
 
         await ctx.channel.send(config.extensions.gate.intro_message.value)

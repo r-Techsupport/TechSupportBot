@@ -4,6 +4,7 @@ import random
 import base
 import discord
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -45,7 +46,9 @@ class Hugger(base.BaseCog):
             ctx (Context): the context
         """
         if user_to_hug.id == ctx.author.id:
-            await ctx.send_deny_embed("Let's be serious")
+            await auxiliary.send_deny_embed(
+                message="Let's be serious", channel=ctx.channel
+            )
             return
 
         embed = self.generate_embed(ctx, user_to_hug)

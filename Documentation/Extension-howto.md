@@ -79,8 +79,9 @@ async def no_mentions(ctx):
         or ctx.message.mentions
         or ctx.message.channel_mentions
     ):
-        await ctx.send_deny_embed(
-            "I cannot remember factoids with user/role/channel mentions"
+        await auxiliary.send_deny_embed(
+            message="I cannot remember factoids with user/role/channel mentions",
+            channel=ctx.channel
         )
         return False
     return True
@@ -298,6 +299,9 @@ response = await self.bot.http_call(
 
 To return a message, use `await ctx` with any of the following methods:
 
+- `send(embed=<embed>)` - This sends a custom embed that has to be defined manually
+
+You can also use `await auxiliary` with any of the following methods:
+
 - `send_deny_embed("<message>")` - This sends a red embed with a custom message
 - `send_confirm_embed("<message>")` - This sends a green embed with a custom message
-- `send(embed=<embed>)` - This sends a custom embed that has to be defined manually

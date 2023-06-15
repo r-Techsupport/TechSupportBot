@@ -39,12 +39,11 @@ class Burn(base.BaseCog):
             user (discord.Member): The user that was called in the burn command
             message (discord.Message): The message to react to.
                 Will be None if no message could be found
-
-        Error handling:
-            No message found: send_deny_embed
         """
         if not message:
-            await ctx.send_deny_embed("I could not a find a message to reply to")
+            await auxiliary.send_deny_embed(
+                message="I could not a find a message to reply to", channel=ctx.channel
+            )
             return
 
         await auxiliary.add_list_of_reactions(

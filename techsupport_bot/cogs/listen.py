@@ -6,6 +6,8 @@ import datetime
 import base
 import discord
 import expiringdict
+import ui
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -233,12 +235,20 @@ class Listener(base.BaseCog):
             command.name
             for command in self.bot.get_cog(self.qualified_name).walk_commands()
         ]:
-            if await ctx.confirm(
-                "Invalid argument! Show help command?", delete_after=True, timeout=10
-            ):
-                await ctx.send(
-                    embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
-                )
+            view = ui.Confirm()
+            await view.send(
+                message="Invalid argument! Show help command?",
+                channel=ctx.channel,
+                author=ctx.author,
+                timeout=10,
+            )
+            await view.wait()
+            if view.value != ui.ConfirmResponse.CONFIRMED:
+                return
+
+            await ctx.send(
+                embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
+            )
 
     @listen.command(
         description="Starts a listening job", usage="[src-channel] [dst-channel]"
@@ -254,7 +264,10 @@ class Listener(base.BaseCog):
             dst (ListenChannel): the destination channel ID
         """
         if src.id == dst.id:
-            await ctx.send_deny_embed("Source and destination channels must differ")
+            await auxiliary.send_deny_embed(
+                message="Source and destination channels must differ",
+                channel=ctx.channel,
+            )
             return
 
         destination_data = await self.get_destination_data(src)
@@ -263,17 +276,24 @@ class Listener(base.BaseCog):
         )
 
         if str(dst.id) in destinations:
-            await ctx.send_deny_embed("That source and destination already exist")
+            await auxiliary.send_deny_embed(
+                message="That source and destination already exist", channel=ctx.channel
+            )
             return
 
         if len(destinations) > self.MAX_DESTINATIONS:
-            await ctx.send_deny_embed("There are too many destinations for that source")
+            await auxiliary.send_deny_embed(
+                message="There are too many destinations for that source",
+                channel=ctx.channel,
+            )
             return
 
         destinations.append(str(dst.id))
         await self.update_destinations(src, destinations)
 
-        await ctx.send_confirm_embed("Listening registered!")
+        await auxiliary.send_confirm_embed(
+            message="Listening registered!", channel=ctx.channel
+        )
 
     @listen.command(
         description="Stops a listening job", usage="[src-channel] [dst-channel]"
@@ -289,7 +309,10 @@ class Listener(base.BaseCog):
             dst (ListenChannel): the destination channel ID
         """
         if src.id == dst.id:
-            await ctx.send_deny_embed("Source and destination channels must differ")
+            await auxiliary.send_deny_embed(
+                message="Source and destination channels must differ",
+                channel=ctx.channel,
+            )
             return
 
         destination_data = await self.get_destination_data(src)
@@ -297,15 +320,18 @@ class Listener(base.BaseCog):
             destination_data.get("destinations", []) if destination_data else []
         )
         if str(dst.id) not in destinations:
-            await ctx.send_deny_embed(
-                "That destination is not registered with that source"
+            await auxiliary.send_deny_embed(
+                message="That destination is not registered with that source",
+                channel=ctx.channel,
             )
             return
 
         destinations.remove(str(dst.id))
         await self.update_destinations(src, destinations)
 
-        await ctx.send_confirm_embed("Listening deregistered!")
+        await auxiliary.send_confirm_embed(
+            message="Listening deregistered!", channel=ctx.channel
+        )
 
     # pylint: disable=attribute-defined-outside-init
     @listen.command(
@@ -322,7 +348,9 @@ class Listener(base.BaseCog):
         await self.bot.mongo[self.COLLECTION_NAME].delete_many({})
         self.destination_cache.clear()
 
-        await ctx.send_confirm_embed("All listeners deregistered!")
+        await auxiliary.send_confirm_embed(
+            message="All listeners deregistered!", channel=ctx.channel
+        )
 
     @listen.command(
         description="Gets listener job registrations",
@@ -338,7 +366,10 @@ class Listener(base.BaseCog):
         source_objects = await self.get_all_sources()
 
         if len(source_objects) == 0:
-            await ctx.send_deny_embed("There are currently no registered listeners")
+            await auxiliary.send_deny_embed(
+                message="There are currently no registered listeners",
+                channel=ctx.channel,
+            )
             return
 
         embed = InfoEmbed(
