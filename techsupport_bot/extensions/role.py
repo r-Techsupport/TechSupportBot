@@ -1,3 +1,6 @@
+"""The file to hold the role extension
+This extension is slash commands"""
+
 import base
 import discord
 import ui
@@ -5,6 +8,11 @@ from discord import app_commands
 
 
 async def setup(bot):
+    """Adding config and the cog to the bot
+
+    Args:
+        bot (commands.Bot): The bot object
+    """
     config = bot.ExtensionConfig()
     config.add(
         key="self_assignable_roles",
@@ -39,27 +47,59 @@ async def setup(bot):
 
 
 class RoleGiver(base.BaseCog):
+    """The main class for the role commands"""
+
     role_group = app_commands.Group(name="role", description="...")
 
     @role_group.command(name="self")
     async def self_role(self, interaction):
+        """The base of the self role command
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+        """
+        # Pull config
         config = await self.bot.get_context_config(guild=interaction.guild)
+
+        # Get needed config items
         roles = config.extensions.role.self_assignable_roles.value
         allowed_to_execute = config.extensions.role.allow_self_assign.value
+
+        # Call the base function
         await self.role_command_base(
             interaction, roles, allowed_to_execute, interaction.user
         )
 
     @role_group.command(name="assign")
     async def assign_role(self, interaction, member: discord.Member):
+        """The base of the wide assign command
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            member (discord.Member): The member to apply roles to
+        """
+        # Pull config
         config = await self.bot.get_context_config(guild=interaction.guild)
+
+        # Get needed config items
         roles = config.extensions.role.all_assignable_roles.value
         allowed_to_execute = config.extensions.role.allow_all_assign.value
+
+        # Call the base function
         await self.role_command_base(interaction, roles, allowed_to_execute, member)
 
     async def role_command_base(
         self, interaction, assignable_roles, allowed_roles, member
     ):
+        """The base processor for the role commands
+        Checks permissions and config, and sends the view
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            assignable_roles (list): A list of roles that are assignabled for this command
+            allowed_roles (list): A list of roles that are allowed to execute this command
+            member (discord.Member): The member to assign roles to
+        """
         role_options = self.generate_options(
             member, interaction.guild, assignable_roles
         )
@@ -99,6 +139,16 @@ class RoleGiver(base.BaseCog):
         )
 
     def generate_options(self, user, guild, roles):
+        """A function to turn a list of roles into a set of SelectOptions
+
+        Args:
+            user (discord.Member): The user that will be getting the roles applied
+            guild (discord.Guild): The guild that the roles are from
+            roles (list): A list of roles by name to add to the options
+
+        Returns:
+            list: A list of SelectOption with defaults set
+        """
         options = []
 
         for role_name in roles:
@@ -118,6 +168,15 @@ class RoleGiver(base.BaseCog):
         return options
 
     async def modify_roles(self, config_roles, new_roles, guild, user):
+        """Modifies a set of roles based on an input and reference list
+
+        Args:
+            config_roles (list): The list of roles allowed to be modified
+            new_roles (list): The list of roles from the config_roles that should be assigned to
+                the user. Any roles not on this list will be removed
+            guild (discord.Guild): The guild to assign the roles in
+            user (discord.Member): The member to assign roles to
+        """
         for role_name in config_roles:
             real_role = discord.utils.get(guild.roles, name=role_name)
             if not real_role:
