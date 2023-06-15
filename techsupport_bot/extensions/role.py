@@ -16,33 +16,54 @@ async def setup(bot):
     config.add(
         key="allow_self_assign",
         datatype="list",
-        title="The list of roles allowed to use /role self",
+        title="List of roles allowed to use /role self",
         description="The list of roles that are allowed to assign themselves roles",
+        default=[],
+    )
+    config.add(
+        key="all_assignable_roles",
+        datatype="list",
+        title="Roles moderators can assign",
+        description="The list of roles by name that moderators can assign to people",
+        default=[],
+    )
+    config.add(
+        key="allow_all_assign",
+        datatype="list",
+        title="List of roles allowed to use /role assign",
+        description="The list of roles that are allowed to assign others roles",
         default=[],
     )
     await bot.add_cog(RoleGiver(bot=bot))
     bot.add_extension_config("role", config)
 
-
 class RoleGiver(base.BaseCog):
-    group = app_commands.Group(name="role", description="...")
+    role_group = app_commands.Group(name="role", description="...")
 
-    @group.command(name="self")
+    @role_group.command(name="self")
     async def self_role(self, interaction):
         config = await self.bot.get_context_config(guild=interaction.guild)
-        # roles = ["Trusted", "Helper", "bots", "dev", "asdf"]
         roles = config.extensions.role.self_assignable_roles.value
-
         allowed_to_execute = config.extensions.role.allow_self_assign.value
-        role_options = self.generate_options(interaction.user, interaction.guild, roles)
+        await self.role_command_base(interaction, roles, allowed_to_execute, interaction.user)
+    
+    @role_group.command(name="assign")
+    async def assign_role(self, interaction, member: discord.Member):
+        config = await self.bot.get_context_config(guild=interaction.guild)
+        roles = config.extensions.role.all_assignable_roles.value
+        allowed_to_execute = config.extensions.role.allow_all_assign.value
+        await self.role_command_base(interaction, roles, allowed_to_execute, member)
 
-        if len(allowed_to_execute) == 0:
+    async def role_command_base(self, interaction, assignable_roles, allowed_roles, member):
+        role_options = self.generate_options(member, interaction.guild, assignable_roles)
+
+        if len(allowed_roles) == 0:
             await interaction.response.send_message(
                 "Nobody is allowed to execute this command", ephemeral=True
             )
             return
 
-        for role in allowed_to_execute:
+        for role in allowed_roles:
             real_role = discord.utils.get(interaction.guild.roles, name=role)
             if real_role not in getattr(interaction.user, "roles", []):
                 await interaction.response.send_message(
@@ -58,14 +79,14 @@ class RoleGiver(base.BaseCog):
 
         view = ui.SelectView(role_options)
         await interaction.response.send_message(
-            content="Select what roles you want below", ephemeral=True, view=view
+            content=f"Select what roles should be assigned to {member} below", ephemeral=True, view=view
         )
         await view.wait()
         await self.modify_roles(
-            config_roles=roles,
+            config_roles=assignable_roles,
             new_roles=view.select.values,
             guild=interaction.guild,
-            user=interaction.user,
+            user=member,
         )
 
     def generate_options(self, user, guild, roles):

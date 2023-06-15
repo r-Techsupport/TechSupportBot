@@ -1,4 +1,5 @@
 import discord
+from base import auxiliary
 
 
 class RoleSelect(discord.ui.Select):
@@ -17,8 +18,9 @@ class RoleSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        embed = auxiliary.prepare_confirm_embed(message=f"Selected: {self.values} roles")
         await interaction.response.send_message(
-            f"You now have {self.values} roles", ephemeral=True
+            embed=embed, ephemeral=True
         )
         self.view.stop()
 
