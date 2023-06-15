@@ -37,6 +37,7 @@ async def setup(bot):
     await bot.add_cog(RoleGiver(bot=bot))
     bot.add_extension_config("role", config)
 
+
 class RoleGiver(base.BaseCog):
     role_group = app_commands.Group(name="role", description="...")
 
@@ -45,8 +46,10 @@ class RoleGiver(base.BaseCog):
         config = await self.bot.get_context_config(guild=interaction.guild)
         roles = config.extensions.role.self_assignable_roles.value
         allowed_to_execute = config.extensions.role.allow_self_assign.value
-        await self.role_command_base(interaction, roles, allowed_to_execute, interaction.user)
-    
+        await self.role_command_base(
+            interaction, roles, allowed_to_execute, interaction.user
+        )
+
     @role_group.command(name="assign")
     async def assign_role(self, interaction, member: discord.Member):
         config = await self.bot.get_context_config(guild=interaction.guild)
@@ -54,8 +57,12 @@ class RoleGiver(base.BaseCog):
         allowed_to_execute = config.extensions.role.allow_all_assign.value
         await self.role_command_base(interaction, roles, allowed_to_execute, member)
 
-    async def role_command_base(self, interaction, assignable_roles, allowed_roles, member):
-        role_options = self.generate_options(member, interaction.guild, assignable_roles)
+    async def role_command_base(
+        self, interaction, assignable_roles, allowed_roles, member
+    ):
+        role_options = self.generate_options(
+            member, interaction.guild, assignable_roles
+        )
 
         if len(allowed_roles) == 0:
             await interaction.response.send_message(
@@ -79,7 +86,9 @@ class RoleGiver(base.BaseCog):
 
         view = ui.SelectView(role_options)
         await interaction.response.send_message(
-            content=f"Select what roles should be assigned to {member} below", ephemeral=True, view=view
+            content=f"Select what roles should be assigned to {member} below",
+            ephemeral=True,
+            view=view,
         )
         await view.wait()
         await self.modify_roles(

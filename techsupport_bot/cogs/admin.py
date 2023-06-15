@@ -683,7 +683,9 @@ class AdminControl(base.BaseCog):
     )
     async def sync_slash_commands(self, ctx):
         synced = await self.bot.tree.sync()
-        await auxiliary.send_confirm_embed(message=f"{len(synced)}", channel=ctx.channel)
+        await auxiliary.send_confirm_embed(
+            message=f"{len(synced)}", channel=ctx.channel
+        )
 
     @util.with_typing
     @commands.command(
