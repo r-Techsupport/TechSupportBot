@@ -53,7 +53,9 @@ class Hugger(base.BaseCog):
 
         embed = self.generate_embed(ctx, user_to_hug)
 
-        await ctx.send(embed=embed, targets=[user_to_hug])
+        await ctx.send(
+            embed=embed, content=auxiliary.construct_mention_string([user_to_hug])
+        )
 
     def generate_embed(self, ctx, user_to_hug):
         """Method to generate the hug embed into discord."""

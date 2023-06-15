@@ -104,6 +104,9 @@ def construct_mention_string(targets: list) -> str:
     if user_mentions.endswith(" "):
         user_mentions = user_mentions[:-1]
 
+    if len(user_mentions) == 0:
+        return None
+
     return user_mentions
 
 
