@@ -7,3 +7,4 @@ from .conch import *
 from .correct import *
 from .emoji import *
 from .hello import *
+from .htd import *
