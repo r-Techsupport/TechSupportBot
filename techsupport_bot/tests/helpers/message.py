@@ -10,8 +10,10 @@ class MockMessage:
     Currently implemented variables and methods:
     content -> The string containing the content of the message
     author -> The MockMember object who create the message
+    clean_content -> The same as content
     """
 
     def __init__(self, content=None, author=None):
         self.content = content
         self.author = author
+        self.clean_content = content
