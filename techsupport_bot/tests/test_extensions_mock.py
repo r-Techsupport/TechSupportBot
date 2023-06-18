@@ -1,6 +1,6 @@
 """
 This is a file to test the extensions/mock.py file
-This contains 5 tests
+This contains 8 tests
 """
 from unittest.mock import AsyncMock, MagicMock, patch
 
