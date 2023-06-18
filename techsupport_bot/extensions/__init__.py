@@ -8,4 +8,4 @@ from .correct import *
 from .emoji import *
 from .hello import *
 from .htd import *
-from .lenny import *
+from .linter import *
