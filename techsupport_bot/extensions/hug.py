@@ -48,11 +48,10 @@ class Hugger(base.BaseCog):
         """
         await self.hug_command(ctx, user_to_hug)
 
-    async def check_hug_eligibility(
+    def check_hug_eligibility(
         self,
         author: discord.Member,
         user_to_hug: discord.Member,
-        channel: discord.abc.Messageable,
     ) -> bool:
         """Checks to see if the hug is allowed
         Checks to see if the author and target match
@@ -60,13 +59,11 @@ class Hugger(base.BaseCog):
         Args:
             author (discord.Member): The author of the hug command
             user_to_hug (discord.Member): The user to hug
-            channel (discord.abc.Messageable): The channel in which the command was run in
 
         Returns:
             bool: True if the command should proceed, false if it shouldn't
         """
-        if user_to_hug.id == author.id:
-            await auxiliary.send_deny_embed(message="Let's be serious", channel=channel)
+        if user_to_hug == author:
             return False
         return True
 
@@ -97,7 +94,10 @@ class Hugger(base.BaseCog):
             ctx (commands.Context): The context in which the command was run in
             user_to_hug (discord.Member): The user to hug
         """
-        if not await self.check_hug_eligibility(ctx.author, user_to_hug, ctx.channel):
+        if not self.check_hug_eligibility(ctx.author, user_to_hug):
+            await auxiliary.send_deny_embed(
+                message="Let's be serious", channel=ctx.channel
+            )
             return
 
         hug_text = self.generate_hug_phrase(ctx.author, user_to_hug)
