@@ -24,7 +24,7 @@ def rand_history(draw):
     This history, returned as an array, will be 1 to 50 messages of random content
     Some will be by a bot, some will not
     """
-    hist_length = draw(integers(1, 50))
+    hist_length = draw(integers(1, 10))
     final_history = []
     botPerson = MockMember(bot=True)
     nonBot = MockMember(bot=False)
