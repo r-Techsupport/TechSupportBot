@@ -79,7 +79,7 @@ class FakeDiscordEnv:
         self.channel = MockChannel()
 
         # context objects
-        self.context = MockContext(channel=self.channel)
+        self.context = MockContext(channel=self.channel, author=self.person1)
 
         # extension objects.
         # Since these all call setup, we remove async create task when creating them
