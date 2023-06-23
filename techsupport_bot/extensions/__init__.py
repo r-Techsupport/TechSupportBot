@@ -8,5 +8,5 @@ from .correct import *
 from .emoji import *
 from .hello import *
 from .htd import *
-from .roll import *
 from .hug import *
+from .roll import *
