@@ -39,34 +39,76 @@ class Hugger(base.BaseCog):
         description="Hugs a mentioned user using an embed",
         usage="@user",
     )
-    async def hug(self, ctx, user_to_hug: discord.Member):
-        """Executes the hug command. Returns bot's response
+    async def hug(self, ctx: commands.Context, user_to_hug: discord.Member):
+        """The .hug discord command function
 
-        parameters:
-            ctx (Context): the context
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+            user_to_hug (discord.Member): The user to hug
         """
-        if user_to_hug.id == ctx.author.id:
+        await self.hug_command(ctx, user_to_hug)
+
+    def check_hug_eligibility(
+        self,
+        author: discord.Member,
+        user_to_hug: discord.Member,
+    ) -> bool:
+        """Checks to see if the hug is allowed
+        Checks to see if the author and target match
+
+        Args:
+            author (discord.Member): The author of the hug command
+            user_to_hug (discord.Member): The user to hug
+
+        Returns:
+            bool: True if the command should proceed, false if it shouldn't
+        """
+        if user_to_hug == author:
+            return False
+        return True
+
+    def generate_hug_phrase(
+        self, author: discord.Member, user_to_hug: discord.Member
+    ) -> str:
+        """Generates a hug phrase from the HUGS_SELECTION variable
+
+        Args:
+            author (discord.Member): The author of the hug command
+            user_to_hug (discord.Member): The user to hug
+
+        Returns:
+            str: The filled in hug str
+        """
+        hug_text = random.choice(self.HUGS_SELECTION).format(
+            user_giving_hug=author.mention,
+            user_to_hug=user_to_hug.mention,
+        )
+        return hug_text
+
+    async def hug_command(
+        self, ctx: commands.Context, user_to_hug: discord.Member
+    ) -> None:
+        """The main logic for the hug command
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+            user_to_hug (discord.Member): The user to hug
+        """
+        if not self.check_hug_eligibility(ctx.author, user_to_hug):
             await auxiliary.send_deny_embed(
                 message="Let's be serious", channel=ctx.channel
             )
             return
 
-        embed = self.generate_embed(ctx, user_to_hug)
+        hug_text = self.generate_hug_phrase(ctx.author, user_to_hug)
 
-        await ctx.send(embed=embed, targets=[user_to_hug])
-
-    def generate_embed(self, ctx, user_to_hug):
-        """Method to generate the hug embed into discord."""
-        hug_text = random.choice(self.HUGS_SELECTION).format(
-            user_giving_hug=ctx.author.mention,
-            user_to_hug=user_to_hug.mention,
+        embed = auxiliary.generate_basic_embed(
+            title="You've been hugged!",
+            description=hug_text,
+            color=discord.Color.blurple(),
+            url=self.ICON_URL,
         )
 
-        embed = discord.Embed()
-
-        embed.add_field(name="You've been hugged!", value=hug_text)
-
-        embed.set_thumbnail(url=self.ICON_URL)
-        embed.color = discord.Color.blurple()
-
-        return embed
+        await ctx.send(
+            embed=embed, content=auxiliary.construct_mention_string([user_to_hug])
+        )
