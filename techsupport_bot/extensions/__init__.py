@@ -9,3 +9,4 @@ from .emoji import *
 from .hello import *
 from .htd import *
 from .hug import *
+from .roll import *
