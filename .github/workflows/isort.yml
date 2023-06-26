@@ -22,4 +22,4 @@ jobs:
         pip install isort==$ISORT_VERSION
     - name: Analysing the code with isort
       run: |
-        isort --check-only $(git rev-parse --show-toplevel)/
+        isort --check-only $(git rev-parse --show-toplevel)/ --profile black

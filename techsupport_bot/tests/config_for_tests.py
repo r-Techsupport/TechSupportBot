@@ -13,7 +13,14 @@ from unittest.mock import patch
 from extensions import Burn, Corrector, Emojis, Greeter, MagicConch
 from hypothesis.strategies import composite, integers, text
 
-from .helpers import MockBot, MockChannel, MockContext, MockMember, MockMessage
+from .helpers import (
+    MockAttachment,
+    MockBot,
+    MockChannel,
+    MockContext,
+    MockMember,
+    MockMessage,
+)
 
 PREFIX = "."
 
@@ -49,6 +56,10 @@ class FakeDiscordEnv:
         self.person2 = MockMember(bot=False, id=2)
         self.person3_bot = MockMember(bot=True, id=3)
 
+        # attachment objects
+        self.json_attachment = MockAttachment(filename="json.json")
+        self.png_attachment = MockAttachment(filename="png.png")
+
         # message objects
         self.message_person1_prefix = MockMessage(
             content=f"{PREFIX}message", author=self.person1
@@ -73,6 +84,11 @@ class FakeDiscordEnv:
         )
         self.message_person3_noprefix = MockMessage(
             content="bot message", author=self.person3_bot
+        )
+        self.message_person1_attachments = MockMessage(
+            content="Attachments",
+            author=self.person1,
+            attachments=[self.json_attachment],
         )
 
         # channel objects
