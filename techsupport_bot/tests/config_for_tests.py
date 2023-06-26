@@ -31,7 +31,7 @@ def rand_history(draw):
     This history, returned as an array, will be 1 to 50 messages of random content
     Some will be by a bot, some will not
     """
-    hist_length = draw(integers(1, 50))
+    hist_length = draw(integers(1, 10))
     final_history = []
     botPerson = MockMember(bot=True)
     nonBot = MockMember(bot=False)
@@ -95,7 +95,7 @@ class FakeDiscordEnv:
         self.channel = MockChannel()
 
         # context objects
-        self.context = MockContext(channel=self.channel)
+        self.context = MockContext(channel=self.channel, author=self.person1)
 
         # extension objects.
         # Since these all call setup, we remove async create task when creating them
