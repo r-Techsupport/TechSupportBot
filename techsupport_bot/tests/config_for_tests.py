@@ -14,6 +14,7 @@ from extensions import Burn, Corrector, Emojis, Greeter, MagicConch
 from hypothesis.strategies import composite, integers, text
 
 from .helpers import (
+    MockAsset,
     MockAttachment,
     MockBot,
     MockChannel,
@@ -51,10 +52,20 @@ class FakeDiscordEnv:
         # bot objects
         self.bot = MockBot()
 
+        # asset objects
+        self.asset1 = MockAsset(url="realurl")
+        self.asset2 = MockAsset(url="differenturl")
+
         # member objects
-        self.person1 = MockMember(bot=False, id=1)
-        self.person2 = MockMember(bot=False, id=2)
-        self.person3_bot = MockMember(bot=True, id=3)
+        self.person1 = MockMember(
+            bot=False, id=1, name="person1", display_avatar=self.asset1
+        )
+        self.person2 = MockMember(
+            bot=False, id=2, name="person2", display_avatar=self.asset2
+        )
+        self.person3_bot = MockMember(
+            bot=True, id=3, name="bot", display_avatar=self.asset1
+        )
 
         # attachment objects
         self.json_attachment = MockAttachment(filename="json.json")
