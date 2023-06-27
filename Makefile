@@ -8,11 +8,11 @@ make sync:
 
 check-format:
 	black --check ./
-	isort --check-only ./
+	isort --check-only ./ --profile black
 
 format:
 	black ./
-	isort ./
+	isort ./ --profile black
 
 lint:
 	$(drun) pylint techsupport_bot/*.py techsupport_bot/base/*.py techsupport_bot/cogs/*.py
