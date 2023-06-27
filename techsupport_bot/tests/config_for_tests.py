@@ -15,6 +15,7 @@ from hypothesis.strategies import composite, integers, text
 
 from .helpers import (
     MockAsset,
+    MockAttachment,
     MockBot,
     MockChannel,
     MockContext,
@@ -66,6 +67,10 @@ class FakeDiscordEnv:
             bot=True, id=3, name="bot", display_avatar=self.asset1
         )
 
+        # attachment objects
+        self.json_attachment = MockAttachment(filename="json.json")
+        self.png_attachment = MockAttachment(filename="png.png")
+
         # message objects
         self.message_person1_prefix = MockMessage(
             content=f"{PREFIX}message", author=self.person1
@@ -90,6 +95,11 @@ class FakeDiscordEnv:
         )
         self.message_person3_noprefix = MockMessage(
             content="bot message", author=self.person3_bot
+        )
+        self.message_person1_attachments = MockMessage(
+            content="Attachments",
+            author=self.person1,
+            attachments=[self.json_attachment],
         )
 
         # channel objects
