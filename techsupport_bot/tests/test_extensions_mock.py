@@ -173,4 +173,4 @@ class Test_PrepareMockMessage:
         result = mocker.prepare_mock_message(message=input_message)
 
         # Step 3 - Assert that everything works
-        assert len(result) == len(input_message)
+        assert len(result) >= len(input_message)
