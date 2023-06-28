@@ -5,7 +5,6 @@ import asyncio
 import base
 import botlogging
 import cogs as builtin_cogs
-import context
 
 
 # pylint: disable=too-many-public-methods, too-many-instance-attributes
@@ -89,10 +88,6 @@ class TechSupportBot(base.AdvancedBot):
         await self.logger.debug("Cleaning up...", send=True)
         await super().logout()
         await self.rabbit.close()
-
-    async def get_context(self, message, cls=context.Context):
-        """Wraps the parent context creation with a custom class."""
-        return await super().get_context(message, cls=cls)
 
     async def on_guild_join(self, guild):
         """Configures a new guild upon joining.

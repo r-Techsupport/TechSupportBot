@@ -355,15 +355,16 @@ class FactoidManager(base.MatchCog):
         embed = self.get_embed_from_factoid(factoid)
         # if the json doesn't include non embed argument, then don't send anything
         # otherwise send message text with embed
-        content = factoid.message if not embed else None
+        plaintext_content = factoid.message if not embed else None
+        mentions = auxiliary.construct_mention_string(ctx.message.mentions)
+
+        content = " ".join(filter(None, [mentions, plaintext_content])) or None
 
         try:
             # define the message and send it
             message = await ctx.send(
                 content=content,
                 embed=embed,
-                # if nobody pinged, ping the author, if mentioned, ping the author and the mention
-                targets=ctx.message.mentions or [ctx.author],
             )
             # log it  in the logging channel with type info and generic content
             await self.bot.guild_log(
