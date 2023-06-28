@@ -11,39 +11,8 @@ async def setup(bot):
     await bot.add_cog(Mocker(bot=bot))
 
 
-class MockEmbed(discord.Embed):
-    """Class to setup the mock embed for discord."""
-
-    def __init__(self, *args, **kwargs):
-        message = kwargs.pop("message")
-        user = kwargs.pop("user")
-        super().__init__(*args, **kwargs)
-
-        mock_string = self.mock_string(message)
-        self.title = f'"{mock_string}"'
-        self.description = user.name
-        self.set_thumbnail(url=user.display_avatar.url)
-        self.color = discord.Color.greyple()
-
-    @staticmethod
-    def mock_string(string):
-        """Method to define the mock string for discord."""
-        mock = ""
-        i = True
-        for char in string:
-            if i:
-                mock += char.upper()
-            else:
-                mock += char.lower()
-            if char != " ":
-                i = not i
-        return mock
-
-
 class Mocker(base.BaseCog):
     """Class to set up the mocking command."""
-
-    SEARCH_LIMIT = 20
 
     @util.with_typing
     @commands.guild_only()
@@ -53,27 +22,28 @@ class Mocker(base.BaseCog):
         description=("Mocks the most recent message by a user"),
         usage="@user",
     )
-    async def mock(self, ctx, user_to_mock: discord.Member):
-        """Method on how to mock the user for discord."""
-        if not user_to_mock:
-            await auxiliary.send_deny_embed(
-                message="You must tag a user if you want to mock them!",
-                channel=ctx.channel,
-            )
-            return
+    async def mock(self, ctx: commands.Context, input_user: discord.Member):
+        """Defines the .mock command on discord
 
-        if user_to_mock.bot:
-            user_to_mock = ctx.author
+        Args:
+            ctx (commands.Context): The context in which the command was run
+            input_user (discord.Member): The raw member input by the invoker
+        """
+        await self.mock_command(ctx, input_user)
+
+    async def mock_command(self, ctx: commands.Context, input_user: discord.Member):
+        """The core logic for the mock command
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+            input_user (discord.Member): The raw member input by the invoker
+        """
+        user_to_mock = self.get_user_to_mock(ctx, input_user)
 
         prefix = await self.bot.get_prefix(ctx.message)
-
-        mock_message = None
-        async for message in ctx.channel.history(limit=self.SEARCH_LIMIT):
-            if message.author == user_to_mock and not message.content.startswith(
-                prefix
-            ):
-                mock_message = message.clean_content
-                break
+        mock_message = await self.generate_mock_message(
+            channel=ctx.channel, user=user_to_mock, prefix=prefix
+        )
 
         if not mock_message:
             await auxiliary.send_deny_embed(
@@ -81,5 +51,71 @@ class Mocker(base.BaseCog):
             )
             return
 
-        embed = MockEmbed(message=mock_message, user=user_to_mock)
+        embed = auxiliary.generate_basic_embed(
+            title=f'"{mock_message}"',
+            description=user_to_mock.name,
+            color=discord.Color.greyple(),
+            url=user_to_mock.display_avatar.url,
+        )
+
         await ctx.send(embed=embed)
+
+    async def generate_mock_message(
+        self, channel: discord.abc.Messageable, user: discord.Member, prefix: str
+    ) -> str:
+        """Finds a message and converts it into a mock format
+
+        Args:
+            channel (discord.abc.Messageable): The channel the mock command was run in
+            user (discord.Member): The user to mock
+            prefix (str): The current prefix of the bot
+
+        Returns:
+            str: The string containing the mocked contents of the message.
+                Will be None if no message could be found
+        """
+        message = await auxiliary.search_channel_for_message(
+            channel=channel, prefix=prefix, member_to_match=user
+        )
+
+        if not message:
+            return None
+
+        return self.prepare_mock_message(message.clean_content)
+
+    def get_user_to_mock(
+        self, ctx: commands.Context, input_user: discord.Member
+    ) -> discord.Member:
+        """Makes sure that the user is to mock is correct..
+        This disallows mocking bots and instead makes it mock the invoker
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+            input_user (discord.Member): The raw member input by the invoker
+
+        Returns:
+            discord.Member: The member to actually be mocked
+        """
+        if input_user.bot:
+            return ctx.author
+        return input_user
+
+    def prepare_mock_message(self, message: str) -> str:
+        """This turns a string into a uppercase lowercase alternating string
+
+        Args:
+            message (str): The contents of a message to convert
+
+        Returns:
+            str: The converted string
+        """
+        mock = ""
+        i = True
+        for char in message:
+            if i:
+                mock += char.upper()
+            else:
+                mock += char.lower()
+            if char != " ":
+                i = not i
+        return mock

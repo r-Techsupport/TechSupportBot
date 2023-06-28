@@ -280,8 +280,6 @@ class Htd(base.BaseCog):
             inline=False,
         )
 
-        print(len(embed.fields))
-
         return embed
 
     async def htd_command(self, ctx: commands.Context, val_to_convert: str) -> None:
