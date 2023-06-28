@@ -9,6 +9,7 @@ from .emoji import *
 from .hello import *
 from .htd import *
 from .hug import *
+from .lenny import *
 from .linter import *
 from .mock import *
 from .roll import *
