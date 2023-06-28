@@ -2,6 +2,7 @@
 import random
 
 import base
+import discord
 import util
 from discord.ext import commands
 
@@ -44,6 +45,18 @@ class Lenny(base.BaseCog):
         brief="Returns a Lenny face",
         description="Returns a randomly chosen Lenny face ( ͡° ͜ʖ ͡°)",
     )
-    async def lenny(self, ctx):
-        """Method for a discord command to return a funny lenny face."""
-        await ctx.send(content=random.choice(self.LENNYS_SELECTION))
+    async def lenny(self, ctx: commands.Context):
+        """Method for a discord command to return a funny lenny face.
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
+        await self.lenny_command(ctx.channel)
+
+    async def lenny_command(self, channel: discord.abc.Messageable):
+        """The main logic for the lenny command
+
+        Args:
+            channel (discord.abc.Messageable): The channel where the lenny command was called in
+        """
+        await channel.send(content=random.choice(self.LENNYS_SELECTION))

@@ -144,7 +144,8 @@ class Rules(base.BaseCog):
             # Checks if first embed sent
             if first:
                 await ctx.send(
-                    embed=embed, targets=ctx.message.mentions or [ctx.author]
+                    embed=embed,
+                    content=auxiliary.construct_mention_string(ctx.message.mentions),
                 )
                 first = False
             else:
