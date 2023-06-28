@@ -173,7 +173,8 @@ class Dumpdbg(base.BaseCog):
                 embed=DumpdbgEmbed(
                     title="Dump succesfully debugged! \nResult links:",
                     description="\n".join(result_urls),
-                )
+                ),
+                content=auxiliary.construct_mention_string([ctx.author]),
             )
         else:
             await ctx.send(
