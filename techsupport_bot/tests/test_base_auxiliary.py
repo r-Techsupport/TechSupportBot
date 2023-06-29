@@ -300,7 +300,7 @@ class Test_ConstructMention:
         output = auxiliary.construct_mention_string([None])
 
         # Step 3 - Assert that everything works
-        assert output == ""
+        assert output == None
 
     def test_one_user(self):
         """Test that if only 1 user is passed, the mention string contains the proper mention"""

@@ -55,7 +55,7 @@ class Burn(base.BaseCog):
             description=f"🔥🔥🔥 {random.choice(self.PHRASES)} 🔥🔥🔥",
             color=discord.Color.red(),
         )
-        await ctx.send(embed=embed, targets=[user])
+        await ctx.send(embed=embed, content=auxiliary.construct_mention_string([user]))
 
     async def burn_command(
         self, ctx: commands.Context, user_to_match: discord.Member
