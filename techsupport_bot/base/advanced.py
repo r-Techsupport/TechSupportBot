@@ -402,6 +402,12 @@ class AdvancedBot(DataBot):
 
         await auxiliary.send_deny_embed(message=error_message, channel=context.channel)
 
+        if message_template.dont_print_trace:
+            return
+
+        if message_template.dont_print_trace:
+            return
+
         log_channel = await self.get_log_channel_from_guild(
             getattr(context, "guild", None), key="logging_channel"
         )

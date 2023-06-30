@@ -7,6 +7,24 @@ from discord.ext import commands
 class ExtensionDisabled(commands.errors.CheckFailure):
     """The exception thrown when an extension is disabled."""
 
+    def __init__(self):
+        self.dont_print_trace = True
+
+
+class FactoidNotFoundError(commands.errors.CommandError):
+    """Thrown when a factoid is not found."""
+
+    def __init__(self, factoid):
+        self.argument = factoid
+        self.dont_print_trace = True
+
+
+class TooLongFactoidMessageError(commands.errors.CommandError):
+    """Thrown when a message is too long"""
+
+    def __init(self):
+        self.dont_print_trace = False
+
 
 # pylint: disable=too-few-public-methods
 class ErrorResponse:
@@ -19,8 +37,9 @@ class ErrorResponse:
 
     DEFAULT_MESSAGE = "I ran into an error processing your command"
 
-    def __init__(self, message_format=None, lookups=None):
+    def __init__(self, message_format=None, lookups=None, dont_print_trace=False):
         self.message_format = message_format
+        self.dont_print_trace = dont_print_trace
 
         if lookups:
             lookups = lookups if isinstance(lookups, list) else [lookups]
@@ -87,35 +106,35 @@ COMMAND_ERROR_RESPONSES = {
         "You provided too many arguments to that command"
     ),
     commands.MessageNotFound: ErrorResponse(
-        'I couldn\'t find the message: "%s"', {"key": "argument"}
+        "I couldn't find the message: `%s`", {"key": "argument"}
     ),
     commands.MemberNotFound: ErrorResponse(
-        'I couldn\'t find the server member: "%s"', {"key": "argument"}
+        "I couldn't find the server member: `%s`", {"key": "argument"}
     ),
     commands.UserNotFound: ErrorResponse(
-        'I couldn\'t find the user: "%s"', {"key": "argument"}
+        "I couldn't find the user: `%s`", {"key": "argument"}
     ),
     commands.ChannelNotFound: ErrorResponse(
-        'I couldn\'t find the channel: "%s"', {"key": "argument"}
+        "I couldn't find the channel: `%s`", {"key": "argument"}
     ),
     commands.ChannelNotReadable: ErrorResponse(
-        'I can\'t read the channel: "%s"', {"key": "argument"}
+        "I can't read the channel: `%s`", {"key": "argument"}
     ),
     commands.BadColourArgument: ErrorResponse(
-        'I can\'t use the color: "%s"', {"key": "argument"}
+        "I can't use the color: `%s`", {"key": "argument"}
     ),
     commands.RoleNotFound: ErrorResponse(
-        'I couldn\'t find the role: "%s"', {"key": "argument"}
+        "I couldn't find the role: `%s`", {"key": "argument"}
     ),
     commands.BadInviteArgument: ErrorResponse("I can't use that invite"),
     commands.EmojiNotFound: ErrorResponse(
-        'I couldn\'t find the emoji: "%s"', {"key": "argument"}
+        "I couldn't find the emoji: `%s`", {"key": "argument"}
     ),
     commands.PartialEmojiConversionFailure: ErrorResponse(
-        'I couldn\'t use the emoji: "%s"', {"key": "argument"}
+        "I couldn't use the emoji: `%s`", {"key": "argument"}
     ),
     commands.BadBoolArgument: ErrorResponse(
-        'I couldn\'t process the boolean: "%s"', {"key": "argument"}
+        "I couldn't process the boolean: `%s`", {"key": "argument"}
     ),
     commands.UnexpectedQuoteError: ErrorResponse(
         "I wasn't able to understand your command because of an unexpected quote (%s)",
@@ -172,6 +191,12 @@ COMMAND_ERROR_RESPONSES = {
     commands.CommandOnCooldown: ErrorResponse(
         "That command is on cooldown. Try again in %s seconds",
         {"key": "retry_after", "wrapper": int},
+    ),
+    FactoidNotFoundError: ErrorResponse(
+        "I can't find the factoid `%s`", {"key": "argument"}
+    ),
+    TooLongFactoidMessageError: ErrorResponse(
+        "The raw factoid message contents cannot be more than 2000 characters long!"
     ),
     ExtensionDisabled: ErrorResponse(
         "That extension is disabled for this context/server"
