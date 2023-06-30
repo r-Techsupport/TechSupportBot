@@ -72,7 +72,8 @@ class Who(base.BaseCog):
 
     @staticmethod
     async def is_reader(interaction: discord.Interaction) -> bool:
-        """Checks whether invoker can read notes. If at least one reader role is not set, all members can read notes."""
+        """Checks whether invoker can read notes. If at least one reader
+        role is not set, all members can read notes."""
         config = await interaction.client.get_context_config(interaction)
         if readers := config.extensions.who.note_readers.value:
             roles = (
@@ -91,6 +92,7 @@ class Who(base.BaseCog):
     async def get_note(
         self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
+        """ "Method to get notes assigned to a user."""
         embed = discord.Embed(
             title=f"User info for `{user}`",
             description="**Note: this is a bot account!**" if user.bot else "",
@@ -310,8 +312,9 @@ class Who(base.BaseCog):
         if isinstance(error, app_commands.CommandNotFound):
             return
 
-        elif isinstance(error, app_commands.MissingPermissions):
-            message = f"I am unable to do that because you lack the permission(s): `{', '.join(error.missing_permissions)}`"
+        if isinstance(error, app_commands.MissingPermissions):
+            message = f"I am unable to do that because you lack the permission(s):\
+                  `{', '.join(error.missing_permissions)}`"
             embed = auxiliary.prepare_deny_embed(message)
 
         elif isinstance(error, app_commands.CheckFailure):
