@@ -3,7 +3,7 @@ Name: Factoids
 Info: Makes callable slices of text
 Unit tests: No
 Config: manage_roles, response_listen_channels, linx_url, prefix
-API: None
+API: Linx
 Databases: Postgres
 Models: Factoid, FactoidJob
 Subcommands: remember, forget, info, json, all, search, loop, deloop, job, jobs, hide, unhide,
@@ -167,6 +167,11 @@ class FactoidManager(base.MatchCog):
     """
 
     LOOP_UPDATE_MINUTES = 10
+    CRON_REGEX = (
+        r"^((\*|([0-5]?\d|\*\/\d+)(-([0-5]?\d))?)(,\s*(\*|([0-5]?\d|\*\/\d+)(-([0-5]"
+        + r"?\d))?)){0,59}\s+){4}(\*|([0-7]?\d|\*(\/[1-9]|[1-5]\d)|mon|tue|wed|thu|fri|sat|sun"
+        + r")|\*\/[1-9])$"
+    )
 
     async def preconfig(self):
         """Preconfig for factoid jobs"""
@@ -176,7 +181,8 @@ class FactoidManager(base.MatchCog):
         # set a hard time limit on repeated cronjob DB calls
         self.cronjob_cache = expiringdict.ExpiringDict(max_len=100, max_age_seconds=300)
         self.factoid_all_cache = expiringdict.ExpiringDict(
-            max_len=1, max_age_seconds=600
+            max_len=1,
+            max_age_seconds=86400,  # 24 hours, matches deletion on linx server
         )
         self.active_jobs = []
         await self.bot.logger.info("Loading factoid jobs", send=True)
@@ -223,6 +229,9 @@ class FactoidManager(base.MatchCog):
             message (str): Message the factoid should send
             embed_config (str): Whether the factoid has an embed set up
             alias (str, optional): The parent factoid. Defaults to None.
+
+            Raises:
+            TooLongFactoidMessageError: When the message argument is over 2k chars, discords limit
         """
         if len(message) > 2000:
             raise TooLongFactoidMessageError
@@ -258,6 +267,9 @@ class FactoidManager(base.MatchCog):
             embed_config (str, optional): Whether the factoid has an embed set up. Defaults to None.
             hidden (bool, optional): Whether the factoid is hidden. Defaults to None.
             alias (str, optional): New parent factoid. Defaults to None.
+
+        Raises:
+            TooLongFactoidMessageError: When the message argument is over 2k chars, discords limit
         """
         if message and len(message) > 2000:
             raise TooLongFactoidMessageError
@@ -358,7 +370,7 @@ class FactoidManager(base.MatchCog):
             alias.name for alias in factoid_aliases
         ]:
             await auxiliary.send_deny_embed(
-                "Can't set an alias for itself!", channel=channel
+                message="Can't set an alias for itself!", channel=channel
             )
             return True
 
@@ -380,14 +392,14 @@ class FactoidManager(base.MatchCog):
 
         return discord.Embed.from_dict(embed_config)
 
-    async def check_lsf_cache(self, flag: str):
+    async def check_lsf_cache(self, flag: str) -> str:
         """Checks whether the factoid all cache exists and is usable
 
         Args:
             flag (str): Used to check if previous instance was hidden
 
         Returns:
-            str or list: The usable cache entry
+            str: The url if the cache exists
         """
         if self.factoid_all_cache:
             cache = self.factoid_all_cache[0]
@@ -400,16 +412,9 @@ class FactoidManager(base.MatchCog):
                 and "hidden" in cache["flags"]
             ):
                 self.factoid_all_cache.pop(0)  # Deletes old cache
-                return None
+                return ""
 
             for value in cache:
-                if value == "file" and "file" in flag:
-                    yaml_file = discord.File(
-                        io.StringIO(cache["file"][0]),
-                        filename=cache["file"][1],
-                    )
-                    return yaml_file
-
                 if value == "url" and "file" not in flag:
                     return cache["url"]
 
@@ -556,8 +561,8 @@ class FactoidManager(base.MatchCog):
             factoid = await self.get_factoid_or_alias(factoid_name, guild)
             name = factoid.name  # Name of the parent
 
+        # Adds the factoid if it doesn't exist already
         except FactoidNotFoundError:
-            # Adds the factoid if it doesn't exist already
             await self.create_factoid_call(
                 factoid_name=name,
                 guild=guild,
@@ -566,9 +571,8 @@ class FactoidManager(base.MatchCog):
                 alias=alias,
             )
 
+        # Modifies the factoid if it already exists
         else:
-            # Modifies it if it already exists
-
             # Confirms modification
             if await self.confirm_factoid_deletion(factoid.name, ctx) is False:
                 return
@@ -587,7 +591,7 @@ class FactoidManager(base.MatchCog):
         await self.handle_cache(guild, name)
 
         await auxiliary.send_confirm_embed(
-            f"Successfully {fmt} factoid `{name.lower()}`", channel=ctx.channel
+            message=f"Successfully {fmt} factoid `{name.lower()}`", channel=ctx.channel
         )
 
     async def delete_factoid(self, ctx: commands.Context, factoid_name: str):
@@ -653,6 +657,8 @@ class FactoidManager(base.MatchCog):
 
         Raises:
             FactoidNotFoundError: Raised if a broken alias is present in the DB
+            TooLongFactoidMessageError: Raised when the raw message content is over discords
+                                        2000 chat limit
         """
         if not ctx.guild:
             return
@@ -745,7 +751,8 @@ class FactoidManager(base.MatchCog):
 
         Args:
             job (FactoidJob): The job to start
-            ctx (commands.Context): The context, used for logging"""
+            ctx (commands.Context): The context, used for logging
+        """
         job_id = job.job_id
         self.cronjob_cache[job_id]["job"] = job
 
@@ -820,8 +827,6 @@ class FactoidManager(base.MatchCog):
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
 
-        print(f"Factoid command called in channel {ctx.channel}")
-
     @util.with_typing
     @commands.check(has_manage_factoids_role)
     @commands.check(no_mentions)
@@ -844,14 +849,23 @@ class FactoidManager(base.MatchCog):
         # Prevents factoids being created with html elements
         if re.match(r"<[^>/]+/?>", message) or re.match(r"<[^>/]+/?>", factoid_name):
             await auxiliary.send_deny_embed(
-                "Cannot create factoids that contain HTML tags!", channel=ctx.channel
+                message="Cannot create factoids that contain HTML tags!",
+                channel=ctx.channel,
+            )
+            return
+
+        # Prevents factoids being created with spaces
+        if " " in factoid_name:
+            await auxiliary.send_deny_embed(
+                message="Cannot create factoids that contain spaces!",
+                channel=ctx.channel,
             )
             return
 
         embed_config = await util.get_json_from_attachments(ctx.message, as_string=True)
         await self.add_factoid(
             ctx,
-            factoid_name=factoid_name.replace(" ", ""),
+            factoid_name=factoid_name,
             guild=str(ctx.guild.id),
             message=message,
             embed_config=embed_config,
@@ -958,20 +972,14 @@ class FactoidManager(base.MatchCog):
             )
             return
 
-        cron_regex = (
-            r"^((\*|([0-5]?\d|\*\/\d+)(-([0-5]?\d))?)(,\s*(\*|([0-5]?\d|\*\/\d+)(-([0-5]"
-            + r"?\d))?)){0,59}\s+){4}(\*|([0-7]?\d|\*(\/[1-9]|[1-5]\d)|mon|tue|wed|thu|fri|sat|sun"
-            + r")|\*\/[1-9])$"
-        )
-
         # Only matches valid cron syntaxes (including some ugly ones,
         # except @ stuff since that isn't supported anyways)
         if not re.match(
-            cron_regex,
+            CRON_REGEX,
             cron_config,
         ):
             await auxiliary.send_deny_embed(
-                f"`{cron_config}` is not a valid cron configuration!",
+                message=f"`{cron_config}` is not a valid cron configuration!",
                 channel=ctx.channel,
             )
             return
@@ -1071,7 +1079,7 @@ class FactoidManager(base.MatchCog):
         if job.embed_config:
             embed_label = "(embed)"
 
-        embed = discord.Embed(
+        embed = auxiliary.generate_basic_embed(
             color=discord.Color.blurple(),
             title=f"Loop config for {factoid_name} {embed_label}",
             description=f'"{job.message}"',
@@ -1145,7 +1153,8 @@ class FactoidManager(base.MatchCog):
 
         if not factoid.embed_config:
             await auxiliary.send_deny_embed(
-                message="There is no embed config for that factoid", channel=ctx.channel
+                message=f"There is no embed config for `{factoid_name}`",
+                channel=ctx.channel,
             )
             return
 
@@ -1221,6 +1230,10 @@ class FactoidManager(base.MatchCog):
             ctx (commands.Context): Context of the invocation
             flag (str, optional): Can be "file", which will return a .yaml instead of a paste.
                                   Defaults to an empty string.
+
+        Raises:
+            commands.MissingPermission: Raised when someone tries to call .factoid all with
+                                        the hidden flag without administrator permissions
         """
         flag = flag.lower()
         # Makes sure no bad flag was passed
@@ -1231,15 +1244,10 @@ class FactoidManager(base.MatchCog):
             )
             return
 
-        # If cache exists
+        # Gets theurl from the cache
         cache = await self.check_lsf_cache(flag)
-        if cache is not None and type(cache) == discord.File:
-            # Returns cached .yaml file
-            await ctx.send(file=cache)
-            return
-
         # URL was passed
-        if cache is not None:
+        if cache:
             # Returns cached URL
             await auxiliary.send_confirm_embed(message=cache, channel=ctx.channel)
             return
@@ -1427,14 +1435,6 @@ class FactoidManager(base.MatchCog):
             filename=f"factoids-for-server-{ctx.guild.id}-{datetime.datetime.utcnow()}.yaml",
         )
 
-        # Creates cache
-        self.factoid_all_cache[0] = {}
-        self.factoid_all_cache[0]["file"] = [
-            yaml.dump(output_data),
-            f"factoids-for-server-{ctx.guild.id}-{datetime.datetime.utcnow()}.yaml",
-        ]
-        self.factoid_all_cache[0]["flags"] = flag
-
         # Sends the file
         await ctx.send(file=yaml_file)
 
@@ -1458,7 +1458,7 @@ class FactoidManager(base.MatchCog):
 
         name_matches = "`"
         for factoid in factoids:
-            if factoid.name and query in factoid.name:
+            if factoid.name and not factoid.hidden and query in factoid.name:
                 name_matches += f"{factoid.name}`, `"
 
         if name_matches == "`":
@@ -1470,6 +1470,7 @@ class FactoidManager(base.MatchCog):
         for factoid in factoids:
             if (
                 factoid.embed_config is not None
+                and not factoid.hidden
                 and query in factoid.embed_config
                 or query in factoid.message
             ):
@@ -1657,7 +1658,8 @@ class FactoidManager(base.MatchCog):
             alias=factoid.name,
         )
         await auxiliary.send_confirm_embed(
-            f"Successfully added the alias `{alias_name.lower()}` for `{factoid.name.lower()}`",
+            message=f"Successfully added the alias `{alias_name.lower()}` for"\
+            +f" `{factoid.name.lower()}`",
             channel=ctx.channel,
         )
 
@@ -1689,7 +1691,7 @@ class FactoidManager(base.MatchCog):
                 await self.get_factoid_entry(factoid_name, str(ctx.guild.id))
             )
             await auxiliary.send_confirm_embed(
-                f"Deleted the alias `{factoid_name.lower()}`", channel=ctx.channel
+                message=f"Deleted the alias `{factoid_name.lower()}`", channel=ctx.channel
             )
             return
 
