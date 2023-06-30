@@ -8,7 +8,7 @@ Databases: Postgres
 Models: Factoid, FactoidJob
 Subcommands: remember, forget, info, json, all, search, loop, deloop, job, jobs, hide, unhide,
              alias, dealias
-Defines: 
+Defines: has_manage_factoids_role, no_mentions
 """
 import asyncio
 import datetime
