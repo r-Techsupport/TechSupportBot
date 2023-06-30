@@ -1658,8 +1658,8 @@ class FactoidManager(base.MatchCog):
             alias=factoid.name,
         )
         await auxiliary.send_confirm_embed(
-            message=f"Successfully added the alias `{alias_name.lower()}` for"\
-            +f" `{factoid.name.lower()}`",
+            message=f"Successfully added the alias `{alias_name.lower()}` for"
+            + f" `{factoid.name.lower()}`",
             channel=ctx.channel,
         )
 
@@ -1691,7 +1691,8 @@ class FactoidManager(base.MatchCog):
                 await self.get_factoid_entry(factoid_name, str(ctx.guild.id))
             )
             await auxiliary.send_confirm_embed(
-                message=f"Deleted the alias `{factoid_name.lower()}`", channel=ctx.channel
+                message=f"Deleted the alias `{factoid_name.lower()}`",
+                channel=ctx.channel,
             )
             return
 
