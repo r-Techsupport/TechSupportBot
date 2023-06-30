@@ -859,7 +859,12 @@ class FactoidManager(base.MatchCog):
         )
 
     @remember.error
-    async def remember_error(self, ctx, error):
+    async def remember_error(self, ctx: commands.Context, error: commands.CommandError):
+        """Makes sure the error text isn't called twice
+        
+        Args:
+            ctx (commands.Context) - Context of the invokation
+            error (commands.CommandError) - The error"""
         if isinstance(error, commands.CheckFailure):
             await auxiliary.send_deny_embed(
                 message="I cannot remember factoids with user/role/channel mentions",
