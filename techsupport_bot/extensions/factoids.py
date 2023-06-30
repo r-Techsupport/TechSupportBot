@@ -975,7 +975,7 @@ class FactoidManager(base.MatchCog):
         # Only matches valid cron syntaxes (including some ugly ones,
         # except @ stuff since that isn't supported anyways)
         if not re.match(
-            CRON_REGEX,
+            self.CRON_REGEX,
             cron_config,
         ):
             await auxiliary.send_deny_embed(
