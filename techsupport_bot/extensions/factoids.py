@@ -861,7 +861,7 @@ class FactoidManager(base.MatchCog):
     @remember.error
     async def remember_error(self, ctx: commands.Context, error: commands.CommandError):
         """Makes sure the error text isn't called twice
-        
+
         Args:
             ctx (commands.Context) - Context of the invokation
             error (commands.CommandError) - The error
