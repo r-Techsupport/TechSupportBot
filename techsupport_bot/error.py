@@ -22,7 +22,7 @@ class FactoidNotFoundError(commands.errors.CommandError):
 class TooLongFactoidMessageError(commands.errors.CommandError):
     """Thrown when a message is too long"""
 
-    def __init(self):
+    def __init__(self):
         self.dont_print_trace = False
 
 

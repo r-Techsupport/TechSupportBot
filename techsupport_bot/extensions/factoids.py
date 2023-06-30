@@ -384,6 +384,39 @@ class FactoidManager(base.MatchCog):
 
         return discord.Embed.from_dict(embed_config)
 
+    async def check_lsf_cache(self, flag: str):
+        """Checks whether the factoid all cache exists and is usable
+
+        Args:
+            flag (str): Used to check if previous instance was hidden
+
+        Returns:
+            str or list: The usable cache entry
+        """
+        if self.factoid_all_cache:
+            cache = self.factoid_all_cache[0]
+
+            # Disregards cache if the hidden flag doesn't match
+            if (
+                "hidden" in flag
+                and not "hidden" in cache["flags"]
+                or "hidden" not in flag
+                and "hidden" in cache["flags"]
+            ):
+                self.factoid_all_cache.pop(0)  # Deletes old cache
+                return None
+
+            for value in cache:
+                if value == "file" and "file" in flag:
+                    yaml_file = discord.File(
+                        io.StringIO(cache["file"][0]),
+                        filename=cache["file"][1],
+                    )
+                    return yaml_file
+
+                if value == "url" and "file" not in flag:
+                    return cache["url"]
+
     # -- Cache functions --
     async def handle_cache(self, guild: str, factoid_name: str):
         """Deletes factoid from cache
@@ -1189,36 +1222,17 @@ class FactoidManager(base.MatchCog):
             return
 
         # If cache exists
-        if self.factoid_all_cache:
-            cache = self.factoid_all_cache[0]
+        cache = await self.check_lsf_cache(flag)
+        if cache is not None and type(cache) == discord.File:
+            # Returns cached .yaml file
+            await ctx.send(file=cache)
+            return
 
-            # Disregards cache if the hidden flag doesn't match
-            if (
-                "hidden" in flag
-                and not "hidden" in cache["flags"]
-                or "hidden" not in flag
-                and "hidden" in cache["flags"]
-            ):
-                self.factoid_all_cache.pop(0)
-                cache = None
-
-            # Gets the cache values (file or url, disregards flags)
-            for value in cache:
-                # Returns cached .yaml file
-                if value == "file" and "file" in flag:
-                    yaml_file = discord.File(
-                        io.StringIO(cache["file"][0]),
-                        filename=cache["file"][1],
-                    )
-                    await ctx.send(file=yaml_file)
-                    return
-
-                # Returns cached URL
-                if value == "url" and "file" not in flag:
-                    await auxiliary.send_confirm_embed(
-                        message=cache["url"], channel=ctx.channel
-                    )
-                    return
+        # URL was passed
+        if cache is not None:
+            # Returns cached URL
+            await auxiliary.send_confirm_embed(message=cache, channel=ctx.channel)
+            return
 
         config = await self.bot.get_context_config(ctx)
 
@@ -1252,18 +1266,19 @@ class FactoidManager(base.MatchCog):
             await self.send_factoids_as_file(ctx, factoids, aliases, list_hidden, flag)
             return
 
+        html = await self.generate_html(ctx, factoids, aliases, list_hidden)
+        headers = {
+            "Content-Type": "text/plain",
+        }
+        response = await self.bot.http_call(
+            "put",
+            config.extensions.factoids.linx_url.value,
+            headers=headers,
+            data=io.StringIO(html),
+            get_raw_response=True,
+        )
+
         try:
-            html = await self.generate_html(ctx, factoids, aliases, list_hidden)
-            headers = {
-                "Content-Type": "text/plain",
-            }
-            response = await self.bot.http_call(
-                "put",
-                config.extensions.factoids.linx_url.value,
-                headers=headers,
-                data=io.StringIO(html),
-                get_raw_response=True,
-            )
             url = await response.text()
             filename = url.split("/")[-1]
             url = url.replace(filename, f"selif/{filename}")

@@ -405,9 +405,6 @@ class AdvancedBot(DataBot):
         if message_template.dont_print_trace:
             return
 
-        if message_template.dont_print_trace:
-            return
-
         log_channel = await self.get_log_channel_from_guild(
             getattr(context, "guild", None), key="logging_channel"
         )
