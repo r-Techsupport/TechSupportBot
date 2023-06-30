@@ -8,7 +8,7 @@ Databases: Postgres
 Models: Factoid, FactoidJob
 Subcommands: remember, forget, info, json, all, search, loop, deloop, job, jobs, hide, unhide,
              alias, dealias
-Defines: # TODO pretty up aobve
+Defines: 
 """
 import asyncio
 import datetime
@@ -157,10 +157,6 @@ async def no_mentions(ctx: commands.Context):
         or ctx.message.mentions  # @person
         or ctx.message.channel_mentions  # #Channel
     ):
-        await auxiliary.send_deny_embed(
-            "I cannot remember factoids with user/role/channel mentions",
-            channel=ctx.channel,
-        )
         return False
     return True
 
@@ -860,6 +856,13 @@ class FactoidManager(base.MatchCog):
             message=message,
             embed_config=embed_config,
             alias=None,
+        )
+    @remember.error
+    async def remember_error(self, ctx, error):
+        if isinstance(error, commands.CheckFailure):
+            await auxiliary.send_deny_embed(
+            message="I cannot remember factoids with user/role/channel mentions",
+            channel=ctx.channel,
         )
 
     @util.with_typing
@@ -1579,7 +1582,7 @@ class FactoidManager(base.MatchCog):
         # Prevents recursing aliases because fuck that!
         if factoid.alias not in ["", None]:
             await auxiliary.send_deny_embed(
-                "Can't set an alias for an alias!", channel=ctx.channel
+                message="Can't set an alias for an alias!", channel=ctx.channel
             )
             return
 
@@ -1728,7 +1731,7 @@ class FactoidManager(base.MatchCog):
         # Updates old aliases
         await self.handle_parent_change(ctx, aliases, new_name)
         await auxiliary.send_confirm_embed(
-            f"Removed old instance, new parent: `{new_name.lower()}`",
+            message=f"Removed old instance, new parent: `{new_name.lower()}`",
             channel=ctx.channel,
         )
 
