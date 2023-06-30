@@ -857,13 +857,14 @@ class FactoidManager(base.MatchCog):
             embed_config=embed_config,
             alias=None,
         )
+
     @remember.error
     async def remember_error(self, ctx, error):
         if isinstance(error, commands.CheckFailure):
             await auxiliary.send_deny_embed(
-            message="I cannot remember factoids with user/role/channel mentions",
-            channel=ctx.channel,
-        )
+                message="I cannot remember factoids with user/role/channel mentions",
+                channel=ctx.channel,
+            )
 
     @util.with_typing
     @commands.check(has_manage_factoids_role)
