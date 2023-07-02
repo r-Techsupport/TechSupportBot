@@ -22,7 +22,7 @@ jobs:
     - name: Install pipfile stuff
       run: |
         ls -lah
-        pipenv install --system --deploy
+        pipenv install --system --deploy --ignore-pipfile --pipfile=./Pipfile
     - name: Install typing-extensions
       run: |
         pip install typing-extensions
