@@ -23,7 +23,7 @@ jobs:
       run: |
         export PIP_PYTHON_PATH=$(which python)
         echo $PIP_PYTHON_PATH
-        pipenv install --system --deploy --ignore-pipfile --pipfile=./Pipfile --python 3.11
+        pipenv install --system
         pip install typing-extensions
     - name: Running pytest
       run: |
