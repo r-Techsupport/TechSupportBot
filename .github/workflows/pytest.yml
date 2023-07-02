@@ -23,6 +23,7 @@ jobs:
       run: |
         ls -lah
         echo $PIP_PYTHON_PATH
+        which python
         pipenv install --system --deploy --ignore-pipfile --pipfile=./Pipfile --python 3.11
     - name: Install typing-extensions
       run: |
