@@ -9,8 +9,9 @@ RUN apk update && \
 
 WORKDIR /var/TechSupportBot
 COPY Pipfile.lock .
+COPY Pipfile .
 
-RUN pip install pipenv && \
+RUN pip install pipenv==$(sed -nE 's/pipenv = "==(.*)"/\1/p' Pipfile) && \
     pipenv requirements > /tmp/requirements.txt && \
     pip install --no-cache-dir -r /tmp/requirements.txt
 
