@@ -15,12 +15,16 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: 3.11
-    - name: Install dependencies
+    - name: Install pip
       run: |
         python -m pip install --upgrade pip
-        python -m pip install pipenv
+    - name: Install pipenv
+      run: |
+        PIPENV_VERSION=$(sed -nE 's/pipenv = "==(.*)"/\1/p' Pipfile)
+        python -m pip install pipenv==$PIPENV_VERSION
+    - name: Install from pipfile
+      run: |
         pipenv install --system
-        pip install typing-extensions
     - name: Running pytest
       run: |
         cd techsupport_bot
