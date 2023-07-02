@@ -104,11 +104,13 @@ class RoleGiver(base.BaseCog):
             member, interaction.guild, assignable_roles
         )
 
-        can_execute = self.check_permissions(interaction.user, interaction.guild, allowed_roles)
+        can_execute = self.check_permissions(
+            interaction.user, interaction.guild, allowed_roles
+        )
         if not can_execute:
             await interaction.response.send_message(
-                    "You are not allowed to execute this command", ephemeral=True
-                )
+                "You are not allowed to execute this command", ephemeral=True
+            )
 
         if len(role_options) == 0:
             await interaction.response.send_message(
@@ -129,8 +131,10 @@ class RoleGiver(base.BaseCog):
             guild=interaction.guild,
             user=member,
         )
-    
-    def check_permissions(self, user: discord.User, guild: discord.Guild, roles: list) -> bool:
+
+    def check_permissions(
+        self, user: discord.User, guild: discord.Guild, roles: list
+    ) -> bool:
         """A function to return a boolean value if the user can run role commands or not
 
         Args:
@@ -148,7 +152,7 @@ class RoleGiver(base.BaseCog):
             real_role = discord.utils.get(guild.roles, name=role)
             if real_role in getattr(user, "roles", []):
                 return True
-        
+
         return False
 
     def generate_options(self, user, guild, roles):
