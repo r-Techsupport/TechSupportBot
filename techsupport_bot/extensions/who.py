@@ -326,9 +326,12 @@ class Who(base.BaseCog):
 
         else:
             embed = auxiliary.prepare_deny_embed("An unknown error occurred.")
-            self.bot.logger.error(error.with_traceback())
+            await self.bot.logger.error(error)
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        else:
+            await interaction.response.send_message(embed=embed, ephemeral=True)
 
     # re-adds note role back to joining users
     @commands.Cog.listener()
