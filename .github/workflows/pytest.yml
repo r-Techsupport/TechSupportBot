@@ -25,7 +25,6 @@ jobs:
     - name: Install from pipfile
       run: |
         pipenv install --system
-        pip install typing-extensions
     - name: Running pytest
       run: |
         cd techsupport_bot
