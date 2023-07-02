@@ -21,6 +21,7 @@ jobs:
         python -m pip install pipenv
     - name: Install pipfile stuff
       run: |
+        pwd
         pipenv install --system --deploy
     - name: Install typing-extensions
       run: |
