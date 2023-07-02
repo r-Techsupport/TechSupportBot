@@ -23,7 +23,7 @@ jobs:
       run: |
         export PIP_PYTHON_PATH=$(which python)
         echo $PIP_PYTHON_PATH
-        pipenv install --system
+        pipenv install --system --python $(which python)
         pip install typing-extensions
     - name: Running pytest
       run: |
