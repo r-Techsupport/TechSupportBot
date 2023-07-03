@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "21899b5887011e7c1a9cc5381aa9f029b40930273b01c3827c6bb3506aabf8c8"
+            "sha256": "41694903d35114112a05b5d275b8ea6013a22c71446bd8667b29c70c5c0ff3e0"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -445,10 +445,10 @@
         },
         "emoji": {
             "hashes": [
-                "sha256:8e5ec80f56dd1fe38f4c4847b9ea6f18d4ad94d0b8dd135b0b2355ddf56d6d62"
+                "sha256:39ad95c9ba270cdfbd141d20c2ebcfc4e295d010b605de66908a098a3ba63a3c"
             ],
             "index": "pypi",
-            "version": "==2.5.1"
+            "version": "==2.6.0"
         },
         "expiringdict": {
             "hashes": [
