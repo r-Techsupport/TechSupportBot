@@ -5,11 +5,13 @@ RUN apk add --no-cache postgresql-dev gcc musl-dev libpq git
 
 WORKDIR /var/TechSupportBot
 
-COPY . .
+COPY Pipfile .
+COPY Pipfile.lock .
 
 RUN pip install --no-cache-dir pipenv==$(sed -nE 's/pipenv = "==(.*)"/\1/p' Pipfile)
-RUN pipenv requirements > /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+RUN pipenv install --system
+
+COPY . .
 
 WORKDIR /var/TechSupportBot/techsupport_bot
 
