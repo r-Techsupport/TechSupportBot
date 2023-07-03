@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "41694903d35114112a05b5d275b8ea6013a22c71446bd8667b29c70c5c0ff3e0"
+            "sha256": "f337771ffefe89ecbd31b13d11046d206728343ba4e1b68bcf866973be4236cc"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -18,11 +18,11 @@
     "default": {
         "aio-pika": {
             "hashes": [
-                "sha256:bacec2aea65b0ca9011400db45568340fae9022f8ae27a8fee8df42889127738",
-                "sha256:d109bafa360369315dc083098cf6597dea6d99d3f25cf07da2a0f00ec294ab1b"
+                "sha256:05b979dd12ac1728a560884aa5676d8ea158afb9b3b14951ff99b9a3b01a8ae1",
+                "sha256:32fd2da24cb81ef8f08503bb9a3a1537bbf54a565b7a4fb5f6bb4f93fa5113a4"
             ],
             "index": "pypi",
-            "version": "==9.1.2"
+            "version": "==9.1.3"
         },
         "aiocron": {
             "hashes": [
