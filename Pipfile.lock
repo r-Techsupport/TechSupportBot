@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "5f4aafd0afc31b4e27fd3534c5a6977e923a8bd89be3057d60fefe794ad13ef9"
+            "sha256": "de1b26a822f1f132c68de162dda9faa9c6ab1156a283051c126bdfd125c8924e"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -750,11 +750,11 @@
         },
         "munch": {
             "hashes": [
-                "sha256:0e4108418cfea898dcad01ff9569c30ff58f01d6f699331d04364f51623627c0",
-                "sha256:5284603030c00906d9d64d8108728c004fbeb91fc1c1e4caca342bc48f2a6dfd"
+                "sha256:542cb151461263216a4e37c3fd9afc425feeaf38aaa3025cd2a981fadb422235",
+                "sha256:71033c45db9fb677a0b7eb517a4ce70ae09258490e419b0e7f00d1e386ecb1b4"
             ],
             "index": "pypi",
-            "version": "==3.0.0"
+            "version": "==4.0.0"
         },
         "mypy-extensions": {
             "hashes": [
