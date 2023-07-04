@@ -1,28 +1,18 @@
+FROM python:3.11-alpine
 
-FROM python:3.11-alpine as builder
-
-RUN apk update && \
-    apk add --no-cache \
-    postgresql-dev \
-    gcc \
-    musl-dev
+RUN apk update
+RUN apk add --no-cache postgresql-dev gcc musl-dev libpq git
 
 WORKDIR /var/TechSupportBot
-COPY Pipfile.lock .
-COPY Pipfile .
 
-RUN pip install pipenv==$(sed -nE 's/pipenv = "==(.*)"/\1/p' Pipfile) && \
-    pipenv requirements > /tmp/requirements.txt && \
-    pip install --no-cache-dir -r /tmp/requirements.txt
+COPY Pipfile .
+COPY Pipfile.lock .
+
+RUN pip install --no-cache-dir pipenv==$(sed -nE 's/pipenv = "==(.*)"/\1/p' Pipfile)
+RUN pipenv install --system
 
 COPY . .
 
-FROM python:3.11-alpine
-RUN apk add --no-cache \
-    libpq \
-    git
-WORKDIR /var/TechSupportBot
-COPY --from=builder /usr/local /usr/local
-COPY --from=builder /var/TechSupportBot/. .
 WORKDIR /var/TechSupportBot/techsupport_bot
+
 CMD python3 -u main.py
