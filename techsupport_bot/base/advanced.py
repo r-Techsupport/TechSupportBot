@@ -428,6 +428,10 @@ class AdvancedBot(DataBot):
         guild = getattr(message.channel, "guild", None)
         channel_id = getattr(message.channel, "id", None)
 
+        # Ignore ephemeral slash command messages
+        if not guild and message.type == discord.MessageType.chat_input_command:
+            return
+
         config_ = await self.get_context_config(guild=guild)
         if str(channel_id) in config_.get("private_channels", []):
             return
@@ -499,6 +503,10 @@ class AdvancedBot(DataBot):
 
         guild = getattr(before.channel, "guild", None)
         channel_id = getattr(before.channel, "id", None)
+
+        # Ignore ephemeral slash command messages
+        if not guild and before.type == discord.MessageType.chat_input_command:
+            return
 
         config_ = await self.get_context_config(guild=guild)
         if str(channel_id) in config_.get("private_channels", []):
