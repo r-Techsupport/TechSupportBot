@@ -67,7 +67,7 @@ class Who(base.BaseCog):
     """Class to set up who for the extension."""
 
     notes = app_commands.Group(
-        name="notes", description="Command Group for the Notes Extension"
+        name="note", description="Command Group for the Notes Extension"
     )
 
     @staticmethod
@@ -133,7 +133,7 @@ class Who(base.BaseCog):
         embed.color = discord.Color.dark_blue()
 
         for note in user_notes:
-            author = interaction.guild.get_member(int(note.author_id)) or "<Not found>"
+            author = interaction.guild.get_member(int(note.author_id)) or note.author_id
             embed.add_field(
                 name=f"Note from {author} ({note.updated.date()})",
                 value=f"*{note.body}*" or "*None*",
@@ -253,7 +253,7 @@ class Who(base.BaseCog):
         embed = auxiliary.prepare_confirm_embed(message=f"Notes cleared for `{user}`")
         await view.followup.send(embed=embed, ephemeral=True)
 
-    @app_commands.checks.has_permissions(kick_members=True)
+    @app_commands.check(is_reader)
     @notes.command(
         name="all",
         description="Gets all notes for a user instead of just new ones",
@@ -274,7 +274,7 @@ class Who(base.BaseCog):
 
         note_output_data = []
         for note in notes:
-            author = interaction.guild.get_member(int(note.author_id)) or "<Not found>"
+            author = interaction.guild.get_member(int(note.author_id)) or note.author_id
             data = {
                 "body": note.body,
                 "from": str(author),
@@ -318,10 +318,7 @@ class Who(base.BaseCog):
             embed = auxiliary.prepare_deny_embed(message)
 
         elif isinstance(error, app_commands.CheckFailure):
-            if interaction.command.name == "whois":
-                message = "You do not have the required role(s) to read notes."
-            else:
-                message = "That command can't be ran in this context"
+            message = "The requirements for running this command have not been met."
             embed = auxiliary.prepare_deny_embed(message)
 
         else:
