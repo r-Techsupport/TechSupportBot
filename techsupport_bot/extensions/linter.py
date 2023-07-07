@@ -1,12 +1,12 @@
 """
 Name: Linter
 Info: Validates .json file syntax
-Unit tests: None
+Unit tests: Yes
 Config: None
 API: None
 Databases: None
 Models: None
-Subcommands: None
+Subcommands: .lint
 Defines: check_syntax
 """
 import json
@@ -47,14 +47,20 @@ class Lint(base.BaseCog):
         description="Checks the syntax of an attached json file",
         usage="|json-file|",
     )
-    async def lint(self, ctx):
+    async def lint(self, ctx: commands.Context):
         """Method to add the lint command to the discord bot.
         Args:
-            ctx (commands.Context) - Context to get the file from.
+            ctx (commands.Context) - The context in which the command was run
         """
-        if len(ctx.message.attachments) != 1 or not ctx.message.attachments[
-            0
-        ].filename.endswith(".json"):
+        await self.lint_command(ctx)
+
+    async def lint_command(self, ctx: commands.Context):
+        """The core logic for the lint command
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
+        if not self.check_valid_attachments(ctx.message.attachments):
             await auxiliary.send_deny_embed(
                 message="You need to attach a single .json file", channel=ctx.channel
             )
@@ -68,3 +74,16 @@ class Lint(base.BaseCog):
             return
 
         await auxiliary.send_confirm_embed(message="Syntax is OK", channel=ctx.channel)
+
+    def check_valid_attachments(self, attachments: list) -> bool:
+        """A command to check if the attachments on a message are valid for linter
+
+        Args:
+            attachments (list): A list of discord.Attachment
+
+        Returns:
+            bool: True if valid, False if invalid
+        """
+        if len(attachments) != 1 or not attachments[0].filename.endswith(".json"):
+            return False
+        return True
