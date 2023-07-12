@@ -232,7 +232,7 @@ class Test_EmojiCommands:
         auxiliary.add_list_of_reactions.assert_called_once_with(
             message=discord_env.message_person1_noprefix_1, reactions=["1", "2"]
         )
-    
+
     @pytest.mark.asyncio
     async def test_reaction_count_to_twenty(self):
         """Test that will test from 0 to 20 reactions"""
