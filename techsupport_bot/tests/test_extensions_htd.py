@@ -3,6 +3,7 @@ This is a file to test the extensions/htd.py file
 This contains 46 tests
 """
 
+import importlib
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import discord
@@ -474,6 +475,9 @@ class Test_CustomEmbed:
             color=discord.Color.green(),
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     def test_fields_correct(self):
         """A test to ensure that the basic embed is generated correctly"""
         # Step 1 - Setup env
@@ -490,7 +494,6 @@ class Test_CustomEmbed:
         hextodec.custom_embed_generation("raw", 5)
 
         # Step 3 - Assert that everything works
-
         expected_calls = [
             call(
                 name="Decimal:",
@@ -513,8 +516,10 @@ class Test_CustomEmbed:
                 inline=False,
             ),
         ]
-
         fakeembed.add_field.assert_has_calls(expected_calls)
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
 
     def test_ascii_error(self):
         """A test to ensure that the basic embed is generated correctly,
@@ -533,7 +538,6 @@ class Test_CustomEmbed:
         hextodec.custom_embed_generation("raw", 5)
 
         # Step 3 - Assert that everything works
-
         expected_calls = [
             call(
                 name="Decimal:",
@@ -556,8 +560,10 @@ class Test_CustomEmbed:
                 inline=False,
             ),
         ]
-
         fakeembed.add_field.assert_has_calls(expected_calls)
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
 
 
 class Test_HTDCommand:
@@ -583,6 +589,9 @@ class Test_HTDCommand:
         # Step 3 - Assert that everything works
         hextodec.clean_input.assert_called_once_with("     test       ")
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_splitnicely_call(self):
         """A test to ensure that split_nicely is called correctly"""
@@ -603,6 +612,9 @@ class Test_HTDCommand:
         # Step 3 - Assert that everything works
         hextodec.split_nicely.assert_called_once_with("clean")
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_convertints_call(self):
         """A test to ensure that convert_list_to_ints is called correctly"""
@@ -622,6 +634,9 @@ class Test_HTDCommand:
 
         # Step 3 - Assert that everything works
         hextodec.convert_list_to_ints.assert_called_once_with(["1", "+", "1"])
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
     async def test_convertints_error(self):
@@ -646,6 +661,9 @@ class Test_HTDCommand:
             channel=discord_env.context.channel,
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_performop_call(self):
         """A test to ensure that perform_op_on_list is called correctly"""
@@ -665,6 +683,9 @@ class Test_HTDCommand:
 
         # Step 3 - Assert that everything works
         hextodec.perform_op_on_list.assert_called_once_with([1, "+", 1])
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
     async def test_perform_op_error(self):
@@ -689,6 +710,9 @@ class Test_HTDCommand:
             channel=discord_env.context.channel,
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_customembed_call(self):
         """A test to ensure that custom_embed_generation is called correctly"""
@@ -709,6 +733,9 @@ class Test_HTDCommand:
         # Step 3 - Assert that everything works
         hextodec.custom_embed_generation.assert_called_once_with("1", 1)
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_send_call(self):
         """A test to ensure that perform_op_on_list is called correctly"""
@@ -728,3 +755,6 @@ class Test_HTDCommand:
 
         # Step 3 - Assert that everything works
         discord_env.context.send.assert_called_once_with(embed="Fake Embed")
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)

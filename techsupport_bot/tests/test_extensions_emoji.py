@@ -4,6 +4,7 @@ This contains 14 tests
 """
 
 
+import importlib
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -158,6 +159,9 @@ class Test_EmojiCommands:
             channel=discord_env.channel,
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_find_no_message(self):
         """Test to ensure that if no message could be found, an error will occur"""
@@ -177,6 +181,9 @@ class Test_EmojiCommands:
             message="No valid messages found to react to!", channel=discord_env.channel
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_unique_error(self):
         """Test to ensure that if the string is not unique, an error will occur"""
@@ -195,6 +202,9 @@ class Test_EmojiCommands:
             channel=discord_env.channel,
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_confirm_with_proper_call(self):
         """Test that send_confirm_embed is being called with the proper string"""
@@ -210,6 +220,9 @@ class Test_EmojiCommands:
         auxiliary.send_confirm_embed.assert_called_once_with(
             message="1 2", channel=discord_env.channel
         )
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
     async def test_proper_reactions(self):
@@ -231,3 +244,6 @@ class Test_EmojiCommands:
         auxiliary.add_list_of_reactions.assert_called_once_with(
             message=discord_env.message_person1_noprefix_1, reactions=["1", "2"]
         )
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)

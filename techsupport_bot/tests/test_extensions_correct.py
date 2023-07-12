@@ -3,6 +3,7 @@ This is a file to test the extensions/correct.py file
 This contains 9 tests
 """
 
+import importlib
 from unittest.mock import AsyncMock
 
 import pytest
@@ -95,6 +96,9 @@ class Test_HandleCorrect:
             allow_bot=False,
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_handle_calls_prepare_message(self):
         """This ensures that the prepare_message function is called, with the correct args"""
@@ -116,6 +120,9 @@ class Test_HandleCorrect:
             discord_env.message_person2_noprefix_1.content, "a", "b"
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_handle_calls_generate_embed(self):
         """This ensures that the generate_basic_embed function is called, with the correct args"""
@@ -134,6 +141,9 @@ class Test_HandleCorrect:
 
         # Step 3 - Assert that everything works
         auxiliary.generate_basic_embed.assert_called_once()
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
     async def test_handle_calls_send(self):
@@ -154,6 +164,9 @@ class Test_HandleCorrect:
         # Step 3 - Assert that everything works
         discord_env.context.send.assert_called_once()
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_handle_no_message_found(self):
         """This test ensures that a deny embed is sent if no message could be found"""
@@ -170,3 +183,6 @@ class Test_HandleCorrect:
             message="I couldn't find any message to correct",
             channel=discord_env.channel,
         )
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
