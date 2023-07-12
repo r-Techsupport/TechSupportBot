@@ -4,6 +4,7 @@ This contains 1 test
 """
 
 
+import importlib
 from unittest.mock import AsyncMock
 
 import pytest
@@ -31,3 +32,6 @@ class Test_Hello:
         auxiliary.add_list_of_reactions.assert_called_once_with(
             message=discord_env.message_person1_noprefix_1, reactions=["🇭", "🇪", "🇾"]
         )
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
