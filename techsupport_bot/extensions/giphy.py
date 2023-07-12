@@ -1,6 +1,8 @@
 """Module for giphy extension in the bot."""
 import base
+import ui
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -42,7 +44,9 @@ class Giphy(base.BaseCog):
 
         data = response.get("data")
         if not data:
-            await ctx.send_deny_embed(f"No search results found for: *{query}*")
+            await auxiliary.send_deny_embed(
+                message=f"No search results found for: *{query}*", channel=ctx.channel
+            )
             return
 
         embeds = []
@@ -51,4 +55,4 @@ class Giphy(base.BaseCog):
             url = self.parse_url(url)
             embeds.append(url)
 
-        ctx.task_paginate(pages=embeds)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)

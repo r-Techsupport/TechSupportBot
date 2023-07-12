@@ -2,6 +2,7 @@
 import base
 import discord
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -44,10 +45,14 @@ class Wolfram(base.BaseCog):
 
         response = await self.bot.http_call("get", url, get_raw_response=True)
         if response.status == 501:
-            await ctx.send_deny_embed("Wolfram|Alpha did not like that question")
+            await auxiliary.send_deny_embed(
+                message="Wolfram|Alpha did not like that question", channel=ctx.channel
+            )
             return
         if response.status != 200:
-            await ctx.send_deny_embed("Wolfram|Alpha ran into an error")
+            await auxiliary.send_deny_embed(
+                message="Wolfram|Alpha ran into an error", channel=ctx.channel
+            )
             return
 
         answer = await response.text()

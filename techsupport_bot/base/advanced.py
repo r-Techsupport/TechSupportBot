@@ -9,6 +9,7 @@ import error
 import expiringdict
 import munch
 import util
+from base import auxiliary
 from discord.ext import commands
 
 from .data import DataBot
@@ -399,7 +400,7 @@ class AdvancedBot(DataBot):
 
         error_message = message_template.get_message(exception)
 
-        await context.send_deny_embed(error_message)
+        await auxiliary.send_deny_embed(message=error_message, channel=context.channel)
 
         log_channel = await self.get_log_channel_from_guild(
             getattr(context, "guild", None), key="logging_channel"
@@ -426,6 +427,10 @@ class AdvancedBot(DataBot):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_delete"""
         guild = getattr(message.channel, "guild", None)
         channel_id = getattr(message.channel, "id", None)
+
+        # Ignore ephemeral slash command messages
+        if not guild and message.type == discord.MessageType.chat_input_command:
+            return
 
         config_ = await self.get_context_config(guild=guild)
         if str(channel_id) in config_.get("private_channels", []):
@@ -498,6 +503,10 @@ class AdvancedBot(DataBot):
 
         guild = getattr(before.channel, "guild", None)
         channel_id = getattr(before.channel, "id", None)
+
+        # Ignore ephemeral slash command messages
+        if not guild and before.type == discord.MessageType.chat_input_command:
+            return
 
         config_ = await self.get_context_config(guild=guild)
         if str(channel_id) in config_.get("private_channels", []):

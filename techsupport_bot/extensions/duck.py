@@ -7,8 +7,9 @@ from datetime import timedelta
 
 import base
 import discord
-import embeds as stock_embeds
+import ui
 import util
+from base import auxiliary
 from discord import Color as embed_colors
 from discord.ext import commands
 
@@ -274,7 +275,7 @@ class DuckHunt(base.LoopCog):
         if not choice_:
             cooldowns[message.author.id] = datetime.datetime.now()
             quote = self.pick_quote()
-            embed = stock_embeds.DenyEmbed(message=quote)
+            embed = auxiliary.prepare_deny_embed(message=quote)
             embed.set_footer(
                 text=f"Try again in {config.extensions.duck.cooldown.value} seconds"
             )
@@ -343,14 +344,18 @@ class DuckHunt(base.LoopCog):
             user = ctx.message.author
 
         if user.bot:
-            await ctx.send_deny_embed(
-                "If it looks like a duck, quacks like a duck, it's a duck!"
+            await auxiliary.send_deny_embed(
+                message="If it looks like a duck, quacks like a duck, it's a duck!",
+                channel=ctx.channel,
             )
             return
 
         duck_user = await self.get_duck_user(user.id, ctx.guild.id)
         if not duck_user:
-            await ctx.send_deny_embed("That user has not partcipated in the duck hunt")
+            await auxiliary.send_deny_embed(
+                message="That user has not partcipated in the duck hunt",
+                channel=ctx.channel,
+            )
             return
 
         embed = discord.Embed(title="Duck Stats", description=user.mention)
@@ -383,7 +388,10 @@ class DuckHunt(base.LoopCog):
         )
 
         if not duck_users:
-            await ctx.send_deny_embed("It appears nobody has befriended any ducks")
+            await auxiliary.send_deny_embed(
+                message="It appears nobody has befriended any ducks",
+                channel=ctx.channel,
+            )
             return
 
         field_counter = 1
@@ -413,7 +421,7 @@ class DuckHunt(base.LoopCog):
             else:
                 field_counter += 1
 
-        ctx.task_paginate(pages=embeds)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
     @util.with_typing
     @commands.guild_only()
@@ -429,8 +437,9 @@ class DuckHunt(base.LoopCog):
         """
         record_time = await self.get_global_record(ctx.guild.id)
         if record_time is None:
-            await ctx.send_deny_embed(
-                "It appears nobody has partcipated in the duck hunt"
+            await auxiliary.send_deny_embed(
+                message="It appears nobody has partcipated in the duck hunt",
+                channel=ctx.channel,
             )
             return
         record_user = (
@@ -465,7 +474,9 @@ class DuckHunt(base.LoopCog):
         )
 
         if not duck_users:
-            await ctx.send_deny_embed("It appears nobody has killed any ducks")
+            await auxiliary.send_deny_embed(
+                message="It appears nobody has killed any ducks", channel=ctx.channel
+            )
             return
 
         field_counter = 1
@@ -495,7 +506,7 @@ class DuckHunt(base.LoopCog):
             else:
                 field_counter += 1
 
-        ctx.task_paginate(pages=embeds)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
     def get_user_text(self, duck_user):
         """Method to get the user for the top commands"""
@@ -507,3 +518,159 @@ class DuckHunt(base.LoopCog):
             user_text = "<Unknown>"
             user_text_extra = ""
         return f"{user_text}{user_text_extra}"
+
+    @util.with_typing
+    @commands.guild_only()
+    @duck.command(
+        brief="Releases a duck into the wild",
+        description="Returns a befriended duck to its natural habitat",
+    )
+    async def release(self, ctx):
+        """Method for releasing a duck"""
+        duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+
+        if not duck_user:
+            await auxiliary.send_deny_embed(
+                message="You have not participated in the duck hunt yet.",
+                channel=ctx.channel,
+            )
+            return
+
+        if not duck_user or duck_user.befriend_count == 0:
+            await auxiliary.send_deny_embed(
+                message="You have no ducks to release.", channel=ctx.channel
+            )
+            return
+
+        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+        await auxiliary.send_confirm_embed(
+            message=f"Fly safe! You have {duck_user.befriend_count} ducks left.",
+            channel=ctx.channel,
+        )
+
+    @util.with_typing
+    @commands.guild_only()
+    @duck.command(
+        brief="Kills a caputred duck",
+        description="Adds a duck to your kill count. Why would you even want to do that?!",
+    )
+    async def kill(self, ctx):
+        """Method for killing ducks"""
+        duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+
+        if not duck_user:
+            await auxiliary.send_deny_embed(
+                message="You have not participated in the duck hunt yet.",
+                channel=ctx.channel,
+            )
+            return
+
+        if duck_user.befriend_count == 0:
+            await auxiliary.send_deny_embed(
+                message="You have no ducks to kill.", channel=ctx.channel
+            )
+            return
+
+        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+        await duck_user.update(kill_count=duck_user.kill_count + 1).apply()
+        await auxiliary.send_confirm_embed(
+            message=f"You monster! You have {duck_user.befriend_count} ducks "
+            + f"left and {duck_user.kill_count} kills to your name.",
+            channel=ctx.channel,
+        )
+
+    @util.with_typing
+    @commands.guild_only()
+    @duck.command(
+        brief="Donates a duck to someone",
+        description="Gives someone the gift of a live duck",
+        usage="[user]",
+    )
+    async def donate(self, ctx, user: discord.Member):
+        """Method for donating ducks"""
+        if user.bot:
+            await auxiliary.send_deny_embed(
+                message="The only ducks I accept are plated with gold!",
+                channel=ctx.channel,
+            )
+            return
+        if user.id == ctx.author.id:
+            await auxiliary.send_deny_embed(
+                message="You can't donate a duck to yourself", channel=ctx.channel
+            )
+            return
+
+        duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+        if not duck_user:
+            await auxiliary.send_deny_embed(
+                message="You have not participated in the duck hunt yet.",
+                channel=ctx.channel,
+            )
+            return
+
+        if not duck_user or duck_user.befriend_count == 0:
+            await auxiliary.send_deny_embed(
+                message="You have no ducks to donate.", channel=ctx.channel
+            )
+            return
+        recipee = await self.get_duck_user(user.id, ctx.guild.id)
+        if not recipee:
+            await auxiliary.send_deny_embed(
+                message=f"{user.mention} has not participated in the duck hunt yet.",
+                channel=ctx.channel,
+            )
+            return
+
+        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+        await recipee.update(befriend_count=recipee.befriend_count + 1).apply()
+        await auxiliary.send_confirm_embed(
+            message=f"You gave a duck to {user.mention}. You now "
+            + f"have {duck_user.befriend_count} ducks left.",
+            channel=ctx.channel,
+        )
+
+    @util.with_typing
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    @duck.command(
+        brief="Resets someones duck counts",
+        description="Deleted the database entry of the target",
+        usage="[user]",
+    )
+    async def reset(self, ctx, user: discord.Member):
+        """Method for resetting duck counts"""
+        if user.bot:
+            await auxiliary.send_deny_embed(
+                message="You leave my ducks alone!", channel=ctx.channel
+            )
+            return
+
+        duck_user = await self.get_duck_user(user.id, ctx.guild.id)
+        if not duck_user:
+            await auxiliary.send_deny_embed(
+                message="The user has not participated in the duck hunt yet.",
+                channel=ctx.channel,
+            )
+            return
+
+        view = ui.Confirm()
+        await view.send(
+            message=f"Are you sure you want to reset {user.mention}s duck stats?",
+            channel=ctx.channel,
+            author=ctx.author,
+        )
+        await view.wait()
+        if view.value is ui.ConfirmResponse.TIMEOUT:
+            return
+        if view.value is ui.ConfirmResponse.DENIED:
+            await auxiliary.send_deny_embed(
+                message=f"{user.mention}s duck stats were NOT reset.",
+                channel=ctx.channel,
+            )
+            return
+
+        await duck_user.delete()
+        await auxiliary.send_confirm_embed(
+            message=f"Succesfully reset {user.mention}s duck stats!",
+            channel=ctx.channel,
+        )

@@ -1,7 +1,9 @@
 """Module for the Spotify extension of the discord bot."""
 import aiohttp
 import base
+import ui
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -42,7 +44,9 @@ class Spotify(base.BaseCog):
         """Method to return a song from the Spotify API."""
         oauth_token = await self.get_oauth_token()
         if not oauth_token:
-            await ctx.send_deny_embed("I couldn't authenticate with Spotify")
+            await auxiliary.send_deny_embed(
+                message="I couldn't authenticate with Spotify", channel=ctx.channel
+            )
             return
 
         headers = {"Authorization": f"Bearer {oauth_token}"}
@@ -54,7 +58,9 @@ class Spotify(base.BaseCog):
         items = response.get("tracks", {}).get("items", [])
 
         if not items:
-            await ctx.send_deny_embed("I couldn't find any results")
+            await auxiliary.send_deny_embed(
+                message="I couldn't find any results", channel=ctx.channel
+            )
             return
 
         links = []
@@ -65,7 +71,9 @@ class Spotify(base.BaseCog):
             links.append(song_url)
 
         if not links:
-            await ctx.send_deny_embed("I had trouble parsing the search results")
+            await auxiliary.send_deny_embed(
+                message="I had trouble parsing the search results", channel=ctx.channel
+            )
             return
 
-        ctx.task_paginate(pages=links)
+        await ui.PaginateView().send(ctx.channel, ctx.author, links)

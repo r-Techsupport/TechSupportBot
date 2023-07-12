@@ -8,7 +8,8 @@ import base
 import discord
 import expiringdict
 import munch
-import util
+import ui
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -69,6 +70,13 @@ async def setup(bot):
         default={},
     )
     config.add(
+        key="banned_file_extensions",
+        datatype="dict",
+        title="List of banned file types",
+        description="A list of all file extensions to be blocked and have a auto warning issued",
+        default=[],
+    )
+    config.add(
         key="alert_channel",
         datatype="int",
         title="Alert channel ID",
@@ -110,6 +118,13 @@ async def setup(bot):
         description="The max amount of messages allowed to be purged in one command",
         default=50,
     )
+    config.add(
+        key="paste_footer_message",
+        datatype="str",
+        title="The linx embed footer",
+        description="The message used on the footer of the large message paste URL",
+        default="Note: Long messages are automatically pasted",
+    )
 
     await bot.add_cog(Protector(bot=bot, models=[Warning], extension_name="protect"))
     bot.add_extension_config("protect", config)
@@ -127,7 +142,10 @@ class ProtectEmbed(discord.Embed):
 class Protector(base.MatchCog):
     """Class for the protector command."""
 
-    ALERT_ICON_URL = "https://cdn.icon-icons.com/icons2/2063/PNG/512/alert_danger_warning_notification_icon_124692.png"
+    ALERT_ICON_URL = (
+        "https://cdn.icon-icons.com/icons2/2063/PNG/512/"
+        + "alert_danger_warning_notification_icon_124692.png"
+    )
     CLIPBOARD_ICON_URL = (
         "https://icon-icons.com/icons2/203/PNG/128/diagram-30_24487.png"
     )
@@ -187,14 +205,9 @@ class Protector(base.MatchCog):
 
         await self.response(config, ctx, message.content, None)
 
-    async def response(self, config, ctx, content, _):
-        """Method to define the response for the protect extension."""
-        # check mass mentions first - return after handling
-        if len(ctx.message.mentions) > config.extensions.protect.max_mentions.value:
-            await self.handle_mass_mention_alert(config, ctx, content)
-            return
-
-        # search the message against keyword strings
+    def search_by_text_regex(self, config, content):
+        """Function to search given input by all
+        text and regex rules from the config"""
         triggered_config = None
         for (
             keyword,
@@ -214,7 +227,7 @@ class Protector(base.MatchCog):
                     filter_config["trigger"] = keyword
                     triggered_config = filter_config
                     if triggered_config.get("delete"):
-                        break
+                        return triggered_config
             else:
                 if filter_config.get("sensitive"):
                     search_keyword = search_keyword.lower()
@@ -223,7 +236,26 @@ class Protector(base.MatchCog):
                     filter_config["trigger"] = keyword
                     triggered_config = filter_config
                     if triggered_config.get("delete"):
-                        break
+                        return triggered_config
+        return triggered_config
+
+    async def response(self, config, ctx, content, _):
+        """Method to define the response for the protect extension."""
+        # check mass mentions first - return after handling
+        if len(ctx.message.mentions) > config.extensions.protect.max_mentions.value:
+            await self.handle_mass_mention_alert(config, ctx, content)
+            return
+
+        # search the message against keyword strings
+        triggered_config = self.search_by_text_regex(config, content)
+
+        for attachment in ctx.message.attachments:
+            if (
+                attachment.filename.split(".")[-1]
+                in config.extensions.protect.banned_file_extensions.value
+            ):
+                await self.handle_file_extension_alert(config, ctx, attachment.filename)
+                return
 
         if triggered_config:
             await self.handle_string_alert(config, ctx, content, triggered_config)
@@ -268,13 +300,32 @@ class Protector(base.MatchCog):
         await self.handle_warn(ctx, ctx.author, "mass mention", bypass=True)
         await self.send_alert(config, ctx, f"Mass mentions from {ctx.author}")
 
+    async def handle_file_extension_alert(self, config, ctx, filename):
+        """Method for handling suspicious file extensions."""
+        await ctx.message.delete()
+        await self.handle_warn(
+            ctx, ctx.author, "Suspicious file extension", bypass=True
+        )
+        await self.send_alert(
+            config, ctx, f"Suspicious file uploaded by {ctx.author}: {filename}"
+        )
+
     async def handle_string_alert(self, config, ctx, content, filter_config):
         """Method to handle a string alert for the protect extension."""
-        if filter_config.warn:
-            await self.handle_warn(ctx, ctx.author, filter_config.message, bypass=True)
-
+        # If needed, delete the message
         if filter_config.delete:
             await ctx.message.delete()
+
+        # Send only 1 response based on warn, deletion, or neither
+        if filter_config.warn:
+            await self.handle_warn(ctx, ctx.author, filter_config.message, bypass=True)
+        elif filter_config.delete:
+            await self.send_default_delete_response(
+                config, ctx, content, filter_config.message
+            )
+        else:
+            embed = ProtectEmbed(description=filter_config.message)
+            await ctx.send(embed=embed)
 
         await self.send_alert(
             config,
@@ -286,17 +337,9 @@ class Protector(base.MatchCog):
         if self.string_alert_cache.get(cache_key):
             return
 
-        if filter_config.delete:
-            await self.send_default_delete_response(
-                config, ctx, content, filter_config.message
-            )
-        else:
-            embed = ProtectEmbed(description=filter_config.message)
-            await ctx.send(embed=embed)
-
         self.string_alert_cache[cache_key] = True
 
-    async def handle_warn(self, ctx, user, reason, bypass=False):
+    async def handle_warn(self, ctx, user: discord.Member, reason: str, bypass=False):
         """Method to handle the warn of a user."""
         if not bypass:
             can_execute = await self.can_execute(ctx, user)
@@ -310,45 +353,80 @@ class Protector(base.MatchCog):
         config = await self.bot.get_context_config(ctx)
 
         if new_count >= config.extensions.protect.max_warnings.value:
-            if not bypass:
-                should_ban = await ctx.confirm(
-                    f"This user has exceeded the max warnings \
-                        {config.extensions.protect.max_warnings.value}. \
-                        Would you like to ban them instead?",
-                    delete_after=True,
-                )
-                if not should_ban:
-                    await ctx.send_deny_embed("No warnings have been set")
-                    return
+            # Start by assuming we don't want to ban someone
+            should_ban = False
 
-            await self.handle_ban(
-                ctx,
-                user,
-                f"Over max warning count {new_count}/\
-                    {config.extensions.protect.max_warnings.value} (final warning: {reason})",
-                bypass=True,
-            )
-            await self.clear_warnings(user, ctx.guild)
-            return
+            # If there is no bypass, ask using ui.Confirm
+            # If there is a bypass, assume we want to ban
+            if not bypass:
+                view = ui.Confirm()
+                await view.send(
+                    message="This user has exceeded the max warnings of "
+                    + f"{config.extensions.protect.max_warnings.value}. Would "
+                    + "you like to ban them instead?",
+                    channel=ctx.channel,
+                    author=ctx.author,
+                )
+                await view.wait()
+                if view.value is ui.ConfirmResponse.CONFIRMED:
+                    should_ban = True
+            else:
+                should_ban = True
+
+            if should_ban:
+                await self.handle_ban(
+                    ctx,
+                    user,
+                    f"Over max warning count {new_count} out "
+                    + f"of {config.extensions.protect.max_warnings.value}"
+                    + f" (final warning: {reason})",
+                    bypass=True,
+                )
+                await self.clear_warnings(user, ctx.guild)
+                return
+
+        embed = await self.generate_user_modified_embed(
+            user, "warn", f"{reason} ({new_count} total warnings)"
+        )
+
+        # Attempt DM for manually initiated, non-banning warns
+        if ctx.command == self.bot.get_command("warn"):
+            # Cancel warns in channels invisible to user
+            if user not in ctx.channel.members:
+                await auxiliary.send_deny_embed(
+                    message=f"{user} cannot see this warning.", channel=ctx.channel
+                )
+                return
+
+            try:
+                await user.send(embed=embed)
+
+            except (discord.HTTPException, discord.Forbidden):
+                await self.bot.logger.warning(f"Failed to DM warning to {user}")
+
+            finally:
+                await ctx.send(content=user.mention, embed=embed)
+
+        else:
+            await ctx.send(embed=embed)
 
         await self.models.Warning(
             user_id=str(user.id), guild_id=str(ctx.guild.id), reason=reason
         ).create()
-        embed = await self.generate_user_modified_embed(
-            user, "warn", f"{reason} ({new_count} total warnings)"
-        )
-        await ctx.send(embed=embed)
 
     async def handle_unwarn(self, ctx, user, reason, bypass=False):
         """Method to handle an unwarn of a user."""
-        if not bypass:
+        # Always allow admins to unwarn other admins
+        if not bypass and not ctx.message.author.guild_permissions.administrator:
             can_execute = await self.can_execute(ctx, user)
             if not can_execute:
                 return
 
         warnings = await self.get_warnings(user, ctx.guild)
         if not warnings:
-            await ctx.send_deny_embed("There are no warnings for that user")
+            await auxiliary.send_deny_embed(
+                message="There are no warnings for that user", channel=ctx.channel
+            )
             return
 
         await self.clear_warnings(user, ctx.guild)
@@ -365,7 +443,9 @@ class Protector(base.MatchCog):
 
         async for ban in ctx.guild.bans(limit=None):
             if user == ban.user:
-                await ctx.send_deny_embed("User is already banned.")
+                await auxiliary.send_deny_embed(
+                    message="User is already banned.", channel=ctx.channel
+                )
                 return
 
         config = await self.bot.get_context_config(ctx)
@@ -389,7 +469,10 @@ class Protector(base.MatchCog):
         try:
             await ctx.guild.unban(user, reason=reason)
         except discord.NotFound:
-            await ctx.send_deny_embed("This user is not banned, or does not exist")
+            await auxiliary.send_deny_embed(
+                message="This user is not banned, or does not exist",
+                channel=ctx.channel,
+            )
             return
 
         embed = await self.generate_user_modified_embed(user, "unban", reason)
@@ -434,25 +517,31 @@ class Protector(base.MatchCog):
         """Method to not execute on admin users."""
         # Check to see if you are banning yourself
         if target.id == ctx.author.id:
-            await ctx.send_deny_embed("You cannot do that to yourself")
+            await auxiliary.send_deny_embed(
+                message="You cannot do that to yourself", channel=ctx.channel
+            )
             return False
         # Check to see if you are banning the bot
         if target.id == self.bot.user.id:
-            await ctx.send_deny_embed("It would be silly to do that to myself")
+            await auxiliary.send_deny_embed(
+                message="It would be silly to do that to myself", channel=ctx.channel
+            )
             return False
         # Check to see if target has a role. Will allow banning on Users outside of server
         if not hasattr(target, "top_role"):
             return True
         # Check to see if the Bot can ban the target
         if ctx.guild.me.top_role < target.top_role:
-            await ctx.send_deny_embed(
-                f"Bot does not have enough premissions to ban `{target}`"
+            await auxiliary.send_deny_embed(
+                message=f"Bot does not have enough premissions to ban `{target}`",
+                channel=ctx.channel,
             )
             return False
         # Check to see if author top role is higher than targets
         if target.top_role >= ctx.author.top_role:
-            await ctx.send_deny_embed(
-                f"Your top role is not high enough to do that to `{target}`"
+            await auxiliary.send_deny_embed(
+                message=f"Your top role is not high enough to do that to `{target}`",
+                channel=ctx.channel,
             )
             return False
         return True
@@ -529,7 +618,7 @@ class Protector(base.MatchCog):
         embed.set_author(
             name=f"Paste by {ctx.author}", icon_url=ctx.author.display_avatar.url
         )
-        embed.set_footer(text="Note: long messages are automatically pasted")
+        embed.set_footer(text=config.extensions.protect.paste_footer_message.value)
         embed.color = discord.Color.blue()
 
         return embed
@@ -627,7 +716,9 @@ class Protector(base.MatchCog):
         """Method to get the warnings of a user in discord."""
         warnings = await self.get_warnings(user, ctx.guild)
         if not warnings:
-            await ctx.send_deny_embed("There are no warnings for that user")
+            await auxiliary.send_deny_embed(
+                message="There are no warnings for that user", channel=ctx.channel
+            )
             return
 
         embed = discord.Embed(title=f"Warnings for {user}")
@@ -668,8 +759,9 @@ class Protector(base.MatchCog):
 
         # The API prevents administrators from being timed out. Check it here
         if user.guild_permissions.administrator:
-            await ctx.send_deny_embed(
-                "Someone with the `administrator` permissions cannot be timed out"
+            await auxiliary.send_deny_embed(
+                message="Someone with the `administrator` permissions cannot be timed out",
+                channel=ctx.channel,
             )
             return
 
@@ -728,7 +820,9 @@ class Protector(base.MatchCog):
             return
 
         if user.timed_out_until is None:
-            await ctx.send_deny_embed("That user is not timed out")
+            await auxiliary.send_deny_embed(
+                message="That user is not timed out", channel=ctx.channel
+            )
             return
 
         await user.timeout(None)
@@ -745,13 +839,13 @@ class Protector(base.MatchCog):
     )
     async def purge(self, ctx):
         """Method to purge messages in discord."""
-        pass
+        ...
 
     @purge.command(
         name="amount",
         aliases=["x"],
         brief="Purges messages by amount",
-        description="Purges the current channel's messages based on amoun",
+        description="Purges the current channel's messages based on amount",
         usage="[amount]",
     )
     async def purge_amount(self, ctx, amount: int = 1):
@@ -775,7 +869,9 @@ class Protector(base.MatchCog):
     async def purge_duration(self, ctx, duration_minutes: int):
         """Method to purge a channel's message up to a time."""
         if duration_minutes < 0:
-            await ctx.send_deny_embed("I can't use that input")
+            await auxiliary.send_deny_embed(
+                message="I can't use that input", channel=ctx.channel
+            )
             return
 
         timestamp = datetime.datetime.utcnow() - datetime.timedelta(
