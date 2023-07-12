@@ -513,34 +513,35 @@ class Protector(base.MatchCog):
         """Method to get the cache key of the user."""
         return f"{guild.id}_{user.id}_{trigger}"
 
-    async def can_execute(self, ctx, target):
+    async def can_execute(self, ctx, target: discord.User):
         """Method to not execute on admin users."""
-        # Check to see if you are banning yourself
-        if target.id == ctx.author.id:
+        action = ctx.command.name or "do that to"
+        # Check to see if executed on author
+        if target == ctx.author:
             await auxiliary.send_deny_embed(
-                message="You cannot do that to yourself", channel=ctx.channel
+                message=f"You cannot {action} yourself", channel=ctx.channel
             )
             return False
-        # Check to see if you are banning the bot
-        if target.id == self.bot.user.id:
+        # Check to see if executed on bot
+        if target == self.bot.user:
             await auxiliary.send_deny_embed(
-                message="It would be silly to do that to myself", channel=ctx.channel
+                message=f"It would be silly to {action} myself", channel=ctx.channel
             )
             return False
-        # Check to see if target has a role. Will allow banning on Users outside of server
+        # Check to see if target has a role. Will allow execution on Users outside of server
         if not hasattr(target, "top_role"):
             return True
-        # Check to see if the Bot can ban the target
-        if ctx.guild.me.top_role < target.top_role:
+        # Check to see if the Bot can execute on the target
+        if ctx.guild.me.top_role <= target.top_role:
             await auxiliary.send_deny_embed(
-                message=f"Bot does not have enough premissions to ban `{target}`",
+                message=f"Bot does not have enough permissions to {action} `{target}`",
                 channel=ctx.channel,
             )
             return False
         # Check to see if author top role is higher than targets
         if target.top_role >= ctx.author.top_role:
             await auxiliary.send_deny_embed(
-                message=f"Your top role is not high enough to do that to `{target}`",
+                message=f"You do not have enough permissions to {action} `{target}`",
                 channel=ctx.channel,
             )
             return False
