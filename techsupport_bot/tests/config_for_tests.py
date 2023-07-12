@@ -102,7 +102,7 @@ class FakeDiscordEnv:
             author=self.person1,
             attachments=[self.json_attachment],
         )
-        self.message_reaction1 = MockMessage(reactions=[1])
+        self.message_reaction1 = MockMessage(content="2",reactions=[1])
         self.message_reaction2 = MockMessage(reactions=[0])
         self.message_reaction3 = MockMessage(reactions=[20])
 
@@ -122,5 +122,5 @@ class FakeDiscordEnv:
             self.hello = Greeter(self.bot)
 
         #reaction objects.
-        self.reaction1 = MockReaction(count=1)
+        self.reaction1 = MockReaction(message="2", count=1)
         self.reaction2 = MockReaction(count=0)
