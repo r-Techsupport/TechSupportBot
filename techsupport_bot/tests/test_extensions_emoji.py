@@ -251,7 +251,7 @@ class Test_EmojiCommands:
     @pytest.mark.asyncio
     async def test_reaction_count_to_twenty(self):
         """Test that will test from 0 to 20 reactions"""
-         # Step 1 - Setup env
+        # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
         discord_env.emoji.generate_emoji_string = MagicMock(return_value=["1"] * 20)
         auxiliary.search_channel_for_message = AsyncMock(
@@ -275,7 +275,7 @@ class Test_EmojiCommands:
     @pytest.mark.asyncio
     async def test_reaction_count_to_twentyone(self):
         """Test that will test from 0 to 21 reactions"""
-         # Step 1 - Setup env
+        # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
         discord_env.emoji.generate_emoji_string = MagicMock(return_value=["1"] * 21)
         auxiliary.search_channel_for_message = AsyncMock(
@@ -302,7 +302,7 @@ class Test_EmojiCommands:
     @pytest.mark.asyncio
     async def test_reaction_count_one_to_twenty(self):
         """Test that will test from 1 to 20 reactions"""
-         # Step 1 - Setup env
+        # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
         discord_env.emoji.generate_emoji_string = MagicMock(return_value=["1"] * 19)
         auxiliary.search_channel_for_message = AsyncMock(
@@ -326,7 +326,7 @@ class Test_EmojiCommands:
     @pytest.mark.asyncio
     async def test_reaction_count_one_to_twentyone(self):
         """Test that will test from 1 to 21 reactions"""
-         # Step 1 - Setup env
+        # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
         discord_env.emoji.generate_emoji_string = MagicMock(return_value=["1"] * 20)
         auxiliary.search_channel_for_message = AsyncMock(
