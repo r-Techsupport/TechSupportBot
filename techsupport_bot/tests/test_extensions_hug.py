@@ -3,6 +3,7 @@ This is a file to test the extensions/hug.py file
 This contains 5 tests
 """
 
+import importlib
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -100,6 +101,9 @@ class Test_HugCommand:
         )
         discord_env.context.send.assert_not_called()
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_success(self):
         """A test to ensure that send is properly called"""
@@ -121,3 +125,6 @@ class Test_HugCommand:
         discord_env.context.send.assert_called_once_with(
             embed="Embed", content="String"
         )
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
