@@ -231,3 +231,24 @@ class Test_EmojiCommands:
         auxiliary.add_list_of_reactions.assert_called_once_with(
             message=discord_env.message_person1_noprefix_1, reactions=["1", "2"]
         )
+          @pytest.mark.asyncio
+    async def test_reaction_count(self):
+        """Test that will test from 0 to 21 reactions"""
+         # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        discord_env.emoji.generate_emoji_string = MagicMock(return_value=["1"] * 20)
+        auxiliary.search_channel_for_message = AsyncMock(
+            return_value=discord_env.message_person1_noprefix_1
+        )
+        
+        auxiliary.send_deny_embed = AsyncMock()
+
+        # Step 2 - Call the function
+        await discord_env.emoji.emoji_commands(
+            discord_env.context, "abcde", True, "Fake discord user"
+        )
+
+        # Step 3 - Assert that everything works
+        assert discord_env.message_person1_noprefix_1.reactions == ["1"] * 20
+        auxiliary.send_deny_embed.assert_not_called()
+
