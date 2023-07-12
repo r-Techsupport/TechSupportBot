@@ -244,7 +244,7 @@ class Test_EmojiCommands:
         auxiliary.add_list_of_reactions.assert_called_once_with(
             message=discord_env.message_person1_noprefix_1, reactions=["1", "2"]
         )
-        
+
         # Step 4 - Cleanup
         importlib.reload(auxiliary)
 
