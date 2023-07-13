@@ -14,8 +14,19 @@ class MockMessage:
     attachments -> A list of MockAttacment objects
     """
 
-    def __init__(self, content=None, author=None, attachments=None):
+    def __init__(self, content=None, author=None, attachments=None, reactions=None):
         self.content = content
         self.author = author
         self.clean_content = content
         self.attachments = attachments
+        self.reactions = reactions
+
+    async def add_reaction(self, reaction):
+        """Replication of the adding a reaction
+        Adding reactions to a previous message
+
+        Args:
+           reaction (list): An array of reactions on the message
+
+        """
+        self.reactions.append(reaction)
