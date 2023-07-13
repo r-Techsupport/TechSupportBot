@@ -3,6 +3,7 @@ This is a file to test the extensions/linter.py file
 This contains 9 tests
 """
 
+import importlib
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -84,6 +85,9 @@ class Test_LintCommand:
             channel=discord_env.context.channel,
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_failed_check_syntax(self):
         """A test to ensure deny embed is called when invalid attachments"""
@@ -104,6 +108,9 @@ class Test_LintCommand:
             channel=discord_env.context.channel,
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_success(self):
         """A test to ensure confirm embed is called if everything is good"""
@@ -123,6 +130,9 @@ class Test_LintCommand:
             message="Syntax is OK",
             channel=discord_env.context.channel,
         )
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
 
 
 class Test_CheckAttachments:

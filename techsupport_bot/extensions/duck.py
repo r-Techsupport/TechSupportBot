@@ -260,7 +260,7 @@ class DuckHunt(base.LoopCog):
             asyncio.create_task(
                 message.author.send(
                     f"I said to wait {config.extensions.duck.cooldown.value}"
-                    + "seconds! Resetting timer..."
+                    + " seconds! Resetting timer..."
                 )
             )
             return False
