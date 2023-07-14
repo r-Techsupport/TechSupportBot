@@ -46,6 +46,13 @@ main:
         guild_config_cache_seconds: 30
         http_cache_length: 100
         http_cache_seconds: 600
+    irc:
+        enable_irc: False
+        server: "irc.libera.chat"
+        port: 6667
+        channels: [""]
+        name: ""
+        password: ""
 
 # Special things
 special:

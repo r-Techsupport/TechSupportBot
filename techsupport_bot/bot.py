@@ -1,10 +1,12 @@
 """The main bot functions.
 """
 import asyncio
+import threading
 
 import base
 import botlogging
 import cogs as builtin_cogs
+import irc
 
 
 # pylint: disable=too-many-public-methods, too-many-instance-attributes
@@ -24,6 +26,24 @@ class TechSupportBot(base.AdvancedBot):
         if isinstance(self.logger, botlogging.DelayedLogger):
             self.logger.register_queue()
             asyncio.create_task(self.logger.run())
+
+        # Start the IRC bot in an asynchronous task
+        irc_config = getattr(self.file_config.main, "irc")
+        if irc_config.enable_irc:
+            irc_socket = irc.connect_irc(
+                server=irc_config.server,
+                port=irc_config.port,
+                channels=irc_config.channels,
+                name=irc_config.name,
+                password=irc_config.password,
+            )
+            if not irc_socket:
+                await self.logger.warning("IRC connection failed")
+            else:
+                irc_thread = threading.Thread(
+                    target=irc.main_irc_loop, args=(irc_socket,)
+                )
+                irc_thread.start()
 
         # this is required for the bot
         await self.logger.debug("Connecting to MongoDB...")
