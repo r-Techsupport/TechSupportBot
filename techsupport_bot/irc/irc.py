@@ -43,18 +43,18 @@ class IRC:
 
         return irc_socket
 
-    def main_irc_loop(self, irc_socket):
+    def main_irc_loop(self):
         # IRC server information
         bot_nickname = "TSDevBot"
 
         # Main bot loop
         while True:
-            data = irc_socket.recv(2048).decode("UTF-8")
+            data = self.irc_socket.recv(2048).decode("UTF-8")
             print(data)
 
             # Respond to PING messages to keep the connection alive
             if data.startswith("PING"):
-                irc_socket.send(bytes("PONG :pingis\n", "UTF-8"))
+                self.irc_socket.send(bytes("PONG :pingis\n", "UTF-8"))
 
             # Example: Reply to a specific command
             if "hello" in data.lower():
@@ -63,6 +63,9 @@ class IRC:
                 channel = data[channel_start:channel_end].strip()
                 if not channel.startswith("#"):
                     continue
-                irc_socket.send(
+                self.irc_socket.send(
                     bytes(f"PRIVMSG {channel} :Hello! I am {bot_nickname}\r\n", "UTF-8")
                 )
+
+    def send_message_from_discord(self, message, channel):
+        self.irc_socket.send(bytes(f"PRIVMSG {channel} :{message}\r\n", "UTF-8"))

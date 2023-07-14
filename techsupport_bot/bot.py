@@ -41,9 +41,7 @@ class TechSupportBot(base.AdvancedBot):
             if not irc_socket:
                 await self.logger.warning("IRC connection failed")
             else:
-                irc_thread = threading.Thread(
-                    target=self.irc.main_irc_loop, args=(irc_socket,)
-                )
+                irc_thread = threading.Thread(target=self.irc.main_irc_loop)
                 irc_thread.start()
 
         # this is required for the bot
