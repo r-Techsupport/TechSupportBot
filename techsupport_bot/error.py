@@ -15,8 +15,9 @@ class FactoidNotFoundError(commands.errors.CommandError):
     """Thrown when a factoid is not found."""
 
     def __init__(self, factoid):
+        # TODO: SHIM
+        self.dont_print_trace = False
         self.argument = factoid
-        self.dont_print_trace = True
 
 
 class TooLongFactoidMessageError(commands.errors.CommandError):
@@ -148,7 +149,6 @@ COMMAND_ERROR_RESPONSES = {
         "You did not close your quote with a `%s`",
         {"key": "close_quotes"},
     ),
-    # CheckFailure
     commands.CheckFailure: ErrorResponse("That command can't be ran in this context"),
     commands.CheckAnyFailure: ErrorResponse(
         "That command can't be ran in this context"
@@ -185,15 +185,14 @@ COMMAND_ERROR_RESPONSES = {
     commands.NSFWChannelRequired: ErrorResponse(
         "I can't do that because the target channel is not marked NSFW"
     ),
-    # DisabledCommand
     commands.DisabledCommand: ErrorResponse("That command is disabled"),
-    # CommandOnCooldown
     commands.CommandOnCooldown: ErrorResponse(
         "That command is on cooldown. Try again in %s seconds",
         {"key": "retry_after", "wrapper": int},
     ),
+    # -Custom errors-
     FactoidNotFoundError: ErrorResponse(
-        "I can't find the factoid `%s`", {"key": "argument"}
+        "I couldn't find the factoid `%s`", {"key": "argument"}
     ),
     TooLongFactoidMessageError: ErrorResponse(
         "The raw factoid message contents cannot be more than 2000 characters long!"

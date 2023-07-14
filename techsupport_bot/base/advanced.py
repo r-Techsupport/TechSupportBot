@@ -204,9 +204,7 @@ class AdvancedBot(DataBot):
         if extension_name:
             config = await self.get_context_config(ctx)
             if not extension_name in config.enabled_extensions:
-                raise error.ExtensionDisabled(
-                    "extension is disabled for this server/context"
-                )
+                raise error.ExtensionDisabled
 
         is_bot_admin = await self.is_bot_admin(ctx)
 
@@ -402,7 +400,8 @@ class AdvancedBot(DataBot):
 
         await auxiliary.send_deny_embed(message=error_message, channel=context.channel)
 
-        if message_template.dont_print_trace:
+        # Stops execution if dont_print_trace is True
+        if hasattr(exception, "dont_print_trace") and exception.dont_print_trace:
             return
 
         log_channel = await self.get_log_channel_from_guild(
