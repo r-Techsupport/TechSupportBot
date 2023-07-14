@@ -15,8 +15,7 @@ class FactoidNotFoundError(commands.errors.CommandError):
     """Thrown when a factoid is not found."""
 
     def __init__(self, factoid):
-        # TODO: SHIM
-        self.dont_print_trace = False
+        self.dont_print_trace = True
         self.argument = factoid
 
 
@@ -127,7 +126,9 @@ COMMAND_ERROR_RESPONSES = {
     commands.RoleNotFound: ErrorResponse(
         "I couldn't find the role: `%s`", {"key": "argument"}
     ),
-    commands.BadInviteArgument: ErrorResponse("I can't use that invite"),
+    commands.BadInviteArgument: ErrorResponse(
+        "I can't use that invite"
+    ),
     commands.EmojiNotFound: ErrorResponse(
         "I couldn't find the emoji: `%s`", {"key": "argument"}
     ),
@@ -149,15 +150,21 @@ COMMAND_ERROR_RESPONSES = {
         "You did not close your quote with a `%s`",
         {"key": "close_quotes"},
     ),
-    commands.CheckFailure: ErrorResponse("That command can't be ran in this context"),
+    commands.CheckFailure: ErrorResponse(
+        "That command can't be ran in this context"
+    ),
     commands.CheckAnyFailure: ErrorResponse(
         "That command can't be ran in this context"
     ),
     commands.PrivateMessageOnly: ErrorResponse(
         "That's only allowed in private messages"
     ),
-    commands.NoPrivateMessage: ErrorResponse("That's only allowed in server channels"),
-    commands.NotOwner: ErrorResponse("Only the bot owner can do that"),
+    commands.NoPrivateMessage: ErrorResponse(
+        "That's only allowed in server channels"
+    ),
+    commands.NotOwner: ErrorResponse(
+        "Only the bot owner can do that"
+    ),
     commands.MissingPermissions: ErrorResponse(
         "I am unable to do that because you lack the permission(s): `%s`",
         {"key": "missing_perms"},
@@ -185,7 +192,9 @@ COMMAND_ERROR_RESPONSES = {
     commands.NSFWChannelRequired: ErrorResponse(
         "I can't do that because the target channel is not marked NSFW"
     ),
-    commands.DisabledCommand: ErrorResponse("That command is disabled"),
+    commands.DisabledCommand: ErrorResponse(
+        "That command is disabled"
+    ),
     commands.CommandOnCooldown: ErrorResponse(
         "That command is on cooldown. Try again in %s seconds",
         {"key": "retry_after", "wrapper": int},
