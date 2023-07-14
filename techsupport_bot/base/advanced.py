@@ -294,6 +294,11 @@ class AdvancedBot(DataBot):
         return channel_id
 
     async def slash_command_log(self, interaction):
+        """A command to log the call of a slash command
+
+        Args:
+            interaction (discord.Interaction): The interaction the slash command generated
+        """
         embed = discord.Embed()
         embed.add_field(name="User", value=interaction.user)
         embed.add_field(
