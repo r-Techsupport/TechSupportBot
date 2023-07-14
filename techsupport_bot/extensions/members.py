@@ -68,8 +68,9 @@ class Members(base.BaseCog):
                 yaml_output_data.append({member.name: data})
 
         if len(yaml_output_data) == 0:
-            await ctx.send_deny_embed(
-                f"Noone in this server has the role `{role.name}`"
+            await auxiliary.send_deny_embed(
+                message=f"No one in this server has the role `{role.name}`",
+                channel=ctx.channel
             )
             return
 
