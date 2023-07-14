@@ -476,7 +476,9 @@ class FactoidManager(base.MatchCog):
                     self.models.Factoid.guild == guild
                 )
                 # hiding hidden factoids
-                .where(self.models.Factoid.hidden == False).gino.all()  # pylint: disable=C0121
+                .where(
+                    self.models.Factoid.hidden == False
+                ).gino.all()  # pylint: disable=C0121
             )
             # Pylint disabled because it wants == to be `is`, which gino doesn't support
 
@@ -696,8 +698,8 @@ class FactoidManager(base.MatchCog):
             # Broken alias, shouldn't happen but is here just in case
             if not factoid:
                 await auxiliary.send_deny_embed(
-                    message=f"Broken alias pointing to nonexistant factoid `{alias}` detected!\n"\
-                        +"(This shouldn't happen, call a code monkey)",
+                    message=f"Broken alias pointing to nonexistant factoid `{alias}` detected!\n"
+                    + "(This shouldn't happen, call a code monkey)",
                     channel=ctx.channel,
                 )
                 raise FactoidNotFoundError(factoid=alias)
