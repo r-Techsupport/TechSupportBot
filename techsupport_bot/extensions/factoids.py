@@ -477,8 +477,8 @@ class FactoidManager(base.MatchCog):
                 )
                 # hiding hidden factoids
                 .where(
-                    self.models.Factoid.hidden == False
-                ).gino.all()  # pylint: disable=C0121
+                    self.models.Factoid.hidden == False  # pylint: disable=C0121
+                ).gino.all()
             )
             # Pylint disabled because it wants == to be `is`, which gino doesn't support
 
