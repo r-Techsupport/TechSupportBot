@@ -51,7 +51,10 @@ class Members(base.BaseCog):
             role = discord.utils.get(ctx.guild.roles, name=role_name)
 
         if not role:
-            await ctx.send_deny_embed(f"I couldn't find the role `{role_name}`")
+            await auxiliary.send_deny_embed(
+                message=f"I couldn't find the role `{role_name}`", 
+                channel=ctx.channel
+            )
             return
 
         # Iterates through members, appends their info to a yaml file
