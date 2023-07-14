@@ -3,10 +3,11 @@ import socket
 
 
 class IRC:
-
     irc_socket = None
 
-    def connect_irc(self, server: str, port: int, channels: list, name: str, password: str):
+    def connect_irc(
+        self, server: str, port: int, channels: list, name: str, password: str
+    ):
         # Connect to the IRC server
         irc_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         irc_socket.connect((server, port))
@@ -41,7 +42,6 @@ class IRC:
             irc_socket.send(bytes(f"JOIN {channel}\r\n", "UTF-8"))
 
         return irc_socket
-
 
     def main_irc_loop(self, irc_socket):
         # IRC server information

@@ -1,11 +1,4 @@
-import datetime
-import io
-import json
-
 import base
-import discord
-import util
-from base import auxiliary
 from discord.ext import commands
 import socket
 
@@ -20,7 +13,6 @@ async def setup(bot):
         discord_channel_id = bot.db.Column(bot.db.String, default=None)
         irc_channel_id = bot.db.Column(bot.db.String, default=None)
 
-
     await bot.add_cog(DiscordToIRC(bot=bot, models=[IRCChannelMapping]))
 
 
@@ -31,8 +23,6 @@ class DiscordToIRC(base.BaseCog):
         description="Executes an irc command",
     )
     async def irc(self, ctx):
-        """Makes the .grab command group"""
-        # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
 
     @irc.command(name="maps", description="List all the maps for IRC")
