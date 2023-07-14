@@ -30,7 +30,8 @@ class TechSupportBot(base.AdvancedBot):
         # Start the IRC bot in an asynchronous task
         irc_config = getattr(self.file_config.main, "irc")
         if irc_config.enable_irc:
-            irc_socket = irc.connect_irc(
+            self.irc = irc.IRC()
+            irc_socket = self.irc.connect_irc(
                 server=irc_config.server,
                 port=irc_config.port,
                 channels=irc_config.channels,
@@ -41,7 +42,7 @@ class TechSupportBot(base.AdvancedBot):
                 await self.logger.warning("IRC connection failed")
             else:
                 irc_thread = threading.Thread(
-                    target=irc.main_irc_loop, args=(irc_socket,)
+                    target=self.irc.main_irc_loop, args=(irc_socket,)
                 )
                 irc_thread.start()
 
