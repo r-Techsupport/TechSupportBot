@@ -17,7 +17,7 @@ import discord
 import util
 import yaml
 from discord.ext import commands
-
+from base import auxiliary
 
 async def setup(bot):
     """Method to add the member command to config."""
