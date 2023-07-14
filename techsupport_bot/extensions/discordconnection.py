@@ -1,6 +1,8 @@
+import asyncio
 import socket
 
 import base
+from bidict import bidict
 from discord.ext import commands
 
 
@@ -16,25 +18,30 @@ async def setup(bot):
         discord_channel_id = bot.db.Column(bot.db.String, default=None)
         irc_channel_id = bot.db.Column(bot.db.String, default=None)
 
-    await bot.add_cog(
-        DiscordToIRC(
-            bot=bot, models=[IRCChannelMapping], extension_name="discordconnection"
-        )
+    irc_cog = DiscordToIRC(
+        bot=bot, models=[IRCChannelMapping], extension_name="discordconnection"
     )
+
+    await bot.add_cog(irc_cog)
+    bot.irc.irc_cog = irc_cog
 
 
 class DiscordToIRC(base.MatchCog):
+    mapping = None  # bidict - discord:irc
+
+    async def preconfig(self):
+        allmaps = await self.models.IRCChannelMapping.query.gino.all()
+        self.mapping = bidict({})
+        for map in allmaps:
+            self.mapping.put(map.discord_channel_id, map.irc_channel_id)
+
     async def match(self, config, ctx, content):
         """Method to match the logging channel to the map."""
-        map = (
-            await self.models.IRCChannelMapping.query.where(
-                self.models.IRCChannelMapping.discord_channel_id == str(ctx.channel.id)
-            )
-            .where(self.models.IRCChannelMapping.guild_id == str(ctx.guild.id))
-            .gino.first()
-        )
+        if not str(ctx.channel.id) in self.mapping:
+            return False
+        map = self.mapping[str(ctx.channel.id)]
         if map:
-            return map.irc_channel_id
+            return map
 
     async def response(self, config, ctx, content, result):
         """Method to generate the response from the logger."""
@@ -49,9 +56,9 @@ class DiscordToIRC(base.MatchCog):
 
     @irc.command(name="maps", description="List all the maps for IRC")
     async def irc_maps(self, ctx):
-        allmaps = await self.models.IRCChannelMapping.query.gino.all()
+        # allmaps = await self.models.IRCChannelMapping.query.gino.all()
 
-        await ctx.send(content=f"maps: {allmaps}")
+        await ctx.send(content=f"maps: {self.mapping}")
 
     @irc.command(name="socket", description="Print socket")
     async def irc_socket(self, ctx):
@@ -73,4 +80,14 @@ class DiscordToIRC(base.MatchCog):
             irc_channel_id=irc_channel,
         )
 
+        self.mapping.put(map.discord_channel_id, map.irc_channel_id)
+
         await map.create()
+
+    async def send_message_from_irc(self, message, irc_channel):
+        map = self.mapping.inverse[irc_channel]
+        if not map:
+            return
+
+        discord_channel = await self.bot.fetch_channel(map)
+        await discord_channel.send(content=f"{message}")

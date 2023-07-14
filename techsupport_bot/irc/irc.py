@@ -1,9 +1,15 @@
+import asyncio
 import base64
 import socket
 
 
 class IRC:
     irc_socket = None
+    irc_cog = None
+    loop = None
+
+    def __init__(self, loop):
+        self.loop = loop
 
     def connect_irc(
         self, server: str, port: int, channels: list, name: str, password: str
@@ -56,16 +62,22 @@ class IRC:
             if data.startswith("PING"):
                 self.irc_socket.send(bytes("PONG :pingis\n", "UTF-8"))
 
-            # Example: Reply to a specific command
-            if "hello" in data.lower():
-                channel_start = data.find("PRIVMSG") + len("PRIVMSG") + 1
-                channel_end = data.find(":", channel_start)
-                channel = data[channel_start:channel_end].strip()
-                if not channel.startswith("#"):
-                    continue
-                self.irc_socket.send(
-                    bytes(f"PRIVMSG {channel} :Hello! I am {bot_nickname}\r\n", "UTF-8")
-                )
+            channel_start = data.find("PRIVMSG") + len("PRIVMSG") + 1
+            channel_end = data.find(":", channel_start)
+            channel = data[channel_start:channel_end].strip()
+            if not channel.startswith("#"):
+                continue
+
+            asyncio.run_coroutine_threadsafe(
+                self.irc_cog.send_message_from_irc(data, channel), self.loop
+            )
+
+    def format_message(self, message):
+        message = message.replace("\n", " ")
+        return message.strip()
 
     def send_message_from_discord(self, message, channel):
-        self.irc_socket.send(bytes(f"PRIVMSG {channel} :{message}\r\n", "UTF-8"))
+        formatted_message = self.format_message(message)
+        self.irc_socket.send(
+            bytes(f"PRIVMSG {channel} :{formatted_message}\r\n", "UTF-8")
+        )

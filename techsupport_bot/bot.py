@@ -30,7 +30,8 @@ class TechSupportBot(base.AdvancedBot):
         # Start the IRC bot in an asynchronous task
         irc_config = getattr(self.file_config.main, "irc")
         if irc_config.enable_irc:
-            self.irc = irc.IRC()
+            loop = asyncio.get_running_loop()
+            self.irc = irc.IRC(loop)
             irc_socket = self.irc.connect_irc(
                 server=irc_config.server,
                 port=irc_config.port,
