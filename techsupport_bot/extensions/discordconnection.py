@@ -16,7 +16,11 @@ async def setup(bot):
         discord_channel_id = bot.db.Column(bot.db.String, default=None)
         irc_channel_id = bot.db.Column(bot.db.String, default=None)
 
-    await bot.add_cog(DiscordToIRC(bot=bot, models=[IRCChannelMapping], extension_name="discordconnection"))
+    await bot.add_cog(
+        DiscordToIRC(
+            bot=bot, models=[IRCChannelMapping], extension_name="discordconnection"
+        )
+    )
 
 
 class DiscordToIRC(base.MatchCog):
@@ -34,7 +38,7 @@ class DiscordToIRC(base.MatchCog):
 
     async def response(self, config, ctx, content, result):
         """Method to generate the response from the logger."""
-        self.bot.irc.send_message_from_discord(content, result) 
+        self.bot.irc.send_message_from_discord(content, result)
 
     @commands.group(
         brief="Executes an irc command",
@@ -60,7 +64,7 @@ class DiscordToIRC(base.MatchCog):
             await ctx.send(content="Socket is active and working.")
         except socket.error as e:
             await ctx.send(content=f"Socket error: {e}")
-    
+
     @irc.command(name="link", description="Add a link")
     async def irc_link(self, ctx, irc_channel: str):
         map = self.models.IRCChannelMapping(

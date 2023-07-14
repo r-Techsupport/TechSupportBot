@@ -99,7 +99,7 @@ class MatchCog(BaseCog):
             return
 
         ctx = await self.bot.get_context(message)
-        
+
         config = await self.bot.get_context_config(ctx)
         if not config:
             return
