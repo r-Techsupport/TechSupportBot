@@ -4,6 +4,8 @@ import socket
 
 
 class IRC:
+    """The IRC side of the relay"""
+
     irc_socket = None
     irc_cog = None
     loop = None
@@ -14,6 +16,18 @@ class IRC:
     def connect_irc(
         self, server: str, port: int, channels: list, name: str, password: str
     ):
+        """This connects to the provided IRC server over SASL
+
+        Args:
+            server (str): The URL of the server
+            port (int): THe port the IRC server runs on
+            channels (list): The list of channels that should be joined
+            name (str): The username of the IRC account
+            password (str): The password of the IRC account
+
+        Returns:
+            socket.socket: The socket created by authentication
+        """
         # Connect to the IRC server
         irc_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         irc_socket.connect((server, port))
@@ -50,9 +64,9 @@ class IRC:
         return irc_socket
 
     def main_irc_loop(self):
-        # IRC server information
-        bot_nickname = "TSDevBot"
-
+        """This is the main loop for IRC
+        It handles the keep alive PING responses and the message relay
+        """
         # Main bot loop
         while True:
             data = self.irc_socket.recv(2048).decode("UTF-8")
@@ -73,10 +87,25 @@ class IRC:
             )
 
     def format_message(self, message):
+        """This formats the message from discord to prepare for sending to IRC
+        Strips new lines and trailing white space
+
+        Args:
+            message (str): The string contents of the messge
+
+        Returns:
+            str: The formatted message
+        """
         message = message.replace("\n", " ")
         return message.strip()
 
     def send_message_from_discord(self, message, channel):
+        """Sends a message from discord to IRC
+
+        Args:
+            message (str): The raw string content of the message
+            channel (str): The IRC channel name
+        """
         formatted_message = self.format_message(message)
         self.irc_socket.send(
             bytes(f"PRIVMSG {channel} :{formatted_message}\r\n", "UTF-8")

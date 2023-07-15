@@ -7,10 +7,20 @@ from discord.ext import commands
 
 
 async def setup(bot):
-    """Method to add the directory to the config."""
+    """Setup function for the IRC relay
+    This is sets up the IRC postgres table, adds the irc cog,
+        and adds a refernce to it to the irc file
+
+    Args:
+        bot (commands.Bot): The bot object
+    """
 
     class IRCChannelMapping(bot.db.Model):
-        """Class to add the directory to the config."""
+        """The database table for the IRC channel maps
+
+        Args:
+            bot (commands.Bot): The bot object
+        """
 
         __tablename__ = "ircchannelmap"
         map_id = bot.db.Column(bot.db.Integer, primary_key=True)
@@ -27,16 +37,30 @@ async def setup(bot):
 
 
 class DiscordToIRC(base.MatchCog):
+    """The discord side of the relay"""
+
     mapping = None  # bidict - discord:irc
 
     async def preconfig(self):
+        """The preconfig setup for the discord side
+        This maps the database to a bidict for quick lookups, and allows lookups in threads
+        """
         allmaps = await self.models.IRCChannelMapping.query.gino.all()
         self.mapping = bidict({})
         for map in allmaps:
             self.mapping.put(map.discord_channel_id, map.irc_channel_id)
 
     async def match(self, config, ctx, content):
-        """Method to match the logging channel to the map."""
+        """Checks to see if the message should be sent to discord
+
+        Args:
+            config (_type_): The config of the guild where the message was sent
+            ctx (commands.Context): The context the message was sent in
+            content (str): The string content of the message
+
+        Returns:
+            str: The string representation of the IRC channel. Will be False if no IRC mapping
+        """
         if not str(ctx.channel.id) in self.mapping:
             return False
         map = self.mapping[str(ctx.channel.id)]
@@ -44,7 +68,14 @@ class DiscordToIRC(base.MatchCog):
             return map
 
     async def response(self, config, ctx, content, result):
-        """Method to generate the response from the logger."""
+        """Send the message to IRC
+
+        Args:
+            config (_type_): The config of the guild where the message was sent
+            ctx (commands.Context): The context the message was sent in
+            content (str): The string content of the message
+            result (str): The string representation of the IRC channel
+        """
         self.bot.irc.send_message_from_discord(content, result)
 
     @commands.group(
@@ -52,20 +83,40 @@ class DiscordToIRC(base.MatchCog):
         description="Executes an irc command",
     )
     async def irc(self, ctx):
+        """The base set of IRC commands
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
         await base.extension_help(self, ctx, self.__module__[11:])
 
     @irc.command(name="maps", description="List all the maps for IRC")
     async def irc_maps(self, ctx):
+        """Show the current IRC maps
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
         # allmaps = await self.models.IRCChannelMapping.query.gino.all()
 
         await ctx.send(content=f"maps: {self.mapping}")
 
     @irc.command(name="socket", description="Print socket")
     async def irc_socket(self, ctx):
+        """Prints the IRC socket
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
         await ctx.send(content=f"{self.bot.irc.irc_socket}")
 
     @irc.command(name="status", description="Check status")
     async def irc_status(self, ctx):
+        """Determines if the IRC socket is connected or not
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
         try:
             self.bot.irc.irc_socket.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
             await ctx.send(content="Socket is active and working.")
@@ -74,6 +125,12 @@ class DiscordToIRC(base.MatchCog):
 
     @irc.command(name="link", description="Add a link")
     async def irc_link(self, ctx, irc_channel: str):
+        """Create a new link between discord and IRC
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+            irc_channel (str): The string representation of the IRC channel
+        """
         map = self.models.IRCChannelMapping(
             guild_id=str(ctx.guild.id),
             discord_channel_id=str(ctx.channel.id),
@@ -85,6 +142,12 @@ class DiscordToIRC(base.MatchCog):
         await map.create()
 
     async def send_message_from_irc(self, message, irc_channel):
+        """Sends a message on discord after recieving one on IRC
+
+        Args:
+            message (str): The string content of the message
+            irc_channel (str): The string representation of the IRC channel
+        """
         map = self.mapping.inverse[irc_channel]
         if not map:
             return
