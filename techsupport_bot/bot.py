@@ -30,21 +30,8 @@ class TechSupportBot(base.AdvancedBot):
         # Start the IRC bot in an asynchronous task
         irc_config = getattr(self.file_config.main, "irc")
         if irc_config.enable_irc:
-            # Stupid discord.py preventing API calls from threads
-            loop = asyncio.get_running_loop()
-            self.irc = irc.IRC(loop)
-            irc_socket = self.irc.connect_irc(
-                server=irc_config.server,
-                port=irc_config.port,
-                channels=irc_config.channels,
-                name=irc_config.name,
-                password=irc_config.password,
-            )
-            if not irc_socket:
-                await self.logger.warning("IRC connection failed")
-            else:
-                irc_thread = threading.Thread(target=self.irc.main_irc_loop)
-                irc_thread.start()
+            await self.logger.debug("Connecting to IRC...")
+            await self.start_irc()
 
         # this is required for the bot
         await self.logger.debug("Connecting to MongoDB...")
@@ -82,6 +69,24 @@ class TechSupportBot(base.AdvancedBot):
         await self.load_builtin_cog(builtin_cogs.ConfigControl)
         await self.load_builtin_cog(builtin_cogs.Raw)
         await self.load_builtin_cog(builtin_cogs.Listener)
+
+    async def start_irc(self):
+        # Stupid discord.py preventing API calls from threads
+        irc_config = getattr(self.file_config.main, "irc")
+        loop = asyncio.get_running_loop()
+        self.irc = irc.IRC(loop)
+        irc_socket = self.irc.connect_irc(
+            server=irc_config.server,
+            port=irc_config.port,
+            channels=irc_config.channels,
+            name=irc_config.name,
+            password=irc_config.password,
+        )
+        if not irc_socket:
+            await self.logger.warning("IRC connection failed")
+        else:
+            irc_thread = threading.Thread(target=self.irc.main_irc_loop)
+            irc_thread.start()
 
     async def load_builtin_cog(self, cog):
         """Loads a cog as a builtin.

@@ -77,18 +77,19 @@ class IRC:
         # Main bot loop
         while True:
             data = self.irc_socket.recv(2048).decode("UTF-8")
-            for line in data.strip().split("\n"):
-                self.console.info(line.strip())
-
-            split_message = formatting.parse_irc_message(data)
-            print(split_message)
-            if split_message is None:
-                continue
 
             # Respond to PING messages to keep the connection alive
             if data.startswith("PING"):
                 self.irc_socket.send(bytes("PONG :pingis\n", "UTF-8"))
+                self.console.info(f"Responded to PING from IRC: {data}")
                 continue
+
+            split_message = formatting.parse_irc_message(data)
+            if split_message is None:
+                continue
+
+            for line in data.strip().split("\n"):
+                self.console.info(line.strip())
 
             if not split_message["channel"].startswith("#"):
                 continue
