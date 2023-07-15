@@ -4,6 +4,7 @@ import logging
 import socket
 
 import discord
+from irc import formatting
 
 
 class IRC:
@@ -79,28 +80,28 @@ class IRC:
             for line in data.strip().split("\n"):
                 self.console.info(line.strip())
 
+            split_message = formatting.parse_irc_message(data)
+            print(split_message)
+            if split_message is None:
+                continue
+
             # Respond to PING messages to keep the connection alive
             if data.startswith("PING"):
                 self.irc_socket.send(bytes("PONG :pingis\n", "UTF-8"))
-
-            parts = data.split(" ")
-
-            print(parts)
-            channel = parts[2]
-            content = " ".join(parts[3:])[1:]
-
-            if not channel.startswith("#"):
-                print(channel)
                 continue
 
-            if "PRIVMSG" in parts[1]:
+            if not split_message["channel"].startswith("#"):
+                continue
+
+            if split_message["action"] == "PRIVMSG":
                 asyncio.run_coroutine_threadsafe(
-                    self.irc_cog.send_message_from_irc(data, channel), self.loop
+                    self.irc_cog.send_message_from_irc(split_message), self.loop
                 )
-            elif "MODE" in parts[1]:
+            elif split_message["action"] == "MODE":
+                asyncio.run_coroutine_threadsafe(
+                    self.irc_cog.send_message_from_irc(split_message), self.loop
+                )
                 print("OP")
-            else:
-                print(parts[1])
 
     def format_message(self, message):
         """This formats the message from discord to prepare for sending to IRC

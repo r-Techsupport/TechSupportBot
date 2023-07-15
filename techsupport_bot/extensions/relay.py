@@ -139,54 +139,26 @@ class DiscordToIRC(base.MatchCog):
 
         await map.create()
 
-    async def send_message_from_irc(self, message, irc_channel):
+    async def send_message_from_irc(self, split_message):
         """Sends a message on discord after recieving one on IRC
 
         Args:
             message (str): The string content of the message
             irc_channel (str): The string representation of the IRC channel
         """
-        map = self.mapping.inverse[irc_channel]
+        map = self.mapping.inverse[split_message["channel"]]
         if not map:
             return
-
-        if "PRIVMSG" not in message:
-            await discord_channel.send(content=message)
-
-        irc_message_split = self.split_irc_message(message)
 
         discord_channel = await self.bot.fetch_channel(map)
 
         embed = self.generate_sent_message_embed(
-            irc_message_split["username"],
-            irc_message_split["content"],
-            irc_message_split["channel"],
+            split_message["username"],
+            split_message["content"],
+            split_message["channel"],
         )
 
         await discord_channel.send(embed=embed)
-
-    def split_irc_message(self, irc_message):
-        """Splits the raw input from IRC into 4 parts
-
-        Args:
-            irc_message (str): The raw IRC message string
-
-        Returns:
-            dict: A dictionary containing the username, hostmark, channel, and content
-        """
-        parts = irc_message.split(" ")
-
-        username = parts[0][1:].split("!")[0]
-        hostmask = parts[0].split("@")[1]
-        channel = parts[2]
-        content = " ".join(parts[3:])[1:]
-
-        return {
-            "username": username,
-            "hostmask": hostmask,
-            "channel": channel,
-            "content": content,
-        }
 
     def generate_sent_message_embed(self, author, message, channel):
         """Generates an embed to send to discord stating that a message was sent
