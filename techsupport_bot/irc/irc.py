@@ -99,23 +99,34 @@ class IRC:
                     self.irc_cog.send_message_from_irc(split_message), self.loop
                 )
             elif split_message["action"] == "MODE":
+                if split_message["content"].startswith("+b"):
+                    split_message[
+                        "content"
+                    ] = f"{split_message['content'][3:]} was banned from {split_message['channel']}"
+
+                elif split_message["content"].startswith("-b"):
+                    split_message[
+                        "content"
+                    ] = f"{split_message['content'][3:]} was unbanned from {split_message['channel']}"
+                else:
+                    continue
                 asyncio.run_coroutine_threadsafe(
                     self.irc_cog.send_message_from_irc(split_message), self.loop
                 )
 
-    def format_message(self, message):
+    def format_message(self, message: discord.Message):
         """This formats the message from discord to prepare for sending to IRC
         Strips new lines and trailing white space
 
         Args:
-            message (str): The string contents of the message
+            message (discord.Message): The discord message to convert
 
         Returns:
-            str: The formatted message
+            str: The formatted message, ready to send to IRC
         """
         permissions_prefix = self.get_permissions_prefix(message.author)
         message_str = f"{self.IRC_BOLD}[D]{self.IRC_BOLD} <{permissions_prefix}"
-        message_str += f"{message.author}> {message.clean_content}"
+        message_str += f"{message.author.display_name}> {message.clean_content}"
         message_str = message_str.replace("\n", " ")
         return message_str.strip()
 
@@ -146,3 +157,6 @@ class IRC:
         self.irc_socket.send(
             bytes(f"PRIVMSG {channel} :{formatted_message}\r\n", "UTF-8")
         )
+
+    def ban_on_irc(self, user: str, channel: str, action: str):
+        self.irc_socket.send(bytes(f"MODE {channel} {action} {user}\r\n", "UTF-8"))

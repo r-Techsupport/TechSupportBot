@@ -136,6 +136,24 @@ class DiscordToIRC(base.MatchCog):
         except socket.error as e:
             await ctx.send(content=f"Socket error: {e}")
 
+    @irc.command(name="ban", description="Ban a user on IRC")
+    async def irc_ban(self, ctx, *, user: str):
+        map = self.mapping[str(ctx.channel.id)]
+        if not map:
+            await auxiliary.send_deny_embed(
+                message="This channel is not linked to IRC", channel=ctx.channel
+            )
+        self.bot.irc.ban_on_irc(user=user, channel=map, action="+b")
+
+    @irc.command(name="unban", description="Unban a user on IRC")
+    async def irc_unban(self, ctx, *, user: str):
+        map = self.mapping[str(ctx.channel.id)]
+        if not map:
+            await auxiliary.send_deny_embed(
+                message="This channel is not linked to IRC", channel=ctx.channel
+            )
+        self.bot.irc.ban_on_irc(user=user, channel=map, action="-b")
+
     @irc.command(name="link", description="Add a link")
     async def irc_link(self, ctx, irc_channel: str):
         """Create a new link between discord and IRC
