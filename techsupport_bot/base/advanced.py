@@ -798,7 +798,8 @@ class AdvancedBot(DataBot):
                 await member.edit(nick=new_nickname)
 
                 await self.logger.info(
-                    f"Member named {member.name} has an invalid username, nickname set to {new_nickname}",
+                    f"Member named {member.name} has an invalid username,"
+                    + f" server nickname set to {new_nickname}",
                     embed=embed,
                     send=True,
                     channel=log_channel,
