@@ -416,11 +416,12 @@ class AdvancedBot(DataBot):
 
         else:
             await auxiliary.send_deny_embed(
-                message=f"Command raised an error and the error message too long to send! First 1000 chars:\n{error_message[:1000]}",
+                message="Command raised an error and the error message too long to send!"
+                + f" First 1000 chars:\n{error_message[:1000]}",
                 channel=context.channel,
             )
             await self.logger.error(
-                f"Command raised an error and the error message too long to send!"
+                "Command raised an error and the error message too long to send!"
                 + " See traceback below",
                 exception=exception,
                 channel=log_channel,
