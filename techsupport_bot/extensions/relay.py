@@ -1,6 +1,7 @@
 import socket
 
 import base
+import discord
 from bidict import bidict
 from discord.ext import commands
 
@@ -149,5 +150,60 @@ class DiscordToIRC(base.MatchCog):
         if not map:
             return
 
+        irc_message_split = self.split_irc_message(message)
+        print(irc_message_split)
+        print(irc_message_split["username"])
+
         discord_channel = await self.bot.fetch_channel(map)
-        await discord_channel.send(content=f"{message}")
+
+        embed = self.generate_sent_message_embed(
+            irc_message_split["username"],
+            irc_message_split["content"],
+            irc_message_split["channel"],
+        )
+        print(embed)
+
+        await discord_channel.send(embed=embed)
+
+    def split_irc_message(self, irc_message):
+        """Splits the raw input from IRC into 4 parts
+
+        Args:
+            irc_message (str): The raw IRC message string
+
+        Returns:
+            dict: A dictionary containing the username, hostmark, channel, and content
+        """
+        parts = irc_message.split(" ")
+
+        username = parts[0][1:].split("!")[0]
+        hostmask = parts[0].split("@")[1]
+        channel = parts[2]
+        content = " ".join(parts[3:])[1:]
+
+        return {
+            "username": username,
+            "hostmask": hostmask,
+            "channel": channel,
+            "content": content,
+        }
+
+    def generate_sent_message_embed(self, author, message, channel):
+        """Generates an embed to send to discord stating that a message was sent
+
+        Args:
+            author (str): The author of the message
+            message (str): The content of the message
+            channel (str): The channel in which the message was sent
+
+        Returns:
+            discord.Embed: The embed prepared and ready to send
+        """
+        ICON_URL = "https://cdn.icon-icons.com/icons2/1508/PNG/512/ircchat_104581.png"
+
+        embed = discord.Embed()
+        embed.set_author(name=f"{author} - {channel}", icon_url=ICON_URL)
+        embed.description = message
+        embed.color = discord.Color.blurple()
+
+        return embed

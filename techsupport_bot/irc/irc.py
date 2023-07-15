@@ -132,7 +132,6 @@ class IRC:
             message (discord.Message): The raw string content of the message
             channel (str): The IRC channel name
         """
-        print("HERE")
         formatted_message = self.format_message(message)
         self.irc_socket.send(
             bytes(f"PRIVMSG {channel} :{formatted_message}\r\n", "UTF-8")
