@@ -41,6 +41,7 @@ main:
         queue_wait_seconds: 3
     disabled_extensions: ["kanye"]
     default_prefix: "."
+    enforce_nicknames: False
     cache:
         guild_config_cache_length: 100
         guild_config_cache_seconds: 30

@@ -11,6 +11,8 @@ import munch
 import util
 from base import auxiliary
 from discord.ext import commands
+import re
+import random
 
 from .data import DataBot
 
@@ -784,6 +786,22 @@ class AdvancedBot(DataBot):
             send=True,
             channel=log_channel,
         )
+
+
+        # -> Nickname enforcement <-
+
+        if self.file_config.main.enforce_nicknames:
+            if not re.match(r'^[a-zA-Z0-9._-]+$', member.name):
+                new_nickname = f"User_{random.randint(100000, 999999)}"
+                await member.edit(nick=new_nickname)
+
+                await self.logger.info(
+                    f"Member named {member.name} has an invalid username, nickname set to {new_nickname}",
+                    embed=embed,
+                    send=True,
+                    channel=log_channel,
+                )
+                
 
     async def on_member_update(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update"""
