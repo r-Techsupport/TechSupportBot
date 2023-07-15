@@ -2,9 +2,9 @@ import socket
 
 import base
 import discord
+from base import auxiliary
 from bidict import bidict
 from discord.ext import commands
-from base import auxiliary
 
 
 async def setup(bot):
@@ -64,19 +64,19 @@ class DiscordToIRC(base.MatchCog):
         irc_config = getattr(self.bot.file_config.main, "irc")
         if not irc_config.enable_irc:
             return False
-        
+
         if not self.mapping:
             return False
 
         # Check if channel has an active map
         if not str(ctx.channel.id) in self.mapping:
             return False
-        
+
         # If there is a map, find it and return it
         map = self.mapping[str(ctx.channel.id)]
         if map:
             return map
-        
+
         # If no conditions are met, do nothing
         return False
 
@@ -145,17 +145,25 @@ class DiscordToIRC(base.MatchCog):
             irc_channel (str): The string representation of the IRC channel
         """
         if str(ctx.channel.id) in self.mapping:
-            await auxiliary.send_deny_embed(message=f"This discord channel is already linked to {self.mapping[str(ctx.channel.id)]}", channel=ctx.channel)
+            await auxiliary.send_deny_embed(
+                message=f"This discord channel is already linked to {self.mapping[str(ctx.channel.id)]}",
+                channel=ctx.channel,
+            )
             return
-        
+
         if irc_channel in self.mapping.inverse:
-            await auxiliary.send_deny_embed(message=f"This IRC channel is already linked {self.mapping.inverse[irc_channel]}", channel=ctx.channel)
+            await auxiliary.send_deny_embed(
+                message=f"This IRC channel is already linked {self.mapping.inverse[irc_channel]}",
+                channel=ctx.channel,
+            )
             return
-        
+
         joined_channels = getattr(self.bot.file_config.main.irc, "channels")
-        
+
         if not irc_channel in joined_channels:
-            await auxiliary.send_deny_embed(message="I am not in this IRC channel", channel=ctx.channel)
+            await auxiliary.send_deny_embed(
+                message="I am not in this IRC channel", channel=ctx.channel
+            )
             return
 
         map = self.models.IRCChannelMapping(
@@ -167,7 +175,9 @@ class DiscordToIRC(base.MatchCog):
         self.mapping.put(map.discord_channel_id, map.irc_channel_id)
 
         await map.create()
-        await auxiliary.send_confirm_embed(message="New link established", channel=ctx.channel)
+        await auxiliary.send_confirm_embed(
+            message="New link established", channel=ctx.channel
+        )
 
     async def send_message_from_irc(self, split_message):
         """Sends a message on discord after recieving one on IRC
@@ -183,9 +193,7 @@ class DiscordToIRC(base.MatchCog):
 
             discord_channel = await self.bot.fetch_channel(map)
 
-            embed = self.generate_sent_message_embed(
-                split_message
-            )
+            embed = self.generate_sent_message_embed(split_message)
 
             await discord_channel.send(embed=embed)
         except Exception as e:
@@ -205,9 +213,14 @@ class DiscordToIRC(base.MatchCog):
         ICON_URL = "https://cdn.icon-icons.com/icons2/1508/PNG/512/ircchat_104581.png"
 
         embed = discord.Embed()
-        embed.set_author(name=f"{split_message['username']} - {split_message['channel']}", icon_url=ICON_URL)
-        embed.description = split_message['content']
-        embed.set_footer(text=f"{split_message['hostmask']} • {getattr(self.bot.file_config.main.irc, 'server')}")
+        embed.set_author(
+            name=f"{split_message['username']} - {split_message['channel']}",
+            icon_url=ICON_URL,
+        )
+        embed.description = split_message["content"]
+        embed.set_footer(
+            text=f"{split_message['hostmask']} • {getattr(self.bot.file_config.main.irc, 'server')}"
+        )
         embed.color = discord.Color.blurple()
 
         return embed
