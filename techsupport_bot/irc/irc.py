@@ -1,7 +1,7 @@
 import asyncio
 import base64
 import socket
-
+import logging
 
 class IRC:
     """The IRC side of the relay"""
@@ -9,6 +9,7 @@ class IRC:
     irc_socket = None
     irc_cog = None
     loop = None
+    console = logging.getLogger("root")
 
     def __init__(self, loop):
         self.loop = loop
@@ -48,7 +49,8 @@ class IRC:
         # Wait for SASL authentication success
         while True:
             data = irc_socket.recv(2048).decode("UTF-8")
-            print(data)
+            for line in data.strip().split("\n"):
+                self.console.info(line.strip())
 
             if "sasl authentication successful" in data.lower():
                 self.irc_socket = irc_socket
@@ -70,7 +72,8 @@ class IRC:
         # Main bot loop
         while True:
             data = self.irc_socket.recv(2048).decode("UTF-8")
-            print(data)
+            for line in data.strip().split("\n"):
+                self.console.info(line.strip())
 
             # Respond to PING messages to keep the connection alive
             if data.startswith("PING"):
