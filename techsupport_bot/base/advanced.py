@@ -402,10 +402,12 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             getattr(context, "guild", None), key="logging_channel"
         )
- 
+
         # 1000 character cap
         if len(error_message) < 1000:
-            await auxiliary.send_deny_embed(message=error_message, channel=context.channel)
+            await auxiliary.send_deny_embed(
+                message=error_message, channel=context.channel
+            )
             await self.logger.error(
                 f"Command error: {exception}",
                 exception=exception,
@@ -415,14 +417,14 @@ class AdvancedBot(DataBot):
         else:
             await auxiliary.send_deny_embed(
                 message=f"Command raised an error and the error message too long to send! First 1000 chars:\n{error_message[:1000]}",
-                channel=context.channel)
+                channel=context.channel,
+            )
             await self.logger.error(
-                f"Command raised an error and the error message too long to send!"\
-                +" See traceback below",
+                f"Command raised an error and the error message too long to send!"
+                + " See traceback below",
                 exception=exception,
                 channel=log_channel,
-            )   
-
+            )
 
     async def on_connect(self):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_connect"""
