@@ -4,7 +4,7 @@ def get_user(split_message: list):
 
 
 def get_hostmask(split_message: list):
-    hostmask = split_message[0].split("@")[1]
+    hostmask = split_message[0].split("!")[1]
     return hostmask
 
 

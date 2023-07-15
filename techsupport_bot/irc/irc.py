@@ -81,7 +81,7 @@ class IRC:
             # Respond to PING messages to keep the connection alive
             if data.startswith("PING"):
                 self.irc_socket.send(bytes("PONG :pingis\n", "UTF-8"))
-                self.console.info(f"Responded to PING from IRC: {data}")
+                self.console.info(f"Responded to PING from IRC: {data.strip()}")
                 continue
 
             split_message = formatting.parse_irc_message(data)
