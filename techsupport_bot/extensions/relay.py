@@ -133,6 +133,9 @@ class DiscordToIRC(base.MatchCog):
         try:
             self.bot.irc.irc_socket.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
             await ctx.send(content="Socket is active and working.")
+            await auxiliary.send_confirm_embed(
+                message=f"Socket {self.bot.irc.irc_socket} appears to be working fine"
+            )
         except socket.error as e:
             await ctx.send(content=f"Socket error: {e}")
 

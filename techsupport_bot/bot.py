@@ -6,7 +6,7 @@ import threading
 import base
 import botlogging
 import cogs as builtin_cogs
-import irc
+import ircrelay
 
 
 # pylint: disable=too-many-public-methods, too-many-instance-attributes
@@ -33,9 +33,7 @@ class TechSupportBot(base.AdvancedBot):
             await self.logger.debug("Connecting to IRC...")
             # Make the IRC class in such a way to allow reload without desctruction
             # We need to pass it the running loop so it can interact with discord
-            loop = asyncio.get_running_loop()
-            self.irc = irc.IRC(loop)
-            await self.start_irc(self.irc)
+            await self.start_irc()
 
         # this is required for the bot
         await self.logger.debug("Connecting to MongoDB...")
@@ -74,7 +72,7 @@ class TechSupportBot(base.AdvancedBot):
         await self.load_builtin_cog(builtin_cogs.Raw)
         await self.load_builtin_cog(builtin_cogs.Listener)
 
-    async def start_irc(self, irc: irc.IRC):
+    async def start_irc(self):
         """Starts the IRC connection in a seperate thread
 
         Args:
@@ -84,20 +82,20 @@ class TechSupportBot(base.AdvancedBot):
             bool: True if the connection was successful, False if it was not
         """
         irc_config = getattr(self.file_config.main, "irc")
-        irc_socket = irc.connect_irc(
+        loop = asyncio.get_running_loop()
+
+        irc_bot = ircrelay.IRCBot(
+            loop=loop,
             server=irc_config.server,
             port=irc_config.port,
             channels=irc_config.channels,
-            name=irc_config.name,
+            username=irc_config.name,
             password=irc_config.password,
         )
-        if not irc_socket:
-            await self.logger.warning("IRC connection failed")
-            return False
-        else:
-            irc_thread = threading.Thread(target=irc.main_irc_loop)
-            irc_thread.start()
-            return True
+        self.irc = irc_bot
+
+        irc_thread = threading.Thread(target=irc_bot.start)
+        irc_thread.start()
 
     async def load_builtin_cog(self, cog):
         """Loads a cog as a builtin.
