@@ -16,8 +16,9 @@ import base
 import discord
 import util
 import yaml
-from discord.ext import commands
 from base import auxiliary
+from discord.ext import commands
+
 
 async def setup(bot):
     """Method to add the member command to config."""
@@ -52,8 +53,7 @@ class Members(base.BaseCog):
 
         if not role:
             await auxiliary.send_deny_embed(
-                message=f"I couldn't find the role `{role_name}`", 
-                channel=ctx.channel
+                message=f"I couldn't find the role `{role_name}`", channel=ctx.channel
             )
             return
 
@@ -70,7 +70,7 @@ class Members(base.BaseCog):
         if len(yaml_output_data) == 0:
             await auxiliary.send_deny_embed(
                 message=f"No one in this server has the role `{role.name}`",
-                channel=ctx.channel
+                channel=ctx.channel,
             )
             return
 
