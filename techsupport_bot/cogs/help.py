@@ -61,6 +61,7 @@ class Helper(base.BaseCog):
         command_prefix = await self.bot.get_prefix(ctx.message)
         embed = HelpEmbed(title="Builtin commands")
         embed_fields = {}
+
         for cog_name in self.bot.builtin_cogs:
             cog = self.bot.get_cog(cog_name)
             if not cog:
@@ -72,7 +73,7 @@ class Helper(base.BaseCog):
         # Sorts all embed_fields alphabetically
         fields = {
             field: embed_fields[field]
-            for field in sorted(embed_fields, key=lambda y: y[1:])
+            for field in sorted(embed_fields, key=lambda x: x[1:])
         }
 
         # Adds them to the embed
@@ -176,12 +177,12 @@ class Helper(base.BaseCog):
 
         return embed
 
-    def add_cog_command_fields(self, cog, embed_field, command_prefix) -> dict:
+    def add_cog_command_fields(self, cog, embed_fields, command_prefix) -> dict:
         """Adds embed embed_field for each command in a given cog.
 
         parameters:
             cog (commands.Cog): The cog to get the commands of
-            embed_field (dict): Field list where Name: description
+            embed_fields (dict): Field list where Name: description
             command_prefix (str): the command prefix for the bot
 
         returns:
@@ -203,11 +204,11 @@ class Helper(base.BaseCog):
 
             usage = command.usage or ""
 
-            embed_field[f"`{syntax} {usage}`"] = (
+            embed_fields[f"`{syntax} {usage}`"] = (
                 command.description or "No description available"
             )
 
-        return embed_field
+        return embed_fields
 
     def add_extension_command_fields(self, extension_name, embed, command_prefix):
         """Adds embed fields for each command in a given cog.
