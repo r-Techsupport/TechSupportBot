@@ -122,7 +122,11 @@ class Emojis(base.BaseCog):
                     message="No valid messages found to react to!", channel=ctx.channel
                 )
                 return
-
+            if len(react_message.reactions) + len(emoji_message) > 20:
+                await auxiliary.send_deny_embed(
+                    message="Reaction Count too many", channel=ctx.channel
+                )
+                return
         # Finally, send the emojis as an embed or a reaction
         if add_reactions:
             if not self.check_if_all_unique(message):
@@ -131,6 +135,7 @@ class Emojis(base.BaseCog):
                     channel=ctx.channel,
                 )
                 return
+
             await auxiliary.add_list_of_reactions(
                 message=react_message, reactions=emoji_message
             )
