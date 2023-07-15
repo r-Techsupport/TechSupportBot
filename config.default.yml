@@ -15,12 +15,6 @@ main:
         name:
         host: mongodb
         port: 27017
-    rabbitmq:
-        user:
-        password:
-        host: rabbitmq
-        vhost: "/"
-        port: 5672
     api_keys:
         google_cse:
         google:

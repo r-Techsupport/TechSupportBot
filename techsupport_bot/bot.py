@@ -62,12 +62,6 @@ class TechSupportBot(base.AdvancedBot):
         except Exception as exception:
             await self.logger.warning(f"Could not connect to Postgres: {exception}")
 
-        await self.logger.debug("Connecting to RabbitMQ...")
-        try:
-            self.rabbit = await self.get_rabbit_connection()
-        except Exception as exception:
-            await self.logger.warning(f"Could not connect to RabbitMQ: {exception}")
-
         await self.logger.debug("Logging into Discord...")
         await super().start(self.file_config.main.auth_token, *args, **kwargs)
 
@@ -108,7 +102,6 @@ class TechSupportBot(base.AdvancedBot):
         """Cleans up after the event loop is interupted."""
         await self.logger.debug("Cleaning up...", send=True)
         await super().logout()
-        await self.rabbit.close()
 
     async def on_guild_join(self, guild):
         """Configures a new guild upon joining.
