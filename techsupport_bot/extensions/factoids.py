@@ -395,13 +395,20 @@ class FactoidManager(base.MatchCog):
             .gino.all()
         )
 
-        # Returns a True if the alias name is the same (.factoid alias a a)
-        # or if the target has the alias already (.factoid alias b a, where b has a set already)
-        if factoid_name == alias_name or factoid_name in [
-            alias.name for alias in factoid_aliases
-        ]:
+        # Returns arue if the factoid and alias name is the same (.factoid alias a a)
+        if factoid_name == alias_name:
             await auxiliary.send_deny_embed(
                 message="Can't set an alias for itself!", channel=channel
+            )
+            return True
+
+        # Returns True if the target has the alias already
+        # (.factoid alias b a, where b has a set already)
+        if factoid_name in [alias.name for alias in factoid_aliases]:
+            await auxiliary.send_deny_embed(
+                message=f"`{alias_name.lower()}` already has `{factoid_name.lower()}`"
+                + "set as an alias!",
+                channel=channel,
             )
             return True
 
@@ -607,7 +614,8 @@ class FactoidManager(base.MatchCog):
         await self.handle_cache(guild, name)
 
         await auxiliary.send_confirm_embed(
-            message=f"Successfully {fmt} factoid `{name.lower()}`", channel=ctx.channel
+            message=f"Successfully {fmt} the factoid `{name.lower()}`",
+            channel=ctx.channel,
         )
 
     async def delete_factoid(self, ctx: commands.Context, factoid_name: str) -> bool:
@@ -1496,7 +1504,7 @@ class FactoidManager(base.MatchCog):
         for factoid in factoids:
             # Hard limit of 10
             if num_of_matches > 10:
-                name_matches = name_matches[:-3] + "And more...   "
+                name_matches = name_matches[:-2] + " more...---"
                 break
 
             if not factoid.alias and query in factoid.name:
@@ -1515,11 +1523,12 @@ class FactoidManager(base.MatchCog):
         for factoid in factoids:
             # Hard limit of 10
             if num_of_matches > 10:
-                content_matches = content_matches[:-3] + "And more...   "
+                content_matches = content_matches[:-2] + " more...---"
                 break
 
             if factoid.embed_config is not None and (
-                query in factoid.embed_config or query in factoid.message
+                any(word in factoid.embed_config for word in query.split())
+                or any(word in factoid.message for word in query.split())
             ):
                 content_matches += f"{factoid.name}`, `"
                 num_of_matches += 1
@@ -1559,14 +1568,15 @@ class FactoidManager(base.MatchCog):
 
         if factoid.hidden:
             await auxiliary.send_deny_embed(
-                message=f"{factoid_name.lower()} is already hidden", channel=ctx.channel
+                message=f"`{factoid_name.lower()}` is already hidden",
+                channel=ctx.channel,
             )
             return
 
         await self.modify_factoid_call(factoid=factoid, hidden=True)
 
         await auxiliary.send_confirm_embed(
-            message=f"{factoid_name.lower()} is now hidden", channel=ctx.channel
+            message=f"`{factoid_name.lower()}` is now hidden", channel=ctx.channel
         )
 
     @util.with_typing
@@ -1592,7 +1602,7 @@ class FactoidManager(base.MatchCog):
 
         if not factoid.hidden:
             await auxiliary.send_deny_embed(
-                message=f"{factoid_name.lower()} is already unhidden",
+                message=f"`{factoid_name.lower()}` is already unhidden",
                 channel=ctx.channel,
             )
             return
@@ -1600,7 +1610,7 @@ class FactoidManager(base.MatchCog):
         await self.modify_factoid_call(factoid=factoid, hidden=False)
 
         await auxiliary.send_confirm_embed(
-            message=f"{factoid_name.lower()} is now unhidden", channel=ctx.channel
+            message=f"`{factoid_name.lower()}` is now unhidden", channel=ctx.channel
         )
 
     @util.with_typing
@@ -1797,8 +1807,18 @@ class FactoidManager(base.MatchCog):
         # Updates old aliases
         await self.handle_parent_change(ctx, aliases, new_name)
         await auxiliary.send_confirm_embed(
-            message=f"Deleted the alias `{factoid_name.lower()}`, new parent: `{new_name.lower()}`",
+            message=f"Deleted the alias `{factoid_name.lower()}`",
             channel=ctx.channel,
+        )
+
+        # Logs the new parent change
+        await self.bot.guild_log(
+            ctx.guild,
+            "logging_channel",
+            "info",
+            f"Factoid dealias: Deleted the alias `{factoid_name.lower()}`"
+            + f", new parent: `{new_name.lower()}`",
+            send=True,
         )
 
         jobs = (
@@ -1811,9 +1831,8 @@ class FactoidManager(base.MatchCog):
         # Deletes the factoid and deletes all jobs tied to it
         await self.delete_factoid_call(factoid, str(ctx.guild.id))
 
-        # If there were jobs tied to it
+        # If there were jobs tied to it, recreate them with the new factoid
         if jobs:
-            # Recreates jobs with new factoid
             for job in jobs:
                 new_job = self.models.FactoidJob(
                     factoid=new_entry.factoid_id, channel=job.channel, cron=job.cron
@@ -1824,8 +1843,8 @@ class FactoidManager(base.MatchCog):
                 self.running_jobs[job_id] = {}
                 self.running_jobs[job_id]["job"] = new_job
 
-                # This allows the job to be stopped instantly by running .cancel()
-                task = asyncio.create_task(self.cronjob(job, ctx))
+                # Starts the new job
+                task = asyncio.create_task(self.cronjob(new_job, ctx))
                 self.running_jobs[job_id]["task"] = task
 
     @util.with_typing
