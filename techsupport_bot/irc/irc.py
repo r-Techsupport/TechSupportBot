@@ -94,7 +94,7 @@ class IRC:
         Strips new lines and trailing white space
 
         Args:
-            message (str): The string contents of the messge
+            message (str): The string contents of the message
 
         Returns:
             str: The formatted message
