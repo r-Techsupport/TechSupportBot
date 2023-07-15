@@ -102,7 +102,6 @@ class IRC:
                 asyncio.run_coroutine_threadsafe(
                     self.irc_cog.send_message_from_irc(split_message), self.loop
                 )
-                print("OP")
 
     def format_message(self, message):
         """This formats the message from discord to prepare for sending to IRC
