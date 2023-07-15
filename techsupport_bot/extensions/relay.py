@@ -150,9 +150,10 @@ class DiscordToIRC(base.MatchCog):
         if not map:
             return
 
+        if "PRIVMSG" not in message:
+            await discord_channel.send(content=message)
+
         irc_message_split = self.split_irc_message(message)
-        print(irc_message_split)
-        print(irc_message_split["username"])
 
         discord_channel = await self.bot.fetch_channel(map)
 
@@ -161,7 +162,6 @@ class DiscordToIRC(base.MatchCog):
             irc_message_split["content"],
             irc_message_split["channel"],
         )
-        print(embed)
 
         await discord_channel.send(embed=embed)
 

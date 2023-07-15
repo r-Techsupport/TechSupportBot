@@ -83,15 +83,24 @@ class IRC:
             if data.startswith("PING"):
                 self.irc_socket.send(bytes("PONG :pingis\n", "UTF-8"))
 
-            channel_start = data.find("PRIVMSG") + len("PRIVMSG") + 1
-            channel_end = data.find(":", channel_start)
-            channel = data[channel_start:channel_end].strip()
+            parts = data.split(" ")
+
+            print(parts)
+            channel = parts[2]
+            content = " ".join(parts[3:])[1:]
+
             if not channel.startswith("#"):
+                print(channel)
                 continue
 
-            asyncio.run_coroutine_threadsafe(
-                self.irc_cog.send_message_from_irc(data, channel), self.loop
-            )
+            if "PRIVMSG" in parts[1]:
+                asyncio.run_coroutine_threadsafe(
+                    self.irc_cog.send_message_from_irc(data, channel), self.loop
+                )
+            elif "MODE" in parts[1]:
+                print("OP")
+            else:
+                print(parts[1])
 
     def format_message(self, message):
         """This formats the message from discord to prepare for sending to IRC
