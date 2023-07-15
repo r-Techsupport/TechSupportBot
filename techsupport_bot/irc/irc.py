@@ -1,7 +1,10 @@
 import asyncio
 import base64
-import socket
 import logging
+import socket
+
+import discord
+
 
 class IRC:
     """The IRC side of the relay"""
@@ -10,6 +13,7 @@ class IRC:
     irc_cog = None
     loop = None
     console = logging.getLogger("root")
+    IRC_BOLD = ""
 
     def __init__(self, loop):
         self.loop = loop
@@ -99,16 +103,36 @@ class IRC:
         Returns:
             str: The formatted message
         """
-        message = message.replace("\n", " ")
-        return message.strip()
+        permissions_prefix = self.get_permissions_prefix(message.author)
+        message_str = f"{self.IRC_BOLD}[D]{self.IRC_BOLD} <{permissions_prefix}"
+        message_str += f"{message.author}> {message.clean_content}"
+        message_str = message_str.replace("\n", " ")
+        return message_str.strip()
+
+    def get_permissions_prefix(self, member: discord.Member):
+        """Gets the correct prefix based on permissions to prefix in IRC
+
+        Args:
+            member (discord.Member): The member object who sent the message in discord
+
+        Returns:
+            str: The string containing the prefix. Could be empty
+        """
+        prefix_str = ""
+        if member.guild_permissions.administrator:
+            prefix_str += "*"
+        if member.guild_permissions.ban_members:
+            prefix_str += "*"
+        return prefix_str
 
     def send_message_from_discord(self, message, channel):
         """Sends a message from discord to IRC
 
         Args:
-            message (str): The raw string content of the message
+            message (discord.Message): The raw string content of the message
             channel (str): The IRC channel name
         """
+        print("HERE")
         formatted_message = self.format_message(message)
         self.irc_socket.send(
             bytes(f"PRIVMSG {channel} :{formatted_message}\r\n", "UTF-8")

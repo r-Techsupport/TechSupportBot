@@ -27,9 +27,7 @@ async def setup(bot):
         discord_channel_id = bot.db.Column(bot.db.String, default=None)
         irc_channel_id = bot.db.Column(bot.db.String, default=None)
 
-    irc_cog = DiscordToIRC(
-        bot=bot, models=[IRCChannelMapping], extension_name="relay"
-    )
+    irc_cog = DiscordToIRC(bot=bot, models=[IRCChannelMapping], extension_name="relay")
 
     await bot.add_cog(irc_cog)
     bot.irc.irc_cog = irc_cog
@@ -75,7 +73,7 @@ class DiscordToIRC(base.MatchCog):
             content (str): The string content of the message
             result (str): The string representation of the IRC channel
         """
-        self.bot.irc.send_message_from_discord(content, result)
+        self.bot.irc.send_message_from_discord(ctx.message, result)
 
     @commands.group(
         brief="Executes an irc command",
