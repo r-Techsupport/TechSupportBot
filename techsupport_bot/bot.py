@@ -31,7 +31,11 @@ class TechSupportBot(base.AdvancedBot):
         irc_config = getattr(self.file_config.main, "irc")
         if irc_config.enable_irc:
             await self.logger.debug("Connecting to IRC...")
-            await self.start_irc()
+            # Make the IRC class in such a way to allow reload without desctruction
+            # We need to pass it the running loop so it can interact with discord
+            loop = asyncio.get_running_loop()
+            self.irc = irc.IRC(loop)
+            await self.start_irc(self.irc)
 
         # this is required for the bot
         await self.logger.debug("Connecting to MongoDB...")
@@ -70,12 +74,17 @@ class TechSupportBot(base.AdvancedBot):
         await self.load_builtin_cog(builtin_cogs.Raw)
         await self.load_builtin_cog(builtin_cogs.Listener)
 
-    async def start_irc(self):
-        # Stupid discord.py preventing API calls from threads
+    async def start_irc(self, irc: irc.IRC):
+        """Starts the IRC connection in a seperate thread
+
+        Args:
+            irc (irc.IRC): The IRC object to start the socket on
+
+        Returns:
+            bool: True if the connection was successful, False if it was not
+        """
         irc_config = getattr(self.file_config.main, "irc")
-        loop = asyncio.get_running_loop()
-        self.irc = irc.IRC(loop)
-        irc_socket = self.irc.connect_irc(
+        irc_socket = irc.connect_irc(
             server=irc_config.server,
             port=irc_config.port,
             channels=irc_config.channels,
@@ -84,9 +93,11 @@ class TechSupportBot(base.AdvancedBot):
         )
         if not irc_socket:
             await self.logger.warning("IRC connection failed")
+            return False
         else:
-            irc_thread = threading.Thread(target=self.irc.main_irc_loop)
+            irc_thread = threading.Thread(target=irc.main_irc_loop)
             irc_thread.start()
+            return True
 
     async def load_builtin_cog(self, cog):
         """Loads a cog as a builtin.
