@@ -4,6 +4,7 @@ This contains 14 tests
 """
 
 
+import importlib
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -158,6 +159,9 @@ class Test_EmojiCommands:
             channel=discord_env.channel,
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_find_no_message(self):
         """Test to ensure that if no message could be found, an error will occur"""
@@ -177,6 +181,9 @@ class Test_EmojiCommands:
             message="No valid messages found to react to!", channel=discord_env.channel
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_unique_error(self):
         """Test to ensure that if the string is not unique, an error will occur"""
@@ -195,6 +202,9 @@ class Test_EmojiCommands:
             channel=discord_env.channel,
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_confirm_with_proper_call(self):
         """Test that send_confirm_embed is being called with the proper string"""
@@ -210,6 +220,9 @@ class Test_EmojiCommands:
         auxiliary.send_confirm_embed.assert_called_once_with(
             message="1 2", channel=discord_env.channel
         )
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
     async def test_proper_reactions(self):
@@ -231,3 +244,108 @@ class Test_EmojiCommands:
         auxiliary.add_list_of_reactions.assert_called_once_with(
             message=discord_env.message_person1_noprefix_1, reactions=["1", "2"]
         )
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
+    @pytest.mark.asyncio
+    async def test_reaction_count_to_twenty(self):
+        """Test that will test from 0 to 20 reactions"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        discord_env.emoji.generate_emoji_string = MagicMock(return_value=["1"] * 20)
+        auxiliary.search_channel_for_message = AsyncMock(
+            return_value=discord_env.message_person1_noprefix_1
+        )
+
+        auxiliary.send_deny_embed = AsyncMock()
+
+        # Step 2 - Call the function
+        await discord_env.emoji.emoji_commands(
+            discord_env.context, "abcde", True, "Fake discord user"
+        )
+
+        # Step 3 - Assert that everything works
+        assert discord_env.message_person1_noprefix_1.reactions == ["1"] * 20
+        auxiliary.send_deny_embed.assert_not_called()
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
+    @pytest.mark.asyncio
+    async def test_reaction_count_to_twentyone(self):
+        """Test that will test from 0 to 21 reactions"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        discord_env.emoji.generate_emoji_string = MagicMock(return_value=["1"] * 21)
+        auxiliary.search_channel_for_message = AsyncMock(
+            return_value=discord_env.message_person1_noprefix_1
+        )
+
+        auxiliary.send_deny_embed = AsyncMock()
+
+        # Step 2 - Call the function
+        await discord_env.emoji.emoji_commands(
+            discord_env.context, "abcde", True, "Fake discord user"
+        )
+
+        # Step 3 - Assert that everything works
+        assert discord_env.message_person1_noprefix_1.reactions == []
+        auxiliary.send_deny_embed.assert_called_once_with(
+            message="Reaction Count too many",
+            channel=discord_env.channel,
+        )
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
+    @pytest.mark.asyncio
+    async def test_reaction_count_one_to_twenty(self):
+        """Test that will test from 1 to 20 reactions"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        discord_env.emoji.generate_emoji_string = MagicMock(return_value=["1"] * 19)
+        auxiliary.search_channel_for_message = AsyncMock(
+            return_value=discord_env.message_reaction1
+        )
+
+        auxiliary.send_deny_embed = AsyncMock()
+
+        # Step 2 - Call the function
+        await discord_env.emoji.emoji_commands(
+            discord_env.context, "abcde", True, "Fake discord user"
+        )
+
+        # Step 3 - Assert that everything works
+        assert discord_env.message_reaction1.reactions == [1] + (["1"] * 19)
+        auxiliary.send_deny_embed.assert_not_called()
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
+    @pytest.mark.asyncio
+    async def test_reaction_count_one_to_twentyone(self):
+        """Test that will test from 1 to 21 reactions"""
+        # Step 1 - Setup env
+        discord_env = config_for_tests.FakeDiscordEnv()
+        discord_env.emoji.generate_emoji_string = MagicMock(return_value=["1"] * 20)
+        auxiliary.search_channel_for_message = AsyncMock(
+            return_value=discord_env.message_reaction1
+        )
+
+        auxiliary.send_deny_embed = AsyncMock()
+
+        # Step 2 - Call the function
+        await discord_env.emoji.emoji_commands(
+            discord_env.context, "abcde", True, "Fake discord user"
+        )
+
+        # Step 3 - Assert that everything works
+        assert discord_env.message_reaction1.reactions == [1]
+        auxiliary.send_deny_embed.assert_called_once_with(
+            message="Reaction Count too many",
+            channel=discord_env.channel,
+        )
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)

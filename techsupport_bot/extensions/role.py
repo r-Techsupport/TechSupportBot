@@ -104,19 +104,13 @@ class RoleGiver(base.BaseCog):
             member, interaction.guild, assignable_roles
         )
 
-        if len(allowed_roles) == 0:
+        can_execute = self.check_permissions(
+            interaction.user, interaction.guild, allowed_roles
+        )
+        if not can_execute:
             await interaction.response.send_message(
-                "Nobody is allowed to execute this command", ephemeral=True
+                "You are not allowed to execute this command", ephemeral=True
             )
-            return
-
-        for role in allowed_roles:
-            real_role = discord.utils.get(interaction.guild.roles, name=role)
-            if real_role not in getattr(interaction.user, "roles", []):
-                await interaction.response.send_message(
-                    "You are not allowed to execute this command", ephemeral=True
-                )
-                return
 
         if len(role_options) == 0:
             await interaction.response.send_message(
@@ -137,6 +131,29 @@ class RoleGiver(base.BaseCog):
             guild=interaction.guild,
             user=member,
         )
+
+    def check_permissions(
+        self, user: discord.User, guild: discord.Guild, roles: list
+    ) -> bool:
+        """A function to return a boolean value if the user can run role commands or not
+
+        Args:
+            user (discord.User): The user executing the command
+            guild (discord.Guild): The guild the command was run in
+            roles (list): A list of the roles allowed to execute
+
+        Returns:
+            bool: True if can execute, false if cannot
+        """
+        if len(roles) == 0:
+            return False
+
+        for role in roles:
+            real_role = discord.utils.get(guild.roles, name=role)
+            if real_role in getattr(user, "roles", []):
+                return True
+
+        return False
 
     def generate_options(self, user, guild, roles):
         """A function to turn a list of roles into a set of SelectOptions

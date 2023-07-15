@@ -36,6 +36,8 @@ class Confirm(discord.ui.View):
         channel: discord.abc.Messageable,
         author: discord.Member,
         timeout: int = 60,
+        interaction: discord.Interaction | None = None,
+        ephemeral: bool = False,
     ) -> None:
         """A function initiate the confirm view
 
@@ -49,9 +51,16 @@ class Confirm(discord.ui.View):
         embed = auxiliary.generate_basic_embed(
             title="Please confirm!", description=message, color=discord.Color.green()
         )
-        self.message = await channel.send(
-            content=author.mention, embed=embed, view=self
-        )
+        if interaction:
+            self.followup = interaction.followup
+            self.message = await self.followup.send(
+                content=author.mention, embed=embed, view=self, ephemeral=ephemeral
+            )
+        else:
+            self.message = await channel.send(
+                content=author.mention, embed=embed, view=self
+            )
+
         self.author = author
         self.timeout = timeout
 
