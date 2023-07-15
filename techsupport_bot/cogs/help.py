@@ -71,13 +71,13 @@ class Helper(base.BaseCog):
             )
 
         # Sorts all embed_fields alphabetically
-        fields = {
+        embed_fields = {
             field: embed_fields[field]
             for field in sorted(embed_fields, key=lambda x: x[1:])
         }
 
         # Adds them to the embed
-        for field in fields:
+        for field in embed_fields:
             embed.add_field(
                 name=field,
                 value=embed_fields[field],
