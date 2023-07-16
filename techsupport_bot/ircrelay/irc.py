@@ -41,7 +41,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         self.console.info("Connected to IRC")
         self.join_channels(connection)
         self.connection = connection
-        self.join_thread = threading.Timer(30, self.join_channels_thread)
+        self.join_thread = threading.Timer(600, self.join_channels_thread)
         self.join_thread.start()
 
     def join_channels(self, connection):
@@ -55,7 +55,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         self.join_channels(self.connection)
         if self.join_thread and self.join_thread.is_alive():
             self.join_thread.cancel()
-        self.join_thread = threading.Timer(30, self.join_channels_thread)
+        self.join_thread = threading.Timer(600, self.join_channels_thread)
         self.join_thread.start()
 
     def on_part(self, connection, event):

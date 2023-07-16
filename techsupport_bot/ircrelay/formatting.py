@@ -52,7 +52,12 @@ def format_discord_message(message: discord.Message):
     message_str = f"{IRC_BOLD}[D]{IRC_BOLD} <{permissions_prefix}"
     message_str += f"{message.author.display_name}> {message.clean_content} {files}"
     message_str = message_str.replace("\n", " ")
-    return message_str.strip()
+    message_str = message_str.strip()
+    print(len(message_str))
+    if len(message_str) > 430:
+        message_str = message_str[:430]
+        message_str = f"{message_str} (Cropped)"
+    return message_str
 
 
 def get_permissions_prefix_for_discord_user(member: discord.Member):
