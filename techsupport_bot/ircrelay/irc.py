@@ -22,6 +22,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
     IRC_BOLD = ""
     connection = None
     join_thread = None
+    ready = False
 
     def __init__(
         self,
@@ -81,6 +82,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         connection.send_raw(f"AUTHENTICATE {encoded_auth_message}")
         time.sleep(10)
         self.console.info("Connected to IRC")
+        self.ready = True
         self.join_channels(connection)
         self.connection = connection
         self.join_thread = threading.Timer(600, self.join_channels_thread)
@@ -92,6 +94,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         Args:
             connection (irc.client.ServerConnection): The IRC connection
         """
+        if not self.ready:
+            return
         for channel in self.join_channel_list:
             if channel in self.channels:
                 continue
