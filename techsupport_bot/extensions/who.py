@@ -78,13 +78,13 @@ class Who(base.BaseCog):
         reader_roles = config.extensions.who.note_readers.value
 
         if not reader_roles:
-            message="There aren't any `note_readers` roles set in the config!"
+            message = "There aren't any `note_readers` roles set in the config!"
             embed = auxiliary.prepare_deny_embed(message=message)
 
             await interaction.response.send_message(embed=embed, ephemeral=True)
 
             raise commands.CommandError(message)
-    
+
         roles = (
             discord.utils.get(interaction.guild.roles, name=role)
             for role in reader_roles
