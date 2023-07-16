@@ -71,6 +71,17 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             self.irc_cog.send_message_from_irc(split_message), self.loop
         )
 
+    def get_irc_status(self):
+        if self.connection.is_connected():
+            status_text = "IRC is connected and working"
+        else:
+            status_text = "IRC is not connected"
+        return {
+            "status": status_text,
+            "name": self.username,
+            "channels": ", ".join(self.channels.keys()),
+        }
+
     def format_message(self, message: discord.Message):
         """This formats the message from discord to prepare for sending to IRC
         Strips new lines and trailing white space

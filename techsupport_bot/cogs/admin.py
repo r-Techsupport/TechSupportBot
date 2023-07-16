@@ -629,23 +629,28 @@ class AdminControl(base.BaseCog):
             value=", ".join(f"{guild.name} ({guild.id})" for guild in self.bot.guilds),
             inline=False,
         )
+        irc_config = getattr(self.bot.file_config.main, "irc")
+        if not irc_config.enable_irc:
+            embed.add_field(
+                name="IRC",
+                value="IRC is not enabled",
+                inline=False,
+            )
+        else:
+            irc_status = self.bot.irc.get_irc_status()
+            embed.add_field(
+                name="IRC",
+                value=f"IRC Status: {irc_status['status']}\n"
+                + f"IRC Bot Name: {irc_status['name']}\n"
+                + f"Channels: {irc_status['channels']}\n",
+                inline=False,
+            )
         try:
-            # Get the repository
             repo = git.Repo(search_parent_directories=True)
-
-            # Get the current commit
             commit = repo.head.commit
-
-            # Get the short commit hash
             commit_hash = commit.hexsha[:7]
-
-            # Get the commit message
             commit_message = commit.message.splitlines()[0].strip()
-
-            # Get the current branch name
             branch_name = repo.active_branch.name
-
-            # Extract the repository owner and repository name
             match = re.search(
                 r"github.com[:/](.*?)/(.*?)(?:.git)?$", repo.remotes.origin.url
             )
@@ -656,7 +661,6 @@ class AdminControl(base.BaseCog):
                 repo_owner = ""
                 repo_name = ""
 
-            # Check for local working differences
             has_differences = repo.is_dirty()
 
             embed.add_field(

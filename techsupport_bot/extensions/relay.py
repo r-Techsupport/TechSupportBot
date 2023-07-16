@@ -114,15 +114,6 @@ class DiscordToIRC(base.MatchCog):
 
         await ctx.send(content=f"maps: {self.mapping}")
 
-    @irc.command(name="socket", description="Print socket")
-    async def irc_socket(self, ctx):
-        """Prints the IRC socket
-
-        Args:
-            ctx (commands.Context): The context in which the command was run
-        """
-        await ctx.send(content=f"{self.bot.irc.irc_socket}")
-
     @irc.command(name="status", description="Check status")
     async def irc_status(self, ctx):
         """Determines if the IRC socket is connected or not
@@ -130,14 +121,8 @@ class DiscordToIRC(base.MatchCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        try:
-            self.bot.irc.irc_socket.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
-            await ctx.send(content="Socket is active and working.")
-            await auxiliary.send_confirm_embed(
-                message=f"Socket {self.bot.irc.irc_socket} appears to be working fine"
-            )
-        except socket.error as e:
-            await ctx.send(content=f"Socket error: {e}")
+        status = self.bot.irc.get_irc_status()
+        await ctx.send(content=status)
 
     @irc.command(name="ban", description="Ban a user on IRC")
     async def irc_ban(self, ctx, *, user: str):
