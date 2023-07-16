@@ -1,7 +1,9 @@
+from typing import Dict
+
 import discord
 
 
-def parse_irc_message(event) -> dict:
+def parse_irc_message(event) -> Dict[str, str]:
     # Looking for username, hostmask, action, channel, content
     username = event.source.split("!")[0]
     hostmask = event.source.split("!")[1]
