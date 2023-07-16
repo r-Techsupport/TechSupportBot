@@ -124,6 +124,7 @@ class DiscordToIRC(base.MatchCog):
         status = self.bot.irc.get_irc_status()
         await ctx.send(content=status)
 
+    @commands.has_permissions(ban_members=True)
     @irc.command(name="ban", description="Ban a user on IRC")
     async def irc_ban(self, ctx, *, user: str):
         map = self.mapping[str(ctx.channel.id)]
@@ -144,6 +145,7 @@ class DiscordToIRC(base.MatchCog):
             channel=ctx.channel,
         )
 
+    @commands.has_permissions(ban_members=True)
     @irc.command(name="unban", description="Unban a user on IRC")
     async def irc_unban(self, ctx, *, user: str):
         map = self.mapping[str(ctx.channel.id)]
@@ -164,6 +166,7 @@ class DiscordToIRC(base.MatchCog):
             channel=ctx.channel,
         )
 
+    @commands.has_permissions(administrator=True)
     @irc.command(name="link", description="Add a link between IRC and discord")
     async def irc_link(self, ctx, irc_channel: str):
         """Create a new link between discord and IRC
@@ -208,6 +211,7 @@ class DiscordToIRC(base.MatchCog):
             channel=ctx.channel,
         )
 
+    @commands.has_permissions(administrator=True)
     @irc.command(name="unlink", description="Remove a link between IRC and discord")
     async def irc_unlink(self, ctx):
         if str(ctx.channel.id) not in self.mapping:
