@@ -44,9 +44,9 @@ main:
         enable_irc: False
         server: "irc.libera.chat"
         port: 6667
-        channels: [""]
-        name: ""
-        password: ""
+        channels: []
+        name:
+        password:
 
 # Special things
 special:
