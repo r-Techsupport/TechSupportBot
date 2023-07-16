@@ -386,7 +386,7 @@ class FactoidManager(base.MatchCog):
             # Sends the raw factoid instead of the embed
             message = await ctx.send(factoid.message)
 
-        self.dispatch(ctx.author, message, factoid)
+        await self.send_to_irc(ctx, factoid.message)
 
         if ctx.message.mentions or ctx.message.reference:
             await self.process_response_event(ctx, factoid)
@@ -457,11 +457,19 @@ class FactoidManager(base.MatchCog):
             )
             await event.create()
 
-    def dispatch(self, author, message, factoid):
-        """Self dispatch the bot for a factoid event."""
-        self.bot.dispatch(
-            "factoid_event",
-            munch.Munch(author=author, message=message, factoid=factoid),
+    async def send_to_irc(
+        self, ctx: commands.Context, factoid_message: discord.Message
+    ) -> None:
+        """Send a factoid to IRC channel, if it was called in a linked channel
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+            factoid_message (discord.Message): The text of the factoid to send
+        """
+        await self.bot.irc.irc_cog.handle_factoid(
+            channel=ctx.channel,
+            discord_message=ctx.message,
+            factoid_message=factoid_message,
         )
 
     async def kickoff_jobs(self):
@@ -536,8 +544,8 @@ class FactoidManager(base.MatchCog):
                 )
                 continue
 
-            message = await channel.send(content=content, embed=embed)
-            self.dispatch(channel.guild.get_member(self.bot.user.id), message, factoid)
+            await channel.send(content=content, embed=embed)
+            await self.send_to_irc(channel, factoid.message)
 
     @commands.group(
         brief="Executes a factoid command",

@@ -97,6 +97,37 @@ class DiscordToIRC(base.MatchCog):
         """
         self.bot.irc.send_message_from_discord(message=ctx.message, channel=result)
 
+    async def handle_factoid(
+        self,
+        channel: discord.abc.Messageable,
+        discord_message: discord.Message,
+        factoid_message: str,
+    ) -> None:
+        """A method to handle a factoid event and send a message to IRC with the content of
+        the factoid but the author of the factoid invoker
+
+        Args:
+            channel (discord.abc.Messageable): The discord channel the factoid was called in
+            discord_message (discord.Message): The original containing the invocation of the factoid
+            factoid_message (str): The string representation of the factoid
+        """
+        irc_config = getattr(self.bot.file_config.main, "irc")
+        if not irc_config.enable_irc:
+            return
+
+        if not self.mapping:
+            return
+
+        # Check if channel has an active map
+        if not str(channel.id) in self.mapping:
+            return
+
+        self.bot.irc.send_message_from_discord(
+            message=discord_message,
+            channel=self.mapping[str(channel.id)],
+            content_override=factoid_message,
+        )
+
     @commands.group(
         brief="Executes an irc command",
         description="Executes an irc command",
@@ -122,13 +153,28 @@ class DiscordToIRC(base.MatchCog):
 
     @irc.command(name="status", description="Check status")
     async def irc_status(self, ctx: commands.Context) -> None:
-        """Determines if the IRC socket is connected or not
+        """Prints some basic status of the IRC bot
+        This same info is available in .bot
 
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        status = self.bot.irc.get_irc_status()
-        await ctx.send(content=status)
+        embed = auxiliary.generate_basic_embed(
+            title="IRC status",
+            description="",
+            color=discord.Color.blurple(),
+        )
+
+        irc_status = self.bot.irc.get_irc_status()
+        irc_config = getattr(self.bot.file_config.main, "irc")
+        if not irc_config.enable_irc:
+            embed.description = "IRC is not enabled"
+        embed.description = (
+            f"IRC Status: `{irc_status['status']}` \n"
+            f"IRC Bot Name: `{irc_status['name']}` \n"
+            f"Channels: `{irc_status['channels']}`"
+        )
+        await ctx.send(embed=embed)
 
     @commands.has_permissions(ban_members=True)
     @irc.command(name="ban", description="Ban a user on IRC")

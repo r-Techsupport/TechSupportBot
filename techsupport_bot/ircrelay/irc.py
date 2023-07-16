@@ -231,16 +231,21 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         )
         self.send_message_to_channel(channel=channel, message=formatted_message)
 
-    def send_message_from_discord(self, message: discord.Message, channel: str) -> None:
+    def send_message_from_discord(
+        self, message: discord.Message, channel: str, content_override: str = None
+    ) -> None:
         """Sends a message from discord to IRC
 
         Args:
             message (discord.Message): The message object that was sent on discord
             channel (str): The linked IRC channel the message was sent
+            content_override (str): If passed, this will changed the content of the message
         """
         if channel not in self.channels:
             self.join_channels(connection=self.connection)
-        formatted_message = formatting.format_discord_message(message)
+        formatted_message = formatting.format_discord_message(
+            message=message, content_override=content_override
+        )
         self.send_message_to_channel(channel=channel, message=formatted_message)
 
     def send_message_to_channel(self, channel: str, message: str) -> None:
