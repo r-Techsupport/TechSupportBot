@@ -82,7 +82,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             "UTF-8"
         )
         connection.send_raw(f"AUTHENTICATE {encoded_auth_message}")
-        time.sleep(10)
+        time.sleep(20) # There is no proper way to wait for authentication to finish
         self.console.info("Connected to IRC")
         self.ready = True
         self.join_channels(connection)

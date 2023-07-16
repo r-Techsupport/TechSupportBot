@@ -147,9 +147,54 @@ class DiscordToIRC(base.MatchCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        # allmaps = await self.models.IRCChannelMapping.query.gino.all()
+        db_links = await self.models.IRCChannelMapping.query.where(
+            self.models.IRCChannelMapping.guild_id == str(ctx.guild.id)
+        ).gino.all()
 
-        await ctx.send(content=f"maps: {self.mapping}")
+        embed = discord.Embed()
+        embed.title = "All IRC links:"
+        embed.color = discord.Color.blurple()
+
+        for entry in db_links:
+            embed.add_field(
+                name=f"<#{entry.discord_channel_id}>",
+                value=entry.irc_channel_id,
+                inline=True,
+            )
+
+        await ctx.send(embed=embed)
+
+    @commands.has_permissions(administrator=True)
+    @irc.command(name="disconnect", description="Disconnect from IRC")
+    async def irc_disconnect(self, ctx: commands.Context) -> None:
+        """Disconnects from IRC
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
+        if not self.bot.irc.connection.is_connected():
+            await auxiliary.send_deny_embed(
+                message="IRC is not connected", channel=ctx.channel
+            )
+        self.bot.irc.connection.disconnect()
+        self.bot.irc.ready = False
+        await auxiliary.send_confirm_embed(
+            message="Disconnected from IRC", channel=ctx.channel
+        )
+
+    @commands.has_permissions(administrator=True)
+    @irc.command(name="reconnect", description="Reconnects to IRC")
+    async def irc_reconnect(self, ctx: commands.Context) -> None:
+        """Reconnects to IRC
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
+        self.bot.irc.connection.reconnect()
+        self.bot.irc.ready = False
+        await auxiliary.send_confirm_embed(
+            message="Reconnected to IRC", channel=ctx.channel
+        )
 
     @irc.command(name="status", description="Check status")
     async def irc_status(self, ctx: commands.Context) -> None:
