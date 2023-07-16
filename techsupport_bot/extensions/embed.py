@@ -102,7 +102,7 @@ class Embedder(base.BaseCog):
             )
             return
 
-        # Gets the embeds from the json
+        # Gets the embeds from the attached file
         request_body = await util.get_json_from_attachments(ctx.message)
 
         # If the data wasn't succesfully gained
