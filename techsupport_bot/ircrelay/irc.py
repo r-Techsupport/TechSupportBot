@@ -68,6 +68,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
     def on_pubmsg(self, connection, event):
         split_message = formatting.parse_irc_message(event)
+        if len(split_message) == 0:
+            return
         self.send_message_to_discord(split_message)
 
     def send_message_to_discord(self, split_message):

@@ -49,11 +49,13 @@ def format_discord_message(message: discord.Message):
     IRC_BOLD = ""
     permissions_prefix = get_permissions_prefix_for_discord_user(message.author)
     files = get_file_links(message.attachments)
+    message_content = f"{message.clean_content} {files}"
+    if len(message_content.strip()) == 0:
+        return ""
     message_str = f"{IRC_BOLD}[D]{IRC_BOLD} <{permissions_prefix}"
-    message_str += f"{message.author.display_name}> {message.clean_content} {files}"
+    message_str += f"{message.author.display_name}> {message_content}"
     message_str = message_str.replace("\n", " ")
     message_str = message_str.strip()
-    print(len(message_str))
     if len(message_str) > 430:
         message_str = message_str[:430]
         message_str = f"{message_str} (Cropped)"
