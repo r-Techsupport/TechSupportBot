@@ -1,5 +1,6 @@
 import discord
 
+
 def parse_irc_message(event) -> dict:
     # Looking for username, hostmask, action, channel, content
     username = event.source.split("!")[0]
@@ -53,6 +54,7 @@ def format_discord_message(message: discord.Message):
     message_str = message_str.replace("\n", " ")
     return message_str.strip()
 
+
 def get_permissions_prefix_for_discord_user(member: discord.Member):
     """Gets the correct prefix based on permissions to prefix in IRC
 
@@ -68,6 +70,7 @@ def get_permissions_prefix_for_discord_user(member: discord.Member):
     if member.guild_permissions.ban_members:
         prefix_str += "*"
     return prefix_str
+
 
 def get_file_links(message_attachments: list):
     links = ""

@@ -86,7 +86,6 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             "channels": ", ".join(self.channels.keys()),
         }
 
-
     def send_message_from_discord(self, message, channel):
         """Sends a message from discord to IRC
 
