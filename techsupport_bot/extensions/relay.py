@@ -251,11 +251,27 @@ class DiscordToIRC(base.MatchCog):
 
             discord_channel = await self.bot.fetch_channel(map)
 
+            mentions = self.get_mentions(
+                message=split_message["content"], channel=discord_channel
+            )
+
             embed = self.generate_sent_message_embed(split_message)
 
-            await discord_channel.send(embed=embed)
+            await discord_channel.send(content=mentions, embed=embed)
         except Exception as e:
             await self.bot.logger.warning(f"{e}")
+
+    def get_mentions(self, message, channel):
+        mentions = ""
+        for word in message.split(" "):
+            member = channel.guild.get_member_named(word)
+            if member:
+                channel_permissions = channel.permissions_for(member)
+                if channel_permissions.read_messages:
+                    mention = f"{member.mention} "
+                    mentions += mention
+                    continue
+        return mentions
 
     def generate_sent_message_embed(self, split_message):
         """Generates an embed to send to discord stating that a message was sent
