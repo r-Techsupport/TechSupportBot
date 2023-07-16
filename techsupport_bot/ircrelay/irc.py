@@ -51,6 +51,9 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
     def on_pubmsg(self, connection, event):
         split_message = formatting.parse_irc_message(event)
+        self.send_message_to_discord(split_message)
+    
+    def send_message_to_discord(self, split_message):
         asyncio.run_coroutine_threadsafe(
             self.irc_cog.send_message_from_irc(split_message), self.loop
         )
@@ -96,6 +99,28 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         """
         formatted_message = self.format_message(message)
         self.connection.privmsg(channel, formatted_message)
+    
+    def on_mode(self, connection, event):
+        print(event)
+        # Parse the mode change event
+        modes = event.arguments[0].split()
+        # The first element of `modes` is the mode being set or removed
+        mode = modes[0]
+
+        # Assuming you have a function named `on_user_mode_change` that you want to call
+        # when someone gets banned/unbanned. You can modify the condition accordingly.
+        if mode in ('+b', '-b'):
+            message = formatting.parse_ban_message(event)
+            self.send_message_to_discord(message)
+
+
+    def on_user_mode_change(self, channel, action, user):
+        # This is where you handle the event when someone gets banned or unbanned.
+        # You can implement your custom logic here.
+        print(f"{user} has been {action} from channel {channel}")
 
     def ban_on_irc(self, user: str, channel: str, action: str):
-        self.irc_socket.send(bytes(f"MODE {channel} {action} {user}\r\n", "UTF-8"))
+        self.connection.mode(channel, f"{action} {user}")
+
+    def is_bot_op_on_channel(self, channel_name):
+        return self.channels[channel_name].is_oper(self.username)
