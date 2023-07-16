@@ -4,7 +4,6 @@ import logging
 import threading
 import time
 
-import discord
 import irc.bot
 import irc.strings
 from ircrelay import formatting
@@ -16,6 +15,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
     console = logging.getLogger("root")
     IRC_BOLD = ""
     connection = None
+    join_thread = None
 
     def __init__(self, loop, server, port, channels, username, password):
         self.loop = loop
@@ -41,7 +41,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         self.console.info("Connected to IRC")
         self.join_channels(connection)
         self.connection = connection
-        threading.Timer(600, self.join_channels_thread).start()
+        self.join_thread = threading.Timer(30, self.join_channels_thread)
+        self.join_thread.start()
 
     def join_channels(self, connection):
         for channel in self.join_channel_list:
@@ -52,7 +53,10 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
     def join_channels_thread(self):
         self.join_channels(self.connection)
-        threading.Timer(600, self.join_channels_thread).start()
+        if self.join_thread and self.join_thread.is_alive():
+            self.join_thread.cancel()
+        self.join_thread = threading.Timer(30, self.join_channels_thread)
+        self.join_thread.start()
 
     def on_part(self, connection, event):
         if event.target == self.username:
@@ -82,37 +86,6 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             "channels": ", ".join(self.channels.keys()),
         }
 
-    def format_message(self, message: discord.Message):
-        """This formats the message from discord to prepare for sending to IRC
-        Strips new lines and trailing white space
-
-        Args:
-            message (discord.Message): The discord message to convert
-
-        Returns:
-            str: The formatted message, ready to send to IRC
-        """
-        permissions_prefix = self.get_permissions_prefix(message.author)
-        message_str = f"{self.IRC_BOLD}[D]{self.IRC_BOLD} <{permissions_prefix}"
-        message_str += f"{message.author.display_name}> {message.clean_content}"
-        message_str = message_str.replace("\n", " ")
-        return message_str.strip()
-
-    def get_permissions_prefix(self, member: discord.Member):
-        """Gets the correct prefix based on permissions to prefix in IRC
-
-        Args:
-            member (discord.Member): The member object who sent the message in discord
-
-        Returns:
-            str: The string containing the prefix. Could be empty
-        """
-        prefix_str = ""
-        if member.guild_permissions.administrator:
-            prefix_str += "*"
-        if member.guild_permissions.ban_members:
-            prefix_str += "*"
-        return prefix_str
 
     def send_message_from_discord(self, message, channel):
         """Sends a message from discord to IRC
@@ -123,7 +96,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         """
         if channel not in self.channels:
             self.join_channels(self.connection)
-        formatted_message = self.format_message(message)
+        formatted_message = formatting.format_discord_message(message)
         self.connection.privmsg(channel, formatted_message)
 
     def on_mode(self, connection, event):
