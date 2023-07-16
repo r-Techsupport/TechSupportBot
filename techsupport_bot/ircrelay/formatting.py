@@ -1,9 +1,21 @@
-from typing import Dict
+"""A bunch of functions to format messages going to and from IRC"""
+from typing import Dict, List
 
 import discord
+import irc.client
 
 
-def parse_irc_message(event) -> Dict[str, str]:
+def parse_irc_message(event: irc.client.Event) -> Dict[str, str]:
+    """This turns the irc.client.Event object into a dictionary
+    This dictionary contains more direct access to import information
+    This gets username, hostmask, channel, and raw content
+
+    Args:
+        event (irc.client.Event): The event object that triggered this function
+
+    Returns:
+        Dict[str, str]: The formatted message
+    """
     # Looking for username, hostmask, action, channel, content
     username = event.source.split("!")[0]
     hostmask = event.source.split("!")[1]
@@ -18,8 +30,18 @@ def parse_irc_message(event) -> Dict[str, str]:
     }
 
 
-def parse_ban_message(event) -> dict:
-    # Looking for username, hostmask, action, channel, content
+def parse_ban_message(event: irc.client.Event) -> Dict[str, str]:
+    """This turns the irc.client.Event object into a dictionary
+    This dictionary contains more direct access to import information
+    This gets username, hostmask, channel
+    Content in this case is a special readable user was banned/unbanned
+
+    Args:
+        event (irc.client.Event): The event object that triggered this function
+
+    Returns:
+        Dict[str, str]: The formatted message
+    """
     username = event.source.split("!")[0]
     hostmask = event.source.split("!")[1]
     channel = event.target
@@ -38,7 +60,7 @@ def parse_ban_message(event) -> dict:
     }
 
 
-def format_discord_message(message: discord.Message):
+def format_discord_message(message: discord.Message) -> str:
     """This formats the message from discord to prepare for sending to IRC
     Strips new lines and trailing white space
 
@@ -52,7 +74,16 @@ def format_discord_message(message: discord.Message):
     return message_str
 
 
-def core_sent_message_format(message: discord.Message):
+def core_sent_message_format(message: discord.Message) -> str:
+    """This formats a message, adds a permissions prefix, user prefix, and fixes new lines and
+    file attachements
+
+    Args:
+        message (discord.Message): The discord message object to format
+
+    Returns:
+        str: The string, with unlimited length, that is ready to be sent to IRC
+    """
     IRC_BOLD = ""
     permissions_prefix = get_permissions_prefix_for_discord_user(message.author)
     files = get_file_links(message.attachments)
@@ -66,15 +97,15 @@ def core_sent_message_format(message: discord.Message):
     return message_str
 
 
-def crop_discord_message(size, message: str):
-    message_str = message
-    if len(message_str) > size:
-        message_str = message_str[:size]
-        message_str = f"{message_str} (Cropped)"
-    return message_str
+def format_discord_edit_message(message: discord.Message) -> str:
+    """This modifies a formatted message to add a message edited flag
 
+    Args:
+        message (discord.Message): The discord message object to format
 
-def format_discord_edit_message(message: discord.Message):
+    Returns:
+        str: The string that is ready to be sent to IRC. Complete with message edited flag
+    """
     message_str = core_sent_message_format(message)
     message_str = f"{message_str} ** (message edited)"
     return message_str
@@ -82,7 +113,17 @@ def format_discord_edit_message(message: discord.Message):
 
 def format_discord_reaction_message(
     message: discord.Message, user: discord.User, reaction: discord.Reaction
-):
+) -> str:
+    """This modifies a formatted message to add a prefix stating a reaction was added
+
+    Args:
+        message (discord.Message): _description_
+        user (discord.User): The user who added the reaction
+        reaction (discord.Reaction): The reaction that was added to the message
+
+    Returns:
+        str: The string that is ready to be sent to IRC, with a prefix showing the reaction
+    """
     # Deal with custom vs global emoji
     if hasattr(reaction.emoji, "name"):
         emoji = reaction.emoji.name
@@ -94,7 +135,7 @@ def format_discord_reaction_message(
     return message_str
 
 
-def get_permissions_prefix_for_discord_user(member: discord.Member):
+def get_permissions_prefix_for_discord_user(member: discord.Member) -> str:
     """Gets the correct prefix based on permissions to prefix in IRC
 
     Args:
@@ -111,7 +152,16 @@ def get_permissions_prefix_for_discord_user(member: discord.Member):
     return prefix_str
 
 
-def get_file_links(message_attachments: list):
+def get_file_links(message_attachments: List[discord.Attachment]) -> str:
+    """Turns a list of attachments into a string containing links to them
+
+    Args:
+        message_attachments (List[discord.Attachment]): The list of attachments from a
+        discord.Message object
+
+    Returns:
+        str: The str containing space a seperated list of urls
+    """
     links = ""
     for attachment in message_attachments:
         links += attachment.url
