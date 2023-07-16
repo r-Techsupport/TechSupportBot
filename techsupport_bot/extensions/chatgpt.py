@@ -6,8 +6,8 @@ Config: API key in config.yml
 API: OpenAI
 Databases: None
 Models: None
-Subcommands: 
-Defines: 
+Subcommands: gpt, gptutil (history, clean)
+Defines: None
 """
 import base
 import discord
