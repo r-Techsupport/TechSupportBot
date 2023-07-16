@@ -220,8 +220,10 @@ class DiscordToIRC(base.MatchCog):
         irc_channel = self.mapping.pop(str(ctx.channel.id))
 
         db_link = await self.models.IRCChannelMapping.query.where(
-            self.models.IRCChannelMapping.irc_channel_id == irc_channel
+            self.models.IRCChannelMapping.discord_channel_id == str(ctx.channel.id)
         ).gino.first()
+
+        print(db_link)
 
         await db_link.delete()
 
@@ -238,9 +240,10 @@ class DiscordToIRC(base.MatchCog):
             irc_channel (str): The string representation of the IRC channel
         """
         try:
-            map = self.mapping.inverse[split_message["channel"]]
-            if not map:
+            if split_message["channel"] not in self.mapping.inverse:
                 return
+
+            map = self.mapping.inverse[split_message["channel"]]
 
             discord_channel = await self.bot.fetch_channel(map)
 
