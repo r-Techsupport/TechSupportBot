@@ -46,6 +46,11 @@ def format_discord_message(message: discord.Message):
     Returns:
         str: The formatted message, ready to send to IRC
     """
+    message_str = core_sent_message_format(message)
+    return message_str
+
+
+def core_sent_message_format(message: discord.Message):
     IRC_BOLD = ""
     permissions_prefix = get_permissions_prefix_for_discord_user(message.author)
     files = get_file_links(message.attachments)
@@ -56,9 +61,34 @@ def format_discord_message(message: discord.Message):
     message_str += f"{message.author.display_name}> {message_content}"
     message_str = message_str.replace("\n", " ")
     message_str = message_str.strip()
-    if len(message_str) > 430:
-        message_str = message_str[:430]
+    return message_str
+
+
+def crop_discord_message(size, message: str):
+    message_str = message
+    if len(message_str) > size:
+        message_str = message_str[:size]
         message_str = f"{message_str} (Cropped)"
+    return message_str
+
+
+def format_discord_edit_message(message: discord.Message):
+    message_str = core_sent_message_format(message)
+    message_str = f"{message_str} ** (message edited)"
+    return message_str
+
+
+def format_discord_reaction_message(
+    message: discord.Message, user: discord.User, reaction: discord.Reaction
+):
+    # Deal with custom vs global emoji
+    if hasattr(reaction.emoji, "name"):
+        emoji = reaction.emoji.name
+    else:
+        emoji = f":{reaction.emoji}:"
+
+    message_str = core_sent_message_format(message)
+    message_str = f"{user.display_name}  reacted with {emoji} to {message_str}"
     return message_str
 
 

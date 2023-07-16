@@ -298,3 +298,35 @@ class DiscordToIRC(base.MatchCog):
         embed.color = discord.Color.blurple()
 
         return embed
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, before, after):
+        channel = before.channel
+        if not channel:
+            return
+
+        if str(channel.id) not in self.mapping:
+            return
+
+        if before.author.bot:
+            return
+
+        # removes embed-generation events
+        if before.clean_content == after.clean_content:
+            return
+
+        self.bot.irc.send_edit_from_discord(after, self.mapping[str(channel.id)])
+
+    @commands.Cog.listener()
+    async def on_reaction_add(self, reaction, user):
+        channel = reaction.message.channel
+
+        if str(channel.id) not in self.mapping:
+            return
+
+        if len(reaction.message.content.strip()) == 0:
+            return
+
+        self.bot.irc.send_reaction_from_discord(
+            reaction, user, self.mapping[str(channel.id)]
+        )

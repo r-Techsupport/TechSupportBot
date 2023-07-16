@@ -4,6 +4,7 @@ import logging
 import threading
 import time
 
+import discord
 import irc.bot
 import irc.strings
 from ircrelay import formatting
@@ -88,6 +89,22 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             "channels": ", ".join(self.channels.keys()),
         }
 
+    def send_edit_from_discord(self, message, channel):
+        if channel not in self.channels:
+            self.join_channels(self.connection)
+        formatted_message = formatting.format_discord_edit_message(message)
+        self.send_message_to_channel(channel, formatted_message)
+
+    def send_reaction_from_discord(
+        self, reaction: discord.Reaction, user: discord.User, channel: str
+    ):
+        if channel not in self.channels:
+            self.join_channels(self.connection)
+        formatted_message = formatting.format_discord_reaction_message(
+            reaction.message, user, reaction
+        )
+        self.send_message_to_channel(channel, formatted_message)
+
     def send_message_from_discord(self, message, channel):
         """Sends a message from discord to IRC
 
@@ -98,7 +115,12 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         if channel not in self.channels:
             self.join_channels(self.connection)
         formatted_message = formatting.format_discord_message(message)
-        self.connection.privmsg(channel, formatted_message)
+        self.send_message_to_channel(channel, formatted_message)
+
+    def send_message_to_channel(self, channel, message):
+        message_list = [message[i : i + 450] for i in range(0, len(message), 450)]
+        for message in message_list:
+            self.connection.privmsg(channel, message)
 
     def on_mode(self, connection, event):
         print(event)
