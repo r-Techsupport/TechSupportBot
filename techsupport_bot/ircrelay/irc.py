@@ -6,6 +6,7 @@ import time
 import discord
 import irc.bot
 import irc.strings
+import schedule
 from ircrelay import formatting
 
 
@@ -28,6 +29,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
     def on_welcome(self, connection, event):
         # Authenticate with SASL
+        self.console.info("Logging in to IRC")
         connection.send_raw("CAP REQ :sasl")
         connection.send_raw(f"AUTHENTICATE PLAIN")
         auth_message = f"\0{self.username}\0{self.password}"
@@ -40,10 +42,20 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         self.join_channels(connection)
         self.connection = connection
 
+        # Schedule the join channels function, to ensure that the bot stays in all channels
+        schedule.every(10).minutes.do(self.join_channels, connection=self.connection)
+
     def join_channels(self, connection):
         for channel in self.join_channel_list:
+            if channel in self.channels:
+                continue
             self.console.info(f"Joining {channel}")
             connection.join(channel)
+
+    def on_part(self, connection, event):
+        print(event)
+        if event.target == self.username:
+            self.join_channels(connection)
 
     def on_privmsg(self, connection, event):
         print("Do something with DMs on IRC here")
@@ -52,7 +64,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
     def on_pubmsg(self, connection, event):
         split_message = formatting.parse_irc_message(event)
         self.send_message_to_discord(split_message)
-    
+
     def send_message_to_discord(self, split_message):
         asyncio.run_coroutine_threadsafe(
             self.irc_cog.send_message_from_irc(split_message), self.loop
@@ -97,9 +109,11 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             message (discord.Message): The raw string content of the message
             channel (str): The IRC channel name
         """
+        if channel not in self.channels:
+            self.join_channels(self.connection)
         formatted_message = self.format_message(message)
         self.connection.privmsg(channel, formatted_message)
-    
+
     def on_mode(self, connection, event):
         print(event)
         # Parse the mode change event
@@ -109,10 +123,9 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
         # Assuming you have a function named `on_user_mode_change` that you want to call
         # when someone gets banned/unbanned. You can modify the condition accordingly.
-        if mode in ('+b', '-b'):
+        if mode in ("+b", "-b"):
             message = formatting.parse_ban_message(event)
             self.send_message_to_discord(message)
-
 
     def on_user_mode_change(self, channel, action, user):
         # This is where you handle the event when someone gets banned or unbanned.

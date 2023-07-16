@@ -148,11 +148,16 @@ class DiscordToIRC(base.MatchCog):
             )
             return
         if not self.bot.irc.is_bot_op_on_channel(map):
-            await auxiliary.send_deny_embed(message=f"The IRC bot does not have permissions to ban", channel=ctx.channel)
+            await auxiliary.send_deny_embed(
+                message=f"The IRC bot does not have permissions to ban",
+                channel=ctx.channel,
+            )
             return
         self.bot.irc.ban_on_irc(user=user, channel=map, action="+b")
-        await auxiliary.send_confirm_embed(message=f"Sucessfully sent ban command for {user} from {map}", channel=ctx.channel)
-
+        await auxiliary.send_confirm_embed(
+            message=f"Sucessfully sent ban command for {user} from {map}",
+            channel=ctx.channel,
+        )
 
     @irc.command(name="unban", description="Unban a user on IRC")
     async def irc_unban(self, ctx, *, user: str):
@@ -163,10 +168,16 @@ class DiscordToIRC(base.MatchCog):
             )
             return
         if not self.bot.irc.is_bot_op_on_channel(map):
-            await auxiliary.send_deny_embed(message=f"The IRC bot does not have permissions to unban", channel=ctx.channel)
+            await auxiliary.send_deny_embed(
+                message=f"The IRC bot does not have permissions to unban",
+                channel=ctx.channel,
+            )
             return
         self.bot.irc.ban_on_irc(user=user, channel=map, action="-b")
-        await auxiliary.send_confirm_embed(message=f"Sucessfully sent unban command for {user} from {map}", channel=ctx.channel)
+        await auxiliary.send_confirm_embed(
+            message=f"Sucessfully sent unban command for {user} from {map}",
+            channel=ctx.channel,
+        )
 
     @irc.command(name="link", description="Add a link")
     async def irc_link(self, ctx, irc_channel: str):

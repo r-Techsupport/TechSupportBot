@@ -12,12 +12,13 @@ def parse_irc_message(event) -> dict:
         "content": content,
     }
 
+
 def parse_ban_message(event) -> dict:
     # Looking for username, hostmask, action, channel, content
     username = event.source.split("!")[0]
     hostmask = event.source.split("!")[1]
     channel = event.target
-    
+
     if "+b" in event.arguments[0]:
         action = "banned"
     elif "+b" in event.arguments[0]:
