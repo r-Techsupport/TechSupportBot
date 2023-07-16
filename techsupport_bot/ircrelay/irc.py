@@ -81,13 +81,16 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
     def get_irc_status(self):
         if self.connection.is_connected():
-            status_text = "IRC is connected and working"
+            status_text = "Connected"
         else:
-            status_text = "IRC is not connected"
+            status_text = "Not connected"
+        channels = ", ".join(self.channels.keys())
+        if len(channels.strip()) == 0:
+            channels = "No channels"
         return {
             "status": status_text,
             "name": self.username,
-            "channels": ", ".join(self.channels.keys()),
+            "channels": channels,
         }
 
     def send_edit_from_discord(self, message, channel):
