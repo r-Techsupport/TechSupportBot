@@ -330,3 +330,7 @@ class DiscordToIRC(base.MatchCog):
         self.bot.irc.send_reaction_from_discord(
             reaction, user, self.mapping[str(channel.id)]
         )
+
+    async def handle_dm_from_irc(self, message, author):
+        owner = await self.bot.get_owner()
+        await owner.send(f"PM from `{author}`: {message}")

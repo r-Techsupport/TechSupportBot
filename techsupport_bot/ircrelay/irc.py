@@ -64,8 +64,9 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             self.join_channels(connection)
 
     def on_privmsg(self, connection, event):
-        print("Do something with DMs on IRC here")
-        self.do_command(event, event.arguments[0])
+        asyncio.run_coroutine_threadsafe(
+            self.irc_cog.handle_dm_from_irc(event.arguments[0], event.source), self.loop
+        )
 
     def on_pubmsg(self, connection, event):
         split_message = formatting.parse_irc_message(event)
