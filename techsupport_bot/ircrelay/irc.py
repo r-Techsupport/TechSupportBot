@@ -44,7 +44,9 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             password (str): The password of the IRC bot account
         """
         self.loop = loop
-        irc.bot.SingleServerIRCBot.__init__(self, [(server, port)], username, username)
+        irc.bot.SingleServerIRCBot.__init__(
+            self, server_list=[(server, port)], realname=username, nickname=username
+        )
         self.join_channel_list = channels
         self.username = username
         self.password = password
@@ -108,7 +110,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         In the event the bot ever leaves a channel for some reason, like a net split
         This will ensure that the bot rejoins them
         """
-        self.join_channels(self.connection)
+        self.join_channels(connection=self.connection)
         if self.join_thread and self.join_thread.is_alive():
             self.join_thread.cancel()
         self.join_thread = threading.Timer(600, self.join_channels_thread)
@@ -117,8 +119,14 @@ class IRCBot(irc.bot.SingleServerIRCBot):
     def on_part(
         self, connection: irc.client.ServerConnection, event: irc.client.Event
     ) -> None:
+        """How to handle what happens when the bot leaves a channel
+
+        Args:
+            connection (irc.client.ServerConnection): The IRC connection
+            event (irc.client.Event): The event object that triggered this function
+        """
         if event.target == self.username:
-            self.join_channels(connection)
+            self.join_channels(connection=connection)
 
     def on_privmsg(
         self, connection: irc.client.ServerConnection, event: irc.client.Event
@@ -131,7 +139,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             event (irc.client.Event): The event object that triggered this function
         """
         asyncio.run_coroutine_threadsafe(
-            self.irc_cog.handle_dm_from_irc(event.arguments[0], event), self.loop
+            self.irc_cog.handle_dm_from_irc(message=event.arguments[0], event=event),
+            self.loop,
         )
 
     def on_pubmsg(
@@ -144,10 +153,10 @@ class IRCBot(irc.bot.SingleServerIRCBot):
            connection (irc.client.ServerConnection): The IRC connection
            event (irc.client.Event): The event object that triggered this function
         """
-        split_message = formatting.parse_irc_message(event)
+        split_message = formatting.parse_irc_message(event=event)
         if len(split_message) == 0:
             return
-        self.send_message_to_discord(split_message)
+        self.send_message_to_discord(split_message=split_message)
 
     def send_message_to_discord(self, split_message: Dict[str, str]) -> None:
         """Sends the given message to discord, using the discord API event loop
@@ -156,7 +165,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             split_message (Dict[str, str]): The formatted message to send to discord
         """
         asyncio.run_coroutine_threadsafe(
-            self.irc_cog.send_message_from_irc(split_message), self.loop
+            self.irc_cog.send_message_from_irc(split_message=split_message), self.loop
         )
 
     def get_irc_status(self) -> Dict[str, str]:
@@ -166,7 +175,9 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         Returns:
             Dict[str, str]: The dictionary containing the 3 status items as strings
         """
-        if self.connection.is_connected():
+        if not self.irc_cog and self.connection.is_connected():
+            status_text = "Connected, discord failed"
+        elif self.connection.is_connected():
             status_text = "Connected"
         else:
             status_text = "Not connected"
@@ -188,8 +199,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         """
         if channel not in self.channels:
             self.join_channels(self.connection)
-        formatted_message = formatting.format_discord_edit_message(message)
-        self.send_message_to_channel(channel, formatted_message)
+        formatted_message = formatting.format_discord_edit_message(message=message)
+        self.send_message_to_channel(channel=channel, message=formatted_message)
 
     def send_reaction_from_discord(
         self, reaction: discord.Reaction, user: discord.User, channel: str
@@ -203,11 +214,11 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             channel (str): The linked IRC channel the message reacted to is in
         """
         if channel not in self.channels:
-            self.join_channels(self.connection)
+            self.join_channels(connection=self.connection)
         formatted_message = formatting.format_discord_reaction_message(
             reaction.message, user, reaction
         )
-        self.send_message_to_channel(channel, formatted_message)
+        self.send_message_to_channel(channel=channel, message=formatted_message)
 
     def send_message_from_discord(self, message: discord.Message, channel: str) -> None:
         """Sends a message from discord to IRC
@@ -217,9 +228,9 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             channel (str): The linked IRC channel the message was sent
         """
         if channel not in self.channels:
-            self.join_channels(self.connection)
+            self.join_channels(connection=self.connection)
         formatted_message = formatting.format_discord_message(message)
-        self.send_message_to_channel(channel, formatted_message)
+        self.send_message_to_channel(channel=channel, message=formatted_message)
 
     def send_message_to_channel(self, channel: str, message: str) -> None:
         """Sends a message to a channel. Splits the message if needed
@@ -248,8 +259,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         mode = modes[0]
 
         if mode in ("+b", "-b"):
-            message = formatting.parse_ban_message(event)
-            self.send_message_to_discord(message)
+            message = formatting.parse_ban_message(event=event)
+            self.send_message_to_discord(split_message=message)
 
     def ban_on_irc(self, user: str, channel: str, action: str) -> None:
         """Ban or unban a given user on the specified IRC channe;

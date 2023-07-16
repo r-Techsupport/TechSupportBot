@@ -95,7 +95,7 @@ class DiscordToIRC(base.MatchCog):
             content (str): The string content of the message
             result (str): The string representation of the IRC channel
         """
-        self.bot.irc.send_message_from_discord(ctx.message, result)
+        self.bot.irc.send_message_from_discord(message=ctx.message, channel=result)
 
     @commands.group(
         brief="Executes an irc command",
@@ -145,7 +145,7 @@ class DiscordToIRC(base.MatchCog):
                 message="This channel is not linked to IRC", channel=ctx.channel
             )
             return
-        if not self.bot.irc.is_bot_op_on_channel(map):
+        if not self.bot.irc.is_bot_op_on_channel(channel_name=map):
             await auxiliary.send_deny_embed(
                 message=f"The IRC bot does not have permissions to ban",
                 channel=ctx.channel,
@@ -172,7 +172,7 @@ class DiscordToIRC(base.MatchCog):
                 message="This channel is not linked to IRC", channel=ctx.channel
             )
             return
-        if not self.bot.irc.is_bot_op_on_channel(map):
+        if not self.bot.irc.is_bot_op_on_channel(channel_name=map):
             await auxiliary.send_deny_embed(
                 message=f"The IRC bot does not have permissions to unban",
                 channel=ctx.channel,
@@ -265,33 +265,30 @@ class DiscordToIRC(base.MatchCog):
         Args:
             split_message (Dict[str, str]): The formatted dictionary of the IRC message
         """
-        try:
-            if split_message["channel"] not in self.mapping.inverse:
-                return
+        if split_message["channel"] not in self.mapping.inverse:
+            return
 
-            map = self.mapping.inverse[split_message["channel"]]
+        map = self.mapping.inverse[split_message["channel"]]
 
-            discord_channel = await self.bot.fetch_channel(map)
+        discord_channel = await self.bot.fetch_channel(map)
 
-            mentions = self.get_mentions(
-                message=split_message["content"], channel=discord_channel
-            )
-            mentions_string = auxiliary.construct_mention_string(mentions)
+        mentions = self.get_mentions(
+            message=split_message["content"], channel=discord_channel
+        )
+        mentions_string = auxiliary.construct_mention_string(targets=mentions)
 
-            embed = self.generate_sent_message_embed(split_message)
+        embed = self.generate_sent_message_embed(split_message=split_message)
 
-            await discord_channel.send(content=mentions_string, embed=embed)
-        except Exception as e:
-            await self.bot.logger.warning(f"{e}")
+        await discord_channel.send(content=mentions_string, embed=embed)
 
     def get_mentions(
-        self, message: str, channel: discord.Channel
+        self, message: str, channel: discord.abc.Messageable
     ) -> List[discord.Member]:
         """A function to turn plain text into mentioned from IRC
 
         Args:
             message (str): The string message from IRC
-            channel (discord.Channel): The channel that the IRC message will be sent to
+            channel (discord.abc.Messageable): The channel that the IRC message will be sent to
 
         Returns:
             List[discord.Member]: The potentially duplicated list members found from the message
@@ -357,7 +354,9 @@ class DiscordToIRC(base.MatchCog):
         if before.clean_content == after.clean_content:
             return
 
-        self.bot.irc.send_edit_from_discord(after, self.mapping[str(channel.id)])
+        self.bot.irc.send_edit_from_discord(
+            message=after, channel=self.mapping[str(channel.id)]
+        )
 
     @commands.Cog.listener()
     async def on_reaction_add(
@@ -379,15 +378,15 @@ class DiscordToIRC(base.MatchCog):
             return
 
         self.bot.irc.send_reaction_from_discord(
-            reaction, user, self.mapping[str(channel.id)]
+            reaction=reaction, user=user, channel=self.mapping[str(channel.id)]
         )
 
-    async def handle_dm_from_irc(self, message: str, author: str) -> None:
+    async def handle_dm_from_irc(self, message: str, event) -> None:
         """Sends a DM to the owner of the bot based on a message from IRC
 
         Args:
             message (str): The message from IRC that the IRC Bot recieved
-            author (str): The hostmask of the user who sent the DM
+            event (irc.client.Event): The event object that triggered this function
         """
         owner = await self.bot.get_owner()
-        await owner.send(f"PM from `{author}`: {message}")
+        await owner.send(f"PM from `{event.source}`: {message}")

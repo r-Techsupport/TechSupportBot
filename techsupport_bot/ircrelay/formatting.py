@@ -70,7 +70,7 @@ def format_discord_message(message: discord.Message) -> str:
     Returns:
         str: The formatted message, ready to send to IRC
     """
-    message_str = core_sent_message_format(message)
+    message_str = core_sent_message_format(message=message)
     return message_str
 
 
@@ -85,8 +85,8 @@ def core_sent_message_format(message: discord.Message) -> str:
         str: The string, with unlimited length, that is ready to be sent to IRC
     """
     IRC_BOLD = ""
-    permissions_prefix = get_permissions_prefix_for_discord_user(message.author)
-    files = get_file_links(message.attachments)
+    permissions_prefix = get_permissions_prefix_for_discord_user(member=message.author)
+    files = get_file_links(message_attachments=message.attachments)
     message_content = f"{message.clean_content} {files}"
     if len(message_content.strip()) == 0:
         return ""
@@ -106,7 +106,7 @@ def format_discord_edit_message(message: discord.Message) -> str:
     Returns:
         str: The string that is ready to be sent to IRC. Complete with message edited flag
     """
-    message_str = core_sent_message_format(message)
+    message_str = core_sent_message_format(message=message)
     message_str = f"{message_str} ** (message edited)"
     return message_str
 
@@ -130,7 +130,7 @@ def format_discord_reaction_message(
     else:
         emoji = f":{reaction.emoji}:"
 
-    message_str = core_sent_message_format(message)
+    message_str = core_sent_message_format(message=message)
     message_str = f"{user.display_name}  reacted with {emoji} to {message_str}"
     return message_str
 
