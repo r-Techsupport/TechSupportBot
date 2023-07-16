@@ -52,18 +52,18 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         self.password = password
 
     def on_nicknameinuse(
-        self, connection: irc.client.ServerConnection, event: irc.client.Event
+        self, connection: irc.client.ServerConnection, _: irc.client.Event
     ) -> None:
         """A simple way to ensure that the bot will never be reject for an in use nickname
 
         Args:
             connection (irc.client.ServerConnection): The IRC connection
-            event (irc.client.Event): The event object that triggered this function
+            _ (irc.client.Event): The event object that triggered this function
         """
         connection.nick(connection.get_nickname() + "_")
 
     def on_welcome(
-        self, connection: irc.client.ServerConnection, event: irc.client.Event
+        self, connection: irc.client.ServerConnection, _: irc.client.Event
     ) -> None:
         """What to do after the connection has been established, but before authentication
         This authenticates using SASL, joins channels, and starts a thread to auto join channels
@@ -71,7 +71,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
         Args:
             connection (irc.client.ServerConnection): The IRC connection
-            event (irc.client.Event): The event object that triggered this function
+            _ (irc.client.Event): The event object that triggered this function
         """
         # Authenticate with SASL
         self.console.info("Authenticating to IRC")
@@ -129,13 +129,13 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             self.join_channels(connection=connection)
 
     def on_privmsg(
-        self, connection: irc.client.ServerConnection, event: irc.client.Event
+        self, _: irc.client.ServerConnection, event: irc.client.Event
     ) -> None:
         """What to do when the bot gets DMs on IRC
         Currently just sends a message to the discord bot owners DMs
 
         Args:
-            connection (irc.client.ServerConnection): The IRC connection
+            _ (irc.client.ServerConnection): The IRC connection
             event (irc.client.Event): The event object that triggered this function
         """
         asyncio.run_coroutine_threadsafe(
@@ -144,13 +144,13 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         )
 
     def on_pubmsg(
-        self, connection: irc.client.ServerConnection, event: irc.client.Event
+        self, _: irc.client.ServerConnection, event: irc.client.Event
     ) -> None:
         """What to do when a message is sent in a public channel the bot is in
         If the channel is linked to a discord channel, the message will get sent to discord
 
         Args:
-           connection (irc.client.ServerConnection): The IRC connection
+           _ (irc.client.ServerConnection): The IRC connection
            event (irc.client.Event): The event object that triggered this function
         """
         split_message = formatting.parse_irc_message(event=event)
@@ -175,12 +175,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         Returns:
             Dict[str, str]: The dictionary containing the 3 status items as strings
         """
-        if not self.irc_cog and self.connection.is_connected():
-            status_text = "Connected, discord failed"
-        elif self.connection.is_connected():
-            status_text = "Connected"
-        else:
-            status_text = "Not connected"
+        status_text = self.generate_status_string()
         channels = ", ".join(self.channels.keys())
         if len(channels.strip()) == 0:
             channels = "No channels"
@@ -189,6 +184,22 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             "name": self.username,
             "channels": channels,
         }
+
+    def generate_status_string(self) -> str:
+        """Generates a human readable status string
+        This takes into account the login process, if the connection is active,
+        and if the discord side loaded fie
+
+        Returns:
+            str: The human readable string, will be one or two words
+        """
+        if not self.ready:
+            return "Not ready"
+        if not self.irc_cog:
+            return "Discord failure"
+        if not self.connection.is_connected():
+            return "Not connected"
+        return "Connected"
 
     def send_edit_from_discord(self, message: discord.Message, channel: str) -> None:
         """This handles a discord message being edited
@@ -243,14 +254,12 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         for message in message_list:
             self.connection.privmsg(channel, message)
 
-    def on_mode(
-        self, connection: irc.client.ServerConnection, event: irc.client.Event
-    ) -> None:
+    def on_mode(self, _: irc.client.ServerConnection, event: irc.client.Event) -> None:
         """What to do when a channel mode is changed
         Currently just handles ban notifications
 
         Args:
-            connection (irc.client.ServerConnection): The IRC connection
+            _ (irc.client.ServerConnection): The IRC connection
             event (irc.client.Event): The event object that triggered this function
         """
         # Parse the mode change event
