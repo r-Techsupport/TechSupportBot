@@ -11,7 +11,6 @@ import aiocron
 import base
 import discord
 import expiringdict
-import munch
 import ui
 import util
 import yaml
@@ -362,7 +361,7 @@ class FactoidManager(base.MatchCog):
 
         try:
             # define the message and send it
-            message = await ctx.send(
+            await ctx.send(
                 content=content,
                 embed=embed,
             )

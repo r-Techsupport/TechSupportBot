@@ -1,4 +1,5 @@
-"""This is the core of the IRC bot. It connects to IRC and handles message tranmissions to discord"""
+"""This is the core of the IRC bot. It connects to IRC and handles 
+message tranmissions to discord"""
 import asyncio
 import base64
 import logging
@@ -76,13 +77,13 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         # Authenticate with SASL
         self.console.info("Authenticating to IRC")
         connection.send_raw("CAP REQ :sasl")
-        connection.send_raw(f"AUTHENTICATE PLAIN")
+        connection.send_raw("AUTHENTICATE PLAIN")
         auth_message = f"\0{self.username}\0{self.password}"
         encoded_auth_message = base64.b64encode(auth_message.encode("UTF-8")).decode(
             "UTF-8"
         )
         connection.send_raw(f"AUTHENTICATE {encoded_auth_message}")
-        time.sleep(20) # There is no proper way to wait for authentication to finish
+        time.sleep(20)  # There is no proper way to wait for authentication to finish
         self.console.info("Connected to IRC")
         self.ready = True
         self.join_channels(connection)
@@ -256,8 +257,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             message (str): The fully formatted string to send to the IRC channel
         """
         message_list = [message[i : i + 450] for i in range(0, len(message), 450)]
-        for message in message_list:
-            self.connection.privmsg(channel, message)
+        for cut_message in message_list:
+            self.connection.privmsg(channel, cut_message)
 
     def on_mode(self, _: irc.client.ServerConnection, event: irc.client.Event) -> None:
         """What to do when a channel mode is changed

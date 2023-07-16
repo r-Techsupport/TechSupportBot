@@ -1,9 +1,7 @@
 """Module for defining the data bot methods."""
 
-import asyncio
 import urllib
 
-import aio_pika
 import aiohttp
 import expiringdict
 import gino

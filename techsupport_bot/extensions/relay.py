@@ -238,7 +238,7 @@ class DiscordToIRC(base.MatchCog):
             return
         if not self.bot.irc.is_bot_op_on_channel(channel_name=map):
             await auxiliary.send_deny_embed(
-                message=f"The IRC bot does not have permissions to ban",
+                message="The IRC bot does not have permissions to ban",
                 channel=ctx.channel,
             )
             return
@@ -265,7 +265,7 @@ class DiscordToIRC(base.MatchCog):
             return
         if not self.bot.irc.is_bot_op_on_channel(channel_name=map):
             await auxiliary.send_deny_embed(
-                message=f"The IRC bot does not have permissions to unban",
+                message="The IRC bot does not have permissions to unban",
                 channel=ctx.channel,
             )
             return
@@ -286,14 +286,16 @@ class DiscordToIRC(base.MatchCog):
         """
         if str(ctx.channel.id) in self.mapping:
             await auxiliary.send_deny_embed(
-                message=f"This discord channel is already linked to {self.mapping[str(ctx.channel.id)]}",
+                message="This discord channel is already linked"
+                + f"to {self.mapping[str(ctx.channel.id)]}",
                 channel=ctx.channel,
             )
             return
 
         if irc_channel in self.mapping.inverse:
             await auxiliary.send_deny_embed(
-                message=f"This IRC channel is already linked <#{self.mapping.inverse[irc_channel]}>",
+                message="This IRC channel is already linked"
+                + f"<#{self.mapping.inverse[irc_channel]}>",
                 channel=ctx.channel,
             )
             return
