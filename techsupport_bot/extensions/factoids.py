@@ -383,7 +383,7 @@ class FactoidManager(base.MatchCog):
                 exception=e,
             )
             # Sends the raw factoid instead of the embed
-            message = await ctx.send(factoid.message)
+            await ctx.send(factoid.message)
 
         await self.send_to_irc(ctx, factoid.message)
 
