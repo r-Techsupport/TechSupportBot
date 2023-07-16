@@ -254,22 +254,22 @@ class DiscordToIRC(base.MatchCog):
             mentions = self.get_mentions(
                 message=split_message["content"], channel=discord_channel
             )
+            mentions_string = auxiliary.construct_mention_string(mentions)
 
             embed = self.generate_sent_message_embed(split_message)
 
-            await discord_channel.send(content=mentions, embed=embed)
+            await discord_channel.send(content=mentions_string, embed=embed)
         except Exception as e:
             await self.bot.logger.warning(f"{e}")
 
     def get_mentions(self, message, channel):
-        mentions = ""
+        mentions = []
         for word in message.split(" "):
             member = channel.guild.get_member_named(word)
             if member:
                 channel_permissions = channel.permissions_for(member)
                 if channel_permissions.read_messages:
-                    mention = f"{member.mention} "
-                    mentions += mention
+                    mentions.append(member)
                     continue
         return mentions
 
