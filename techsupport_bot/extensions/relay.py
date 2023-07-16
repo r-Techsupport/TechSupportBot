@@ -164,7 +164,7 @@ class DiscordToIRC(base.MatchCog):
             channel=ctx.channel,
         )
 
-    @irc.command(name="link", description="Add a link")
+    @irc.command(name="link", description="Add a link between IRC and discord")
     async def irc_link(self, ctx, irc_channel: str):
         """Create a new link between discord and IRC
 
@@ -181,7 +181,7 @@ class DiscordToIRC(base.MatchCog):
 
         if irc_channel in self.mapping.inverse:
             await auxiliary.send_deny_embed(
-                message=f"This IRC channel is already linked {self.mapping.inverse[irc_channel]}",
+                message=f"This IRC channel is already linked <#{self.mapping.inverse[irc_channel]}>",
                 channel=ctx.channel,
             )
             return
@@ -204,7 +204,30 @@ class DiscordToIRC(base.MatchCog):
 
         await map.create()
         await auxiliary.send_confirm_embed(
-            message="New link established", channel=ctx.channel
+            message=f"New link established between <#{ctx.channel.id}> and {irc_channel}",
+            channel=ctx.channel,
+        )
+
+    @irc.command(name="unlink", description="Remove a link between IRC and discord")
+    async def irc_unlink(self, ctx):
+        if str(ctx.channel.id) not in self.mapping:
+            await auxiliary.send_deny_embed(
+                message="This discord channel is not linked to any IRC channel",
+                channel=ctx.channel,
+            )
+            return
+
+        irc_channel = self.mapping.pop(str(ctx.channel.id))
+
+        db_link = await self.models.IRCChannelMapping.query.where(
+            self.models.IRCChannelMapping.irc_channel_id == irc_channel
+        ).gino.first()
+
+        await db_link.delete()
+
+        await auxiliary.send_confirm_embed(
+            message=f"Successfully deleted link between <#{ctx.channel.id}> and {irc_channel}",
+            channel=ctx.channel,
         )
 
     async def send_message_from_irc(self, split_message):
