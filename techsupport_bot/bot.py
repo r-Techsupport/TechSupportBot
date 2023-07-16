@@ -95,6 +95,7 @@ class TechSupportBot(base.AdvancedBot):
         self.irc = irc_bot
 
         irc_thread = threading.Thread(target=irc_bot.start)
+        await self.logger.info("Logging in to IRC")
         irc_thread.start()
 
     async def load_builtin_cog(self, cog):

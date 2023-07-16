@@ -1,12 +1,12 @@
 import asyncio
 import base64
 import logging
+import threading
 import time
 
 import discord
 import irc.bot
 import irc.strings
-import schedule
 from ircrelay import formatting
 
 
@@ -29,7 +29,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
     def on_welcome(self, connection, event):
         # Authenticate with SASL
-        self.console.info("Logging in to IRC")
+        self.console.info("Authenticating to IRC")
         connection.send_raw("CAP REQ :sasl")
         connection.send_raw(f"AUTHENTICATE PLAIN")
         auth_message = f"\0{self.username}\0{self.password}"
@@ -41,9 +41,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         self.console.info("Connected to IRC")
         self.join_channels(connection)
         self.connection = connection
-
-        # Schedule the join channels function, to ensure that the bot stays in all channels
-        schedule.every(10).minutes.do(self.join_channels, connection=self.connection)
+        threading.Timer(600, self.join_channels_thread).start()
 
     def join_channels(self, connection):
         for channel in self.join_channel_list:
@@ -52,8 +50,11 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             self.console.info(f"Joining {channel}")
             connection.join(channel)
 
+    def join_channels_thread(self):
+        self.join_channels(self.connection)
+        threading.Timer(600, self.join_channels_thread).start()
+
     def on_part(self, connection, event):
-        print(event)
         if event.target == self.username:
             self.join_channels(connection)
 
