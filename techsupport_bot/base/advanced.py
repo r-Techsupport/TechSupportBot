@@ -399,17 +399,33 @@ class AdvancedBot(DataBot):
             message_template = error.ErrorResponse()
 
         error_message = message_template.get_message(exception)
-
-        await auxiliary.send_deny_embed(message=error_message, channel=context.channel)
-
         log_channel = await self.get_log_channel_from_guild(
             getattr(context, "guild", None), key="logging_channel"
         )
-        await self.logger.error(
-            f"Command error: {exception}",
-            exception=exception,
-            channel=log_channel,
-        )
+
+        # 1000 character cap
+        if len(error_message) < 1000:
+            await auxiliary.send_deny_embed(
+                message=error_message, channel=context.channel
+            )
+            await self.logger.error(
+                f"Command error: {exception}",
+                exception=exception,
+                channel=log_channel,
+            )
+
+        else:
+            await auxiliary.send_deny_embed(
+                message="Command raised an error and the error message too long to send!"
+                + f" First 1000 chars:\n{error_message[:1000]}",
+                channel=context.channel,
+            )
+            await self.logger.error(
+                "Command raised an error and the error message too long to send!"
+                + " See traceback below",
+                exception=exception,
+                channel=log_channel,
+            )
 
     async def on_connect(self):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_connect"""
@@ -427,6 +443,10 @@ class AdvancedBot(DataBot):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_delete"""
         guild = getattr(message.channel, "guild", None)
         channel_id = getattr(message.channel, "id", None)
+
+        # Ignore ephemeral slash command messages
+        if not guild and message.type == discord.MessageType.chat_input_command:
+            return
 
         config_ = await self.get_context_config(guild=guild)
         if str(channel_id) in config_.get("private_channels", []):
@@ -499,6 +519,10 @@ class AdvancedBot(DataBot):
 
         guild = getattr(before.channel, "guild", None)
         channel_id = getattr(before.channel, "id", None)
+
+        # Ignore ephemeral slash command messages
+        if not guild and before.type == discord.MessageType.chat_input_command:
+            return
 
         config_ = await self.get_context_config(guild=guild)
         if str(channel_id) in config_.get("private_channels", []):
@@ -776,6 +800,30 @@ class AdvancedBot(DataBot):
             send=True,
             channel=log_channel,
         )
+
+    async def on_member_update(self, before, after):
+        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update"""
+        changed_role = set(before.roles) ^ set(after.roles)
+        if changed_role:
+            if len(before.roles) < len(after.roles):
+                embed = discord.Embed()
+                embed.add_field(name="Roles added", value=next(iter(changed_role)))
+                embed.add_field(name="Server", value=before.guild.name)
+            else:
+                embed = discord.Embed()
+                embed.add_field(name="Roles lost", value=next(iter(changed_role)))
+                embed.add_field(name="Server", value=before.guild.name)
+
+            log_channel = await self.get_log_channel_from_guild(
+                getattr(before, "guild", None), key="member_events_channel"
+            )
+
+            await self.logger.info(
+                f"Member with ID {before.id} has changed status in guild with ID {before.guild.id}",
+                embed=embed,
+                send=True,
+                channel=log_channel,
+            )
 
     async def on_member_remove(self, member):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_remove"""

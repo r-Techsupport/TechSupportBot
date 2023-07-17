@@ -4,6 +4,7 @@ This contains 23 tests
 """
 
 
+import importlib
 from unittest.mock import AsyncMock, MagicMock, call
 
 import discord
@@ -360,6 +361,9 @@ class Test_DenyEmbed:
             color=discord.Color.red(),
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_send_deny(self):
         """Test that send deny embed sends the right content to the right place"""
@@ -374,6 +378,9 @@ class Test_DenyEmbed:
 
         # Step 3 - Assert that everything works
         discord_env.channel.send.assert_awaited_once_with(content="", embed="test")
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
 
 
 class Test_ConfirmEmbed:
@@ -394,6 +401,9 @@ class Test_ConfirmEmbed:
             color=discord.Color.green(),
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_send_confirm(self):
         """Test that send confirm embed sends the right content to the right place"""
@@ -408,3 +418,6 @@ class Test_ConfirmEmbed:
 
         # Step 3 - Assert that everything works
         discord_env.channel.send.assert_awaited_once_with(content="", embed="test")
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
