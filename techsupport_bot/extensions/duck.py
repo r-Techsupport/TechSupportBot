@@ -280,7 +280,10 @@ class DuckHunt(base.LoopCog):
                 text=f"Try again in {config.extensions.duck.cooldown.value} seconds"
             )
             asyncio.create_task(
-                message.author.timeout(timedelta(seconds=10), reason="Missed a duck")
+                message.author.timeout(
+                    timedelta(seconds=config.extensions.duck.cooldown.value),
+                    reason="Missed a duck",
+                )
             )
             asyncio.create_task(
                 message.channel.send(
