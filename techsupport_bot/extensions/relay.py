@@ -4,6 +4,7 @@ from typing import Dict, List, Union
 import base
 import discord
 import munch
+import ui
 from base import auxiliary
 from bidict import bidict
 from discord.ext import commands
@@ -337,13 +338,27 @@ class DiscordToIRC(base.MatchCog):
             )
             return
 
+        view = ui.Confirm()
+        await view.send(
+            message=f"Are you sure you want to unlink <#{ctx.channel.id}> and {self.mapping[str(ctx.channel.id)]}",
+            channel=ctx.channel,
+            author=ctx.author,
+        )
+        await view.wait()
+        if view.value is ui.ConfirmResponse.TIMEOUT:
+            return
+        if view.value is ui.ConfirmResponse.DENIED:
+            await auxiliary.send_deny_embed(
+                message=f"The link between <#{ctx.channel.id}> and {self.mapping[str(ctx.channel.id)]} was not deleted",
+                channel=ctx.channel,
+            )
+            return
+
         irc_channel = self.mapping.pop(str(ctx.channel.id))
 
         db_link = await self.models.IRCChannelMapping.query.where(
             self.models.IRCChannelMapping.discord_channel_id == str(ctx.channel.id)
         ).gino.first()
-
-        print(db_link)
 
         await db_link.delete()
 
