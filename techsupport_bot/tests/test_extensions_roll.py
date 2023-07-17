@@ -3,6 +3,7 @@ This is a file to test the extensions/roll.py file
 This contains 3 tests
 """
 
+import importlib
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import discord
@@ -53,6 +54,9 @@ class Test_RollCommand:
             url=roller.ICON_URL,
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_roll_calls_send(self):
         """A test to ensure that ctx.send is called correctly"""
@@ -68,6 +72,9 @@ class Test_RollCommand:
 
         # Step 3 - Assert that everything works
         discord_env.context.send.assert_called_once_with(embed="embed")
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
 
 
 class Test_RandomNumber:

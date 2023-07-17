@@ -21,6 +21,7 @@ from .helpers import (
     MockContext,
     MockMember,
     MockMessage,
+    MockReaction,
 )
 
 PREFIX = "."
@@ -76,7 +77,7 @@ class FakeDiscordEnv:
             content=f"{PREFIX}message", author=self.person1
         )
         self.message_person1_noprefix_1 = MockMessage(
-            content="message", author=self.person1
+            content="message", author=self.person1, reactions=[]
         )
         self.message_person1_noprefix_2 = MockMessage(
             content="different message", author=self.person1
@@ -101,6 +102,9 @@ class FakeDiscordEnv:
             author=self.person1,
             attachments=[self.json_attachment],
         )
+        self.message_reaction1 = MockMessage(content="2", reactions=[1])
+        self.message_reaction2 = MockMessage(reactions=[0])
+        self.message_reaction3 = MockMessage(reactions=[20])
 
         # channel objects
         self.channel = MockChannel()
@@ -116,3 +120,7 @@ class FakeDiscordEnv:
             self.conch = MagicConch(self.bot)
             self.emoji = Emojis(self.bot)
             self.hello = Greeter(self.bot)
+
+        # reaction objects.
+        self.reaction1 = MockReaction(message="2", count=1)
+        self.reaction2 = MockReaction(count=0)
