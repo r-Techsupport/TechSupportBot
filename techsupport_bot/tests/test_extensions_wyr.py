@@ -10,8 +10,6 @@ import discord
 import pytest
 from base import auxiliary
 from extensions import wyr
-from hypothesis import given
-from hypothesis.strategies import text
 
 from . import config_for_tests
 
