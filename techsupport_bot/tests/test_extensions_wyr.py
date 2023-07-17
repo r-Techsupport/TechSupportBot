@@ -1,6 +1,6 @@
 """
 This is a file to test the extensions/wyr.py file
-This contains 6 tests
+This contains 7 tests
 """
 import importlib
 import random
@@ -141,7 +141,7 @@ class Test_Get_Question:
         importlib.reload(random)
 
     def test_last_set(self):
-        """Ensure that get_question gets any question"""
+        """Ensure that the last variable is properly set"""
         # Step 1 - Setup env
         wyr_test = setup_local_extension()
         wyr_test.last = None
@@ -151,3 +151,19 @@ class Test_Get_Question:
 
         # Step 3 - Assert that everything works
         assert wyr_test.last is question
+
+    def test_wrap_around(self):
+        """Ensure that get_question wraps around if needed"""
+        # Step 1 - Setup env
+        wyr_test = setup_local_extension()
+        wyr_test.last = wyr_test.QUESTIONS[len(wyr_test.QUESTIONS) - 1]
+        random.randint = MagicMock(return_value=len(wyr_test.QUESTIONS) - 1)
+
+        # Step 2 - Call the function
+        question = wyr_test.get_question()
+
+        # Step 3 - Assert that everything works
+        assert question is wyr_test.QUESTIONS[0]
+
+        # Step 4 - Cleanup
+        importlib.reload(random)

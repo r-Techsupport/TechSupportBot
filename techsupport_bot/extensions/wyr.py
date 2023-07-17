@@ -553,7 +553,7 @@ class WouldYouRather(base.BaseCog):
         Returns:
             Question: The question to print to the user
         """
-        rand_index = random.randint(0, len(self.QUESTIONS))
+        rand_index = random.randint(0, len(self.QUESTIONS) - 1)
         if self.last == self.QUESTIONS[rand_index]:
             rand_index = (rand_index + 1) % len(self.QUESTIONS)
         self.last = self.QUESTIONS[rand_index]
