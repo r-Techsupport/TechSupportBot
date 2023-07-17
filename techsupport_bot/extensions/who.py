@@ -75,13 +75,21 @@ class Who(base.BaseCog):
         """Checks whether invoker can read notes. If at least one reader
         role is not set, all members can read notes."""
         config = await interaction.client.get_context_config(interaction)
-        if readers := config.extensions.who.note_readers.value:
+        if reader_roles := config.extensions.who.note_readers.value:
             roles = (
-                discord.utils.get(interaction.guild.roles, name=reader)
-                for reader in readers
+                discord.utils.get(interaction.guild.roles, name=role)
+                for role in reader_roles
             )
+
             return any((role in interaction.user.roles for role in roles))
-        return True
+
+        # Reader_roles are empty (not set)
+        message = "There aren't any `note_readers` roles set in the config!"
+        embed = auxiliary.prepare_deny_embed(message=message)
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        raise commands.CommandError(message)
 
     @app_commands.check(is_reader)
     @app_commands.command(
