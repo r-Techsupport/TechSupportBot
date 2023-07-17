@@ -52,7 +52,7 @@ class HangmanGame:
             |
             |
         =========""",
-        """
+        r"""
         +---+
         |   |
         O   |
@@ -60,7 +60,7 @@ class HangmanGame:
             |
             |
         =========""",
-        """
+        r"""
         +---+
         |   |
         O   |
@@ -68,7 +68,7 @@ class HangmanGame:
             |
             |
         =========""",
-        """
+        r"""
         +---+
         |   |
         O   |
@@ -76,7 +76,7 @@ class HangmanGame:
        /    |
             |
         =========""",
-        """
+        r"""
         +---+
         |   |
         O   |
@@ -193,8 +193,6 @@ class HangmanCog(base.BaseCog):
 
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
-
-        pass
 
     @hangman.command(
         name="start",
@@ -325,7 +323,7 @@ class HangmanCog(base.BaseCog):
         old_message = game_data.get("message")
         try:
             await old_message.delete()
-        except Exception:
+        except discord.errors.NotFound:
             pass
 
         embed = await self.generate_game_embed(ctx, game_data.get("game"))
