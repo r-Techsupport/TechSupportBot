@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "9718ed697be056f277b6049b7b8f5bf85815e710cd7285b9dce3fd80f19d0c9e"
+            "sha256": "6c03846be7e1e24a2fa0e8825f90ddfe9c976154776091834247eaef02f50d31"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,14 +16,6 @@
         ]
     },
     "default": {
-        "aio-pika": {
-            "hashes": [
-                "sha256:d51738779c8a16f9f64801b71115c7270f761b7869cc19a429165ad715db9e33",
-                "sha256:fdfd966217e191a601c78b0869dd2d646ef64c11f7a16c88494a17c8b22b001a"
-            ],
-            "index": "pypi",
-            "version": "==9.1.4"
-        },
         "aiocron": {
             "hashes": [
                 "sha256:48546513faf2eb7901e65a64eba7b653c80106ed00ed9ca3419c3d10b6555a01",
@@ -124,14 +116,6 @@
             ],
             "markers": "python_version >= '3.6'",
             "version": "==3.8.4"
-        },
-        "aiormq": {
-            "hashes": [
-                "sha256:ccf495e3da2849be37ba802389839ac7a6f18cf58f2b7d5f2cc4eb21e2dbc564",
-                "sha256:da53ec26aeecdccda8dab7947f391c9b53943f7dd45c0fc4b515971e7fc320cf"
-            ],
-            "markers": "python_version >= '3.7' and python_version < '4.0'",
-            "version": "==6.7.6"
         },
         "aiosignal": {
             "hashes": [
@@ -463,10 +447,10 @@
         },
         "distlib": {
             "hashes": [
-                "sha256:14bad2d9b04d3a36127ac97f30b12a19268f211063d8f8ee4f47108896e11b46",
-                "sha256:f35c4b692542ca110de7ef0bea44d73981caeb34ca0b9b6b2e6d7790dda8f80e"
+                "sha256:2e24928bc811348f0feb63014e97aaae3037f2cf48712d51ae61df7fd6075057",
+                "sha256:9dafe54b34a028eafd95039d5e5d4851a13734540f1331060d31c9916e7147a8"
             ],
-            "version": "==0.3.6"
+            "version": "==0.3.7"
         },
         "dnspython": {
             "hashes": [
@@ -871,14 +855,6 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==23.1"
-        },
-        "pamqp": {
-            "hashes": [
-                "sha256:15acef752356593ca569d13dfedc8ada9f17deeeb8cec4f7b77825e2b6c7de3e",
-                "sha256:22550ceb1ca50aafda65873e77e8c1c1b139fb5975e1a09860fae940cf8e970a"
-            ],
-            "markers": "python_version >= '3.7'",
-            "version": "==3.2.1"
         },
         "pathspec": {
             "hashes": [
