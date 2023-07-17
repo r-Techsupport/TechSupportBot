@@ -637,7 +637,7 @@ class DuckHunt(base.LoopCog):
     @commands.guild_only()
     @duck.command(
         brief="Resets someones duck counts",
-        description="Deleted the database entry of the target",
+        description="Deletes the database entry of the target",
         usage="[user]",
     )
     async def reset(self, ctx, user: discord.Member):
