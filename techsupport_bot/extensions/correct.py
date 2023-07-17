@@ -48,7 +48,10 @@ class Corrector(base.BaseCog):
             description=f"{updated_message} :white_check_mark:",
             color=discord.Color.green(),
         )
-        await ctx.send(embed=embed, targets=[message_to_correct.author])
+        await ctx.send(
+            embed=embed,
+            content=auxiliary.construct_mention_string([message_to_correct.author]),
+        )
 
     def prepare_message(
         self, old_content: str, to_replace: str, replacement: str

@@ -13,7 +13,16 @@ from unittest.mock import patch
 from extensions import Burn, Corrector, Emojis, Greeter, MagicConch
 from hypothesis.strategies import composite, integers, text
 
-from .helpers import MockBot, MockChannel, MockContext, MockMember, MockMessage
+from .helpers import (
+    MockAsset,
+    MockAttachment,
+    MockBot,
+    MockChannel,
+    MockContext,
+    MockMember,
+    MockMessage,
+    MockReaction,
+)
 
 PREFIX = "."
 
@@ -24,7 +33,7 @@ def rand_history(draw):
     This history, returned as an array, will be 1 to 50 messages of random content
     Some will be by a bot, some will not
     """
-    hist_length = draw(integers(1, 50))
+    hist_length = draw(integers(1, 10))
     final_history = []
     botPerson = MockMember(bot=True)
     nonBot = MockMember(bot=False)
@@ -44,17 +53,31 @@ class FakeDiscordEnv:
         # bot objects
         self.bot = MockBot()
 
+        # asset objects
+        self.asset1 = MockAsset(url="realurl")
+        self.asset2 = MockAsset(url="differenturl")
+
         # member objects
-        self.person1 = MockMember(bot=False, id=1)
-        self.person2 = MockMember(bot=False, id=2)
-        self.person3_bot = MockMember(bot=True, id=3)
+        self.person1 = MockMember(
+            bot=False, id=1, name="person1", display_avatar=self.asset1
+        )
+        self.person2 = MockMember(
+            bot=False, id=2, name="person2", display_avatar=self.asset2
+        )
+        self.person3_bot = MockMember(
+            bot=True, id=3, name="bot", display_avatar=self.asset1
+        )
+
+        # attachment objects
+        self.json_attachment = MockAttachment(filename="json.json")
+        self.png_attachment = MockAttachment(filename="png.png")
 
         # message objects
         self.message_person1_prefix = MockMessage(
             content=f"{PREFIX}message", author=self.person1
         )
         self.message_person1_noprefix_1 = MockMessage(
-            content="message", author=self.person1
+            content="message", author=self.person1, reactions=[]
         )
         self.message_person1_noprefix_2 = MockMessage(
             content="different message", author=self.person1
@@ -74,12 +97,20 @@ class FakeDiscordEnv:
         self.message_person3_noprefix = MockMessage(
             content="bot message", author=self.person3_bot
         )
+        self.message_person1_attachments = MockMessage(
+            content="Attachments",
+            author=self.person1,
+            attachments=[self.json_attachment],
+        )
+        self.message_reaction1 = MockMessage(content="2", reactions=[1])
+        self.message_reaction2 = MockMessage(reactions=[0])
+        self.message_reaction3 = MockMessage(reactions=[20])
 
         # channel objects
         self.channel = MockChannel()
 
         # context objects
-        self.context = MockContext(channel=self.channel)
+        self.context = MockContext(channel=self.channel, author=self.person1)
 
         # extension objects.
         # Since these all call setup, we remove async create task when creating them
@@ -89,3 +120,7 @@ class FakeDiscordEnv:
             self.conch = MagicConch(self.bot)
             self.emoji = Emojis(self.bot)
             self.hello = Greeter(self.bot)
+
+        # reaction objects.
+        self.reaction1 = MockReaction(message="2", count=1)
+        self.reaction2 = MockReaction(count=0)

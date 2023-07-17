@@ -3,6 +3,7 @@ This is a file to test the extensions/burn.py file
 This contains 6 tests
 """
 
+import importlib
 from unittest.mock import AsyncMock
 
 import pytest
@@ -61,6 +62,9 @@ class Test_HandleBurn:
             reactions=["🔥", "🚒", "👨‍🚒"],
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_handle_burn_calls_send(self):
         """
@@ -84,6 +88,9 @@ class Test_HandleBurn:
         # Step 3 - Assert that everything works
         discord_env.context.send.assert_called_once()
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_handle_burn_no_message(self):
         """
@@ -102,6 +109,9 @@ class Test_HandleBurn:
             message="I could not a find a message to reply to",
             channel=discord_env.channel,
         )
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
 
 
 class Test_BurnCommand:
@@ -126,6 +136,9 @@ class Test_BurnCommand:
             member_to_match=discord_env.person1,
         )
 
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
+
     @pytest.mark.asyncio
     async def test_calls_handle_burn(self):
         """A simple test to ensure that burn_command calls handle_burn
@@ -146,3 +159,6 @@ class Test_BurnCommand:
             discord_env.person1,
             discord_env.message_person1_noprefix_1,
         )
+
+        # Step 4 - Cleanup
+        importlib.reload(auxiliary)
