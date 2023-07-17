@@ -340,7 +340,8 @@ class DiscordToIRC(base.MatchCog):
 
         view = ui.Confirm()
         await view.send(
-            message=f"Are you sure you want to unlink <#{ctx.channel.id}> and {self.mapping[str(ctx.channel.id)]}",
+            message=f"Are you sure you want to unlink <#{ctx.channel.id}>"
+            + f"and {self.mapping[str(ctx.channel.id)]}",
             channel=ctx.channel,
             author=ctx.author,
         )
@@ -349,7 +350,8 @@ class DiscordToIRC(base.MatchCog):
             return
         if view.value is ui.ConfirmResponse.DENIED:
             await auxiliary.send_deny_embed(
-                message=f"The link between <#{ctx.channel.id}> and {self.mapping[str(ctx.channel.id)]} was not deleted",
+                message=f"The link between <#{ctx.channel.id}> "
+                + f"and {self.mapping[str(ctx.channel.id)]} was not deleted",
                 channel=ctx.channel,
             )
             return
