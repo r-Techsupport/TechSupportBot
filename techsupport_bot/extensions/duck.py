@@ -280,7 +280,10 @@ class DuckHunt(base.LoopCog):
                 text=f"Try again in {config.extensions.duck.cooldown.value} seconds"
             )
             asyncio.create_task(
-                message.author.timeout(timedelta(seconds=10), reason="Missed a duck")
+                message.author.timeout(
+                    timedelta(seconds=config.extensions.duck.cooldown.value),
+                    reason="Missed a duck",
+                )
             )
             asyncio.create_task(
                 message.channel.send(
@@ -634,7 +637,7 @@ class DuckHunt(base.LoopCog):
     @commands.guild_only()
     @duck.command(
         brief="Resets someones duck counts",
-        description="Deleted the database entry of the target",
+        description="Deletes the database entry of the target",
         usage="[user]",
     )
     async def reset(self, ctx, user: discord.Member):
