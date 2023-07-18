@@ -101,6 +101,8 @@ class Who(base.BaseCog):
         self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         """ "Method to get notes assigned to a user."""
+        await self.bot.slash_command_log(interaction)
+
         embed = discord.Embed(
             title=f"User info for `{user}`",
             description="**Note: this is a bot account!**" if user.bot else "",
@@ -160,6 +162,7 @@ class Who(base.BaseCog):
         self, interaction: discord.Interaction, user: discord.Member, body: str
     ) -> None:
         """Method to set a note on a user."""
+        await self.bot.slash_command_log(interaction)
         if interaction.user.id == user.id:
             embed = auxiliary.prepare_deny_embed(
                 message="You cannot add a note for yourself"
@@ -218,6 +221,7 @@ class Who(base.BaseCog):
         self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         """Method to clear notes on a user."""
+        await self.bot.slash_command_log(interaction)
         notes = await self.get_notes(user, interaction.guild)
 
         if not notes:
@@ -271,6 +275,7 @@ class Who(base.BaseCog):
         self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         """Method to get all notes for a user."""
+        await self.bot.slash_command_log(interaction)
         notes = await self.get_notes(user, interaction.guild)
 
         if not notes:
