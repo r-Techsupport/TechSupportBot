@@ -1,0 +1,6 @@
+site_name: My Docs
+repo_url: https://github.com/r-Techsupport/TechSupportBot/
+nav:
+- 'Home': 'index.md'
+- Factoids:
+    - 'TestCases': 'Factoids/TestCases.md'

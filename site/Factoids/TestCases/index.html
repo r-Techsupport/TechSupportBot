@@ -1,0 +1,2102 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>TestCases - My Docs</title>
+        <link href="../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css">
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../..">My Docs</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href="../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Factoids <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="./" class="dropdown-item active">TestCases</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../.." class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" class="nav-link disabled">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/r-Techsupport/TechSupportBot/edit/master/docs/Factoids/TestCases.md" class="nav-link"><i class="fa fa-github"></i> Edit on GitHub</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="1"><a href="#application" class="nav-link">Application</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#unexpected-errors" class="nav-link">Unexpected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#burn" class="nav-link">Burn</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_1" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_1" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_1" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#chaptgpt" class="nav-link">ChaptGPT</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#conch" class="nav-link">Conch</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_2" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_2" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_2" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#unexpected-errors_1" class="nav-link">Unexpected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#correct" class="nav-link">Correct</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_3" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_3" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_3" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#unexpected-errors_2" class="nav-link">Unexpected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#directory" class="nav-link">Directory</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#duck" class="nav-link">Duck</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_4" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_4" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_4" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#dumpdbg" class="nav-link">Dumpdbg</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_5" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_5" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_5" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#unexpected-errors_3" class="nav-link">Unexpected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#embed" class="nav-link">Embed</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_6" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_6" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_6" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#unexpected-errors_4" class="nav-link">Unexpected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#emoji" class="nav-link">Emoji</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_7" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_7" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_7" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#unexpected-errors_5" class="nav-link">Unexpected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#factoids" class="nav-link">Factoids</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_8" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_8" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_8" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#unexpected-errors_6" class="nav-link">Unexpected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#gate" class="nav-link">Gate</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_9" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_9" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_9" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#giphy" class="nav-link">Giphy</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_10" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_10" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_10" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#google" class="nav-link">Google</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_11" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_11" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_11" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#grab" class="nav-link">Grab</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_12" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_12" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_12" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#hangman" class="nav-link">Hangman</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_13" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_13" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_13" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#unexpected-errors_7" class="nav-link">Unexpected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#hello" class="nav-link">Hello</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_14" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_14" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#htd" class="nav-link">HTD</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_15" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_15" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_14" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#unexpected-errors_8" class="nav-link">Unexpected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#hug" class="nav-link">Hug</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_16" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_16" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_15" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#ipinfo" class="nav-link">Ipinfo</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_17" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_17" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_16" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#unexpected-errors_9" class="nav-link">Unexpected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#iss" class="nav-link">Iss</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_18" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_18" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#joke" class="nav-link">Joke</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_19" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_19" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#kanye" class="nav-link">Kanye</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_20" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_20" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#lenny" class="nav-link">Lenny</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_21" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_21" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#logger" class="nav-link">Logger</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#normal-use_22" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#mock" class="nav-link">Mock</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_22" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_23" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_17" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#news" class="nav-link">News</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-dependencies" class="nav-link">Command Dependencies</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_24" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_18" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#poll" class="nav-link">Poll</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_23" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_25" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_19" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#protect" class="nav-link">Protect</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_24" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_26" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_20" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#extra-notes" class="nav-link">Extra Notes</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#relay" class="nav-link">Relay</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#roll" class="nav-link">Roll</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_25" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_27" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_21" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#rules" class="nav-link">Rules</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_26" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_28" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_22" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#spotify" class="nav-link">Spotify</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_27" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_29" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_23" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#translate" class="nav-link">Translate</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_28" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_30" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_24" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#urban" class="nav-link">Urban</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_29" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_31" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_25" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#warcraft" class="nav-link">Warcraft</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#weather" class="nav-link">Weather</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_30" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_32" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_26" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#who" class="nav-link">Who</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_31" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_33" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_27" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#wolfram" class="nav-link">Wolfram</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_32" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_34" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_28" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#wyr" class="nav-link">Wyr</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_33" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_35" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#xkcd" class="nav-link">xkcd</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#command-restrictions_34" class="nav-link">Command Restrictions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_36" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_29" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="1"><a href="#bot-commands" class="nav-link">Bot Commands</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#normal-use_37" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_30" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_38" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_31" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_39" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_32" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_40" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_33" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_41" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_34" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_42" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_35" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#note" class="nav-link">Note</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_43" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_36" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#note_1" class="nav-link">Note</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_44" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_37" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_45" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_38" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_46" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_39" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_47" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_40" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_48" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_41" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_49" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_42" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_50" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_43" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#note_2" class="nav-link">Note</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_51" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_44" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_52" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_45" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_53" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_46" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_54" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_47" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_55" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_48" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#note_3" class="nav-link">Note</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_56" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_49" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_57" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_50" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#normal-use_58" class="nav-link">Normal use</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#expected-errors_51" class="nav-link">Expected errors</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="application">Application</h1>
+<p>Uses Google forum for Application
+Uses Mongo for storing the application
+Config setup</p>
+<h2 id="command-restrictions">Command Restrictions</h2>
+<p>.application get <application_id>
+    User need manage application role
+.application all <status (optional: approved/denied/pending)>
+    User needs manage application role
+.application approve <application_id>
+    User need manage application role
+.application deny <application_id> <reason>
+    User need manage application role
+.application remind 
+    User need manage application role</p>
+<h2 id="normal-use">Normal use</h2>
+<p>User makes an application on Google forums
+People with privileges can approve or deny the application </p>
+<h2 id="expected-errors">Expected errors</h2>
+<p>User name not found, ignore application
+DM are close will not confirm application (Issue 213)</p>
+<h2 id="unexpected-errors">Unexpected errors</h2>
+<p>User can submit muliple applications
+User can ping by role 
+One time application just failed outwrite</p>
+<h1 id="burn">Burn</h1>
+<p>No Dependencies</p>
+<h2 id="command-restrictions_1">Command Restrictions</h2>
+<p>.burn
+    No restrictions</p>
+<h2 id="normal-use_1">Normal use</h2>
+<p>.burn @Discord Member
+    reply with a ping to the member/invoker with a random burn message
+    And react to the message being burned with the 3 specific emojis
+.burn username
+    reply with a ping to the member/invoker with a random burn message
+    And react to the message being burned with the 3 specific emojis
+.burn id
+    reply with a ping to the member/invoker with a random burn message
+    And react to the message being burned with the 3 specific emojis</p>
+<h2 id="expected-errors_1">Expected errors</h2>
+<p>Cannot burn a command
+    Cound not find a message to reply to
+Allows to burn same person multiple times, but does nothing</p>
+<h1 id="chaptgpt">ChaptGPT</h1>
+<p>No API</p>
+<h1 id="conch">Conch</h1>
+<p>No Dependencies</p>
+<h2 id="command-restrictions_2">Command Restrictions</h2>
+<p>.conch <question>
+    None
+.8ball <question>
+    None
+.8b <question>
+    None</p>
+<h2 id="normal-use_2">Normal use</h2>
+<p>.conch Question
+    Repeats question with a ? (crops to 256 without a ?)
+    Replies from a list of responses
+.8ball Question
+    Repeats question with a ? (crops to 256 without a ?)
+    Replies from a list of responses
+.8b Question
+    Repeats question with a ? (crops to 256 without a ?)
+    Replies from a list of responses</p>
+<h2 id="expected-errors_2">Expected errors</h2>
+<p>.conch
+    Return a deny embed with "You need to add a question"</p>
+<h2 id="unexpected-errors_1">Unexpected errors</h2>
+<p>.conch @role
+    Check to see if the bot can ping role</p>
+<h1 id="correct">Correct</h1>
+<p>No Dependencies</p>
+<h2 id="command-restrictions_3">Command Restrictions</h2>
+<p>.correct [to_replace] [replacement]
+    None
+.c [to_replace] [replacement]
+    None</p>
+<h2 id="normal-use_3">Normal use</h2>
+<p>.correct [to_replace] [replacement]
+    Replies with a CorrectEmbed with the new
+.c [to_replace] [replacement]
+    Replies with a CorrectEmbed with the new</p>
+<h2 id="expected-errors_3">Expected errors</h2>
+<p>.correct or .c
+    Replies with a Deny Embed "You did not provide the command argument: <code>to_replace: str</code>"
+.correct or .c [to_replace] 
+    Replies with a Deny Embed "You did not provide the command argument: <code>replacement: str</code>"
+.correct or .c "incorrect string" "correction string"
+    Replies with a Deny Embed "I couldn't find any message to correct"</p>
+<h2 id="unexpected-errors_2">Unexpected errors</h2>
+<p>.correct or .c
+    Cannot correct a message that start with the prefix of the bot</p>
+<h1 id="directory">Directory</h1>
+<p>Disabled</p>
+<h1 id="duck">Duck</h1>
+<p>User Postgres Database
+Config setup</p>
+<h2 id="command-restrictions_4">Command Restrictions</h2>
+<p>.duck stats
+    None
+.duck friends
+    None
+.duck killers
+    None</p>
+<h2 id="normal-use_4">Normal use</h2>
+<p>Spawns ducks every so often based on channel in config file
+User can use Bang or Bef to kill or friend duck in 60 seconds
+Random times it will make user wait for a cooldown (5 seconds) to kill or friend duck
+    Should display quotes (issue #73)
+If no one kills or friends duck in 60 seconds
+    Send an embed saying the Duck got away
+.duck stats
+    Defaults to author for their duck stats
+.duck stats Member
+    Displays duck stats for that member
+.duck friends
+    Displays leaderboard of duck friends
+.duck killers
+    Displays leaderboard of duck killers</p>
+<h2 id="expected-errors_4">Expected errors</h2>
+<p>.duck stats Member with no stats
+    Sends Deny Embed with "That user has no partcipated in the duck hunt"
+.duck stats non Member
+    Sends deny Embed with "I couldn't find the server member: "non Member"</p>
+<h1 id="dumpdbg">Dumpdbg</h1>
+<p>Uses server API
+Uses Praiser
+Config setup</p>
+<h2 id="command-restrictions_5">Command Restrictions</h2>
+<p>.dumpdbg [.dmp file]
+    Has cooldown 1 time every 60 seconds</p>
+<h2 id="normal-use_5">Normal use</h2>
+<p>.dumpdbg [.dmp file]
+    Sends off to server for praising and returns a txt file
+    Give an embed for Dumps successfuly returned with a link to the pasted txt file
+Aliases are:
+    dump, debug-dump, debug_dump, debugdump</p>
+<h2 id="expected-errors_5">Expected errors</h2>
+<p>.dump with a zip
+    Return Deny Embed with "No valid dumps detected!"</p>
+<h2 id="unexpected-errors_3">Unexpected errors</h2>
+<p>.dump with a file renamed to dmp
+    return a Deny embed "I ran into error processing your command: Command raised an exception: KeyError: 'url'"</p>
+<h1 id="embed">Embed</h1>
+<p>No Dependencies</p>
+<h2 id="command-restrictions_6">Command Restrictions</h2>
+<p>.embed |embed-list-json-upload|
+    None
+.embed keep |embed-list-json-upload|</p>
+<h2 id="normal-use_6">Normal use</h2>
+<p>.embed <attach json>
+    Displays how the json works</p>
+<h2 id="expected-errors_6">Expected errors</h2>
+<p>.embed
+    send Deny embed "Please provide a jSON file for your embeds"
+.embed keep |embed-list-json-upload|
+    Will send a direct message "I couldn't generate all of your embeds" if one or more embed failed, but not delete them
+.embed |embed-list-json-upload|
+    Will send a direct message "I couldn't generate all of your embeds, so I gave you a blank slate" if the json is broken, but not too broken
+.embed |embed-list-json-upload|
+    Will send a deny embed if the json has errors in it</p>
+<h2 id="unexpected-errors_4">Unexpected errors</h2>
+<p>.embed |embed-list-json-upload|
+    Send a Deny embed that command raised an exception: AttributeError: 'Context' object has no attribue 'get_json_from_attachments' (issue #183)</p>
+<h1 id="emoji">Emoji</h1>
+<p>Uses emoji python library</p>
+<h2 id="command-restrictions_7">Command Restrictions</h2>
+<p>.emoji reaction [message] @Member
+    Has premissions to add_reactions</p>
+<h2 id="normal-use_7">Normal use</h2>
+<p>.emoji message "abc"
+    Sends confirm embed with the message in emojis
+.emoji msg "abc"
+    Message for the help command to display options
+    Sends confirm embed with the message in emojis
+.emoji reaction "message to react with" @Member
+    Will react to the last message by user with message in emoji</p>
+<h2 id="expected-errors_7">Expected errors</h2>
+<p>.emoji reaction "message" @Member
+    Has a dupiclate emoji sends deny embed "Invalid message! Make sure there are no repeat characters!"
+.emoji reaction "message" @non Member
+    Replies with a deny embed "I couldn't find the server member: "Non member""
+.emoji message "message" 
+    Send deny embed if cannot find an emoji for something in "message" with "I can't get any emoji letters from your message!"</p>
+<h2 id="unexpected-errors_5">Unexpected errors</h2>
+<p>.emoji reaction "string longer than 20 characters" @Member
+    Will send emojis up to 20 times before errors out with a deny embed stating Forbidden: 403 Maximum number of reactions
+Some weird actions when using codeblocks    </p>
+<h1 id="factoids">Factoids</h1>
+<p>Uses Postgres for database
+Config setup</p>
+<h2 id="command-restrictions_8">Command Restrictions</h2>
+<p>.factoid remember [factoid-name] [factoid-output] |optional-embed-json-upload|
+    User needs manage factoids role
+.factoid forget [factoid-name]
+    User needs manage factoids role
+.factoid json [factoid-name]
+    User needs manage factoids role
+.factoid loop [factoid-name] [cron_config] [channel]
+    User needs manage factoids role
+.factoid deloop [factoid-name] [channel]
+    User needs manage factoids role
+.factoid job [factoid-name] [channel]
+    User needs manage factoids role
+.factoid jobs
+    None
+.factoid all
+    None
+.factoid hide [Factoid-name]
+    User need permissions to kick_members
+.factoid unhide [Factoid-name]
+    User need permissions to kick_members</p>
+<h2 id="normal-use_8">Normal use</h2>
+<p>.factoid loop <factoid-name> &lt; cron_config&gt; <channel>
+    Will loop the factoid as often as you want in the channel you would like
+.factoid forget <factoid-name>
+    Will forget the factoid that is saved with that name
+.factoid remember <factoid-name> <factoid-output> <optional | embed json>
+    Will remember a factoid to call later
+.factoid job <factoid-name> <channel>
+    Will display the loop config for the <factoid-name> and channel along with the factoid
+.factoid deloop <factoid-name> <channel>
+    Will deloop the <factoid-name> on the channel
+.factoid unhide <factoid-name>
+    Will hide the factoid-name from the list of all the factoids
+.factoid all or .factoid lsf
+    Will provide a list of all unhidden factoid in a confirm embed through the paste
+.factoid hide <factoid-name>
+    Will hide the factoid-name from the list of all
+.factoid jobs
+    Will provide an embed displaying which factoids are in jobs currently
+.factoid json <factoid-name>
+    Will provide a json for the factoid name</p>
+<h2 id="expected-errors_8">Expected errors</h2>
+<p>.factoid json <factoid-name>
+    If factoid-name has no json will send deny embed "There is no embed config for that factoid"
+.factoid
+    Will send help embed with a list of all options for factoid command
+.factoid loop <factoid-name> &lt; cron_config&gt; <channel>
+    Will check if factoid-name exist otherwise send deny embed "That factoid does not exist"
+    Will check if factoid-name is already looping in a channel send deny embed "That factoid is already looping in this channel"
+.factoid remember <factoid-name>
+    Will send a deny embed "You did not provide the command argument: <code>message: str</code>"
+    Will send a deny embed "I am unable to do that because you lack the role(s): [<Role id=773304890772029470 name='Trusted'>, <Role id=749314516801552416 name='Moderator'>]" if user does not have premissions
+.factoid job <factoid-name> <channel>
+    Send deny embed for "That job does not exist" if job does not exist in that channel or factoid name is wrong
+    Send deny embed "I couldn't find the channel: "<channel>" if channel is wrong
+.factoid job
+    Send deny embed "You did not provide the command argument: <code>factoid_name: str</code>"
+.factoid job <factoid-name>
+    Send deny embed "You did not provide the command argument: <code>channel: discord.channel.TextChannel</code>"
+.factoid deloop
+    Send deny embed "You did not provide the command argument: <code>factoid_name: str</code>"
+.factoid deloop <factoid-name>
+    Send deny embed "You did not provide the command argument: <code>channel: discord.channel.TextChannel</code>"
+.factoid deloop <factoid-name> <channel>
+    Send deny embed for "That job does not exist" if job does not exist in that channel or factoid name is wrong
+    Send deny embed "I couldn't find the channel: "<channel>" if channel is wrong
+.factoid unhide <factoid-name>
+    send deny embed "I couldn't find that factoid" if name doesn't exist
+    send deny embed "That factoid is already unhidden" if factoid is unhidden.
+.factoid hide <factoid-name>
+    send deny embed "I couldn't find that factoid" if name doesn't exist
+    send deny embed "That factoid is already hidden" if factoid-name is hidden
+.factoid jobs
+    Send deny embed "There are no registered factoid loop jobs for this guild" if no jobs exists
+.factoid json <factoid-name>
+    Send deny embed "I couldn't find that factoid" if name doesn't exist</p>
+<h2 id="unexpected-errors_6">Unexpected errors</h2>
+<p>.factoid forget <factoid-name>
+    Will Send a confirm embed that the factoid was deleted
+    Will send a deny embed that the factoid doesn't exists.
+Don't know what will happen to jobs if a channel is deleted</p>
+<h1 id="gate">Gate</h1>
+<p>Config setup</p>
+<h2 id="command-restrictions_9">Command Restrictions</h2>
+<p>.gate intro
+    User needs permissions to manage_messages
+    guild_only</p>
+<h2 id="normal-use_9">Normal use</h2>
+<p>Set Gate channel in config
+User sends approved message and will be assigned a role
+Approved message will be deleted after wait time (default = 60 seconds)
+All messages beside admin of bot will be deleted in channel.
+.gate intro
+    Send the message in the config file to the gate channel.</p>
+<h2 id="expected-errors_9">Expected errors</h2>
+<p>.gate intro
+    Sends deny embed "That command is only usable in the gate channel" if not in gate channel.
+.gate
+    Send help embed that list how to use the command.</p>
+<h1 id="giphy">Giphy</h1>
+<p>Uses Giphy API</p>
+<h2 id="command-restrictions_10">Command Restrictions</h2>
+<p>.giphy [query]
+    None</p>
+<h2 id="normal-use_10">Normal use</h2>
+<p>.giphy test
+    Will return a gif of test with emoji reactions to search between them.</p>
+<h2 id="expected-errors_10">Expected errors</h2>
+<p>.giphy alajfkidoiawhngonaodwsfjoniafds
+    Will return a deny embed "No search results found for: alajfkidoiawhngonaodwsfjoniafds"
+.giphy
+    Will return deny embed "You did not provide the command argument: <code>query: str</code>"</p>
+<h1 id="google">Google</h1>
+<p>Uses Google CSE API
+Uses Youtube API</p>
+<h2 id="command-restrictions_11">Command Restrictions</h2>
+<p>.googe search [query]
+    Has cooldown of 3 times in 60 seconds
+.googe images [query]
+    Has cooldown of 3 times in 60 seconds</p>
+<h2 id="normal-use_11">Normal use</h2>
+<p>.google search [query]
+.g search [query]
+.g s [query]
+.google s [query]
+    Will return embed with link of first google search result for <message>
+.google images [query]
+.google i [query]
+.google is [query]
+.g images [query]
+.g i [query]
+.g is [query]
+    Will return embed with first image in google image search result
+.youtube [query]
+.yt [query]
+    Will return first link of a youtube search</p>
+<h2 id="expected-errors_11">Expected errors</h2>
+<p>.google search
+    Will return deny embed "You did not provide the command argument: <code>query: str</code>"
+.youtube
+    Will return deny embed "You did not provide the command argument: <code>query: str</code>"</p>
+<h1 id="grab">Grab</h1>
+<p>Uses Postgres
+Config setup</p>
+<h2 id="command-restrictions_12">Command Restrictions</h2>
+<p>.grab [message_id]
+    Checks for invalid_channel
+.grabs all [@Member]
+    Checks for invalid_channel
+.grabs random [@Member]
+    Checks for invalid_channel</p>
+<h2 id="normal-use_12">Normal use</h2>
+<p>.grab [message_id]
+    Will grab the message from the message_id and save it under the user who grabbed it
+.grabs all [@Member]
+    Send embed with all grabs for Member
+.grabs random [@Member]
+    Will get a random grab from the Member</p>
+<h2 id="expected-errors_12">Expected errors</h2>
+<p>.grab
+    Send deny embed "You did not provide the command argument: message: <code>discord.message.Message</code>"
+.grabs all
+.grabs random
+    Send deny embed "You did not provide the command argument: user_to_grab: <code>discord.member.Member</code>"
+.grab <message_id>
+    Send deny embed "I couldn't find the message: "<message_id>"" if not correct message_id</p>
+<h1 id="hangman">Hangman</h1>
+<p>Config setup</p>
+<h2 id="command-restrictions_13">Command Restrictions</h2>
+<p>.hangman start [word]
+    None
+.hangman guess [letter]
+    None
+.hangman redraw
+    None
+.hangman stop
+    Check if user can stop game</p>
+<h2 id="normal-use_13">Normal use</h2>
+<p>.hangman start [word]
+    Will start a hangman game with the word and draw the picture with dashes for the length of word.
+.hangman redraw
+    Will redraw the current state of hangman
+.hangman stop
+    Will stop the current game of the hangman
+.hangman guess [letter]
+    Will guess the letter in the game and send an embed with result</p>
+<h2 id="expected-errors_13">Expected errors</h2>
+<p>.hangman start [word]
+    Will send deny embed "There is a game in progress for this channel" if another game isn't finished
+    Will send deny embed "I ran into an error processing your command: Command raised an exception: HTTPException: 400 Bad Request (error code: 50035): Invalid Form Body In embeds.0.title: Must be 256 or fewer in length." If length is longer that 128 because it adds spaces
+.hangman redraw
+    Will send deny embed "There is a game in progress for this channel" if game isn't started
+.hangman guess [letter]
+    Will send deny embed "You can only guess a letter" if you try to guess a non letter</p>
+<h2 id="unexpected-errors_7">Unexpected errors</h2>
+<p>Game does not stop when word is guess, or number of guesses is up.</p>
+<h1 id="hello">Hello</h1>
+<p>Uses python emoji library</p>
+<h2 id="command-restrictions_14">Command Restrictions</h2>
+<p>.hello
+    None</p>
+<h2 id="normal-use_14">Normal use</h2>
+<p>.hello
+    Bot will react with "HEY" in emojis to command call</p>
+<h1 id="htd">HTD</h1>
+<p>No Dependencies</p>
+<h2 id="command-restrictions_15">Command Restrictions</h2>
+<p>.htd [value]
+    None</p>
+<h2 id="normal-use_15">Normal use</h2>
+<p>.htd 0x<hex>
+    Will return an embed with the Decimal, Binary, and Ascii equivalent if there is one
+.htd 0b<binary>
+    Will return an embed with the Decimal, Hex, and Ascii equivalent if there is one
+.htd <Decimal>
+    Will return an embed with the Hex, Binary, and Ascii equivalent if there is one
+.htd <hex> + <hex>
+.htd <hex> + <Binary>
+.htd <hex> + <Decimal>
+    Will return the addition of the two values
+.htd <hex> - <hex>
+.htd <hex> - <Binary>
+.htd <hex> - <Decimal>
+    Will return the subtraction of the two values
+.htd <hex> * <hex>
+.htd <hex> * <Binary>
+.htd <hex> * <Decimal>
+    Will return the multiplication of the two values
+.htd <hex> / <hex>
+.htd <hex> / <Binary>
+.htd <hex> / <Decimal>
+    Will return the division of the two values</p>
+<h2 id="expected-errors_14">Expected errors</h2>
+<p>.htd <hex> +
+    Will return deny embed "I ran into an error processing your command: Command raised an exception: IndexError: string index out of range"
+.htd + <hex>
+    Will return deny embed "Unable to perform calculation, are you sure that equation is valid?"
+.htd <Decimal> / 0
+    Will return deny embed "I ran into an error processing your command: Command raised an exception: ZeroDivisionError: division by zero"</p>
+<h2 id="unexpected-errors_8">Unexpected errors</h2>
+<p>ascii ending just new line after new line after new line, and it will just extend the embed into infinity
+Could also spell out bad words</p>
+<h1 id="hug">Hug</h1>
+<p>No Dependencies</p>
+<h2 id="command-restrictions_16">Command Restrictions</h2>
+<p>.hug [@Member]
+    None</p>
+<h2 id="normal-use_16">Normal use</h2>
+<p>.hug @Member
+    Will return an embed from a list of ways to hug</p>
+<h2 id="expected-errors_15">Expected errors</h2>
+<p>.hug
+    Return deny embed "You did not provide the command argument: user_to_hug: <code>discord.member.Member</code>" for Member not found
+.hug yourself
+    Return deny embed "Let's be serious"</p>
+<h1 id="ipinfo">Ipinfo</h1>
+<p>Uses API ipinfo.io</p>
+<h2 id="command-restrictions_17">Command Restrictions</h2>
+<p>.ipinfo [ip]
+    Has cooldown of 1 time every 30 seconds</p>
+<h2 id="normal-use_17">Normal use</h2>
+<p>.ipinfo <ip address>
+    Will return the embed with information from geodata on the ip address.</p>
+<h2 id="expected-errors_16">Expected errors</h2>
+<p>.ipinfo
+    Return deny embed "You did not provide the command argument: <code>ip_address: str</code>" if no string provided
+.ipinfo [ip]
+    Will return deny embed "I couldn't find that IP" if ip address is wrong</p>
+<h2 id="unexpected-errors_9">Unexpected errors</h2>
+<p>.ip [ip] 
+    The alias does not return anything</p>
+<h1 id="iss">Iss</h1>
+<p>Uses API open-notify.org
+Uses Geocode.xyz</p>
+<h2 id="command-restrictions_18">Command Restrictions</h2>
+<p>.iss
+    Has cooldown of 1 time every 60 seconds</p>
+<h2 id="normal-use_18">Normal use</h2>
+<p>.iss
+    Return embed to track the International Space Station with location latitude and Longitude</p>
+<h1 id="joke">Joke</h1>
+<p>Uses API from jokeapi.dev</p>
+<h2 id="command-restrictions_19">Command Restrictions</h2>
+<p>.joke
+    Has cooldown of 1 time every 60 seconds</p>
+<h2 id="normal-use_19">Normal use</h2>
+<p>.joke
+    returns an embed with a random joke from jokeapi.dev</p>
+<h1 id="kanye">Kanye</h1>
+<p>API key from api.kanye.restrictions</p>
+<h2 id="command-restrictions_20">Command Restrictions</h2>
+<p>.kanye
+    Has cooldown of 1 time every 60 seconds</p>
+<h2 id="normal-use_20">Normal use</h2>
+<p>.kanye
+    Will return an embed with a random quote from the API</p>
+<h1 id="lenny">Lenny</h1>
+<p>No Dependencies</p>
+<h2 id="command-restrictions_21">Command Restrictions</h2>
+<p>.len
+    None</p>
+<h2 id="normal-use_21">Normal use</h2>
+<p>.len
+    Returns a rand face from a list</p>
+<h1 id="logger">Logger</h1>
+<p>No Dependencies</p>
+<h2 id="normal-use_22">Normal use</h2>
+<p>Should log every message in the logger channel
+Should log the url for an attachment in the logger channel</p>
+<h1 id="mock">Mock</h1>
+<p>No Dependencies</p>
+<h2 id="command-restrictions_22">Command Restrictions</h2>
+<p>.mock [@user]
+    None
+.sb [@user]
+    None</p>
+<h2 id="normal-use_23">Normal use</h2>
+<p>.mock @Member
+.sb @Member
+    returns embed of last message with alternating cases for the message</p>
+<h2 id="expected-errors_17">Expected errors</h2>
+<p>.mock
+.sb
+    Return deny embed "You did not provide the command argument: user_to_mock: <code>discord.member.Member</code>" if member doesn't exist
+.mock @Member
+.sb @Member
+    If member does not exist will return "I coudn't find the server member: "<Member>""</p>
+<h1 id="news">News</h1>
+<p>Uses API for newsapi.org</p>
+<h2 id="command-dependencies">Command Dependencies</h2>
+<p>.news random [category] (optional)
+    Has cooldown of 1 time every 30 seconds</p>
+<h2 id="normal-use_24">Normal use</h2>
+<p>.news random [category] (optional)
+    Will return a random news story from all or the specific category you pick out.</p>
+<h2 id="expected-errors_18">Expected errors</h2>
+<p>.news
+    Will return the help embed for command usage
+.news [category]
+    Will return embed asking to display help command</p>
+<h1 id="poll">Poll</h1>
+<p>Uses API strawpoll.com</p>
+<h2 id="command-restrictions_23">Command Restrictions</h2>
+<p>.poll example
+    None
+.poll creates |json-upload|
+    None
+.poll generate |json-upload|
+    None
+.strawpoll generate |json-upload|
+    None
+.strawpoll example
+    None</p>
+<h2 id="normal-use_25">Normal use</h2>
+<p>.poll example 
+    returns a json file of an exmaple poll
+.poll create |json-upload|
+    Takes the json and creates an embed with a poll, adds reactions for the options
+.poll generate |json-upload|
+    Takes the json and creates an embed with a poll, adds reactions for the options
+.strawpoll generate |json-upload|
+    uses the json to upload a poll to strawpoll.com
+.strawpoll example
+    returns a json with an example of the poll for strawpoll</p>
+<h2 id="expected-errors_19">Expected errors</h2>
+<p>Timeouts has to be between 10 and 300
+Will error on an invalid json
+.poll generate <json>
+    Will send a deny embed "I need between 2 and 5 options! (options key)" if only one option is given
+    Will send a deny embed "I need the poll question to be a string (question key)" if question isn't a string
+    Will send a deny embed "Nobody voted in the poll, so I won't bother showing any results" if no unique results were found.
+    Will send a deny embed "I did not find a poll question (question key)" if no question in json
+    Will send a deny embed "I need the poll options to be a list (question key)" if the options are not a list
+.poll generate
+    Send deny embed "I couldn't find any data in your upload" with no json</p>
+<h1 id="protect">Protect</h1>
+<p>Uses Postgres</p>
+<h2 id="command-restrictions_24">Command Restrictions</h2>
+<p>.ban
+    The Bot and a user needs premissions to ban_members
+.unban
+    The Bot and a user needs premissions to ban_members
+.kick
+    The bot and a user needs premissions to kick_members
+.warn
+    The bot and a user needs premissions to kick_members
+.unwarn
+    The bot and a user needs premissions to kick_members
+.warnings
+    The bot and a user needs premissions to kick_members
+.mute
+    The bot and a user needs premissions to kick_members
+.unmute
+    The bot and a user needs premissions to kick_members
+.purge
+    The bot and a user needs premissions to manage_messages</p>
+<h2 id="normal-use_26">Normal use</h2>
+<p>Will not allow users to mass mention, Will warn user who tries to do it.
+Will paste a message over 750 characters into a paste.
+.ban @User |optional -reason|
+    Will ban the user from the server including users not in server. return user modified embed to show users has been banned.
+.unban @User |optional -reason|
+    Will unban the user from the server including users not in server. return user modified embed to show users has been unbanned.
+.kick @Member |optional -reason|
+    Will kick a member from the server. return user modified embed to show user has been kicked
+.warn @Member |optional -reason|
+    Will set a warn on a member with a reason, once you get 3 warnings it will ban the member
+.unwarn @Member |optional -reason|
+    Will remove the warnings from a Member
+.warnings @User
+    Will display all the warnings for a Member
+.mute @Member |optional -reason|
+    Will add a "Muted" role to the Member 
+.unmute @Member |optional -reason|
+    Will remove the "Muted role from the Member
+.purge x <Number>
+    Will purge the last <Number> of messages including the bot command
+.purge d <Number>
+    Will purge the last number of messages since <Number> minutes ago</p>
+<h2 id="expected-errors_20">Expected errors</h2>
+<p>.ban @User
+    Will send a deny embed "You cannot do that to yourself" if you try to ban yourself
+    Will send a deny embed "It would be silly to do that to myself" if you try to ban the bot
+    Will send a deny embed "Your top role is not high enough to do that to <code>{target}</code>" if you try to ban someone who's role is over than you.
+    Will send a deny embed "User is already banned" if user is already banned
+    Will send a deny embed "I couldn't find the user &lt;@User&gt;" if not a user of discord
+    Will send a deny embed "I ran into an error processing your command: Command raised an exception: Forbidden: 403 Forbidden (error code: 50013): Missing Permissions" if the bot does not have a top role high enough to ban
+.unban @User
+    Will send a deny embed "You cannot do that to yourself" if you try to unban yourself
+    Will send a deny embed "It would be silly to do that to myself" if you try to unban the bot
+    Will send a deny embed "Your top role is not high enough to do that to <code>{target}</code>" if you try to unban someone who's role is over than you.
+    Will send a deny embed "User is not banned, or does not exist" if user is already unbanned
+    Will send a deny embed "I couldn't find the user &lt;@User&gt;" if not a user of discord
+.kick @Member
+    Will send a deny embed "You cannot do that to yourself" if you try to kick yourself
+    Will send a deny embed "It would be silly to do that to myself" if you try to kick the bot
+    Will send a deny embed "Your top role is not high enough to do that to <code>{target}</code>" if you try to kick someone who's role is over than you.
+    Will send a deny embed "I couldn't find the server member: &lt;@Member&gt; if member is not in server or they exist
+.warn @Member
+    Will send a deny embed "You cannot do that to yourself" if you try to warn yourself
+    Will send a deny embed "It would be silly to do that to myself" if you try to warn the bot
+    Will send a deny embed "Your top role is not high enough to do that to <code>{target}</code>" if you try to warn someone who's role is over than you.
+    Will send a deny embed "I couldn't find the server member: &lt;@Member&gt;" if not a user of discord or not in server
+    Will send a deny embed "I ran into an error processing your command: Command raised an exception: Forbidden: 403 Forbidden (error code: 50013): Missing Permissions" after three warnings if the bot cannot ban a Member, also clears the warning that is issued.
+.unwarn @Member
+    Will send a deny embed "You cannot do that to yourself" if you try to unwarn yourself
+    Will send a deny embed "It would be silly to do that to myself" if you try to unwarn the bot
+    Will send a deny embed "Your top role is not high enough to do that to <code>{target}</code>" if you try to unwarm someone who's role is over than you.
+    Will send a deny embed "There are no warnings for that user" if the member has no warnings
+.warnings @User
+    Will send a deny embed "There are no warnings for that user" if User has no warnings or user does not esists
+.mute @Member
+    Will send a deny embed "You cannot do that to yourself" if you try to mute yourself
+    Will send a deny embed "It would be silly to do that to myself" if you try to mute the bot
+    Will send a deny embed "Your top role is not high enough to do that to <code>{target}</code>" if you try to mute someone who's role is over than you.
+    Will send a deny embed "I couldn't find the server member: @Member" if the Member is not in server or if Member does not exists
+    Will send a deny embed "The <code>Muted</code> role does not exist" if the "Muted" role does not exists
+.unmute @Member
+    Will send a deny embed "You cannot do that to yourself" if you try to unmute yourself
+    Will send a deny embed "It would be silly to do that to myself" if you try to unmute the bot
+    Will send a deny embed "Your top role is not high enough to do that to <code>{target}</code>" if you try to unmute someone who's role is over than you.
+    Will send a deny embed "I couldn't find the server member: @Member" if the Member is not in server or if Member does not exists
+    Will send a deny embed "The <code>Muted</code> role does not exist" if the "Muted" role does not exists
+.purge x <non int>
+    Will send a deny embed "I ran into an error processing your command: Converting to "int" failed for parameter "amount"." if a non interger is provided
+.purge d <non int>
+    Will send a deny embed "I ran into an error processing your command: Converting to "int" failed for parameter "duration_minutes"." if a non interger is provided</p>
+<h2 id="extra-notes">Extra Notes</h2>
+<p>Can add a string map with words or phrases to make a response to. Will also take in regex. 
+If added in a codeblock will ping in the stack trace because it paste as plane text.</p>
+<h1 id="relay">Relay</h1>
+<h1 id="roll">Roll</h1>
+<p>Discord Library Random</p>
+<h2 id="command-restrictions_25">Command Restrictions</h2>
+<p>.roll
+    None</p>
+<h2 id="normal-use_27">Normal use</h2>
+<p>.roll
+    Will default and pick a random number form 1-100
+.roll <int>
+    Will set a new minimum and choose a number between <int> and 100
+.roll <int> <int>
+    Will Choose a value between <int> and <int></p>
+<h2 id="expected-errors_21">Expected errors</h2>
+<p>.roll <int > 100&gt;
+    Will send a deny embed "I ran into an error processing your command: Command raised an exception: ValueError: empty range for randrange() (101, 101, 0)" indicating the value is out of range
+.roll <decimal>
+    Will send a deny embed "I ran into an error processing your command: Converting to "int" failed for parameter "min"." if you put in a non interger value
+.roll <int> <non int>
+    Will send a deny embed "I ran into an error processing your command: Converting to "int" failed for parameter "max"." if cannot find an int for second parameter</p>
+<h1 id="rules">Rules</h1>
+<p>Uses Mongo</p>
+<h2 id="command-restrictions_26">Command Restrictions</h2>
+<p>.rule
+    None
+.rule edit |json|
+    Author needs administrator
+.rule get <int>
+    None
+.rule all
+    None</p>
+<h2 id="normal-use_28">Normal use</h2>
+<p>.rule edit
+    Will return a json file with sample rules.
+.rule edit <json>
+    Will update the rules based on the json provided
+.rule get <int>
+    Will return rule <int> in an embed with description
+.rule get <int>,<int>
+    Will return all rules provided in different embed with description
+.rule get <int>,<int> (same interger)
+    Will return all rules provided in a different embed with description (but will not paste same rule twice)
+.rule all
+    Will return all rules in a single embed with description of each.</p>
+<h2 id="expected-errors_22">Expected errors</h2>
+<p>.rule
+    Will return a help embed of the options to use with the rule command
+.rule edit |json|
+    Will send a success message even if it is an invalid json for the rules
+.rule get <non int>
+    Will send a deny embed "Please specify a rule number"
+.rule get <int> (out of range)
+    Will send a deny embed "Rule number <int> doesn't exist"
+.rule get <int>,<non int>,<int>
+    Will send a deny embed "Please specify a rule number"
+.rule get <int>,<int>,<int> (one a non rule)
+    Will print all the rules that exists then send a deny embed with which one did not. (will not repeat duplicates of rules if expanded, but will repeate of rules that do not exist)
+.rule get &lt;int &lt;=0&gt;
+    Will send deny embed "That rule number is invalid"</p>
+<h1 id="spotify">Spotify</h1>
+<p>Uses Spotify API</p>
+<h2 id="command-restrictions_27">Command Restrictions</h2>
+<p>.spotify
+    Has cooldown for 3 times in 60 seconds</p>
+<h2 id="normal-use_29">Normal use</h2>
+<p>.spotify <track name>
+    Will return a result from Spotify with the <track name> with up to 3 results form the US market </p>
+<h2 id="expected-errors_23">Expected errors</h2>
+<p>.spotify
+    Will return a deny embed with "You did not provide the command argument: query: str"
+.spotify <track name>
+    Will return a deny embed with "I couldn't find any results"
+.spotify <track name>
+    Will return a deny embed with "I couldn't authenticate with Spotify" if no API or cannot be reached</p>
+<h1 id="translate">Translate</h1>
+<p>Uses mymemory.translated.net API</p>
+<h2 id="command-restrictions_28">Command Restrictions</h2>
+<p>.translate <message (in quotes)> <sorce language code> <Destination language code>
+    has cooldown for 1 time in 60 seconds</p>
+<h2 id="normal-use_30">Normal use</h2>
+<p>.transale <message (in quotes)> <sorce language code> <Destination language code>
+    Will send a confirm embed with the translated message</p>
+<h2 id="expected-errors_24">Expected errors</h2>
+<p>.translate
+    Will send deny embed with "You did not provide the command argument: message"
+.translate <message>
+    Will send deny embed with "You did not provide the command argument: src: str"
+.translate <message> <src language code>
+    Will send a deny embed with "You did not provide the command argument: dest: str"
+.translate <message> <scr language code> <dest language code>
+    Will send a deny embed "I wasn't able to understand your command because of an unexpected quote (")" if you try to add quotes in the string</p>
+<h1 id="urban">Urban</h1>
+<p>Uses urbandictionary.com API for base term
+Uses urbandictionary.com API for see more terms</p>
+<h2 id="command-restrictions_29">Command Restrictions</h2>
+<p>.urb <query>
+    Has cooldown of 3 times in 60 seconds</p>
+<h2 id="normal-use_31">Normal use</h2>
+<p>.urb test
+.urban test
+.urbandictionary test
+    Will return a result embed with a link to the urbandictionary page and a short summy of the define (up to 10 results)</p>
+<h2 id="expected-errors_25">Expected errors</h2>
+<p>.urb
+    Will return a deny embed "You did not provide the command argument: <code>query: str</code>"
+.urb ugekuahskdddfgehasjdf
+    Will return an deny embed "No results found for: <query>"</p>
+<h1 id="warcraft">Warcraft</h1>
+<p>Not in Use</p>
+<h1 id="weather">Weather</h1>
+<p>Uses API from openweathermap.org</p>
+<h2 id="command-restrictions_30">Command Restrictions</h2>
+<p>.weather [city/town] [state-code] [country-code]
+    Has cooldown of 3 times in 60 seconds</p>
+<h2 id="normal-use_32">Normal use</h2>
+<p>.weather [city/town] [state-code] [country-code]
+.wea [city/town] [state-code] [country-code]
+.we [city/town] [state-code] [country-code]
+    Will return an embed with the weather from the place you selected</p>
+<h2 id="expected-errors_26">Expected errors</h2>
+<p>.weather <invalid configuration>
+    Will send a deny embed "I could not find the weather from your search"</p>
+<h1 id="who">Who</h1>
+<p>Postgres</p>
+<h2 id="command-restrictions_31">Command Restrictions</h2>
+<p>.whois [@Member]
+    None
+.note set [@Member] [note]
+    User needs permissions to kick_members
+.note clear [@Member]
+    User needs permissions to kick_members
+.note all [@Member]
+    User needs permissions to kick_members</p>
+<h2 id="normal-use_33">Normal use</h2>
+<p>.whois [@Member]
+    Will return an embed with information on the Member with notes
+.note set [@Member] [note]
+    Will set a note on the Member and provide a confirm embed "Note created for @Member"
+.note clear [@Member]
+    Will ask you if you want to erase notes for user, checkmark to confirm and erase note
+.note all [@Member]
+    Will return a json with all the notes on the user</p>
+<h2 id="expected-errors_27">Expected errors</h2>
+<p>.whois [@Member]
+    Will return a deny embed "I couldn't find server member: @Member" if member does no exist or is part of guild
+.note
+    Will return help embed with options for commands of Who
+.note set [@Member]
+    Will return a deny embed "You did not provide the command argument: <code>body: str</code>" if no note
+.note clear [@Member]
+    Will return a deny embed "I couldn't find server member: @Member" if member does no exist or is part of guild
+.note all [@Member]
+    Will return a deny embed "I couldn't find server member: @Member" if member does no exist or is part of guild</p>
+<h1 id="wolfram">Wolfram</h1>
+<p>Uses API from wolframalpha.com</p>
+<h2 id="command-restrictions_32">Command Restrictions</h2>
+<p>.wa [query]
+.math [query]
+.wolframalpha [query]
+.jarvis [query]
+    Has cooldown of 3 times every 60 seconds</p>
+<h2 id="normal-use_34">Normal use</h2>
+<p>.wa [query]
+.math [query]
+.wolframalpha [query]
+.jarvis [query]
+    Will return an embed with the simple answer to the [query]</p>
+<h2 id="expected-errors_28">Expected errors</h2>
+<p>.wa [query]
+.math [query]
+.wolframalpha [query]
+.jarvis [query]
+    Will return a deny embed "Wolfram|Alpha ran into an error" if no API or API error
+    Will return a deny embed "Wolfram|Alpha did not like that question" if no results are found</p>
+<h1 id="wyr">Wyr</h1>
+<p>No Dependencies</p>
+<h2 id="command-restrictions_33">Command Restrictions</h2>
+<p>.wyr
+    None</p>
+<h2 id="normal-use_35">Normal use</h2>
+<p>.wyr
+    Return an embed with the generated question</p>
+<h1 id="xkcd">xkcd</h1>
+<p>Uses APIs from xkcd.com</p>
+<h2 id="command-restrictions_34">Command Restrictions</h2>
+<p>.xkcd random
+.xkcd number [number]
+.xkcd # [number]
+    Has cooldown of 3 times every 60 seconds</p>
+<h2 id="normal-use_36">Normal use</h2>
+<p>.xkcd random
+    Will return an embed with a random comic from xkcd
+.xkcd number [number]
+    Will return a specific number comic from xkcd
+.xkcd # [number]
+    Will return a specific number comic from xkcd</p>
+<h2 id="expected-errors_29">Expected errors</h2>
+<p>.xkcd
+    Will return the help embed to display how to use commands in xkcd
+.xkcd number [number]
+    Will return a deny embed "I had trouble looking up XKCD's comics" if API goes above 200 seconds
+.xkcd number 1023103132
+    Will return a deny embed "I ran into an error processing your command: Command raised an exception: ContentTypeError: 0, message='Attempt to decode JSON with unexpected mimetype: text/html; charset=utf-8', url=URL('https://xkcd.com/1023103132/info.0.json')" if cannot find the right number</p>
+<h1 id="bot-commands">Bot Commands</h1>
+<h2 id="normal-use_37">Normal use</h2>
+<p>.extension unload [extension-name]
+    Returns a confrim embed "I've unloaded that extension"</p>
+<h2 id="expected-errors_30">Expected errors</h2>
+<p>.extension unload [extension-name]
+    Returns a confrim embed "I've unloaded that extension" Even if name is not an extension
+    Returns a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command."
+.extension unload
+    Return a deny embed "You did not provide the command argument: <code>extension_name: str</code>"</p>
+<h2 id="normal-use_38">Normal use</h2>
+<p>.extension register [extension-name] |python-file-upload|</p>
+<h2 id="expected-errors_31">Expected errors</h2>
+<p>.extension register [extension-name]
+    Return a deny embed "You did not provice a Python file upload"
+.extension register [extension-name] |python-file-upload|
+    Return a deny embed "I don't recognize your upload as a Python file" if you try to upload a differnt file type
+    return a deny embed "I ran into an error processing your command: Command raised an exception: TypeError: argument of type 'coroutine' is not iterable" If python file has an error
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
+.extension register
+    Return a deny embed "You did not provide the command argument: <code>extension_name: str</code>"</p>
+<h2 id="normal-use_39">Normal use</h2>
+<p>.extensions satus [extension-name]
+    Return an embed that tells status of [extension-name] loaded/unloaded</p>
+<h2 id="expected-errors_32">Expected errors</h2>
+<p>.extensions satus [extension-name]
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
+    Will return an embed saying extension is unloaded even if wrong name
+.extension status
+    Return a deny embed "You did not provide the command argument: <code>extension_name: str</code>"</p>
+<h2 id="normal-use_40">Normal use</h2>
+<p>.extension load [extension-name]
+    Return a confirm embed "I've loaded that extension"</p>
+<h2 id="expected-errors_33">Expected errors</h2>
+<p>.extension load [extension-name]
+    Will return a confirm embed "I've loaded that extension" even if name is wrong or extension is already loaded.
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
+.extension load
+    Return a deny embed "You did not provide the command argument: <code>extension_name: str</code>"</p>
+<h2 id="normal-use_41">Normal use</h2>
+<p>.command enable [command-name]
+    Return a confirm embed "Successfully enabled command: [command-name]"</p>
+<h2 id="expected-errors_34">Expected errors</h2>
+<p>.command enable [command-name]
+    Return a deny embed "Command [command-name] is already enabled!" If it is already enabled
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
+    Return a deny embed "No such command: [command-name]" if command doesn't exists
+.command enable
+    Return a deny embed "You did not provide the command argument: <code>command_name: str</code>"</p>
+<h2 id="normal-use_42">Normal use</h2>
+<p>.command disable [command-name]
+    Return a confrim embed "Successfully disabled command: [command-name]"</p>
+<h2 id="expected-errors_35">Expected errors</h2>
+<p>.command disable [command-name]
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
+    Return a deny embed "No such command: [command-name]" if command doesn't exists
+    Return a deny embed "Command [command-name] is already disabled!" If it is already disabled
+.command disable
+    Return a deny embed "You did not provide the command argument: <code>command_name: str</code>"</p>
+<h2 id="note">Note</h2>
+<p>Disabling <code>command</code> means you cannot enable any commands you disabled per session </p>
+<h2 id="normal-use_43">Normal use</h2>
+<p>.set game [game-name]
+    return a confrim embed "Successfully set game to [game-name]"</p>
+<h2 id="expected-errors_36">Expected errors</h2>
+<p>.set game [game-name]
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
+.set game
+    Return a deny embed "You did not provide the command argument: <code>game_name: str</code>"</p>
+<h2 id="note_1">Note</h2>
+<p>[game-name] is limited to 128 characters will set to none if over that by default.</p>
+<h2 id="normal-use_44">Normal use</h2>
+<p>.set nick [nickname]
+    Return a confrim embed "Seuccessfully set nick to: [nickname]"</p>
+<h2 id="expected-errors_37">Expected errors</h2>
+<p>.set nick
+    Return a deny embed "You did not provide the command argument: <code>nick: str</code>"
+.set nick [nickname]
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin</p>
+<h2 id="normal-use_45">Normal use</h2>
+<p>.echo channel [channel-id] [message]
+    Return a conrim embed "Message sent" Returns a message in the channel from the bot</p>
+<h2 id="expected-errors_38">Expected errors</h2>
+<p>.echo channel [channel-id] [message]
+    Return a deny embed "I couldn't find that channel" if the bot could not find channel id.
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
+.echo channel [channel-id]
+    Return a deny embed "You did not provide the command argument: <code>message: str</code>"
+.echo channel
+    return a deny embed "You did not provide the command argument: <code>channel_id: int</code>"</p>
+<h2 id="normal-use_46">Normal use</h2>
+<p>.echo user [user-id] [message]
+    Return a conrim embed "Message sent" DM user your message</p>
+<h2 id="expected-errors_39">Expected errors</h2>
+<p>.echo user [user-id] [message]
+    Return a deny embed "I ran into an error processing your command: Command raised an exception: Forbidden: 403 Forbidden (error code: 50007): Cannot send messages to this user" if cannot dm user 
+    I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command.
+    Return a deny embed "I ran into an error processing your command: Command raised an exception: NotFound: 404 Not Found (error code: 10013): Unknown User" If cannot find user
+.echo user [user-id]
+    Return a deny embed "You did not provide the command argument: <code>message: str</code>"
+.echo user 
+    Return a deny embed "You did not provide the command argument: <code>user_id: int</code>"</p>
+<h2 id="normal-use_47">Normal use</h2>
+<p>.restart
+    Return a confirm embed "Rebooting! Beep boop!" and restart the bot
+.reboot
+    Return a confirm embed "Rebooting! Beep boop!" and restart the bot</p>
+<h2 id="expected-errors_40">Expected errors</h2>
+<p>.restart
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin</p>
+<h2 id="normal-use_48">Normal use</h2>
+<p>.leave [guild-id]
+    The bot will leave the server it is in</p>
+<h2 id="expected-errors_41">Expected errors</h2>
+<p>.leave [guild-id]
+    Return a deny embed "I don't appear to be in that guild" if bot is not in that server
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin</p>
+<h2 id="normal-use_49">Normal use</h2>
+<p>.bot
+    Return an embed with time started, latency, description, and server</p>
+<h2 id="expected-errors_42">Expected errors</h2>
+<p>.bot
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin</p>
+<h2 id="normal-use_50">Normal use</h2>
+<p>.issue [title] [description]
+    Return an embed saying the issue was created with issue number and url</p>
+<h2 id="expected-errors_43">Expected errors</h2>
+<p>.issue [title] [description]
+    Return a deny embed "I was unable to create your issue (status code 401)" if could not create issue
+    Return a deny embed "I don't have a Github API key" if not API key
+    Return a deny embed "I don't have a Github repo configured" if name of repo does not match an existing one
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
+.issue [title]
+    Return a deny embed "You did not provide the command argument: <code>description: str</code>"
+.issue
+    Return a deny embed "You did not provide the command argument: <code>title: str</code>"</p>
+<h2 id="note_2">Note</h2>
+<p>Needs Github API key</p>
+<h2 id="normal-use_51">Normal use</h2>
+<p>.config disable-extension [extension-name]
+    Return a confrim embed "I've disabled that extension for this guild</p>
+<h2 id="expected-errors_44">Expected errors</h2>
+<p>.config disable-extension [extension-name]
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
+    Return a deny embed "I could not find that extension, or it's not loaded" if name does not exists
+    Return a deny embed "That extension is already disabled for this guild" if extension is already disabled</p>
+<h2 id="normal-use_52">Normal use</h2>
+<p>.config enable-extension [extension-name]
+    Return a confrim embed "I've enabled that extension for this guild" and enable the extension</p>
+<h2 id="expected-errors_45">Expected errors</h2>
+<p>.config enable-extension [extension-name]
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
+    Return a deny embed "That extension is already enabled for this guild" If extension is already enabled
+    Return a deny embed "I could not find that extension, or it's not loaded" if no extension exists</p>
+<h2 id="normal-use_53">Normal use</h2>
+<p>.config patch |uploaded-json|
+    Return confim embed "I've updated that config"
+.config patch
+    Return the config file for the bot</p>
+<h2 id="expected-errors_46">Expected errors</h2>
+<p>.config patch |uploaded-json|
+    Return a deny embed "I couldn't match your upload data with the current config schema" if json is wrong</p>
+<h2 id="normal-use_54">Normal use</h2>
+<p>.raw |uploaded-python-file|
+    Return a confrim embed "Code executed!" And execute the code in the file</p>
+<h2 id="expected-errors_47">Expected errors</h2>
+<p>.raw
+    Return a deny embed "No Python code found" if you do not provide a json
+.raw |uploaded-python-file|
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
+    Return a confrim embed "Code executed!" if file is a json
+    Return a deny embed "Error: [e]" if it runs into an exception in the file</p>
+<h2 id="normal-use_55">Normal use</h2>
+<p>.listen clear
+    Return a confrim embed "All listeners dergistered!</p>
+<h2 id="expected-errors_48">Expected errors</h2>
+<p>.listen clear
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin</p>
+<h2 id="note_3">Note</h2>
+<p>Will return the confrim embed even if no jobs are cleared</p>
+<h2 id="normal-use_56">Normal use</h2>
+<p>.listen stop [src-channel] [dst-channel]
+    Return a confim embed "Listening deregistered!"</p>
+<h2 id="expected-errors_49">Expected errors</h2>
+<p>.listen stop [src-channel] [dst-channel]
+    return a deny embed "Could not convert argument to: <code>&lt;class 'cogs.listen.ListenChannel'&gt;</code>" if [src-channel] or [dst-channel] is wrong
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
+.listen stop
+    Return a deny embed "You did not provide the command argument: <code>src: cogs.listen.ListenChannel</code>" if no src channel
+.listen stop [src-channel]
+    Return a deny embed "You did not provide the command argument: <code>dst: cogs.listen.ListenChannel</code> if no dest channel</p>
+<h2 id="normal-use_57">Normal use</h2>
+<p>.listen jobs
+    Return an embed with the listener registrations with src and dest channels in description</p>
+<h2 id="expected-errors_50">Expected errors</h2>
+<p>.listen jobs
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
+    Return a deny embed "There are currently no registered listeners" If not jobs exists</p>
+<h2 id="normal-use_58">Normal use</h2>
+<p>.listen start [src-channel] [dst-channel]
+    Return a confrim embed "Listening registered!"</p>
+<h2 id="expected-errors_51">Expected errors</h2>
+<p>.listen start [src-channel] [dst-channel]
+    return a deny embed "Could not convert argument to: <code>&lt;class 'cogs.listen.ListenChannel'&gt;</code>" if [src-channel] or [dst-channel] is wrong
+    Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
+    Return a deny embed "That source and destination already exist" if the listening config exists already
+.listen start
+    Return a deny embed "You did not provide the command argument: <code>src: cogs.listen.ListenChannel</code>" if no src channel
+.listen start [src-channel]
+    Return a deny embed "You did not provide the command argument: <code>dst: cogs.listen.ListenChannel</code> if no dest channel</p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
