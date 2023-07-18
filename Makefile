@@ -1,7 +1,12 @@
 image = rtechsupport/techsupport-bot
 full-image = $(image):prod
-drun = docker run --rm -v $(shell pwd):/var/TechSupportBot -t $(full-image) python3 -m
 main_dir = techsupport_bot
+
+ifeq ($(shell docker-compose -v > /dev/null 2>&1; echo $$?), 0)
+	DOCKER_COMPOSE_CMD := docker-compose
+else
+	DOCKER_COMPOSE_CMD := docker compose
+endif
 
 make sync:
 	python3 -m pipenv sync -d
@@ -15,8 +20,7 @@ format:
 	isort ./ --profile black
 
 lint:
-	$(drun) pylint techsupport_bot/*.py techsupport_bot/base/*.py techsupport_bot/cogs/*.py
-	# TODO: add techsupport_bot/plugins/*.py after plugins documented
+	pylint $(shell git ls-files '*.py')
 
 test:
 	PYTHONPATH=./techsupport_bot pytest techsupport_bot/tests/ -p no:warnings
@@ -29,18 +33,23 @@ rebuild:
 	make build
 	make start
 
+devbuild:
+	make format
+	make rebuild
+	make logs
+
 start:
-	docker-compose up -d
+	$(DOCKER_COMPOSE_CMD) up -d
 
 update:
-	docker-compose down
-	docker-compose up -d --build
+	$(DOCKER_COMPOSE_CMD) down
+	$(DOCKER_COMPOSE_CMD) up -d --build
 
 clean:
 	docker system prune --volumes -a
 
 down:
-	docker-compose down
+	$(DOCKER_COMPOSE_CMD) down
 
 reset:
 	make down
@@ -49,7 +58,7 @@ reset:
 	make start
 
 restart:
-	docker-compose restart
+	$(DOCKER_COMPOSE_CMD) restart
 
 logs:
 	docker logs discordBot -f
