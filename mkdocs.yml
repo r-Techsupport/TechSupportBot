@@ -1,5 +1,6 @@
 site_name: My Docs
 repo_url: https://github.com/r-Techsupport/TechSupportBot/
+edit_uri: '#root/docs/'
 nav:
 - 'Home': 'index.md'
 - Factoids:
