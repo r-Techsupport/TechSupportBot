@@ -14,5 +14,6 @@ For full documentation visit [mkdocs.org](https://www.mkdocs.org).
     mkdocs.yml    # The configuration file.
     docs/
         index.md  # The documentation homepage.
-        TestCases.md # This documents most of the test cases for the bot.
-        ...       # Other markdown pages, images and other files.
+        Factoids/
+            TestCases.md # This documents most of the test cases for the bot.
+
