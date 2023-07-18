@@ -291,6 +291,29 @@ class AdvancedBot(DataBot):
 
         return channel_id
 
+    async def slash_command_log(self, interaction):
+        """A command to log the call of a slash command
+
+        Args:
+            interaction (discord.Interaction): The interaction the slash command generated
+        """
+        embed = discord.Embed()
+        embed.add_field(name="User", value=interaction.user)
+        embed.add_field(
+            name="Channel", value=getattr(interaction.channel, "name", "DM")
+        )
+        embed.add_field(name="Server", value=getattr(interaction.guild, "name", "None"))
+        embed.add_field(name="Namespace", value=f"{interaction.namespace}")
+
+        log_channel = await self.get_log_channel_from_guild(
+            interaction.guild, key="logging_channel"
+        )
+
+        sliced_content = interaction.command.qualified_name[:100]
+        message = f"Command detected: `/{sliced_content}`"
+
+        await self.logger.info(message, embed=embed, send=True, channel=log_channel)
+
     async def guild_log(self, guild, key, log_type, message, **kwargs):
         """Wrapper for logging directly to a guild's log channel.
 
@@ -398,20 +421,43 @@ class AdvancedBot(DataBot):
 
         error_message = message_template.get_message(exception)
 
-        await auxiliary.send_deny_embed(message=error_message, channel=context.channel)
-
-        # Stops execution if dont_print_trace is True
-        if hasattr(exception, "dont_print_trace") and exception.dont_print_trace:
-            return
-
         log_channel = await self.get_log_channel_from_guild(
             getattr(context, "guild", None), key="logging_channel"
         )
-        await self.logger.error(
-            f"Command error: {exception}",
-            exception=exception,
-            channel=log_channel,
-        )
+
+        # 1000 character cap
+        if len(error_message) < 1000:
+            await auxiliary.send_deny_embed(
+                message=error_message, channel=context.channel
+            )
+            
+            # Stops execution if dont_print_trace is True
+            if hasattr(exception, "dont_print_trace") and exception.dont_print_trace:
+                return
+            
+            await self.logger.error(
+                f"Command error: {exception}",
+                exception=exception,
+                channel=log_channel,
+            )
+
+        else:
+            await auxiliary.send_deny_embed(
+                message="Command raised an error and the error message too long to send!"
+                + f" First 1000 chars:\n{error_message[:1000]}",
+                channel=context.channel,
+            )
+            
+            # Stops execution if dont_print_trace is True
+            if hasattr(exception, "dont_print_trace") and exception.dont_print_trace:
+                return
+         
+            await self.logger.error(
+                "Command raised an error and the error message too long to send!"
+                + " See traceback below",
+                exception=exception,
+                channel=log_channel,
+            )
 
     async def on_connect(self):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_connect"""

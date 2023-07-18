@@ -13,3 +13,4 @@ from .lenny import *
 from .linter import *
 from .mock import *
 from .roll import *
+from .wyr import *

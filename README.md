@@ -58,6 +58,7 @@ The Makefile offers shortcut commands for development.
 * `test` runs unit tests.
 * `build` builds the Docker image.
 * `rebuild` will build the latest version of the bot, and (if needed) recreate the docker container
+* `devbuild` will format the code, rebuild the container, start the new version, and display container logs
 * `start` starts the entire system, databases and all. This can also be used as a fast update, as it won't force a full rebuild.
 * `update` stops all the containers, builds a fresh build of the bot, and starts all containers.
 * `clean` removes all unused docker assets, including volumes. This may be destructive.
