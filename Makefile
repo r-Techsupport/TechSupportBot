@@ -2,9 +2,9 @@ image = rtechsupport/techsupport-bot
 full-image = $(image):prod
 main_dir = techsupport_bot
 
-# Dynamically set the docker command to be docker-compose or docker compose
-DOCKER_COMPOSE_CMD := $(shell which docker-compose 2> /dev/null)
-ifeq (,$(DOCKER_COMPOSE_CMD))
+ifeq ($(shell docker-compose -v > /dev/null 2>&1; echo $$?), 0)
+	DOCKER_COMPOSE_CMD := docker-compose
+else
 	DOCKER_COMPOSE_CMD := docker compose
 endif
 
