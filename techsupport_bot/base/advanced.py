@@ -430,11 +430,11 @@ class AdvancedBot(DataBot):
             await auxiliary.send_deny_embed(
                 message=error_message, channel=context.channel
             )
-            
+
             # Stops execution if dont_print_trace is True
             if hasattr(exception, "dont_print_trace") and exception.dont_print_trace:
                 return
-            
+
             await self.logger.error(
                 f"Command error: {exception}",
                 exception=exception,
@@ -447,11 +447,11 @@ class AdvancedBot(DataBot):
                 + f" First 1000 chars:\n{error_message[:1000]}",
                 channel=context.channel,
             )
-            
+
             # Stops execution if dont_print_trace is True
             if hasattr(exception, "dont_print_trace") and exception.dont_print_trace:
                 return
-         
+
             await self.logger.error(
                 "Command raised an error and the error message too long to send!"
                 + " See traceback below",
