@@ -58,6 +58,8 @@ class RoleGiver(base.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that called this command
         """
+        await self.bot.slash_command_log(interaction)
+
         # Pull config
         config = await self.bot.get_context_config(guild=interaction.guild)
 
@@ -78,6 +80,8 @@ class RoleGiver(base.BaseCog):
             interaction (discord.Interaction): The interaction that called this command
             member (discord.Member): The member to apply roles to
         """
+        await self.bot.slash_command_log(interaction)
+
         # Pull config
         config = await self.bot.get_context_config(guild=interaction.guild)
 
