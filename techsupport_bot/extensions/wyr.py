@@ -1,10 +1,10 @@
 """Module for the wyr extension for the discord bot."""
-import uuid
-from random import choice
+import random
 
 import base
 import discord
 import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -19,24 +19,18 @@ class Question:
     def __init__(self, option_a, option_b):
         self.option_a = option_a
         self.option_b = option_b
-        self.id = uuid.uuid4()
 
-    def get_question(self):
-        """Method for setting up a question."""
-        return f"Would you rather: {self.option_a} **OR** {self.option_b}?"
+    def __str__(self) -> str:
+        """Allows the question object to be printed as a string
 
-    def generate_embed(self):
-        """Method for generating the embed for a wyr question."""
-        description = f"{self.option_a}, or {self.option_b}?"
-        embed = discord.Embed(title="Would you rather...", description=description)
-        embed.color = discord.Color.blurple()
-        return embed
+        Returns:
+            str: A string representation of the question class
+        """
+        return f"{self.option_a}, or {self.option_b}?"
 
 
 class WouldYouRather(base.BaseCog):
     """Class to create a would you rather scenario."""
-
-    HAS_CONFIG = False
 
     async def preconfig(self):
         """Method to preconfig the wyr scenario."""
@@ -535,12 +529,32 @@ class WouldYouRather(base.BaseCog):
         brief="Gets Would You Rather questions",
         description="Creates a random Would You Rather question",
     )
-    async def wyr(self, ctx):
+    async def wyr(self, ctx: commands.Context) -> None:
         """Method to call the wyr command."""
-        while True:
-            question = choice(self.QUESTIONS)
-            if self.last != question.id:
-                self.last = question.id
-                break
+        await self.wyr_command(ctx)
 
-        await ctx.send(embed=question.generate_embed())
+    async def wyr_command(self, ctx: commands.Context) -> None:
+        """The main processing of .wyr
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
+        question = self.get_question()
+        embed = auxiliary.generate_basic_embed(
+            title="Would you rather...",
+            description=str(question),
+            color=discord.Color.blurple(),
+        )
+        await ctx.send(embed=embed)
+
+    def get_question(self) -> Question:
+        """This gets a non-repeated question
+
+        Returns:
+            Question: The question to print to the user
+        """
+        rand_index = random.randint(0, len(self.QUESTIONS) - 1)
+        if self.last == self.QUESTIONS[rand_index]:
+            rand_index = (rand_index + 1) % len(self.QUESTIONS)
+        self.last = self.QUESTIONS[rand_index]
+        return self.QUESTIONS[rand_index]

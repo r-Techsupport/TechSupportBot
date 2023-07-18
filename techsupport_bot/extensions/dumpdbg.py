@@ -95,6 +95,12 @@ class Dumpdbg(base.BaseCog):
         api_endpoint = config.extensions.dumpdbg.api_endpoint.value
         permitted_roles = config.extensions.dumpdbg.roles.value
 
+        if not permitted_roles:
+            await auxiliary.send_deny_embed(
+                message="No permitted roles set in the config!", channel=ctx.channel
+            )
+            return
+
         # -> Message checks <-
 
         # Checks if the user has any permitted roles
