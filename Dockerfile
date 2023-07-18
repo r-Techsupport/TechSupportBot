@@ -8,8 +8,8 @@ WORKDIR /var/TechSupportBot
 COPY Pipfile .
 COPY Pipfile.lock .
 
+RUN pip install --no-cache-dir pip==$(sed -nE 's/pip = "==(.*)"/\1/p' Pipfile) 
 RUN pip install --no-cache-dir pipenv==$(sed -nE 's/pipenv = "==(.*)"/\1/p' Pipfile)
-RUN pip install --no-cache-dir "cython<3.0" pyyaml --no-build-isolation
 RUN pipenv install --system
 
 COPY . .
