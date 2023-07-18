@@ -1,5 +1,5 @@
 site_name: My Docs
-repo_url: https://github.com/TheKrol/TechSupportBot
+repo_url: https://github.com/r-TechSupport/TechSupportBot
 nav:
 - Home: 'index.md'
 - Factoids:
