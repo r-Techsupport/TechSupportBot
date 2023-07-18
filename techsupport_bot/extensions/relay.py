@@ -96,7 +96,8 @@ class DiscordToIRC(base.MatchCog):
             content (str): The string content of the message
             result (str): The string representation of the IRC channel
         """
-        self.bot.irc.send_message_from_discord(message=ctx.message, channel=result)
+        if self.bot.irc.ready:
+            self.bot.irc.send_message_from_discord(message=ctx.message, channel=result)
 
     async def handle_factoid(
         self,
@@ -177,8 +178,8 @@ class DiscordToIRC(base.MatchCog):
             await auxiliary.send_deny_embed(
                 message="IRC is not connected", channel=ctx.channel
             )
-        self.bot.irc.connection.disconnect()
         self.bot.irc.ready = False
+        self.bot.irc.connection.disconnect()
         await auxiliary.send_confirm_embed(
             message="Disconnected from IRC", channel=ctx.channel
         )
@@ -191,8 +192,8 @@ class DiscordToIRC(base.MatchCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        self.bot.irc.connection.reconnect()
         self.bot.irc.ready = False
+        self.bot.irc.connection.reconnect()
         await auxiliary.send_confirm_embed(
             message="Reconnected to IRC", channel=ctx.channel
         )

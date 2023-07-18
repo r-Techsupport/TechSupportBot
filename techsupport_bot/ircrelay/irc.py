@@ -51,6 +51,19 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         self.join_channel_list = channels
         self.username = username
         self.password = password
+        self._on_disconnect = self.reconnect_from_disconnect
+
+    def reconnect_from_disconnect(
+        self, connection: irc.client.ServerConnection, event: irc.client.Event
+    ) -> None:
+        """Reconnecting to IRC in the event there is a disconnect
+
+        Args:
+            connection (irc.client.ServerConnection): The IRC connection
+            event (irc.client.Event): The event object that triggered this function
+        """
+        self.console.error(f"Disconnected from IRC - Attempting reconnection: {event}")
+        connection.reconnect()
 
     def on_nicknameinuse(
         self, connection: irc.client.ServerConnection, _: irc.client.Event
