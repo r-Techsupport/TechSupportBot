@@ -179,15 +179,12 @@ class FactoidManager(base.MatchCog):
             del self.factoid_all_cache[guild]
 
         # Deloops the factoid first (if it's looped)
-        jobs = (
-            await self.models.FactoidJob.query.where(
-                self.models.Factoid.guild == factoid.guild
-            )
-            .where(self.models.Factoid.factoid_id == factoid.factoid_id)
-            .gino.all()
-        )
+        jobs = await self.models.FactoidJob.query.where(
+            self.models.FactoidJob.factoid == factoid.factoid_id
+        ).gino.all()
         if jobs:
             for job in jobs:
+                print(job.channel)
                 job_id = job.job_id
                 # Cancels the job
                 self.running_jobs[job_id]["task"].cancel()
@@ -586,6 +583,14 @@ class FactoidManager(base.MatchCog):
 
         # Adds the factoid if it doesn't exist already
         except FactoidNotFoundError:
+            # If remember was called with an embed but not a message and the factoid does not exist
+            if not message:
+                await auxiliary.send_deny_embed(
+                    message="You did not provide the factoid message!",
+                    channel=ctx.channel,
+                )
+                return
+
             await self.create_factoid_call(
                 factoid_name=name,
                 guild=guild,
@@ -718,9 +723,6 @@ class FactoidManager(base.MatchCog):
         plaintext_content = factoid.message if not embed else None
         mentions = auxiliary.construct_mention_string(ctx.message.mentions)
 
-        if not mentions:
-            mentions = ctx.author.mention
-
         content = " ".join(filter(None, [mentions, plaintext_content])) or None
         if content and len(content) > 2000:
             await auxiliary.send_deny_embed(
@@ -732,7 +734,7 @@ class FactoidManager(base.MatchCog):
 
         try:
             # define the message and send it
-            message = await ctx.send(
+            message = await ctx.reply(
                 content=content,
                 embed=embed,
             )
@@ -744,7 +746,7 @@ class FactoidManager(base.MatchCog):
                 f"Sending factoid: {query} (triggered by {ctx.author} in #{ctx.channel.name})",
                 send=True,
             )
-            # If something breaks, also log it
+        # If something breaks, also log it
         except discord.errors.HTTPException as e:
             await self.bot.guild_log(
                 ctx.guild,
@@ -754,7 +756,9 @@ class FactoidManager(base.MatchCog):
                 exception=e,
             )
             # Sends the raw factoid instead of the embed as fallback
-            message = await ctx.send(f"{mentions} {factoid.message}")
+            message = await ctx.reply(
+                f"{mentions+' ' if mentions else ''}{factoid.message}"
+            )
 
         self.dispatch(ctx.author, message, factoid)
 
@@ -852,7 +856,20 @@ class FactoidManager(base.MatchCog):
                 )
                 continue
 
-            message = await channel.send(content=content, embed=embed)
+            try:
+                message = await channel.send(content=content, embed=embed)
+
+            except discord.errors.HTTPException as e:
+                await self.bot.guild_log(
+                    ctx.guild,
+                    "logging_channel",
+                    "error",
+                    "Could not send looped factoid",
+                    exception=e,
+                )
+                # Sends the raw factoid instead of the embed as fallback
+                message = await channel.send(content=factoid.message)
+
             self.dispatch(channel.guild.get_member(self.bot.user.id), message, factoid)
 
     @commands.group(
@@ -874,7 +891,9 @@ class FactoidManager(base.MatchCog):
         description="Creates a factoid",
         usage="[factoid-name] [factoid-output] |optional-embed-json-upload|",
     )
-    async def remember(self, ctx: commands.Context, factoid_name: str, *, message: str):
+    async def remember(
+        self, ctx: commands.Context, factoid_name: str, *, message: str = ""
+    ):
         """Command to add a factoid
 
         Args:
@@ -891,6 +910,16 @@ class FactoidManager(base.MatchCog):
             return
 
         embed_config = await util.get_json_from_attachments(ctx.message, as_string=True)
+
+        if not embed_config and not message:
+            await auxiliary.send_deny_embed(
+                message="You did not provide the factoid message!", channel=ctx.channel
+            )
+            return
+
+        if embed_config and message == "":
+            message = None
+
         await self.add_factoid(
             ctx,
             factoid_name=factoid_name,
@@ -1212,11 +1241,27 @@ class FactoidManager(base.MatchCog):
         for alias in aliases:
             alias_list += f"`{alias.name.lower()}`, "
 
+        # Gets the factoids loop jobs
+        jobs = await self.models.FactoidJob.query.where(
+            self.models.FactoidJob.factoid == factoid.factoid_id
+        ).gino.all()
+
         # Adds all firleds to the embed
         embed.add_field(name="Aliases", value=alias_list[:-2])
         embed.add_field(name="Embed", value=bool(factoid.embed_config))
         embed.add_field(name="Contents", value=factoid.message)
         embed.add_field(name="Date of creation", value=factoid.time)
+
+        if jobs:
+            for job in jobs[:10]:
+                channel = self.bot.get_channel(int(job.channel))
+                if not channel:
+                    continue
+                embed.add_field(
+                    name=f"**Loop:** {factoid.name} - #{channel.name}",
+                    value=f"`{job.cron}`\n",
+                    inline=False,
+                )
 
         # Finally, sends the factoid
         await ctx.send(embed=embed)
@@ -1493,9 +1538,17 @@ class FactoidManager(base.MatchCog):
             ctx (commands.Context): Context of the invokation
             query (str): The querry to look for
         """
+        query = query.lower()
+
+        if len(query) < 3:
+            await auxiliary.send_deny_embed(
+                message="Please enter at least 3 characters for the search query!",
+                channel=ctx.channel,
+            )
+            return
+
         factoids = await self.get_all_factoids(str(ctx.guild.id))
         # Makes query lowercase, makes sure you can't search for JSON elements
-        query = query.lower().replace("{", "").replace("}", "")
         embed = discord.Embed(color=discord.Color.green())
         num_of_matches = 0
 
@@ -1848,6 +1901,7 @@ class FactoidManager(base.MatchCog):
                 self.running_jobs[job_id]["task"] = task
 
     @util.with_typing
+    @commands.has_permissions(administrator=True)
     @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
