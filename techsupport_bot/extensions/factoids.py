@@ -63,7 +63,7 @@ async def setup(bot):
         channel = bot.db.Column(bot.db.String)
         cron = bot.db.Column(bot.db.String)
 
-    # dealing with the config.yml file located in ../
+    # Sets the config up
     config = bot.ExtensionConfig()
     config.add(
         key="manage_roles",
@@ -71,13 +71,6 @@ async def setup(bot):
         title="Manage factoids roles",
         description="The roles required to manage factoids",
         default=["Factoids"],
-    )
-    config.add(
-        key="response_listen_channels",
-        datatype="list",
-        title="Factoids response listen channels",
-        description="The list of channel ID's to listen for factoid response events",
-        default=[],
     )
     config.add(
         key="linx_url",
