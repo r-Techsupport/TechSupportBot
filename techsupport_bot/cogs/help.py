@@ -59,13 +59,30 @@ class Helper(base.BaseCog):
             ctx (discord.ext.Context): the context object for the message
         """
         command_prefix = await self.bot.get_prefix(ctx.message)
-
         embed = HelpEmbed(title="Builtin commands")
+        embed_fields = {}
+
         for cog_name in self.bot.builtin_cogs:
             cog = self.bot.get_cog(cog_name)
             if not cog:
                 continue
-            embed = self.add_cog_command_fields(cog, embed, command_prefix)
+            embed_fields = self.add_cog_command_fields(
+                cog, embed_fields, command_prefix
+            )
+
+        # Sorts all embed_fields alphabetically
+        embed_fields = {
+            field: embed_fields[field]
+            for field in sorted(embed_fields, key=lambda x: x[1:])
+        }
+
+        # Adds them to the embed
+        for field in embed_fields:
+            embed.add_field(
+                name=field,
+                value=embed_fields[field],
+                inline=False,
+            )
 
         await ctx.send(embed=embed)
 
@@ -160,15 +177,23 @@ class Helper(base.BaseCog):
 
         return embed
 
-    def add_cog_command_fields(self, cog, embed, command_prefix):
-        """Adds embed fields for each command in a given cog.
+    def add_cog_command_fields(self, cog, embed_fields, command_prefix) -> dict:
+        """Adds embed embed_field for each command in a given cog.
 
         parameters:
-            extension_name (str): the name of the extension
-            embed (discord.Embed): the embed to add fields to
+            cog (commands.Cog): The cog to get the commands of
+            embed_fields (dict): Field list where Name: description
             command_prefix (str): the command prefix for the bot
+
+        returns:
+            dict: The modified field list
         """
-        for command in cog.walk_commands():
+
+        # Sorts commands alphabetically
+        command_list = list(cog.walk_commands())
+        command_list.sort(key=lambda command: command.name)
+
+        for command in command_list:
             if issubclass(command.__class__, commands.Group):
                 continue
 
@@ -179,13 +204,11 @@ class Helper(base.BaseCog):
 
             usage = command.usage or ""
 
-            embed.add_field(
-                name=f"`{syntax} {usage}`",
-                value=command.description or "No description available",
-                inline=False,
+            embed_fields[f"`{syntax} {usage}`"] = (
+                command.description or "No description available"
             )
 
-        return embed
+        return embed_fields
 
     def add_extension_command_fields(self, extension_name, embed, command_prefix):
         """Adds embed fields for each command in a given cog.
@@ -195,7 +218,12 @@ class Helper(base.BaseCog):
             embed (discord.Embed): the embed to add fields to
             command_prefix (str): the command prefix for the bot
         """
-        for command in self.bot.walk_commands():
+
+        # Sorts commands alphabetically
+        command_list = list(self.bot.walk_commands())
+        command_list.sort(key=lambda command: command.name)
+
+        for command in command_list:
             command_extension_name = self.bot.get_command_extension_name(command)
             if extension_name != command_extension_name:
                 continue
