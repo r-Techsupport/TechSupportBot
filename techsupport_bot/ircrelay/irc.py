@@ -3,6 +3,7 @@ message tranmissions to discord"""
 import asyncio
 import base64
 import logging
+import os
 import threading
 import time
 from typing import Dict, List
@@ -52,6 +53,10 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         self.username = username
         self.password = password
         self._on_disconnect = self.reconnect_from_disconnect
+
+    def exit_irc(self):
+        """Instatly kills the IRC thread"""
+        os._exit(1)
 
     def reconnect_from_disconnect(
         self, connection: irc.client.ServerConnection, event: irc.client.Event

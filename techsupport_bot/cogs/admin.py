@@ -571,6 +571,7 @@ class AdminControl(base.BaseCog):
         await auxiliary.send_confirm_embed(
             message="Rebooting! Beep boop!", channel=ctx.channel
         )
+        self.bot.irc.exit_irc()
         await self.bot.close()
 
     @commands.command(
