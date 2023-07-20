@@ -1,6 +1,9 @@
 """Module for defining the advanced bot methods."""
 import asyncio
 import datetime
+import random
+import re
+import string
 import sys
 import time
 
@@ -11,6 +14,7 @@ import munch
 import util
 from base import auxiliary
 from discord.ext import commands
+from unidecode import unidecode
 
 from .data import DataBot
 
@@ -142,6 +146,7 @@ class AdvancedBot(DataBot):
         config_.guild_events_channel = None
         config_.private_channels = []
         config_.enabled_extensions = []
+        config_.nickname_filter = False
 
         config_.extensions = extensions_config
 
@@ -809,8 +814,32 @@ class AdvancedBot(DataBot):
             channel=log_channel,
         )
 
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
+        config_ = await self.get_context_config(guild=member.guild)
+
+        if config_.get("nickname_filter", False):
+            temp_name = member.display_name
+            # First, make the string all ascii
+            temp_name = unidecode(temp_name)
+            # Second, remove markdown
+            markdown_pattern = r"(\*\*|__|\*|_|\~\~|`|#+|-{3,}|\|{3,}|>)"
+            temp_name = re.sub(markdown_pattern, "", temp_name)
+            # Third, strip any excess white space or the API will decline
+            temp_name = temp_name.strip()
+            # Finally, ensure the nickname is the correct length
+            if len(temp_name) < 3:
+                new_str = "".join(
+                    random.choice(string.ascii_letters) for _ in range(10)
+                )
+                if len(temp_name) > 0:
+                    temp_name = temp_name + "-"
+                temp_name = f"{temp_name}USER-{new_str}".strip()
+            temp_name = temp_name[:32]
+            # If the name is differnet, set it
+            if temp_name != member.display_name:
+                await member.edit(nick=temp_name)
+
         embed = discord.Embed()
         embed.add_field(name="Member", value=member)
         embed.add_field(name="Server", value=member.guild.name)
