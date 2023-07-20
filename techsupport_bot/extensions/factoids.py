@@ -1540,7 +1540,7 @@ class FactoidManager(base.MatchCog):
                 name_matches = name_matches[:-2] + " more...---"
                 break
 
-            if not factoid.alias and query in factoid.name:
+            if not factoid.alias and query in factoid.name.lower():
                 name_matches += f"{factoid.name}`, `"
                 num_of_matches += 1
 
@@ -1560,8 +1560,8 @@ class FactoidManager(base.MatchCog):
                 break
 
             if factoid.embed_config is not None and (
-                any(word in factoid.embed_config for word in query.split())
-                or any(word in factoid.message for word in query.split())
+                any(word in factoid.embed_config.lower() for word in query.split())
+                or any(word in factoid.message.lower() for word in query.split())
             ):
                 content_matches += f"{factoid.name}`, `"
                 num_of_matches += 1
