@@ -116,7 +116,7 @@ class TechSupportBot(base.AdvancedBot):
     async def cleanup(self):
         """Cleans up after the event loop is interupted."""
         await self.logger.debug("Cleaning up...", send=True)
-        await super().logout()
+        await super().close()
 
     async def on_guild_join(self, guild):
         """Configures a new guild upon joining.
