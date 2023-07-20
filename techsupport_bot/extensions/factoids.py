@@ -184,7 +184,6 @@ class FactoidManager(base.MatchCog):
         ).gino.all()
         if jobs:
             for job in jobs:
-                print(job.channel)
                 job_id = job.job_id
                 # Cancels the job
                 self.running_jobs[job_id]["task"].cancel()
@@ -280,7 +279,7 @@ class FactoidManager(base.MatchCog):
     async def confirm_factoid_deletion(
         self, factoid_name: str, ctx: commands.Context, fmt: str
     ) -> bool:
-        """Confirms if a factoid should be deleted
+        """Confirms if a factoid should be deleted/modified
 
         Args:
             factoid_name (str): The factoid that is being prompted for deletion
@@ -336,7 +335,7 @@ class FactoidManager(base.MatchCog):
             return "I cannot remember factoids with user/role/channel mentions"
 
         # Prevents factoids being created with html elements
-        if re.match(r"<[^>/]+/?>", message) or re.match(r"<[^>/]+/?>", factoid_name):
+        if re.search(r"<[^>]+>", message) or re.search(r"<[^>]+>", factoid_name):
             return "Cannot create factoids that contain HTML tags!"
 
         # Prevents factoids being created with spaces
@@ -601,12 +600,12 @@ class FactoidManager(base.MatchCog):
 
         # Modifies the factoid if it already exists
         else:
+            fmt = "modified"
             # Confirms modification
             if await self.confirm_factoid_deletion(name, ctx, fmt) is False:
                 return
 
             # Modifies the old entry
-            fmt = "modified"
             await self.modify_factoid_call(
                 factoid=await self.get_raw_factoid_entry(name, str(ctx.guild.id)),
                 factoid_name=name,
@@ -697,25 +696,13 @@ class FactoidManager(base.MatchCog):
         # Replaces \n with spaces so factoid can be called even with newlines
         query = message_content[1:].replace("\n", " ").split(" ")[0].lower()
         try:
-            factoid = await self.get_raw_factoid_entry(query, str(ctx.guild.id))
+            factoid = await self.get_factoid(query, str(ctx.guild.id))
+
         except FactoidNotFoundError:
             await self.bot.logger.debug(
                 f"Invalid factoid call {query} from {ctx.guild.id}"
             )
             return
-
-        # If the factoid is an alias
-        if factoid.alias not in ["", None]:
-            alias = factoid.alias
-            factoid = await self.get_raw_factoid_entry(alias, str(ctx.guild.id))
-            # Broken alias, shouldn't happen but is here just in case
-            if not factoid:
-                await auxiliary.send_deny_embed(
-                    message=f"Broken alias pointing to nonexistant factoid `{alias}` detected!\n"
-                    + "(This shouldn't happen, call a code monkey)",
-                    channel=ctx.channel,
-                )
-                raise FactoidNotFoundError(factoid=alias)
 
         embed = self.get_embed_from_factoid(factoid)
         # if the json doesn't include non embed argument, then don't send anything
