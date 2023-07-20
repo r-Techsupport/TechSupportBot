@@ -21,7 +21,6 @@ import aiocron
 import base
 import discord
 import expiringdict
-import munch
 import ui
 import util
 import yaml
@@ -714,7 +713,7 @@ class FactoidManager(base.MatchCog):
 
         try:
             # define the message and send it
-            message = await ctx.reply(
+            await ctx.reply(
                 content=content,
                 embed=embed,
             )
@@ -736,23 +735,23 @@ class FactoidManager(base.MatchCog):
                 exception=e,
             )
             # Sends the raw factoid instead of the embed as fallback
-            message = await ctx.reply(
-                f"{mentions+' ' if mentions else ''}{factoid.message}"
-            )
+            await ctx.reply(f"{mentions+' ' if mentions else ''}{factoid.message}")
 
-        self.dispatch(ctx.author, message, factoid)
+        await self.send_to_irc(ctx, factoid.message)
 
-    def dispatch(self, author: discord.Member, message: discord.Message, factoid):
-        """Sends factoid info into the irc relay
+    async def send_to_irc(
+        self, ctx: commands.Context, factoid_message: discord.Message
+    ) -> None:
+        """Send a factoid to IRC channel, if it was called in a linked channel
 
         Args:
-            author (discord.Member): The invoker
-            message (discord.Message): The message paired with the factoid
-            factoid (Factoid): The factoid called
+            ctx (commands.Context): The context in which the command was run
+            factoid_message (discord.Message): The text of the factoid to send
         """
-        self.bot.dispatch(
-            "factoid_event",
-            munch.Munch(author=author, message=message, factoid=factoid),
+        await self.bot.irc.irc_cog.handle_factoid(
+            channel=ctx.channel,
+            discord_message=ctx.message,
+            factoid_message=factoid_message,
         )
 
     # -- Factoid job related functions --
@@ -837,7 +836,7 @@ class FactoidManager(base.MatchCog):
                 continue
 
             try:
-                message = await channel.send(content=content, embed=embed)
+                await channel.send(content=content, embed=embed)
 
             except discord.errors.HTTPException as e:
                 await self.bot.guild_log(
@@ -848,9 +847,9 @@ class FactoidManager(base.MatchCog):
                     exception=e,
                 )
                 # Sends the raw factoid instead of the embed as fallback
-                message = await channel.send(content=factoid.message)
+                await channel.send(content=factoid.message)
 
-            self.dispatch(channel.guild.get_member(self.bot.user.id), message, factoid)
+            await self.send_to_irc(channel, factoid.message)
 
     @commands.group(
         brief="Executes a factoid command",
