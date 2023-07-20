@@ -63,7 +63,7 @@ async def setup(bot):
         channel = bot.db.Column(bot.db.String)
         cron = bot.db.Column(bot.db.String)
 
-    # Sets the config up
+    # Sets up the config
     config = bot.ExtensionConfig()
     config.add(
         key="manage_roles",
