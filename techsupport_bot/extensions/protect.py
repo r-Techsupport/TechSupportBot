@@ -292,7 +292,9 @@ class Protector(base.MatchCog):
             await self.send_alert(config, ctx, "Could not convert text to Linx paste")
             return
 
-        await ctx.send(embed=linx_embed, files=attachments[:10])
+        await ctx.send(
+            ctx.message.author.mention, embed=linx_embed, files=attachments[:10]
+        )
 
     async def handle_mass_mention_alert(self, config, ctx, content):
         """Method for handling mass mentions in an alert."""
@@ -325,7 +327,7 @@ class Protector(base.MatchCog):
             )
         else:
             embed = ProtectEmbed(description=filter_config.message)
-            await ctx.send(embed=embed)
+            await ctx.send(ctx.message.author.mention, embed=embed)
 
         await self.send_alert(
             config,
@@ -408,7 +410,7 @@ class Protector(base.MatchCog):
                 await ctx.send(content=user.mention, embed=embed)
 
         else:
-            await ctx.send(embed=embed)
+            await ctx.send(ctx.message.author.mention, embed=embed)
 
         await self.models.Warning(
             user_id=str(user.id), guild_id=str(ctx.guild.id), reason=reason
@@ -579,7 +581,7 @@ class Protector(base.MatchCog):
     async def send_default_delete_response(self, config, ctx, content, reason):
         """Method for the default delete of a message."""
         embed = ProtectEmbed(description=f"Message deleted. Reason: *{reason}*")
-        await ctx.send(embed=embed)
+        await ctx.send(ctx.message.author.mention, embed=embed)
         await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
 
     async def get_warnings(self, user, guild):
