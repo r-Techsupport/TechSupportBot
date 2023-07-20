@@ -224,8 +224,12 @@ async def extension_help(self, ctx, extension_name):
         embed = discord.Embed()
         embed.title = f"Extension Commands: `{extension_name}`"
 
-        # Loops through each command in the bots library
-        for command in self.bot.walk_commands():
+        # Sorts commands alphabetically
+        command_list = list(self.bot.walk_commands())
+        command_list.sort(key=lambda command: command.name)
+
+        # Loops through every command in the bots library
+        for command in command_list:
             # Gets the command name
             command_extension_name = self.bot.get_command_extension_name(command)
 

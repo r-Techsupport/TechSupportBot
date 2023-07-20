@@ -1,11 +1,17 @@
 """Base cogs for making extentions.
 """
 
+from __future__ import annotations
 
 import asyncio
+from typing import TYPE_CHECKING, List
 
+import gino
 import munch
 from discord.ext import commands
+
+if TYPE_CHECKING:
+    import bot
 
 
 class BaseCog(commands.Cog):
@@ -23,11 +29,11 @@ class BaseCog(commands.Cog):
 
     def __init__(
         self,
-        bot,
-        models=None,
-        no_guild=False,
-        extension_name=None,
-    ):
+        bot: bot.TechSupportBot,
+        models: List[gino.Model] = None,
+        no_guild: bool = False,
+        extension_name: str = None,
+    ) -> None:
         self.bot = bot
         self.no_guild = no_guild
         self.extension_name = extension_name
