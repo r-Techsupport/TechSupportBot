@@ -31,8 +31,6 @@ main:
         spotify_client:
         spotify_key:
         github:
-        battlenet_client:
-        battlenet_key:
         openai:
         dumpdbg_api:
     logging:
