@@ -296,7 +296,7 @@ class DiscordToIRC(base.MatchCog):
 
         if irc_channel in self.mapping.inverse:
             await auxiliary.send_deny_embed(
-                message="This IRC channel is already linked" 
+                message="This IRC channel is already linked"
                 + f"to <#{self.mapping.inverse[irc_channel]}>",
                 channel=ctx.channel,
             )
