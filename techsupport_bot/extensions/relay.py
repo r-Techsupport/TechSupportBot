@@ -288,7 +288,7 @@ class DiscordToIRC(base.MatchCog):
         """
         if str(ctx.channel.id) in self.mapping:
             await auxiliary.send_deny_embed(
-                message="This discord channel is already linked"
+                message="This discord channel is already linked "
                 + f"to {self.mapping[str(ctx.channel.id)]}",
                 channel=ctx.channel,
             )
@@ -296,8 +296,8 @@ class DiscordToIRC(base.MatchCog):
 
         if irc_channel in self.mapping.inverse:
             await auxiliary.send_deny_embed(
-                message="This IRC channel is already linked"
-                + f"<#{self.mapping.inverse[irc_channel]}>",
+                message="This IRC channel is already linked" 
+                + f"to <#{self.mapping.inverse[irc_channel]}>",
                 channel=ctx.channel,
             )
             return
@@ -306,7 +306,7 @@ class DiscordToIRC(base.MatchCog):
 
         if not irc_channel in joined_channels:
             await auxiliary.send_deny_embed(
-                message="I am not in this IRC channel", channel=ctx.channel
+                message="I am not in that IRC channel", channel=ctx.channel
             )
             return
 
