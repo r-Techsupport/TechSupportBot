@@ -15,12 +15,6 @@ main:
         name:
         host: mongodb
         port: 27017
-    rabbitmq:
-        user:
-        password:
-        host: rabbitmq
-        vhost: "/"
-        port: 5672
     api_keys:
         google_cse:
         google:
@@ -44,6 +38,13 @@ main:
         guild_config_cache_seconds: 30
         http_cache_length: 100
         http_cache_seconds: 600
+    irc:
+        enable_irc: False
+        server: "irc.libera.chat"
+        port: 6667
+        channels: []
+        name:
+        password:
 
 # Special things
 special:

@@ -25,7 +25,7 @@ cp config.default.yml config.yml
 ```
 ### .env file
 The first file we will edit is the .env file. This is where you will store database information.  
-You will need to create a username and password for mongodb, postgres, and rabbitmq. These credentials do not have to be different.  
+You will need to create a username and password for mongodb and postgres. These credentials do not have to be different.  
 You will also need to create a db name for postgres. This works best when it is all lowercase, but it is not strictly required.  
 When filling in the information, do not include spaces or quotes. Just put the content directly after the equals sign.  
 You will need all of this information again, so make sure to keep note of it.  
@@ -39,9 +39,6 @@ Do not change the port or host.
 #### mongodb
 For mongodb, you will need the username and password you created previously. You will also need to create a DB name here. Enter the username and password exactly as found in your .env file. Just like postgres, the DB name works best with all lowercase, but it is not a requirement.  
 Do not change the port or host.  
-#### rabbitmq
-For rabbitmq, you will only need the username and password you created previously. Enter it exactly as found in your .env file.  
-Do not change the host, vhost, or port.  
 #### Additional configuration
 All the additional configuration is optional, and is not required to start the bot. This includes all API keys. The default settings everywhere else work, but can be changed later if desired.
 ## Final tasks
