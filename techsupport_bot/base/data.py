@@ -217,7 +217,3 @@ class DataBot(ExtensionsBot):
             await client.close()
 
         return response
-
-
-class RateLimitExceeded(Exception):
-    pass
