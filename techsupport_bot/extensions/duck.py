@@ -408,7 +408,7 @@ class DuckHunt(base.LoopCog):
                 discord.Embed(
                     title="Duck Friendships",
                     description=(
-                        "Global speed record:                        "
+                        "Global speed record: "
                         f" {str(await self.get_global_record(ctx.guild.id))} seconds"
                     ),
                 )
@@ -495,7 +495,7 @@ class DuckHunt(base.LoopCog):
                 discord.Embed(
                     title="Duck Kills",
                     description=(
-                        "Global speed record:                         "
+                        "Global speed record: "
                         f" {str(await self.get_global_record(ctx.guild.id))} seconds"
                     ),
                 )

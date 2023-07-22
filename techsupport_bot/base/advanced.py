@@ -591,7 +591,7 @@ class AdvancedBot(DataBot):
 
         if isinstance(reaction.message.channel, discord.DMChannel):
             await self.logger.info(
-                f"PM from `{user}`: added {reaction.emoji} reaction                    "
+                f"PM from `{user}`: added {reaction.emoji} reaction "
                 f" to message {reaction.message.content} in DMs",
                 send=True,
             )

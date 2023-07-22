@@ -89,7 +89,8 @@ class BotLogger:
 
         if not target:
             self.console.warning(
-                f"Could not determine Discord target to send {console.__name__} log"
+                "Could not determine Discord target to send %s log",
+                console.__name__
             )
             return
 
