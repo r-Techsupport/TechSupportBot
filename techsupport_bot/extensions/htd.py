@@ -123,11 +123,11 @@ class Htd(base.BaseCog):
         name="htd",
         brief="Convert values to different bases",
         description=(
-            "Takes a value and returns the value in different bases             and"
+            "Takes a value and returns the value in different bases and"
             " encodings (bianary, hex, base 10, and ascii)"
         ),
         usage=(
-            "`htd [value]`\nAccepts numbers in the following formats:\n0x            "
+            "`htd [value]`\nAccepts numbers in the following formats:\n0x"
             " (hex)\n0b (binary) \nNo prefix (assumed ascii)"
         ),
     )

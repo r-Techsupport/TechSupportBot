@@ -332,8 +332,8 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         """Method to confirm application with the user through direct message."""
         embed = ApplicationEmbed(
             description=(
-                f"I received an application on the server `{ctx.guild.name}`.          "
-                "       Did you make this application? Please reply with `yes` or `no`"
+                f"I received an application on the server `{ctx.guild.name}`.\n"
+                "Did you make this application? Please reply with `yes` or `no`"
             ),
         )
         message = await user.send(embed=embed)

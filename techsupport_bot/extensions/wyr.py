@@ -218,10 +218,10 @@ class WouldYouRather(base.BaseCog):
         Question("go snorkeling on a reef", "camping by a lake"),
         Question("have an elephant-sized cat", "a cat-sized elephant"),
         Question(
-            "be able to jump into any picture and instantly be in that place and       "
-            "          time but able to return",
-            "would you rather be able to take pictures of the future, just stand       "
-            "          in a place think of a time in the future and take a picture",
+            "be able to jump into any picture and instantly be in that place and "
+            "time but able to return",
+            "would you rather be able to take pictures of the future, just stand "
+            "in a place think of a time in the future and take a picture",
         ),
         Question("play outdoors", "indoors"),
         Question("eat broccoli flavored ice cream", "meat flavored cookies"),

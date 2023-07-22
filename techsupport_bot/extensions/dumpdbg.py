@@ -49,8 +49,8 @@ class Dumpdbg(base.BaseCog):
         aliases=["dump", "debug-dump", "debug_dump", "debugdump"],
         brief="Debugs an uploaded dump file",
         description=(
-            "Runs an attached Windows minidump (.dmp) files through WinDBG on          "
-            "   an external server and returns the pasted output."
+            "Runs an attached Windows minidump (.dmp) files through WinDBG on "
+            "an external server and returns the pasted output."
         ),
         usage="|attached-dump-files|",
     )
