@@ -20,8 +20,10 @@ class Weather(base.BaseCog):
         filtered_args = filter(bool, args)
         searches = ",".join(map(str, filtered_args))
         url = "http://api.openweathermap.org/data/2.5/weather"
-        filled_url = f"{url}?q={searches}&units=imperial&appid"
-        filled_url += f"={self.bot.file_config.main.api_keys.open_weather}"
+        filled_url = (
+            f"{url}?q={searches}&units=imperial&appid"
+            f"={self.bot.file_config.main.api_keys.open_weather}"
+        )
         return filled_url
 
     @util.with_typing
@@ -81,8 +83,10 @@ class Weather(base.BaseCog):
             )
             embed.add_field(name="Humidity", value=f"{int(response.main.humidity)} %")
             embed.set_thumbnail(
-                url="https://cdn.icon-icons.com/icons2/8/PNG/256/cloudyweather_cloud_"
-                + "inpart_day_wind_thunder_sunny_rain_darkness_nublad_1459.png"
+                url=(
+                    "https://cdn.icon-icons.com/icons2/8/PNG/256/cloudyweather_cloud_"
+                    "inpart_day_wind_thunder_sunny_rain_darkness_nublad_1459.png"
+                )
             )
             embed.color = discord.Color.blurple()
         except AttributeError:
