@@ -28,7 +28,10 @@ class Weather(base.BaseCog):
         name="we",
         aliases=["weather", "wea"],
         brief="Searches for the weather",
-        description="Returns the weather for a given area (this API sucks; I'm sorry in advance)",
+        description=(
+            "Returns the weather for a given area (this API sucks; I'm sorry in"
+            " advance)"
+        ),
         usage="[city/town] [state-code] [country-code]",
     )
     async def weather(
@@ -63,7 +66,10 @@ class Weather(base.BaseCog):
 
             embed.add_field(
                 name="Temp (F)",
-                value=f"{int(response.main.temp)} (feels like {int(response.main.feels_like)})",
+                value=(
+                    f"{int(response.main.temp)} (feels like"
+                    f" {int(response.main.feels_like)})"
+                ),
                 inline=False,
             )
             embed.add_field(name="Low (F)", value=int(response.main.temp_min))

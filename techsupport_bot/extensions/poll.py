@@ -85,7 +85,7 @@ class ReactionPoller(PollGenerator):
     """Class to add reactions to the poll generator."""
 
     OPTION_EMOJIS = ["one", "two", "three", "four", "five"]
-    STOP_EMOJI = "\u26D4"
+    STOP_EMOJI = "\u26d4"
     EXAMPLE_DATA = {
         "question": "Best ice cream?",
         "options": ["Chocolate", "Vanilla", "Strawberry", "Cookie Dough", "Other..."],
@@ -129,7 +129,9 @@ class ReactionPoller(PollGenerator):
     @poll.command(
         aliases=["create"],
         brief="Generates a poll",
-        description="Creates a poll for everyone to vote in (only admins can make polls)",
+        description=(
+            "Creates a poll for everyone to vote in (only admins can make polls)"
+        ),
         usage="|json-upload|",
     )
     async def generate(self, ctx):
@@ -181,7 +183,9 @@ class ReactionPoller(PollGenerator):
                 await message.clear_reactions()
             except discord.NotFound:
                 await auxiliary.send_deny_embed(
-                    message="I could not find the poll message. It might have been deleted?",
+                    message=(
+                        "I could not find the poll message. It might have been deleted?"
+                    ),
                     channel=ctx.channel,
                 )
             except discord.Forbidden:
@@ -191,7 +195,9 @@ class ReactionPoller(PollGenerator):
         total = sum(count for count in results.values())
         if total == 0:
             await auxiliary.send_deny_embed(
-                message="Nobody voted in the poll, so I won't bother showing any results",
+                message=(
+                    "Nobody voted in the poll, so I won't bother showing any results"
+                ),
                 channel=ctx.channel,
             )
             return

@@ -657,9 +657,11 @@ class AdminControl(base.BaseCog):
 
             embed.add_field(
                 name="Version Info",
-                value=f"Upstream: `{repo_owner}/{repo_name}/{branch_name}`\n\
-                    Commit: `{commit_hash} - {commit_message}`\n\
-                    Local changes made: `{has_differences}`",
+                value=(
+                    f"Upstream: `{repo_owner}/{repo_name}/{branch_name}`\n             "
+                    f"       Commit: `{commit_hash} - {commit_message}`\n              "
+                    f"      Local changes made: `{has_differences}`"
+                ),
                 inline=False,
             )
         except Exception as exc:
@@ -739,7 +741,9 @@ class AdminControl(base.BaseCog):
         status_code = response.get("status_code")
         if status_code != 201:
             await auxiliary.send_deny_embed(
-                message=f"I was unable to create your issue (status code {status_code})",
+                message=(
+                    f"I was unable to create your issue (status code {status_code})"
+                ),
                 channel=ctx.channel,
             )
             return

@@ -146,7 +146,10 @@ class Helper(base.BaseCog):
 
         command_prefix = await self.bot.get_prefix(ctx.message)
         embed = HelpEmbed(
-            title=f"Use `{command_prefix}{self.help_command.name} {self.extension_help_command.name} <extension_name>` to see extension commands",
+            title=(
+                f"Use `{command_prefix}{self.help_command.name} {self.extension_help_command.name} <extension_name>`"
+                " to see extension commands"
+            ),
             description=extension_name_text,
         )
 

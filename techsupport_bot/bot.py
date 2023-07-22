@@ -53,6 +53,9 @@ class TechSupportBot(base.AdvancedBot):
         await super().start(self.file_config.main.auth_token, *args, **kwargs)
 
     async def setup_hook(self):
+        """This function is automatically called after the bot has been logged into discord
+        This loads postgres, extensions, and the help menu
+        """
         await self.logger.debug("Loading extensions...")
         await self.load_extensions()
 

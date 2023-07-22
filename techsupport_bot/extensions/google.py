@@ -140,7 +140,10 @@ class Googler(base.BaseCog):
             link = item.get("link")
             if not link:
                 await auxiliary.send_deny_embed(
-                    message="I had an issue processing Google's response... try again later!",
+                    message=(
+                        "I had an issue processing Google's response... try again"
+                        " later!"
+                    ),
                     channel=ctx.channel,
                 )
                 return
@@ -154,7 +157,7 @@ class Googler(base.BaseCog):
     @commands.command(
         aliases=["yt"],
         brief="Searches YouTube",
-        description=("Returns the top YouTube search result"),
+        description="Returns the top YouTube search result",
         usage="[query]",
     )
     async def youtube(self, ctx, *, query: str):

@@ -211,7 +211,9 @@ class DuckHunt(base.LoopCog):
 
         embed = discord.Embed(
             title=f"Duck {action}!",
-            description=f"{winner.mention} {action} the duck in {duration_seconds} seconds!",
+            description=(
+                f"{winner.mention} {action} the duck in {duration_seconds} seconds!"
+            ),
         )
         embed.color = (
             embed_colors.blurple() if action == "befriended" else embed_colors.red()
@@ -403,8 +405,10 @@ class DuckHunt(base.LoopCog):
             embed = (
                 discord.Embed(
                     title="Duck Friendships",
-                    description=f"Global speed record:\
-                         {str(await self.get_global_record(ctx.guild.id))} seconds",
+                    description=(
+                        "Global speed record:                        "
+                        f" {str(await self.get_global_record(ctx.guild.id))} seconds"
+                    ),
                 )
                 if field_counter == 1
                 else embed
@@ -488,8 +492,10 @@ class DuckHunt(base.LoopCog):
             embed = (
                 discord.Embed(
                     title="Duck Kills",
-                    description=f"Global speed record:\
-                          {str(await self.get_global_record(ctx.guild.id))} seconds",
+                    description=(
+                        "Global speed record:                         "
+                        f" {str(await self.get_global_record(ctx.guild.id))} seconds"
+                    ),
                 )
                 if field_counter == 1
                 else embed
@@ -555,7 +561,9 @@ class DuckHunt(base.LoopCog):
     @commands.guild_only()
     @duck.command(
         brief="Kills a caputred duck",
-        description="Adds a duck to your kill count. Why would you even want to do that?!",
+        description=(
+            "Adds a duck to your kill count. Why would you even want to do that?!"
+        ),
     )
     async def kill(self, ctx):
         """Method for killing ducks"""
