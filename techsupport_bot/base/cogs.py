@@ -124,7 +124,7 @@ class MatchCog(BaseCog):
             config = await self.bot.get_context_config(ctx)
             channel = config.get("logging_channel")
             await self.bot.logger.error(
-                f"Match cog error: {self.__class__.__name__}!",
+                f"Match cog error: {self.__class__.__name__} {e}!",
                 exception=e,
                 channel=channel,
             )

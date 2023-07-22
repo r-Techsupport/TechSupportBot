@@ -126,7 +126,7 @@ When making command code, please make the actual decorated functions just refer 
 
 ## Making embeds
 
-To make embeds, use the `generate_basic_embed` from auxiliary.py.
+To make embeds, use the `generate_basic_embed` method from auxiliary.py.
 The arguments to supply:
 - `title` - The title of the embed
 - `description` - The description of the embed

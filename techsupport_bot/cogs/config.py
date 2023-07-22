@@ -118,6 +118,10 @@ class ConfigControl(base.BaseCog):
                 {"guild_id": config.get("guild_id")}, uploaded_data
             )
 
+            # Delete config from cache
+            if str(ctx.guild.id) in self.bot.guild_config_cache:
+                del self.bot.guild_config_cache[str(ctx.guild.id)]
+
             await auxiliary.send_confirm_embed(
                 message="I've updated that config", channel=ctx.channel
             )
