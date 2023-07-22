@@ -111,7 +111,6 @@ class News(base.LoopCog):
         """Method to define the wait time for the news api pull."""
         await aiocron.crontab(config.extensions.news.cron_config.value).next()
 
-    @commands.cooldown(1, 30, commands.BucketType.channel)
     @commands.group(
         brief="Executes a news command",
         description="Executes a news command",

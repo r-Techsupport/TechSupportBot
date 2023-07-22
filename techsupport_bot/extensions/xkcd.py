@@ -18,7 +18,6 @@ class XKCD(base.BaseCog):
     MOST_RECENT_API_URL = "https://xkcd.com/info.0.json"
     SPECIFIC_API_URL = "https://xkcd.com/%s/info.0.json"
 
-    @commands.cooldown(3, 60, commands.BucketType.channel)
     @commands.group(
         brief="Executes a xkcd command",
         description="Executes a xkcd command",
