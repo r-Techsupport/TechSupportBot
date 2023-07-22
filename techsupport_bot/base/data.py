@@ -19,8 +19,8 @@ class DataBot(ExtensionsBot):
         self.db = None
         super().__init__(*args, **kwargs)
         self.http_cache = expiringdict.ExpiringDict(
-            max_len=self.file_config.main.cache.http_cache_length,
-            max_age_seconds=self.file_config.main.cache.http_cache_seconds,
+            max_len=self.file_config.cache.http_cache_length,
+            max_age_seconds=self.file_config.cache.http_cache_seconds,
         )
 
     def generate_db_url(self, postgres=True):
@@ -32,7 +32,7 @@ class DataBot(ExtensionsBot):
         db_type = "postgres" if postgres else "mongodb"
 
         try:
-            config_child = getattr(self.file_config.main, db_type)
+            config_child = getattr(self.file_config.database, db_type)
 
             user = config_child.user
             password = config_child.password
@@ -82,7 +82,7 @@ class DataBot(ExtensionsBot):
             self.generate_db_url(postgres=False)
         )
 
-        return mongo_client[self.file_config.main.mongodb.name]
+        return mongo_client[self.file_config.database.mongodb.name]
 
     # pylint: disable=too-many-locals
     async def http_call(self, method, url, *args, **kwargs):

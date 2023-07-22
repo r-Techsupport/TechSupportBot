@@ -26,8 +26,8 @@ class Spotify(base.BaseCog):
             self.AUTH_URL,
             data=data,
             auth=aiohttp.BasicAuth(
-                self.bot.file_config.main.api_keys.spotify_client,
-                self.bot.file_config.main.api_keys.spotify_key,
+                self.bot.file_config.api.api_keys.spotify_client,
+                self.bot.file_config.api.api_keys.spotify_key,
             ),
         )
 

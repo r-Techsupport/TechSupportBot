@@ -63,7 +63,7 @@ class News(base.LoopCog):
     async def get_headlines(self, country_code, category=None):
         """Method to get the headline for the news command."""
         url = self.API_URL.format(
-            self.bot.file_config.main.api_keys.news,
+            self.bot.file_config.api.api_keys.news,
             country_code,
         )
         if category:
