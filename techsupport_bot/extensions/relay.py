@@ -286,6 +286,7 @@ class DiscordToIRC(base.MatchCog):
             ctx (commands.Context): The context in which the command was run
             irc_channel (str): The string representation of the IRC channel
         """
+        irc_channel = "#" + irc_channel
         if str(ctx.channel.id) in self.mapping:
             await auxiliary.send_deny_embed(
                 message="This discord channel is already linked "
