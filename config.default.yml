@@ -30,7 +30,7 @@ api:
         channels: []
         name:
         password:
-    keys:
+    api_keys:
         dumpdbg:
         giphy:
         google:
