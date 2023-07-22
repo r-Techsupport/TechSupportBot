@@ -116,25 +116,31 @@ class DataBot(ExtensionsBot):
             response_object = cached_response
             log_message = f"Retrieving cached HTTP GET response ({cache_key})"
         else:
-            client = aiohttp.ClientSession()
-            method_fn = getattr(client, method.lower())
-            response_object = await method_fn(url, *args, **kwargs)
-            if method == "get":
-                self.http_cache[cache_key] = response_object
-            log_message = f"Making HTTP {method.upper()} request to URL: {cache_key}"
+            async with aiohttp.ClientSession() as client:
+                method_fn = getattr(client, method.lower())
+                async with method_fn(url, *args, **kwargs) as response_object:
+                    if status := response_object.status != 200:
+                        return munch.munchify({"status_code": status})
 
-        await self.logger.info(log_message)
+                    if method == "get":
+                        self.http_cache[cache_key] = response_object
+                    log_message = (
+                        f"Making HTTP {method.upper()} request to URL: {cache_key}"
+                    )
 
-        if get_raw_response:
-            response = response_object
-        else:
-            response_json = await response_object.json()
-            response = (
-                munch.munchify(response_json) if response_object else munch.Munch()
-            )
-            response["status_code"] = getattr(response_object, "status", None)
+                    await self.logger.info(log_message)
 
-        if client:
-            await client.close()
+                    if get_raw_response:
+                        response = response_object
+                    else:
+                        response_json = await response_object.json()
+                        response = (
+                            munch.munchify(response_json)
+                            if response_object
+                            else munch.Munch()
+                        )
+                        response["status_code"] = getattr(
+                            response_object, "status", None
+                        )
 
-        return response
+                        return response
