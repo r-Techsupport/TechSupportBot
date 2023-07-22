@@ -50,6 +50,7 @@ class Raw(base.BaseCog):
             code (str): the raw Python code to exec (including async)
         """
         # Make an async function with the code and `exec` it
+        # pylint: disable=exec-used
         exec("async def __ex(self): " + "".join(f"\n {l}" for l in code.split("\n")))
 
         # Get `__ex` from local variables, call it and return the result

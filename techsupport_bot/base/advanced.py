@@ -114,7 +114,7 @@ class AdvancedBot(DataBot):
 
         if time_taken > self.CONFIG_RECEIVE_WARNING_TIME_MS:
             await self.logger.warning(
-                f"Context config receive time = {time_taken} ms                 (over"
+                f"Context config receive time = {time_taken} ms (over"
                 f" {self.CONFIG_RECEIVE_WARNING_TIME_MS} threshold)",
                 send=True,
             )
@@ -404,6 +404,7 @@ class AdvancedBot(DataBot):
         if hasattr(context.command, "on_error"):
             return
         if context.cog:
+            # pylint: disable=protected-access
             if (
                 commands.Cog._get_overridden_method(context.cog.cog_command_error)
                 is not None

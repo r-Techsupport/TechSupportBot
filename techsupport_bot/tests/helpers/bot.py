@@ -2,6 +2,7 @@
 This is a file to store the fake disord.Bot objection
 """
 
+
 class MockBot:
     """
     This is the MockBot class
