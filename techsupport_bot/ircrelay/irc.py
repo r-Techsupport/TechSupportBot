@@ -56,7 +56,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
     def exit_irc(self):
         """Instatly kills the IRC thread"""
-        os._exit(1)
+        self.die()
 
     def reconnect_from_disconnect(
         self, connection: irc.client.ServerConnection, event: irc.client.Event

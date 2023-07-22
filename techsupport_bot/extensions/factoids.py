@@ -475,7 +475,7 @@ class FactoidManager(base.MatchCog):
                     self.models.Factoid.guild == guild
                 )
                 # hiding hidden factoids
-                .where(self.models.Factoid.hidden == False).gino.all()
+                .where(self.models.Factoid.hidden is False).gino.all()
             )
 
         # Gets ALL factoids for ALL guilds

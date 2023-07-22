@@ -130,7 +130,7 @@ class News(base.LoopCog):
     )
     async def random(self, ctx, category=None):
         """Method to define the random to get a news."""
-        if category == None:
+        if category is None:
             category = random.choice(list(Category)).value
         else:
             category.lower()

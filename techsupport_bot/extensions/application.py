@@ -108,8 +108,6 @@ class ApplicationEmbed(discord.Embed):
 class NoPendingApplications(Exception):
     """Class for what happens when no applications are recieved."""
 
-    pass
-
 
 class ApplicationManager(base.MatchCog, base.LoopCog):
     """Class to manage the application extension of the bot, including getting data and status."""
@@ -404,8 +402,6 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
-
-        pass
 
     @application.command(
         name="get",
