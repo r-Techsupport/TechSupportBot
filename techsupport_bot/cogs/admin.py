@@ -34,6 +34,12 @@ class AdminControl(base.BaseCog):
         description="Executes an extension bot command",
     )
     async def extension_group(self, ctx):
+        """The bare .extension command. This does nothing but generate the help message
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
+
         # Executed if there are no/invalid args supplied
         def get_help_embed(self, command_prefix):
             # Gets commands, checks if first supplied arg is valid
@@ -219,6 +225,12 @@ class AdminControl(base.BaseCog):
         description="Executes a commands bot command",
     )
     async def command_group(self, ctx):
+        """The bare .command command. This does nothing but generate the help message
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
+
         # Executed if there are no/invalid args supplied
         def get_help_embed(self, command_prefix):
             # Gets commands, checks if first supplied arg is valid
@@ -345,6 +357,12 @@ class AdminControl(base.BaseCog):
         description="Executes a `set X` bot command",
     )
     async def set_group(self, ctx):
+        """The bare .set command. This does nothing but generate the help message
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
+
         # Executed if there are no/invalid args supplied
         def get_help_embed(self, command_prefix):
             # Gets commands, checks if first supplied arg is valid
@@ -439,6 +457,12 @@ class AdminControl(base.BaseCog):
         brief="Executes an echo bot command", description="Executes an echo bot command"
     )
     async def echo(self, ctx):
+        """The bare .echo command. This does nothing but generate the help message
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
+
         # Executed if there are no/invalid args supplied
         def get_help_embed(self, command_prefix):
             # Gets commands, checks if first supplied arg is valid
@@ -658,9 +682,9 @@ class AdminControl(base.BaseCog):
             embed.add_field(
                 name="Version Info",
                 value=(
-                    f"Upstream: `{repo_owner}/{repo_name}/{branch_name}`\n             "
-                    f"       Commit: `{commit_hash} - {commit_message}`\n              "
-                    f"      Local changes made: `{has_differences}`"
+                    f"Upstream: `{repo_owner}/{repo_name}/{branch_name}`\n"
+                    f"Commit: `{commit_hash} - {commit_message}`\n"
+                    f"Local changes made: `{has_differences}`"
                 ),
                 inline=False,
             )
@@ -733,7 +757,8 @@ class AdminControl(base.BaseCog):
 
         response = await self.bot.http_call(
             "post",
-            f"{self.GITHUB_API_BASE_URL}/repos/{self.bot.file_config.special.github.username}/{self.bot.file_config.special.github.repo}/issues",
+            f"{self.GITHUB_API_BASE_URL}/repos/{self.bot.file_config.special.github.username}"
+            + f"/{self.bot.file_config.special.github.repo}/issues",
             headers=headers,
             data=json.dumps({"title": title, "body": description}),
         )

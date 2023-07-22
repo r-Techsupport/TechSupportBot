@@ -865,7 +865,6 @@ class Protector(base.MatchCog):
     )
     async def purge(self, ctx):
         """Method to purge messages in discord."""
-        ...
 
     @purge.command(
         name="amount",

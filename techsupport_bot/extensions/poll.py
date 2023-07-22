@@ -275,8 +275,6 @@ class StrawPoller(PollGenerator):
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
 
-        print(f"Strawpoll command called in channel {ctx.channel}")
-
     @util.with_typing
     @strawpoll.command(
         brief="Shows example poll JSON",

@@ -18,6 +18,8 @@ async def setup(bot):
     """Method to add duck into the config file"""
 
     class DuckUser(bot.db.Model):
+        """The descripiton duck table in postgres to be used with gino"""
+
         __tablename__ = "duckusers"
 
         pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
