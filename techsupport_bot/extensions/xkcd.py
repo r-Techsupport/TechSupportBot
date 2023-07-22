@@ -20,16 +20,17 @@ class XKCD(base.BaseCog):
 
     @commands.cooldown(3, 60, commands.BucketType.channel)
     @commands.group(
-        brief="Executes a xkcd command",
-        description="Executes a xkcd command",
+        brief="xkcd extension parent",
+        description="Group for xkcd subcommands and retrieves numbered comics.",
+        invoke_without_subcommand=True,
     )
-    async def xkcd(self, ctx):
+    async def xkcd(self, ctx, number: int | None = None):
         """Method to create the command for xkcd."""
-
-        # Executed if there are no/invalid args supplied
-        await base.extension_help(self, ctx, self.__module__[11:])
-
-        pass
+        if number:
+            await self.numbered_comic(ctx, number)
+        else:
+            # Executed if there are no/invalid args supplied
+            await base.extension_help(self, ctx, self.__module__[11:])
 
     @xkcd.command(
         name="random",
@@ -73,12 +74,16 @@ class XKCD(base.BaseCog):
         await ctx.send(embed=embed)
 
     @xkcd.command(
-        name="number",
-        aliases=["#"],
+        name="[number]",
         brief="Gets a XKCD comic",
         description="Gets a XKCD comic by number",
-        usage="[number]",
     )
+    async def shadow_number(self, ctx, *, _) -> None:
+        """Method to generate the help entry for the group parent and
+        prevent direct invocation."""
+        ctx.message.content = f"{ctx.message.content[0]}xkcd invalid"
+        await base.extension_help(self, ctx, self.__module__[11:])
+
     async def numbered_comic(self, ctx, number: int):
         """Method to get a specific number comic from xkcd."""
         comic_data = await self.api_call(number=number)
