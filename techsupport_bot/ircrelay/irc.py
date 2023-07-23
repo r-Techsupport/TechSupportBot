@@ -275,7 +275,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             channel (str): The IRC channel to send the message to
             message (str): The fully formatted string to send to the IRC channel
         """
-        message_list = [message[i : i + 450] for i in range(0, len(message), 450)]
+        message_list = [message[i : i + 430] for i in range(0, len(message), 430)]
         for cut_message in message_list:
             self.connection.privmsg(channel, cut_message)
 
