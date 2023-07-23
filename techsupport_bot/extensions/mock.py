@@ -19,7 +19,7 @@ class Mocker(base.BaseCog):
     @commands.command(
         aliases=["sb"],
         brief="Mocks a user",
-        description=("Mocks the most recent message by a user"),
+        description="Mocks the most recent message by a user",
         usage="@user",
     )
     async def mock(self, ctx: commands.Context, input_user: discord.Member):

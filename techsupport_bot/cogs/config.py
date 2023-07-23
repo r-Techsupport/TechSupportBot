@@ -109,7 +109,10 @@ class ConfigControl(base.BaseCog):
             uploaded_data["guild_id"] = str(ctx.guild.id)
             if not util.config_schema_matches(uploaded_data, config):
                 await auxiliary.send_deny_embed(
-                    message="I couldn't match your upload data with the current config schema",
+                    message=(
+                        "I couldn't match your upload data with the current config"
+                        " schema"
+                    ),
                     channel=ctx.channel,
                 )
                 return

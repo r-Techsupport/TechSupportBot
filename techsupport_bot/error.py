@@ -26,7 +26,6 @@ class TooLongFactoidMessageError(commands.errors.CommandError):
         self.dont_print_trace = False
 
 
-# pylint: disable=too-few-public-methods
 class ErrorResponse:
     """Object for generating a custom error message from an exception.
 

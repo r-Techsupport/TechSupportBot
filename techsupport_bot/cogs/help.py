@@ -140,14 +140,15 @@ class Helper(base.BaseCog):
             ctx (discord.ext.Context): the context object for the message
             extension_names (List[str]): the extension names to use
         """
-        extension_name_text = ""
-        for extension_name in extension_names:
-            extension_name_text += f"- `{extension_name}`\n"
+        extension_name_text = "- " + str.join("\n- ", extension_names)
 
-        # pylint: disable=no-member
         command_prefix = await self.bot.get_prefix(ctx.message)
         embed = HelpEmbed(
-            title=f"Use `{command_prefix}{self.help_command.name} {self.extension_help_command.name} <extension_name>` to see extension commands",
+            title=(
+                f"Use `{command_prefix}{self.help_command.name} "
+                + f"{self.extension_help_command.name} <extension_name>`"
+                " to see extension commands"
+            ),
             description=extension_name_text,
         )
 
