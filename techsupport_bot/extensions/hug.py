@@ -21,7 +21,10 @@ class Hugger(base.BaseCog):
         "{user_giving_hug} wraps arms around {user_to_hug} and clings forever",
         "{user_giving_hug} hugs {user_to_hug} and gives their hair a sniff",
         "{user_giving_hug} glomps {user_to_hug}",
-        "cant stop, wont stop. {user_giving_hug} hugs {user_to_hug} until the sun goes cold",
+        (
+            "cant stop, wont stop. {user_giving_hug} hugs {user_to_hug} until the sun"
+            " goes cold"
+        ),
         "{user_giving_hug} reluctantly hugs {user_to_hug}...",
         "{user_giving_hug} hugs {user_to_hug} into a coma",
         "{user_giving_hug} smothers {user_to_hug} with a loving hug",

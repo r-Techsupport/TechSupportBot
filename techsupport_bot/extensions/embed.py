@@ -92,8 +92,10 @@ class Embedder(base.BaseCog):
         # If files weren't supplied, if not only JSONs were supplied
         if not ctx.message.attachments or not any(
             [
-                attachment.filename.endswith(".json")
-                for attachment in ctx.message.attachments
+                any(
+                    attachment.filename.endswith(".json")
+                    for attachment in ctx.message.attachments
+                )
             ]
         ):
             await auxiliary.send_deny_embed(

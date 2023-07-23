@@ -56,6 +56,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
     def exit_irc(self):
         """Instatly kills the IRC thread"""
+        # pylint: disable=protected-access
         os._exit(1)
 
     def reconnect_from_disconnect(
@@ -67,7 +68,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             connection (irc.client.ServerConnection): The IRC connection
             event (irc.client.Event): The event object that triggered this function
         """
-        self.console.error(f"Disconnected from IRC - Attempting reconnection: {event}")
+        self.console.error("Disconnected from IRC - Attempting reconnection: %s", event)
         connection.reconnect()
 
     def on_nicknameinuse(
@@ -120,7 +121,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         for channel in self.join_channel_list:
             if channel in self.channels:
                 continue
-            self.console.info(f"Joining {channel}")
+            self.console.info("Joining %s", channel)
             connection.join(channel)
 
     def join_channels_thread(self):

@@ -9,11 +9,9 @@ import cogs as builtin_cogs
 import ircrelay
 
 
-# pylint: disable=too-many-public-methods, too-many-instance-attributes
 class TechSupportBot(base.AdvancedBot):
     """The main bot object."""
 
-    # pylint: disable=attribute-defined-outside-init
     def __init__(self, *args, **kwargs):
         self._startup_time = None
         self.builtin_cogs = []
@@ -55,6 +53,9 @@ class TechSupportBot(base.AdvancedBot):
         await super().start(self.file_config.main.auth_token, *args, **kwargs)
 
     async def setup_hook(self):
+        """This function is automatically called after the bot has been logged into discord
+        This loads postgres, extensions, and the help menu
+        """
         await self.logger.debug("Loading extensions...")
         await self.load_extensions()
 
