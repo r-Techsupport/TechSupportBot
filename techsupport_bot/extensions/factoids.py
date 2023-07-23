@@ -157,7 +157,7 @@ class FactoidManager(base.MatchCog):
             max_len=1,
             max_age_seconds=86400,  # 24 hours, matches deletion on linx server
         )
-        await self.bot.logger.info("Loading factoid jobs", send=True)
+        await self.bot.logger.debug("Loading factoid jobs")
         await self.kickoff_jobs()
 
     # -- DB calls --
