@@ -9,7 +9,6 @@ import emoji
 import util
 from base import auxiliary
 from discord.ext import commands
-from discord.reaction import Reaction
 
 
 async def setup(bot):
@@ -69,7 +68,10 @@ class PollGenerator(base.BaseCog):
 
         if not strawpoll:
             if not image_url or not isinstance(image_url, str):
-                request_body.image_url = "https://cdn.icon-icons.com/icons2/259/PNG/128/ic_poll_128_28553.png"
+                request_body.image_url = (
+                    "https://cdn.icon-icons.com/icons2"
+                    "/259/PNG/128/ic_poll_128_28553.png"
+                )
 
             if not timeout or not isinstance(timeout, int):
                 request_body.timeout = 60
@@ -85,7 +87,7 @@ class ReactionPoller(PollGenerator):
     """Class to add reactions to the poll generator."""
 
     OPTION_EMOJIS = ["one", "two", "three", "four", "five"]
-    STOP_EMOJI = "\u26D4"
+    STOP_EMOJI = "\u26d4"
     EXAMPLE_DATA = {
         "question": "Best ice cream?",
         "options": ["Chocolate", "Vanilla", "Strawberry", "Cookie Dough", "Other..."],
@@ -109,8 +111,6 @@ class ReactionPoller(PollGenerator):
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
 
-        pass
-
     @util.with_typing
     @poll.command(
         brief="Shows example poll JSON",
@@ -129,7 +129,9 @@ class ReactionPoller(PollGenerator):
     @poll.command(
         aliases=["create"],
         brief="Generates a poll",
-        description="Creates a poll for everyone to vote in (only admins can make polls)",
+        description=(
+            "Creates a poll for everyone to vote in (only admins can make polls)"
+        ),
         usage="|json-upload|",
     )
     async def generate(self, ctx):
@@ -181,7 +183,9 @@ class ReactionPoller(PollGenerator):
                 await message.clear_reactions()
             except discord.NotFound:
                 await auxiliary.send_deny_embed(
-                    message="I could not find the poll message. It might have been deleted?",
+                    message=(
+                        "I could not find the poll message. It might have been deleted?"
+                    ),
                     channel=ctx.channel,
                 )
             except discord.Forbidden:
@@ -191,7 +195,9 @@ class ReactionPoller(PollGenerator):
         total = sum(count for count in results.values())
         if total == 0:
             await auxiliary.send_deny_embed(
-                message="Nobody voted in the poll, so I won't bother showing any results",
+                message=(
+                    "Nobody voted in the poll, so I won't bother showing any results"
+                ),
                 channel=ctx.channel,
             )
             return
@@ -268,8 +274,6 @@ class StrawPoller(PollGenerator):
 
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
-
-        print(f"Strawpoll command called in channel {ctx.channel}")
 
     @util.with_typing
     @strawpoll.command(

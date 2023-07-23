@@ -33,7 +33,6 @@ class HTTPRateLimit(commands.errors.CommandError):
         self.wait = wait
 
 
-# pylint: disable=too-few-public-methods
 class ErrorResponse:
     """Object for generating a custom error message from an exception.
 

@@ -148,7 +148,7 @@ class FactoidManager(base.MatchCog):
             max_len=1,
             max_age_seconds=86400,  # 24 hours, matches deletion on linx server
         )
-        await self.bot.logger.info("Loading factoid jobs", send=True)
+        await self.bot.logger.debug("Loading factoid jobs")
         await self.kickoff_jobs()
 
     # -- DB calls --
@@ -251,9 +251,9 @@ class FactoidManager(base.MatchCog):
         await factoid.update(
             name=factoid_name.lower() if factoid_name is not None else factoid.name,
             message=message if message is not None else factoid.message,
-            embed_config=embed_config
-            if embed_config is not None
-            else factoid.embed_config,
+            embed_config=(
+                embed_config if embed_config is not None else factoid.embed_config
+            ),
             hidden=hidden if hidden is not None else factoid.hidden,
             alias=alias if alias is not None else None,
         ).apply()
@@ -277,7 +277,9 @@ class FactoidManager(base.MatchCog):
 
         view = ui.Confirm()
         await view.send(
-            message=f"The factoid `{factoid_name}` already exists. Should I overwrite it?",
+            message=(
+                f"The factoid `{factoid_name}` already exists. Should I overwrite it?"
+            ),
             channel=ctx.channel,
             author=ctx.author,
         )
@@ -464,11 +466,8 @@ class FactoidManager(base.MatchCog):
                     self.models.Factoid.guild == guild
                 )
                 # hiding hidden factoids
-                .where(
-                    self.models.Factoid.hidden == False  # pylint: disable=C0121
-                ).gino.all()
+                .where(self.models.Factoid.hidden is False).gino.all()
             )
-            # Pylint disabled because it wants == to be `is`, which gino doesn't support
 
         # Gets ALL factoids for ALL guilds
         else:
@@ -715,7 +714,8 @@ class FactoidManager(base.MatchCog):
                 ctx.guild,
                 "logging_channel",
                 "info",
-                f"Sending factoid: {query} (triggered by {ctx.author} in #{ctx.channel.name})",
+                f"Sending factoid: {query} (triggered by {ctx.author} in"
+                f" #{ctx.channel.name})",
                 send=True,
             )
         # If something breaks, also log it
@@ -778,14 +778,16 @@ class FactoidManager(base.MatchCog):
                 if not from_db:
                     # This factoid job has been deleted from the DB
                     await self.bot.logger.warning(
-                        f"Cron job {job} has failed - factoid has been deleted from the DB"
+                        f"Cron job {job} has failed - factoid has been deleted from"
+                        " the DB"
                     )
                     if ctx:
                         await self.bot.guild_log(
                             ctx.guild,
                             "logging_channel",
                             "error",
-                            f"Cron job {job} has failed - factoid has been deleted from the DB",
+                            f"Cron job {job} has failed - factoid has been deleted from"
+                            " the DB",
                         )
                     return
                 job = from_db
@@ -813,7 +815,8 @@ class FactoidManager(base.MatchCog):
             ).gino.first()
             if not factoid:
                 await self.bot.logger.warning(
-                    "Could not find factoid referenced by job - will retry after waiting"
+                    "Could not find factoid referenced by job - will retry after"
+                    " waiting"
                 )
                 continue
 
@@ -824,7 +827,8 @@ class FactoidManager(base.MatchCog):
             channel = self.bot.get_channel(int(job.channel))
             if not channel:
                 await self.bot.logger.warning(
-                    "Could not find channel to send factoid cronjob - will retry after waiting"
+                    "Could not find channel to send factoid cronjob - will retry after"
+                    " waiting"
                 )
                 continue
 
@@ -1170,7 +1174,9 @@ class FactoidManager(base.MatchCog):
         formatted = json.dumps(json.loads(factoid.embed_config), indent=4)
         json_file = discord.File(
             io.StringIO(formatted),
-            filename=f"{factoid.name}-factoid-embed-config-{datetime.datetime.utcnow()}.json",
+            filename=(
+                f"{factoid.name}-factoid-embed-config-{datetime.datetime.utcnow()}.json"
+            ),
         )
 
         await ctx.send(file=json_file)
@@ -1180,7 +1186,9 @@ class FactoidManager(base.MatchCog):
     @factoid.command(
         brief="Gets information about a factoid",
         aliases=["aliases"],
-        description="Returns information about a factoid (or the parent if it's an alias)",
+        description=(
+            "Returns information about a factoid (or the parent if it's an alias)"
+        ),
         usage="[factoid-name]",
     )
     async def info(
@@ -1489,7 +1497,9 @@ class FactoidManager(base.MatchCog):
 
         yaml_file = discord.File(
             io.StringIO(yaml.dump(output_data)),
-            filename=f"factoids-for-server-{ctx.guild.id}-{datetime.datetime.utcnow()}.yaml",
+            filename=(
+                f"factoids-for-server-{ctx.guild.id}-{datetime.datetime.utcnow()}.yaml"
+            ),
         )
 
         # Sends the file
@@ -1692,8 +1702,8 @@ class FactoidManager(base.MatchCog):
             # Alias already present and points to the correct factoid
             if target_entry.alias == factoid.name:
                 await auxiliary.send_deny_embed(
-                    f"`{factoid.name.lower()}` already has `{target_entry.name.lower()}` set "
-                    + "as an alias!",
+                    f"`{factoid.name.lower()}` already has"
+                    f" `{target_entry.name.lower()}` set " + "as an alias!",
                     channel=ctx.channel,
                 )
                 return
@@ -1756,7 +1766,9 @@ class FactoidManager(base.MatchCog):
     @commands.guild_only()
     @factoid.command(
         brief="Deletes only an alias",
-        description="Removes an alias from the group. Will never delete the actual factoid",
+        description=(
+            "Removes an alias from the group. Will never delete the actual factoid"
+        ),
         usage="[factoid-name] [optional-new-parent]",
     )
     async def dealias(

@@ -1088,17 +1088,6 @@ Needs Github API key
 	Return a deny embed "I couldn't match your upload data with the current config schema" if json is wrong
 
 ## Normal use
-.raw |uploaded-python-file|
-	Return a confrim embed "Code executed!" And execute the code in the file
-## Expected errors
-.raw
-	Return a deny embed "No Python code found" if you do not provide a json
-.raw |uploaded-python-file|
-	Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
-	Return a confrim embed "Code executed!" if file is a json
-	Return a deny embed "Error: [e]" if it runs into an exception in the file
-
-## Normal use
 .listen clear
 	Return a confrim embed "All listeners dergistered!
 ## Expected errors

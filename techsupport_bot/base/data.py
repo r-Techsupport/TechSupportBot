@@ -126,7 +126,6 @@ class DataBot(ExtensionsBot):
 
         return mongo_client[self.file_config.main.mongodb.name]
 
-    # pylint: disable=too-many-locals
     async def http_call(self, method, url, ignore_rate_limit=False, *args, **kwargs):
         """Makes an HTTP request.
 
