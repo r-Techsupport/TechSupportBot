@@ -126,7 +126,7 @@ class DataBot(ExtensionsBot):
 
         return mongo_client[self.file_config.main.mongodb.name]
 
-    async def http_call(self, method, url, ignore_rate_limit=False, *args, **kwargs):
+    async def http_call(self, method, url, *args, **kwargs):
         """Makes an HTTP request.
 
         By default this returns JSON/dict with the status code injected.
@@ -138,6 +138,7 @@ class DataBot(ExtensionsBot):
             get_raw_response (bool): True if the actual response object should be returned
         """
         # Get the URL not the endpoint being called
+        ignore_rate_limit = False
         root_url = urlparse(url).netloc
 
         # If the URL is not rate limited, we assume it can be executed an unlimited amount of times

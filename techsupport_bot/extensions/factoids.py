@@ -1281,8 +1281,6 @@ class FactoidManager(base.MatchCog):
             await auxiliary.send_confirm_embed(message=url, channel=ctx.channel)
             return
 
-        config = await self.bot.get_context_config(ctx)
-
         factoids = await self.get_all_factoids(guild, list_hidden=True)
         if not factoids:
             await auxiliary.send_deny_embed(
