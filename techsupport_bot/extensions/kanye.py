@@ -88,7 +88,6 @@ class KanyeQuotes(base.LoopCog):
         )
 
     @util.with_typing
-    @commands.cooldown(1, 60, commands.BucketType.channel)
     @commands.command(
         brief="Gets a Kanye West quote",
         description="Gets a random Kanye West quote from the Kanye West API",
