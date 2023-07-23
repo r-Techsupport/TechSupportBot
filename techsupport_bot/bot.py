@@ -70,7 +70,6 @@ class TechSupportBot(base.AdvancedBot):
 
         await self.load_builtin_cog(builtin_cogs.AdminControl)
         await self.load_builtin_cog(builtin_cogs.ConfigControl)
-        await self.load_builtin_cog(builtin_cogs.Raw)
         await self.load_builtin_cog(builtin_cogs.Listener)
 
     async def start_irc(self):
