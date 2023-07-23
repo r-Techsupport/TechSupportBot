@@ -46,7 +46,7 @@ update:
 	$(DOCKER_COMPOSE_CMD) up -d --build
 
 clean:
-	docker system prune --volumes -a
+	docker system prune --volumes -af
 
 down:
 	$(DOCKER_COMPOSE_CMD) down

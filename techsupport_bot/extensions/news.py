@@ -122,8 +122,6 @@ class News(base.LoopCog):
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
 
-        print(f"News command called in channel {ctx.channel}")
-
     @news.command(
         name="random",
         brief="Gets a random news article",
@@ -132,7 +130,7 @@ class News(base.LoopCog):
     )
     async def random(self, ctx, category=None):
         """Method to define the random to get a news."""
-        if category == None:
+        if category is None:
             category = random.choice(list(Category)).value
         else:
             category.lower()
