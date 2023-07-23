@@ -1,6 +1,7 @@
 """Module for defining the data bot methods."""
 
 import urllib
+from json import JSONDecodeError
 
 import aiohttp
 import expiringdict
@@ -119,9 +120,6 @@ class DataBot(ExtensionsBot):
             async with aiohttp.ClientSession() as client:
                 method_fn = getattr(client, method.lower())
                 async with method_fn(url, *args, **kwargs) as response_object:
-                    if status := response_object.status != 200:
-                        return munch.munchify({"status_code": status})
-
                     if method == "get":
                         self.http_cache[cache_key] = response_object
                     log_message = (
@@ -133,7 +131,17 @@ class DataBot(ExtensionsBot):
                     if get_raw_response:
                         response = response_object
                     else:
-                        response_json = await response_object.json()
+                        try:
+                            response_json = await response_object.json()
+                        except (aiohttp.ClientResponseError, JSONDecodeError) as e:
+                            response_json = {}
+                            await self.logger.warning(
+                                (
+                                    f"{method.upper()} request to URL: {cache_key} failed "
+                                    f"with error: {type(e).__name__}"
+                                )
+                            )
+
                         response = (
                             munch.munchify(response_json)
                             if response_object
