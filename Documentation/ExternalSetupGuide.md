@@ -62,37 +62,25 @@ Setup needed: API key
 2. Fill out your name, password, and fill out the captcha
 3. Click submit, and you'll get your API key
 # Relay
-Setup needed: IRC account, discord-CloudBot setup
+Setup needed: IRC account
 ## IRC account
 1. Login to libera.chat using your client of choice
 2. Reigster your nickname (/msg NickServ REGISTER YourPassword youremail@example.com)
 3. You will get an email, run the command in your email to verify your registration
 ### (Optional) Getting a cloak
-Cloaks are useful if you need to join a default ban channel, as your IP can change but a cloak cannot
+Cloaks are useful if you need to join a channel that is whitelisted, as your IP can change but a cloak cannot
 1. Join the clock channel (/join #libera-cloak)
 2. Send the message (!cloakme)
-## discord-CloudBot
-1. Clone this repository: https://github.com/r-Techsupport/discord-CloudBot
-### config.json
-1. Copy config.default.json to config.json and change the following settings:
-- "nick", "user", and "realname" should all be the username you registered on IRC
-- "channels" should be set to a list of channels you would like the bot to join
-- "log_channel" should be set to a channel to send error logs. It can be a channel above, but doesn't have to be
-- Under SASL, add hte "user" and "pass" from the username and password you created above
-### relay.py
-1. Edit the file at plugins/relay.py
-- Set "MQ_USER" and "MQ_PASS" to the username and password defined in the bot .env file
-- Make a name for a "SEND_QUEUE" and "RECV_QUEUE". You will need these later
-- Make a "CHANNEL_MAP", which is discord-id: "#irc-channel"
 ## Config.yml setup
-The final thing that needs to be changed is config.yml for the discord bot. You will have to edit some "special" settings. Add something like:
+1. Put your IRC account and server information in config.yml, and enable IRC
 ```
-    relay:
-        channel_map:
-          "#IRCChan": DiscordID
-        send_queue: DiscordToIRC
-        recv_queue: IRCToDiscord
-        stale_seconds: 600
+irc:
+    enable_irc: False
+    server: "irc.libera.chat"
+    port: 6667
+    channels: [""]
+    name: ""
+    password: ""
 ```
 # Spotify
 # Weather
