@@ -46,7 +46,10 @@ class LogEmbed(discord.Embed):
         )
         self.add_field(name="Display Name", value=ctx.author.display_name or "Unknown")
         self.add_field(name="Name", value=ctx.author.name or "Unknown")
-        self.add_field(name="Discriminator", value=ctx.author.discriminator or "None")
+        if ctx.author.discriminator != "0":
+            self.add_field(
+                name="Discriminator", value=ctx.author.discriminator or "None"
+            )
         self.add_field(
             name="Roles",
             value=(",".join([role.name for role in ctx.author.roles[1:]])) or "None",
