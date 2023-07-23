@@ -75,7 +75,6 @@ class Listener(base.BaseCog):
     CACHE_TIME = 60
     COLLECTION_NAME = "listener"
 
-    # pylint: disable=attribute-defined-outside-init
     async def preconfig(self):
         """Preconfigures the listener cog."""
         self.destination_cache = expiringdict.ExpiringDict(
@@ -333,7 +332,6 @@ class Listener(base.BaseCog):
             message="Listening deregistered!", channel=ctx.channel
         )
 
-    # pylint: disable=attribute-defined-outside-init
     @listen.command(
         description="Clears all listener jobs",
     )

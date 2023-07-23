@@ -53,10 +53,8 @@ class ISSLocator(base.BaseCog):
                 message="I had trouble calling the GEO API. Maybe it's down?",
                 channel=ctx.channel,
             )
-            return
-        else:
-            osmtags = response.get("osmtags", {})
-            location = osmtags.get("name")
+        osmtags = response.get("osmtags", {})
+        location = osmtags.get("name")
 
         if not location:
             location = "Unknown"

@@ -3,7 +3,6 @@ import datetime
 
 import base
 import discord
-from discord.ext import commands
 
 
 async def setup(bot):
@@ -42,7 +41,7 @@ class LogEmbed(discord.Embed):
 
         self.add_field(
             name="Channel",
-            value=(f"{ctx.channel.name} ({ctx.channel.mention})") or "Unknown",
+            value=f"{ctx.channel.name} ({ctx.channel.mention})" or "Unknown",
         )
         self.add_field(name="Display Name", value=ctx.author.display_name or "Unknown")
         self.add_field(name="Name", value=ctx.author.name or "Unknown")
@@ -52,7 +51,7 @@ class LogEmbed(discord.Embed):
             )
         self.add_field(
             name="Roles",
-            value=(",".join([role.name for role in ctx.author.roles[1:]])) or "None",
+            value=",".join([role.name for role in ctx.author.roles[1:]]) or "None",
             inline=False,
         )
 
