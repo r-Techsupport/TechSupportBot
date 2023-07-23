@@ -28,7 +28,6 @@ class Wolfram(base.BaseCog):
     API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
 
     @util.with_typing
-    @commands.cooldown(3, 60, commands.BucketType.channel)
     @commands.command(
         name="wa",
         aliases=["math", "wolframalpha", "jarvis"],
