@@ -239,7 +239,7 @@ class DuckHunt(base.LoopCog):
 
     def pick_quote(self) -> str:
         """Method for picking a random quote for the miss message"""
-        QUOTES_FILE = "extensions/duckQuotes.txt"
+        QUOTES_FILE = "resources/duckQuotes.txt"
         with open(QUOTES_FILE, "r", encoding="utf-8") as file:
             lines = file.readlines()
             random_line = random.choice(lines)
@@ -283,12 +283,17 @@ class DuckHunt(base.LoopCog):
             embed.set_footer(
                 text=f"Try again in {config.extensions.duck.cooldown.value} seconds"
             )
-            asyncio.create_task(
-                message.author.timeout(
-                    timedelta(seconds=config.extensions.duck.cooldown.value),
-                    reason="Missed a duck",
+            # Only attempt timeout if we know we can do it
+            if (
+                channel.guild.me.top_role > message.author.top_role
+                and channel.guild.me.guild_permissions.moderate_members
+            ):
+                asyncio.create_task(
+                    message.author.timeout(
+                        timedelta(seconds=config.extensions.duck.cooldown.value),
+                        reason="Missed a duck",
+                    )
                 )
-            )
             asyncio.create_task(
                 message.channel.send(
                     content=message.author.mention,
@@ -560,6 +565,7 @@ class DuckHunt(base.LoopCog):
         )
 
     @util.with_typing
+    @commands.cooldown(1, 600)
     @commands.guild_only()
     @duck.command(
         brief="Kills a caputred duck",
@@ -585,6 +591,21 @@ class DuckHunt(base.LoopCog):
             return
 
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+
+        config = await self.bot.get_context_config(ctx)
+        weights = (
+            config.extensions.duck.success_rate.value,
+            100 - config.extensions.duck.success_rate.value,
+        )
+
+        passed = random.choice(random.choices([True, False], weights=weights, k=1000))
+        if not passed:
+            await auxiliary.send_deny_embed(
+                message="The duck got away before you could kill it.",
+                channel=ctx.channel,
+            )
+            return
+
         await duck_user.update(kill_count=duck_user.kill_count + 1).apply()
         await auxiliary.send_confirm_embed(
             message=f"You monster! You have {duck_user.befriend_count} ducks "
@@ -593,6 +614,7 @@ class DuckHunt(base.LoopCog):
         )
 
     @util.with_typing
+    @commands.cooldown(1, 600)
     @commands.guild_only()
     @duck.command(
         brief="Donates a duck to someone",
@@ -635,6 +657,21 @@ class DuckHunt(base.LoopCog):
             return
 
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+
+        config = await self.bot.get_context_config(ctx)
+        weights = (
+            config.extensions.duck.success_rate.value,
+            100 - config.extensions.duck.success_rate.value,
+        )
+
+        passed = random.choice(random.choices([True, False], weights=weights, k=1000))
+        if not passed:
+            await auxiliary.send_deny_embed(
+                message="The duck got away before you could donate it.",
+                channel=ctx.channel,
+            )
+            return
+
         await recipee.update(befriend_count=recipee.befriend_count + 1).apply()
         await auxiliary.send_confirm_embed(
             message=f"You gave a duck to {user.mention}. You now "
