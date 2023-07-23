@@ -27,7 +27,6 @@ class Weather(base.BaseCog):
         return filled_url
 
     @util.with_typing
-    @commands.cooldown(3, 60, commands.BucketType.channel)
     @commands.command(
         name="we",
         aliases=["weather", "wea"],

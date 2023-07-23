@@ -12,13 +12,6 @@ async def setup(bot):
     """Method to add the dumpdbg command to config."""
     config = bot.ExtensionConfig()
     config.add(
-        key="api_endpoint",
-        datatype="str",
-        title="DBG Server API address",
-        description="Endpoint for WinDBG server",
-        default="",
-    )
-    config.add(
         key="roles",
         datatype="list",
         title="Permitted roles",
@@ -43,7 +36,6 @@ class Dumpdbg(base.BaseCog):
 
     @util.with_typing
     @commands.guild_only()
-    @commands.cooldown(1, 60, commands.BucketType.channel)
     @commands.command(
         name="dumpdbg",
         aliases=["dump", "debug-dump", "debug_dump", "debugdump"],
@@ -94,7 +86,7 @@ class Dumpdbg(base.BaseCog):
             return valid_URLs
 
         config = await self.bot.get_context_config(guild=ctx.guild)
-        api_endpoint = config.extensions.dumpdbg.api_endpoint.value
+        api_endpoint = self.bot.file_config.main.api_url.dumpdbg
         permitted_roles = config.extensions.dumpdbg.roles.value
 
         if not permitted_roles:

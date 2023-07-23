@@ -20,7 +20,6 @@ class IPInfo(base.BaseCog):
         "iconfinder-dedicatedipaddress-4263513_117864.png"
     )
 
-    @commands.cooldown(1, 30, commands.BucketType.channel)
     @commands.command(
         name="ipinfo",
         aliases=["ip"],

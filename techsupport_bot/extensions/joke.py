@@ -54,7 +54,6 @@ class Joker(base.BaseCog):
         return embed
 
     @util.with_typing
-    @commands.cooldown(1, 60, commands.BucketType.channel)
     @commands.command(
         name="joke",
         brief="Tells a joke",

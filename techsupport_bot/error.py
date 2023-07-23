@@ -26,6 +26,13 @@ class TooLongFactoidMessageError(commands.errors.CommandError):
         self.dont_print_trace = False
 
 
+class HTTPRateLimit(commands.errors.CommandError):
+    """An API call is on rate limit"""
+
+    def __init__(self, wait):
+        self.wait = wait
+
+
 class ErrorResponse:
     """Object for generating a custom error message from an exception.
 
@@ -185,8 +192,12 @@ COMMAND_ERROR_RESPONSES = {
     ),
     commands.DisabledCommand: ErrorResponse("That command is disabled"),
     commands.CommandOnCooldown: ErrorResponse(
-        "That command is on cooldown. Try again in %s seconds",
-        {"key": "retry_after", "wrapper": int},
+        "That command is on cooldown. Try again in %.2f seconds",
+        {"key": "retry_after", "wrapper": float},
+    ),
+    HTTPRateLimit: ErrorResponse(
+        "That API is on cooldown. Try again in %.2f seconds",
+        {"key": "wait"},
     ),
     # -Custom errors-
     FactoidNotFoundError: ErrorResponse(

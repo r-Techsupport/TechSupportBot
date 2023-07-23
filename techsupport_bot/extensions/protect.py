@@ -110,13 +110,6 @@ async def setup(bot):
         default=3,
     )
     config.add(
-        key="linx_url",
-        datatype="str",
-        title="Linx API URL",
-        description="The URL to an optional Linx API for pastebinning large messages",
-        default=None,
-    )
-    config.add(
         key="max_warnings",
         datatype="int",
         title="Max Warnings",
@@ -303,7 +296,7 @@ class Protector(base.MatchCog):
 
         reason = "message too long (too many newlines or characters)"
 
-        if not config.extensions.protect.linx_url.value:
+        if not self.bot.file_config.main.api_url.linx:
             await self.send_default_delete_response(config, ctx, content, reason)
             return
 
@@ -628,7 +621,7 @@ class Protector(base.MatchCog):
         }
         file = {"file": io.StringIO(content)}
         response = await self.bot.http_call(
-            "post", config.extensions.protect.linx_url.value, headers=headers, data=file
+            "post", self.bot.file_config.main.api_url.linx, headers=headers, data=file
         )
 
         url = response.get("url")

@@ -80,7 +80,6 @@ class ChatGPT(base.BaseCog):
         return response
 
     @util.with_typing
-    @commands.cooldown(3, 60, commands.BucketType.channel)
     @commands.command(
         brief="Prompts ChatGPT",
         description="Issues a prompt to the ChatGPT API",

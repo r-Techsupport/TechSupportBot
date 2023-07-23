@@ -46,7 +46,6 @@ class Googler(base.BaseCog):
         response = await self.bot.http_call("get", url, params=data, use_cache=True)
         return response.get("items")
 
-    @commands.cooldown(3, 60, commands.BucketType.channel)
     @commands.group(
         aliases=["g"],
         brief="Executes a Google command",
@@ -150,7 +149,6 @@ class Googler(base.BaseCog):
         await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
     @util.with_typing
-    @commands.cooldown(3, 60, commands.BucketType.channel)
     @commands.guild_only()
     @commands.command(
         aliases=["yt"],

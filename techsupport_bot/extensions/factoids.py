@@ -2,7 +2,7 @@
 Name: Factoids
 Info: Makes callable slices of text
 Unit tests: No
-Config: manage_roles, response_listen_channels, linx_url, prefix
+Config: manage_roles, prefix
 API: Linx
 Databases: Postgres
 Models: Factoid, FactoidJob
@@ -70,15 +70,6 @@ async def setup(bot):
         title="Manage factoids roles",
         description="The roles required to manage factoids",
         default=["Factoids"],
-    )
-    config.add(
-        key="linx_url",
-        datatype="str",
-        title="Linx API URL",
-        description=(
-            "The URL to an optional Linx API for pastebinning factoid-all responses"
-        ),
-        default=None,
     )
     config.add(
         key="prefix",
@@ -1290,8 +1281,6 @@ class FactoidManager(base.MatchCog):
             await auxiliary.send_confirm_embed(message=url, channel=ctx.channel)
             return
 
-        config = await self.bot.get_context_config(ctx)
-
         factoids = await self.get_all_factoids(guild, list_hidden=True)
         if not factoids:
             await auxiliary.send_deny_embed(
@@ -1318,7 +1307,7 @@ class FactoidManager(base.MatchCog):
 
             list_only_hidden = True
 
-        if "file" in flags or not config.extensions.factoids.linx_url.value:
+        if "file" in flags or not self.bot.file_config.main.api_url.linx:
             await self.send_factoids_as_file(
                 ctx, factoids, aliases, list_only_hidden, flag
             )
@@ -1339,7 +1328,7 @@ class FactoidManager(base.MatchCog):
             }
             response = await self.bot.http_call(
                 "put",
-                config.extensions.factoids.linx_url.value,
+                self.bot.file_config.main.api_url.linx,
                 headers=headers,
                 data=io.StringIO(html),
                 get_raw_response=True,
