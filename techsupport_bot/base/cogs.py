@@ -221,7 +221,7 @@ class LoopCog(BaseCog):
             )
             await asyncio.sleep(self.TRACKER_WAIT)
 
-            await self.bot.logger.info(
+            await self.bot.logger.debug(
                 f"Checking registered channels for {self.extension_name} loop cog"
             )
             for guild_id, registered_channels in self.channels.items():
