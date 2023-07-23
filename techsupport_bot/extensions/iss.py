@@ -18,7 +18,6 @@ class ISSLocator(base.BaseCog):
     GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
 
     @util.with_typing
-    @commands.cooldown(1, 60, commands.BucketType.channel)
     @commands.command(
         name="iss",
         brief="Finds the ISS",
@@ -53,10 +52,8 @@ class ISSLocator(base.BaseCog):
                 message="I had trouble calling the GEO API. Maybe it's down?",
                 channel=ctx.channel,
             )
-            return
-        else:
-            osmtags = response.get("osmtags", {})
-            location = osmtags.get("name")
+        osmtags = response.get("osmtags", {})
+        location = osmtags.get("name")
 
         if not location:
             location = "Unknown"

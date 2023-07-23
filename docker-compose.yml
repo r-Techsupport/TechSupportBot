@@ -10,9 +10,6 @@ services:
             - TZ=UTC
         restart: unless-stopped
         stop_signal: SIGINT
-        ports:
-            - "127.0.0.1:8765:8765"
-            - "127.0.0.1:20000:20000"
         volumes:
             - ./config.yml:/var/TechSupportBot/techsupport_bot/config.yml
         networks:
@@ -22,7 +19,7 @@ services:
             - mongodb
 
     postgres:
-        image: postgres:12.0-alpine
+        image: postgres:15.3-alpine
         container_name: postgres
         restart: unless-stopped
         ports:
@@ -31,13 +28,13 @@ services:
             - ../DBs/postgres:/var/lib/postgresql/data/
         environment:
             - POSTGRES_USER=${POSTGRES_DB_USER}
-            - POSTGRES_PASS=${POSTGRES_DB_PASSWORD}
+            - POSTGRES_PASSWORD=${POSTGRES_DB_PASSWORD}
             - POSTGRES_DB=${POSTGRES_DB_NAME}
         networks:
             - all
 
     mongodb:
-        image: mongo:4.4
+        image: mongo:6.0.7
         container_name: mongodb
         volumes:
             - ../DBs/mongo:/data/db
@@ -55,4 +52,4 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.0.0.0/24
+        - subnet: 10.167.53.0/24

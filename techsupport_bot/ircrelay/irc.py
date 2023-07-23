@@ -59,6 +59,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
 
     def exit_irc(self):
         """Instatly kills the IRC thread"""
+        # pylint: disable=protected-access
         os._exit(1)
 
     def reconnect_from_disconnect(
@@ -70,7 +71,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
             connection (irc.client.ServerConnection): The IRC connection
             event (irc.client.Event): The event object that triggered this function
         """
-        self.console.error(f"Disconnected from IRC - Attempting reconnection: {event}")
+        self.console.error("Disconnected from IRC - Attempting reconnection: %s", event)
         connection.reconnect()
 
     def on_nicknameinuse(
@@ -107,7 +108,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         if not self.ready:
             return
         for channel in self.join_channel_list:
-            self.console.info(f"Joining {channel}")
+            self.console.info("Joining %s", channel)
             self.connection.join(channel)
 
     def join_channels_thread(self):
@@ -261,7 +262,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
             channel (str): The IRC channel to send the message to
             message (str): The fully formatted string to send to the IRC channel
         """
-        message_list = [message[i : i + 450] for i in range(0, len(message), 450)]
+        message_list = [message[i : i + 430] for i in range(0, len(message), 430)]
         for cut_message in message_list:
             self.connection.privmsg(channel, cut_message)
 

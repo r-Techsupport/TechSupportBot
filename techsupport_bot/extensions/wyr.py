@@ -50,8 +50,10 @@ class WouldYouRather(base.BaseCog):
             "not know the difference between a baby and a muffin",
         ),
         Question(
-            "fuck the top half of Emma Watson's body with the bottom half of Hulk Hogan's body",
-            "fuck the top half of Hulk Hogan's body with the bottom half of Emma Watson's body",
+            "fuck the top half of Emma Watson's body with the bottom half of Hulk"
+            " Hogan's body",
+            "fuck the top half of Hulk Hogan's body with the bottom half of Emma"
+            " Watson's body",
         ),
         Question("have hair for teeth", "have teeth for fair"),
         Question(
@@ -170,7 +172,8 @@ class WouldYouRather(base.BaseCog):
         Question("be a master at origami", "a master of sleight of hand magic"),
         Question("have a tail that can’t grab things", "wings that can’t fly"),
         Question(
-            "have a special room you could fill with as many bubbles as you want, anytime you want",
+            "have a special room you could fill with as many bubbles as you want,"
+            " anytime you want",
             "have a slide that goes from your roof to the ground",
         ),
         Question("dance in front of 1000 people", "sing in front of 1000 people"),
@@ -215,10 +218,10 @@ class WouldYouRather(base.BaseCog):
         Question("go snorkeling on a reef", "camping by a lake"),
         Question("have an elephant-sized cat", "a cat-sized elephant"),
         Question(
-            "be able to jump into any picture and instantly be in that place and \
-                time but able to return",
-            "would you rather be able to take pictures of the future, just stand \
-                in a place think of a time in the future and take a picture",
+            "be able to jump into any picture and instantly be in that place and "
+            "time but able to return",
+            "would you rather be able to take pictures of the future, just stand "
+            "in a place think of a time in the future and take a picture",
         ),
         Question("play outdoors", "indoors"),
         Question("eat broccoli flavored ice cream", "meat flavored cookies"),
@@ -242,7 +245,8 @@ class WouldYouRather(base.BaseCog):
         Question("never eat cheese again", "never drink anything sweet again"),
         Question(
             "have your very own house next to your parent’s house",
-            "live with your parents in a house that’s twice the size of the one you live in now",
+            "live with your parents in a house that’s twice the size of the one you"
+            " live in now",
         ),
         Question("have a cupcake", "a piece of cake"),
         Question(
@@ -318,8 +322,10 @@ class WouldYouRather(base.BaseCog):
             "have an extremely popular podcast",
         ),
         Question(
-            "able to talk to animals and have them understand you, but you can’t understand them,",
-            "would you rather be able to understand what animals say but they can’t understand you",
+            "able to talk to animals and have them understand you, but you can’t"
+            " understand them,",
+            "would you rather be able to understand what animals say but they can’t"
+            " understand you",
         ),
         Question("eat smores", "cupcakes"),
         Question("ride in a hang glider", "ride in a helicopter"),
@@ -367,7 +373,8 @@ class WouldYouRather(base.BaseCog):
         Question("ride in a hang glider", "skydive"),
         Question(
             "every vegetable you eat taste like candy but still be healthy",
-            "all water you drink taste like a different delicious beverage every time you drink it",
+            "all water you drink taste like a different delicious beverage every time"
+            " you drink it",
         ),
         Question(
             "be really good at skateboarding", "really good at any video game you tried"
@@ -401,7 +408,8 @@ class WouldYouRather(base.BaseCog):
             "never have to get another shot but still be healthy",
         ),
         Question(
-            "be able to learn everything in a book by putting it under your pillow while you slept",
+            "be able to learn everything in a book by putting it under your pillow"
+            " while you slept",
             "be able to control your dreams every night",
         ),
         Question(
@@ -470,7 +478,8 @@ class WouldYouRather(base.BaseCog):
         ),
         Question("have a pet penguin", "a pet Komodo dragon"),
         Question(
-            "be able to eat pancakes as much as you want without it hurting your health",
+            "be able to eat pancakes as much as you want without it hurting your"
+            " health",
             "be able to eat as much bacon as you want without it hurting your health",
         ),
         Question("be able to talk to animals", "be able to fly"),

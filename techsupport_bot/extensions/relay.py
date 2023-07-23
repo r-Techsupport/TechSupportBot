@@ -321,7 +321,9 @@ class DiscordToIRC(base.MatchCog):
 
         await map.create()
         await auxiliary.send_confirm_embed(
-            message=f"New link established between <#{ctx.channel.id}> and {irc_channel}",
+            message=(
+                f"New link established between <#{ctx.channel.id}> and {irc_channel}"
+            ),
             channel=ctx.channel,
         )
 
@@ -367,7 +369,10 @@ class DiscordToIRC(base.MatchCog):
         await db_link.delete()
 
         await auxiliary.send_confirm_embed(
-            message=f"Successfully deleted link between <#{ctx.channel.id}> and {irc_channel}",
+            message=(
+                f"Successfully deleted link between <#{ctx.channel.id}> and"
+                f" {irc_channel}"
+            ),
             channel=ctx.channel,
         )
 
@@ -435,7 +440,10 @@ class DiscordToIRC(base.MatchCog):
         )
         embed.description = split_message["content"]
         embed.set_footer(
-            text=f"{split_message['hostmask']} • {getattr(self.bot.file_config.main.irc, 'server')}"
+            text=(
+                f"{split_message['hostmask']} •"
+                f" {getattr(self.bot.file_config.main.irc, 'server')}"
+            )
         )
         embed.color = discord.Color.blurple()
 
