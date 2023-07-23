@@ -26,7 +26,10 @@ class RuleEmbed(discord.Embed):
 class Rules(base.BaseCog):
     """Class to define the rules for the extension."""
 
-    RULE_ICON_URL = "https://cdn.icon-icons.com/icons2/907/PNG/512/balance-scale-of-justice_icon-icons.com_70554.png"
+    RULE_ICON_URL = (
+        "https://cdn.icon-icons.com/icons2/907/PNG"
+        "/512/balance-scale-of-justice_icon-icons.com_70554.png"
+    )
     COLLECTION_NAME = "rules_extension"
 
     async def preconfig(self):
@@ -40,8 +43,6 @@ class Rules(base.BaseCog):
 
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
-
-        print(f"Rule command called in channel {ctx.channel}")
 
     @commands.has_permissions(administrator=True)
     @commands.guild_only()

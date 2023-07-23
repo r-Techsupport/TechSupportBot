@@ -122,10 +122,14 @@ class Htd(base.BaseCog):
     @commands.command(
         name="htd",
         brief="Convert values to different bases",
-        description="Takes a value and returns the value in different bases\
-             and encodings (bianary, hex, base 10, and ascii)",
-        usage="`htd [value]`\nAccepts numbers in the following formats:\n0x \
-            (hex)\n0b (binary) \nNo prefix (assumed ascii)",
+        description=(
+            "Takes a value and returns the value in different bases and"
+            " encodings (bianary, hex, base 10, and ascii)"
+        ),
+        usage=(
+            "`htd [value]`\nAccepts numbers in the following formats:\n0x"
+            " (hex)\n0b (binary) \nNo prefix (assumed ascii)"
+        ),
     )
     async def htd(self, ctx, *, val_to_convert):
         """This discord command for .htd
@@ -310,7 +314,10 @@ class Htd(base.BaseCog):
             calced_val = self.perform_op_on_list(int_list)
         except ValueError:
             await auxiliary.send_deny_embed(
-                message="Unable to perform calculation, are you sure that equation is valid?",
+                message=(
+                    "Unable to perform calculation, are you sure that equation is"
+                    " valid?"
+                ),
                 channel=ctx.channel,
             )
             return
