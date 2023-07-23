@@ -107,15 +107,22 @@ class ConfigControl(base.BaseCog):
         if uploaded_data:
             # server-side check of guild
             uploaded_data["guild_id"] = str(ctx.guild.id)
-            if not util.config_schema_matches(uploaded_data, config):
-                await auxiliary.send_deny_embed(
-                    message=(
-                        "I couldn't match your upload data with the current config"
-                        " schema"
-                    ),
+            config_difference = util.config_schema_matches(uploaded_data, config)
+            if config_difference:
+                view = ui.Confirm()
+                await view.send(
+                    message=f"Accept {config_difference} changes to the guild config?",
                     channel=ctx.channel,
+                    author=ctx.author,
                 )
-                return
+                await view.wait()
+                if view.value is ui.ConfirmResponse.DENIED:
+                    await auxiliary.send_deny_embed(
+                        message="Config was not changed",
+                        channel=ctx.channel,
+                    )
+                if view.value is not ui.ConfirmResponse.CONFIRMED:
+                    return
 
             await self.bot.guild_config_collection.replace_one(
                 {"guild_id": config.get("guild_id")}, uploaded_data
