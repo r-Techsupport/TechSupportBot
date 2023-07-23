@@ -28,7 +28,10 @@ async def setup(bot):
         datatype="str",
         title="Server Gate intro message",
         description="The message that's sent when running the intro message command",
-        default="Welcome to our server! 👋 Please read the rules then type agree below to verify yourself",
+        default=(
+            "Welcome to our server! 👋 Please read the rules then type agree below to"
+            " verify yourself"
+        ),
     )
     config.add(
         key="welcome_message",
@@ -41,14 +44,19 @@ async def setup(bot):
         key="delete_wait",
         datatype="int",
         title="Welcome message delete time",
-        description="The amount of time to wait (in seconds) before deleting the welcome message",
+        description=(
+            "The amount of time to wait (in seconds) before deleting the welcome"
+            " message"
+        ),
         default=60,
     )
     config.add(
         key="verify_text",
         datatype="str",
         title="Verification text",
-        description="The case-insensitive text the user should type to verify themselves",
+        description=(
+            "The case-insensitive text the user should type to verify themselves"
+        ),
         default="agree",
     )
 
@@ -137,8 +145,6 @@ class ServerGate(base.MatchCog):
 
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
-
-        print(f"Gate command called in channel {ctx.channel}")
 
     @commands.has_permissions(manage_messages=True)
     @commands.guild_only()

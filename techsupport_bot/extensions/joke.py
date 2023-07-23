@@ -12,7 +12,10 @@ async def setup(bot):
         key="pc_jokes",
         datatype="bool",
         title="Politically correct jokes only",
-        description="True only politically correct jokes should be shown (non-racist/non-sexist)",
+        description=(
+            "True only politically correct jokes should be shown"
+            " (non-racist/non-sexist)"
+        ),
         default=True,
     )
     await bot.add_cog(Joker(bot=bot))
@@ -51,7 +54,6 @@ class Joker(base.BaseCog):
         return embed
 
     @util.with_typing
-    @commands.cooldown(1, 60, commands.BucketType.channel)
     @commands.command(
         name="joke",
         brief="Tells a joke",

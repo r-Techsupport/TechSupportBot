@@ -706,7 +706,9 @@ class Test_HTDCommand:
 
         # Step 3 - Assert that everything works
         auxiliary.send_deny_embed.assert_called_once_with(
-            message="Unable to perform calculation, are you sure that equation is valid?",
+            message=(
+                "Unable to perform calculation, are you sure that equation is valid?"
+            ),
             channel=discord_env.context.channel,
         )
 

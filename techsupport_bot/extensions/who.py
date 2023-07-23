@@ -48,7 +48,9 @@ async def setup(bot):
         key="note_bypass",
         datatype="list",
         title="Note bypass list",
-        description="A list of roles that shouldn't have notes set or the note roll assigned",
+        description=(
+            "A list of roles that shouldn't have notes set or the note roll assigned"
+        ),
         default=["Moderator"],
     )
     config.add(
@@ -326,8 +328,10 @@ class Who(base.BaseCog):
             return
 
         if isinstance(error, app_commands.MissingPermissions):
-            message = f"I am unable to do that because you lack the permission(s):\
-                  `{', '.join(error.missing_permissions)}`"
+            message = (
+                "I am unable to do that because you lack the permission(s):           "
+                f"       `{', '.join(error.missing_permissions)}`"
+            )
             embed = auxiliary.prepare_deny_embed(message)
 
         elif isinstance(error, app_commands.CheckFailure):

@@ -216,11 +216,12 @@ class LoopCog(BaseCog):
         """Periodifically kicks off new per-channel tasks based on updated channels config."""
         while True:
             await self.bot.logger.debug(
-                f"Sleeping for {self.TRACKER_WAIT} seconds before checking channel config"
+                f"Sleeping for {self.TRACKER_WAIT} seconds before checking channel"
+                " config"
             )
             await asyncio.sleep(self.TRACKER_WAIT)
 
-            await self.bot.logger.info(
+            await self.bot.logger.debug(
                 f"Checking registered channels for {self.extension_name} loop cog"
             )
             for guild_id, registered_channels in self.channels.items():
@@ -233,7 +234,8 @@ class LoopCog(BaseCog):
                 )
                 if not isinstance(configured_channels, list):
                     await self.bot.logger.error(
-                        f"Configured channels no longer readable for guild with ID {guild_id} - deleting registration"
+                        "Configured channels no longer readable for guild with ID"
+                        f" {guild_id} - deleting registration"
                     )
                     del registered_channels
                     continue
@@ -254,7 +256,8 @@ class LoopCog(BaseCog):
 
                     if not channel.id in [ch.id for ch in registered_channels]:
                         await self.bot.logger.debug(
-                            f"Found new channel with ID {channel.id} in loop config - starting task"
+                            f"Found new channel with ID {channel.id} in loop config -"
+                            " starting task"
                         )
                         asyncio.create_task(self._loop_execute(guild, channel))
 
