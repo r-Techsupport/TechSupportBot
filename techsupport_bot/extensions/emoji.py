@@ -131,7 +131,9 @@ class Emojis(base.BaseCog):
         if add_reactions:
             if not self.check_if_all_unique(message):
                 await auxiliary.send_deny_embed(
-                    message="Invalid message! Make sure there are no repeat characters!",
+                    message=(
+                        "Invalid message! Make sure there are no repeat characters!"
+                    ),
                     channel=ctx.channel,
                 )
                 return

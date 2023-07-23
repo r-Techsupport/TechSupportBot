@@ -212,7 +212,9 @@ class HangmanCog(base.BaseCog):
             if getattr(user, "id", 0) == ctx.author.id:
                 view = ui.Confirm()
                 await view.send(
-                    message="There is a current game in progress. Would you like to end it?",
+                    message=(
+                        "There is a current game in progress. Would you like to end it?"
+                    ),
                     channel=ctx.channel,
                     author=ctx.author,
                 )
@@ -292,7 +294,10 @@ class HangmanCog(base.BaseCog):
         prefix = await self.bot.get_prefix(ctx.message)
         embed = discord.Embed(
             title=f"`{hangman_word}`",
-            description=f"Type `{prefix}help extension hangman` for more info\n\n ```{hangman_drawing}```",
+            description=(
+                f"Type `{prefix}help extension hangman` for more info\n\n"
+                f" ```{hangman_drawing}```"
+            ),
         )
 
         if game.failed:
