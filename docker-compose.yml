@@ -10,9 +10,6 @@ services:
             - TZ=UTC
         restart: unless-stopped
         stop_signal: SIGINT
-        ports:
-            - "127.0.0.1:8765:8765"
-            - "127.0.0.1:20000:20000"
         volumes:
             - ./config.yml:/var/TechSupportBot/techsupport_bot/config.yml
         networks:
@@ -55,4 +52,4 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.0.0.0/24
+        - subnet: 10.167.53.0/24

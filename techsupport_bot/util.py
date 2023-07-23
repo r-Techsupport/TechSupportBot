@@ -75,9 +75,27 @@ def config_schema_matches(input_config, current_config):
         any(key not in current_config for key in input_config.keys())
         or len(current_config) != len(input_config) + 1
     ):
-        return False
+        added_keys = []
+        removed_keys = []
 
-    return True
+        for key in input_config.keys():
+            if key not in current_config and key != "_id":
+                added_keys.append(key)
+
+        for key in current_config.keys():
+            if key not in input_config and key != "_id":
+                removed_keys.append(key)
+
+        result = []
+        for key in added_keys:
+            result.append("added: " + key)
+
+        for key in removed_keys:
+            result.append("removed: " + key)
+
+        return result
+
+    return None
 
 
 def with_typing(command):
