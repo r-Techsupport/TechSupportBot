@@ -18,28 +18,8 @@ services:
         networks:
             - all
         depends_on:
-            - rabbitmq
             - postgres
             - mongodb
-
-    rabbitmq:
-        image: rabbitmq:3.8.5-management
-        container_name: rabbitmq
-        hostname: rabbitmq
-        volumes:
-            - ../DBs/rabbitmq/:/var/lib/rabbitmq/
-        environment:
-            RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
-        ports:
-            - "127.0.0.1:4369:4369"
-            - "127.0.0.1:5671:5671"
-            - "127.0.0.1:5672:5672"
-            - "127.0.0.1:15672:15672"
-            - "127.0.0.1:25672:25672"
-        networks:
-            - all
-        restart: unless-stopped
 
     postgres:
         image: postgres:12.0-alpine

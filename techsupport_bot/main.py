@@ -10,7 +10,6 @@ import discord
 MODULE_LOG_LEVELS = {
     "discord": logging.INFO,
     "gino": logging.WARNING,
-    "aio_pika": logging.INFO,
 }
 
 for module_name, level in MODULE_LOG_LEVELS.items():
