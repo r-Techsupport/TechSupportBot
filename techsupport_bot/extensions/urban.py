@@ -35,7 +35,7 @@ class UrbanDictionary(base.BaseCog):
         name="urb",
         aliases=["urbandictionary", "urban"],
         brief="Searches Urban Dictionary",
-        description=("Returns the top Urban Dictionary search result"),
+        description="Returns the top Urban Dictionary search result",
         usage="[query]",
     )
     async def urban(self, ctx, *, query: str):
