@@ -1334,7 +1334,7 @@ class FactoidManager(base.MatchCog):
                 data=io.StringIO(html),
                 get_raw_response=True,
             )
-            url = await response.text()
+            url = response["text"]
             filename = url.split("/")[-1]
             url = url.replace(filename, f"selif/{filename}")
 

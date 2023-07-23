@@ -129,7 +129,10 @@ class DataBot(ExtensionsBot):
                     await self.logger.info(log_message)
 
                     if get_raw_response:
-                        response = response_object
+                        response = {
+                            "status": response_object.status,
+                            "text": await response_object.text(),
+                        }
                     else:
                         try:
                             response_json = await response_object.json()
@@ -150,5 +153,4 @@ class DataBot(ExtensionsBot):
                         response["status_code"] = getattr(
                             response_object, "status", None
                         )
-
-                        return response
+                    return response
