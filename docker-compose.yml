@@ -34,7 +34,7 @@ services:
             - all
 
     mongodb:
-        image: mongo:4.4
+        image: mongo:6.0.7
         container_name: mongodb
         volumes:
             - ../DBs/mongo:/data/db
