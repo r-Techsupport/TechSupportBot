@@ -48,7 +48,9 @@ async def setup(bot):
         key="reminder_on",
         datatype="bool",
         title="Reminder feature toggle",
-        description="True if the bot should periodically remind of pending applications",
+        description=(
+            "True if the bot should periodically remind of pending applications"
+        ),
         default=False,
     )
     # The syntax for how reminders should work
@@ -105,8 +107,6 @@ class ApplicationEmbed(discord.Embed):
 
 class NoPendingApplications(Exception):
     """Class for what happens when no applications are recieved."""
-
-    pass
 
 
 class ApplicationManager(base.MatchCog, base.LoopCog):
@@ -229,9 +229,11 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
         embed = ApplicationEmbed()
         embed.set_footer(
-            text="This is a periodic reminder"
-            if automated
-            else "This reminder was triggered manually"
+            text=(
+                "This is a periodic reminder"
+                if automated
+                else "This reminder was triggered manually"
+            )
         )
 
         for app in applications:
@@ -329,8 +331,10 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
     async def confirm_with_user(self, ctx, user):
         """Method to confirm application with the user through direct message."""
         embed = ApplicationEmbed(
-            description=f"I received an application on the server `{ctx.guild.name}`. \
-                Did you make this application? Please reply with `yes` or `no`",
+            description=(
+                f"I received an application on the server `{ctx.guild.name}`.\n"
+                "Did you make this application? Please reply with `yes` or `no`"
+            ),
         )
         message = await user.send(embed=embed)
 
@@ -398,8 +402,6 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
-
-        pass
 
     @application.command(
         name="get",
@@ -477,7 +479,10 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         if status == "denied":
             view = ui.Confirm()
             await view.send(
-                message="That application has been marked as denied. Are you sure you want to approve it?",
+                message=(
+                    "That application has been marked as denied. Are you sure you want"
+                    " to approve it?"
+                ),
                 channel=ctx.channel,
                 author=ctx.author,
             )
@@ -495,7 +500,10 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
         view = ui.Confirm()
         await view.send(
-            message=f"This will attempt to notify `{username}` and approve their application",
+            message=(
+                f"This will attempt to notify `{username}` and approve their"
+                " application"
+            ),
             channel=ctx.channel,
             author=ctx.author,
         )
@@ -504,7 +512,10 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             return
         if view.value is ui.ConfirmResponse.DENIED:
             await auxiliary.send_deny_embed(
-                message=f"The application was not approved and `{username}` was not notified",
+                message=(
+                    f"The application was not approved and `{username}` was not"
+                    " notified"
+                ),
                 channel=ctx.channel,
             )
             return
@@ -562,7 +573,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
 
         view = ui.Confirm()
         await view.send(
-            message=f"This will attempt to notify `{username}` and deny their application",
+            message=(
+                f"This will attempt to notify `{username}` and deny their application"
+            ),
             channel=ctx.channel,
             author=ctx.author,
         )
@@ -571,7 +584,9 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
             return
         if view.value is ui.ConfirmResponse.DENIED:
             await auxiliary.send_deny_embed(
-                message=f"The application was not denied and `{username}` was not notified",
+                message=(
+                    f"The application was not denied and `{username}` was not notified"
+                ),
                 channel=ctx.channel,
             )
             return
@@ -615,12 +630,16 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         message_content = (
             f"I've {status} that application and notified `{user}`!"
             if user
-            else f"I've {status} that application, but the applicant has left the server"
+            else (
+                f"I've {status} that application, but the applicant has left the server"
+            )
         )
         await auxiliary.send_confirm_embed(message=message_content, channel=ctx.channel)
 
         embed = ApplicationEmbed(
-            description=f"Hey, your application in `{ctx.guild.name}` has been {status}!",
+            description=(
+                f"Hey, your application in `{ctx.guild.name}` has been {status}!"
+            ),
         )
         if reason:
             embed.description = f"{embed.description} Reason: {reason}"

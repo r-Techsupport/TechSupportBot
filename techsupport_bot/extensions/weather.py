@@ -20,7 +20,11 @@ class Weather(base.BaseCog):
         filtered_args = filter(bool, args)
         searches = ",".join(map(str, filtered_args))
         url = "http://api.openweathermap.org/data/2.5/weather"
-        return f"{url}?q={searches}&units=imperial&appid={self.bot.file_config.main.api_keys.open_weather}"
+        filled_url = (
+            f"{url}?q={searches}&units=imperial&appid"
+            f"={self.bot.file_config.main.api_keys.open_weather}"
+        )
+        return filled_url
 
     @util.with_typing
     @commands.cooldown(3, 60, commands.BucketType.channel)
@@ -28,7 +32,10 @@ class Weather(base.BaseCog):
         name="we",
         aliases=["weather", "wea"],
         brief="Searches for the weather",
-        description="Returns the weather for a given area (this API sucks; I'm sorry in advance)",
+        description=(
+            "Returns the weather for a given area (this API sucks; I'm sorry in"
+            " advance)"
+        ),
         usage="[city/town] [state-code] [country-code]",
     )
     async def weather(
@@ -63,7 +70,10 @@ class Weather(base.BaseCog):
 
             embed.add_field(
                 name="Temp (F)",
-                value=f"{int(response.main.temp)} (feels like {int(response.main.feels_like)})",
+                value=(
+                    f"{int(response.main.temp)} (feels like"
+                    f" {int(response.main.feels_like)})"
+                ),
                 inline=False,
             )
             embed.add_field(name="Low (F)", value=int(response.main.temp_min))
@@ -73,7 +83,10 @@ class Weather(base.BaseCog):
             )
             embed.add_field(name="Humidity", value=f"{int(response.main.humidity)} %")
             embed.set_thumbnail(
-                url="https://cdn.icon-icons.com/icons2/8/PNG/256/cloudyweather_cloud_inpart_day_wind_thunder_sunny_rain_darkness_nublad_1459.png"
+                url=(
+                    "https://cdn.icon-icons.com/icons2/8/PNG/256/cloudyweather_cloud_"
+                    "inpart_day_wind_thunder_sunny_rain_darkness_nublad_1459.png"
+                )
             )
             embed.color = discord.Color.blurple()
         except AttributeError:
