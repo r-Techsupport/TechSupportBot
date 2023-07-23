@@ -37,6 +37,7 @@ class AdvancedBot(DataBot):
         )
 
     async def start(self, *args, **kwargs):
+        """Function is automatically called when the bot is started by discord.py"""
         self.guild_config_lock = asyncio.Lock()
         await super().start(*args, **kwargs)
 
@@ -113,8 +114,8 @@ class AdvancedBot(DataBot):
 
         if time_taken > self.CONFIG_RECEIVE_WARNING_TIME_MS:
             await self.logger.warning(
-                f"Context config receive time = {time_taken} ms \
-                (over {self.CONFIG_RECEIVE_WARNING_TIME_MS} threshold)",
+                f"Context config receive time = {time_taken} ms (over"
+                f" {self.CONFIG_RECEIVE_WARNING_TIME_MS} threshold)",
                 send=True,
             )
 
@@ -174,8 +175,8 @@ class AdvancedBot(DataBot):
             if not extension_config and extension_config_from_data:
                 should_update = True
                 await self.logger.debug(
-                    f"Found extension {extension_name} not \
-                    in config with ID {config_object.guild_id}"
+                    f"Found extension {extension_name} not                     in"
+                    f" config with ID {config_object.guild_id}"
                 )
                 config_object.extensions[
                     extension_name
@@ -443,7 +444,9 @@ class AdvancedBot(DataBot):
 
         else:
             await auxiliary.send_deny_embed(
-                message="Command raised an error and the error message too long to send!"
+                message=(
+                    "Command raised an error and the error message too long to send!"
+                )
                 + f" First 1000 chars:\n{error_message[:1000]}",
                 channel=context.channel,
             )
@@ -589,8 +592,8 @@ class AdvancedBot(DataBot):
 
         if isinstance(reaction.message.channel, discord.DMChannel):
             await self.logger.info(
-                f"PM from `{user}`: added {reaction.emoji} reaction \
-                    to message {reaction.message.content} in DMs",
+                f"PM from `{user}`: added {reaction.emoji} reaction "
+                f" to message {reaction.message.content} in DMs",
                 send=True,
             )
             return
@@ -613,7 +616,8 @@ class AdvancedBot(DataBot):
             guild, key="guild_events_channel"
         )
         await self.logger.info(
-            f"Reaction added to message with ID {reaction.message.id} by user with ID {user.id}",
+            f"Reaction added to message with ID {reaction.message.id} by user with ID"
+            f" {user.id}",
             embed=embed,
             send=True,
             channel=log_channel,
@@ -626,8 +630,8 @@ class AdvancedBot(DataBot):
 
         if isinstance(reaction.message.channel, discord.DMChannel):
             await self.logger.info(
-                f"PM from `{user}`: removed {reaction.emoji} reaction \
-                    to message {reaction.message.content} in DMs",
+                f"PM from `{user}`: removed {reaction.emoji} reaction                  "
+                f"   to message {reaction.message.content} in DMs",
                 send=True,
             )
             return
@@ -650,8 +654,8 @@ class AdvancedBot(DataBot):
             guild, key="guild_events_channel"
         )
         await self.logger.info(
-            f"Reaction removed from message with ID {reaction.message.id} \
-            by user with ID {user.id}",
+            f"Reaction removed from message with ID {reaction.message.id}            "
+            f" by user with ID {user.id}",
             embed=embed,
             send=True,
             channel=log_channel,
@@ -774,8 +778,8 @@ class AdvancedBot(DataBot):
             channel.guild, key="guild_events_channel"
         )
         await self.logger.info(
-            f"Channel pins updated in channel with ID {channel.id} \
-            in guild with ID {channel.guild.id}",
+            f"Channel pins updated in channel with ID {channel.id}             in guild"
+            f" with ID {channel.guild.id}",
             embed=embed,
             send=True,
             channel=log_channel,
@@ -812,7 +816,8 @@ class AdvancedBot(DataBot):
             channel.guild, key="guild_events_channel"
         )
         await self.logger.info(
-            f"Webooks updated for channel with ID {channel.id} in guild with ID {channel.guild.id}",
+            f"Webooks updated for channel with ID {channel.id} in guild with ID"
+            f" {channel.guild.id}",
             embed=embed,
             send=True,
             channel=log_channel,
@@ -851,7 +856,8 @@ class AdvancedBot(DataBot):
             )
 
             await self.logger.info(
-                f"Member with ID {before.id} has changed status in guild with ID {before.guild.id}",
+                f"Member with ID {before.id} has changed status in guild with ID"
+                f" {before.guild.id}",
                 embed=embed,
                 send=True,
                 channel=log_channel,

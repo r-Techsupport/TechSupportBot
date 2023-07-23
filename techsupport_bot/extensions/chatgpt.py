@@ -38,11 +38,14 @@ class ChatGPT(base.BaseCog):
     SYSTEM_PROMPT = [
         {
             "role": "system",
-            "content": "The following questions are being asked via a Discord bot. "
-            + "Please try to keep messages informative but concise. For example, "
-            + "in code responses please try to not have a lot of newlines if unnecessary."
-            + "The max message size should always be under 2000 characters "
-            + "or it will get clipped.",
+            "content": (
+                "The following questions are being asked via a Discord bot. "
+                + "Please try to keep messages informative but concise. For example, "
+                + "in code responses please try to not have a lot of newlines if"
+                " unnecessary."
+                + "The max message size should always be under 2000 characters "
+                + "or it will get clipped."
+            ),
         }
     ]
 
@@ -65,9 +68,11 @@ class ChatGPT(base.BaseCog):
         # [Messages] contains the history as well as the newest prompt
         data = {
             "model": "gpt-3.5-turbo",
-            "messages": self.SYSTEM_PROMPT
-            + self.history.get(ctx.author.id, [])
-            + [{"role": "user", "content": prompt}],
+            "messages": (
+                self.SYSTEM_PROMPT
+                + self.history.get(ctx.author.id, [])
+                + [{"role": "user", "content": prompt}]
+            ),
         }
         response = await self.bot.http_call(
             "post", self.API_URL, headers=headers, json=data
@@ -75,7 +80,6 @@ class ChatGPT(base.BaseCog):
         return response
 
     @util.with_typing
-    @commands.cooldown(3, 60, commands.BucketType.channel)
     @commands.command(
         brief="Prompts ChatGPT",
         description="Issues a prompt to the ChatGPT API",

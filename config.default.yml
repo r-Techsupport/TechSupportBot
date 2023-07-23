@@ -41,6 +41,9 @@ api:
         spotify_client:
         spotify_key:
         wolfram:
+    api_url:
+        dumpdbg:
+        linx:
 logging:
     queue_enabled: True
     block_discord_send: False

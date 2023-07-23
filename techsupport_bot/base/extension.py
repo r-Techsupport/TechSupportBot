@@ -14,11 +14,9 @@ from discord.ext import commands
 class ExtensionConfig:
     """Represents the config of an extension."""
 
-    # pylint: disable=too-few-public-methods
     def __init__(self):
         self.data = munch.DefaultMunch(None)
 
-    # pylint: disable=too-many-arguments
     def add(self, key, datatype, title, description, default):
         """Adds a new entry to the config.
 

@@ -31,49 +31,66 @@ async def setup(bot):
         key="channels",
         datatype="list",
         title="Protected channels",
-        description="The list of channel ID's associated with the channels to auto-protect",
+        description=(
+            "The list of channel ID's associated with the channels to auto-protect"
+        ),
         default=[],
     )
     config.add(
         key="bypass_roles",
         datatype="list",
         title="Bypassed role names",
-        description="The list of role names associated with bypassed roles by the auto-protect",
+        description=(
+            "The list of role names associated with bypassed roles by the auto-protect"
+        ),
         default=[],
     )
     config.add(
         key="bypass_roles",
         datatype="list",
         title="Bypassed role names",
-        description="The list of role names associated with bypassed roles by the auto-protect",
+        description=(
+            "The list of role names associated with bypassed roles by the auto-protect"
+        ),
         default=[],
     )
     config.add(
         key="bypass_ids",
         datatype="list",
         title="Bypassed member ID's",
-        description="The list of member ID's associated with bypassed members by the auto-protect",
+        description=(
+            "The list of member ID's associated with bypassed members by the"
+            " auto-protect"
+        ),
         default=[],
     )
     config.add(
         key="length_limit",
         datatype="int",
         title="Max length limit",
-        description="The max char limit on messages before they trigger an action by auto-protect",
+        description=(
+            "The max char limit on messages before they trigger an action by"
+            " auto-protect"
+        ),
         default=500,
     )
     config.add(
         key="string_map",
         datatype="dict",
         title="Keyword string map",
-        description="Mapping of keyword strings to data defining the action taken by auto-protect",
+        description=(
+            "Mapping of keyword strings to data defining the action taken by"
+            " auto-protect"
+        ),
         default={},
     )
     config.add(
         key="banned_file_extensions",
         datatype="dict",
         title="List of banned file types",
-        description="A list of all file extensions to be blocked and have a auto warning issued",
+        description=(
+            "A list of all file extensions to be blocked and have a auto warning issued"
+        ),
         default=[],
     )
     config.add(
@@ -87,15 +104,10 @@ async def setup(bot):
         key="max_mentions",
         datatype="int",
         title="Max message mentions",
-        description="Max number of mentions allowed in a message before triggering auto-protect",
+        description=(
+            "Max number of mentions allowed in a message before triggering auto-protect"
+        ),
         default=3,
-    )
-    config.add(
-        key="linx_url",
-        datatype="str",
-        title="Linx API URL",
-        description="The URL to an optional Linx API for pastebinning large messages",
-        default=None,
     )
     config.add(
         key="max_warnings",
@@ -108,7 +120,9 @@ async def setup(bot):
         key="ban_delete_duration",
         datatype="int",
         title="Ban delete duration (days)",
-        description="The amount of days to delete messages for a user after they are banned",
+        description=(
+            "The amount of days to delete messages for a user after they are banned"
+        ),
         default=7,
     )
     config.add(
@@ -282,7 +296,7 @@ class Protector(base.MatchCog):
 
         reason = "message too long (too many newlines or characters)"
 
-        if not config.extensions.protect.linx_url.value:
+        if not self.bot.file_config.main.api_url.linx:
             await self.send_default_delete_response(config, ctx, content, reason)
             return
 
@@ -607,7 +621,7 @@ class Protector(base.MatchCog):
         }
         file = {"file": io.StringIO(content)}
         response = await self.bot.http_call(
-            "post", config.extensions.protect.linx_url.value, headers=headers, data=file
+            "post", self.bot.file_config.main.api_url.linx, headers=headers, data=file
         )
 
         url = response.get("url")
@@ -763,7 +777,9 @@ class Protector(base.MatchCog):
         # The API prevents administrators from being timed out. Check it here
         if user.guild_permissions.administrator:
             await auxiliary.send_deny_embed(
-                message="Someone with the `administrator` permissions cannot be timed out",
+                message=(
+                    "Someone with the `administrator` permissions cannot be timed out"
+                ),
                 channel=ctx.channel,
             )
             return
@@ -842,7 +858,6 @@ class Protector(base.MatchCog):
     )
     async def purge(self, ctx):
         """Method to purge messages in discord."""
-        ...
 
     @purge.command(
         name="amount",
