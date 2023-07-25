@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "0a8137cf8e75dad9f0654c2a0f5c540b00ebfd15469c27c0ddaef763d84c78db"
+            "sha256": "bb92b00a778d5f6aaec40b34b4de66ceb28da4990039449c04d6d114f9d4fecb"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -200,7 +200,7 @@
                 "sha256:f4f62f04cdf38441a70f279505ef3b4eadf64479b17e707c950515846a2df197",
                 "sha256:fc9e9f9ff1aa0eddcc3247a180ac9e9b51a62311e988809ac6152e8fb8097756"
             ],
-            "markers": "python_version >= '3.7'",
+            "markers": "python_full_version >= '3.7.0'",
             "version": "==0.28.0"
         },
         "attrs": {
@@ -410,7 +410,7 @@
                 "sha256:f779d3ad205f108d14e99bb3859aa7dd8e9c68874617c72354d7ecaec2a054ac",
                 "sha256:f87f746ee241d30d6ed93969de31e5ffd09a2961a051e60ae6bddde9ec3583aa"
             ],
-            "markers": "python_version >= '3.7'",
+            "markers": "python_full_version >= '3.7.0'",
             "version": "==3.2.0"
         },
         "click": {
@@ -597,6 +597,14 @@
             ],
             "index": "pypi",
             "version": "==6.82.0"
+        },
+        "ib3": {
+            "hashes": [
+                "sha256:23023c8998b3eec660bc222ecf6e9ef75ebbf59f4b63e1b18c17021cc836a3ad",
+                "sha256:bc4ea0eba083ad1ed9bc9a7a57f306e3784f9dc2cd8f926dd56016bc5659a5ff"
+            ],
+            "index": "pypi",
+            "version": "==0.2.0"
         },
         "idna": {
             "hashes": [
