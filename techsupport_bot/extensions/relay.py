@@ -66,7 +66,7 @@ class DiscordToIRC(base.MatchCog):
             str: The string representation of the IRC channel. Will be None if no IRC mapping
         """
         # Check if IRC is enabled
-        irc_config = getattr(self.bot.file_config.main, "irc")
+        irc_config = getattr(self.bot.file_config.api, "irc")
         if not irc_config.enable_irc:
             return None
 
@@ -113,7 +113,7 @@ class DiscordToIRC(base.MatchCog):
             discord_message (discord.Message): The original containing the invocation of the factoid
             factoid_message (str): The string representation of the factoid
         """
-        irc_config = getattr(self.bot.file_config.main, "irc")
+        irc_config = getattr(self.bot.file_config.api, "irc")
         if not irc_config.enable_irc:
             return
 
@@ -213,7 +213,7 @@ class DiscordToIRC(base.MatchCog):
         )
 
         irc_status = self.bot.irc.get_irc_status()
-        irc_config = getattr(self.bot.file_config.main, "irc")
+        irc_config = getattr(self.bot.file_config.api, "irc")
         if not irc_config.enable_irc:
             embed.description = "IRC is not enabled"
         embed.description = (
@@ -303,7 +303,7 @@ class DiscordToIRC(base.MatchCog):
             )
             return
 
-        joined_channels = getattr(self.bot.file_config.main.irc, "channels")
+        joined_channels = getattr(self.bot.file_config.api.irc, "channels")
 
         if not irc_channel in joined_channels:
             await auxiliary.send_deny_embed(
@@ -442,7 +442,7 @@ class DiscordToIRC(base.MatchCog):
         embed.set_footer(
             text=(
                 f"{split_message['hostmask']} •"
-                f" {getattr(self.bot.file_config.main.irc, 'server')}"
+                f" {getattr(self.bot.file_config.api.irc, 'server')}"
             )
         )
         embed.color = discord.Color.blurple()

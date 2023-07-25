@@ -68,9 +68,9 @@ class Googler(base.BaseCog):
     async def search(self, ctx, *, query: str):
         """Method for searching results on google."""
         data = {
-            "cx": self.bot.file_config.main.api_keys.google_cse,
+            "cx": self.bot.file_config.api.api_keys.google_cse,
             "q": query,
-            "key": self.bot.file_config.main.api_keys.google,
+            "key": self.bot.file_config.api.api_keys.google,
         }
 
         items = await self.get_items(self.GOOGLE_URL, data)
@@ -118,9 +118,9 @@ class Googler(base.BaseCog):
     async def images(self, ctx, *, query: str):
         """Method to get an image from a google search."""
         data = {
-            "cx": self.bot.file_config.main.api_keys.google_cse,
+            "cx": self.bot.file_config.api.api_keys.google_cse,
             "q": query,
-            "key": self.bot.file_config.main.api_keys.google,
+            "key": self.bot.file_config.api.api_keys.google,
             "searchType": "image",
         }
         items = await self.get_items(self.GOOGLE_URL, data)
@@ -162,7 +162,7 @@ class Googler(base.BaseCog):
             self.YOUTUBE_URL,
             data={
                 "q": query,
-                "key": self.bot.file_config.main.api_keys.google,
+                "key": self.bot.file_config.api.api_keys.google,
                 "type": "video",
             },
         )

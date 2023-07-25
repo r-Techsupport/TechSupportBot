@@ -32,8 +32,8 @@ class AdvancedBot(DataBot):
         self.guild_config_lock = None
         super().__init__(*args, prefix=self.get_prefix, **kwargs)
         self.guild_config_cache = expiringdict.ExpiringDict(
-            max_len=self.file_config.main.cache.guild_config_cache_length,
-            max_age_seconds=self.file_config.main.cache.guild_config_cache_seconds,
+            max_len=self.file_config.cache.guild_config_cache_length,
+            max_age_seconds=self.file_config.cache.guild_config_cache_seconds,
         )
 
     async def start(self, *args, **kwargs):
@@ -49,7 +49,7 @@ class AdvancedBot(DataBot):
         """
         guild_config = await self.get_context_config(guild=message.guild)
         return getattr(
-            guild_config, "command_prefix", self.file_config.main.default_prefix
+            guild_config, "command_prefix", self.file_config.bot_config.default_prefix
         )
 
     async def get_all_context_configs(self, projection, limit=100):
@@ -137,7 +137,7 @@ class AdvancedBot(DataBot):
         config_ = munch.DefaultMunch(None)
 
         config_.guild_id = str(lookup)
-        config_.command_prefix = self.file_config.main.default_prefix
+        config_.command_prefix = self.file_config.bot_config.default_prefix
         config_.logging_channel = None
         config_.member_events_channel = None
         config_.guild_events_channel = None
@@ -238,13 +238,13 @@ class AdvancedBot(DataBot):
             return True
 
         if ctx.message.author.id in [
-            int(id) for id in self.file_config.main.admins.ids
+            int(id) for id in self.file_config.bot_config.admins.ids
         ]:
             return True
 
         role_is_admin = False
         for role in getattr(ctx.message.author, "roles", []):
-            if role.name in self.file_config.main.admins.roles:
+            if role.name in self.file_config.bot_config.admins.roles:
                 role_is_admin = True
                 break
         if role_is_admin:

@@ -22,7 +22,7 @@ class Weather(base.BaseCog):
         url = "http://api.openweathermap.org/data/2.5/weather"
         filled_url = (
             f"{url}?q={searches}&units=imperial&appid"
-            f"={self.bot.file_config.main.api_keys.open_weather}"
+            f"={self.bot.file_config.api.api_keys.open_weather}"
         )
         return filled_url
 

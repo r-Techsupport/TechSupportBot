@@ -116,7 +116,7 @@ class Dumpdbg(base.BaseCog):
 
         # Makes sure the API key was suplied
 
-        KEY = self.bot.file_config.main.api_keys.dumpdbg_api
+        KEY = self.bot.file_config.api.api_keys.dumpdbg
 
         if KEY in (None, ""):
             await auxiliary.send_deny_embed(

@@ -58,24 +58,24 @@ class ExtensionsBot(commands.Bot):
             command_prefix=prefix, intents=intents, allowed_mentions=allowed_mentions
         )
 
-        if self.file_config.main.logging.queue_enabled:
+        if self.file_config.logging.queue_enabled:
             self.logger = botlogging.DelayedLogger(
                 bot=self,
                 name=self.__class__.__name__,
-                send=not self.file_config.main.logging.block_discord_send,
-                wait_time=self.file_config.main.logging.queue_wait_seconds,
+                send=not self.file_config.logging.block_discord_send,
+                wait_time=self.file_config.logging.queue_wait_seconds,
             )
 
         else:
             self.logger = botlogging.BotLogger(
                 bot=self,
                 name=self.__class__.__name__,
-                send=not self.file_config.main.logging.block_discord_send,
+                send=not self.file_config.logging.block_discord_send,
             )
 
     def run(self, *args, **kwargs):
         """Runs the bot, but uses the file config auth token instead of args."""
-        super().run(self.file_config.main.auth_token, *args, **kwargs)
+        super().run(self.file_config.bot_config.auth_token, *args, **kwargs)
 
     def load_file_config(self, validate=True):
         """Loads the config yaml file into a bot object.
@@ -88,15 +88,15 @@ class ExtensionsBot(commands.Bot):
 
         self.file_config = munch.munchify(config_)
 
-        self.file_config.main.disabled_extensions = (
-            self.file_config.main.disabled_extensions or []
+        self.file_config.bot_config.disabled_extensions = (
+            self.file_config.bot_config.disabled_extensions or []
         )
 
         if not validate:
             return
 
         for subsection in ["required"]:
-            self.validate_bot_config_subsection("main", subsection)
+            self.validate_bot_config_subsection("bot_config", subsection)
 
     def validate_bot_config_subsection(self, section, subsection):
         """Loops through a config subsection to check for missing values.
@@ -135,7 +135,7 @@ class ExtensionsBot(commands.Bot):
         """
         self.logger.console.debug("Retrieving extensions")
         for extension_name in await self.get_potential_extensions():
-            if extension_name in self.file_config.main.disabled_extensions:
+            if extension_name in self.file_config.bot_config.disabled_extensions:
                 self.logger.console.debug(
                     f"{extension_name} is disabled on startup - ignoring load"
                 )
