@@ -257,10 +257,10 @@ The bot uses two types of config:
 - config.yml - Used primarily for API keys
 - json config - Accessed via `.config patch`, holdso ther misc values
 
-To add values to config.yml, you have to manually append them to it and default.config.yml respectively.
+To add values to config.yml, you have to manually append them to it and config.default.yml respectively.
 To access the values, you can use the following:
 ```py
-self.bot.file_config.main.cfg-group-name.value-name
+self.bot.file_config.group.subgroup.key
 ```
 ---
 To access the json config, you can add the following line of code, which loads the guild config file:

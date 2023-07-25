@@ -1,8 +1,11 @@
-main:
+bot_config:
     auth_token:
     admins:
         ids: []
         roles: []
+    disabled_extensions: ["kanye"]
+    default_prefix: "."
+database:
     postgres:
         user:
         password:
@@ -15,32 +18,11 @@ main:
         name:
         host: mongodb
         port: 27017
-    api_keys:
-        google_cse:
-        google:
-        giphy:
-        news:
-        wolfram:
-        open_weather:
-        spotify_client:
-        spotify_key:
-        github:
-        openai:
-        dumpdbg_api:
-    api_url:
-        dumpdbg:
-        linx:
-    logging:
-        queue_enabled: True
-        block_discord_send: False
-        queue_wait_seconds: 3
-    disabled_extensions: ["kanye"]
-    default_prefix: "."
-    cache:
-        guild_config_cache_length: 100
-        guild_config_cache_seconds: 30
-        http_cache_length: 100
-        http_cache_seconds: 600
+api:
+    github:
+        api_key:
+        username:
+        repo:
     irc:
         enable_irc: False
         server: "irc.libera.chat"
@@ -48,9 +30,26 @@ main:
         channels: []
         name:
         password:
-
-# Special things
-special:
-    github:
-        username:
-        repo:
+    api_keys:
+        dumpdbg:
+        giphy:
+        google:
+        google_cse:
+        news:
+        open_weather:
+        openai:
+        spotify_client:
+        spotify_key:
+        wolfram:
+    api_url:
+        dumpdbg:
+        linx:
+logging:
+    queue_enabled: True
+    block_discord_send: False
+    queue_wait_seconds: 3
+cache:
+    guild_config_cache_length: 100
+    guild_config_cache_seconds: 30
+    http_cache_length: 100
+    http_cache_seconds: 600

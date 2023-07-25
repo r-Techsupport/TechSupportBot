@@ -26,7 +26,7 @@ class TechSupportBot(base.AdvancedBot):
             asyncio.create_task(self.logger.run())
 
         # Start the IRC bot in an asynchronous task
-        irc_config = getattr(self.file_config.main, "irc")
+        irc_config = getattr(self.file_config.api, "irc")
         if irc_config.enable_irc:
             await self.logger.debug("Connecting to IRC...")
             # Make the IRC class in such a way to allow reload without desctruction
@@ -50,7 +50,7 @@ class TechSupportBot(base.AdvancedBot):
             await self.logger.warning(f"Could not connect to Postgres: {exception}")
 
         await self.logger.debug("Logging into Discord...")
-        await super().start(self.file_config.main.auth_token, *args, **kwargs)
+        await super().start(self.file_config.bot_config.auth_token, *args, **kwargs)
 
     async def setup_hook(self):
         """This function is automatically called after the bot has been logged into discord
@@ -81,7 +81,7 @@ class TechSupportBot(base.AdvancedBot):
         Returns:
             bool: True if the connection was successful, False if it was not
         """
-        irc_config = getattr(self.file_config.main, "irc")
+        irc_config = getattr(self.file_config.api, "irc")
         loop = asyncio.get_running_loop()
 
         irc_bot = ircrelay.IRCBot(
