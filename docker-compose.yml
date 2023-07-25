@@ -6,7 +6,7 @@ services:
         build: .
         container_name: discordBot
         environment:
-            - DEBUG=0
+            - DEBUG=${DEBUG}
             - TZ=UTC
         restart: unless-stopped
         stop_signal: SIGINT
