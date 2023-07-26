@@ -217,11 +217,9 @@ class DataBot(ExtensionsBot):
                             response_json = await response_object.json()
                         except (aiohttp.ClientResponseError, JSONDecodeError) as e:
                             response_json = {}
-                            await self.logger.warning(
-                                (
-                                    f"{method.upper()} request to URL: {cache_key} failed "
-                                    f"with error: {type(e).__name__}"
-                                )
+                            await self.logger.error(
+                                f"{method.upper()} request to URL: {cache_key} failed",
+                                exception=e,
                             )
 
                         response = (
