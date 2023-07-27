@@ -882,8 +882,8 @@ class AdvancedBot(DataBot):
                 try:
                     await member.send(
                         (
-                            "Your nickname has been changed to make it easy to read and ping your name."
-                            f" Your new nickname is {temp_name}."
+                            "Your nickname has been changed to make it easy to read and ping "
+                            f"your name. Your new nickname is {temp_name}."
                         )
                     )
                 except discord.Forbidden:
