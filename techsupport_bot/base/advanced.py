@@ -467,6 +467,49 @@ class AdvancedBot(DataBot):
                 channel=log_channel,
             )
 
+    def format_username(self, username: str) -> str:
+        """Formats a username to be all ascii and easily readable and pingable
+
+        Args:
+            username (str): The original users username
+
+        Returns:
+            str: The new username with all formatting applied
+        """
+
+        # Prepare a random string, just in case
+        random_string = "".join(random.choice(string.ascii_letters) for _ in range(10))
+
+        # Step 1 - Force all ascii
+        username = unidecode(username)
+
+        # Step 2 - Remove all markdown
+        markdown_pattern = r"(\*\*|__|\*|_|\~\~|`|#+|-{3,}|\|{3,}|>)"
+        username = re.sub(markdown_pattern, "", username)
+
+        # Step 3 - Strip
+        username = username.strip()
+
+        # Step 4 - Fix dumb spaces
+        username = re.sub(r"\s+", " ", username)
+        username = re.sub(r"(\b\w) ", r"\1", username)
+
+        # Step 5 - Start with letter
+        match = re.search(r"[A-Za-z]", username)
+        if match:
+            username = username[match.start() :]
+        else:
+            username = ""
+
+        # Step 6 - Length check
+        if len(username) < 3 and len(username) > 0:
+            username = f"{username}-USER-{random_string}"
+        elif len(username) == 0:
+            username = f"USER-{random_string}"
+        username = username[:32]
+
+        return username
+
     async def on_connect(self):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_connect"""
         await self.logger.info("Connected to Discord")
@@ -833,26 +876,20 @@ class AdvancedBot(DataBot):
         config_ = await self.get_context_config(guild=member.guild)
 
         if config_.get("nickname_filter", False):
-            temp_name = member.display_name
-            # First, make the string all ascii
-            temp_name = unidecode(temp_name)
-            # Second, remove markdown
-            markdown_pattern = r"(\*\*|__|\*|_|\~\~|`|#+|-{3,}|\|{3,}|>)"
-            temp_name = re.sub(markdown_pattern, "", temp_name)
-            # Third, strip any excess white space or the API will decline
-            temp_name = temp_name.strip()
-            # Finally, ensure the nickname is the correct length
-            if len(temp_name) < 3:
-                new_str = "".join(
-                    random.choice(string.ascii_letters) for _ in range(10)
-                )
-                if len(temp_name) > 0:
-                    temp_name = temp_name + "-"
-                temp_name = f"{temp_name}USER-{new_str}".strip()
-            temp_name = temp_name[:32]
-            # If the name is differnet, set it
+            temp_name = self.format_username(member.display_name)
             if temp_name != member.display_name:
                 await member.edit(nick=temp_name)
+                try:
+                    await member.send(
+                        (
+                            "Your nickname has been changed to make it easy to read and ping your name."
+                            f" Your new nickname is {temp_name}."
+                        )
+                    )
+                except discord.Forbidden:
+                    self.bot.logger.warning(
+                        f"Could not DM {member.name} about nickname changes"
+                    )
 
         embed = discord.Embed()
         embed.add_field(name="Member", value=member)
