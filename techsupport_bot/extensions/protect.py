@@ -46,12 +46,10 @@ async def setup(bot):
         default=[],
     )
     config.add(
-        key="bypass_roles",
+        key="immune_roles",
         datatype="list",
-        title="Bypassed role names",
-        description=(
-            "The list of role names associated with bypassed roles by the auto-protect"
-        ),
+        title="Immune role names",
+        description=("The list of role names that are immune to protect commands"),
         default=[],
     )
     config.add(
@@ -532,6 +530,8 @@ class Protector(base.MatchCog):
     async def can_execute(self, ctx, target: discord.User):
         """Method to not execute on admin users."""
         action = ctx.command.name or "do that to"
+        config = await self.bot.get_context_config(ctx)
+
         # Check to see if executed on author
         if target == ctx.author:
             await auxiliary.send_deny_embed(
@@ -547,6 +547,15 @@ class Protector(base.MatchCog):
         # Check to see if target has a role. Will allow execution on Users outside of server
         if not hasattr(target, "top_role"):
             return True
+        # Check to see if target has any immune roles
+        for name in config.extensions.protect.immune_roles.value:
+            role_check = discord.utils.get(target.guild.roles, name=name)
+            if role_check and role_check in getattr(target, "roles", []):
+                await auxiliary.send_deny_embed(
+                    message=f"You cannot {action} {target} because they have `{role_check}` role",
+                    channel=ctx.channel,
+                )
+                return False
         # Check to see if the Bot can execute on the target
         if ctx.guild.me.top_role <= target.top_role:
             await auxiliary.send_deny_embed(
