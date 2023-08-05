@@ -294,7 +294,7 @@ class Protector(base.MatchCog):
 
         reason = "message too long (too many newlines or characters)"
 
-        if not self.bot.file_config.main.api_url.linx:
+        if not self.bot.file_config.api.api_url.linx:
             await self.send_default_delete_response(config, ctx, content, reason)
             return
 
@@ -630,7 +630,7 @@ class Protector(base.MatchCog):
         }
         file = {"file": io.StringIO(content)}
         response = await self.bot.http_call(
-            "post", self.bot.file_config.main.api_url.linx, headers=headers, data=file
+            "post", self.bot.file_config.api.api_url.linx, headers=headers, data=file
         )
 
         url = response.get("url")
