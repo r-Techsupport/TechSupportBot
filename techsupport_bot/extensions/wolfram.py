@@ -1,7 +1,6 @@
 """Module for the wolfram extension for the discord bot."""
 import base
 import discord
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -27,7 +26,7 @@ class Wolfram(base.BaseCog):
 
     API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         name="wa",
         aliases=["math", "wolframalpha", "jarvis"],

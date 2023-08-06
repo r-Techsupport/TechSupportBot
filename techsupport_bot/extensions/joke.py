@@ -1,7 +1,7 @@
 """Module for the joke extension for the discord bot."""
 import base
 import discord
-import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -53,7 +53,7 @@ class Joker(base.BaseCog):
         embed.color = discord.Color.random()
         return embed
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         name="joke",
         brief="Tells a joke",

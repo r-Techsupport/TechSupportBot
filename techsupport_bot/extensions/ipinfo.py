@@ -1,7 +1,6 @@
 """Module for the ipinfo extension into the bot."""
 import base
 import discord
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -39,7 +38,7 @@ class IPInfo(base.BaseCog):
         response.pop("readme", None)
         response.pop("status_code", None)
 
-        embed = util.generate_embed_from_kwargs(
+        embed = auxiliary.generate_embed_from_kwargs(
             title=f"IP info for {ip_address}", all_inline=True, **response
         )
 

@@ -3,7 +3,6 @@ import random
 
 import base
 import discord
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -532,7 +531,7 @@ class WouldYouRather(base.BaseCog):
         Question("watch a two-hour movie", "watch two hours of shows"),
     ]
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         name="wyr",
         brief="Gets Would You Rather questions",
