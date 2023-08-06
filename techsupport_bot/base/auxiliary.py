@@ -6,21 +6,30 @@ This replaces duplicate or similar code across many extensions
 import inspect
 import json
 from functools import wraps
+from typing import Any
 
 import discord
 import munch
 
 
 def generate_basic_embed(
-    title: str, description: str, color: discord.Color, url: str = ""
+    title: str,
+    description: str | None = None,
+    color: discord.Color | None = None,
+    url: str = "",
+    all_inline: bool = False,
+    **fields: Any,
 ) -> discord.Embed:
-    """Generates a basic embed
+    """Generates an embed with the given properties and populated with the given
+    fields.
 
     Args:
         title (str): The title to be assigned to the embed
         description (str): The description to be assigned to the embed
         color (discord.Color): The color to be assigned to the embed
         url (str, optional): A URL for a thumbnail picture. Defaults to "".
+        all_inline (bool): True if all fields should be added with inline=True
+        fields (dict): A dictionary containing the title and content of embed fields
 
     Returns:
         discord.Embed: The formatted embed, styled with the 4 above options
@@ -31,6 +40,8 @@ def generate_basic_embed(
     embed.color = color
     if url != "":
         embed.set_thumbnail(url=url)
+    for key, value in fields.items():
+        embed.add_field(name=key, value=value, inline=all_inline)
     return embed
 
 
@@ -221,31 +232,6 @@ async def get_json_from_attachments(
     return (
         json.dumps(attachment_jsons) if as_string else munch.munchify(attachment_jsons)
     )
-
-
-def generate_embed_from_kwargs(
-    title: str | None = None,
-    description: str | None = None,
-    all_inline: bool = False,
-    cls: discord.Embed | None = None,
-    **kwargs,
-) -> discord.Embed:
-    """Wrapper for generating an embed from a set of key, values.
-
-    parameters:
-        title (str): the title for the embed
-        description (str): the description for the embed
-        all_inline (bool): True if all fields should be added with inline=True
-        cls (discord.Embed): the embed class to use
-        kwargs (dict): a set of keyword values to be displayed
-    """
-    if not cls:
-        cls = discord.Embed
-
-    embed = cls(title=title, description=description)
-    for key, value in kwargs.items():
-        embed.add_field(name=key, value=value, inline=all_inline)
-    return embed
 
 
 def config_schema_matches(input_config: dict, current_config: dict) -> list[str] | None:

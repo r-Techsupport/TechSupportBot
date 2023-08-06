@@ -38,7 +38,7 @@ class IPInfo(base.BaseCog):
         response.pop("readme", None)
         response.pop("status_code", None)
 
-        embed = auxiliary.generate_embed_from_kwargs(
+        embed = auxiliary.generate_basic_embed(
             title=f"IP info for {ip_address}", all_inline=True, **response
         )
 
