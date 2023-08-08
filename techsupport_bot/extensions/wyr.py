@@ -26,6 +26,10 @@ class WouldYouRather(base.BaseCog):
         brief="Gets Would You Rather questions",
         description="Creates a random Would You Rather question",
     )
+    async def wyr(self, ctx: commands.Context) -> None:
+        """Exists to preserve undecorated wyr_command for testing"""
+        await self.wyr_command(ctx)
+
     async def wyr_command(self, ctx: commands.Context) -> None:
         """The main processing of .wyr
 
@@ -35,7 +39,7 @@ class WouldYouRather(base.BaseCog):
         question = self.get_question()
         embed = auxiliary.generate_basic_embed(
             title="Would you rather...",
-            description=str(question),
+            description=self.create_question_string(question),
             color=discord.Color.blurple(),
         )
         await ctx.send(embed=embed)
@@ -54,4 +58,17 @@ class WouldYouRather(base.BaseCog):
                 pass
             selection = random.choice(questions)
             self.last = selection
-            return selection.strip('"').replace('" || "', ", ").capitalize()
+            return selection
+
+    @staticmethod
+    def create_question_string(question: str) -> str:
+        """Converts a string in the form of
+        '\"option1\" || \"option2\"' to
+        'option1, or option2?'
+
+        Args:
+            question (str): resource string
+
+        Returns:
+            str: question string"""
+        return question.strip('"').replace('" || "', ", or ").capitalize() + "?"
