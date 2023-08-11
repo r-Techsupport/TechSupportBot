@@ -86,7 +86,7 @@ class Dumpdbg(base.BaseCog):
             return valid_URLs
 
         config = await self.bot.get_context_config(guild=ctx.guild)
-        api_endpoint = self.bot.file_config.main.api_url.dumpdbg
+        api_endpoint = self.bot.file_config.api.api_url.dumpdbg
         permitted_roles = config.extensions.dumpdbg.roles.value
 
         if not permitted_roles:

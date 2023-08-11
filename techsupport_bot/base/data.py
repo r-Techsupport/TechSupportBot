@@ -51,19 +51,19 @@ class DataBot(ExtensionsBot):
         }
         # For the variable APIs, if they don't exist, don't rate limit them
         try:
-            self.rate_limits[urlparse(self.file_config.main.api_url.dumpdbg).netloc] = (
+            self.rate_limits[urlparse(self.file_config.api.api_url.dumpdbg).netloc] = (
                 1,
                 60,
             )
         except AttributeError:
-            self.logger.warning("No dumpdbg API URL found. Not rate limiting dumpdbg")
+            print("No dumpdbg API URL found. Not rate limiting dumpdbg")
         try:
-            self.rate_limits[urlparse(self.file_config.main.api_url.linx).netloc] = (
+            self.rate_limits[urlparse(self.file_config.api.api_url.linx).netloc] = (
                 20,
                 60,
             )
         except AttributeError:
-            self.logger.warning("No linx API URL found. Not rate limiting linx")
+            print("No linx API URL found. Not rate limiting linx")
 
     def generate_db_url(self, postgres=True):
         """Dynamically converts config to a Postgres/MongoDB url.
