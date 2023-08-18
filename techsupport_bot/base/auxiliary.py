@@ -3,33 +3,23 @@ This is a collection of functions designed to be used by many extensions
 This replaces duplicate or similar code across many extensions
 """
 
-import inspect
 import json
 from functools import wraps
-from typing import Any
 
 import discord
 import munch
 
 
 def generate_basic_embed(
-    title: str,
-    description: str | None = None,
-    color: discord.Color | None = None,
-    url: str = "",
-    all_inline: bool = False,
-    **fields: Any,
+    title: str, description: str, color: discord.Color, url: str = ""
 ) -> discord.Embed:
-    """Generates an embed with the given properties and populated with the given
-    fields.
+    """Generates a basic embed
 
     Args:
         title (str): The title to be assigned to the embed
         description (str): The description to be assigned to the embed
         color (discord.Color): The color to be assigned to the embed
         url (str, optional): A URL for a thumbnail picture. Defaults to "".
-        all_inline (bool): True if all fields should be added with inline=True
-        fields (dict): A dictionary containing the title and content of embed fields
 
     Returns:
         discord.Embed: The formatted embed, styled with the 4 above options
@@ -40,8 +30,6 @@ def generate_basic_embed(
     embed.color = color
     if url != "":
         embed.set_thumbnail(url=url)
-    for key, value in fields.items():
-        embed.add_field(name=key, value=value, inline=all_inline)
     return embed
 
 
@@ -301,41 +289,6 @@ def with_typing(command: discord.ext.commands.Command) -> discord.ext.commands.C
     command.callback.__module__ = original_callback.__module__
 
     return command
-
-
-def preserialize_object(obj: object) -> dict:
-    """Provides sane object -> dict transformation for most objects.
-
-    parameters;
-        obj (object): the object to serialize
-    """
-    attributes = inspect.getmembers(obj, lambda a: not inspect.isroutine(a))
-    filtered_attributes = filter(
-        lambda e: not (e[0].startswith("__") and e[0].endswith("__")), attributes
-    )
-
-    data = {}
-    for name, attr in filtered_attributes:
-        # remove single underscores
-        if name.startswith("_"):
-            name = name[1:]
-
-        # if it's not a basic type, stringify it
-        # only catch: nested data is not readily JSON
-        if isinstance(attr, list):
-            attr = [str(element) for element in attr]
-        elif isinstance(attr, dict):
-            attr = {str(key): str(value) for key, value in attr.items()}
-        elif isinstance(attr, int):
-            attr = str(attr)
-        elif isinstance(attr, float):
-            pass
-        else:
-            attr = str(attr)
-
-        data[str(name)] = attr
-
-    return data
 
 
 def get_object_diff(
