@@ -134,6 +134,7 @@ class RoleGiver(base.BaseCog):
             new_roles=view.select.values,
             guild=interaction.guild,
             user=member,
+            reason=f"Role command, ran by {interaction.user}",
         )
 
     def check_permissions(
@@ -188,7 +189,7 @@ class RoleGiver(base.BaseCog):
             options.append(discord.SelectOption(label=role_name, default=default))
         return options
 
-    async def modify_roles(self, config_roles, new_roles, guild, user):
+    async def modify_roles(self, config_roles, new_roles, guild, user, reason):
         """Modifies a set of roles based on an input and reference list
 
         Args:
@@ -197,6 +198,7 @@ class RoleGiver(base.BaseCog):
                 the user. Any roles not on this list will be removed
             guild (discord.Guild): The guild to assign the roles in
             user (discord.Member): The member to assign roles to
+            resaon (str): The reason to add to the audit log
         """
         for role_name in config_roles:
             real_role = discord.utils.get(guild.roles, name=role_name)
@@ -207,6 +209,6 @@ class RoleGiver(base.BaseCog):
 
             # If the role was requested to be added
             if real_role.name in new_roles and real_role not in user_roles:
-                await user.add_roles(real_role)
+                await user.add_roles(real_role, reason=reason)
             elif real_role.name not in new_roles and real_role in user_roles:
-                await user.remove_roles(real_role)
+                await user.remove_roles(real_role, reason=reason)
