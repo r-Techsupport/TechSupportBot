@@ -56,6 +56,10 @@ async def invalid_channel(ctx):
     This is expected to be used in a @commands.check call
     """
     config = await ctx.bot.get_context_config(ctx)
+    # Check if list is empty. If it is, allow all channels
+    if not config.extensions.grab.allowed_channels.value:
+        return True
+    # If this list is not empty, it is a strict whitelist
     if str(ctx.channel.id) in config.extensions.grab.allowed_channels.value:
         return True
     raise commands.CommandError("Grabs are disabled for this channel")
