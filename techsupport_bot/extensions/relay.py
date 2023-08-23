@@ -178,6 +178,8 @@ class DiscordToIRC(base.MatchCog):
             await auxiliary.send_deny_embed(
                 message="IRC is not connected", channel=ctx.channel
             )
+            return
+
         self.bot.irc.ready = False
         self.bot.irc.connection.disconnect()
         await auxiliary.send_confirm_embed(
