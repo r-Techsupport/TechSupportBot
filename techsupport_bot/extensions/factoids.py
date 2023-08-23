@@ -466,7 +466,8 @@ class FactoidManager(base.MatchCog):
                     self.models.Factoid.guild == guild
                 )
                 # hiding hidden factoids
-                .where(self.models.Factoid.hidden is False).gino.all()
+                # pylint: disable=C0121
+                .where(self.models.Factoid.hidden == False).gino.all()
             )
 
         # Gets ALL factoids for ALL guilds
@@ -1528,7 +1529,7 @@ class FactoidManager(base.MatchCog):
             )
             return
 
-        factoids = await self.get_all_factoids(guild, list_hidden=True)
+        factoids = await self.get_all_factoids(guild, list_hidden=False)
         # Makes query lowercase, makes sure you can't search for JSON elements
         embed = discord.Embed(color=discord.Color.green())
         num_of_matches = 0
