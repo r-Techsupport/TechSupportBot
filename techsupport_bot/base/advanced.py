@@ -148,6 +148,7 @@ class AdvancedBot(DataBot):
         config_.private_channels = []
         config_.enabled_extensions = []
         config_.nickname_filter = False
+        config_.enable_logging = True
 
         config_.extensions = extensions_config
 
@@ -366,6 +367,8 @@ class AdvancedBot(DataBot):
         See: https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.on_command
         """
         config_ = await self.get_context_config(ctx)
+        if not config_.get("enable_logging", True):
+            return
         if str(ctx.channel.id) in config_.get("private_channels", []):
             return
 
@@ -532,6 +535,8 @@ class AdvancedBot(DataBot):
             return
 
         config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         if str(channel_id) in config_.get("private_channels", []):
             return
 
@@ -569,6 +574,8 @@ class AdvancedBot(DataBot):
         channel_id = getattr(messages[0].channel, "id", None)
 
         config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         if str(channel_id) in config_.get("private_channels", []):
             return
 
@@ -608,6 +615,8 @@ class AdvancedBot(DataBot):
             return
 
         config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         if str(channel_id) in config_.get("private_channels", []):
             return
 
@@ -647,6 +656,8 @@ class AdvancedBot(DataBot):
             return
 
         config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         if str(channel_id) in config_.get("private_channels", []):
             return
 
@@ -685,6 +696,8 @@ class AdvancedBot(DataBot):
             return
 
         config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         if str(channel_id) in config_.get("private_channels", []):
             return
 
@@ -717,6 +730,8 @@ class AdvancedBot(DataBot):
         channel_id = getattr(message.channel, "id", None)
 
         config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         if str(channel_id) in config_.get("private_channels", []):
             return
 
@@ -745,6 +760,10 @@ class AdvancedBot(DataBot):
         """
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_delete
         """
+        guild = getattr(channel, "guild", None)
+        config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         embed = discord.Embed()
         embed.add_field(name="Channel Name", value=channel.name)
         embed.add_field(name="Server", value=channel.guild.name)
@@ -763,6 +782,10 @@ class AdvancedBot(DataBot):
         """
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_create
         """
+        guild = getattr(channel, "guild", None)
+        config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         embed = discord.Embed()
         embed.add_field(name="Channel Name", value=channel.name)
         embed.add_field(name="Server", value=channel.guild.name)
@@ -781,6 +804,8 @@ class AdvancedBot(DataBot):
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_update
         """
         config_ = await self.get_context_config(guild=before.guild)
+        if not config_.get("enable_logging", True):
+            return
         if str(before.id) in config_.get("private_channels", []):
             return
 
@@ -815,6 +840,8 @@ class AdvancedBot(DataBot):
         https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_pins_update
         """
         config_ = await self.get_context_config(guild=channel.guild)
+        if not config_.get("enable_logging", True):
+            return
         if str(channel.id) in config_.get("private_channels", []):
             return
 
@@ -838,6 +865,9 @@ class AdvancedBot(DataBot):
         See:
         https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_integrations_update
         """
+        config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         embed = discord.Embed()
         embed.add_field(name="Server", value=guild)
         log_channel = await self.get_log_channel_from_guild(
@@ -853,6 +883,8 @@ class AdvancedBot(DataBot):
     async def on_webhooks_update(self, channel):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_webhooks_update"""
         config_ = await self.get_context_config(guild=channel.guild)
+        if not config_.get("enable_logging", True):
+            return
         if str(channel.id) in config_.get("private_channels", []):
             return
 
@@ -890,6 +922,8 @@ class AdvancedBot(DataBot):
                     self.bot.logger.warning(
                         f"Could not DM {member.name} about nickname changes"
                     )
+        if not config_.get("enable_logging", True):
+            return
 
         embed = discord.Embed()
         embed.add_field(name="Member", value=member)
@@ -906,6 +940,10 @@ class AdvancedBot(DataBot):
 
     async def on_member_update(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update"""
+        guild = getattr(before, "guild", None)
+        config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         changed_role = set(before.roles) ^ set(after.roles)
         if changed_role:
             if len(before.roles) < len(after.roles):
@@ -931,6 +969,10 @@ class AdvancedBot(DataBot):
 
     async def on_member_remove(self, member):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_remove"""
+        guild = getattr(member, "guild", None)
+        config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         embed = discord.Embed()
         embed.add_field(name="Member", value=member)
         embed.add_field(name="Server", value=member.guild.name)
@@ -981,6 +1023,10 @@ class AdvancedBot(DataBot):
         """
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_update
         """
+        guild = getattr(before, "guild", None)
+        config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         diff = util.get_object_diff(
             before,
             after,
@@ -1024,6 +1070,10 @@ class AdvancedBot(DataBot):
 
     async def on_guild_role_create(self, role):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_create"""
+        guild = getattr(role, "guild", None)
+        config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         embed = discord.Embed()
         embed.add_field(name="Server", value=role.guild.name)
         log_channel = await self.get_log_channel_from_guild(
@@ -1038,6 +1088,10 @@ class AdvancedBot(DataBot):
 
     async def on_guild_role_delete(self, role):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_delete"""
+        guild = getattr(role, "guild", None)
+        config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         embed = discord.Embed()
         embed.add_field(name="Server", value=role.guild.name)
         log_channel = await self.get_log_channel_from_guild(
@@ -1052,6 +1106,10 @@ class AdvancedBot(DataBot):
 
     async def on_guild_role_update(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_update"""
+        guild = getattr(before, "guild", None)
+        config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         attrs = ["color", "mentionable", "name", "permissions", "position", "tags"]
         diff = util.get_object_diff(before, after, attrs)
 
@@ -1073,6 +1131,9 @@ class AdvancedBot(DataBot):
         """
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_emojis_update
         """
+        config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         embed = discord.Embed()
         embed.add_field(name="Server", value=before.name)
 
@@ -1088,6 +1149,9 @@ class AdvancedBot(DataBot):
 
     async def on_member_ban(self, guild, user):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_ban"""
+        config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         embed = discord.Embed()
         embed.add_field(name="User", value=user)
         embed.add_field(name="Server", value=guild.name)
@@ -1104,6 +1168,9 @@ class AdvancedBot(DataBot):
 
     async def on_member_unban(self, guild, user):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_unban"""
+        config_ = await self.get_context_config(guild=guild)
+        if not config_.get("enable_logging", True):
+            return
         embed = discord.Embed()
         embed.add_field(name="User", value=user)
         embed.add_field(name="Server", value=guild.name)
