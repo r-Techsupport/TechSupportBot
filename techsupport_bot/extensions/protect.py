@@ -285,11 +285,20 @@ class Protector(base.MatchCog):
         """Method to set up the number of max lines."""
         return int(max_length / self.CHARS_PER_NEWLINE) + 1
 
-    async def handle_length_alert(self, config, ctx, content):
+    async def handle_length_alert(self, config, ctx, content) -> None:
         """Method to handle alert for the protect extension."""
-        attachments = []
+        attachments: list[discord.File] = []
         if ctx.message.attachments:
-            attachments = [await attch.to_file() for attch in ctx.message.attachments]
+            total_attachment_size = 0
+            for attch in ctx.message.attachments:
+                if (
+                    total_attachment_size := total_attachment_size + attch.size
+                ) <= ctx.filesize_limit:
+                    attachments.append(await attch.to_file())
+            if (lf := len(ctx.message.attachments) - len(attachments)) != 0:
+                await self.bot.logger.info(
+                    f"Did not reupload {lf} file(s) due to file size limit."
+                )
         await ctx.message.delete()
 
         reason = "message too long (too many newlines or characters)"
