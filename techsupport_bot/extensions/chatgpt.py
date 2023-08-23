@@ -93,7 +93,7 @@ class ChatGPT(base.BaseCog):
             prompt (str): The prompt to push
         """
         # -> Gets the API key <-
-        api_key = self.bot.file_config.main.api_keys.openai
+        api_key = self.bot.file_config.api.api_keys.openai
         if not api_key:
             await auxiliary.send_deny_embed(
                 message="I couldn't find the OpenAI API key", channel=ctx.channel

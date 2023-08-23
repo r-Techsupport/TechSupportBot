@@ -86,7 +86,7 @@ class Dumpdbg(base.BaseCog):
             return valid_URLs
 
         config = await self.bot.get_context_config(guild=ctx.guild)
-        api_endpoint = self.bot.file_config.main.api_url.dumpdbg
+        api_endpoint = self.bot.file_config.api.api_url.dumpdbg
         permitted_roles = config.extensions.dumpdbg.roles.value
 
         if not permitted_roles:
@@ -116,7 +116,7 @@ class Dumpdbg(base.BaseCog):
 
         # Makes sure the API key was suplied
 
-        KEY = self.bot.file_config.main.api_keys.dumpdbg_api
+        KEY = self.bot.file_config.api.api_keys.dumpdbg
 
         if KEY in (None, ""):
             await auxiliary.send_deny_embed(

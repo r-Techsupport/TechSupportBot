@@ -24,8 +24,8 @@ class DataBot(ExtensionsBot):
         self.db = None
         super().__init__(*args, **kwargs)
         self.http_cache = expiringdict.ExpiringDict(
-            max_len=self.file_config.main.cache.http_cache_length,
-            max_age_seconds=self.file_config.main.cache.http_cache_seconds,
+            max_len=self.file_config.cache.http_cache_length,
+            max_age_seconds=self.file_config.cache.http_cache_seconds,
         )
         self.url_rate_limit_history = {}
         # Rate limit configurations for each root URL
@@ -52,19 +52,19 @@ class DataBot(ExtensionsBot):
         }
         # For the variable APIs, if they don't exist, don't rate limit them
         try:
-            self.rate_limits[urlparse(self.file_config.main.api_url.dumpdbg).netloc] = (
+            self.rate_limits[urlparse(self.file_config.api.api_url.dumpdbg).netloc] = (
                 1,
                 60,
             )
         except AttributeError:
-            self.logger.warning("No dumpdbg API URL found. Not rate limiting dumpdbg")
+            print("No dumpdbg API URL found. Not rate limiting dumpdbg")
         try:
-            self.rate_limits[urlparse(self.file_config.main.api_url.linx).netloc] = (
+            self.rate_limits[urlparse(self.file_config.api.api_url.linx).netloc] = (
                 20,
                 60,
             )
         except AttributeError:
-            self.logger.warning("No linx API URL found. Not rate limiting linx")
+            print("No linx API URL found. Not rate limiting linx")
 
     def generate_db_url(self, postgres=True):
         """Dynamically converts config to a Postgres/MongoDB url.
@@ -75,7 +75,7 @@ class DataBot(ExtensionsBot):
         db_type = "postgres" if postgres else "mongodb"
 
         try:
-            config_child = getattr(self.file_config.main, db_type)
+            config_child = getattr(self.file_config.database, db_type)
 
             user = config_child.user
             password = config_child.password
@@ -125,7 +125,7 @@ class DataBot(ExtensionsBot):
             self.generate_db_url(postgres=False)
         )
 
-        return mongo_client[self.file_config.main.mongodb.name]
+        return mongo_client[self.file_config.database.mongodb.name]
 
     async def http_call(self, method, url, *args, **kwargs):
         """Makes an HTTP request.

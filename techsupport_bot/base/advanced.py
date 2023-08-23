@@ -1,6 +1,9 @@
 """Module for defining the advanced bot methods."""
 import asyncio
 import datetime
+import random
+import re
+import string
 import sys
 import time
 
@@ -11,6 +14,7 @@ import munch
 import util
 from base import auxiliary
 from discord.ext import commands
+from unidecode import unidecode
 
 from .data import DataBot
 
@@ -32,8 +36,8 @@ class AdvancedBot(DataBot):
         self.guild_config_lock = None
         super().__init__(*args, prefix=self.get_prefix, **kwargs)
         self.guild_config_cache = expiringdict.ExpiringDict(
-            max_len=self.file_config.main.cache.guild_config_cache_length,
-            max_age_seconds=self.file_config.main.cache.guild_config_cache_seconds,
+            max_len=self.file_config.cache.guild_config_cache_length,
+            max_age_seconds=self.file_config.cache.guild_config_cache_seconds,
         )
 
     async def start(self, *args, **kwargs):
@@ -49,7 +53,7 @@ class AdvancedBot(DataBot):
         """
         guild_config = await self.get_context_config(guild=message.guild)
         return getattr(
-            guild_config, "command_prefix", self.file_config.main.default_prefix
+            guild_config, "command_prefix", self.file_config.bot_config.default_prefix
         )
 
     async def get_all_context_configs(self, projection, limit=100):
@@ -137,12 +141,13 @@ class AdvancedBot(DataBot):
         config_ = munch.DefaultMunch(None)
 
         config_.guild_id = str(lookup)
-        config_.command_prefix = self.file_config.main.default_prefix
+        config_.command_prefix = self.file_config.bot_config.default_prefix
         config_.logging_channel = None
         config_.member_events_channel = None
         config_.guild_events_channel = None
         config_.private_channels = []
         config_.enabled_extensions = []
+        config_.nickname_filter = False
 
         config_.extensions = extensions_config
 
@@ -238,13 +243,13 @@ class AdvancedBot(DataBot):
             return True
 
         if ctx.message.author.id in [
-            int(id) for id in self.file_config.main.admins.ids
+            int(id) for id in self.file_config.bot_config.admins.ids
         ]:
             return True
 
         role_is_admin = False
         for role in getattr(ctx.message.author, "roles", []):
-            if role.name in self.file_config.main.admins.roles:
+            if role.name in self.file_config.bot_config.admins.roles:
                 role_is_admin = True
                 break
         if role_is_admin:
@@ -461,6 +466,49 @@ class AdvancedBot(DataBot):
                 exception=exception,
                 channel=log_channel,
             )
+
+    def format_username(self, username: str) -> str:
+        """Formats a username to be all ascii and easily readable and pingable
+
+        Args:
+            username (str): The original users username
+
+        Returns:
+            str: The new username with all formatting applied
+        """
+
+        # Prepare a random string, just in case
+        random_string = "".join(random.choice(string.ascii_letters) for _ in range(10))
+
+        # Step 1 - Force all ascii
+        username = unidecode(username)
+
+        # Step 2 - Remove all markdown
+        markdown_pattern = r"(\*\*|__|\*|_|\~\~|`|#+|-{3,}|\|{3,}|>)"
+        username = re.sub(markdown_pattern, "", username)
+
+        # Step 3 - Strip
+        username = username.strip()
+
+        # Step 4 - Fix dumb spaces
+        username = re.sub(r"\s+", " ", username)
+        username = re.sub(r"(\b\w) ", r"\1", username)
+
+        # Step 5 - Start with letter
+        match = re.search(r"[A-Za-z]", username)
+        if match:
+            username = username[match.start() :]
+        else:
+            username = ""
+
+        # Step 6 - Length check
+        if len(username) < 3 and len(username) > 0:
+            username = f"{username}-USER-{random_string}"
+        elif len(username) == 0:
+            username = f"USER-{random_string}"
+        username = username[:32]
+
+        return username
 
     async def on_connect(self):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_connect"""
@@ -823,8 +871,26 @@ class AdvancedBot(DataBot):
             channel=log_channel,
         )
 
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
+        config_ = await self.get_context_config(guild=member.guild)
+
+        if config_.get("nickname_filter", False):
+            temp_name = self.format_username(member.display_name)
+            if temp_name != member.display_name:
+                await member.edit(nick=temp_name)
+                try:
+                    await member.send(
+                        (
+                            "Your nickname has been changed to make it easy to read and ping "
+                            f"your name. Your new nickname is {temp_name}."
+                        )
+                    )
+                except discord.Forbidden:
+                    self.bot.logger.warning(
+                        f"Could not DM {member.name} about nickname changes"
+                    )
+
         embed = discord.Embed()
         embed.add_field(name="Member", value=member)
         embed.add_field(name="Server", value=member.guild.name)

@@ -1307,7 +1307,7 @@ class FactoidManager(base.MatchCog):
 
             list_only_hidden = True
 
-        if "file" in flags or not self.bot.file_config.main.api_url.linx:
+        if "file" in flags or not self.bot.file_config.api.api_url.linx:
             await self.send_factoids_as_file(
                 ctx, factoids, aliases, list_only_hidden, flag
             )
@@ -1328,7 +1328,7 @@ class FactoidManager(base.MatchCog):
             }
             response = await self.bot.http_call(
                 "put",
-                self.bot.file_config.main.api_url.linx,
+                self.bot.file_config.api.api_url.linx,
                 headers=headers,
                 data=io.StringIO(html),
                 get_raw_response=True,

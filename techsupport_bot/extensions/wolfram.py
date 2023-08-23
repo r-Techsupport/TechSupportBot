@@ -38,7 +38,7 @@ class Wolfram(base.BaseCog):
     async def simple_search(self, ctx, *, query: str):
         """Method to search through the wolfram API."""
         url = self.API_URL.format(
-            self.bot.file_config.main.api_keys.wolfram,
+            self.bot.file_config.api.api_keys.wolfram,
             query,
         )
 

@@ -1,21 +1,20 @@
 """This is the core of the IRC bot. It connects to IRC and handles 
 message tranmissions to discord"""
 import asyncio
-import base64
 import logging
 import os
 import threading
-import time
 from typing import Dict, List
 
 import discord
+import ib3.auth
 import irc.bot
 import irc.client
 import irc.strings
 from ircrelay import formatting
 
 
-class IRCBot(irc.bot.SingleServerIRCBot):
+class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
     """The IRC bot class. This is the class that runs the entire IRC side of the bot"""
 
     irc_cog = None
@@ -46,8 +45,12 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             password (str): The password of the IRC bot account
         """
         self.loop = loop
-        irc.bot.SingleServerIRCBot.__init__(
-            self, server_list=[(server, port)], realname=username, nickname=username
+        super().__init__(
+            server_list=[(server, port)],
+            realname=username,
+            nickname=username,
+            ident_password=password,
+            channels=channels,
         )
         self.join_channel_list = channels
         self.username = username
@@ -93,36 +96,20 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             connection (irc.client.ServerConnection): The IRC connection
             _ (irc.client.Event): The event object that triggered this function
         """
-        # Authenticate with SASL
-        self.console.info("Authenticating to IRC")
-        connection.send_raw("CAP REQ :sasl")
-        connection.send_raw("AUTHENTICATE PLAIN")
-        auth_message = f"\0{self.username}\0{self.password}"
-        encoded_auth_message = base64.b64encode(auth_message.encode("UTF-8")).decode(
-            "UTF-8"
-        )
-        connection.send_raw(f"AUTHENTICATE {encoded_auth_message}")
-        time.sleep(20)  # There is no proper way to wait for authentication to finish
         self.console.info("Connected to IRC")
         self.ready = True
-        self.join_channels(connection)
+        self.custom_join_channels()
         self.connection = connection
         self.join_thread = threading.Timer(600, self.join_channels_thread)
         self.join_thread.start()
 
-    def join_channels(self, connection: irc.client.ServerConnection) -> None:
-        """Joins all channels from the list of channels in self.join_channel_list
-
-        Args:
-            connection (irc.client.ServerConnection): The IRC connection
-        """
+    def custom_join_channels(self) -> None:
+        """Joins all channels from the list of channels in self.join_channel_list"""
         if not self.ready:
             return
         for channel in self.join_channel_list:
-            if channel in self.channels:
-                continue
             self.console.info("Joining %s", channel)
-            connection.join(channel)
+            self.connection.join(channel)
 
     def join_channels_thread(self):
         """A function called by the auto join channel thread
@@ -130,7 +117,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         In the event the bot ever leaves a channel for some reason, like a net split
         This will ensure that the bot rejoins them
         """
-        self.join_channels(connection=self.connection)
+        self.custom_join_channels()
         if self.join_thread and self.join_thread.is_alive():
             self.join_thread.cancel()
         self.join_thread = threading.Timer(600, self.join_channels_thread)
@@ -146,7 +133,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             event (irc.client.Event): The event object that triggered this function
         """
         if event.target == self.username:
-            self.join_channels(connection=connection)
+            self.custom_join_channels()
 
     def on_privmsg(
         self, _: irc.client.ServerConnection, event: irc.client.Event
@@ -228,8 +215,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             message (discord.Message): The message object after being edited
             channel (str): The linked IRC channel the message was sent
         """
-        if channel not in self.channels:
-            self.join_channels(self.connection)
+        # if channel not in self.channels:
+        #    self.join_channels(self.connection)
         formatted_message = formatting.format_discord_edit_message(message=message)
         self.send_message_to_channel(channel=channel, message=formatted_message)
 
@@ -244,8 +231,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             user (discord.User): The user who added the reaction
             channel (str): The linked IRC channel the message reacted to is in
         """
-        if channel not in self.channels:
-            self.join_channels(connection=self.connection)
+        # if channel not in self.channels:
+        #    self.join_channels(connection=self.connection)
         formatted_message = formatting.format_discord_reaction_message(
             reaction.message, user, reaction
         )
@@ -261,8 +248,8 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             channel (str): The linked IRC channel the message was sent
             content_override (str): If passed, this will changed the content of the message
         """
-        if channel not in self.channels:
-            self.join_channels(connection=self.connection)
+        # if channel not in self.channels:
+        #    self.join_channels(connection=self.connection)
         formatted_message = formatting.format_discord_message(
             message=message, content_override=content_override
         )

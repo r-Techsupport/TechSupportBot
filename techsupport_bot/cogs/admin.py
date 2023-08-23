@@ -645,7 +645,7 @@ class AdminControl(base.BaseCog):
             value=", ".join(f"{guild.name} ({guild.id})" for guild in self.bot.guilds),
             inline=True,
         )
-        irc_config = getattr(self.bot.file_config.main, "irc")
+        irc_config = getattr(self.bot.file_config.api, "irc")
         if not irc_config.enable_irc:
             embed.add_field(
                 name="IRC",
@@ -734,15 +734,15 @@ class AdminControl(base.BaseCog):
             description: the description of the issue
         """
 
-        if not self.bot.file_config.main.api_keys.github:
+        if not self.bot.file_config.api.github.api_key:
             await auxiliary.send_deny_embed(
                 message="I don't have a Github API key", channel=ctx.channel
             )
             return
 
         if (
-            not self.bot.file_config.special.github.username
-            or not self.bot.file_config.special.github.repo
+            not self.bot.file_config.api.github.username
+            or not self.bot.file_config.api.github.repo
         ):
             await auxiliary.send_deny_embed(
                 message="I don't have a Github repo configured", channel=ctx.channel
@@ -750,15 +750,15 @@ class AdminControl(base.BaseCog):
             return
 
         headers = {
-            "Authorization": f"Bearer {self.bot.file_config.main.api_keys.github}",
+            "Authorization": f"Bearer {self.bot.file_config.api.github.api_key}",
             "Accept": "application/vnd.github.v3+json",
             "Content-Type": "text/plain",
         }
 
         response = await self.bot.http_call(
             "post",
-            f"{self.GITHUB_API_BASE_URL}/repos/{self.bot.file_config.special.github.username}"
-            + f"/{self.bot.file_config.special.github.repo}/issues",
+            f"{self.GITHUB_API_BASE_URL}/repos/{self.bot.file_config.api.github.username}"
+            + f"/{self.bot.file_config.api.github.repo}/issues",
             headers=headers,
             data=json.dumps({"title": title, "body": description}),
         )
