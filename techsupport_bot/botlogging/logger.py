@@ -83,6 +83,10 @@ class BotLogger:
         channel = self.bot.get_channel(int(channel_id)) if channel_id else None
 
         if channel:
+            guild = getattr(channel, "guild", None)
+            config_ = await self.bot.get_context_config(guild=guild)
+            if not config_.get("enable_logging", True):
+                return
             target = channel
         else:
             target = await self.bot.get_owner()
