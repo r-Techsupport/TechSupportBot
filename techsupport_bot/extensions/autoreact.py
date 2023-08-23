@@ -53,5 +53,7 @@ class AutoReact(base.MatchCog):
             if word in config.extensions.autoreact.react_map.value:
                 reaction = config.extensions.autoreact.react_map.value.get(word)
                 if reaction not in reactions:
-                    reactions.append(config.extensions.autoreact.react_map.value.get(word))
+                    reactions.append(
+                        config.extensions.autoreact.react_map.value.get(word)
+                    )
         await auxiliary.add_list_of_reactions(message=ctx.message, reactions=reactions)
