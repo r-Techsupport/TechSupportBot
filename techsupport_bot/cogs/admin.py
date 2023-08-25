@@ -588,10 +588,10 @@ class AdminControl(base.BaseCog):
             message="Rebooting! Beep boop!", channel=ctx.channel
         )
         # Exit IRC if it's enabled
-        irc_config = getattr(self.file_config.api, "irc")
+        irc_config = getattr(self.bot.file_config.api, "irc")
         if irc_config.enable_irc:
             self.bot.irc.exit_irc()
-        
+
         # Close the bot and let the docker container restart
         await self.bot.close()
 
