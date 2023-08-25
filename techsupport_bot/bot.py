@@ -57,6 +57,7 @@ class TechSupportBot(base.AdvancedBot):
         This loads postgres, extensions, and the help menu
         """
         await self.logger.debug("Loading extensions...")
+        self.extension_name_list = []
         await self.load_extensions()
 
         if self.db:
