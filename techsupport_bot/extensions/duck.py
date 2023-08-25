@@ -117,7 +117,6 @@ class DuckHunt(base.LoopCog):
 
         self.cooldowns[guild.id] = {}
 
-        start_time = datetime.datetime.now()
         embed = discord.Embed(
             title="*Quack Quack*",
             description="Befriend the duck with `bef` or shoot with `bang`",
@@ -126,6 +125,7 @@ class DuckHunt(base.LoopCog):
         embed.color = discord.Color.green()
 
         message = await channel.send(embed=embed)
+        start_time = message.created_at
 
         response_message = None
         try:
@@ -149,7 +149,7 @@ class DuckHunt(base.LoopCog):
         await message.delete()
 
         if response_message:
-            raw_duration = datetime.datetime.now() - start_time
+            raw_duration = response_message.created_at - start_time
             action = (
                 "befriended" if response_message.content.lower() == "bef" else "killed"
             )
