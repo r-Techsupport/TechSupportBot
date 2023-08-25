@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "13861aa4dc95af2fd021433be650155846f636db485e5f743b6591c812c3f8e6"
+            "sha256": "ceaab8cb4d5772dd4e79a79226cb8004d80ac41e187b721dc1b9ee45085291b0"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -192,7 +192,7 @@
                 "sha256:f4f62f04cdf38441a70f279505ef3b4eadf64479b17e707c950515846a2df197",
                 "sha256:fc9e9f9ff1aa0eddcc3247a180ac9e9b51a62311e988809ac6152e8fb8097756"
             ],
-            "markers": "python_version >= '3.7'",
+            "markers": "python_full_version >= '3.7.0'",
             "version": "==0.28.0"
         },
         "attrs": {
@@ -402,7 +402,7 @@
                 "sha256:f779d3ad205f108d14e99bb3859aa7dd8e9c68874617c72354d7ecaec2a054ac",
                 "sha256:f87f746ee241d30d6ed93969de31e5ffd09a2961a051e60ae6bddde9ec3583aa"
             ],
-            "markers": "python_version >= '3.7'",
+            "markers": "python_full_version >= '3.7.0'",
             "version": "==3.2.0"
         },
         "click": {
@@ -431,11 +431,11 @@
         },
         "discord.py": {
             "hashes": [
-                "sha256:149652f24da299706270bf8c03c2fcf80cf1caf3a480744c61d5b001688b380d",
-                "sha256:8eb4fe66b5d503da6de3a8425e23012711dc2fbcd7a782107a92beac15ee3459"
+                "sha256:4560f70f2eddba7e83370ecebd237ac09fbb4980dc66507482b0c0e5b8f76b9c",
+                "sha256:9da4679fc3cb10c64b388284700dc998663e0e57328283bbfcfc2525ec5960a6"
             ],
             "index": "pypi",
-            "version": "==2.3.1"
+            "version": "==2.3.2"
         },
         "distlib": {
             "hashes": [
@@ -641,11 +641,11 @@
         },
         "jaraco.functools": {
             "hashes": [
-                "sha256:784718fbc5d70c5a7bd881c362d23d561913102eb1381cec21327c8ebda3351c",
-                "sha256:e96a0d4ea455005a4092ce89a69ea0f7fb7e22807ad3b1008f9bf70c48d1cf2e"
+                "sha256:8b137b0feacc17fef4bacee04c011c9e86f2341099c870a1d12d3be37b32a638",
+                "sha256:df2e2b0aadd2dfcee2d7e0d7d083d5a5b68f4c8621e6915ae9819a90de65dd44"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==3.8.1"
+            "version": "==3.9.0"
         },
         "jaraco.logging": {
             "hashes": [
