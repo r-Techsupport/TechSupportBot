@@ -32,9 +32,9 @@ class AutoReact(base.MatchCog):
         Returns:
             bool: True if there needs to be a reaction, False otherwise
         """
-        wordlist = content.lower().split()
-        for word in wordlist:
-            if word in config.extensions.autoreact.react_map.value:
+        search_content = f" {content} "
+        for word in config.extensions.autoreact.react_map.value:
+            if f" {word} " in search_content:
                 return True
         return False
 
@@ -47,10 +47,10 @@ class AutoReact(base.MatchCog):
             content (str): The string content of the message
             _ (bool): The result from the match function
         """
-        wordlist = content.lower().split()
+        search_content = f" {content} "
         reactions = []
-        for word in wordlist:
-            if word in config.extensions.autoreact.react_map.value:
+        for word in config.extensions.autoreact.react_map.value:
+            if f" {word} " in search_content:
                 reaction = config.extensions.autoreact.react_map.value.get(word)
                 if reaction not in reactions:
                     reactions.append(
