@@ -32,6 +32,11 @@ async def setup(bot: commands.Bot) -> None:
         discord_channel_id = bot.db.Column(bot.db.String, default=None)
         irc_channel_id = bot.db.Column(bot.db.String, default=None)
 
+    # Don't load relay if irc is disabled
+    irc_config = getattr(bot.file_config.api, "irc")
+    if not irc_config.enable_irc:
+        return None
+
     irc_cog = DiscordToIRC(bot=bot, models=[IRCChannelMapping], extension_name="relay")
 
     await bot.add_cog(irc_cog)
