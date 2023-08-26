@@ -125,7 +125,7 @@ class AdvancedBot(DataBot):
 
         return config_
 
-    async def create_new_context_config(self, lookup):
+    async def create_new_context_config(self, lookup: str):
         """Creates a new guild config based on a lookup key (usually a guild ID).
 
         parameters:
