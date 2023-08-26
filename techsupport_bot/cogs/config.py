@@ -267,7 +267,7 @@ class ConfigControl(base.BaseCog):
                 channel=ctx.channel,
             )
             return
-        elif view.value == ui.ConfirmResponse.TIMEOUT:
+        if view.value == ui.ConfirmResponse.TIMEOUT:
             return
         await self.bot.guild_config_collection.delete_one(
             {"guild_id": str(ctx.guild.id)}
