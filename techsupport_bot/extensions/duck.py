@@ -17,19 +17,6 @@ from discord.ext import commands
 async def setup(bot):
     """Method to add duck into the config file"""
 
-    class DuckUser(bot.db.Model):
-        """The descripiton duck table in postgres to be used with gino"""
-
-        __tablename__ = "duckusers"
-
-        pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
-        author_id = bot.db.Column(bot.db.String)
-        guild_id = bot.db.Column(bot.db.String)
-        befriend_count = bot.db.Column(bot.db.Integer, default=0)
-        kill_count = bot.db.Column(bot.db.Integer, default=0)
-        updated = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
-        speed_record = bot.db.Column(bot.db.Float, default=80.0)
-
     config = bot.ExtensionConfig()
     config.add(
         key="hunt_channels",
@@ -74,7 +61,7 @@ async def setup(bot):
         default=50,
     )
 
-    await bot.add_cog(DuckHunt(bot=bot, models=[DuckUser], extension_name="duck"))
+    await bot.add_cog(DuckHunt(bot=bot, extension_name="duck"))
     bot.add_extension_config("duck", config)
 
 
@@ -195,7 +182,7 @@ class DuckHunt(base.LoopCog):
 
         duck_user = await self.get_duck_user(winner.id, guild.id)
         if not duck_user:
-            duck_user = self.models.DuckUser(
+            duck_user = self.bot.models.DuckUser(
                 author_id=str(winner.id),
                 guild_id=str(guild.id),
                 befriend_count=0,
@@ -306,10 +293,10 @@ class DuckHunt(base.LoopCog):
     async def get_duck_user(self, user_id, guild_id):
         """Method to get the duck winner"""
         duck_user = (
-            await self.models.DuckUser.query.where(
-                self.models.DuckUser.author_id == str(user_id)
+            await self.bot.models.DuckUser.query.where(
+                self.bot.models.DuckUser.author_id == str(user_id)
             )
-            .where(self.models.DuckUser.guild_id == str(guild_id))
+            .where(self.bot.models.DuckUser.guild_id == str(guild_id))
             .gino.first()
         )
 
@@ -322,8 +309,8 @@ class DuckHunt(base.LoopCog):
         Parametrs:
         guild_id -> The ID of the guild in question
         """
-        query = await self.models.DuckUser.query.where(
-            self.models.DuckUser.guild_id == str(guild_id)
+        query = await self.bot.models.DuckUser.query.where(
+            self.bot.models.DuckUser.guild_id == str(guild_id)
         ).gino.all()
 
         speed_records = [record.speed_record for record in query]
@@ -391,11 +378,11 @@ class DuckHunt(base.LoopCog):
     async def friends(self, ctx):
         """Method for viewing top friend counts"""
         duck_users = (
-            await self.models.DuckUser.query.order_by(
-                -self.models.DuckUser.befriend_count
+            await self.bot.models.DuckUser.query.order_by(
+                -self.bot.models.DuckUser.befriend_count
             )
-            .where(self.models.DuckUser.befriend_count > 0)
-            .where(self.models.DuckUser.guild_id == str(ctx.guild.id))
+            .where(self.bot.models.DuckUser.befriend_count > 0)
+            .where(self.bot.models.DuckUser.guild_id == str(ctx.guild.id))
             .gino.all()
         )
 
@@ -457,10 +444,10 @@ class DuckHunt(base.LoopCog):
             )
             return
         record_user = (
-            await self.models.DuckUser.query.where(
-                self.models.DuckUser.speed_record == record_time
+            await self.bot.models.DuckUser.query.where(
+                self.bot.models.DuckUser.speed_record == record_time
             )
-            .where(self.models.DuckUser.guild_id == str(ctx.guild.id))
+            .where(self.bot.models.DuckUser.guild_id == str(ctx.guild.id))
             .gino.first()
         )
 
@@ -481,9 +468,11 @@ class DuckHunt(base.LoopCog):
     async def killers(self, ctx):
         """Method for viewing top killer counts"""
         duck_users = (
-            await self.models.DuckUser.query.order_by(-self.models.DuckUser.kill_count)
-            .where(self.models.DuckUser.kill_count > 0)
-            .where(self.models.DuckUser.guild_id == str(ctx.guild.id))
+            await self.bot.models.DuckUser.query.order_by(
+                -self.bot.models.DuckUser.kill_count
+            )
+            .where(self.bot.models.DuckUser.kill_count > 0)
+            .where(self.bot.models.DuckUser.guild_id == str(ctx.guild.id))
             .gino.all()
         )
 
