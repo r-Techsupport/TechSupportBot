@@ -5,7 +5,6 @@ This modules requires no config, no databases, and no APIs
 """
 import base
 import discord
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -68,7 +67,7 @@ class Corrector(base.BaseCog):
         """
         return old_content.replace(to_replace, f"**{replacement}**")
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @commands.command(
         aliases=["c"],
