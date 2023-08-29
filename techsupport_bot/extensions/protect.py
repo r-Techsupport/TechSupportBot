@@ -17,16 +17,6 @@ from discord.ext import commands
 async def setup(bot):
     """Class to set up the protect options in the config file."""
 
-    class Warning(bot.db.Model):
-        """Class to set up warnings for the config file."""
-
-        __tablename__ = "warnings"
-        pk = bot.db.Column(bot.db.Integer, primary_key=True)
-        user_id = bot.db.Column(bot.db.String)
-        guild_id = bot.db.Column(bot.db.String)
-        reason = bot.db.Column(bot.db.String)
-        time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
-
     config = bot.ExtensionConfig()
     config.add(
         key="channels",
@@ -139,7 +129,7 @@ async def setup(bot):
         default="Note: Long messages are automatically pasted",
     )
 
-    await bot.add_cog(Protector(bot=bot, models=[Warning], extension_name="protect"))
+    await bot.add_cog(Protector(bot=bot, extension_name="protect"))
     bot.add_extension_config("protect", config)
 
 
@@ -434,7 +424,7 @@ class Protector(base.MatchCog):
         else:
             await ctx.send(ctx.message.author.mention, embed=embed)
 
-        await self.models.Warning(
+        await self.bot.models.Warning(
             user_id=str(user.id), guild_id=str(ctx.guild.id), reason=reason
         ).create()
 
@@ -518,9 +508,9 @@ class Protector(base.MatchCog):
 
     async def clear_warnings(self, user, guild):
         """Method to clear warnings of a user in discord."""
-        await self.models.Warning.delete.where(
-            self.models.Warning.user_id == str(user.id)
-        ).where(self.models.Warning.guild_id == str(guild.id)).gino.status()
+        await self.bot.models.Warning.delete.where(
+            self.bot.models.Warning.user_id == str(user.id)
+        ).where(self.bot.models.Warning.guild_id == str(guild.id)).gino.status()
 
     async def generate_user_modified_embed(self, user, action, reason):
         """Method to generate the user embed with the reason."""
@@ -620,10 +610,10 @@ class Protector(base.MatchCog):
     async def get_warnings(self, user, guild):
         """Method to get the warnings of a user."""
         warnings = (
-            await self.models.Warning.query.where(
-                self.models.Warning.user_id == str(user.id)
+            await self.bot.models.Warning.query.where(
+                self.bot.models.Warning.user_id == str(user.id)
             )
-            .where(self.models.Warning.guild_id == str(guild.id))
+            .where(self.bot.models.Warning.guild_id == str(guild.id))
             .gino.all()
         )
         return warnings
