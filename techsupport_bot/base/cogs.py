@@ -182,6 +182,7 @@ class LoopCog(BaseCog):
             .get("value")
         )
         if channels is not None:
+            channels = sorted(set(channels))
             self.channels[guild.id] = [
                 self.bot.get_channel(int(ch_id)) for ch_id in channels
             ]

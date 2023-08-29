@@ -14,28 +14,6 @@ from discord.ext import commands
 async def setup(bot):
     """Adding the who configuration to the config file."""
 
-    class UserNote(bot.db.Model):
-        """Class to set up the config file."""
-
-        __tablename__ = "usernote"
-
-        pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
-        user_id = bot.db.Column(bot.db.String)
-        guild_id = bot.db.Column(bot.db.String)
-        updated = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
-        author_id = bot.db.Column(bot.db.String)
-        body = bot.db.Column(bot.db.String)
-
-    class Warning(bot.db.Model):
-        """Class to set up warnings for the config file."""
-
-        __tablename__ = "warnings"
-        pk = bot.db.Column(bot.db.Integer, primary_key=True)
-        user_id = bot.db.Column(bot.db.String)
-        guild_id = bot.db.Column(bot.db.String)
-        reason = bot.db.Column(bot.db.String)
-        time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
-
     config = bot.ExtensionConfig()
     config.add(
         key="note_role",
@@ -61,7 +39,7 @@ async def setup(bot):
         default=[],
     )
 
-    await bot.add_cog(Who(bot=bot, models=[UserNote, Warning], extension_name="who"))
+    await bot.add_cog(Who(bot=bot, extension_name="who"))
     bot.add_extension_config("who", config)
 
 
@@ -123,10 +101,10 @@ class Who(base.BaseCog):
         # Gets all warnings for an user and adds them to the embed (Mod only)
         if interaction.permissions.kick_members:
             warnings = (
-                await self.models.Warning.query.where(
-                    self.models.Warning.user_id == str(user.id)
+                await self.bot.models.Warning.query.where(
+                    self.bot.models.Warning.user_id == str(user.id)
                 )
-                .where(self.models.Warning.guild_id == str(interaction.guild.id))
+                .where(self.bot.models.Warning.guild_id == str(interaction.guild.id))
                 .gino.all()
             )
             for warning in warnings:
@@ -172,7 +150,7 @@ class Who(base.BaseCog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        note = self.models.UserNote(
+        note = self.bot.models.UserNote(
             user_id=str(user.id),
             guild_id=str(interaction.guild.id),
             author_id=str(interaction.user.id),
@@ -309,11 +287,11 @@ class Who(base.BaseCog):
     async def get_notes(self, user, guild):
         """Method to get current notes on the user."""
         user_notes = (
-            await self.models.UserNote.query.where(
-                self.models.UserNote.user_id == str(user.id)
+            await self.bot.models.UserNote.query.where(
+                self.bot.models.UserNote.user_id == str(user.id)
             )
-            .where(self.models.UserNote.guild_id == str(guild.id))
-            .order_by(self.models.UserNote.updated.desc())
+            .where(self.bot.models.UserNote.guild_id == str(guild.id))
+            .order_by(self.bot.models.UserNote.updated.desc())
             .gino.all()
         )
 
