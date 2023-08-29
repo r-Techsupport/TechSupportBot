@@ -3,7 +3,7 @@ import random
 
 import base
 import discord
-import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -39,7 +39,7 @@ class Lenny(base.BaseCog):
         "✺◟( ͡° ͜ʖ ͡°)◞✺",
     ]
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         name="len",
         brief="Returns a Lenny face",

@@ -10,7 +10,6 @@ import base
 import discord
 import emoji
 import inflect
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -154,7 +153,7 @@ class Emojis(base.BaseCog):
         """Executed if there are no/invalid args supplied"""
         await base.extension_help(self, ctx, self.__module__[11:])
 
-    @util.with_typing
+    @auxiliary.with_typing
     @emoji.command(
         aliases=["msg"],
         brief="Generates an emoji message",

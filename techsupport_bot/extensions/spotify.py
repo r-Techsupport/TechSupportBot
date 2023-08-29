@@ -2,7 +2,6 @@
 import aiohttp
 import base
 import ui
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -33,7 +32,7 @@ class Spotify(base.BaseCog):
 
         return response.get("access_token")
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         brief="Searches Spotify",
         description="Returns Spotify track results",

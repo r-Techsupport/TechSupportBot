@@ -3,7 +3,6 @@ import random
 
 import base
 import discord
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -34,7 +33,7 @@ class Hugger(base.BaseCog):
         "https://cdn.icon-icons.com/icons2/1648/PNG/512/10022huggingface_110042.png"
     )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @commands.command(
         name="hug",
