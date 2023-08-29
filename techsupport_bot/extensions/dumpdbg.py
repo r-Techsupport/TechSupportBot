@@ -3,7 +3,6 @@ import json
 
 import base
 import discord
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -34,7 +33,7 @@ class DumpdbgEmbed(discord.Embed):
 class Dumpdbg(base.BaseCog):
     """Class for the dump debugger on the discord bot."""
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @commands.command(
         name="dumpdbg",

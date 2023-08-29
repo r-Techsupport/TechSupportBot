@@ -8,7 +8,6 @@ import base
 import discord
 import git
 import ui
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -94,7 +93,7 @@ class AdminControl(base.BaseCog):
                 embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
             )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @extension_group.command(
         name="status",
         description="Gets the status of an extension by name",
@@ -127,7 +126,7 @@ class AdminControl(base.BaseCog):
 
         await ctx.send(embed=embed)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @extension_group.command(
         name="load", description="Loads an extension by name", usage="[extension-name]"
     )
@@ -145,7 +144,7 @@ class AdminControl(base.BaseCog):
             message="I've loaded that extension", channel=ctx.channel
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @extension_group.command(
         name="unload",
         description="Unloads an extension by name",
@@ -165,7 +164,7 @@ class AdminControl(base.BaseCog):
             message="I've unloaded that extension", channel=ctx.channel
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @extension_group.command(
         name="register",
         description="Uploads an extension from Discord to be saved on the bot",
@@ -285,7 +284,7 @@ class AdminControl(base.BaseCog):
                 embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
             )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @command_group.command(
         name="enable", description="Enables a command by name", usage="[command-name]"
     )
@@ -318,7 +317,7 @@ class AdminControl(base.BaseCog):
             channel=ctx.channel,
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @command_group.command(
         name="disable", description="Disables a command by name", usage="[command-name]"
     )
@@ -417,7 +416,7 @@ class AdminControl(base.BaseCog):
                 embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
             )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @set_group.command(
         name="game", description="Sets the game of the bot", usage="[game-name]"
     )
@@ -435,7 +434,7 @@ class AdminControl(base.BaseCog):
             message=f"Successfully set game to: *{game_name}*", channel=ctx.channel
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @set_group.command(
         name="nick", description="Sets the nick of the bot", usage="[nickname]"
     )
@@ -517,7 +516,7 @@ class AdminControl(base.BaseCog):
                 embed=get_help_embed(self, await self.bot.get_prefix(ctx.message))
             )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @echo.command(
         name="channel",
         description="Echos a message to a channel",
@@ -544,7 +543,7 @@ class AdminControl(base.BaseCog):
 
         await auxiliary.send_confirm_embed(message="Message sent", channel=ctx.channel)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @echo.command(
         name="user",
         description="Echos a message to a user",
@@ -704,7 +703,7 @@ class AdminControl(base.BaseCog):
 
         await ctx.send(embed=embed)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         name="sync",
         description="Syncs slash commands",
@@ -721,7 +720,7 @@ class AdminControl(base.BaseCog):
             message=f"{len(synced)}", channel=ctx.channel
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         name="issue",
         aliases=["ish", "botish", "botissue"],

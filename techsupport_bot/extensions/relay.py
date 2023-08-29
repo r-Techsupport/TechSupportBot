@@ -19,26 +19,13 @@ async def setup(bot: commands.Bot) -> None:
         bot (commands.Bot): The bot object
     """
 
-    class IRCChannelMapping(bot.db.Model):
-        """The database table for the IRC channel maps
-
-        Args:
-            bot (commands.Bot): The bot object
-        """
-
-        __tablename__ = "ircchannelmap"
-        map_id = bot.db.Column(bot.db.Integer, primary_key=True)
-        guild_id = bot.db.Column(bot.db.String, default=None)
-        discord_channel_id = bot.db.Column(bot.db.String, default=None)
-        irc_channel_id = bot.db.Column(bot.db.String, default=None)
-
     # Don't load relay if irc is disabled
     irc_config = getattr(bot.file_config.api, "irc")
     if not irc_config.enable_irc:
         return None
 
-    irc_cog = DiscordToIRC(bot=bot, models=[IRCChannelMapping], extension_name="relay")
-
+    irc_cog = DiscordToIRC(bot=bot, extension_name="relay")
+    
     await bot.add_cog(irc_cog)
     bot.irc.irc_cog = irc_cog
 
@@ -52,7 +39,7 @@ class DiscordToIRC(base.MatchCog):
         """The preconfig setup for the discord side
         This maps the database to a bidict for quick lookups, and allows lookups in threads
         """
-        allmaps = await self.models.IRCChannelMapping.query.gino.all()
+        allmaps = await self.bot.models.IRCChannelMapping.query.gino.all()
         self.mapping = bidict({})
         for map in allmaps:
             self.mapping.put(map.discord_channel_id, map.irc_channel_id)
@@ -154,8 +141,8 @@ class DiscordToIRC(base.MatchCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        db_links = await self.models.IRCChannelMapping.query.where(
-            self.models.IRCChannelMapping.guild_id == str(ctx.guild.id)
+        db_links = await self.bot.models.IRCChannelMapping.query.where(
+            self.bot.models.IRCChannelMapping.guild_id == str(ctx.guild.id)
         ).gino.all()
 
         embed = discord.Embed()
@@ -316,7 +303,7 @@ class DiscordToIRC(base.MatchCog):
             )
             return
 
-        map = self.models.IRCChannelMapping(
+        map = self.bot.models.IRCChannelMapping(
             guild_id=str(ctx.guild.id),
             discord_channel_id=str(ctx.channel.id),
             irc_channel_id=irc_channel,
@@ -367,8 +354,8 @@ class DiscordToIRC(base.MatchCog):
 
         irc_channel = self.mapping.pop(str(ctx.channel.id))
 
-        db_link = await self.models.IRCChannelMapping.query.where(
-            self.models.IRCChannelMapping.discord_channel_id == str(ctx.channel.id)
+        db_link = await self.bot.models.IRCChannelMapping.query.where(
+            self.bot.models.IRCChannelMapping.discord_channel_id == str(ctx.channel.id)
         ).gino.first()
 
         await db_link.delete()
