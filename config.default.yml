@@ -5,6 +5,7 @@ bot_config:
         roles: []
     disabled_extensions: ["kanye"]
     default_prefix: "."
+    global_alerts_channel: ""
 database:
     postgres:
         user:

@@ -59,7 +59,9 @@ class LogEmbed(discord.Embed):
         self.color = discord.Color.greyple()
 
         self.timestamp = datetime.datetime.utcnow()
-        self.set_footer(text=f"Author ID: {ctx.author.id}")
+        self.set_footer(
+            text=f"Author ID: {ctx.author.id} • Message ID: {ctx.message.id}"
+        )
 
 
 class Logger(base.MatchCog):

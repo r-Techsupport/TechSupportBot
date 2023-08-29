@@ -10,24 +10,6 @@ async def setup(bot):
 ```
 This code is run when loading the extension, is used to add model classes and config entries.
 
-
-## Models
-
-This defines any database models used in this extension.
-
-```py
-class Model_name(bot.db.Model):
-    __tablename__ = "<table-name>"
-
-    Int_Entry = bot.db.Column(bot.db.Integer, primary_key=True)
-    Str_Entry = bot.db.Column(bot.db.String, default=None)
-    guild = bot.db.Column(bot.db.String)
-```
-This creates a table called `<table-name>` and adds the columns `Int_entry`, `Str_entry`and `guild` to it. 
-Make sure to include `guild` along with handling for it so the entry is only callable in the server a command was invoked from.
-The `default` argument is optional but preferred, since an exception will be thrown if there wasn't a value assigned but it is attempted to be accessed.
-
-
 ## Config entries
 
 ```py
@@ -62,9 +44,29 @@ NOTE: The entry might not automatically get added to the file and will have to b
 await bot.add_cog(extension-name(bot=bot))
 bot.add_extension_config("extension-name", config)
 ```
-This registers the extension, assumes the extension name is the filename if the `extension_name` argument wasn't supplied. If any custom models are defined, make sure to add the `models` argument with its value being `[Model_name_1, Model_name_2, ...]`
+This registers the extension, assumes the extension name is the filename if the `extension_name` argument wasn't supplied.
 
 The second line adds the extension to the config .json file.
+
+## Optional: Postgres
+
+This defines any database models used in this extension.
+
+```py
+class Model_name(bot.db.Model):
+    __tablename__ = "<table-name>"
+
+    Int_Entry = bot.db.Column(bot.db.Integer, primary_key=True)
+    Str_Entry = bot.db.Column(bot.db.String, default=None)
+    guild = bot.db.Column(bot.db.String)
+```
+This creates a table called `<table-name>` and adds the columns `Int_entry`, `Str_entry`and `guild` to it. 
+Make sure to include `guild` along with handling for it so the entry is only callable in the server a command was invoked from.
+The `default` argument is optional but preferred, since an exception will be thrown if there wasn't a value assigned but it is attempted to be accessed.
+
+Add this to the base/databases.py file, and register it in the bot.models variable at the bottom of the file.
+You can access it by "self.bot.models.Model_name"
+
 
 
 ## Optional: Command checks
