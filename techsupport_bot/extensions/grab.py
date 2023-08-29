@@ -6,7 +6,6 @@ import random
 import base
 import discord
 import ui
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -53,7 +52,7 @@ class Grabber(base.BaseCog):
     HAS_CONFIG = False
     SEARCH_LIMIT = 20
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @commands.check(invalid_channel)
     @commands.command(
@@ -132,7 +131,7 @@ class Grabber(base.BaseCog):
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @commands.check(invalid_channel)
     @grabs.command(
@@ -203,7 +202,7 @@ class Grabber(base.BaseCog):
 
         await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @commands.check(invalid_channel)
     @grabs.command(
@@ -259,7 +258,7 @@ class Grabber(base.BaseCog):
 
         await ctx.send(embed=embed)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @commands.check(invalid_channel)
     @grabs.command(

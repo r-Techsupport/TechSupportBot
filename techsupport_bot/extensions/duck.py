@@ -8,7 +8,6 @@ from datetime import timedelta
 import base
 import discord
 import ui
-import util
 from base import auxiliary
 from discord import Color as embed_colors
 from discord.ext import commands
@@ -330,7 +329,7 @@ class DuckHunt(base.LoopCog):
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @duck.command(
         brief="Get duck stats",
@@ -369,7 +368,7 @@ class DuckHunt(base.LoopCog):
 
         await ctx.send(embed=embed)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @duck.command(
         brief="Get duck friendship scores",
@@ -424,7 +423,7 @@ class DuckHunt(base.LoopCog):
 
         await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @duck.command(
         brief="Get the record holder",
@@ -459,7 +458,7 @@ class DuckHunt(base.LoopCog):
 
         await ctx.send(embed=embed)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @duck.command(
         brief="Get duck kill scores",
@@ -524,7 +523,7 @@ class DuckHunt(base.LoopCog):
             user_text_extra = ""
         return f"{user_text}{user_text_extra}"
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @duck.command(
         brief="Releases a duck into the wild",
@@ -553,7 +552,7 @@ class DuckHunt(base.LoopCog):
             channel=ctx.channel,
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.cooldown(1, 600)
     @commands.guild_only()
     @duck.command(
@@ -602,7 +601,7 @@ class DuckHunt(base.LoopCog):
             channel=ctx.channel,
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.cooldown(1, 600)
     @commands.guild_only()
     @duck.command(
@@ -668,7 +667,7 @@ class DuckHunt(base.LoopCog):
             channel=ctx.channel,
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     @duck.command(

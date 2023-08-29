@@ -11,7 +11,6 @@ Defines: has_embed_role
 """
 import base
 import discord
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -70,7 +69,7 @@ async def has_embed_role(ctx: commands.Context) -> bool:
 class Embedder(base.BaseCog):
     """Main extension class"""
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.has_permissions(manage_messages=True)
     @commands.check(has_embed_role)
     @commands.command(
@@ -105,7 +104,7 @@ class Embedder(base.BaseCog):
             return
 
         # Gets the embeds from the attached file
-        request_body = await util.get_json_from_attachments(ctx.message)
+        request_body = await auxiliary.get_json_from_attachments(ctx.message)
 
         # If the data wasn't succesfully gained
         if not request_body:
