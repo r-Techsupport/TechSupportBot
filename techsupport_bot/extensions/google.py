@@ -15,8 +15,8 @@ async def setup(bot):
             raise AttributeError("Googler was not loaded due to missing API key")
         if not bot.file_config.api.api_keys.google_cse:
             raise AttributeError("Googler was not loaded due to missing API key")
-    except AttributeError:
-        raise AttributeError("Googler was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError("Googler was not loaded due to missing API key") from exc
 
     config = bot.ExtensionConfig()
     config.add(

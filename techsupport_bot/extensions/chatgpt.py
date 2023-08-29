@@ -24,8 +24,8 @@ async def setup(bot):
     try:
         if not bot.file_config.api.api_keys.openai:
             raise AttributeError("ChatGPT was not loaded due to missing API key")
-    except AttributeError:
-        raise AttributeError("ChatGPT was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError("ChatGPT was not loaded due to missing API key") from exc
 
     await bot.add_cog(ChatGPT(bot=bot))
 

@@ -15,8 +15,8 @@ async def setup(bot):
             raise AttributeError("Spotify was not loaded due to missing API key")
         if not bot.file_config.api.api_keys.spotify_key:
             raise AttributeError("Spotify was not loaded due to missing API key")
-    except AttributeError:
-        raise AttributeError("Spotify was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError("Spotify was not loaded due to missing API key") from exc
 
     await bot.add_cog(Spotify(bot=bot))
 

@@ -14,8 +14,8 @@ async def setup(bot):
     try:
         if not bot.file_config.api.api_keys.dumpdbg:
             raise AttributeError("Dumpdbg was not loaded due to missing API key")
-    except AttributeError:
-        raise AttributeError("Dumpdbg was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError("Dumpdbg was not loaded due to missing API key") from exc
 
     config = bot.ExtensionConfig()
     config.add(

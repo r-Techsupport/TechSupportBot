@@ -14,8 +14,8 @@ async def setup(bot):
     try:
         if not bot.file_config.api.api_keys.news:
             raise AttributeError("News was not loaded due to missing API key")
-    except AttributeError:
-        raise AttributeError("News was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError("News was not loaded due to missing API key") from exc
 
     config = bot.ExtensionConfig()
     config.add(

@@ -13,8 +13,8 @@ async def setup(bot):
     try:
         if not bot.file_config.api.api_keys.open_weather:
             raise AttributeError("Weather was not loaded due to missing API key")
-    except AttributeError:
-        raise AttributeError("Weather was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError("Weather was not loaded due to missing API key") from exc
 
     await bot.add_cog(Weather(bot=bot))
 
