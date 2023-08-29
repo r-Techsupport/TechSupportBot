@@ -5,7 +5,6 @@ import json
 
 import base
 import discord
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -56,7 +55,7 @@ class Rules(base.BaseCog):
         """Method to edit the rules that were set up."""
         collection = self.bot.mongo[self.COLLECTION_NAME]
 
-        uploaded_data = await util.get_json_from_attachments(ctx.message)
+        uploaded_data = await auxiliary.get_json_from_attachments(ctx.message)
         if uploaded_data:
             uploaded_data["guild_id"] = str(ctx.guild.id)
             await collection.replace_one({"guild_id": str(ctx.guild.id)}, uploaded_data)
