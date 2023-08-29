@@ -22,7 +22,6 @@ import base
 import discord
 import expiringdict
 import ui
-import util
 import yaml
 from aiohttp.client_exceptions import InvalidURL
 from base import auxiliary
@@ -858,7 +857,7 @@ class FactoidManager(base.MatchCog):
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
@@ -885,7 +884,9 @@ class FactoidManager(base.MatchCog):
             await auxiliary.send_deny_embed(message=error_message, channel=ctx.channel)
             return
 
-        embed_config = await util.get_json_from_attachments(ctx.message, as_string=True)
+        embed_config = await auxiliary.get_json_from_attachments(
+            ctx.message, as_string=True
+        )
 
         if not embed_config and not message:
             await auxiliary.send_deny_embed(
@@ -905,7 +906,7 @@ class FactoidManager(base.MatchCog):
             alias=None,
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
@@ -938,7 +939,7 @@ class FactoidManager(base.MatchCog):
         for alias in aliases:
             await self.delete_factoid_call(alias, str(ctx.guild.id))
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
@@ -1008,7 +1009,7 @@ class FactoidManager(base.MatchCog):
             message="Factoid loop created", channel=ctx.channel
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
@@ -1053,7 +1054,7 @@ class FactoidManager(base.MatchCog):
             channel=ctx.channel,
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
@@ -1102,7 +1103,7 @@ class FactoidManager(base.MatchCog):
 
         await ctx.send(embed=embed)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @factoid.command(
         brief="Lists loop jobs",
@@ -1144,7 +1145,7 @@ class FactoidManager(base.MatchCog):
 
         await ctx.send(embed=embed)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
@@ -1181,7 +1182,7 @@ class FactoidManager(base.MatchCog):
 
         await ctx.send(file=json_file)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @factoid.command(
         brief="Gets information about a factoid",
@@ -1246,7 +1247,7 @@ class FactoidManager(base.MatchCog):
         # Finally, sends the factoid
         await ctx.send(embed=embed)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @factoid.command(
         name="all",
@@ -1503,7 +1504,7 @@ class FactoidManager(base.MatchCog):
         # Sends the file
         await ctx.send(file=yaml_file)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @factoid.command(
         aliases=["find"],
@@ -1577,7 +1578,7 @@ class FactoidManager(base.MatchCog):
         # Finally, send the embed
         await ctx.send(embed=embed)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
@@ -1612,7 +1613,7 @@ class FactoidManager(base.MatchCog):
             message=f"`{factoid_name.lower()}` is now hidden", channel=ctx.channel
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
@@ -1646,7 +1647,7 @@ class FactoidManager(base.MatchCog):
             message=f"`{factoid_name.lower()}` is now unhidden", channel=ctx.channel
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
@@ -1760,7 +1761,7 @@ class FactoidManager(base.MatchCog):
             channel=ctx.channel,
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @factoid.command(
         brief="Deletes only an alias",
@@ -1882,7 +1883,7 @@ class FactoidManager(base.MatchCog):
                 task = asyncio.create_task(self.cronjob(new_job, ctx))
                 self.running_jobs[job_id]["task"] = task
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.has_permissions(administrator=True)
     @commands.check(has_manage_factoids_role)
     @commands.guild_only()

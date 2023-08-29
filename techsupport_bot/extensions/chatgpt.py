@@ -13,7 +13,6 @@ import base
 import discord
 import expiringdict
 import ui
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -79,7 +78,7 @@ class ChatGPT(base.BaseCog):
         )
         return response
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         brief="Prompts ChatGPT",
         description="Issues a prompt to the ChatGPT API",
@@ -154,7 +153,7 @@ class ChatGPT(base.BaseCog):
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
 
-    @util.with_typing
+    @auxiliary.with_typing
     @gptutil.command(
         name="clear",
         brief="Clears history",
@@ -197,7 +196,7 @@ class ChatGPT(base.BaseCog):
             message="Chat history cleared!", channel=ctx.channel
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @gptutil.command(
         name="history",
         brief="Gets history",

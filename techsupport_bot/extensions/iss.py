@@ -1,7 +1,6 @@
 """Module to add the location of the ISS to the bot."""
 import base
 import discord
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -17,7 +16,7 @@ class ISSLocator(base.BaseCog):
     ISS_URL = "http://api.open-notify.org/iss-now.json"
     GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         name="iss",
         brief="Finds the ISS",

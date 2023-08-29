@@ -8,7 +8,6 @@ import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import util
 from base import auxiliary
 from extensions import linter
 
@@ -38,7 +37,7 @@ class Test_CheckSyntax:
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
         linter_test = setup_local_extension(discord_env.bot)
-        util.get_json_from_attachments = AsyncMock()
+        auxiliary.get_json_from_attachments = AsyncMock()
 
         # Step 2 - Call the function
         result = await linter_test.check_syntax(discord_env.message_person1_attachments)
@@ -52,7 +51,7 @@ class Test_CheckSyntax:
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
         linter_test = setup_local_extension(discord_env.bot)
-        util.get_json_from_attachments = AsyncMock(
+        auxiliary.get_json_from_attachments = AsyncMock(
             side_effect=json.JSONDecodeError("1", "1", 1)
         )
 
