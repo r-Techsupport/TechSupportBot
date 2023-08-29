@@ -124,8 +124,8 @@ class DuckHunt(base.LoopCog):
         embed.set_image(url=self.DUCK_PIC_URL)
         embed.color = discord.Color.green()
 
-        message = await channel.send(embed=embed)
-        start_time = message.created_at
+        duck_message = await channel.send(embed=embed)
+        start_time = duck_message.created_at
 
         response_message = None
         try:
@@ -133,7 +133,9 @@ class DuckHunt(base.LoopCog):
                 "message",
                 timeout=config.extensions.duck.timeout.value,
                 # can't pull the config in a non-coroutine
-                check=functools.partial(self.message_check, config, channel),
+                check=functools.partial(
+                    self.message_check, config, channel, duck_message
+                ),
             )
         except asyncio.TimeoutError:
             pass
@@ -146,7 +148,7 @@ class DuckHunt(base.LoopCog):
                 exception=e,
             )
 
-        await message.delete()
+        await duck_message.delete()
 
         if response_message:
             raw_duration = response_message.created_at - start_time
@@ -233,6 +235,8 @@ class DuckHunt(base.LoopCog):
                 footer_string += "\nNew global record!"
                 footer_string += f" Previous global record: {global_record} seconds"
             await duck_user.update(speed_record=duration_exact).apply()
+        else:
+            footer_string += f"Exact time: {duration_exact} seconds."
         embed.set_footer(text=footer_string)
 
         await channel.send(embed=embed)
@@ -245,10 +249,13 @@ class DuckHunt(base.LoopCog):
             random_line = random.choice(lines)
             return random_line.strip()
 
-    def message_check(self, config, channel, message):
+    def message_check(self, config, channel, duck_message, message):
         """Method to check if 'bef' or 'bang' was typed"""
         # ignore other channels
         if message.channel.id != channel.id:
+            return False
+
+        if duck_message.created_at > message.created_at:
             return False
 
         if not message.content.lower() in ["bef", "bang"]:
