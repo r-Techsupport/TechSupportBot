@@ -22,7 +22,7 @@ async def setup(bot: commands.Bot) -> None:
     # Don't load relay if irc is disabled
     irc_config = getattr(bot.file_config.api, "irc")
     if not irc_config.enable_irc:
-        return None
+        raise AttributeError("Relay was not loaded due to IRC being disabled")
 
     irc_cog = DiscordToIRC(bot=bot, extension_name="relay")
 
