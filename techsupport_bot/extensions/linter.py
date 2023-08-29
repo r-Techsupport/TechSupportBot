@@ -13,7 +13,6 @@ import json
 
 import base
 import discord
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -36,11 +35,11 @@ class Lint(base.BaseCog):
         """
         # The called method returns JSONDecodeError if the syntax is not valid.
         try:
-            await util.get_json_from_attachments(message, as_string=True)
+            await auxiliary.get_json_from_attachments(message, as_string=True)
         except json.JSONDecodeError as err:
             return err
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @commands.command(
         brief="Checks the syntax of an attached json file",

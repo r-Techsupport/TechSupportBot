@@ -3,7 +3,6 @@ import random
 
 import base
 import discord
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -18,7 +17,7 @@ class Roller(base.BaseCog):
 
     ICON_URL = "https://cdn.icon-icons.com/icons2/1465/PNG/512/678gamedice_100992.png"
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         name="roll",
         brief="Rolls a number",
