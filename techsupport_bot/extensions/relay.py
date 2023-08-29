@@ -25,7 +25,7 @@ async def setup(bot: commands.Bot) -> None:
         return None
 
     irc_cog = DiscordToIRC(bot=bot, extension_name="relay")
-    
+
     await bot.add_cog(irc_cog)
     bot.irc.irc_cog = irc_cog
 
