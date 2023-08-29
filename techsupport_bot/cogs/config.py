@@ -8,7 +8,6 @@ import json
 import base
 import discord
 import ui
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -103,7 +102,7 @@ class ConfigControl(base.BaseCog):
         """
         config = await self.bot.get_context_config(ctx, get_from_cache=False)
 
-        uploaded_data = await util.get_json_from_attachments(ctx.message)
+        uploaded_data = await auxiliary.get_json_from_attachments(ctx.message)
         if uploaded_data:
             # server-side check of guild
             if str(ctx.guild.id) != str(uploaded_data["guild_id"]):
@@ -113,7 +112,7 @@ class ConfigControl(base.BaseCog):
                 )
                 return
             uploaded_data["guild_id"] = str(ctx.guild.id)
-            config_difference = util.config_schema_matches(uploaded_data, config)
+            config_difference = auxiliary.config_schema_matches(uploaded_data, config)
             if config_difference:
                 view = ui.Confirm()
                 await view.send(
@@ -245,4 +244,40 @@ class ConfigControl(base.BaseCog):
 
         await auxiliary.send_confirm_embed(
             message="I've disabled that extension for this guild", channel=ctx.channel
+        )
+
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    @config_command.command(
+        name="reset",
+        brief="Resets current guild config",
+        description="Resets config to default for the current guild",
+    )
+    async def reset_config(self, ctx: commands.Context):
+        """A function to reset the current guild config to stock
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
+        view = ui.Confirm()
+        await view.send(
+            message=f"Are you sure you want to reset the config for {ctx.guild.name}?",
+            channel=ctx.channel,
+            author=ctx.author,
+        )
+        await view.wait()
+        if view.value == ui.ConfirmResponse.DENIED:
+            await auxiliary.send_deny_embed(
+                message="The config was not reset",
+                channel=ctx.channel,
+            )
+            return
+        if view.value == ui.ConfirmResponse.TIMEOUT:
+            return
+        await self.bot.guild_config_collection.delete_one(
+            {"guild_id": str(ctx.guild.id)}
+        )
+        await self.bot.create_new_context_config(lookup=str(ctx.guild.id))
+        await auxiliary.send_confirm_embed(
+            message="I've reset the config for this guild", channel=ctx.channel
         )

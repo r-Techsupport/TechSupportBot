@@ -2,7 +2,6 @@
 import base
 import discord
 import ui
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -57,7 +56,7 @@ class Googler(base.BaseCog):
         # Executed if there are no/invalid args supplied
         await base.extension_help(self, ctx, self.__module__[11:])
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @google.command(
         aliases=["s"],
@@ -107,7 +106,7 @@ class Googler(base.BaseCog):
 
         await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @google.command(
         aliases=["i", "is"],
@@ -148,7 +147,7 @@ class Googler(base.BaseCog):
 
         await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @commands.command(
         aliases=["yt"],
