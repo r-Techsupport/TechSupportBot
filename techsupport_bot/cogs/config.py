@@ -239,3 +239,39 @@ class ConfigControl(base.BaseCog):
         await auxiliary.send_confirm_embed(
             message="I've disabled that extension for this guild", channel=ctx.channel
         )
+
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    @config_command.command(
+        name="reset",
+        brief="Resets current guild config",
+        description="Resets config to default for the current guild",
+    )
+    async def reset_config(self, ctx: commands.Context):
+        """A function to reset the current guild config to stock
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
+        view = ui.Confirm()
+        await view.send(
+            message=f"Are you sure you want to reset the config for {ctx.guild.name}?",
+            channel=ctx.channel,
+            author=ctx.author,
+        )
+        await view.wait()
+        if view.value == ui.ConfirmResponse.DENIED:
+            await auxiliary.send_deny_embed(
+                message="The config was not reset",
+                channel=ctx.channel,
+            )
+            return
+        if view.value == ui.ConfirmResponse.TIMEOUT:
+            return
+        await self.bot.guild_config_collection.delete_one(
+            {"guild_id": str(ctx.guild.id)}
+        )
+        await self.bot.create_new_context_config(lookup=str(ctx.guild.id))
+        await auxiliary.send_confirm_embed(
+            message="I've reset the config for this guild", channel=ctx.channel
+        )
