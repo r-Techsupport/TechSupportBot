@@ -105,6 +105,12 @@ class ConfigControl(base.BaseCog):
         uploaded_data = await auxiliary.get_json_from_attachments(ctx.message)
         if uploaded_data:
             # server-side check of guild
+            if str(ctx.guild.id) != str(uploaded_data["guild_id"]):
+                await auxiliary.send_deny_embed(
+                    message="This config file is not for this guild",
+                    channel=ctx.channel,
+                )
+                return
             uploaded_data["guild_id"] = str(ctx.guild.id)
             config_difference = auxiliary.config_schema_matches(uploaded_data, config)
             if config_difference:
