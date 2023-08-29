@@ -8,7 +8,6 @@ import json
 import base
 import discord
 import ui
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -103,11 +102,11 @@ class ConfigControl(base.BaseCog):
         """
         config = await self.bot.get_context_config(ctx, get_from_cache=False)
 
-        uploaded_data = await util.get_json_from_attachments(ctx.message)
+        uploaded_data = await auxiliary.get_json_from_attachments(ctx.message)
         if uploaded_data:
             # server-side check of guild
             uploaded_data["guild_id"] = str(ctx.guild.id)
-            config_difference = util.config_schema_matches(uploaded_data, config)
+            config_difference = auxiliary.config_schema_matches(uploaded_data, config)
             if config_difference:
                 view = ui.Confirm()
                 await view.send(

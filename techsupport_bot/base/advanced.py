@@ -11,7 +11,6 @@ import discord
 import error
 import expiringdict
 import munch
-import util
 from base import auxiliary
 from discord.ext import commands
 from unidecode import unidecode
@@ -612,9 +611,9 @@ class AdvancedBot(DataBot):
             return
 
         attrs = ["content", "embeds"]
-        diff = util.get_object_diff(before, after, attrs)
+        diff = auxiliary.get_object_diff(before, after, attrs)
         embed = discord.Embed()
-        embed = util.add_diff_fields(embed, diff)
+        embed = auxiliary.add_diff_fields(embed, diff)
         embed.add_field(name="Author", value=before.author)
         embed.add_field(name="Channel", value=getattr(before.channel, "name", "DM"))
         embed.add_field(
@@ -792,10 +791,10 @@ class AdvancedBot(DataBot):
             "permissions_synced",
             "position",
         ]
-        diff = util.get_object_diff(before, after, attrs)
+        diff = auxiliary.get_object_diff(before, after, attrs)
 
         embed = discord.Embed()
-        embed = util.add_diff_fields(embed, diff)
+        embed = auxiliary.add_diff_fields(embed, diff)
         embed.add_field(name="Channel Name", value=before.name)
         embed.add_field(name="Server", value=before.guild.name)
 
@@ -981,7 +980,7 @@ class AdvancedBot(DataBot):
         """
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_update
         """
-        diff = util.get_object_diff(
+        diff = auxiliary.get_object_diff(
             before,
             after,
             [
@@ -1009,7 +1008,7 @@ class AdvancedBot(DataBot):
         )
 
         embed = discord.Embed()
-        embed = util.add_diff_fields(embed, diff)
+        embed = auxiliary.add_diff_fields(embed, diff)
         embed.add_field(name="Server", value=before.name)
 
         log_channel = await self.get_log_channel_from_guild(
@@ -1053,10 +1052,10 @@ class AdvancedBot(DataBot):
     async def on_guild_role_update(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_update"""
         attrs = ["color", "mentionable", "name", "permissions", "position", "tags"]
-        diff = util.get_object_diff(before, after, attrs)
+        diff = auxiliary.get_object_diff(before, after, attrs)
 
         embed = discord.Embed()
-        embed = util.add_diff_fields(embed, diff)
+        embed = auxiliary.add_diff_fields(embed, diff)
         embed.add_field(name="Server", value=before.name)
 
         log_channel = await self.get_log_channel_from_guild(
