@@ -6,6 +6,16 @@ from discord.ext import commands
 
 async def setup(bot):
     """Loading the Cats plugin"""
+
+    # Don't load without the API key
+    try:
+        if not bot.file_config.api.api_keys.cat:
+            await bot.logger.warning("Cats was not loaded due to missing API key")
+            return False
+    except AttributeError:
+        await bot.logger.warning("Cats was not loaded due to missing API key")
+        return False
+
     await bot.add_cog(Cats(bot=bot))
 
 
