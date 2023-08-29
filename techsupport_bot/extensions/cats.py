@@ -1,6 +1,6 @@
 """Module for the urban dictionary extension for the discord bot."""
 import base
-import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -14,7 +14,7 @@ class Cats(base.BaseCog):
 
     API_URL = "https://api.thecatapi.com/v1/images/search?limit=1&api_key={}"
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(name="cat", brief="Gets a cat")
     async def cat(self, ctx):
         """Prints a cat to discord
