@@ -5,6 +5,7 @@ import re
 from datetime import timedelta
 
 import base
+import dateparser
 import discord
 import expiringdict
 import munch
@@ -765,9 +766,7 @@ class Protector(base.MatchCog):
         usage="@user [time] [reason]",
         aliases=["timeout"],
     )
-    async def mute(
-        self, ctx, user: discord.Member, duration: str = None, *, reason: str = None
-    ):
+    async def mute(self, ctx, user: discord.Member, *, duration: str = None):
         """
         Method to mute a user in discord using the native timeout.
         This should be run via discord
@@ -776,7 +775,6 @@ class Protector(base.MatchCog):
         user: The discord.Member to be timed out. Required
         duration: A string (# [s|m|h|d]) that declares how long.
             Max time is 28 days by discord API. Defaults to 1 hour
-        reason: A reason for the action. Defaults to none.
         """
         can_execute = await self.can_execute(ctx, user)
         if not can_execute:
@@ -792,26 +790,22 @@ class Protector(base.MatchCog):
             )
             return
 
-        # Complex way to generate duration from shorthand time
         delta_duration = None
-        try:
-            if duration:
-                num = int(duration[:-1])  # Extract numerical value
-                unit = duration[-1]  # Extract unit (d, h, m, s)
-                if unit == "d":
-                    delta_duration = timedelta(days=num)
-                elif unit == "h":
-                    delta_duration = timedelta(hours=num)
-                elif unit == "m":
-                    delta_duration = timedelta(minutes=num)
-                elif unit == "s":
-                    delta_duration = timedelta(seconds=num)
-                else:
-                    raise ValueError("Invalid duration")
-            else:
-                delta_duration = timedelta(hours=1)
-        except ValueError as exc:
-            raise ValueError("Invalid duration") from exc
+
+        if duration:
+            # The date parser defaults to time in the past, so it is second
+            # This could be fixed by appending "in" to your query, but this is simpler
+            try:
+                delta_duration = datetime.datetime.now() - dateparser.parse(duration)
+                delta_duration = timedelta(
+                    seconds=round(delta_duration.total_seconds())
+                )
+            except TypeError as exc:
+                raise ValueError("Invalid duration") from exc
+            if not delta_duration:
+                raise ValueError("Invalid duration")
+        else:
+            delta_duration = timedelta(hours=1)
 
         # Checks to ensure time is valid and within the scope of the API
         if delta_duration > timedelta(days=28):
@@ -820,10 +814,10 @@ class Protector(base.MatchCog):
             raise ValueError("Timeout duration cannot be less than 1 second")
 
         # Timeout the user and send messages to both the invocation channel, and the protect log
-        await user.timeout(delta_duration, reason=reason)
+        await user.timeout(delta_duration)
 
         embed = await self.generate_user_modified_embed(
-            user, f"muted for {delta_duration}", reason
+            user, f"muted for {delta_duration}", reason=None
         )
 
         await ctx.send(embed=embed)
