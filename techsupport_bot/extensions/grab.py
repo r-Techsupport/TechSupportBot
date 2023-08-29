@@ -1,7 +1,6 @@
 """
 Module for defining the grabs extension
 """
-import datetime
 import random
 
 import base
@@ -13,19 +12,6 @@ from discord.ext import commands
 
 async def setup(bot):
     """Setup to add Grab to the config file"""
-
-    class Grab(bot.db.Model):
-        """Template for a Grab"""
-
-        __tablename__ = "grabs"
-
-        pk = bot.db.Column(bot.db.Integer, primary_key=True)
-        author_id = bot.db.Column(bot.db.String)
-        channel = bot.db.Column(bot.db.String)
-        guild = bot.db.Column(bot.db.String)
-        message = bot.db.Column(bot.db.String)
-        time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
-        nsfw = bot.db.Column(bot.db.Boolean, default=False)
 
     config = bot.ExtensionConfig()
     config.add(
@@ -43,7 +29,7 @@ async def setup(bot):
         default=[],
     )
 
-    await bot.add_cog(Grabber(bot=bot, models=[Grab]))
+    await bot.add_cog(Grabber(bot=bot))
     bot.add_extension_config("grab", config)
 
 
@@ -110,10 +96,10 @@ class Grabber(base.BaseCog):
             return
 
         grab = (
-            await self.models.Grab.query.where(
-                self.models.Grab.author_id == str(user_to_grab.id),
+            await self.bot.models.Grab.query.where(
+                self.bot.models.Grab.author_id == str(user_to_grab.id),
             )
-            .where(self.models.Grab.message == grab_message)
+            .where(self.bot.models.Grab.message == grab_message)
             .gino.first()
         )
 
@@ -123,7 +109,7 @@ class Grabber(base.BaseCog):
             )
             return
 
-        grab = self.models.Grab(
+        grab = self.bot.models.Grab(
             author_id=str(user_to_grab.id),
             channel=str(ctx.channel.id),
             guild=str(ctx.guild.id),
@@ -166,12 +152,13 @@ class Grabber(base.BaseCog):
             )
             return
 
-        query = self.models.Grab.query.where(
-            self.models.Grab.author_id == str(user_to_grab.id)
-        ).where(self.models.Grab.guild == str(ctx.guild.id))
+        query = self.bot.models.Grab.query.where(
+            self.bot.models.Grab.author_id == str(user_to_grab.id)
+        ).where(self.bot.models.Grab.guild == str(ctx.guild.id))
 
         if not is_nsfw:
-            query = query.where(self.models.Grab.nsfw is False)
+            # pylint: disable=C0121
+            query = query.where(self.bot.models.Grab.nsfw == False)
 
         grabs = await query.gino.all()
 
@@ -235,19 +222,19 @@ class Grabber(base.BaseCog):
             return
 
         grabs = (
-            await self.models.Grab.query.where(
-                self.models.Grab.author_id == str(user_to_grab.id)
+            await self.bot.models.Grab.query.where(
+                self.bot.models.Grab.author_id == str(user_to_grab.id)
             )
-            .where(self.models.Grab.guild == str(ctx.guild.id))
+            .where(self.bot.models.Grab.guild == str(ctx.guild.id))
             .gino.all()
         )
 
-        query = self.models.Grab.query.where(
-            self.models.Grab.author_id == str(user_to_grab.id)
-        ).where(self.models.Grab.guild == str(ctx.guild.id))
+        query = self.bot.models.Grab.query.where(
+            self.bot.models.Grab.author_id == str(user_to_grab.id)
+        ).where(self.bot.models.Grab.guild == str(ctx.guild.id))
 
         if not ctx.channel.is_nsfw():
-            query = query.where(self.models.Grab.nsfw is False)
+            query = query.where(self.bot.models.Grab.nsfw is False)
 
         grabs = await query.gino.all()
 
@@ -294,11 +281,11 @@ class Grabber(base.BaseCog):
             return
         # Gets the target grab by the message
         grab = (
-            await self.models.Grab.query.where(
-                self.models.Grab.author_id == str(target_user.id)
+            await self.bot.models.Grab.query.where(
+                self.bot.models.Grab.author_id == str(target_user.id)
             )
-            .where(self.models.Grab.guild == str(ctx.guild.id))
-            .where(self.models.Grab.message == message)
+            .where(self.bot.models.Grab.guild == str(ctx.guild.id))
+            .where(self.bot.models.Grab.message == message)
             .gino.all()
         )
 
