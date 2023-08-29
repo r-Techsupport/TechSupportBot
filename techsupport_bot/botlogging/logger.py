@@ -81,9 +81,18 @@ class BotLogger:
             return
 
         channel = self.bot.get_channel(int(channel_id)) if channel_id else None
+        global_channel = (
+            self.bot.get_channel(
+                int(self.bot.file_config.bot_config.global_alerts_channel)
+            )
+            if self.bot.file_config.bot_config.global_alerts_channel
+            else None
+        )
 
         if channel:
             target = channel
+        elif self.bot.file_config.bot_config.global_alerts_channel:
+            target = global_channel
         else:
             target = await self.bot.get_owner()
 
