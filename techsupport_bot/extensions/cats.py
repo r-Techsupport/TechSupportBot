@@ -11,10 +11,10 @@ async def setup(bot):
     try:
         if not bot.file_config.api.api_keys.cat:
             await bot.logger.warning("Cats was not loaded due to missing API key")
-            return False
+            return None
     except AttributeError:
         await bot.logger.warning("Cats was not loaded due to missing API key")
-        return False
+        return None
 
     await bot.add_cog(Cats(bot=bot))
 
