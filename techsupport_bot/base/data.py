@@ -37,7 +37,7 @@ class DataBot(ExtensionsBot):
             "ipinfo.io": (1, 30),
             "api.open-notify.org": (1, 60),
             "geocode.xyz": (1, 60),
-            "v2.jokeapi.dev": (1, 60),
+            "v2.jokeapi.dev": (10, 60),
             "api.kanye.rest": (1, 60),
             "newsapi.org": (1, 30),
             "accounts.spotify.com": (3, 60),
