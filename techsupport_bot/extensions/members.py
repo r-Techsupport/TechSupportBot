@@ -14,7 +14,6 @@ import io
 
 import base
 import discord
-import util
 import yaml
 from base import auxiliary
 from discord.ext import commands
@@ -83,7 +82,7 @@ class Members(base.BaseCog):
 
         await ctx.send(file=yaml_file)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.has_permissions(manage_roles=True)
     @commands.guild_only()
     @commands.command(
