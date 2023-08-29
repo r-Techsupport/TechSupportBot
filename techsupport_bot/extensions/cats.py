@@ -11,8 +11,8 @@ async def setup(bot):
     try:
         if not bot.file_config.api.api_keys.cat:
             raise AttributeError("Cats was not loaded due to missing API key")
-    except AttributeError:
-        raise AttributeError("Cats was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError("Cats was not loaded due to missing API key") from exc
 
     await bot.add_cog(Cats(bot=bot))
 
