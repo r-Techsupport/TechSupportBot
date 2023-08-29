@@ -9,6 +9,14 @@ from discord.ext import commands
 
 async def setup(bot):
     """Adding the news config to the config file."""
+
+    # Don't load without the API key
+    try:
+        if not bot.file_config.api.api_keys.news:
+            raise AttributeError("News was not loaded due to missing API key")
+    except AttributeError:
+        raise AttributeError("News was not loaded due to missing API key")
+
     config = bot.ExtensionConfig()
     config.add(
         key="channel",

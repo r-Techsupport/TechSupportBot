@@ -8,6 +8,14 @@ from discord.ext import commands
 
 async def setup(bot):
     """Adding the weather configuration to the config file."""
+
+    # Don't load without the API key
+    try:
+        if not bot.file_config.api.api_keys.open_weather:
+            raise AttributeError("Weather was not loaded due to missing API key")
+    except AttributeError:
+        raise AttributeError("Weather was not loaded due to missing API key")
+
     await bot.add_cog(Weather(bot=bot))
 
 

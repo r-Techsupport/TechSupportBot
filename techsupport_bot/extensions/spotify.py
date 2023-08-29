@@ -8,6 +8,16 @@ from discord.ext import commands
 
 async def setup(bot):
     """Adding the Spotify configuration to the config file."""
+
+    # Don't load without the API key
+    try:
+        if not bot.file_config.api.api_keys.spotify_client:
+            raise AttributeError("Spotify was not loaded due to missing API key")
+        if not bot.file_config.api.api_keys.spotify_key:
+            raise AttributeError("Spotify was not loaded due to missing API key")
+    except AttributeError:
+        raise AttributeError("Spotify was not loaded due to missing API key")
+
     await bot.add_cog(Spotify(bot=bot))
 
 
