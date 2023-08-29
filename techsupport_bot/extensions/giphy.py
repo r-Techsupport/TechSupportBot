@@ -1,7 +1,6 @@
 """Module for giphy extension in the bot."""
 import base
 import ui
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -23,7 +22,7 @@ class Giphy(base.BaseCog):
         index = url.find("?cid=")
         return url[:index]
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @commands.command(
         name="giphy",

@@ -7,6 +7,7 @@ import base
 import botlogging
 import cogs as builtin_cogs
 import ircrelay
+import munch
 
 
 class TechSupportBot(base.AdvancedBot):
@@ -61,6 +62,8 @@ class TechSupportBot(base.AdvancedBot):
 
         if self.db:
             await self.logger.debug("Syncing Postgres tables...")
+            self.models = munch.DefaultMunch(None)
+            base.databases.setup_models(self)
             await self.db.gino.create_all()
 
         await self.logger.debug("Loading Help commands...")
