@@ -7,7 +7,6 @@ import random
 
 import base
 import discord
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -74,7 +73,7 @@ class Burn(base.BaseCog):
 
         await self.handle_burn(ctx, user_to_match, message)
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.guild_only()
     @commands.command(
         brief="Declares a BURN!",

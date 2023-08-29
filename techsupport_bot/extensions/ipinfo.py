@@ -1,7 +1,7 @@
 """Module for the ipinfo extension into the bot."""
+
 import base
 import discord
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -39,11 +39,20 @@ class IPInfo(base.BaseCog):
         response.pop("readme", None)
         response.pop("status_code", None)
 
-        embed = util.generate_embed_from_kwargs(
-            title=f"IP info for {ip_address}", all_inline=True, **response
-        )
+        embed = self.generate_embed(ip_address, response)
+        await ctx.send(embed=embed)
 
+    def generate_embed(self, ip: str, fields: dict[str, str]) -> discord.Embed:
+        """Generates an embed from a set of key, values.
+
+        parameters:
+            ip (str): the ip address
+            fields (dict): dictionary containing embed field titles and
+            their contents
+        """
+        embed = discord.Embed(title=f"IP info for {ip}")
         embed.set_thumbnail(url=self.IP_ICON_URL)
         embed.color = discord.Color.dark_green()
-
-        await ctx.send(embed=embed)
+        for key, value in fields.items():
+            embed.add_field(name=key, value=value, inline=True)
+        return embed
