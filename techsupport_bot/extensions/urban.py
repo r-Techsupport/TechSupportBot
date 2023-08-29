@@ -2,7 +2,6 @@
 import base
 import discord
 import ui
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -29,7 +28,7 @@ class UrbanDictionary(base.BaseCog):
     SEE_MORE_URL = "https://www.urbandictionary.com/define.php?term="
     ICON_URL = "https://cdn.icon-icons.com/icons2/114/PNG/512/dictionary_19159.png"
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         name="urb",
         aliases=["urbandictionary", "urban"],
