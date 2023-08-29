@@ -440,7 +440,6 @@ class FactoidManager(base.MatchCog):
                 # hiding hidden factoids
                 # pylint: disable=C0121
                 .where(self.bot.models.Factoid.hidden == False).gino.all()
-
             )
 
         # Gets ALL factoids for ALL guilds
