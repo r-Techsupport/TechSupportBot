@@ -886,7 +886,7 @@ class AdvancedBot(DataBot):
                         )
                     )
                 except discord.Forbidden:
-                    await self.bot.logger.warning(
+                    await self.logger.warning(
                         f"Could not DM {member.name} about nickname changes"
                     )
 
