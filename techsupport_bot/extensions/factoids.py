@@ -714,6 +714,11 @@ class FactoidManager(base.MatchCog):
             ctx (commands.Context): The context in which the command was run
             factoid_message (discord.Message): The text of the factoid to send
         """
+        # Don't attempt to send a message if irc if irc is disabled
+        irc_config = getattr(self.bot.file_config.api, "irc")
+        if not irc_config.enable_irc:
+            return None
+
         await self.bot.irc.irc_cog.handle_factoid(
             channel=ctx.channel,
             discord_message=ctx.message,
