@@ -174,6 +174,13 @@ class Helper(base.BaseCog):
                 embed.description = "That extension is not currently loaded"
             return embed
 
+        config = await self.bot.get_context_config(ctx)
+        if not (extension_name in config.enabled_extensions):
+            embed.description = (
+                "That extension has been disabled by the guild administrators"
+            )
+            return embed
+
         command_prefix = await self.bot.get_prefix(ctx.message)
 
         embed = self.add_extension_command_fields(extension_name, embed, command_prefix)
