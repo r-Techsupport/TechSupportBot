@@ -168,13 +168,15 @@ class DuckHunt(base.LoopCog):
         raw_duration -> A datetime object of the time since the duck spawned
         channel -> The channel in which the duck game happened in
         """
-        await self.bot.guild_log(
-            guild,
-            "logging_channel",
-            "info",
-            f"Duck {action} by {winner} in #{channel.name}",
-            send=True,
-        )
+        config_ = await self.bot.get_context_config(guild=guild)
+        if not str(channel.id) in config_.get("private_channels", []):
+            await self.bot.guild_log(
+                guild,
+                "logging_channel",
+                "info",
+                f"Duck {action} by {winner} in #{channel.name}",
+                send=True,
+            )
 
         duration_seconds = raw_duration.seconds
         duration_exact = float(
