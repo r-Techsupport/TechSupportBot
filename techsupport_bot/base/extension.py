@@ -127,6 +127,19 @@ class ExtensionsBot(commands.Bot):
             if os.path.isfile(f) and not f.endswith("__init__.py")
         ]
 
+    async def check_extension_exists(self, extension):
+        """A function to check if an extension exists, by extension name
+
+        Args:
+            extension (str): The name of the extension
+
+        Returns:
+            bool: True if exists, False if it doesn't exist
+        """
+        if extension in await self.get_potential_extensions():
+            return True
+        return False
+
     async def load_extensions(self, graceful=True):
         """Loads all extensions currently in the extensions directory.
 
