@@ -5,6 +5,7 @@ import re
 from datetime import timedelta
 
 import base
+import dateparser
 import discord
 import expiringdict
 import munch
@@ -15,16 +16,6 @@ from discord.ext import commands
 
 async def setup(bot):
     """Class to set up the protect options in the config file."""
-
-    class Warning(bot.db.Model):
-        """Class to set up warnings for the config file."""
-
-        __tablename__ = "warnings"
-        pk = bot.db.Column(bot.db.Integer, primary_key=True)
-        user_id = bot.db.Column(bot.db.String)
-        guild_id = bot.db.Column(bot.db.String)
-        reason = bot.db.Column(bot.db.String)
-        time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
 
     config = bot.ExtensionConfig()
     config.add(
@@ -46,12 +37,10 @@ async def setup(bot):
         default=[],
     )
     config.add(
-        key="bypass_roles",
+        key="immune_roles",
         datatype="list",
-        title="Bypassed role names",
-        description=(
-            "The list of role names associated with bypassed roles by the auto-protect"
-        ),
+        title="Immune role names",
+        description=("The list of role names that are immune to protect commands"),
         default=[],
     )
     config.add(
@@ -140,7 +129,7 @@ async def setup(bot):
         default="Note: Long messages are automatically pasted",
     )
 
-    await bot.add_cog(Protector(bot=bot, models=[Warning], extension_name="protect"))
+    await bot.add_cog(Protector(bot=bot, extension_name="protect"))
     bot.add_extension_config("protect", config)
 
 
@@ -287,11 +276,20 @@ class Protector(base.MatchCog):
         """Method to set up the number of max lines."""
         return int(max_length / self.CHARS_PER_NEWLINE) + 1
 
-    async def handle_length_alert(self, config, ctx, content):
+    async def handle_length_alert(self, config, ctx, content) -> None:
         """Method to handle alert for the protect extension."""
-        attachments = []
+        attachments: list[discord.File] = []
         if ctx.message.attachments:
-            attachments = [await attch.to_file() for attch in ctx.message.attachments]
+            total_attachment_size = 0
+            for attch in ctx.message.attachments:
+                if (
+                    total_attachment_size := total_attachment_size + attch.size
+                ) <= ctx.filesize_limit:
+                    attachments.append(await attch.to_file())
+            if (lf := len(ctx.message.attachments) - len(attachments)) != 0:
+                await self.bot.logger.info(
+                    f"Did not reupload {lf} file(s) due to file size limit."
+                )
         await ctx.message.delete()
 
         reason = "message too long (too many newlines or characters)"
@@ -426,7 +424,7 @@ class Protector(base.MatchCog):
         else:
             await ctx.send(ctx.message.author.mention, embed=embed)
 
-        await self.models.Warning(
+        await self.bot.models.Warning(
             user_id=str(user.id), guild_id=str(ctx.guild.id), reason=reason
         ).create()
 
@@ -510,9 +508,9 @@ class Protector(base.MatchCog):
 
     async def clear_warnings(self, user, guild):
         """Method to clear warnings of a user in discord."""
-        await self.models.Warning.delete.where(
-            self.models.Warning.user_id == str(user.id)
-        ).where(self.models.Warning.guild_id == str(guild.id)).gino.status()
+        await self.bot.models.Warning.delete.where(
+            self.bot.models.Warning.user_id == str(user.id)
+        ).where(self.bot.models.Warning.guild_id == str(guild.id)).gino.status()
 
     async def generate_user_modified_embed(self, user, action, reason):
         """Method to generate the user embed with the reason."""
@@ -532,6 +530,8 @@ class Protector(base.MatchCog):
     async def can_execute(self, ctx, target: discord.User):
         """Method to not execute on admin users."""
         action = ctx.command.name or "do that to"
+        config = await self.bot.get_context_config(ctx)
+
         # Check to see if executed on author
         if target == ctx.author:
             await auxiliary.send_deny_embed(
@@ -547,6 +547,15 @@ class Protector(base.MatchCog):
         # Check to see if target has a role. Will allow execution on Users outside of server
         if not hasattr(target, "top_role"):
             return True
+        # Check to see if target has any immune roles
+        for name in config.extensions.protect.immune_roles.value:
+            role_check = discord.utils.get(target.guild.roles, name=name)
+            if role_check and role_check in getattr(target, "roles", []):
+                await auxiliary.send_deny_embed(
+                    message=f"You cannot {action} {target} because they have `{role_check}` role",
+                    channel=ctx.channel,
+                )
+                return False
         # Check to see if the Bot can execute on the target
         if ctx.guild.me.top_role <= target.top_role:
             await auxiliary.send_deny_embed(
@@ -601,10 +610,10 @@ class Protector(base.MatchCog):
     async def get_warnings(self, user, guild):
         """Method to get the warnings of a user."""
         warnings = (
-            await self.models.Warning.query.where(
-                self.models.Warning.user_id == str(user.id)
+            await self.bot.models.Warning.query.where(
+                self.bot.models.Warning.user_id == str(user.id)
             )
-            .where(self.models.Warning.guild_id == str(guild.id))
+            .where(self.bot.models.Warning.guild_id == str(guild.id))
             .gino.all()
         )
         return warnings
@@ -757,9 +766,7 @@ class Protector(base.MatchCog):
         usage="@user [time] [reason]",
         aliases=["timeout"],
     )
-    async def mute(
-        self, ctx, user: discord.Member, duration: str = None, *, reason: str = None
-    ):
+    async def mute(self, ctx, user: discord.Member, *, duration: str = None):
         """
         Method to mute a user in discord using the native timeout.
         This should be run via discord
@@ -768,7 +775,6 @@ class Protector(base.MatchCog):
         user: The discord.Member to be timed out. Required
         duration: A string (# [s|m|h|d]) that declares how long.
             Max time is 28 days by discord API. Defaults to 1 hour
-        reason: A reason for the action. Defaults to none.
         """
         can_execute = await self.can_execute(ctx, user)
         if not can_execute:
@@ -784,26 +790,22 @@ class Protector(base.MatchCog):
             )
             return
 
-        # Complex way to generate duration from shorthand time
         delta_duration = None
-        try:
-            if duration:
-                num = int(duration[:-1])  # Extract numerical value
-                unit = duration[-1]  # Extract unit (d, h, m, s)
-                if unit == "d":
-                    delta_duration = timedelta(days=num)
-                elif unit == "h":
-                    delta_duration = timedelta(hours=num)
-                elif unit == "m":
-                    delta_duration = timedelta(minutes=num)
-                elif unit == "s":
-                    delta_duration = timedelta(seconds=num)
-                else:
-                    raise ValueError("Invalid duration")
-            else:
-                delta_duration = timedelta(hours=1)
-        except ValueError as exc:
-            raise ValueError("Invalid duration") from exc
+
+        if duration:
+            # The date parser defaults to time in the past, so it is second
+            # This could be fixed by appending "in" to your query, but this is simpler
+            try:
+                delta_duration = datetime.datetime.now() - dateparser.parse(duration)
+                delta_duration = timedelta(
+                    seconds=round(delta_duration.total_seconds())
+                )
+            except TypeError as exc:
+                raise ValueError("Invalid duration") from exc
+            if not delta_duration:
+                raise ValueError("Invalid duration")
+        else:
+            delta_duration = timedelta(hours=1)
 
         # Checks to ensure time is valid and within the scope of the API
         if delta_duration > timedelta(days=28):
@@ -812,10 +814,10 @@ class Protector(base.MatchCog):
             raise ValueError("Timeout duration cannot be less than 1 second")
 
         # Timeout the user and send messages to both the invocation channel, and the protect log
-        await user.timeout(delta_duration, reason=reason)
+        await user.timeout(delta_duration)
 
         embed = await self.generate_user_modified_embed(
-            user, f"muted for {delta_duration}", reason
+            user, f"muted for {delta_duration}", reason=None
         )
 
         await ctx.send(embed=embed)

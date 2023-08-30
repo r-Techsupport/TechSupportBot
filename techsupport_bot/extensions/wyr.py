@@ -3,7 +3,6 @@ import random
 
 import base
 import discord
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -20,7 +19,7 @@ class WouldYouRather(base.BaseCog):
         """Method to preconfig the wyr scenario."""
         self.last = None
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         name="wyr",
         brief="Gets Would You Rather questions",

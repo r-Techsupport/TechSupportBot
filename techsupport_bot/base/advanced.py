@@ -1,6 +1,9 @@
 """Module for defining the advanced bot methods."""
 import asyncio
 import datetime
+import random
+import re
+import string
 import sys
 import time
 
@@ -8,9 +11,9 @@ import discord
 import error
 import expiringdict
 import munch
-import util
 from base import auxiliary
 from discord.ext import commands
+from unidecode import unidecode
 
 from .data import DataBot
 
@@ -121,7 +124,7 @@ class AdvancedBot(DataBot):
 
         return config_
 
-    async def create_new_context_config(self, lookup):
+    async def create_new_context_config(self, lookup: str):
         """Creates a new guild config based on a lookup key (usually a guild ID).
 
         parameters:
@@ -143,6 +146,7 @@ class AdvancedBot(DataBot):
         config_.guild_events_channel = None
         config_.private_channels = []
         config_.enabled_extensions = []
+        config_.nickname_filter = False
 
         config_.extensions = extensions_config
 
@@ -462,6 +466,49 @@ class AdvancedBot(DataBot):
                 channel=log_channel,
             )
 
+    def format_username(self, username: str) -> str:
+        """Formats a username to be all ascii and easily readable and pingable
+
+        Args:
+            username (str): The original users username
+
+        Returns:
+            str: The new username with all formatting applied
+        """
+
+        # Prepare a random string, just in case
+        random_string = "".join(random.choice(string.ascii_letters) for _ in range(10))
+
+        # Step 1 - Force all ascii
+        username = unidecode(username)
+
+        # Step 2 - Remove all markdown
+        markdown_pattern = r"(\*\*|__|\*|_|\~\~|`|#+|-{3,}|\|{3,}|>)"
+        username = re.sub(markdown_pattern, "", username)
+
+        # Step 3 - Strip
+        username = username.strip()
+
+        # Step 4 - Fix dumb spaces
+        username = re.sub(r"\s+", " ", username)
+        username = re.sub(r"(\b\w) ", r"\1", username)
+
+        # Step 5 - Start with letter
+        match = re.search(r"[A-Za-z]", username)
+        if match:
+            username = username[match.start() :]
+        else:
+            username = ""
+
+        # Step 6 - Length check
+        if len(username) < 3 and len(username) > 0:
+            username = f"{username}-USER-{random_string}"
+        elif len(username) == 0:
+            username = f"USER-{random_string}"
+        username = username[:32]
+
+        return username
+
     async def on_connect(self):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_connect"""
         await self.logger.info("Connected to Discord")
@@ -564,9 +611,9 @@ class AdvancedBot(DataBot):
             return
 
         attrs = ["content", "embeds"]
-        diff = util.get_object_diff(before, after, attrs)
+        diff = auxiliary.get_object_diff(before, after, attrs)
         embed = discord.Embed()
-        embed = util.add_diff_fields(embed, diff)
+        embed = auxiliary.add_diff_fields(embed, diff)
         embed.add_field(name="Author", value=before.author)
         embed.add_field(name="Channel", value=getattr(before.channel, "name", "DM"))
         embed.add_field(
@@ -744,10 +791,10 @@ class AdvancedBot(DataBot):
             "permissions_synced",
             "position",
         ]
-        diff = util.get_object_diff(before, after, attrs)
+        diff = auxiliary.get_object_diff(before, after, attrs)
 
         embed = discord.Embed()
-        embed = util.add_diff_fields(embed, diff)
+        embed = auxiliary.add_diff_fields(embed, diff)
         embed.add_field(name="Channel Name", value=before.name)
         embed.add_field(name="Server", value=before.guild.name)
 
@@ -823,8 +870,26 @@ class AdvancedBot(DataBot):
             channel=log_channel,
         )
 
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
+        config_ = await self.get_context_config(guild=member.guild)
+
+        if config_.get("nickname_filter", False):
+            temp_name = self.format_username(member.display_name)
+            if temp_name != member.display_name:
+                await member.edit(nick=temp_name)
+                try:
+                    await member.send(
+                        (
+                            "Your nickname has been changed to make it easy to read and ping "
+                            f"your name. Your new nickname is {temp_name}."
+                        )
+                    )
+                except discord.Forbidden:
+                    await self.logger.warning(
+                        f"Could not DM {member.name} about nickname changes"
+                    )
+
         embed = discord.Embed()
         embed.add_field(name="Member", value=member)
         embed.add_field(name="Server", value=member.guild.name)
@@ -915,7 +980,7 @@ class AdvancedBot(DataBot):
         """
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_update
         """
-        diff = util.get_object_diff(
+        diff = auxiliary.get_object_diff(
             before,
             after,
             [
@@ -943,7 +1008,7 @@ class AdvancedBot(DataBot):
         )
 
         embed = discord.Embed()
-        embed = util.add_diff_fields(embed, diff)
+        embed = auxiliary.add_diff_fields(embed, diff)
         embed.add_field(name="Server", value=before.name)
 
         log_channel = await self.get_log_channel_from_guild(
@@ -987,10 +1052,10 @@ class AdvancedBot(DataBot):
     async def on_guild_role_update(self, before, after):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_update"""
         attrs = ["color", "mentionable", "name", "permissions", "position", "tags"]
-        diff = util.get_object_diff(before, after, attrs)
+        diff = auxiliary.get_object_diff(before, after, attrs)
 
         embed = discord.Embed()
-        embed = util.add_diff_fields(embed, diff)
+        embed = auxiliary.add_diff_fields(embed, diff)
         embed.add_field(name="Server", value=before.name)
 
         log_channel = await self.get_log_channel_from_guild(

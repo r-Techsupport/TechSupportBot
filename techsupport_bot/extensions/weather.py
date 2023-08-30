@@ -2,7 +2,6 @@
 import base
 import discord
 import munch
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -26,7 +25,7 @@ class Weather(base.BaseCog):
         )
         return filled_url
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         name="we",
         aliases=["weather", "wea"],

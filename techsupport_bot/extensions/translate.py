@@ -1,6 +1,5 @@
 """Module for the translate extension for the discord bot."""
 import base
-import util
 from base import auxiliary
 from discord.ext import commands
 
@@ -17,7 +16,7 @@ class Translator(base.BaseCog):
 
     API_URL = "https://api.mymemory.translated.net/get?q={}&langpair={}|{}"
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         brief="Translates a message",
         description="Translates a given input message to another language",

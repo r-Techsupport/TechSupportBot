@@ -4,7 +4,7 @@ import random
 
 import base
 import discord
-import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -87,7 +87,7 @@ class KanyeQuotes(base.LoopCog):
             )
         )
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         brief="Gets a Kanye West quote",
         description="Gets a random Kanye West quote from the Kanye West API",

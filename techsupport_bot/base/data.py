@@ -3,6 +3,7 @@
 import time
 import urllib
 from collections import deque
+from json import JSONDecodeError
 from urllib.parse import urlparse
 
 import aiohttp
@@ -36,7 +37,7 @@ class DataBot(ExtensionsBot):
             "ipinfo.io": (1, 30),
             "api.open-notify.org": (1, 60),
             "geocode.xyz": (1, 60),
-            "v2.jokeapi.dev": (1, 60),
+            "v2.jokeapi.dev": (10, 60),
             "api.kanye.rest": (1, 60),
             "newsapi.org": (1, 30),
             "accounts.spotify.com": (3, 60),
@@ -48,6 +49,7 @@ class DataBot(ExtensionsBot):
             "api.github.com": (3, 60),
             "api.giphy.com": (3, 60),
             "strawpoll.com": (3, 60),
+            "api.thecatapi.com": (10, 60),
         }
         # For the variable APIs, if they don't exist, don't rate limit them
         try:
@@ -195,25 +197,43 @@ class DataBot(ExtensionsBot):
             response_object = cached_response
             log_message = f"Retrieving cached HTTP GET response ({cache_key})"
         else:
-            client = aiohttp.ClientSession()
-            method_fn = getattr(client, method.lower())
-            response_object = await method_fn(url, *args, **kwargs)
-            if method == "get":
-                self.http_cache[cache_key] = response_object
-            log_message = f"Making HTTP {method.upper()} request to URL: {cache_key}"
+            async with aiohttp.ClientSession() as client:
+                method_fn = getattr(client, method.lower())
+                async with method_fn(url, *args, **kwargs) as response_object:
+                    if method == "get":
+                        self.http_cache[cache_key] = response_object
+                    log_message = (
+                        f"Making HTTP {method.upper()} request to URL: {cache_key}"
+                    )
 
-        await self.logger.info(log_message)
+                    await self.logger.info(log_message)
 
-        if get_raw_response:
-            response = response_object
-        else:
-            response_json = await response_object.json()
-            response = (
-                munch.munchify(response_json) if response_object else munch.Munch()
-            )
-            response["status_code"] = getattr(response_object, "status", None)
+                    if get_raw_response:
+                        response = {
+                            "status": response_object.status,
+                            "text": await response_object.text(),
+                        }
+                    else:
+                        try:
+                            response_json = await response_object.json()
+                        except (aiohttp.ClientResponseError, JSONDecodeError) as e:
+                            response_json = {}
+                            await self.logger.error(
+                                f"{method.upper()} request to URL: {cache_key} failed",
+                                exception=e,
+                            )
 
-        if client:
-            await client.close()
-
-        return response
+                        response = (
+                            munch.munchify(response_json)
+                            if response_object
+                            else munch.Munch()
+                        )
+                        try:
+                            response["status_code"] = getattr(
+                                response_object, "status", None
+                            )
+                        except TypeError:
+                            await self.logger.warning(
+                                "Failed to add status_code to API response"
+                            )
+                    return response

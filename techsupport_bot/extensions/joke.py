@@ -1,7 +1,7 @@
 """Module for the joke extension for the discord bot."""
 import base
 import discord
-import util
+from base import auxiliary
 from discord.ext import commands
 
 
@@ -53,7 +53,7 @@ class Joker(base.BaseCog):
         embed.color = discord.Color.random()
         return embed
 
-    @util.with_typing
+    @auxiliary.with_typing
     @commands.command(
         name="joke",
         brief="Tells a joke",
@@ -64,6 +64,6 @@ class Joker(base.BaseCog):
         """Method to call to get all the joke together."""
         config = await self.bot.get_context_config(ctx)
         response = await self.call_api(ctx, config)
-        text = await response.text()
+        text = response["text"]
         embed = self.generate_embed(text)
         await ctx.send(embed=embed)

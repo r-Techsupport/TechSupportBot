@@ -51,7 +51,7 @@ class RoleGiver(base.BaseCog):
 
     role_group = app_commands.Group(name="role", description="...")
 
-    @role_group.command(name="self")
+    @role_group.command(name="self", description="Assign or remove roles from yourself")
     async def self_role(self, interaction):
         """The base of the self role command
 
@@ -72,7 +72,7 @@ class RoleGiver(base.BaseCog):
             interaction, roles, allowed_to_execute, interaction.user
         )
 
-    @role_group.command(name="assign")
+    @role_group.command(name="manage", description="Modify roles on a given user")
     async def assign_role(self, interaction, member: discord.Member):
         """The base of the wide assign command
 
