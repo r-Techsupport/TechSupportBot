@@ -158,6 +158,7 @@ class ExtensionsBot(commands.Bot):
                 await self.load_extension(
                     f"{self.EXTENSIONS_DIR_NAME}.{extension_name}"
                 )
+                self.extension_name_list.append(extension_name)
             except Exception as exception:
                 self.logger.console.error(
                     f"Failed to load extension {extension_name}: {exception}"
