@@ -136,6 +136,7 @@ class AdvancedBot(DataBot):
             if extension_config:
                 # don't attach to guild config if extension isn't configurable
                 extensions_config[extension_name] = extension_config.data
+        self.extension_name_list.sort()
 
         config_ = munch.DefaultMunch(None)
 
@@ -145,7 +146,7 @@ class AdvancedBot(DataBot):
         config_.member_events_channel = None
         config_.guild_events_channel = None
         config_.private_channels = []
-        config_.enabled_extensions = []
+        config_.enabled_extensions = self.extension_name_list
         config_.nickname_filter = False
 
         config_.extensions = extensions_config
@@ -179,7 +180,7 @@ class AdvancedBot(DataBot):
             if not extension_config and extension_config_from_data:
                 should_update = True
                 await self.logger.debug(
-                    f"Found extension {extension_name} not                     in"
+                    f"Found extension {extension_name} not in"
                     f" config with ID {config_object.guild_id}"
                 )
                 config_object.extensions[
@@ -886,7 +887,7 @@ class AdvancedBot(DataBot):
                         )
                     )
                 except discord.Forbidden:
-                    self.bot.logger.warning(
+                    await self.logger.warning(
                         f"Could not DM {member.name} about nickname changes"
                     )
 
