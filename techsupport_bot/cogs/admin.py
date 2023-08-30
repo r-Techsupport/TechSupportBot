@@ -586,7 +586,12 @@ class AdminControl(base.BaseCog):
         await auxiliary.send_confirm_embed(
             message="Rebooting! Beep boop!", channel=ctx.channel
         )
-        self.bot.irc.exit_irc()
+        # Exit IRC if it's enabled
+        irc_config = getattr(self.bot.file_config.api, "irc")
+        if irc_config.enable_irc:
+            self.bot.irc.exit_irc()
+
+        # Close the bot and let the docker container restart
         await self.bot.close()
 
     @commands.command(
