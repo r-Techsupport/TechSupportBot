@@ -166,7 +166,19 @@ class Helper(base.BaseCog):
         if not self.bot.extensions.get(
             f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}"
         ):
-            embed.description = "That extension could not be found"
+            if not await self.bot.check_extension_exists(extension_name):
+                embed.description = "That extension could not be found"
+            elif extension_name in self.bot.file_config.bot_config.disabled_extensions:
+                embed.description = "That extension has been disabled by the bot owner"
+            else:
+                embed.description = "That extension is not currently loaded"
+            return embed
+
+        config = await self.bot.get_context_config(ctx)
+        if not extension_name in config.enabled_extensions:
+            embed.description = (
+                "That extension has been disabled by the guild administrators"
+            )
             return embed
 
         command_prefix = await self.bot.get_prefix(ctx.message)
