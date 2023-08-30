@@ -43,9 +43,7 @@ class LogEmbed(discord.Embed):
             name="Channel",
             value=f"{ctx.channel.name} ({ctx.channel.mention})" or "Unknown",
         )
-        self.add_field(
-                name="Display Name", value=ctx.author.display_name or "Unknown"
-            )
+        self.add_field(name="Display Name", value=ctx.author.display_name or "Unknown")
         if ctx.author.nick:
             self.add_field(
                 name="Global Name", value=ctx.author.global_name or "Unknown"
