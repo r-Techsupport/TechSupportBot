@@ -49,6 +49,7 @@ class DataBot(ExtensionsBot):
             "api.github.com": (3, 60),
             "api.giphy.com": (3, 60),
             "strawpoll.com": (3, 60),
+            "api.thecatapi.com": (10, 60),
         }
         # For the variable APIs, if they don't exist, don't rate limit them
         try:
@@ -227,7 +228,12 @@ class DataBot(ExtensionsBot):
                             if response_object
                             else munch.Munch()
                         )
-                        response["status_code"] = getattr(
-                            response_object, "status", None
-                        )
+                        try:
+                            response["status_code"] = getattr(
+                                response_object, "status", None
+                            )
+                        except TypeError:
+                            await self.logger.warning(
+                                "Failed to add status_code to API response"
+                            )
                     return response
