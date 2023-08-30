@@ -438,7 +438,8 @@ class FactoidManager(base.MatchCog):
                     self.bot.models.Factoid.guild == guild
                 )
                 # hiding hidden factoids
-                .where(self.bot.models.Factoid.hidden is False).gino.all()
+                # pylint: disable=C0121
+                .where(self.bot.models.Factoid.hidden == False).gino.all()
             )
 
         # Gets ALL factoids for ALL guilds
@@ -717,6 +718,11 @@ class FactoidManager(base.MatchCog):
             message (discord.Message): The message object of the invocation
             factoid_message (str): The text of the factoid to send
         """
+        # Don't attempt to send a message if irc if irc is disabled
+        irc_config = getattr(self.bot.file_config.api, "irc")
+        if not irc_config.enable_irc:
+            return None
+
         await self.bot.irc.irc_cog.handle_factoid(
             channel=channel,
             discord_message=message,
@@ -1497,6 +1503,7 @@ class FactoidManager(base.MatchCog):
             query (str): The querry to look for
         """
         query = query.lower()
+        guild = str(ctx.guild.id)
 
         if len(query) < 3:
             await auxiliary.send_deny_embed(
@@ -1505,7 +1512,7 @@ class FactoidManager(base.MatchCog):
             )
             return
 
-        factoids = await self.get_all_factoids(str(ctx.guild.id))
+        factoids = await self.get_all_factoids(guild, list_hidden=False)
         # Makes query lowercase, makes sure you can't search for JSON elements
         embed = discord.Embed(color=discord.Color.green())
         num_of_matches = 0
