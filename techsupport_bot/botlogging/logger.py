@@ -1,12 +1,34 @@
 """Module for logging bot events.
 """
 
+from __future__ import annotations
+
 import datetime
 import logging
+import os
 import traceback
+from dataclasses import dataclass
+from enum import Enum, auto
+from typing import Optional, Union
 
+import bot
 import botlogging.embed as embed_lib
 import discord
+
+
+class LogLevel(Enum):
+    DEBUG = "debug"
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+
+
+@dataclass
+class LogContext:
+    guild: Optional[discord.Guild] = None
+    channel: Optional[discord.abc.Messageable] = None
+    user: Optional[Union(discord.Member, discord.User)] = None
+    message: Optional[discord.Message] = None
 
 
 class BotLogger:
@@ -15,17 +37,137 @@ class BotLogger:
     parameters:
         bot (bot.TechSupportBot): the bot object
         name (str): the name of the logging channel
+        send (bool): Whether or not to allow sending of logs to discord
     """
+
+    class GenericLogLevel:
+        def __init__(self):
+            self.type = None
+            self.console = None
+            self.embed = None
+
+    class DebugLogLevel(GenericLogLevel):
+        def __init__(self, main_console):
+            self.type = LogLevel.DEBUG
+            self.console = main_console.debug
+            self.embed = embed_lib.DebugEmbed
+
+    class InfoLogLevel(GenericLogLevel):
+        def __init__(self, main_console):
+            self.type = LogLevel.INFO
+            self.console = main_console.info
+            self.embed = embed_lib.InfoEmbed
+
+    class WarningLogLevel(GenericLogLevel):
+        def __init__(self, main_console):
+            self.type = LogLevel.WARNING
+            self.console = main_console.warning
+            self.embed = embed_lib.WarningEmbed
+
+    class ErrorLogLevel(GenericLogLevel):
+        def __init__(self, main_console):
+            self.type = LogLevel.ERROR
+            self.console = main_console.error
+            self.embed = embed_lib.ErrorEmbed
 
     # this defaults to False because most logs shouldn't send out
     DEFAULT_LOG_SEND = False
     # this defaults to True because most error logs should send out
     DEFAULT_ERROR_LOG_SEND = True
 
-    def __init__(self, **kwargs):
-        self.bot = kwargs.get("bot")
-        self.console = logging.getLogger(kwargs.get("name", "root"))
-        self.send = kwargs.get("send")
+    def __init__(self, bot: bot.TechSupportBot, name: str, send: bool):
+        self.bot = bot
+        self.console = logging.getLogger(name if name else "root")
+        self.send = send
+        self.LogLevels = {
+            "debug": self.DebugLogLevel(self.console),
+            "info": self.InfoLogLevel(self.console),
+            "warning": self.WarningLogLevel(self.console),
+            "error": self.ErrorLogLevel(self.console),
+        }
+
+    async def check_if_should_log(self, level: GenericLogLevel, context: LogContext):
+        # Log everything if debug mode is on
+        # Otherwise, don't send debug events
+        if bool(int(os.environ.get("DEBUG", 0))):
+            return True
+        elif level.type == LogLevel.DEBUG:
+            return False
+
+        # Error events should always be sent, ignoring private channels and disabled logging
+        if level.type == LogLevel.ERROR:
+            return True
+
+        # If there is no guild, the log should always be logged
+        if not context.guild:
+            return True
+
+        # Get the guilds config
+        config = await self.bot.get_context_config(guild=context.guild)
+
+        # Checking to see if guild logging is enabled
+        if not config.enable_logging:
+            return False
+
+        # Checking to see if log occured in private channels
+        if str(context.channel.id) in config.private_channels:
+            return False
+
+        return True
+
+    async def get_discord_target(self, channel: discord.abc.Messageable):
+        # If a channel was passed, that is where the log should be sent
+        if channel:
+            return channel
+
+        # If no channel is passed, determine if there is a global location for logs
+        global_channel = (
+            self.bot.get_channel(
+                int(self.bot.file_config.bot_config.global_alerts_channel)
+            )
+            if self.bot.file_config.bot_config.global_alerts_channel
+            else None
+        )
+
+        if global_channel:
+            return global_channel
+
+        # If no channel or global channel is set, DM the bot owner
+        return await self.bot.get_owner()
+
+    async def send_log(
+        self,
+        message: str,
+        level: LogLevel,
+        context: LogContext = None,
+        channel: discord.abc.Messageable = None,
+        send_to_discord: bool = True,
+        send_to_console: bool = True,
+    ) -> None:
+        log_level = self.convert_level(level)
+
+        # Determine if we should even try sending the log at all
+        if context and not await self.check_if_should_log(log_level, context):
+            return
+
+        # Check if we need to send message to console
+        if send_to_console:
+            log_level.console(message)
+
+        # If we don't send to discord, we are done
+        if not send_to_discord:
+            return
+
+        # Get the appropriate target to send to on discord
+        log_channel = await self.get_discord_target(channel)
+
+        try:
+            await log_channel.send(message)
+        except discord.Forbidden:
+            self.console.warning("Failed to send log")
+
+    def convert_level(self, level: LogLevel) -> GenericLogLevel:
+        return self.LogLevels[level.value]
 
     async def info(self, message, **kwargs):
         """Logs at the INFO level.

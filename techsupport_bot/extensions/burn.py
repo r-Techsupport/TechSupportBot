@@ -8,6 +8,7 @@ import random
 import base
 import discord
 from base import auxiliary
+from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
 
@@ -87,4 +88,27 @@ class Burn(base.BaseCog):
             ctx (commands.Context): The context in which the command was run
             user_to_match (discord.Member): The user in which to burn
         """
+        await self.bot.logger.send_log(
+            message="test A",
+            level=LogLevel.DEBUG,
+            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+        )
+        await self.bot.logger.send_log(
+            message="test B",
+            level=LogLevel.INFO,
+            channel=ctx.channel,
+            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+        )
+        await self.bot.logger.send_log(
+            message="test C",
+            level=LogLevel.WARNING,
+            send_to_console=False,
+            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+        )
+        await self.bot.logger.send_log(
+            message="test D",
+            level=LogLevel.ERROR,
+            send_to_discord=False,
+            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+        )
         await self.burn_command(ctx, user_to_match)
