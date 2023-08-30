@@ -4,7 +4,7 @@ This contains 7 tests
 """
 import importlib
 import random
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import discord
 import pytest
@@ -26,21 +26,6 @@ def setup_local_extension(bot=None):
     """
     with patch("asyncio.create_task", return_value=None):
         return wyr.WouldYouRather(bot)
-
-
-class Test_Question_Class:
-    """A single test to test the Question class"""
-
-    def test_str_question(self):
-        """A test to ensure that the __str__ function is working"""
-        # Step 1 - Setup env
-        question = wyr.Question("Left", "Right")
-
-        # Step 2 - Call the function
-        text_question = str(question)
-
-        # Step 3 - Assert that everything works
-        assert text_question == "Left, or Right?"
 
 
 class Test_Preconfig:
@@ -68,7 +53,7 @@ class Test_WYR_Command:
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
         wyr_test = setup_local_extension(discord_env.bot)
-        wyr_test.get_question = MagicMock(return_value="Real question")
+        wyr_test.get_question = MagicMock(return_value='"real" || "question"')
         auxiliary.generate_basic_embed = MagicMock(return_value="embed")
         discord_env.context.send = AsyncMock()
 
@@ -78,7 +63,7 @@ class Test_WYR_Command:
         # Step 3 - Assert that everything works
         auxiliary.generate_basic_embed.assert_called_once_with(
             title="Would you rather...",
-            description="Real question",
+            description="Real, or question?",
             color=discord.Color.blurple(),
         )
 
@@ -108,6 +93,8 @@ class Test_WYR_Command:
 class Test_Get_Question:
     """A set of tests to test the get_question function"""
 
+    sample_resource = '"q1o1" || "q1o2"\n"q2o1" || "q2o2"'
+
     def test_any_question(self):
         """Ensure that get_question gets any question"""
         # Step 1 - Setup env
@@ -115,27 +102,41 @@ class Test_Get_Question:
         wyr_test.last = None
 
         # Step 2 - Call the function
-        question = wyr_test.get_question()
+        with patch("builtins.open", mock_open(read_data=self.sample_resource)):
+            question = wyr_test.get_question()
 
         # Step 3 - Assert that everything works
-        assert isinstance(question, wyr.Question)
+        assert isinstance(question, str)
+        assert question != ""
+
+    def test_resource_read(self):
+        """A test to ensure that the resource file is parsed correctly"""
+        # Step 1 - Setup env
+        wyr_test = setup_local_extension()
+        wyr_test.last = None
+
+        # Step 2 - Call the function
+        with patch("builtins.open", mock_open(read_data=self.sample_resource)):
+            question = wyr_test.get_question()
+
+        # Step 3 - Assert that everything works
+        assert question in ['"q1o1" || "q1o2"', '"q2o1" || "q2o2"']
+
+        # Step 4 - Cleanup
+        importlib.reload(random)
 
     def test_non_repeat_question(self):
         """A test to ensure that a random question can never occur twice"""
         # Step 1 - Setup env
         wyr_test = setup_local_extension()
-        wyr_test.QUESTIONS = [
-            wyr.Question("left 1", "right 1"),
-            wyr.Question("left 2", "right 2"),
-        ]
-        wyr_test.last = wyr_test.QUESTIONS[0]
-        random.randint = MagicMock(return_value=0)
+        wyr_test.last = '"q1o1" || "q1o2"'
 
         # Step 2 - Call the function
-        question = wyr_test.get_question()
+        with patch("builtins.open", mock_open(read_data=self.sample_resource)):
+            question = wyr_test.get_question()
 
         # Step 3 - Assert that everything works
-        assert question is wyr_test.QUESTIONS[1]
+        assert question == '"q2o1" || "q2o2"'
 
         # Step 4 - Cleanup
         importlib.reload(random)
@@ -147,23 +148,20 @@ class Test_Get_Question:
         wyr_test.last = None
 
         # Step 2 - Call the function
-        question = wyr_test.get_question()
+        with patch("builtins.open", mock_open(read_data=self.sample_resource)):
+            question = wyr_test.get_question()
 
         # Step 3 - Assert that everything works
         assert wyr_test.last is question
 
-    def test_wrap_around(self):
-        """Ensure that get_question wraps around if needed"""
+    def test_create_question_string(self):
+        """Ensure that the string is properly turned into
+        a question"""
         # Step 1 - Setup env
         wyr_test = setup_local_extension()
-        wyr_test.last = wyr_test.QUESTIONS[len(wyr_test.QUESTIONS) - 1]
-        random.randint = MagicMock(return_value=len(wyr_test.QUESTIONS) - 1)
 
         # Step 2 - Call the function
-        question = wyr_test.get_question()
+        resource_string = wyr_test.create_question_string('"q1o1" || "q1o2"')
 
         # Step 3 - Assert that everything works
-        assert question is wyr_test.QUESTIONS[0]
-
-        # Step 4 - Cleanup
-        importlib.reload(random)
+        assert resource_string == "Q1o1, or q1o2?"

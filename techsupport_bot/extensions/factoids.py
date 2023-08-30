@@ -438,7 +438,8 @@ class FactoidManager(base.MatchCog):
                     self.bot.models.Factoid.guild == guild
                 )
                 # hiding hidden factoids
-                .where(self.bot.models.Factoid.hidden is False).gino.all()
+                # pylint: disable=C0121
+                .where(self.bot.models.Factoid.hidden == False).gino.all()
             )
 
         # Gets ALL factoids for ALL guilds
@@ -702,20 +703,29 @@ class FactoidManager(base.MatchCog):
             # Sends the raw factoid instead of the embed as fallback
             await ctx.reply(f"{mentions+' ' if mentions else ''}{factoid.message}")
 
-        await self.send_to_irc(ctx, factoid.message)
+        await self.send_to_irc(ctx.channel, ctx.message, factoid.message)
 
     async def send_to_irc(
-        self, ctx: commands.Context, factoid_message: discord.Message
+        self,
+        channel: discord.abc.Messageable,
+        message: discord.Message,
+        factoid_message: str,
     ) -> None:
         """Send a factoid to IRC channel, if it was called in a linked channel
 
         Args:
-            ctx (commands.Context): The context in which the command was run
-            factoid_message (discord.Message): The text of the factoid to send
+            ctx (discord.abc.Messageable): The channel the factoid was sent in
+            message (discord.Message): The message object of the invocation
+            factoid_message (str): The text of the factoid to send
         """
+        # Don't attempt to send a message if irc if irc is disabled
+        irc_config = getattr(self.bot.file_config.api, "irc")
+        if not irc_config.enable_irc:
+            return None
+
         await self.bot.irc.irc_cog.handle_factoid(
-            channel=ctx.channel,
-            discord_message=ctx.message,
+            channel=channel,
+            discord_message=message,
             factoid_message=factoid_message,
         )
 
@@ -805,7 +815,7 @@ class FactoidManager(base.MatchCog):
                 continue
 
             try:
-                await channel.send(content=content, embed=embed)
+                message = await channel.send(content=content, embed=embed)
 
             except discord.errors.HTTPException as e:
                 await self.bot.guild_log(
@@ -816,9 +826,9 @@ class FactoidManager(base.MatchCog):
                     exception=e,
                 )
                 # Sends the raw factoid instead of the embed as fallback
-                await channel.send(content=factoid.message)
+                message = await channel.send(content=factoid.message)
 
-            await self.send_to_irc(channel, factoid.message)
+            await self.send_to_irc(channel, message, factoid.message)
 
     @commands.group(
         brief="Executes a factoid command",
@@ -1493,6 +1503,7 @@ class FactoidManager(base.MatchCog):
             query (str): The querry to look for
         """
         query = query.lower()
+        guild = str(ctx.guild.id)
 
         if len(query) < 3:
             await auxiliary.send_deny_embed(
@@ -1501,7 +1512,7 @@ class FactoidManager(base.MatchCog):
             )
             return
 
-        factoids = await self.get_all_factoids(str(ctx.guild.id))
+        factoids = await self.get_all_factoids(guild, list_hidden=False)
         # Makes query lowercase, makes sure you can't search for JSON elements
         embed = discord.Embed(color=discord.Color.green())
         num_of_matches = 0
