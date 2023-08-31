@@ -12,6 +12,7 @@ import munch
 import ui
 from base import auxiliary
 from discord.ext import commands
+from botlogging import LogContext, LogLevel
 
 
 async def setup(bot):
@@ -416,7 +417,13 @@ class Protector(base.MatchCog):
                 await user.send(embed=embed)
 
             except (discord.HTTPException, discord.Forbidden):
-                await self.bot.logger.warning(f"Failed to DM warning to {user}")
+                channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                        message=f"Failed to DM warning to {user}",
+                        level=LogLevel.WARNING,
+                        channel=channel,
+                        context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                    )
 
             finally:
                 await ctx.send(content=user.mention, embed=embed)

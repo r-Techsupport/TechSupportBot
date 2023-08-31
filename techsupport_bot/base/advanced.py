@@ -12,6 +12,7 @@ import error
 import expiringdict
 import munch
 from base import auxiliary
+from botlogging import LogContext, LogLevel
 from discord.ext import commands
 from unidecode import unidecode
 
@@ -116,10 +117,10 @@ class AdvancedBot(DataBot):
         time_taken = (time.time() - start) * 1000.0
 
         if time_taken > self.CONFIG_RECEIVE_WARNING_TIME_MS:
-            await self.logger.warning(
-                f"Context config receive time = {time_taken} ms (over"
-                f" {self.CONFIG_RECEIVE_WARNING_TIME_MS} threshold)",
-                send=True,
+            await self.logger.send_log(
+                message=f"Context config receive time = {time_taken} ms (over {self.CONFIG_RECEIVE_WARNING_TIME_MS} threshold)",
+                level=LogLevel.WARNING,
+                context=LogContext(guild=self.get_guild(lookup)),
             )
 
         return config_
@@ -156,8 +157,11 @@ class AdvancedBot(DataBot):
             await self.guild_config_collection.insert_one(config_)
         except Exception as exception:
             # safely finish because the new config is still useful
-            await self.logger.error(
-                "Could not insert guild config into MongoDB", exception=exception
+            await self.logger.send_log(
+                message="Could not insert guild config into MongoDB",
+                level=LogLevel.ERROR,
+                context=LogContext(guild=self.get_guild(lookup)),
+                exception=exception,
             )
 
         return config_
@@ -392,8 +396,9 @@ class AdvancedBot(DataBot):
             event_method (str): the event method name associated with the error (eg. on_message)
         """
         _, exception, _ = sys.exc_info()
-        await self.logger.error(
-            f"Bot error in {event_method}: {exception}",
+        await self.logger.send_log(
+            message=f"Bot error in {event_method}: {exception}",
+            level=LogLevel.ERROR,
             exception=exception,
         )
 
@@ -436,17 +441,6 @@ class AdvancedBot(DataBot):
             await auxiliary.send_deny_embed(
                 message=error_message, channel=context.channel
             )
-
-            # Stops execution if dont_print_trace is True
-            if hasattr(exception, "dont_print_trace") and exception.dont_print_trace:
-                return
-
-            await self.logger.error(
-                f"Command error: {exception}",
-                exception=exception,
-                channel=log_channel,
-            )
-
         else:
             await auxiliary.send_deny_embed(
                 message=(
@@ -456,16 +450,17 @@ class AdvancedBot(DataBot):
                 channel=context.channel,
             )
 
-            # Stops execution if dont_print_trace is True
-            if hasattr(exception, "dont_print_trace") and exception.dont_print_trace:
-                return
+        # Stops execution if dont_print_trace is True
+        if hasattr(exception, "dont_print_trace") and exception.dont_print_trace:
+            return
 
-            await self.logger.error(
-                "Command raised an error and the error message too long to send!"
-                + " See traceback below",
-                exception=exception,
-                channel=log_channel,
-            )
+        await self.logger.send_log(
+            message=f"Command error: {exception}",
+            level=LogLevel.ERROR,
+            channel=log_channel,
+            context=LogContext(guild=context.guild, channel=context.channel),
+            exception=exception,
+        )
 
     def format_username(self, username: str) -> str:
         """Formats a username to be all ascii and easily readable and pingable
@@ -873,9 +868,9 @@ class AdvancedBot(DataBot):
 
     async def on_member_join(self, member: discord.Member):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
-        config_ = await self.get_context_config(guild=member.guild)
+        config = await self.get_context_config(guild=member.guild)
 
-        if config_.get("nickname_filter", False):
+        if config.get("nickname_filter", False):
             temp_name = self.format_username(member.display_name)
             if temp_name != member.display_name:
                 await member.edit(nick=temp_name)
@@ -887,8 +882,12 @@ class AdvancedBot(DataBot):
                         )
                     )
                 except discord.Forbidden:
-                    await self.logger.warning(
-                        f"Could not DM {member.name} about nickname changes"
+                    channel = config.get("logging_channel")
+                    await self.logger.send_log(
+                        message=f"Could not DM {member.name} about nickname changes",
+                        level=LogLevel.WARNING,
+                        channel=channel,
+                        context=LogContext(guild=member.guild),
                     )
 
         embed = discord.Embed()

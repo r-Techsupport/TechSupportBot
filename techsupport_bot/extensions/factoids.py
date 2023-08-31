@@ -25,6 +25,7 @@ import ui
 import yaml
 from aiohttp.client_exceptions import InvalidURL
 from base import auxiliary
+from botlogging import LogContext, LogLevel
 from croniter import CroniterBadCronError
 from discord.ext import commands
 from error import FactoidNotFoundError, TooLongFactoidMessageError
@@ -759,18 +760,21 @@ class FactoidManager(base.MatchCog):
                 ).gino.first()
                 if not from_db:
                     # This factoid job has been deleted from the DB
-                    await self.bot.logger.warning(
-                        f"Cron job {job} has failed - factoid has been deleted from"
-                        " the DB"
-                    )
+                    log_channel = None
+                    log_context = None
+
                     if ctx:
-                        await self.bot.guild_log(
-                            ctx.guild,
-                            "logging_channel",
-                            "error",
-                            f"Cron job {job} has failed - factoid has been deleted from"
-                            " the DB",
-                        )
+                        config = await self.bot.get_context_config(ctx)
+                        channel = config.get("logging_channel")
+                        log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
+
+                    await self.bot.logger.send_log(
+                        message=f"Cron job {job} has failed - factoid has been deleted from the DB",
+                        level=LogLevel.WARNING,
+                        channel=channel,
+                        context=log_context,
+                    )
+
                     return
                 job = from_db
                 self.running_jobs[job_id]["job"] = job
@@ -778,28 +782,43 @@ class FactoidManager(base.MatchCog):
             try:
                 await aiocron.crontab(job.cron).next()
 
-            except CroniterBadCronError as e:
-                await self.bot.logger.error(
-                    "Could not await cron completion", exception=e
-                )
+            except CroniterBadCronError as exception:
+                log_channel = None
+                log_context = None
+
                 if ctx:
-                    await self.bot.guild_log(
-                        ctx.guild,
-                        "logging_channel",
-                        "error",
-                        "Could not await cron job completion",
-                        exception=e,
-                    )
+                    config = await self.bot.get_context_config(ctx)
+                    channel = config.get("logging_channel")
+                    log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
+
+                await self.bot.logger.send_log(
+                    message="Could not await cron completion",
+                    level=LogLevel.ERROR,
+                    channel=log_channel,
+                    context=log_context,
+                    exception=exception,
+                )
+
                 await asyncio.sleep(300)
 
             factoid = await self.bot.models.Factoid.query.where(
                 self.bot.models.Factoid.factoid_id == job.factoid
             ).gino.first()
             if not factoid:
-                await self.bot.logger.warning(
-                    "Could not find factoid referenced by job - will retry after"
-                    " waiting"
-                )
+                log_channel = None
+                log_context = None
+
+                if ctx:
+                    config = await self.bot.get_context_config(ctx)
+                    channel = config.get("logging_channel")
+                    log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
+                
+                await self.bot.logger.send_log(
+                        message="Could not find factoid referenced by job - will retry after waiting",
+                        level=LogLevel.WARNING,
+                        channel=log_channel,
+                        context=log_context,
+                    )
                 continue
 
             # Get_embed accepts job as a factoid object
@@ -808,10 +827,20 @@ class FactoidManager(base.MatchCog):
 
             channel = self.bot.get_channel(int(job.channel))
             if not channel:
-                await self.bot.logger.warning(
-                    "Could not find channel to send factoid cronjob - will retry after"
-                    " waiting"
-                )
+                log_channel = None
+                log_context = None
+
+                if ctx:
+                    config = await self.bot.get_context_config(ctx)
+                    channel = config.get("logging_channel")
+                    log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
+                
+                await self.bot.logger.send_log(
+                        message="Could not find channel to send factoid cronjob - will retry after waiting",
+                        level=LogLevel.WARNING,
+                        channel=log_channel,
+                        context=log_context,
+                    )
                 continue
 
             try:

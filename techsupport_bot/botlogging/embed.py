@@ -1,5 +1,7 @@
 """Module for log embeds.
 """
+import datetime
+
 import discord
 
 
@@ -13,6 +15,15 @@ class LogEmbed(discord.Embed):
         super().__init__(
             title=self.title.upper(), description=message, color=self.color
         )
+        self.timestamp = datetime.datetime.utcnow()
+
+    def modify_embed(self, embed):
+        embed.title = self.title
+        embed.color = self.color
+        embed.description = self.description
+        embed.timestamp = datetime.datetime.utcnow()
+
+        return embed
 
 
 class InfoEmbed(LogEmbed):

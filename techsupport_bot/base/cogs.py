@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, List
 
 import gino
 import munch
+from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -58,9 +59,11 @@ class BaseCog(commands.Cog):
 
         try:
             await handler()
-        except Exception as e:
-            await self.bot.logger.error(
-                f"Cog preconfig error: {handler.__name__}!", exception=e
+        except Exception as exception:
+            await self.logger.send_log(
+                message=f"Cog preconfig error: {handler.__name__}!",
+                level=LogLevel.ERROR,
+                exception=exception,
             )
             if not self.KEEP_COG_ON_FAILURE:
                 await self.bot.remove_cog(self)
@@ -119,14 +122,16 @@ class MatchCog(BaseCog):
 
         try:
             await self.response(config, ctx, message.content, result)
-        except Exception as e:
+        except Exception as exception:
             await self.bot.logger.debug("Checking config for log channel")
             config = await self.bot.get_context_config(ctx)
             channel = config.get("logging_channel")
-            await self.bot.logger.error(
-                f"Match cog error: {self.__class__.__name__} {e}!",
-                exception=e,
+            await self.logger.send_log(
+                message=f"Match cog error: {self.__class__.__name__} {exception}!",
+                level=LogLevel.ERROR,
                 channel=channel,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                exception=exception,
             )
 
     async def match(self, _config, _ctx, _content):
@@ -234,9 +239,10 @@ class LoopCog(BaseCog):
                     .get("value")
                 )
                 if not isinstance(configured_channels, list):
-                    await self.bot.logger.error(
-                        "Configured channels no longer readable for guild with ID"
-                        f" {guild_id} - deleting registration"
+                    await self.logger.send_log(
+                        message=f"Configured channels no longer readable for guild with ID {guild_id} - deleting registration",
+                        level=LogLevel.ERROR,
+                        context=LogContext(guild=self.get_guild(guild_id)),
                     )
                     del registered_channels
                     continue
@@ -303,19 +309,24 @@ class LoopCog(BaseCog):
                         await self.execute(config, guild, target_channel)
                     else:
                         await self.execute(config, guild)
-                except Exception as e:
+                except Exception as exception:
                     # always try to wait even when execute fails
-                    await self.bot.logger.error(
-                        f"Loop cog execute error: {self.__class__.__name__}!",
-                        exception=e,
+                    await self.logger.send_log(
+                        message=f"Loop cog execute error: {self.__class__.__name__}!",
+                        level=LogLevel.ERROR,
                         channel=getattr(config, "logging_channel", None),
+                        context=LogContext(guild=guild),
+                        exception=exception,
                     )
 
             try:
                 await self.wait(config, guild)
-            except Exception as e:
-                await self.bot.logger.error(
-                    f"Loop wait cog error: {self.__class__.__name__}!", exception=e
+            except Exception as exception:
+                await self.logger.send_log(
+                    message=f"Loop wait cog error: {self.__class__.__name__}!",
+                    level=LogLevel.ERROR,
+                    context=LogContext(guild=guild),
+                    exception=exception,
                 )
                 # avoid spamming
                 await self._default_wait()

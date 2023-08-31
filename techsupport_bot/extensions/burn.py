@@ -88,27 +88,44 @@ class Burn(base.BaseCog):
             ctx (commands.Context): The context in which the command was run
             user_to_match (discord.Member): The user in which to burn
         """
+        embed = discord.Embed()
+        embed.add_field(name="User", value="TEST")
         await self.bot.logger.send_log(
             message="test A",
             level=LogLevel.DEBUG,
+            channel=ctx.channel.id,
             context=LogContext(guild=ctx.guild, channel=ctx.channel),
         )
         await self.bot.logger.send_log(
             message="test B",
             level=LogLevel.INFO,
-            channel=ctx.channel,
-            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            channel=ctx.channel.id,
+            context=LogContext(guild=ctx.guild),
+            embed=embed,
         )
         await self.bot.logger.send_log(
             message="test C",
             level=LogLevel.WARNING,
-            send_to_console=False,
-            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            channel=ctx.channel.id,
+            context=LogContext(channel=ctx.channel),
+            embed=embed,
         )
         await self.bot.logger.send_log(
             message="test D",
             level=LogLevel.ERROR,
-            send_to_discord=False,
+            channel=ctx.channel.id,
             context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            embed=embed,
         )
+        try:
+            a = 0 / 0
+        except Exception as exc:
+            await self.bot.logger.send_log(
+                message="test E",
+                level=LogLevel.ERROR,
+                channel=ctx.channel.id,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                embed=embed,
+                exception=exc,
+            )
         await self.burn_command(ctx, user_to_match)

@@ -8,6 +8,7 @@ import botlogging
 import cogs as builtin_cogs
 import ircrelay
 import munch
+from botlogging import LogContext, LogLevel
 
 
 class TechSupportBot(base.AdvancedBot):
@@ -48,7 +49,11 @@ class TechSupportBot(base.AdvancedBot):
         try:
             self.db = await self.get_postgres_ref()
         except Exception as exception:
-            await self.logger.warning(f"Could not connect to Postgres: {exception}")
+            await self.logger.send_log(
+                message=f"Could not connect to Postgres: {exception}",
+                level=LogLevel.WARNING,
+                exception=exception,
+            )
 
         await self.logger.debug("Logging into Discord...")
         await super().start(self.file_config.bot_config.auth_token, *args, **kwargs)
@@ -113,8 +118,10 @@ class TechSupportBot(base.AdvancedBot):
             await self.add_cog(cog)
             self.builtin_cogs.append(cog.qualified_name)
         except Exception as exception:
-            await self.logger.warning(
-                f"Could not load builtin cog {cog.__name__}: {exception}"
+            await self.logger.send_log(
+                message=f"Could not load builtin cog {cog.__name__}: {exception}",
+                level=LogLevel.WARNING,
+                exception=exception,
             )
 
     async def cleanup(self):
@@ -132,9 +139,12 @@ class TechSupportBot(base.AdvancedBot):
             if getattr(cog, "COG_TYPE", "").lower() == "loop":
                 try:
                     await cog.register_new_tasks(guild)
-                except Exception as e:
-                    await self.logger.error(
-                        "Could not register loop tasks for cog on guild join",
-                        exception=e,
+                except Exception as exception:
+                    await self.logger.send_log(
+                        message="Could not register loop tasks for cog on guild join",
+                        level=LogLevel.ERROR,
+                        context=LogContext(guild=guild),
+                        exception=exception,
                     )
+
         await super().on_guild_join(guild)

@@ -10,6 +10,7 @@ import aiohttp
 import expiringdict
 import gino
 import munch
+from botlogging import LogContext, LogLevel
 from error import HTTPRateLimit
 from motor import motor_asyncio
 
@@ -216,11 +217,16 @@ class DataBot(ExtensionsBot):
                     else:
                         try:
                             response_json = await response_object.json()
-                        except (aiohttp.ClientResponseError, JSONDecodeError) as e:
+                        except (
+                            aiohttp.ClientResponseError,
+                            JSONDecodeError,
+                        ) as exception:
                             response_json = {}
-                            await self.logger.error(
-                                f"{method.upper()} request to URL: {cache_key} failed",
-                                exception=e,
+                            await self.logger.send_log(
+                                message=f"{method.upper()} request to URL: {cache_key} failed",
+                                level=LogLevel.ERROR,
+                                console_only=True,
+                                exception=exception,
                             )
 
                         response = (
@@ -233,7 +239,8 @@ class DataBot(ExtensionsBot):
                                 response_object, "status", None
                             )
                         except TypeError:
-                            await self.logger.warning(
-                                "Failed to add status_code to API response"
+                            await self.logger.send_log(
+                                message="Failed to add status_code to API response",
+                                level=LogLevel.WARNING,
                             )
                     return response

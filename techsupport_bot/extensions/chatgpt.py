@@ -15,7 +15,7 @@ import expiringdict
 import ui
 from base import auxiliary
 from discord.ext import commands
-
+from botlogging import LogContext, LogLevel
 
 async def setup(bot):
     """Registers the extension"""
@@ -103,13 +103,18 @@ class ChatGPT(base.BaseCog):
         response = await self.call_api(ctx, api_key, prompt)
 
         # -> Response processing <-
+        config = await self.get_context_config(ctx)
         choices = response.get("choices", [])
         if not choices:
             # Tries to figure out what error happened
             if error := response.get("error", []):
-                await self.bot.logger.warning(
-                    f"OpenAI API responded with an error! Contents: {error['message']}"
-                )
+                channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                        message=f"OpenAI API responded with an error! Contents: {error['message']}",
+                        level=LogLevel.WARNING,
+                        channel=channel,
+                        context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                    )
 
             await auxiliary.send_deny_embed(
                 message="I couldn't figure out what to say!", channel=ctx.channel
