@@ -8,11 +8,13 @@ import os
 import traceback
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-import bot
 import botlogging.embed as embed_lib
 import discord
+
+if TYPE_CHECKING:
+    import bot
 
 
 class LogLevel(Enum):
