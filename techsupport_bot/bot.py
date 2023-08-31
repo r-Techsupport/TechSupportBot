@@ -171,7 +171,6 @@ class TechSupportBot(base.AdvancedBot):
                         level=LogLevel.ERROR,
                         context=LogContext(guild=guild),
                         exception=exception,
-                        console_only=True,
                     )
 
         await super().on_guild_join(guild)

@@ -10,7 +10,7 @@ import aiohttp
 import expiringdict
 import gino
 import munch
-from botlogging import LogContext, LogLevel
+from botlogging import LogLevel
 from error import HTTPRateLimit
 from motor import motor_asyncio
 
