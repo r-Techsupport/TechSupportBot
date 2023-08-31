@@ -156,6 +156,7 @@ class AdvancedBot(DataBot):
         config_.private_channels = []
         config_.enabled_extensions = self.extension_name_list
         config_.nickname_filter = False
+        config_.enable_logging = True
 
         config_.extensions = extensions_config
 
