@@ -17,7 +17,15 @@ class LogEmbed(discord.Embed):
         )
         self.timestamp = datetime.datetime.utcnow()
 
-    def modify_embed(self, embed):
+    def modify_embed(self, embed: discord.Embed) -> discord.Embed:
+        """This modifies an existing embed to match with the LogEmbed style
+
+        Args:
+            embed (discord.Embed): The embed to modify
+
+        Returns:
+            discord.Embed: The modified embed
+        """
         embed.title = self.title
         embed.color = self.color
         embed.description = self.description

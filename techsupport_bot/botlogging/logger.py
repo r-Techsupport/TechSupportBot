@@ -101,8 +101,8 @@ class BotLogger:
             self.console = main_console.error
             self.embed = embed_lib.ErrorEmbed
 
-    def __init__(self, bot: bot.TechSupportBot, name: str, send: bool):
-        self.bot = bot
+    def __init__(self, discord_bot: bot.TechSupportBot, name: str, send: bool):
+        self.bot = discord_bot
         self.console = logging.getLogger(name if name else "root")
         self.send = send
         self.LogLevels = {
@@ -133,7 +133,9 @@ class BotLogger:
         # Otherwise, don't send debug events
         if bool(int(os.environ.get("DEBUG", 0))):
             return True
-        elif level.type == LogLevel.DEBUG:
+
+        # If debug is off, and the log is a debug log, ignore it
+        if level.type == LogLevel.DEBUG:
             return False
 
         # Error events should always be sent, ignoring private channels and disabled logging
@@ -213,10 +215,13 @@ class BotLogger:
             level (LogLevel): The enum of the level the log should be logged at
             context (LogContext, optional): The context the log was made in. Defaults to None.
             channel (str, optional): The string ID of the channel to log to. Defaults to None.
-            console_only (bool, optional): If this log should only be sent to the console. Defaults to False.
-            embed (discord.Embed, optional): If this log is going to be sent to discord, you can provide a pre-filled embed.
+            console_only (bool, optional): If this log should only be sent to the console.
+                Defaults to False.
+            embed (discord.Embed, optional): If this log is going to be sent to discord,
+                you can provide a pre-filled embed.
                 The title, description, and color will be overwrote. Defaults to None.
-            exception (Exception, optional): The exception item if you wish to log an exception with this log.
+            exception (Exception, optional): The exception item if you wish to
+                log an exception with this log.
                 Exceptions will be logged in plain text. Defaults to None.
         """
         log_level = self.convert_level(level)

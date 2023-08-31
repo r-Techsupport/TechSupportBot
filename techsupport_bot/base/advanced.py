@@ -565,7 +565,6 @@ class AdvancedBot(DataBot):
     async def on_message_delete(self, message):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_delete"""
         guild = getattr(message.channel, "guild", None)
-        channel_id = getattr(message.channel, "id", None)
 
         # Ignore ephemeral slash command messages
         if not guild and message.type == discord.MessageType.chat_input_command:
@@ -636,7 +635,6 @@ class AdvancedBot(DataBot):
             return
 
         guild = getattr(before.channel, "guild", None)
-        channel_id = getattr(before.channel, "id", None)
 
         # Ignore ephemeral slash command messages
         if not guild and before.type == discord.MessageType.chat_input_command:
