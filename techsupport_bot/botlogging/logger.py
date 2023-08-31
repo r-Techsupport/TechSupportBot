@@ -237,7 +237,7 @@ class BotLogger:
             )
 
         # If we don't send to discord, we are done
-        if console_only:
+        if console_only or not self.send:
             return
 
         # Ensure message is never too long
