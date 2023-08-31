@@ -31,8 +31,7 @@ class TechSupportBot(base.AdvancedBot):
         irc_config = getattr(self.file_config.api, "irc")
         if irc_config.enable_irc:
             await self.logger.send_log(
-                message="Connecting to IRC...",
-                level=LogLevel.DEBUG,
+                message="Connecting to IRC...", level=LogLevel.DEBUG, console_only=True
             )
             # Make the IRC class in such a way to allow reload without desctruction
             # We need to pass it the running loop so it can interact with discord
@@ -40,8 +39,7 @@ class TechSupportBot(base.AdvancedBot):
 
         # this is required for the bot
         await self.logger.send_log(
-            message="Connecting to MongoDB...",
-            level=LogLevel.DEBUG,
+            message="Connecting to MongoDB...", level=LogLevel.DEBUG, console_only=True
         )
         self.mongo = self.get_mongo_ref()
 
@@ -49,14 +47,14 @@ class TechSupportBot(base.AdvancedBot):
             await self.logger.send_log(
                 message="Creating new MongoDB guild config collection...",
                 level=LogLevel.DEBUG,
+                console_only=True,
             )
             await self.mongo.create_collection(self.GUILD_CONFIG_COLLECTION)
 
         self.guild_config_collection = self.mongo[self.GUILD_CONFIG_COLLECTION]
 
         await self.logger.send_log(
-            message="Connecting to Postgres...",
-            level=LogLevel.DEBUG,
+            message="Connecting to Postgres...", level=LogLevel.DEBUG, console_only=True
         )
         try:
             self.db = await self.get_postgres_ref()
@@ -65,11 +63,11 @@ class TechSupportBot(base.AdvancedBot):
                 message=f"Could not connect to Postgres: {exception}",
                 level=LogLevel.WARNING,
                 exception=exception,
+                console_only=True,
             )
 
         await self.logger.send_log(
-            message="Logging into Discord...",
-            level=LogLevel.DEBUG,
+            message="Logging into Discord...", level=LogLevel.DEBUG, console_only=True
         )
         await super().start(self.file_config.bot_config.auth_token, *args, **kwargs)
 
@@ -78,8 +76,7 @@ class TechSupportBot(base.AdvancedBot):
         This loads postgres, extensions, and the help menu
         """
         await self.logger.send_log(
-            message="Loading extensions...",
-            level=LogLevel.DEBUG,
+            message="Loading extensions...", level=LogLevel.DEBUG, console_only=True
         )
         self.extension_name_list = []
         await self.load_extensions()
@@ -88,14 +85,14 @@ class TechSupportBot(base.AdvancedBot):
             await self.logger.send_log(
                 message="Syncing Postgres tables...",
                 level=LogLevel.DEBUG,
+                console_only=True,
             )
             self.models = munch.DefaultMunch(None)
             base.databases.setup_models(self)
             await self.db.gino.create_all()
 
         await self.logger.send_log(
-            message="Loading Help commands...",
-            level=LogLevel.DEBUG,
+            message="Loading Help commands...", level=LogLevel.DEBUG, console_only=True
         )
         self.remove_command("help")
         help_cog = builtin_cogs.Helper(self)
@@ -129,8 +126,7 @@ class TechSupportBot(base.AdvancedBot):
 
         irc_thread = threading.Thread(target=irc_bot.start)
         await self.logger.send_log(
-            message="Logging in to IRC",
-            level=LogLevel.INFO,
+            message="Logging in to IRC", level=LogLevel.INFO, console_only=True
         )
         irc_thread.start()
 
@@ -149,13 +145,13 @@ class TechSupportBot(base.AdvancedBot):
                 message=f"Could not load builtin cog {cog.__name__}: {exception}",
                 level=LogLevel.WARNING,
                 exception=exception,
+                console_only=True,
             )
 
     async def cleanup(self):
         """Cleans up after the event loop is interupted."""
         await self.logger.send_log(
-            message="Cleaning up...",
-            level=LogLevel.DEBUG,
+            message="Cleaning up...", level=LogLevel.DEBUG, console_only=True
         )
         await super().close()
 
@@ -175,6 +171,7 @@ class TechSupportBot(base.AdvancedBot):
                         level=LogLevel.ERROR,
                         context=LogContext(guild=guild),
                         exception=exception,
+                        console_only=True,
                     )
 
         await super().on_guild_join(guild)

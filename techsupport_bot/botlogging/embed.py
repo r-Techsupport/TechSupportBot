@@ -52,27 +52,3 @@ class ErrorEmbed(LogEmbed):
 
     title = "error"
     color = discord.Color.red()
-
-
-def from_level_name(message, level):
-    """Wrapper for generating a log embed.
-
-    parameters:
-        message (str): the message
-        level (str): the logging level
-    """
-    level = level.lower()
-    if level == "info":
-        embed_cls = InfoEmbed
-    elif level == "debug":
-        embed_cls = DebugEmbed
-    elif level == "warning":
-        embed_cls = WarningEmbed
-    elif level == "error":
-        embed_cls = ErrorEmbed
-    else:
-        raise ValueError("invalid log level provided")
-
-    embed = embed_cls(message)
-
-    return embed

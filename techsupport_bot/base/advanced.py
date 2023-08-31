@@ -108,6 +108,7 @@ class AdvancedBot(DataBot):
                     await self.logger.send_log(
                         message="No config found in MongoDB",
                         level=LogLevel.DEBUG,
+                        console_only=True,
                     )
                     if create_if_none:
                         config_ = await self.create_new_context_config(lookup)
@@ -163,6 +164,7 @@ class AdvancedBot(DataBot):
                 message=f"Inserting new config for lookup key: {lookup}",
                 level=LogLevel.DEBUG,
                 context=LogContext(guild=self.get_guild(lookup)),
+                console_only=True,
             )
             await self.guild_config_collection.insert_one(config_)
         except Exception as exception:
@@ -200,6 +202,7 @@ class AdvancedBot(DataBot):
                     ),
                     level=LogLevel.DEBUG,
                     context=LogContext(guild=self.get_guild(config_object.guild_id)),
+                    console_only=True,
                 )
                 config_object.extensions[
                     extension_name
@@ -212,6 +215,7 @@ class AdvancedBot(DataBot):
                 ),
                 level=LogLevel.DEBUG,
                 context=LogContext(guild=self.get_guild(config_object.guild_id)),
+                console_only=True,
             )
             await self.guild_config_collection.replace_one(
                 {"_id": config_object.get("_id")}, config_object
@@ -230,6 +234,7 @@ class AdvancedBot(DataBot):
             message="Checking if command can run",
             level=LogLevel.DEBUG,
             context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            console_only=True,
         )
 
         extension_name = self.get_command_extension_name(ctx.command)
@@ -266,6 +271,7 @@ class AdvancedBot(DataBot):
             message="Checking context against bot admins",
             level=LogLevel.DEBUG,
             context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            console_only=True,
         )
 
         owner = await self.get_owner()
@@ -291,9 +297,11 @@ class AdvancedBot(DataBot):
         """Gets the owner object from the bot application."""
         if not self.owner:
             try:
+                # If this isn't console only, it is a forever recursion
                 await self.logger.send_log(
                     message="Looking up bot owner",
                     level=LogLevel.DEBUG,
+                    console_only=True,
                 )
                 app_info = await self.application_info()
                 self.owner = app_info.owner
@@ -375,8 +383,7 @@ class AdvancedBot(DataBot):
         """Callback for when the bot is finished starting up."""
         self.__startup_time = datetime.datetime.utcnow()
         await self.logger.send_log(
-            message="Bot online",
-            level=LogLevel.INFO,
+            message="Bot online", level=LogLevel.INFO, console_only=True
         )
         await self.get_owner()
 

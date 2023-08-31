@@ -100,7 +100,9 @@ class DataBot(ExtensionsBot):
             url = f"{url}/{name}"
 
         # don't log the password
-        self.logger.console.debug(f"Generated DB URL: {url_filtered}")
+        self.logger.console.debug(
+            f"Generated DB URL: {url_filtered}", console_only=True
+        )
 
         return url
 
@@ -112,6 +114,7 @@ class DataBot(ExtensionsBot):
         await self.logger.send_log(
             message="Obtaining and binding to Gino instance",
             level=LogLevel.DEBUG,
+            console_only=True,
         )
 
         db_ref = gino.Gino()
@@ -124,7 +127,7 @@ class DataBot(ExtensionsBot):
 
     def get_mongo_ref(self):
         """Grabs the MongoDB ref to the bot's configured table."""
-        self.logger.console.debug("Obtaining MongoDB client")
+        self.logger.console.debug("Obtaining MongoDB client", console_only=True)
 
         mongo_client = motor_asyncio.AsyncIOMotorClient(
             self.generate_db_url(postgres=False)
