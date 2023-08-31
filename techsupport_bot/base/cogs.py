@@ -60,7 +60,7 @@ class BaseCog(commands.Cog):
         try:
             await handler()
         except Exception as exception:
-            await self.logger.send_log(
+            await self.bot.logger.send_log(
                 message=f"Cog preconfig error: {handler.__name__}!",
                 level=LogLevel.ERROR,
                 exception=exception,
@@ -126,7 +126,7 @@ class MatchCog(BaseCog):
             await self.bot.logger.debug("Checking config for log channel")
             config = await self.bot.get_context_config(ctx)
             channel = config.get("logging_channel")
-            await self.logger.send_log(
+            await self.bot.logger.send_log(
                 message=f"Match cog error: {self.__class__.__name__} {exception}!",
                 level=LogLevel.ERROR,
                 channel=channel,
@@ -239,7 +239,7 @@ class LoopCog(BaseCog):
                     .get("value")
                 )
                 if not isinstance(configured_channels, list):
-                    await self.logger.send_log(
+                    await self.bot.logger.send_log(
                         message=f"Configured channels no longer readable for guild with ID {guild_id} - deleting registration",
                         level=LogLevel.ERROR,
                         context=LogContext(guild=self.get_guild(guild_id)),
@@ -311,7 +311,7 @@ class LoopCog(BaseCog):
                         await self.execute(config, guild)
                 except Exception as exception:
                     # always try to wait even when execute fails
-                    await self.logger.send_log(
+                    await self.bot.logger.send_log(
                         message=f"Loop cog execute error: {self.__class__.__name__}!",
                         level=LogLevel.ERROR,
                         channel=getattr(config, "logging_channel", None),
@@ -322,7 +322,7 @@ class LoopCog(BaseCog):
             try:
                 await self.wait(config, guild)
             except Exception as exception:
-                await self.logger.send_log(
+                await self.bot.logger.send_log(
                     message=f"Loop wait cog error: {self.__class__.__name__}!",
                     level=LogLevel.ERROR,
                     context=LogContext(guild=guild),
