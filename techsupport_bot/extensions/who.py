@@ -356,10 +356,10 @@ class Who(base.BaseCog):
 
         await member.add_roles(role)
 
-        await self.bot.guild_log(
-            member.guild,
-            "logging_channel",
-            "warning",
-            f"Found noted user with ID {member.id} joining - re-adding role",
-            send=True,
+        log_channel = config.get("logging_channel")
+        await self.bot.logger.send_log(
+            message=f"Found noted user with ID {member.id} joining - re-adding role",
+            level=LogLevel.INFO,
+            context=LogContext(guild=member.guild),
+            channel=log_channel,
         )

@@ -3,6 +3,7 @@
 import base
 import discord
 from base import auxiliary
+from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
 
@@ -99,12 +100,16 @@ class ServerGate(base.MatchCog):
         if content.lower() == config.extensions.gate.verify_text.value:
             roles = await self.get_roles(config, ctx)
             if not roles:
-                await self.bot.guild_log(
-                    ctx.guild,
-                    "logging_channel",
-                    "warning",
-                    "No roles to give user in gate plugin channel - ignoring message",
-                    send=True,
+                config = await self.bot.get_context_config(ctx)
+                log_channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message=(
+                        "No roles to give user in gate plugin channel - ignoring"
+                        " message"
+                    ),
+                    level=LogLevel.WARNING,
+                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                    channel=log_channel,
                 )
                 return
 

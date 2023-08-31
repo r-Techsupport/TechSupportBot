@@ -18,6 +18,7 @@ import discord
 class LogLevel(Enum):
     """This is a way to map log levels to strings, and have the easy ability
     to dynamically add or remove log levels"""
+
     DEBUG = "debug"
     INFO = "info"
     WARNING = "warning"
@@ -31,9 +32,10 @@ class LogContext:
 
     parameters:
         guild (discord.Guild): The guild the log occured with. Optional
-        channel (discord.abc.Messageble): The channel, DM, thread, 
+        channel (discord.abc.Messageble): The channel, DM, thread,
             or other messagable the log occured in
     """
+
     guild: Optional[discord.Guild] = None
     channel: Optional[discord.abc.Messageable] = None
 
@@ -53,6 +55,7 @@ class BotLogger:
 
         You should never use this manually
         """
+
         def __init__(self):
             self.type = None
             self.console = None
@@ -62,6 +65,7 @@ class BotLogger:
         """This is class defining special parameters for debug logs
         This should never be used manually. Use the LogLevel Enum instead
         """
+
         def __init__(self, main_console):
             self.type = LogLevel.DEBUG
             self.console = main_console.debug
@@ -71,6 +75,7 @@ class BotLogger:
         """This is class defining special parameters for info logs
         This should never be used manually. Use the LogLevel Enum instead
         """
+
         def __init__(self, main_console):
             self.type = LogLevel.INFO
             self.console = main_console.info
@@ -80,6 +85,7 @@ class BotLogger:
         """This is class defining special parameters for warning logs
         This should never be used manually. Use the LogLevel Enum instead
         """
+
         def __init__(self, main_console):
             self.type = LogLevel.WARNING
             self.console = main_console.warning
@@ -89,6 +95,7 @@ class BotLogger:
         """This is class defining special parameters for error logs
         This should never be used manually. Use the LogLevel Enum instead
         """
+
         def __init__(self, main_console):
             self.type = LogLevel.ERROR
             self.console = main_console.error
@@ -207,9 +214,9 @@ class BotLogger:
             context (LogContext, optional): The context the log was made in. Defaults to None.
             channel (str, optional): The string ID of the channel to log to. Defaults to None.
             console_only (bool, optional): If this log should only be sent to the console. Defaults to False.
-            embed (discord.Embed, optional): If this log is going to be sent to discord, you can provide a pre-filled embed. 
+            embed (discord.Embed, optional): If this log is going to be sent to discord, you can provide a pre-filled embed.
                 The title, description, and color will be overwrote. Defaults to None.
-            exception (Exception, optional): The exception item if you wish to log an exception with this log. 
+            exception (Exception, optional): The exception item if you wish to log an exception with this log.
                 Exceptions will be logged in plain text. Defaults to None.
         """
         log_level = self.convert_level(level)

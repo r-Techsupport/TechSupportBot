@@ -367,18 +367,6 @@ class AdvancedBot(DataBot):
             embed=embed,
         )
 
-    async def guild_log(self, guild, key, log_type, message, **kwargs):
-        """Wrapper for logging directly to a guild's log channel.
-
-        parameters:
-            guild (discord.Guild): the guild object to reference
-            key (string): the key to use when looking up the channel
-            log_type (string): the log type to use (info, error, warning, etc.)
-            message (string): the log message
-        """
-        log_channel = await self.get_log_channel_from_guild(guild, key)
-        await getattr(self.logger, log_type)(message, channel=log_channel, **kwargs)
-
     async def on_ready(self):
         """Callback for when the bot is finished starting up."""
         self.__startup_time = datetime.datetime.utcnow()

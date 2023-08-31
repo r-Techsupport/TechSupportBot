@@ -99,12 +99,13 @@ class Logger(base.MatchCog):
             return
 
         if channel.guild.id != ctx.guild.id:
-            await self.bot.guild_log(
-                ctx.guild,
-                "logging_channel",
-                "warning",
-                "Configured channel not in associated guild - aborting log",
-                send=True,
+            config = await self.bot.get_context_config(ctx)
+            log_channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message="Configured channel not in associated guild - aborting log",
+                level=LogLevel.WARNING,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                channel=log_channel,
             )
             return
 

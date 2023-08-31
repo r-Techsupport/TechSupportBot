@@ -689,22 +689,27 @@ class FactoidManager(base.MatchCog):
                 embed=embed,
             )
             # log it in the logging channel with type info and generic content
-            await self.bot.guild_log(
-                ctx.guild,
-                "logging_channel",
-                "info",
-                f"Sending factoid: {query} (triggered by {ctx.author} in"
-                f" #{ctx.channel.name})",
-                send=True,
+            config = await self.bot.get_context_config(ctx)
+            log_channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message=(
+                    f"Sending factoid: {query} (triggered by {ctx.author} in"
+                    f" #{ctx.channel.name})"
+                ),
+                level=LogLevel.INFO,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                channel=log_channel,
             )
         # If something breaks, also log it
-        except discord.errors.HTTPException as e:
-            await self.bot.guild_log(
-                ctx.guild,
-                "logging_channel",
-                "error",
-                "Could not send factoid",
-                exception=e,
+        except discord.errors.HTTPException as exception:
+            config = await self.bot.get_context_config(ctx)
+            log_channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message="Could not send factoid",
+                level=LogLevel.ERROR,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                channel=log_channel,
+                exception=exception,
             )
             # Sends the raw factoid instead of the embed as fallback
             await ctx.reply(f"{mentions+' ' if mentions else ''}{factoid.message}")
@@ -860,13 +865,15 @@ class FactoidManager(base.MatchCog):
             try:
                 message = await channel.send(content=content, embed=embed)
 
-            except discord.errors.HTTPException as e:
-                await self.bot.guild_log(
-                    ctx.guild,
-                    "logging_channel",
-                    "error",
-                    "Could not send looped factoid",
-                    exception=e,
+            except discord.errors.HTTPException as exception:
+                config = await self.bot.get_context_config(ctx)
+                log_channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message="Could not send looped factoid",
+                    level=LogLevel.ERROR,
+                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                    channel=log_channel,
+                    exception=exception,
                 )
                 # Sends the raw factoid instead of the embed as fallback
                 message = await channel.send(content=factoid.message)
@@ -1373,13 +1380,15 @@ class FactoidManager(base.MatchCog):
                 self.factoid_all_cache[str(ctx.guild.id)]["url"] = url
 
         # If an error happened while calling the api
-        except (gaierror, InvalidURL) as e:
-            await self.bot.guild_log(
-                ctx.guild,
-                "logging_channel",
-                "error",
-                "Could not render/send all-factoid HTML",
-                exception=e,
+        except (gaierror, InvalidURL) as exception:
+            config = await self.bot.get_context_config(ctx)
+            log_channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message="Could not render/send all-factoid HTML",
+                level=LogLevel.ERROR,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                channel=log_channel,
+                exception=exception,
             )
 
             await self.send_factoids_as_file(
@@ -1875,13 +1884,16 @@ class FactoidManager(base.MatchCog):
         )
 
         # Logs the new parent change
-        await self.bot.guild_log(
-            ctx.guild,
-            "logging_channel",
-            "info",
-            f"Factoid dealias: Deleted the alias `{factoid_name.lower()}`"
-            + f", new parent: `{new_name.lower()}`",
-            send=True,
+        config = await self.bot.get_context_config(ctx)
+        log_channel = config.get("logging_channel")
+        await self.bot.logger.send_log(
+            message=(
+                f"Factoid dealias: Deleted the alias `{factoid_name.lower()}`, new"
+                f" parent: `{new_name.lower()}`"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            channel=log_channel,
         )
 
         jobs = (

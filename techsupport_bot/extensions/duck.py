@@ -9,6 +9,7 @@ import base
 import discord
 import ui
 from base import auxiliary
+from botlogging import LogContext, LogLevel
 from discord import Color as embed_colors
 from discord.ext import commands
 
@@ -92,12 +93,13 @@ class DuckHunt(base.LoopCog):
     async def execute(self, config, guild, channel):
         """Method for sending the duck"""
         if not channel:
-            await self.bot.guild_log(
-                guild,
-                "logging_channel",
-                "warning",
-                "Channel not found for Duckhunt loop - continuing",
-                send=True,
+            config = await self.bot.get_context_config(guild=guild)
+            log_channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message="Channel not found for Duckhunt loop - continuing",
+                level=LogLevel.WARNING,
+                context=LogContext(guild=guild),
+                channel=log_channel,
             )
             return
 
@@ -125,13 +127,15 @@ class DuckHunt(base.LoopCog):
             )
         except asyncio.TimeoutError:
             pass
-        except Exception as e:
-            await self.bot.guild_log(
-                guild,
-                "logging_channel",
-                "error",
-                "Exception thrown waiting for duckhunt input",
-                exception=e,
+        except Exception as exception:
+            config = await self.bot.get_context_config(guild=guild)
+            log_channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message="Exception thrown waiting for duckhunt input",
+                level=LogLevel.ERROR,
+                context=LogContext(guild=guild, channel=channel),
+                channel=log_channel,
+                exception=exception,
             )
 
         await duck_message.delete()
@@ -169,14 +173,13 @@ class DuckHunt(base.LoopCog):
         channel -> The channel in which the duck game happened in
         """
         config_ = await self.bot.get_context_config(guild=guild)
-        if not str(channel.id) in config_.get("private_channels", []):
-            await self.bot.guild_log(
-                guild,
-                "logging_channel",
-                "info",
-                f"Duck {action} by {winner} in #{channel.name}",
-                send=True,
-            )
+        log_channel = config_.get("logging_channel")
+        await self.bot.logger.send_log(
+            message=f"Duck {action} by {winner} in #{channel.name}",
+            level=LogLevel.INFO,
+            context=LogContext(guild=guild, channel=channel),
+            channel=log_channel,
+        )
 
         duration_seconds = raw_duration.seconds
         duration_exact = float(

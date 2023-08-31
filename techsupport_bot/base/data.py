@@ -100,9 +100,7 @@ class DataBot(ExtensionsBot):
             url = f"{url}/{name}"
 
         # don't log the password
-        self.logger.console.debug(
-            f"Generated DB URL: {url_filtered}", console_only=True
-        )
+        self.logger.console.debug(f"Generated DB URL: {url_filtered}")
 
         return url
 
@@ -127,7 +125,7 @@ class DataBot(ExtensionsBot):
 
     def get_mongo_ref(self):
         """Grabs the MongoDB ref to the bot's configured table."""
-        self.logger.console.debug("Obtaining MongoDB client", console_only=True)
+        self.logger.console.debug("Obtaining MongoDB client")
 
         mongo_client = motor_asyncio.AsyncIOMotorClient(
             self.generate_db_url(postgres=False)
