@@ -121,7 +121,10 @@ class FactoidManager(base.MatchCog):
             max_len=1,
             max_age_seconds=86400,  # 24 hours, matches deletion on linx server
         )
-        await self.bot.logger.debug("Loading factoid jobs")
+        await self.bot.logger.send_log(
+            message="Loading factoid jobs",
+            level=LogLevel.DEBUG,
+        )
         await self.kickoff_jobs()
 
     # -- DB calls --
@@ -657,8 +660,10 @@ class FactoidManager(base.MatchCog):
             factoid = await self.get_factoid(query, str(ctx.guild.id))
 
         except FactoidNotFoundError:
-            await self.bot.logger.debug(
-                f"Invalid factoid call {query} from {ctx.guild.id}"
+            await self.bot.logger.send_log(
+                message=f"Invalid factoid call {query} from {ctx.guild.id}",
+                level=LogLevel.DEBUG,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
             )
             return
 

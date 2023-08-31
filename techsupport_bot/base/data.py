@@ -109,7 +109,10 @@ class DataBot(ExtensionsBot):
 
         This doesn't follow a singleton pattern (use bot.db instead).
         """
-        await self.logger.debug("Obtaining and binding to Gino instance")
+        await self.logger.send_log(
+            message="Obtaining and binding to Gino instance",
+            level=LogLevel.DEBUG,
+        )
 
         db_ref = gino.Gino()
         db_url = self.generate_db_url()

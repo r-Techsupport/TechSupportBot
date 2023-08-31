@@ -30,22 +30,34 @@ class TechSupportBot(base.AdvancedBot):
         # Start the IRC bot in an asynchronous task
         irc_config = getattr(self.file_config.api, "irc")
         if irc_config.enable_irc:
-            await self.logger.debug("Connecting to IRC...")
+            await self.logger.send_log(
+                message="Connecting to IRC...",
+                level=LogLevel.DEBUG,
+            )
             # Make the IRC class in such a way to allow reload without desctruction
             # We need to pass it the running loop so it can interact with discord
             await self.start_irc()
 
         # this is required for the bot
-        await self.logger.debug("Connecting to MongoDB...")
+        await self.logger.send_log(
+            message="Connecting to MongoDB...",
+            level=LogLevel.DEBUG,
+        )
         self.mongo = self.get_mongo_ref()
 
         if not self.GUILD_CONFIG_COLLECTION in await self.mongo.list_collection_names():
-            await self.logger.debug("Creating new MongoDB guild config collection...")
+            await self.logger.send_log(
+                message="Creating new MongoDB guild config collection...",
+                level=LogLevel.DEBUG,
+            )
             await self.mongo.create_collection(self.GUILD_CONFIG_COLLECTION)
 
         self.guild_config_collection = self.mongo[self.GUILD_CONFIG_COLLECTION]
 
-        await self.logger.debug("Connecting to Postgres...")
+        await self.logger.send_log(
+            message="Connecting to Postgres...",
+            level=LogLevel.DEBUG,
+        )
         try:
             self.db = await self.get_postgres_ref()
         except Exception as exception:
@@ -55,24 +67,36 @@ class TechSupportBot(base.AdvancedBot):
                 exception=exception,
             )
 
-        await self.logger.debug("Logging into Discord...")
+        await self.logger.send_log(
+            message="Logging into Discord...",
+            level=LogLevel.DEBUG,
+        )
         await super().start(self.file_config.bot_config.auth_token, *args, **kwargs)
 
     async def setup_hook(self):
         """This function is automatically called after the bot has been logged into discord
         This loads postgres, extensions, and the help menu
         """
-        await self.logger.debug("Loading extensions...")
+        await self.logger.send_log(
+            message="Loading extensions...",
+            level=LogLevel.DEBUG,
+        )
         self.extension_name_list = []
         await self.load_extensions()
 
         if self.db:
-            await self.logger.debug("Syncing Postgres tables...")
+            await self.logger.send_log(
+                message="Syncing Postgres tables...",
+                level=LogLevel.DEBUG,
+            )
             self.models = munch.DefaultMunch(None)
             base.databases.setup_models(self)
             await self.db.gino.create_all()
 
-        await self.logger.debug("Loading Help commands...")
+        await self.logger.send_log(
+            message="Loading Help commands...",
+            level=LogLevel.DEBUG,
+        )
         self.remove_command("help")
         help_cog = builtin_cogs.Helper(self)
         await self.add_cog(help_cog)
@@ -129,7 +153,10 @@ class TechSupportBot(base.AdvancedBot):
 
     async def cleanup(self):
         """Cleans up after the event loop is interupted."""
-        await self.logger.debug("Cleaning up...", send=True)
+        await self.logger.send_log(
+            message="Cleaning up...",
+            level=LogLevel.DEBUG,
+        )
         await super().close()
 
     async def on_guild_join(self, guild):

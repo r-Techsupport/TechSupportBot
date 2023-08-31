@@ -105,7 +105,10 @@ class AdvancedBot(DataBot):
                 )
 
                 if not config_:
-                    await self.logger.debug("No config found in MongoDB")
+                    await self.logger.send_log(
+                        message="No config found in MongoDB",
+                        level=LogLevel.DEBUG,
+                    )
                     if create_if_none:
                         config_ = await self.create_new_context_config(lookup)
                 else:
@@ -156,7 +159,11 @@ class AdvancedBot(DataBot):
         config_.extensions = extensions_config
 
         try:
-            await self.logger.debug(f"Inserting new config for lookup key: {lookup}")
+            await self.logger.send_log(
+                message=f"Inserting new config for lookup key: {lookup}",
+                level=LogLevel.DEBUG,
+                context=LogContext(guild=self.get_guild(lookup)),
+            )
             await self.guild_config_collection.insert_one(config_)
         except Exception as exception:
             # safely finish because the new config is still useful
@@ -186,17 +193,25 @@ class AdvancedBot(DataBot):
             extension_config = config_object.extensions.get(extension_name)
             if not extension_config and extension_config_from_data:
                 should_update = True
-                await self.logger.debug(
-                    f"Found extension {extension_name} not in"
-                    f" config with ID {config_object.guild_id}"
+                await self.logger.send_log(
+                    message=(
+                        f"Found extension {extension_name} not in config with ID"
+                        f" {config_object.guild_id}"
+                    ),
+                    level=LogLevel.DEBUG,
+                    context=LogContext(guild=self.get_guild(config_object.guild_id)),
                 )
                 config_object.extensions[
                     extension_name
                 ] = extension_config_from_data.data
 
         if should_update:
-            await self.logger.debug(
-                f"Updating guild config for lookup key: {config_object.guild_id}"
+            await self.logger.send_log(
+                message=(
+                    f"Updating guild config for lookup key: {config_object.guild_id}"
+                ),
+                level=LogLevel.DEBUG,
+                context=LogContext(guild=self.get_guild(config_object.guild_id)),
             )
             await self.guild_config_collection.replace_one(
                 {"_id": config_object.get("_id")}, config_object
@@ -211,7 +226,11 @@ class AdvancedBot(DataBot):
             ctx (discord.ext.Context): the context associated with the command
             call_once (bool): True if the check should be retrieved from the call_once attribute
         """
-        await self.logger.debug("Checking if command can run")
+        await self.logger.send_log(
+            message="Checking if command can run",
+            level=LogLevel.DEBUG,
+            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+        )
 
         extension_name = self.get_command_extension_name(ctx.command)
         if extension_name:
@@ -243,7 +262,11 @@ class AdvancedBot(DataBot):
         parameters:
             ctx (discord.ext.Context): the context associated with the command
         """
-        await self.logger.debug("Checking context against bot admins")
+        await self.logger.send_log(
+            message="Checking context against bot admins",
+            level=LogLevel.DEBUG,
+            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+        )
 
         owner = await self.get_owner()
         if getattr(owner, "id", None) == ctx.author.id:
@@ -268,7 +291,10 @@ class AdvancedBot(DataBot):
         """Gets the owner object from the bot application."""
         if not self.owner:
             try:
-                await self.logger.debug("Looking up bot owner")
+                await self.logger.send_log(
+                    message="Looking up bot owner",
+                    level=LogLevel.DEBUG,
+                )
                 app_info = await self.application_info()
                 self.owner = app_info.owner
             except discord.errors.HTTPException:
