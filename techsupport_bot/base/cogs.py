@@ -240,7 +240,10 @@ class LoopCog(BaseCog):
                 )
                 if not isinstance(configured_channels, list):
                     await self.bot.logger.send_log(
-                        message=f"Configured channels no longer readable for guild with ID {guild_id} - deleting registration",
+                        message=(
+                            "Configured channels no longer readable for guild with ID"
+                            f" {guild_id} - deleting registration"
+                        ),
                         level=LogLevel.ERROR,
                         context=LogContext(guild=self.get_guild(guild_id)),
                     )

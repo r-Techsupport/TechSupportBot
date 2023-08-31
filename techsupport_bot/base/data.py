@@ -207,7 +207,11 @@ class DataBot(ExtensionsBot):
                         f"Making HTTP {method.upper()} request to URL: {cache_key}"
                     )
 
-                    await self.logger.info(log_message)
+                    await self.logger.send_log(
+                        message=log_message,
+                        level=LogLevel.INFO,
+                        console_only=True,
+                    )
 
                     if get_raw_response:
                         response = {
@@ -223,7 +227,10 @@ class DataBot(ExtensionsBot):
                         ) as exception:
                             response_json = {}
                             await self.logger.send_log(
-                                message=f"{method.upper()} request to URL: {cache_key} failed",
+                                message=(
+                                    f"{method.upper()} request to URL:"
+                                    f" {cache_key} failed"
+                                ),
                                 level=LogLevel.ERROR,
                                 console_only=True,
                                 exception=exception,

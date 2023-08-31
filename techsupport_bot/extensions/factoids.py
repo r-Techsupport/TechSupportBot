@@ -769,7 +769,10 @@ class FactoidManager(base.MatchCog):
                         log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
 
                     await self.bot.logger.send_log(
-                        message=f"Cron job {job} has failed - factoid has been deleted from the DB",
+                        message=(
+                            f"Cron job {job} has failed - factoid has been deleted from"
+                            " the DB"
+                        ),
                         level=LogLevel.WARNING,
                         channel=channel,
                         context=log_context,
@@ -812,13 +815,16 @@ class FactoidManager(base.MatchCog):
                     config = await self.bot.get_context_config(ctx)
                     channel = config.get("logging_channel")
                     log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
-                
+
                 await self.bot.logger.send_log(
-                        message="Could not find factoid referenced by job - will retry after waiting",
-                        level=LogLevel.WARNING,
-                        channel=log_channel,
-                        context=log_context,
-                    )
+                    message=(
+                        "Could not find factoid referenced by job - will retry after"
+                        " waiting"
+                    ),
+                    level=LogLevel.WARNING,
+                    channel=log_channel,
+                    context=log_context,
+                )
                 continue
 
             # Get_embed accepts job as a factoid object
@@ -834,13 +840,16 @@ class FactoidManager(base.MatchCog):
                     config = await self.bot.get_context_config(ctx)
                     channel = config.get("logging_channel")
                     log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
-                
+
                 await self.bot.logger.send_log(
-                        message="Could not find channel to send factoid cronjob - will retry after waiting",
-                        level=LogLevel.WARNING,
-                        channel=log_channel,
-                        context=log_context,
-                    )
+                    message=(
+                        "Could not find channel to send factoid cronjob - will retry"
+                        " after waiting"
+                    ),
+                    level=LogLevel.WARNING,
+                    channel=log_channel,
+                    context=log_context,
+                )
                 continue
 
             try:

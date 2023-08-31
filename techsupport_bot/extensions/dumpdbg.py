@@ -4,8 +4,9 @@ import json
 import base
 import discord
 from base import auxiliary
-from discord.ext import commands
 from botlogging import LogContext, LogLevel
+from discord.ext import commands
+
 
 async def setup(bot):
     """Method to add the dumpdbg command to config."""
@@ -159,11 +160,13 @@ class Dumpdbg(base.BaseCog):
                 )
                 channel = config.get("logging_channel")
                 await self.bot.logger.send_log(
-                        message=f"Dumpdbg API responded with the error `{response['error']}`",
-                        level=LogLevel.WARNING,
-                        channel=channel,
-                        context=LogContext(guild=ctx.guild, channel=ctx.channel),
-                    )
+                    message=(
+                        f"Dumpdbg API responded with the error `{response['error']}`"
+                    ),
+                    level=LogLevel.WARNING,
+                    channel=channel,
+                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                )
                 return
             result_urls.append(response["url"])
 

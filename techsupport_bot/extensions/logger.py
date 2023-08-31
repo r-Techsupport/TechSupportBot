@@ -3,6 +3,7 @@ import datetime
 
 import base
 import discord
+from botlogging import LogContext, LogLevel
 
 
 async def setup(bot):
@@ -116,8 +117,14 @@ class Logger(base.MatchCog):
                 ) <= ctx.filesize_limit:
                     attachments.append(await attch.to_file())
             if (lf := len(ctx.message.attachments) - len(attachments)) != 0:
-                await self.bot.logger.info(
-                    f"Did not reupload {lf} file(s) due to file size limit."
+                log_channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message=(
+                        f"Logger did not reupload {lf} file(s) due to file size limit."
+                    ),
+                    level=LogLevel.INFO,
+                    channel=log_channel,
+                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
                 )
 
         await channel.send(embed=LogEmbed(context=ctx), files=attachments[:10])

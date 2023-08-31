@@ -118,7 +118,10 @@ class AdvancedBot(DataBot):
 
         if time_taken > self.CONFIG_RECEIVE_WARNING_TIME_MS:
             await self.logger.send_log(
-                message=f"Context config receive time = {time_taken} ms (over {self.CONFIG_RECEIVE_WARNING_TIME_MS} threshold)",
+                message=(
+                    f"Context config receive time = {time_taken} ms (over"
+                    f" {self.CONFIG_RECEIVE_WARNING_TIME_MS} threshold)"
+                ),
                 level=LogLevel.WARNING,
                 context=LogContext(guild=self.get_guild(lookup)),
             )
@@ -322,7 +325,13 @@ class AdvancedBot(DataBot):
         sliced_content = interaction.command.qualified_name[:100]
         message = f"Command detected: `/{sliced_content}`"
 
-        await self.logger.info(message, embed=embed, send=True, channel=log_channel)
+        await self.logger.send_log(
+            message=message,
+            level=LogLevel.INFO,
+            context=LogContext(guild=interaction.guild, channel=interaction.channel),
+            channel=log_channel,
+            embed=embed,
+        )
 
     async def guild_log(self, guild, key, log_type, message, **kwargs):
         """Wrapper for logging directly to a guild's log channel.
@@ -339,7 +348,10 @@ class AdvancedBot(DataBot):
     async def on_ready(self):
         """Callback for when the bot is finished starting up."""
         self.__startup_time = datetime.datetime.utcnow()
-        await self.logger.info("Bot online")
+        await self.logger.send_log(
+            message="Bot online",
+            level=LogLevel.INFO,
+        )
         await self.get_owner()
 
     async def on_message(self, message):
@@ -358,9 +370,11 @@ class AdvancedBot(DataBot):
             attachment_urls = ", ".join(a.url for a in message.attachments)
             content_string = f'"{message.content}"' if message.content else ""
             attachment_string = f"({attachment_urls})" if attachment_urls else ""
-            await self.logger.info(
-                f"PM from `{message.author}`: {content_string} {attachment_string}",
-                send=True,
+            await self.logger.send_log(
+                message=(
+                    f"PM from `{message.author}`: {content_string} {attachment_string}"
+                ),
+                level=LogLevel.INFO,
             )
 
         await self.process_commands(message)
@@ -369,10 +383,6 @@ class AdvancedBot(DataBot):
         """
         See: https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.on_command
         """
-        config_ = await self.get_context_config(ctx)
-        if str(ctx.channel.id) in config_.get("private_channels", []):
-            return
-
         embed = discord.Embed()
         embed.add_field(name="User", value=ctx.author)
         embed.add_field(name="Channel", value=getattr(ctx.channel, "name", "DM"))
@@ -385,8 +395,12 @@ class AdvancedBot(DataBot):
         sliced_content = ctx.message.content[:100]
         message = f"Command detected: {sliced_content}"
 
-        await self.logger.info(
-            message, embed=embed, context=ctx, send=True, channel=log_channel
+        await self.logger.send_log(
+            message=message,
+            level=LogLevel.INFO,
+            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            channel=log_channel,
+            embed=embed,
         )
 
     async def on_error(self, event_method, *_args, **_kwargs):
@@ -507,15 +521,24 @@ class AdvancedBot(DataBot):
 
     async def on_connect(self):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_connect"""
-        await self.logger.info("Connected to Discord")
+        await self.logger.send_log(
+            message="Connected to Discord",
+            level=LogLevel.INFO,
+        )
 
     async def on_resumed(self):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_resumed"""
-        await self.logger.info("Resume event")
+        await self.logger.send_log(
+            message="Resume event",
+            level=LogLevel.INFO,
+        )
 
     async def on_disconnect(self):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_disconnect"""
-        await self.logger.info("Disconnected from Discord")
+        await self.logger.send_log(
+            message="Disconnected from Discord",
+            level=LogLevel.INFO,
+        )
 
     async def on_message_delete(self, message):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_delete"""
@@ -524,10 +547,6 @@ class AdvancedBot(DataBot):
 
         # Ignore ephemeral slash command messages
         if not guild and message.type == discord.MessageType.chat_input_command:
-            return
-
-        config_ = await self.get_context_config(guild=guild)
-        if str(channel_id) in config_.get("private_channels", []):
             return
 
         embed = discord.Embed()
@@ -549,11 +568,12 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             guild, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"Message with ID {message.id} deleted",
-            embed=embed,
-            send=True,
+        await self.logger.send_log(
+            message=f"Message with ID {message.id} deleted",
+            level=LogLevel.INFO,
+            context=LogContext(guild=message.channel.guild, channel=message.channel),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_bulk_message_delete(self, messages):
@@ -561,11 +581,6 @@ class AdvancedBot(DataBot):
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_bulk_message_delete
         """
         guild = getattr(messages[0].channel, "guild", None)
-        channel_id = getattr(messages[0].channel, "id", None)
-
-        config_ = await self.get_context_config(guild=guild)
-        if str(channel_id) in config_.get("private_channels", []):
-            return
 
         unique_channels = set()
         unique_servers = set()
@@ -582,11 +597,14 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             guild, key="guild_events_channel"
         )
-        await self.logger.info(
+        await self.logger.send_log(
             message=f"{len(messages)} messages bulk deleted!",
-            embed=embed,
-            send=True,
+            level=LogLevel.INFO,
+            context=LogContext(
+                guild=messages[0].channel.guild, channel=messages[0].channel
+            ),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_message_edit(self, before, after):
@@ -600,10 +618,6 @@ class AdvancedBot(DataBot):
 
         # Ignore ephemeral slash command messages
         if not guild and before.type == discord.MessageType.chat_input_command:
-            return
-
-        config_ = await self.get_context_config(guild=guild)
-        if str(channel_id) in config_.get("private_channels", []):
             return
 
         attrs = ["content", "embeds"]
@@ -621,28 +635,27 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             guild, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"Message edit detected on message with ID {before.id}",
-            embed=embed,
-            send=True,
+
+        await self.logger.send_log(
+            message=f"Message edit detected on message with ID {before.id}",
+            level=LogLevel.INFO,
+            context=LogContext(guild=before.channel.guild, channel=before.channel),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_reaction_add(self, reaction, user):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_add"""
         guild = getattr(reaction.message.channel, "guild", None)
-        channel_id = getattr(reaction.message.channel, "id", None)
 
         if isinstance(reaction.message.channel, discord.DMChannel):
-            await self.logger.info(
-                f"PM from `{user}`: added {reaction.emoji} reaction "
-                f" to message {reaction.message.content} in DMs",
-                send=True,
+            await self.logger.send_log(
+                message=(
+                    f"PM from `{user}`: added {reaction.emoji} reaction to message"
+                    f" {reaction.message.content} in DMs"
+                ),
+                level=LogLevel.INFO,
             )
-            return
-
-        config_ = await self.get_context_config(guild=guild)
-        if str(channel_id) in config_.get("private_channels", []):
             return
 
         embed = discord.Embed()
@@ -658,29 +671,32 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             guild, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"Reaction added to message with ID {reaction.message.id} by user with ID"
-            f" {user.id}",
-            embed=embed,
-            send=True,
+
+        await self.logger.send_log(
+            message=(
+                f"Reaction added to message with ID {reaction.message.id} by user with"
+                f" ID {user.id}"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(
+                guild=reaction.message.channel.guild, channel=reaction.message.channel
+            ),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_reaction_remove(self, reaction, user):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_remove"""
         guild = getattr(reaction.message.channel, "guild", None)
-        channel_id = getattr(reaction.message.channel, "id", None)
 
         if isinstance(reaction.message.channel, discord.DMChannel):
-            await self.logger.info(
-                f"PM from `{user}`: removed {reaction.emoji} reaction                  "
-                f"   to message {reaction.message.content} in DMs",
-                send=True,
+            await self.logger.send_log(
+                message=(
+                    f"PM from `{user}`: removed {reaction.emoji} reaction to message"
+                    f" {reaction.message.content} in DMs"
+                ),
+                level=LogLevel.INFO,
             )
-            return
-
-        config_ = await self.get_context_config(guild=guild)
-        if str(channel_id) in config_.get("private_channels", []):
             return
 
         embed = discord.Embed()
@@ -696,12 +712,18 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             guild, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"Reaction removed from message with ID {reaction.message.id}            "
-            f" by user with ID {user.id}",
-            embed=embed,
-            send=True,
+
+        await self.logger.send_log(
+            message=(
+                f"Reaction removed from message with ID {reaction.message.id} by user"
+                f" with ID {user.id}"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(
+                guild=reaction.message.channel.guild, channel=reaction.message.channel
+            ),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_reaction_clear(self, message, reactions):
@@ -709,11 +731,6 @@ class AdvancedBot(DataBot):
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_clear
         """
         guild = getattr(message.channel, "guild", None)
-        channel_id = getattr(message.channel, "id", None)
-
-        config_ = await self.get_context_config(guild=guild)
-        if str(channel_id) in config_.get("private_channels", []):
-            return
 
         unique_emojis = set()
         for reaction in reactions:
@@ -729,11 +746,13 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             guild, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"{len(reactions)} cleared from message with ID {message.id}",
-            embed=embed,
-            send=True,
+
+        await self.logger.send_log(
+            message=f"{len(reactions)} cleared from message with ID {message.id}",
+            level=LogLevel.INFO,
+            context=LogContext(guild=message.channel.guild, channel=message.channel),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_guild_channel_delete(self, channel):
@@ -747,11 +766,16 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             channel.guild, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"Channel with ID {channel.id} deleted in guild with ID {channel.guild.id}",
-            embed=embed,
-            send=True,
+
+        await self.logger.send_log(
+            message=(
+                f"Channel with ID {channel.id} deleted in guild with ID"
+                f" {channel.guild.id}"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(guild=channel.guild, channel=channel),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_guild_channel_create(self, channel):
@@ -764,21 +788,21 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             getattr(channel, "guild", None), key="guild_events_channel"
         )
-        await self.logger.info(
-            f"Channel with ID {channel.id} created in guild with ID {channel.guild.id}",
-            embed=embed,
-            send=True,
+        await self.logger.send_log(
+            message=(
+                f"Channel with ID {channel.id} created in guild with ID"
+                f" {channel.guild.id}"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(guild=channel.guild, channel=channel),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_guild_channel_update(self, before, after):
         """
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_update
         """
-        config_ = await self.get_context_config(guild=before.guild)
-        if str(before.id) in config_.get("private_channels", []):
-            return
-
         attrs = [
             "category",
             "changed_roles",
@@ -797,11 +821,15 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             before.guild, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"Channel with ID {before.id} modified in guild with ID {before.guild.id}",
-            embed=embed,
-            send=True,
+        await self.logger.send_log(
+            message=(
+                f"Channel with ID {before.id} modified in guild with ID"
+                f" {before.guild.id}"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(guild=before.guild, channel=before),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_guild_channel_pins_update(self, channel, _last_pin):
@@ -809,10 +837,6 @@ class AdvancedBot(DataBot):
         See:
         https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_pins_update
         """
-        config_ = await self.get_context_config(guild=channel.guild)
-        if str(channel.id) in config_.get("private_channels", []):
-            return
-
         embed = discord.Embed()
         embed.add_field(name="Channel Name", value=channel.name)
         embed.add_field(name="Server", value=channel.guild)
@@ -820,12 +844,16 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             channel.guild, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"Channel pins updated in channel with ID {channel.id}             in guild"
-            f" with ID {channel.guild.id}",
-            embed=embed,
-            send=True,
+
+        await self.logger.send_log(
+            message=(
+                f"Channel pins updated in channel with ID {channel.id} in guild with ID"
+                f" {channel.guild.id}"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(guild=channel.guild, channel=channel),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_guild_integrations_update(self, guild):
@@ -838,19 +866,16 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             guild, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"Integrations updated in guild with ID {guild.id}",
-            embed=embed,
-            send=True,
+        await self.logger.send_log(
+            message=f"Integrations updated in guild with ID {guild.id}",
+            level=LogLevel.INFO,
+            context=LogContext(guild=guild),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_webhooks_update(self, channel):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_webhooks_update"""
-        config_ = await self.get_context_config(guild=channel.guild)
-        if str(channel.id) in config_.get("private_channels", []):
-            return
-
         embed = discord.Embed()
         embed.add_field(name="Channel", value=channel.name)
         embed.add_field(name="Server", value=channel.guild)
@@ -858,12 +883,16 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             channel.guild, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"Webooks updated for channel with ID {channel.id} in guild with ID"
-            f" {channel.guild.id}",
-            embed=embed,
-            send=True,
+
+        await self.logger.send_log(
+            message=(
+                f"Webooks updated for channel with ID {channel.id} in guild with ID"
+                f" {channel.guild.id}"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(guild=channel.guild, channel=channel),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_member_join(self, member: discord.Member):
@@ -876,10 +905,8 @@ class AdvancedBot(DataBot):
                 await member.edit(nick=temp_name)
                 try:
                     await member.send(
-                        (
-                            "Your nickname has been changed to make it easy to read and ping "
-                            f"your name. Your new nickname is {temp_name}."
-                        )
+                        "Your nickname has been changed to make it easy to read and"
+                        f" ping your name. Your new nickname is {temp_name}."
                     )
                 except discord.Forbidden:
                     channel = config.get("logging_channel")
@@ -896,11 +923,15 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             getattr(member, "guild", None), key="member_events_channel"
         )
-        await self.logger.info(
-            f"Member with ID {member.id} has joined guild with ID {member.guild.id}",
-            embed=embed,
-            send=True,
+
+        await self.logger.send_log(
+            message=(
+                f"Member with ID {member.id} has joined guild with ID {member.guild.id}"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(guild=member.guild),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_member_update(self, before, after):
@@ -920,12 +951,15 @@ class AdvancedBot(DataBot):
                 getattr(before, "guild", None), key="member_events_channel"
             )
 
-            await self.logger.info(
-                f"Member with ID {before.id} has changed status in guild with ID"
-                f" {before.guild.id}",
-                embed=embed,
-                send=True,
+            await self.logger.send_log(
+                message=(
+                    f"Member with ID {before.id} has changed status in guild with ID"
+                    f" {before.guild.id}"
+                ),
+                level=LogLevel.INFO,
+                context=LogContext(guild=before.guild),
                 channel=log_channel,
+                embed=embed,
             )
 
     async def on_member_remove(self, member):
@@ -936,25 +970,26 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             getattr(member, "guild", None), key="member_events_channel"
         )
-        await self.logger.info(
-            f"Member with ID {member.id} has left guild with ID {member.guild.id}",
-            embed=embed,
-            send=True,
+
+        await self.logger.send_log(
+            message=(
+                f"Member with ID {member.id} has left guild with ID {member.guild.id}"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(guild=member.guild),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_guild_remove(self, guild):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_remove"""
         embed = discord.Embed()
         embed.add_field(name="Server", value=guild.name)
-        log_channel = await self.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
-        )
-        await self.logger.info(
-            f"Left guild with ID {guild.id}",
+        await self.logger.send_log(
+            message=f"Left guild with ID {guild.id}",
+            level=LogLevel.INFO,
+            context=LogContext(guild=guild),
             embed=embed,
-            send=True,
-            channel=log_channel,
         )
 
     async def on_guild_join(self, guild):
@@ -969,11 +1004,13 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             guild, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"Joined guild with ID {guild.id}",
-            embed=embed,
-            send=True,
+
+        await self.logger.send_log(
+            message=f"Joined guild with ID {guild.id}",
+            level=LogLevel.INFO,
+            context=LogContext(guild=guild),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_guild_update(self, before, after):
@@ -1014,11 +1051,12 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             before, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"Guild with ID {before.id} updated",
-            embed=embed,
-            send=True,
+        await self.logger.send_log(
+            message=f"Guild with ID {before.id} updated",
+            level=LogLevel.INFO,
+            context=LogContext(guild=before),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_guild_role_create(self, role):
@@ -1028,11 +1066,15 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             role.guild, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"New role with name {role.name} added to guild with ID {role.guild.id}",
-            embed=embed,
-            send=True,
+
+        await self.logger.send_log(
+            message=(
+                f"New role with name {role.name} added to guild with ID {role.guild.id}"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(guild=role.before),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_guild_role_delete(self, role):
@@ -1042,11 +1084,14 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             role.guild, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"Role with name {role.name} deleted from guild with ID {role.guild.id}",
-            embed=embed,
-            send=True,
+        await self.logger.send_log(
+            message=(
+                f"Role with name {role.name} deleted from guild with ID {role.guild.id}"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(guild=role.before),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_guild_role_update(self, before, after):
@@ -1061,11 +1106,16 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             before.guild, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"Role with name {before.name} updated in guild with ID {before.guild.id}",
-            embed=embed,
-            send=True,
+
+        await self.logger.send_log(
+            message=(
+                f"Role with name {before.name} updated in guild with ID"
+                f" {before.guild.id}"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(guild=before.before),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_guild_emojis_update(self, guild, before, _):
@@ -1078,11 +1128,12 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             guild, key="guild_events_channel"
         )
-        await self.logger.info(
-            f"Emojis updated in guild with ID {guild.id}",
-            embed=embed,
-            send=True,
+        await self.logger.send_log(
+            message=f"Emojis updated in guild with ID {guild.id}",
+            level=LogLevel.INFO,
+            context=LogContext(guild=before),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_member_ban(self, guild, user):
@@ -1094,11 +1145,13 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             guild, key="member_events_channel"
         )
-        await self.logger.info(
-            f"User with ID {user.id} banned from guild with ID {guild.id}",
-            embed=embed,
-            send=True,
+
+        await self.logger.send_log(
+            message=f"User with ID {user.id} banned from guild with ID {guild.id}",
+            level=LogLevel.INFO,
+            context=LogContext(guild=guild),
             channel=log_channel,
+            embed=embed,
         )
 
     async def on_member_unban(self, guild, user):
@@ -1110,9 +1163,11 @@ class AdvancedBot(DataBot):
         log_channel = await self.get_log_channel_from_guild(
             guild, key="member_events_channel"
         )
-        await self.logger.info(
-            f"User with ID {user.id} unbanned from guild with ID {guild.id}",
-            embed=embed,
-            send=True,
+
+        await self.logger.send_log(
+            message=f"User with ID {user.id} unbanned from guild with ID {guild.id}",
+            level=LogLevel.INFO,
+            context=LogContext(guild=guild),
             channel=log_channel,
+            embed=embed,
         )
