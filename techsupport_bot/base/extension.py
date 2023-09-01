@@ -60,7 +60,7 @@ class ExtensionsBot(commands.Bot):
 
         if self.file_config.logging.queue_enabled:
             self.logger = botlogging.DelayedLogger(
-                bot=self,
+                discord_bot=self,
                 name=self.__class__.__name__,
                 send=not self.file_config.logging.block_discord_send,
                 wait_time=self.file_config.logging.queue_wait_seconds,
