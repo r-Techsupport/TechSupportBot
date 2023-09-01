@@ -20,6 +20,14 @@ from discord.ext import commands
 
 async def setup(bot):
     """Registers the extension"""
+
+    # Don't load without the API key
+    try:
+        if not bot.file_config.api.api_keys.openai:
+            raise AttributeError("ChatGPT was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError("ChatGPT was not loaded due to missing API key") from exc
+
     await bot.add_cog(ChatGPT(bot=bot))
 
 

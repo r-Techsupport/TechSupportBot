@@ -7,6 +7,14 @@ from discord.ext import commands
 
 async def setup(bot):
     """Adding the wolfram configuration to the config file."""
+
+    # Don't load without the API key
+    try:
+        if not bot.file_config.api.api_keys.wolfram:
+            raise AttributeError("Wolfram was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError("Wolfram was not loaded due to missing API key") from exc
+
     await bot.add_cog(Wolfram(bot=bot))
 
 

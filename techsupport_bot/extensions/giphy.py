@@ -7,6 +7,14 @@ from discord.ext import commands
 
 async def setup(bot):
     """Method to add giphy to the config."""
+
+    # Don't load without the API key
+    try:
+        if not bot.file_config.api.api_keys.giphy:
+            raise AttributeError("Giphy was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError("Giphy was not loaded due to missing API key") from exc
+
     await bot.add_cog(Giphy(bot=bot))
 
 
