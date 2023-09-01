@@ -9,6 +9,14 @@ from discord.ext import commands
 
 async def setup(bot):
     """Method to add the dumpdbg command to config."""
+
+    # Don't load without the API key
+    try:
+        if not bot.file_config.api.api_keys.dumpdbg:
+            raise AttributeError("Dumpdbg was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError("Dumpdbg was not loaded due to missing API key") from exc
+
     config = bot.ExtensionConfig()
     config.add(
         key="roles",
