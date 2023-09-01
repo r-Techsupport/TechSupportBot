@@ -33,8 +33,9 @@ class AutoReact(base.MatchCog):
             bool: True if there needs to be a reaction, False otherwise
         """
         search_content = f" {content} "
+        search_content = search_content.lower()
         for word in config.extensions.autoreact.react_map.value:
-            if f" {word} " in search_content:
+            if f" {word.lower()} " in search_content:
                 return True
         return False
 
@@ -48,9 +49,10 @@ class AutoReact(base.MatchCog):
             _ (bool): The result from the match function
         """
         search_content = f" {content} "
+        search_content = search_content.lower()
         reactions = []
         for word in config.extensions.autoreact.react_map.value:
-            if f" {word} " in search_content:
+            if f" {word.lower()} " in search_content:
                 reaction = config.extensions.autoreact.react_map.value.get(word)
                 if reaction not in reactions:
                     reactions.append(
