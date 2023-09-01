@@ -187,7 +187,7 @@ class Who(base.BaseCog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        await user.add_roles(role)
+        await user.add_roles(role, reason=f"First note was added by {interaction.user}")
 
         embed = auxiliary.prepare_confirm_embed(message=f"Note created for `{user}`")
         await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -241,7 +241,9 @@ class Who(base.BaseCog):
             interaction.guild.roles, name=config.extensions.who.note_role.value
         )
         if role:
-            await user.remove_roles(role)
+            await user.remove_roles(
+                role, reason=f"Notes were cleared by {interaction.user}"
+            )
 
         embed = auxiliary.prepare_confirm_embed(message=f"Notes cleared for `{user}`")
         await view.followup.send(embed=embed, ephemeral=True)
@@ -354,7 +356,7 @@ class Who(base.BaseCog):
         if not user_notes:
             return
 
-        await member.add_roles(role)
+        await member.add_roles(role, reason="Noted user has joined the guild")
 
         log_channel = config.get("logging_channel")
         await self.bot.logger.send_log(

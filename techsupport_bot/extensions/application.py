@@ -661,4 +661,4 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
                     continue
                 roles.append(role)
 
-            await user.add_roles(*roles)
+            await user.add_roles(*roles, reason=f"Application approved by {ctx.author}")
