@@ -4,6 +4,7 @@ import json
 import base
 import discord
 from base import auxiliary
+from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
 
@@ -165,8 +166,14 @@ class Dumpdbg(base.BaseCog):
                     + f"Api response: `{response['error']}`",
                     channel=ctx.channel,
                 )
-                await self.bot.logger.warning(
-                    f"Dumpdbg API responded with the error `{response['error']}`"
+                channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message=(
+                        f"Dumpdbg API responded with the error `{response['error']}`"
+                    ),
+                    level=LogLevel.WARNING,
+                    channel=channel,
+                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
                 )
                 return
             result_urls.append(response["url"])

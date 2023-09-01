@@ -11,6 +11,7 @@ import expiringdict
 import munch
 import ui
 from base import auxiliary
+from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
 
@@ -40,7 +41,7 @@ async def setup(bot):
         key="immune_roles",
         datatype="list",
         title="Immune role names",
-        description=("The list of role names that are immune to protect commands"),
+        description="The list of role names that are immune to protect commands",
         default=[],
     )
     config.add(
@@ -164,8 +165,10 @@ class Protector(base.MatchCog):
         """Method to match roles for the protect command."""
         # exit the match based on exclusion parameters
         if not str(ctx.channel.id) in config.extensions.protect.channels.value:
-            await self.bot.logger.debug(
-                "Channel not in protected channels - ignoring protect check"
+            await self.bot.logger.send_log(
+                message="Channel not in protected channels - ignoring protect check",
+                level=LogLevel.DEBUG,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
             )
             return False
 
@@ -287,8 +290,14 @@ class Protector(base.MatchCog):
                 ) <= ctx.filesize_limit:
                     attachments.append(await attch.to_file())
             if (lf := len(ctx.message.attachments) - len(attachments)) != 0:
-                await self.bot.logger.info(
-                    f"Did not reupload {lf} file(s) due to file size limit."
+                log_channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message=(
+                        f"Protect did not reupload {lf} file(s) due to file size limit."
+                    ),
+                    level=LogLevel.INFO,
+                    channel=log_channel,
+                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
                 )
         await ctx.message.delete()
 
@@ -416,7 +425,13 @@ class Protector(base.MatchCog):
                 await user.send(embed=embed)
 
             except (discord.HTTPException, discord.Forbidden):
-                await self.bot.logger.warning(f"Failed to DM warning to {user}")
+                channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message=f"Failed to DM warning to {user}",
+                    level=LogLevel.WARNING,
+                    channel=channel,
+                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                )
 
             finally:
                 await ctx.send(content=user.mention, embed=embed)
@@ -552,7 +567,10 @@ class Protector(base.MatchCog):
             role_check = discord.utils.get(target.guild.roles, name=name)
             if role_check and role_check in getattr(target, "roles", []):
                 await auxiliary.send_deny_embed(
-                    message=f"You cannot {action} {target} because they have `{role_check}` role",
+                    message=(
+                        f"You cannot {action} {target} because they have `{role_check}`"
+                        " role"
+                    ),
                     channel=ctx.channel,
                 )
                 return False

@@ -10,6 +10,7 @@ import aiohttp
 import expiringdict
 import gino
 import munch
+from botlogging import LogLevel
 from error import HTTPRateLimit
 from motor import motor_asyncio
 
@@ -108,7 +109,11 @@ class DataBot(ExtensionsBot):
 
         This doesn't follow a singleton pattern (use bot.db instead).
         """
-        await self.logger.debug("Obtaining and binding to Gino instance")
+        await self.logger.send_log(
+            message="Obtaining and binding to Gino instance",
+            level=LogLevel.DEBUG,
+            console_only=True,
+        )
 
         db_ref = gino.Gino()
         db_url = self.generate_db_url()
@@ -206,7 +211,11 @@ class DataBot(ExtensionsBot):
                         f"Making HTTP {method.upper()} request to URL: {cache_key}"
                     )
 
-                    await self.logger.info(log_message)
+                    await self.logger.send_log(
+                        message=log_message,
+                        level=LogLevel.INFO,
+                        console_only=True,
+                    )
 
                     if get_raw_response:
                         response = {
@@ -216,11 +225,19 @@ class DataBot(ExtensionsBot):
                     else:
                         try:
                             response_json = await response_object.json()
-                        except (aiohttp.ClientResponseError, JSONDecodeError) as e:
+                        except (
+                            aiohttp.ClientResponseError,
+                            JSONDecodeError,
+                        ) as exception:
                             response_json = {}
-                            await self.logger.error(
-                                f"{method.upper()} request to URL: {cache_key} failed",
-                                exception=e,
+                            await self.logger.send_log(
+                                message=(
+                                    f"{method.upper()} request to URL:"
+                                    f" {cache_key} failed"
+                                ),
+                                level=LogLevel.ERROR,
+                                console_only=True,
+                                exception=exception,
                             )
 
                         response = (
@@ -233,7 +250,8 @@ class DataBot(ExtensionsBot):
                                 response_object, "status", None
                             )
                         except TypeError:
-                            await self.logger.warning(
-                                "Failed to add status_code to API response"
+                            await self.logger.send_log(
+                                message="Failed to add status_code to API response",
+                                level=LogLevel.WARNING,
                             )
                     return response

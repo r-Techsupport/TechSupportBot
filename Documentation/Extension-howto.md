@@ -295,7 +295,18 @@ response = await self.bot.http_call(
     headers={"Content-Type": "application/json"},
 )
 ```
+## Logging
 
+Logging can be done with the following:
+```py
+await self.bot.logger.send_log(
+            message="Message",
+            level=LogLevel.INFO,
+            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            channel=log_channel,
+        )
+```
+If applicable, add the content guild and channel
 
 ## Returning a message
 

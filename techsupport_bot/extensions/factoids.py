@@ -25,6 +25,7 @@ import ui
 import yaml
 from aiohttp.client_exceptions import InvalidURL
 from base import auxiliary
+from botlogging import LogContext, LogLevel
 from croniter import CroniterBadCronError
 from discord.ext import commands
 from error import FactoidNotFoundError, TooLongFactoidMessageError
@@ -120,7 +121,10 @@ class FactoidManager(base.MatchCog):
             max_len=1,
             max_age_seconds=86400,  # 24 hours, matches deletion on linx server
         )
-        await self.bot.logger.debug("Loading factoid jobs")
+        await self.bot.logger.send_log(
+            message="Loading factoid jobs",
+            level=LogLevel.DEBUG,
+        )
         await self.kickoff_jobs()
 
     # -- DB calls --
@@ -656,8 +660,10 @@ class FactoidManager(base.MatchCog):
             factoid = await self.get_factoid(query, str(ctx.guild.id))
 
         except FactoidNotFoundError:
-            await self.bot.logger.debug(
-                f"Invalid factoid call {query} from {ctx.guild.id}"
+            await self.bot.logger.send_log(
+                message=f"Invalid factoid call {query} from {ctx.guild.id}",
+                level=LogLevel.DEBUG,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
             )
             return
 
@@ -683,22 +689,27 @@ class FactoidManager(base.MatchCog):
                 embed=embed,
             )
             # log it in the logging channel with type info and generic content
-            await self.bot.guild_log(
-                ctx.guild,
-                "logging_channel",
-                "info",
-                f"Sending factoid: {query} (triggered by {ctx.author} in"
-                f" #{ctx.channel.name})",
-                send=True,
+            config = await self.bot.get_context_config(ctx)
+            log_channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message=(
+                    f"Sending factoid: {query} (triggered by {ctx.author} in"
+                    f" #{ctx.channel.name})"
+                ),
+                level=LogLevel.INFO,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                channel=log_channel,
             )
         # If something breaks, also log it
-        except discord.errors.HTTPException as e:
-            await self.bot.guild_log(
-                ctx.guild,
-                "logging_channel",
-                "error",
-                "Could not send factoid",
-                exception=e,
+        except discord.errors.HTTPException as exception:
+            config = await self.bot.get_context_config(ctx)
+            log_channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message="Could not send factoid",
+                level=LogLevel.ERROR,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                channel=log_channel,
+                exception=exception,
             )
             # Sends the raw factoid instead of the embed as fallback
             await ctx.reply(f"{mentions+' ' if mentions else ''}{factoid.message}")
@@ -759,18 +770,24 @@ class FactoidManager(base.MatchCog):
                 ).gino.first()
                 if not from_db:
                     # This factoid job has been deleted from the DB
-                    await self.bot.logger.warning(
-                        f"Cron job {job} has failed - factoid has been deleted from"
-                        " the DB"
-                    )
+                    log_channel = None
+                    log_context = None
+
                     if ctx:
-                        await self.bot.guild_log(
-                            ctx.guild,
-                            "logging_channel",
-                            "error",
+                        config = await self.bot.get_context_config(ctx)
+                        channel = config.get("logging_channel")
+                        log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
+
+                    await self.bot.logger.send_log(
+                        message=(
                             f"Cron job {job} has failed - factoid has been deleted from"
-                            " the DB",
-                        )
+                            " the DB"
+                        ),
+                        level=LogLevel.WARNING,
+                        channel=channel,
+                        context=log_context,
+                    )
+
                     return
                 job = from_db
                 self.running_jobs[job_id]["job"] = job
@@ -778,27 +795,45 @@ class FactoidManager(base.MatchCog):
             try:
                 await aiocron.crontab(job.cron).next()
 
-            except CroniterBadCronError as e:
-                await self.bot.logger.error(
-                    "Could not await cron completion", exception=e
-                )
+            except CroniterBadCronError as exception:
+                log_channel = None
+                log_context = None
+
                 if ctx:
-                    await self.bot.guild_log(
-                        ctx.guild,
-                        "logging_channel",
-                        "error",
-                        "Could not await cron job completion",
-                        exception=e,
-                    )
+                    config = await self.bot.get_context_config(ctx)
+                    channel = config.get("logging_channel")
+                    log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
+
+                await self.bot.logger.send_log(
+                    message="Could not await cron completion",
+                    level=LogLevel.ERROR,
+                    channel=log_channel,
+                    context=log_context,
+                    exception=exception,
+                )
+
                 await asyncio.sleep(300)
 
             factoid = await self.bot.models.Factoid.query.where(
                 self.bot.models.Factoid.factoid_id == job.factoid
             ).gino.first()
             if not factoid:
-                await self.bot.logger.warning(
-                    "Could not find factoid referenced by job - will retry after"
-                    " waiting"
+                log_channel = None
+                log_context = None
+
+                if ctx:
+                    config = await self.bot.get_context_config(ctx)
+                    channel = config.get("logging_channel")
+                    log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
+
+                await self.bot.logger.send_log(
+                    message=(
+                        "Could not find factoid referenced by job - will retry after"
+                        " waiting"
+                    ),
+                    level=LogLevel.WARNING,
+                    channel=log_channel,
+                    context=log_context,
                 )
                 continue
 
@@ -808,22 +843,37 @@ class FactoidManager(base.MatchCog):
 
             channel = self.bot.get_channel(int(job.channel))
             if not channel:
-                await self.bot.logger.warning(
-                    "Could not find channel to send factoid cronjob - will retry after"
-                    " waiting"
+                log_channel = None
+                log_context = None
+
+                if ctx:
+                    config = await self.bot.get_context_config(ctx)
+                    channel = config.get("logging_channel")
+                    log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
+
+                await self.bot.logger.send_log(
+                    message=(
+                        "Could not find channel to send factoid cronjob - will retry"
+                        " after waiting"
+                    ),
+                    level=LogLevel.WARNING,
+                    channel=log_channel,
+                    context=log_context,
                 )
                 continue
 
             try:
                 message = await channel.send(content=content, embed=embed)
 
-            except discord.errors.HTTPException as e:
-                await self.bot.guild_log(
-                    ctx.guild,
-                    "logging_channel",
-                    "error",
-                    "Could not send looped factoid",
-                    exception=e,
+            except discord.errors.HTTPException as exception:
+                config = await self.bot.get_context_config(ctx)
+                log_channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message="Could not send looped factoid",
+                    level=LogLevel.ERROR,
+                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                    channel=log_channel,
+                    exception=exception,
                 )
                 # Sends the raw factoid instead of the embed as fallback
                 message = await channel.send(content=factoid.message)
@@ -1330,13 +1380,15 @@ class FactoidManager(base.MatchCog):
                 self.factoid_all_cache[str(ctx.guild.id)]["url"] = url
 
         # If an error happened while calling the api
-        except (gaierror, InvalidURL) as e:
-            await self.bot.guild_log(
-                ctx.guild,
-                "logging_channel",
-                "error",
-                "Could not render/send all-factoid HTML",
-                exception=e,
+        except (gaierror, InvalidURL) as exception:
+            config = await self.bot.get_context_config(ctx)
+            log_channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message="Could not render/send all-factoid HTML",
+                level=LogLevel.ERROR,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                channel=log_channel,
+                exception=exception,
             )
 
             await self.send_factoids_as_file(
@@ -1832,13 +1884,16 @@ class FactoidManager(base.MatchCog):
         )
 
         # Logs the new parent change
-        await self.bot.guild_log(
-            ctx.guild,
-            "logging_channel",
-            "info",
-            f"Factoid dealias: Deleted the alias `{factoid_name.lower()}`"
-            + f", new parent: `{new_name.lower()}`",
-            send=True,
+        config = await self.bot.get_context_config(ctx)
+        log_channel = config.get("logging_channel")
+        await self.bot.logger.send_log(
+            message=(
+                f"Factoid dealias: Deleted the alias `{factoid_name.lower()}`, new"
+                f" parent: `{new_name.lower()}`"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            channel=log_channel,
         )
 
         jobs = (

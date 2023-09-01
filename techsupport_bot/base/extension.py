@@ -68,7 +68,7 @@ class ExtensionsBot(commands.Bot):
 
         else:
             self.logger = botlogging.BotLogger(
-                bot=self,
+                discord_bot=self,
                 name=self.__class__.__name__,
                 send=not self.file_config.logging.block_discord_send,
             )
