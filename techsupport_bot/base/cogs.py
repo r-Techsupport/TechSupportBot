@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, List
 
 import gino
 import munch
+from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -58,9 +59,11 @@ class BaseCog(commands.Cog):
 
         try:
             await handler()
-        except Exception as e:
-            await self.bot.logger.error(
-                f"Cog preconfig error: {handler.__name__}!", exception=e
+        except Exception as exception:
+            await self.bot.logger.send_log(
+                message=f"Cog preconfig error: {handler.__name__}!",
+                level=LogLevel.ERROR,
+                exception=exception,
             )
             if not self.KEEP_COG_ON_FAILURE:
                 await self.bot.remove_cog(self)
@@ -119,14 +122,20 @@ class MatchCog(BaseCog):
 
         try:
             await self.response(config, ctx, message.content, result)
-        except Exception as e:
-            await self.bot.logger.debug("Checking config for log channel")
+        except Exception as exception:
+            await self.bot.logger.send_log(
+                message="Checking config for log channel",
+                level=LogLevel.DEBUG,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            )
             config = await self.bot.get_context_config(ctx)
             channel = config.get("logging_channel")
-            await self.bot.logger.error(
-                f"Match cog error: {self.__class__.__name__} {e}!",
-                exception=e,
+            await self.bot.logger.send_log(
+                message=f"Match cog error: {self.__class__.__name__} {exception}!",
+                level=LogLevel.ERROR,
                 channel=channel,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                exception=exception,
             )
 
     async def match(self, _config, _ctx, _content):
@@ -189,13 +198,17 @@ class LoopCog(BaseCog):
 
         if self.channels.get(guild.id):
             for channel in self.channels.get(guild.id, []):
-                await self.bot.logger.debug(
-                    f"Creating loop task for channel with ID {channel.id}"
+                await self.bot.logger.send_log(
+                    message=f"Creating loop task for channel with ID {channel.id}",
+                    level=LogLevel.DEBUG,
+                    context=LogContext(guild=channel.guild, channel=channel),
                 )
                 asyncio.create_task(self._loop_execute(guild, channel))
         else:
-            await self.bot.logger.debug(
-                f"Creating loop task for guild with ID {guild.id}"
+            await self.bot.logger.send_log(
+                message=f"Creating loop task for guild with ID {guild.id}",
+                level=LogLevel.DEBUG,
+                context=LogContext(guild=guild),
             )
             asyncio.create_task(self._loop_execute(guild))
 
@@ -204,7 +217,10 @@ class LoopCog(BaseCog):
         await self._handle_preconfig(self.loop_preconfig)
 
         if self.no_guild:
-            await self.bot.logger.debug("Creating global loop task")
+            await self.bot.logger.send_log(
+                message="Creating global loop task",
+                level=LogLevel.DEBUG,
+            )
             asyncio.create_task(self._loop_execute(None))
             return
 
@@ -216,14 +232,20 @@ class LoopCog(BaseCog):
     async def _track_new_channels(self):
         """Periodifically kicks off new per-channel tasks based on updated channels config."""
         while True:
-            await self.bot.logger.debug(
-                f"Sleeping for {self.TRACKER_WAIT} seconds before checking channel"
-                " config"
+            await self.bot.logger.send_log(
+                message=(
+                    f"Sleeping for {self.TRACKER_WAIT} seconds before checking channel"
+                    " config"
+                ),
+                level=LogLevel.DEBUG,
             )
             await asyncio.sleep(self.TRACKER_WAIT)
 
-            await self.bot.logger.debug(
-                f"Checking registered channels for {self.extension_name} loop cog"
+            await self.bot.logger.send_log(
+                message=(
+                    f"Checking registered channels for {self.extension_name} loop cog"
+                ),
+                level=LogLevel.DEBUG,
             )
             for guild_id, registered_channels in self.channels.items():
                 guild = self.bot.get_guild(guild_id)
@@ -234,9 +256,13 @@ class LoopCog(BaseCog):
                     .get("value")
                 )
                 if not isinstance(configured_channels, list):
-                    await self.bot.logger.error(
-                        "Configured channels no longer readable for guild with ID"
-                        f" {guild_id} - deleting registration"
+                    await self.bot.logger.send_log(
+                        message=(
+                            "Configured channels no longer readable for guild with ID"
+                            f" {guild_id} - deleting registration"
+                        ),
+                        level=LogLevel.ERROR,
+                        context=LogContext(guild=self.get_guild(guild_id)),
                     )
                     del registered_channels
                     continue
@@ -250,15 +276,23 @@ class LoopCog(BaseCog):
 
                     channel = self.bot.get_channel(channel_id)
                     if not channel:
-                        await self.bot.logger.debug(
-                            f"Could not find channel with ID {channel_id} - moving on"
+                        await self.bot.logger.send_log(
+                            message=(
+                                f"Could not find channel with ID {channel_id} -"
+                                " moving on"
+                            ),
+                            level=LogLevel.DEBUG,
                         )
                         continue
 
                     if not channel.id in [ch.id for ch in registered_channels]:
-                        await self.bot.logger.debug(
-                            f"Found new channel with ID {channel.id} in loop config -"
-                            " starting task"
+                        await self.bot.logger.send_log(
+                            message=(
+                                f"Found new channel with ID {channel.id} in loop config"
+                                " - starting task"
+                            ),
+                            level=LogLevel.DEBUG,
+                            context=LogContext(guild=channel.guild, channel=channel),
                         )
                         asyncio.create_task(self._loop_execute(guild, channel))
 
@@ -303,19 +337,24 @@ class LoopCog(BaseCog):
                         await self.execute(config, guild, target_channel)
                     else:
                         await self.execute(config, guild)
-                except Exception as e:
+                except Exception as exception:
                     # always try to wait even when execute fails
-                    await self.bot.logger.error(
-                        f"Loop cog execute error: {self.__class__.__name__}!",
-                        exception=e,
+                    await self.bot.logger.send_log(
+                        message=f"Loop cog execute error: {self.__class__.__name__}!",
+                        level=LogLevel.ERROR,
                         channel=getattr(config, "logging_channel", None),
+                        context=LogContext(guild=guild),
+                        exception=exception,
                     )
 
             try:
                 await self.wait(config, guild)
-            except Exception as e:
-                await self.bot.logger.error(
-                    f"Loop wait cog error: {self.__class__.__name__}!", exception=e
+            except Exception as exception:
+                await self.bot.logger.send_log(
+                    message=f"Loop wait cog error: {self.__class__.__name__}!",
+                    level=LogLevel.ERROR,
+                    context=LogContext(guild=guild),
+                    exception=exception,
                 )
                 # avoid spamming
                 await self._default_wait()

@@ -7,6 +7,7 @@ import discord
 import ui
 import yaml
 from base import auxiliary
+from botlogging import LogContext, LogLevel
 from discord import app_commands
 from discord.ext import commands
 
@@ -320,7 +321,17 @@ class Who(base.BaseCog):
 
         else:
             embed = auxiliary.prepare_deny_embed("An unknown error occurred.")
-            await self.bot.logger.error(error)
+            config = await self.bot.get_context_config(guild=interaction.guild)
+            log_channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message=f"An unknown error occurred. {error}",
+                level=LogLevel.ERROR,
+                channel=log_channel,
+                context=LogContext(
+                    guild=interaction.guild, channel=interaction.channel
+                ),
+                exception=error,
+            )
 
         if interaction.response.is_done():
             await interaction.followup.send(embed=embed, ephemeral=True)
@@ -347,10 +358,10 @@ class Who(base.BaseCog):
 
         await member.add_roles(role, reason="Noted user has joined the guild")
 
-        await self.bot.guild_log(
-            member.guild,
-            "logging_channel",
-            "warning",
-            f"Found noted user with ID {member.id} joining - re-adding role",
-            send=True,
+        log_channel = config.get("logging_channel")
+        await self.bot.logger.send_log(
+            message=f"Found noted user with ID {member.id} joining - re-adding role",
+            level=LogLevel.INFO,
+            context=LogContext(guild=member.guild),
+            channel=log_channel,
         )

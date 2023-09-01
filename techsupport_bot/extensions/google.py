@@ -8,6 +8,16 @@ from discord.ext import commands
 
 async def setup(bot):
     """Adding google extension config to the config file."""
+
+    # Don't load without the API key
+    try:
+        if not bot.file_config.api.api_keys.google:
+            raise AttributeError("Googler was not loaded due to missing API key")
+        if not bot.file_config.api.api_keys.google_cse:
+            raise AttributeError("Googler was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError("Googler was not loaded due to missing API key") from exc
+
     config = bot.ExtensionConfig()
     config.add(
         key="max_responses",

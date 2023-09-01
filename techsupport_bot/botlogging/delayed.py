@@ -2,6 +2,7 @@
 """
 
 import asyncio
+import os
 
 from botlogging import logger
 
@@ -12,6 +13,7 @@ class DelayedLogger(logger.BotLogger):
     parameters:
         bot (bot.TechSupportBot): the bot object
         name (str): the name of the logging channel
+        send (bool): Whether or not to allow sending of logs to discord
         wait_time (float): the time to wait between log sends
         queue_size (int): the max number of queue events
     """
@@ -22,37 +24,18 @@ class DelayedLogger(logger.BotLogger):
         self.__send_queue = None
         super().__init__(*args, **kwargs)
 
-    async def info(self, message, *args, **kwargs):
-        """Adds an info log level to the DelayedLogger queue
-
-        Args:
-            message (str): The message to log
+    async def send_log(self, *args, **kwargs):
+        """Adds a log to the queue
+        Does nothing different than the Logger send_log function()
+        Will disregard debug logs if debug is off
         """
-        await self.__send_queue.put(super().info(message, *args, **kwargs))
 
-    async def debug(self, message, *args, **kwargs):
-        """Adds an debug log level to the DelayedLogger queue
+        if kwargs.get("level", None) == logger.LogLevel.DEBUG and not bool(
+            int(os.environ.get("DEBUG", 0))
+        ):
+            return
 
-        Args:
-            message (str): The message to log
-        """
-        await self.__send_queue.put(super().debug(message, *args, **kwargs))
-
-    async def warning(self, message, *args, **kwargs):
-        """Adds an warning log level to the DelayedLogger queue
-
-        Args:
-            message (str): The message to log
-        """
-        await self.__send_queue.put(super().warning(message, *args, **kwargs))
-
-    async def error(self, message, *args, **kwargs):
-        """Adds an error log level to the DelayedLogger queue
-
-        Args:
-            message (str): The message to log
-        """
-        await self.__send_queue.put(super().error(message, *args, **kwargs))
+        await self.__send_queue.put(super().send_log(*args, **kwargs))
 
     def register_queue(self):
         """Registers the asyncio.Queue object to make delayed logging possible"""

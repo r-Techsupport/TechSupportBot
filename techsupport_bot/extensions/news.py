@@ -4,11 +4,20 @@ import random
 
 import aiocron
 import base
+from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
 
 async def setup(bot):
     """Adding the news config to the config file."""
+
+    # Don't load without the API key
+    try:
+        if not bot.file_config.api.api_keys.news:
+            raise AttributeError("News was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError("News was not loaded due to missing API key") from exc
+
     config = bot.ExtensionConfig()
     config.add(
         key="channel",
@@ -96,12 +105,12 @@ class News(base.LoopCog):
             )
             url = article.get("url")
 
-        await self.bot.guild_log(
-            guild,
-            "logging_channel",
-            "info",
-            f"Sending news headline to #{channel.name}",
-            send=True,
+        log_channel = config.get("logging_channel")
+        await self.bot.logger.send_log(
+            message=f"Sending news headline to #{channel.name}",
+            level=LogLevel.INFO,
+            context=LogContext(guild=guild, channel=channel),
+            channel=log_channel,
         )
         if url.endswith("/"):
             url = url[:-1]

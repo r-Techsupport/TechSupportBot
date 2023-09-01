@@ -14,11 +14,20 @@ import discord
 import expiringdict
 import ui
 from base import auxiliary
+from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
 
 async def setup(bot):
     """Registers the extension"""
+
+    # Don't load without the API key
+    try:
+        if not bot.file_config.api.api_keys.openai:
+            raise AttributeError("ChatGPT was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError("ChatGPT was not loaded due to missing API key") from exc
+
     await bot.add_cog(ChatGPT(bot=bot))
 
 
@@ -103,12 +112,20 @@ class ChatGPT(base.BaseCog):
         response = await self.call_api(ctx, api_key, prompt)
 
         # -> Response processing <-
+        config = await self.get_context_config(ctx)
         choices = response.get("choices", [])
         if not choices:
             # Tries to figure out what error happened
             if error := response.get("error", []):
-                await self.bot.logger.warning(
-                    f"OpenAI API responded with an error! Contents: {error['message']}"
+                channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message=(
+                        "OpenAI API responded with an error! Contents:"
+                        f" {error['message']}"
+                    ),
+                    level=LogLevel.WARNING,
+                    channel=channel,
+                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
                 )
 
             await auxiliary.send_deny_embed(

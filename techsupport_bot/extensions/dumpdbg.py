@@ -4,11 +4,20 @@ import json
 import base
 import discord
 from base import auxiliary
+from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
 
 async def setup(bot):
     """Method to add the dumpdbg command to config."""
+
+    # Don't load without the API key
+    try:
+        if not bot.file_config.api.api_keys.dumpdbg:
+            raise AttributeError("Dumpdbg was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError("Dumpdbg was not loaded due to missing API key") from exc
+
     config = bot.ExtensionConfig()
     config.add(
         key="roles",
@@ -157,8 +166,14 @@ class Dumpdbg(base.BaseCog):
                     + f"Api response: `{response['error']}`",
                     channel=ctx.channel,
                 )
-                await self.bot.logger.warning(
-                    f"Dumpdbg API responded with the error `{response['error']}`"
+                channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message=(
+                        f"Dumpdbg API responded with the error `{response['error']}`"
+                    ),
+                    level=LogLevel.WARNING,
+                    channel=channel,
+                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
                 )
                 return
             result_urls.append(response["url"])
