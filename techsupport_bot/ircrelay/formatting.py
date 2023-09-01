@@ -140,7 +140,7 @@ def format_discord_reaction_message(
         emoji = f":{reaction.emoji}:"
 
     message_str = core_sent_message_format(message=message)
-    message_str = f"{user.display_name}  reacted with {emoji} to {message_str}"
+    message_str = f"{user.display_name} reacted with {emoji} to {message_str}"
     return message_str
 
 
