@@ -1,3 +1,4 @@
+"""All of the discord event listeners where they used for logging"""
 import datetime
 import sys
 from typing import Optional, Sequence, Union
@@ -10,6 +11,10 @@ from .common import LogContext, LogLevel
 
 
 class EventLogger(cogs.BaseCog):
+    """This is the cog that holds all of the discord event listeners
+    For the explicit purpose of logging, not taking further action
+    """
+
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_edit"""

@@ -1,3 +1,4 @@
+"""A few common functions to help the logging system work smoothly"""
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
