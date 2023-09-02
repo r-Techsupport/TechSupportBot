@@ -650,6 +650,7 @@ class EventLogger(cogs.BaseCog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
+        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
         embed = discord.Embed()
         embed.add_field(name="Member", value=member)
         embed.add_field(name="Server", value=member.guild.name)
