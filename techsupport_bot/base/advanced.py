@@ -546,6 +546,7 @@ class AdvancedBot(DataBot):
         await self.logger.send_log(
             message="Connected to Discord",
             level=LogLevel.INFO,
+            console_only=True,
         )
 
     async def on_resumed(self):
@@ -553,6 +554,7 @@ class AdvancedBot(DataBot):
         await self.logger.send_log(
             message="Resume event",
             level=LogLevel.INFO,
+            console_only=True,
         )
 
     async def on_disconnect(self):
@@ -560,6 +562,7 @@ class AdvancedBot(DataBot):
         await self.logger.send_log(
             message="Disconnected from Discord",
             level=LogLevel.INFO,
+            console_only=True,
         )
 
     async def on_message_delete(self, message):
