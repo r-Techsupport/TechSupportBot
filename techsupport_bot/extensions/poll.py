@@ -3,10 +3,9 @@ import asyncio
 import io
 import json
 
-import base
 import discord
 import emoji
-from base import auxiliary
+from base import auxiliary, cogs, extension
 from discord.ext import commands
 
 
@@ -26,7 +25,7 @@ class PollEmbed(discord.Embed):
         self.color = discord.Color.gold()
 
 
-class PollGenerator(base.BaseCog):
+class PollGenerator(cogs.BaseCog):
     """Class to make the poll generator for the extension."""
 
     async def validate_data(self, ctx, request_body, strawpoll=False):
@@ -108,7 +107,7 @@ class ReactionPoller(PollGenerator):
         """Method to create the poll command."""
 
         # Executed if there are no/invalid args supplied
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 
     @auxiliary.with_typing
     @poll.command(
@@ -272,7 +271,7 @@ class StrawPoller(PollGenerator):
         """Method to give an exmaple poll with json."""
 
         # Executed if there are no/invalid args supplied
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 
     @auxiliary.with_typing
     @strawpoll.command(

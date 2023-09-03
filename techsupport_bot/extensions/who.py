@@ -2,11 +2,10 @@
 import datetime
 import io
 
-import base
 import discord
 import ui
 import yaml
-from base import auxiliary
+from base import auxiliary, cogs
 from botlogging import LogContext, LogLevel
 from discord import app_commands
 from discord.ext import commands
@@ -44,7 +43,7 @@ async def setup(bot):
     bot.add_extension_config("who", config)
 
 
-class Who(base.BaseCog):
+class Who(cogs.BaseCog):
     """Class to set up who for the extension."""
 
     notes = app_commands.Group(

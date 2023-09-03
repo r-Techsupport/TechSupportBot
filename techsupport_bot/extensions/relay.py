@@ -1,11 +1,10 @@
 """This is the discord side of the IRC->Discord relay"""
 from typing import Dict, List, Union
 
-import base
 import discord
 import munch
 import ui
-from base import auxiliary
+from base import auxiliary, cogs, extension
 from bidict import bidict
 from discord.ext import commands
 
@@ -30,7 +29,7 @@ async def setup(bot: commands.Bot) -> None:
     bot.irc.irc_cog = irc_cog
 
 
-class DiscordToIRC(base.MatchCog):
+class DiscordToIRC(cogs.MatchCog):
     """The discord side of the relay"""
 
     mapping = None  # bidict - discord:irc
@@ -132,7 +131,7 @@ class DiscordToIRC(base.MatchCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 
     @irc.command(name="maps", description="List all the maps for IRC")
     async def irc_maps(self, ctx: commands.Context) -> None:

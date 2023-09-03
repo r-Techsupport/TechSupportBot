@@ -1,9 +1,8 @@
 """
 Convert a value or evalute a mathematical expression to decimal, hex, binary, and ascii encoding
 """
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -14,7 +13,7 @@ async def setup(bot):
     await bot.add_cog(Htd(bot=bot))
 
 
-class Htd(base.BaseCog):
+class Htd(cogs.BaseCog):
     """
     perform calculations on cross-base numbers and convert between them
     """

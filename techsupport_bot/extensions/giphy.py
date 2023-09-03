@@ -1,7 +1,6 @@
 """Module for giphy extension in the bot."""
-import base
 import ui
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -18,7 +17,7 @@ async def setup(bot):
     await bot.add_cog(Giphy(bot=bot))
 
 
-class Giphy(base.BaseCog):
+class Giphy(cogs.BaseCog):
     """Class for the giphy extension."""
 
     GIPHY_URL = "http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"

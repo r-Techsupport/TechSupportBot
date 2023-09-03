@@ -1,8 +1,7 @@
 """Module for defining the gate extension for the bot."""
 
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs, extension
 from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
@@ -78,7 +77,7 @@ class WelcomeEmbed(discord.Embed):
         self.color = discord.Color.green()
 
 
-class ServerGate(base.MatchCog):
+class ServerGate(cogs.MatchCog):
     """Class to get the server gate from config."""
 
     async def match(self, config, ctx, _):
@@ -149,7 +148,7 @@ class ServerGate(base.MatchCog):
         """Method to create the command for gate extension."""
 
         # Executed if there are no/invalid args supplied
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 
     @commands.has_permissions(manage_messages=True)
     @commands.guild_only()
