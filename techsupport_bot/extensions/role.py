@@ -53,9 +53,9 @@ class RoleGiver(base.BaseCog):
         super().__init__(bot=bot)
         self.ctx_menu = app_commands.ContextMenu(
             name="Manage roles",
-            callback=self.assign_role_command,  # set the callback of the context menu to "my_cool_context_menu"
+            callback=self.assign_role_command,
         )
-        self.bot.tree.add_command(self.ctx_menu)  # add the context menu to the tree
+        self.bot.tree.add_command(self.ctx_menu)
 
     role_group = app_commands.Group(name="role", description="...")
 
