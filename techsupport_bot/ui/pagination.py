@@ -92,6 +92,7 @@ class PaginateView(discord.ui.View):
     ):
         """This declares the trash button, and what should happen when it's pressed"""
         await interaction.response.defer()
+        self.stop()
         await self.message.delete()
 
     async def interaction_check(self, interaction):
