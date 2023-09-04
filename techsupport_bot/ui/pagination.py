@@ -84,6 +84,7 @@ class PaginateView(discord.ui.View):
         """This declares the stop button, and what should happen when it's pressed"""
         await interaction.response.defer()
         self.clear_items()
+        self.stop()
         await self.update_message()
 
     @discord.ui.button(emoji="🗑️", style=discord.ButtonStyle.danger, row=1)
