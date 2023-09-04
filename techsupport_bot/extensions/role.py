@@ -49,6 +49,14 @@ async def setup(bot):
 class RoleGiver(base.BaseCog):
     """The main class for the role commands"""
 
+    def __init__(self, bot):
+        super().__init__(bot=bot)
+        self.ctx_menu = app_commands.ContextMenu(
+            name="Manage roles",
+            callback=self.assign_role_command,  # set the callback of the context menu to "my_cool_context_menu"
+        )
+        self.bot.tree.add_command(self.ctx_menu)  # add the context menu to the tree
+
     role_group = app_commands.Group(name="role", description="...")
 
     @role_group.command(name="self", description="Assign or remove roles from yourself")
@@ -80,6 +88,18 @@ class RoleGiver(base.BaseCog):
             interaction (discord.Interaction): The interaction that called this command
             member (discord.Member): The member to apply roles to
         """
+        await self.assign_role_command(interaction=interaction, member=member)
+
+    async def assign_role_command(
+        self, interaction: discord.Interaction, member: discord.Member
+    ):
+        """Serves as the core logic for the /role manage command
+        This is the direct entry point for the context menu
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this
+            member (discord.Member): The member to modify roles of
+        """
         await self.bot.slash_command_log(interaction)
 
         # Pull config
@@ -93,7 +113,7 @@ class RoleGiver(base.BaseCog):
         await self.role_command_base(interaction, roles, allowed_to_execute, member)
 
     async def role_command_base(
-        self, interaction, assignable_roles, allowed_roles, member
+        self, interaction: discord.Interaction, assignable_roles, allowed_roles, member
     ):
         """The base processor for the role commands
         Checks permissions and config, and sends the view
