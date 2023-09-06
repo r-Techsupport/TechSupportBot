@@ -59,6 +59,13 @@ async def setup(bot):
         description="The success rate of bef/bang messages",
         default=50,
     )
+    config.add(
+        key="spawn_user",
+        datatype="int",
+        title="Allow user to spawn duck",
+        description="Set up who you want to allow to spawn a duck",
+        default=[],
+    )
 
     await bot.add_cog(DuckHunt(bot=bot, extension_name="duck"))
     bot.add_extension_config("duck", config)
@@ -725,3 +732,25 @@ class DuckHunt(cogs.LoopCog):
             message=f"Successfully reset {user.mention}s duck stats!",
             channel=ctx.channel,
         )
+
+    @auxiliary.with_typing
+    @commands.guild_only()
+    @duck.command(
+        brief="Spawns a duck on command",
+        description="Will spawn a duck with the command"
+    )
+    async def spawn(self, ctx):
+        config = await self.bot.get_context_config(ctx)
+        spawn_user = config.extensions.duck.spawn_user.value
+        print(f"Spawn_user {config.extensions.duck.spawn_user.value}")
+        for person in spawn_user:
+            print(f"id vs person {ctx.author.id == int(person)}")
+            if ctx.author.id == int(person):
+                await self.execute(config,ctx.guild,ctx.channel)
+                return
+        await auxiliary.send_deny_embed(
+            message="It looks like you don't have permissions to spawn a duck",
+            channel=ctx.channel,
+        )
+        
+        
