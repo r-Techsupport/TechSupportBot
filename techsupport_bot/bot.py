@@ -102,6 +102,9 @@ class TechSupportBot(base.AdvancedBot):
         await self.load_builtin_cog(builtin_cogs.ConfigControl)
         await self.load_builtin_cog(builtin_cogs.Listener)
 
+        # This is the guild events logging cog
+        await self.load_builtin_cog(botlogging.EventLogger)
+
     async def start_irc(self):
         """Starts the IRC connection in a seperate thread
 
