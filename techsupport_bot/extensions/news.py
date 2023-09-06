@@ -70,7 +70,7 @@ class News(cogs.LoopCog):
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
 
     async def preconfig(self):
-        """ Function to check to see if value enter is valid."""
+        """Function to check to see if value enter is valid."""
         self.valid_category = []
         for item in Category:
             self.valid_category.append(item.value)
