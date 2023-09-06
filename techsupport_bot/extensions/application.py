@@ -34,19 +34,39 @@ async def setup(bot):
         datatype="string",
         title="Cronjob config for the reminder about pending applications for staff",
         description="Crontab syntax for executing pending reminder events (example: 0 17 * * *)",
-        default="* * * * *",
+        default="0 17 * * *",
+    )
+    config.add(
+        key="notification_cron_config",
+        datatype="string",
+        title="Cronjob config for the reminder about pending applications for staff",
+        description="Crontab syntax for executing pending reminder events (example: 0 17 * * *)",
+        default="0 */3 * * *",
     )
     await bot.add_cog(ApplicationManager(bot=bot, extension_name="application"))
+    await bot.add_cog(ApplicationReminder(bot=bot, extension_name="application"))
     bot.add_extension_config("application", config)
+
+
+class ApplicationReminder(base.LoopCog):
+    async def execute(self, config, guild):
+        """Method to execute the news command."""
+        channel = guild.get_channel(
+            int(config.extensions.application.management_channel.value)
+        )
+        if not channel:
+            return
+
+        await channel.send("reminder")
+
+    async def wait(self, config, _):
+        await aiocron.crontab(
+            config.extensions.application.notification_cron_config.value
+        ).next()
 
 
 class ApplicationManager(base.LoopCog):
     """Class to manage the application extension of the bot, including getting data and status."""
-
-    COLLECTION_NAME = "applications_extension"
-    STALE_APPLICATION_DAYS = 30
-    MAX_REMINDER_FIELDS = 10
-    CHANNELS_KEY = "management_channel"
 
     @app_commands.command(name="feedback", description="Submit feedback")
     async def feedback(self, interaction: discord.Interaction):
@@ -57,14 +77,15 @@ class ApplicationManager(base.LoopCog):
 
     async def execute(self, config, guild):
         """Method to execute the news command."""
-        channel = guild.get_channel(int(config.extensions.news.channel.value))
+        channel = guild.get_channel(
+            int(config.extensions.application.management_channel.value)
+        )
         if not channel:
             return
 
-        await channel.send("test 2")
+        await channel.send("manager")
 
     async def wait(self, config, _):
-        """Method to define the wait time for the news api pull."""
         await aiocron.crontab(
             config.extensions.application.reminder_cron_config.value
         ).next()
