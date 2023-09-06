@@ -3,9 +3,8 @@ Module for the correct command on the discord bot.
 This module has unit tests
 This modules requires no config, no databases, and no APIs
 """
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -14,7 +13,7 @@ async def setup(bot):
     await bot.add_cog(Corrector(bot=bot))
 
 
-class Corrector(base.BaseCog):
+class Corrector(cogs.BaseCog):
     """Class for the correct command for the discord bot."""
 
     async def correct_command(self, ctx, to_replace: str, replacement: str) -> None:

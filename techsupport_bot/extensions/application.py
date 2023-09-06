@@ -5,11 +5,10 @@ import json
 import uuid
 
 import aiocron
-import base
 import discord
 import ui
 import yaml
-from base import auxiliary
+from base import auxiliary, cogs, extension
 from discord.ext import commands
 
 
@@ -109,7 +108,7 @@ class NoPendingApplications(Exception):
     """Class for what happens when no applications are recieved."""
 
 
-class ApplicationManager(base.MatchCog, base.LoopCog):
+class ApplicationManager(cogs.MatchCog, cogs.LoopCog):
     """Class to manage the application extension of the bot, including getting data and status."""
 
     COLLECTION_NAME = "applications_extension"
@@ -401,7 +400,7 @@ class ApplicationManager(base.MatchCog, base.LoopCog):
         """Method for application."""
 
         # Executed if there are no/invalid args supplied
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 
     @application.command(
         name="get",

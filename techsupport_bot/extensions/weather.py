@@ -1,8 +1,7 @@
 """Module for the weather extension for the discord bot."""
-import base
 import discord
 import munch
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -19,7 +18,7 @@ async def setup(bot):
     await bot.add_cog(Weather(bot=bot))
 
 
-class Weather(base.BaseCog):
+class Weather(cogs.BaseCog):
     """Class to set up the weather extension for the discord bot."""
 
     def get_url(self, args):

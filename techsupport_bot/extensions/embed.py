@@ -9,9 +9,8 @@ Models: None
 Subcommands: embed 
 Defines: has_embed_role
 """
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -66,7 +65,7 @@ async def has_embed_role(ctx: commands.Context) -> bool:
     return True
 
 
-class Embedder(base.BaseCog):
+class Embedder(cogs.BaseCog):
     """Main extension class"""
 
     @auxiliary.with_typing

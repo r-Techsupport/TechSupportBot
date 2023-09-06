@@ -4,22 +4,19 @@ import datetime
 import random
 import re
 import string
-import sys
 import time
 
 import discord
 import error
 import expiringdict
 import munch
-from base import auxiliary
+from base import auxiliary, data
 from botlogging import LogContext, LogLevel
 from discord.ext import commands
 from unidecode import unidecode
 
-from .data import DataBot
 
-
-class AdvancedBot(DataBot):
+class AdvancedBot(data.DataBot):
     """
     Advanced extension bot with most base features,
     including per-guild config and event logging.
@@ -376,67 +373,70 @@ class AdvancedBot(DataBot):
         )
         await self.get_owner()
 
-    async def on_message(self, message):
-        """Catches messages and acts appropriately.
+    def format_username(self, username: str) -> str:
+        """Formats a username to be all ascii and easily readable and pingable
 
-        parameters:
-            message (discord.Message): the message object
+        Args:
+            username (str): The original users username
+
+        Returns:
+            str: The new username with all formatting applied
         """
-        owner = await self.get_owner()
-        if (
-            owner
-            and isinstance(message.channel, discord.DMChannel)
-            and message.author.id != owner.id
-            and not message.author.bot
-        ):
-            attachment_urls = ", ".join(a.url for a in message.attachments)
-            content_string = f'"{message.content}"' if message.content else ""
-            attachment_string = f"({attachment_urls})" if attachment_urls else ""
-            await self.logger.send_log(
-                message=(
-                    f"PM from `{message.author}`: {content_string} {attachment_string}"
-                ),
-                level=LogLevel.INFO,
-            )
 
-        await self.process_commands(message)
+        # Prepare a random string, just in case
+        random_string = "".join(random.choice(string.ascii_letters) for _ in range(10))
 
-    async def on_command(self, ctx):
-        """
-        See: https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.on_command
-        """
-        embed = discord.Embed()
-        embed.add_field(name="User", value=ctx.author)
-        embed.add_field(name="Channel", value=getattr(ctx.channel, "name", "DM"))
-        embed.add_field(name="Server", value=getattr(ctx.guild, "name", "None"))
+        # Step 1 - Force all ascii
+        username = unidecode(username)
 
-        log_channel = await self.get_log_channel_from_guild(
-            ctx.guild, key="logging_channel"
-        )
+        # Step 2 - Remove all markdown
+        markdown_pattern = r"(\*\*|__|\*|_|\~\~|`|#+|-{3,}|\|{3,}|>)"
+        username = re.sub(markdown_pattern, "", username)
 
-        sliced_content = ctx.message.content[:100]
-        message = f"Command detected: {sliced_content}"
+        # Step 3 - Strip
+        username = username.strip()
 
-        await self.logger.send_log(
-            message=message,
-            level=LogLevel.INFO,
-            context=LogContext(guild=ctx.guild, channel=ctx.channel),
-            channel=log_channel,
-            embed=embed,
-        )
+        # Step 4 - Fix dumb spaces
+        username = re.sub(r"\s+", " ", username)
+        username = re.sub(r"(\b\w) ", r"\1", username)
 
-    async def on_error(self, event_method, *_args, **_kwargs):
-        """Catches non-command errors and sends them to the error logger for processing.
+        # Step 5 - Start with letter
+        match = re.search(r"[A-Za-z]", username)
+        if match:
+            username = username[match.start() :]
+        else:
+            username = ""
 
-        parameters:
-            event_method (str): the event method name associated with the error (eg. on_message)
-        """
-        _, exception, _ = sys.exc_info()
-        await self.logger.send_log(
-            message=f"Bot error in {event_method}: {exception}",
-            level=LogLevel.ERROR,
-            exception=exception,
-        )
+        # Step 6 - Length check
+        if len(username) < 3 and len(username) > 0:
+            username = f"{username}-USER-{random_string}"
+        elif len(username) == 0:
+            username = f"USER-{random_string}"
+        username = username[:32]
+
+        return username
+
+    async def on_member_join(self, member: discord.Member):
+        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
+        config = await self.get_context_config(guild=member.guild)
+
+        if config.get("nickname_filter", False):
+            temp_name = self.format_username(member.display_name)
+            if temp_name != member.display_name:
+                await member.edit(nick=temp_name)
+                try:
+                    await member.send(
+                        "Your nickname has been changed to make it easy to read and"
+                        f" ping your name. Your new nickname is {temp_name}."
+                    )
+                except discord.Forbidden:
+                    channel = config.get("logging_channel")
+                    await self.logger.send_log(
+                        message=f"Could not DM {member.name} about nickname changes",
+                        level=LogLevel.WARNING,
+                        channel=channel,
+                        context=LogContext(guild=member.guild),
+                    )
 
     async def on_command_error(self, context, exception):
         """Catches command errors and sends them to the error logger for processing.
@@ -498,696 +498,27 @@ class AdvancedBot(DataBot):
             exception=exception,
         )
 
-    def format_username(self, username: str) -> str:
-        """Formats a username to be all ascii and easily readable and pingable
-
-        Args:
-            username (str): The original users username
-
-        Returns:
-            str: The new username with all formatting applied
-        """
-
-        # Prepare a random string, just in case
-        random_string = "".join(random.choice(string.ascii_letters) for _ in range(10))
-
-        # Step 1 - Force all ascii
-        username = unidecode(username)
-
-        # Step 2 - Remove all markdown
-        markdown_pattern = r"(\*\*|__|\*|_|\~\~|`|#+|-{3,}|\|{3,}|>)"
-        username = re.sub(markdown_pattern, "", username)
-
-        # Step 3 - Strip
-        username = username.strip()
-
-        # Step 4 - Fix dumb spaces
-        username = re.sub(r"\s+", " ", username)
-        username = re.sub(r"(\b\w) ", r"\1", username)
-
-        # Step 5 - Start with letter
-        match = re.search(r"[A-Za-z]", username)
-        if match:
-            username = username[match.start() :]
-        else:
-            username = ""
-
-        # Step 6 - Length check
-        if len(username) < 3 and len(username) > 0:
-            username = f"{username}-USER-{random_string}"
-        elif len(username) == 0:
-            username = f"USER-{random_string}"
-        username = username[:32]
-
-        return username
-
-    async def on_connect(self):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_connect"""
-        await self.logger.send_log(
-            message="Connected to Discord",
-            level=LogLevel.INFO,
-        )
-
-    async def on_resumed(self):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_resumed"""
-        await self.logger.send_log(
-            message="Resume event",
-            level=LogLevel.INFO,
-        )
-
-    async def on_disconnect(self):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_disconnect"""
-        await self.logger.send_log(
-            message="Disconnected from Discord",
-            level=LogLevel.INFO,
-        )
-
-    async def on_message_delete(self, message):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_delete"""
-        guild = getattr(message.channel, "guild", None)
-
-        # Ignore ephemeral slash command messages
-        if not guild and message.type == discord.MessageType.chat_input_command:
-            return
-
-        embed = discord.Embed()
-        embed.add_field(name="Content", value=message.content[:1024] or "None")
-        if len(message.content) > 1024:
-            embed.add_field(name="\a", value=message.content[1025:2048])
-        if len(message.content) > 2048:
-            embed.add_field(name="\a", value=message.content[2049:3072])
-        if len(message.content) > 3072:
-            embed.add_field(name="\a", value=message.content[3073:4096])
-        embed.add_field(name="Author", value=message.author)
-        embed.add_field(
-            name="Channel",
-            value=getattr(message.channel, "name", "DM"),
-        )
-        embed.add_field(name="Server", value=getattr(guild, "name", "None"))
-        embed.set_footer(text=f"Author ID: {message.author.id}")
-
-        log_channel = await self.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
-        )
-        await self.logger.send_log(
-            message=f"Message with ID {message.id} deleted",
-            level=LogLevel.INFO,
-            context=LogContext(guild=message.channel.guild, channel=message.channel),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_bulk_message_delete(self, messages):
-        """
-        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_bulk_message_delete
-        """
-        guild = getattr(messages[0].channel, "guild", None)
-
-        unique_channels = set()
-        unique_servers = set()
-        for message in messages:
-            unique_channels.add(message.channel.name)
-            unique_servers.add(
-                f"{message.channel.guild.name} ({message.channel.guild.id})"
-            )
-
-        embed = discord.Embed()
-        embed.add_field(name="Channels", value=",".join(unique_channels))
-        embed.add_field(name="Servers", value=",".join(unique_servers))
-
-        log_channel = await self.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
-        )
-        await self.logger.send_log(
-            message=f"{len(messages)} messages bulk deleted!",
-            level=LogLevel.INFO,
-            context=LogContext(
-                guild=messages[0].channel.guild, channel=messages[0].channel
-            ),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_message_edit(self, before, after):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_edit"""
-        # this seems to spam, not sure why
-        if before.content == after.content:
-            return
-
-        guild = getattr(before.channel, "guild", None)
-
-        # Ignore ephemeral slash command messages
-        if not guild and before.type == discord.MessageType.chat_input_command:
-            return
-
-        attrs = ["content", "embeds"]
-        diff = auxiliary.get_object_diff(before, after, attrs)
-        embed = discord.Embed()
-        embed = auxiliary.add_diff_fields(embed, diff)
-        embed.add_field(name="Author", value=before.author)
-        embed.add_field(name="Channel", value=getattr(before.channel, "name", "DM"))
-        embed.add_field(
-            name="Server",
-            value=guild,
-        )
-        embed.set_footer(text=f"Author ID: {before.author.id}")
-
-        log_channel = await self.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
-        )
-
-        await self.logger.send_log(
-            message=f"Message edit detected on message with ID {before.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=before.channel.guild, channel=before.channel),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_reaction_add(self, reaction, user):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_add"""
-        guild = getattr(reaction.message.channel, "guild", None)
-
-        if isinstance(reaction.message.channel, discord.DMChannel):
-            await self.logger.send_log(
-                message=(
-                    f"PM from `{user}`: added {reaction.emoji} reaction to message"
-                    f" {reaction.message.content} in DMs"
-                ),
-                level=LogLevel.INFO,
-            )
-            return
-
-        embed = discord.Embed()
-        embed.add_field(name="Emoji", value=reaction.emoji)
-        embed.add_field(name="User", value=user)
-        embed.add_field(name="Message", value=reaction.message.content or "None")
-        embed.add_field(name="Message Author", value=reaction.message.author)
-        embed.add_field(
-            name="Channel", value=getattr(reaction.message.channel, "name", "DM")
-        )
-        embed.add_field(name="Server", value=guild.name)
-
-        log_channel = await self.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
-        )
-
-        await self.logger.send_log(
-            message=(
-                f"Reaction added to message with ID {reaction.message.id} by user with"
-                f" ID {user.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(
-                guild=reaction.message.channel.guild, channel=reaction.message.channel
-            ),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_reaction_remove(self, reaction, user):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_remove"""
-        guild = getattr(reaction.message.channel, "guild", None)
-
-        if isinstance(reaction.message.channel, discord.DMChannel):
-            await self.logger.send_log(
-                message=(
-                    f"PM from `{user}`: removed {reaction.emoji} reaction to message"
-                    f" {reaction.message.content} in DMs"
-                ),
-                level=LogLevel.INFO,
-            )
-            return
-
-        embed = discord.Embed()
-        embed.add_field(name="Emoji", value=reaction.emoji)
-        embed.add_field(name="User", value=user)
-        embed.add_field(name="Message", value=reaction.message.content or "None")
-        embed.add_field(name="Message Author", value=reaction.message.author)
-        embed.add_field(
-            name="Channel", value=getattr(reaction.message.channel, "name", "DM")
-        )
-        embed.add_field(name="Server", value=guild.name)
-
-        log_channel = await self.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
-        )
-
-        await self.logger.send_log(
-            message=(
-                f"Reaction removed from message with ID {reaction.message.id} by user"
-                f" with ID {user.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(
-                guild=reaction.message.channel.guild, channel=reaction.message.channel
-            ),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_reaction_clear(self, message, reactions):
-        """
-        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_clear
-        """
-        guild = getattr(message.channel, "guild", None)
-
-        unique_emojis = set()
-        for reaction in reactions:
-            unique_emojis.add(reaction.emoji)
-
-        embed = discord.Embed()
-        embed.add_field(name="Emojis", value=",".join(unique_emojis))
-        embed.add_field(name="Message", value=message.content or "None")
-        embed.add_field(name="Message Author", value=message.author)
-        embed.add_field(name="Channel", value=getattr(message.channel, "name", "DM"))
-        embed.add_field(name="Server", value=guild.name)
-
-        log_channel = await self.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
-        )
-
-        await self.logger.send_log(
-            message=f"{len(reactions)} cleared from message with ID {message.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=message.channel.guild, channel=message.channel),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_guild_channel_delete(self, channel):
-        """
-        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_delete
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Channel Name", value=channel.name)
-        embed.add_field(name="Server", value=channel.guild.name)
-
-        log_channel = await self.get_log_channel_from_guild(
-            channel.guild, key="guild_events_channel"
-        )
-
-        await self.logger.send_log(
-            message=(
-                f"Channel with ID {channel.id} deleted in guild with ID"
-                f" {channel.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=channel.guild, channel=channel),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_guild_channel_create(self, channel):
-        """
-        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_create
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Channel Name", value=channel.name)
-        embed.add_field(name="Server", value=channel.guild.name)
-        log_channel = await self.get_log_channel_from_guild(
-            getattr(channel, "guild", None), key="guild_events_channel"
-        )
-        await self.logger.send_log(
-            message=(
-                f"Channel with ID {channel.id} created in guild with ID"
-                f" {channel.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=channel.guild, channel=channel),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_guild_channel_update(self, before, after):
-        """
-        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_update
-        """
-        attrs = [
-            "category",
-            "changed_roles",
-            "name",
-            "overwrites",
-            "permissions_synced",
-            "position",
-        ]
-        diff = auxiliary.get_object_diff(before, after, attrs)
-
-        embed = discord.Embed()
-        embed = auxiliary.add_diff_fields(embed, diff)
-        embed.add_field(name="Channel Name", value=before.name)
-        embed.add_field(name="Server", value=before.guild.name)
-
-        log_channel = await self.get_log_channel_from_guild(
-            before.guild, key="guild_events_channel"
-        )
-        await self.logger.send_log(
-            message=(
-                f"Channel with ID {before.id} modified in guild with ID"
-                f" {before.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=before.guild, channel=before),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_guild_channel_pins_update(self, channel, _last_pin):
-        """
-        See:
-        https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_pins_update
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Channel Name", value=channel.name)
-        embed.add_field(name="Server", value=channel.guild)
-
-        log_channel = await self.get_log_channel_from_guild(
-            channel.guild, key="guild_events_channel"
-        )
-
-        await self.logger.send_log(
-            message=(
-                f"Channel pins updated in channel with ID {channel.id} in guild with ID"
-                f" {channel.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=channel.guild, channel=channel),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_guild_integrations_update(self, guild):
-        """
-        See:
-        https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_integrations_update
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Server", value=guild)
-        log_channel = await self.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
-        )
-        await self.logger.send_log(
-            message=f"Integrations updated in guild with ID {guild.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=guild),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_webhooks_update(self, channel):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_webhooks_update"""
-        embed = discord.Embed()
-        embed.add_field(name="Channel", value=channel.name)
-        embed.add_field(name="Server", value=channel.guild)
-
-        log_channel = await self.get_log_channel_from_guild(
-            channel.guild, key="guild_events_channel"
-        )
-
-        await self.logger.send_log(
-            message=(
-                f"Webooks updated for channel with ID {channel.id} in guild with ID"
-                f" {channel.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=channel.guild, channel=channel),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_member_join(self, member: discord.Member):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
-        config = await self.get_context_config(guild=member.guild)
-
-        if config.get("nickname_filter", False):
-            temp_name = self.format_username(member.display_name)
-            if temp_name != member.display_name:
-                await member.edit(nick=temp_name)
-                try:
-                    await member.send(
-                        "Your nickname has been changed to make it easy to read and"
-                        f" ping your name. Your new nickname is {temp_name}."
-                    )
-                except discord.Forbidden:
-                    channel = config.get("logging_channel")
-                    await self.logger.send_log(
-                        message=f"Could not DM {member.name} about nickname changes",
-                        level=LogLevel.WARNING,
-                        channel=channel,
-                        context=LogContext(guild=member.guild),
-                    )
-
-        embed = discord.Embed()
-        embed.add_field(name="Member", value=member)
-        embed.add_field(name="Server", value=member.guild.name)
-        log_channel = await self.get_log_channel_from_guild(
-            getattr(member, "guild", None), key="member_events_channel"
-        )
-
-        await self.logger.send_log(
-            message=(
-                f"Member with ID {member.id} has joined guild with ID {member.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=member.guild),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_member_update(self, before, after):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update"""
-        changed_role = set(before.roles) ^ set(after.roles)
-        if changed_role:
-            if len(before.roles) < len(after.roles):
-                embed = discord.Embed()
-                embed.add_field(name="Roles added", value=next(iter(changed_role)))
-                embed.add_field(name="Server", value=before.guild.name)
-            else:
-                embed = discord.Embed()
-                embed.add_field(name="Roles lost", value=next(iter(changed_role)))
-                embed.add_field(name="Server", value=before.guild.name)
-
-            log_channel = await self.get_log_channel_from_guild(
-                getattr(before, "guild", None), key="member_events_channel"
-            )
-
-            await self.logger.send_log(
-                message=(
-                    f"Member with ID {before.id} has changed status in guild with ID"
-                    f" {before.guild.id}"
-                ),
-                level=LogLevel.INFO,
-                context=LogContext(guild=before.guild),
-                channel=log_channel,
-                embed=embed,
-            )
-
-    async def on_member_remove(self, member):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_remove"""
-        embed = discord.Embed()
-        embed.add_field(name="Member", value=member)
-        embed.add_field(name="Server", value=member.guild.name)
-        log_channel = await self.get_log_channel_from_guild(
-            getattr(member, "guild", None), key="member_events_channel"
-        )
-
-        await self.logger.send_log(
-            message=(
-                f"Member with ID {member.id} has left guild with ID {member.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=member.guild),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_guild_remove(self, guild):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_remove"""
-        embed = discord.Embed()
-        embed.add_field(name="Server", value=guild.name)
-        await self.logger.send_log(
-            message=f"Left guild with ID {guild.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=guild),
-            embed=embed,
-        )
-
-    async def on_guild_join(self, guild):
-        """Configures a new guild upon joining.
+    async def on_message(self, message):
+        """Catches messages and acts appropriately.
 
         parameters:
-            guild (discord.Guild): the guild that was joined
+            message (discord.Message): the message object
         """
-        embed = discord.Embed()
-        embed.add_field(name="Server", value=guild.name)
+        owner = await self.get_owner()
+        if (
+            owner
+            and isinstance(message.channel, discord.DMChannel)
+            and message.author.id != owner.id
+            and not message.author.bot
+        ):
+            attachment_urls = ", ".join(a.url for a in message.attachments)
+            content_string = f'"{message.content}"' if message.content else ""
+            attachment_string = f"({attachment_urls})" if attachment_urls else ""
+            await self.bot.logger.send_log(
+                message=(
+                    f"PM from `{message.author}`: {content_string} {attachment_string}"
+                ),
+                level=LogLevel.INFO,
+            )
 
-        log_channel = await self.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
-        )
-
-        await self.logger.send_log(
-            message=f"Joined guild with ID {guild.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=guild),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_guild_update(self, before, after):
-        """
-        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_update
-        """
-        diff = auxiliary.get_object_diff(
-            before,
-            after,
-            [
-                "banner",
-                "banner_url",
-                "bitrate_limit",
-                "categories",
-                "default_role",
-                "description",
-                "discovery_splash",
-                "discovery_splash_url",
-                "emoji_limit",
-                "emojis",
-                "explicit_content_filter",
-                "features",
-                "icon",
-                "icon_url",
-                "name",
-                "owner",
-                "region",
-                "roles",
-                "rules_channel",
-                "verification_level",
-            ],
-        )
-
-        embed = discord.Embed()
-        embed = auxiliary.add_diff_fields(embed, diff)
-        embed.add_field(name="Server", value=before.name)
-
-        log_channel = await self.get_log_channel_from_guild(
-            before, key="guild_events_channel"
-        )
-        await self.logger.send_log(
-            message=f"Guild with ID {before.id} updated",
-            level=LogLevel.INFO,
-            context=LogContext(guild=before),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_guild_role_create(self, role):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_create"""
-        embed = discord.Embed()
-        embed.add_field(name="Server", value=role.guild.name)
-        log_channel = await self.get_log_channel_from_guild(
-            role.guild, key="guild_events_channel"
-        )
-
-        await self.logger.send_log(
-            message=(
-                f"New role with name {role.name} added to guild with ID {role.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=role.before),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_guild_role_delete(self, role):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_delete"""
-        embed = discord.Embed()
-        embed.add_field(name="Server", value=role.guild.name)
-        log_channel = await self.get_log_channel_from_guild(
-            role.guild, key="guild_events_channel"
-        )
-        await self.logger.send_log(
-            message=(
-                f"Role with name {role.name} deleted from guild with ID {role.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=role.before),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_guild_role_update(self, before, after):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_update"""
-        attrs = ["color", "mentionable", "name", "permissions", "position", "tags"]
-        diff = auxiliary.get_object_diff(before, after, attrs)
-
-        embed = discord.Embed()
-        embed = auxiliary.add_diff_fields(embed, diff)
-        embed.add_field(name="Server", value=before.name)
-
-        log_channel = await self.get_log_channel_from_guild(
-            before.guild, key="guild_events_channel"
-        )
-
-        await self.logger.send_log(
-            message=(
-                f"Role with name {before.name} updated in guild with ID"
-                f" {before.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=before.before),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_guild_emojis_update(self, guild, before, _):
-        """
-        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_emojis_update
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Server", value=before.name)
-
-        log_channel = await self.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
-        )
-        await self.logger.send_log(
-            message=f"Emojis updated in guild with ID {guild.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=before),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_member_ban(self, guild, user):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_ban"""
-        embed = discord.Embed()
-        embed.add_field(name="User", value=user)
-        embed.add_field(name="Server", value=guild.name)
-
-        log_channel = await self.get_log_channel_from_guild(
-            guild, key="member_events_channel"
-        )
-
-        await self.logger.send_log(
-            message=f"User with ID {user.id} banned from guild with ID {guild.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=guild),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_member_unban(self, guild, user):
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_unban"""
-        embed = discord.Embed()
-        embed.add_field(name="User", value=user)
-        embed.add_field(name="Server", value=guild.name)
-
-        log_channel = await self.get_log_channel_from_guild(
-            guild, key="member_events_channel"
-        )
-
-        await self.logger.send_log(
-            message=f"User with ID {user.id} unbanned from guild with ID {guild.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=guild),
-            channel=log_channel,
-            embed=embed,
-        )
+        await self.process_commands(message)

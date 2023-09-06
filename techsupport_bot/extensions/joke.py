@@ -1,7 +1,6 @@
 """Module for the joke extension for the discord bot."""
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -22,7 +21,7 @@ async def setup(bot):
     bot.add_extension_config("joke", config)
 
 
-class Joker(base.BaseCog):
+class Joker(cogs.BaseCog):
     """Class to make up the joke extension."""
 
     API_URL = "https://v2.jokeapi.dev/joke/Any"

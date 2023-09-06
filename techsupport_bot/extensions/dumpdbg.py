@@ -1,9 +1,8 @@
 """Module for the dumpdbg command on discord bot."""
 import json
 
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs
 from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
@@ -39,7 +38,7 @@ class DumpdbgEmbed(discord.Embed):
         self.color = discord.Color.green()
 
 
-class Dumpdbg(base.BaseCog):
+class Dumpdbg(cogs.BaseCog):
     """Class for the dump debugger on the discord bot."""
 
     @auxiliary.with_typing

@@ -1,6 +1,5 @@
 """Module for the autoreact extension for the discord bot."""
-import base
-from base import auxiliary
+from base import auxiliary, cogs
 
 
 async def setup(bot):
@@ -18,7 +17,7 @@ async def setup(bot):
     bot.add_extension_config("autoreact", config)
 
 
-class AutoReact(base.MatchCog):
+class AutoReact(cogs.MatchCog):
     """Class for the autoreact to make it to discord."""
 
     async def match(self, config, _, content):

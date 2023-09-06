@@ -11,9 +11,8 @@ Defines: check_syntax
 """
 import json
 
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -22,7 +21,7 @@ async def setup(bot):
     await bot.add_cog(Lint(bot=bot))
 
 
-class Lint(base.BaseCog):
+class Lint(cogs.BaseCog):
     """Class to add the lint command on the discord bot."""
 
     async def check_syntax(self, message: discord.Message) -> str:

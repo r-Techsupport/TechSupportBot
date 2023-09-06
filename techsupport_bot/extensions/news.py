@@ -3,7 +3,7 @@ import enum
 import random
 
 import aiocron
-import base
+from base import cogs, extension
 from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
@@ -64,7 +64,7 @@ class Category(enum.Enum):
     TECH = "technology"
 
 
-class News(base.LoopCog):
+class News(cogs.LoopCog):
     """Class to set up the news extension for the discord bot."""
 
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
@@ -128,7 +128,7 @@ class News(base.LoopCog):
         """Method to set up the news command."""
 
         # Executed if there are no/invalid args supplied
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 
     @news.command(
         name="random",

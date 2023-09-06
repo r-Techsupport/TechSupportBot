@@ -1,7 +1,6 @@
 """Module for the mock extension for the discord bot."""
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -10,7 +9,7 @@ async def setup(bot):
     await bot.add_cog(Mocker(bot=bot))
 
 
-class Mocker(base.BaseCog):
+class Mocker(cogs.BaseCog):
     """Class to set up the mocking command."""
 
     @auxiliary.with_typing

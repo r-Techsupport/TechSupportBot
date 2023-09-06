@@ -3,11 +3,10 @@
 
 import datetime
 
-import base
 import discord
 import expiringdict
 import ui
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -67,7 +66,7 @@ class InfoEmbed(discord.Embed):
         self.color = discord.Color.green()
 
 
-class Listener(base.BaseCog):
+class Listener(cogs.BaseCog):
     """Cog object for listening to channels."""
 
     ADMIN_ONLY = True

@@ -4,13 +4,12 @@ import io
 import re
 from datetime import timedelta
 
-import base
 import dateparser
 import discord
 import expiringdict
 import munch
 import ui
-from base import auxiliary
+from base import auxiliary, cogs
 from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
@@ -143,7 +142,7 @@ class ProtectEmbed(discord.Embed):
         self.color = discord.Color.gold()
 
 
-class Protector(base.MatchCog):
+class Protector(cogs.MatchCog):
     """Class for the protector command."""
 
     ALERT_ICON_URL = (
