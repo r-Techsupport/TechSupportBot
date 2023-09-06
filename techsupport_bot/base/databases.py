@@ -1,17 +1,39 @@
 """This file stores all of the postgres table declarations
 All models can be used by any extension
 """
+from __future__ import annotations
 
 import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import bot
 
 
-def setup_models(bot):
+def setup_models(bot: bot.TechSupportBot):
     """A function to setup all of the postgres tables
     This is stored in bot.models variable
 
     Args:
-        bot (TechSupportBot): The bot object to register the databases to
+        bot (bot.TechSupportBot): The bot object to register the databases to
     """
+
+    class Applications(bot.db.Model):
+        """The postgres table for applications
+        Currenty used in application.py"""
+
+        __tablename__ = "applications"
+
+        pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
+        guild_id = bot.db.Column(bot.db.String)
+        applicant_name = bot.db.Column(bot.db.String)
+        applicant_id = bot.db.Column(bot.db.String)
+        application_stauts = bot.db.Column(bot.db.String)
+        experience = bot.db.Column(bot.db.String)
+        reason = bot.db.Column(bot.db.String)
+        application_time = bot.db.Column(
+            bot.db.DateTime, default=datetime.datetime.utcnow
+        )
 
     class DuckUser(bot.db.Model):
         """The postgres table for ducks
@@ -103,6 +125,7 @@ def setup_models(bot):
         reason = bot.db.Column(bot.db.String)
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
 
+    # bot.models.applications = Applications
     bot.models.DuckUser = DuckUser
     bot.models.Factoid = Factoid
     bot.models.FactoidJob = FactoidJob

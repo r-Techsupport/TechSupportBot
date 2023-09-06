@@ -33,10 +33,7 @@ class Feedback(discord.ui.Modal, title="Feedback"):
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.send_message(
-            f"Thanks for your feedback, {self.name.value}!", ephemeral=True
-        )
-        await interaction.channel.send(
-            f"USER: {interaction.user.name}, NAME: {self.name.value}, FEEDBACK: {self.feedback.value}"
+            f"Thanks for your feedback, {interaction.user.name}!", ephemeral=True
         )
 
     async def on_error(
