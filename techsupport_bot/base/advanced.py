@@ -10,15 +10,13 @@ import discord
 import error
 import expiringdict
 import munch
-from base import auxiliary
+from base import auxiliary, data
 from botlogging import LogContext, LogLevel
 from discord.ext import commands
 from unidecode import unidecode
 
-from .data import DataBot
 
-
-class AdvancedBot(DataBot):
+class AdvancedBot(data.DataBot):
     """
     Advanced extension bot with most base features,
     including per-guild config and event logging.

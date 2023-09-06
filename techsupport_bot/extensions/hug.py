@@ -1,9 +1,8 @@
 """Module for the hug extention for the bot."""
 import random
 
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -12,7 +11,7 @@ async def setup(bot):
     await bot.add_cog(Hugger(bot=bot))
 
 
-class Hugger(base.BaseCog):
+class Hugger(cogs.BaseCog):
     """Class to make the hug command."""
 
     HUGS_SELECTION = [

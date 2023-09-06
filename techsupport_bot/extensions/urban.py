@@ -1,8 +1,7 @@
 """Module for the urban dictionary extension for the discord bot."""
-import base
 import discord
 import ui
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -21,7 +20,7 @@ async def setup(bot):
     bot.add_extension_config("urban", config)
 
 
-class UrbanDictionary(base.BaseCog):
+class UrbanDictionary(cogs.BaseCog):
     """Class for setting up the urban dictionary extension."""
 
     BASE_URL = "http://api.urbandictionary.com/v0/define?term="

@@ -1,6 +1,5 @@
 """Module for the translate extension for the discord bot."""
-import base
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -9,7 +8,7 @@ async def setup(bot):
     await bot.add_cog(Translator(bot=bot))
 
 
-class Translator(base.BaseCog):
+class Translator(cogs.BaseCog):
     """Class to set up the translate extension."""
 
     HAS_CONFIG = False

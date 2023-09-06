@@ -1,7 +1,6 @@
 """Module to add the location of the ISS to the bot."""
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -10,7 +9,7 @@ async def setup(bot):
     await bot.add_cog(ISSLocator(bot=bot))
 
 
-class ISSLocator(base.BaseCog):
+class ISSLocator(cogs.BaseCog):
     """Class to locate the ISS at its current position."""
 
     ISS_URL = "http://api.open-notify.org/iss-now.json"

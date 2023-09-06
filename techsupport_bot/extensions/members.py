@@ -12,10 +12,9 @@ Defines: get_members_with_role
 import datetime
 import io
 
-import base
 import discord
 import yaml
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -24,7 +23,7 @@ async def setup(bot):
     await bot.add_cog(Members(bot=bot))
 
 
-class Members(base.BaseCog):
+class Members(cogs.BaseCog):
     """Class for the Member command on the discord bot."""
 
     async def get_members_with_role(

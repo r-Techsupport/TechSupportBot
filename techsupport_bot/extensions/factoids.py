@@ -18,13 +18,12 @@ import re
 from socket import gaierror
 
 import aiocron
-import base
 import discord
 import expiringdict
 import ui
 import yaml
 from aiohttp.client_exceptions import InvalidURL
-from base import auxiliary
+from base import auxiliary, cogs, extension
 from botlogging import LogContext, LogLevel
 from croniter import CroniterBadCronError
 from discord.ext import commands
@@ -99,7 +98,7 @@ async def has_manage_factoids_role(ctx: commands.Context):
     return True
 
 
-class FactoidManager(base.MatchCog):
+class FactoidManager(cogs.MatchCog):
     """
     Manages all facttoid features
     """
@@ -888,7 +887,7 @@ class FactoidManager(base.MatchCog):
         """Method to create the factoid command group."""
 
         # Executed if there are no/invalid args supplied
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 
     @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)
