@@ -1,8 +1,8 @@
 """Module for the logger extension for the discord bot."""
 import datetime
 
-import base
 import discord
+from base import cogs
 from botlogging import LogContext, LogLevel
 
 
@@ -69,7 +69,7 @@ class LogEmbed(discord.Embed):
         )
 
 
-class Logger(base.MatchCog):
+class Logger(cogs.MatchCog):
     """Class for the logger to make it to discord."""
 
     async def match(self, config, ctx, _):

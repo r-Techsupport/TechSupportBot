@@ -116,7 +116,7 @@ embed = AbcEmbed(title="Hello world", description="Sample text")
 # The main command class
 
 ```py
-class Extension_name(base.MatchCog):
+class Extension_name(cogs.MatchCog):
 ```
 
 This is where we define all command groups and their respective commands, along with preconfig and other functions used later in the code.
@@ -160,7 +160,7 @@ Even though it executes no code, we add an automatic help trigger that is called
     async def command-group-name():
 
         # Executed if there are no/invalid args supplied
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 ```
 This defines a command group that is called using `.command-group-name <command>`.
 The help is included and called if it is called by itself, should be included unless the command group itself serves a purpose.

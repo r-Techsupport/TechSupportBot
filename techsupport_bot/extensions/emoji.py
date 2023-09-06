@@ -6,11 +6,10 @@ This modules requires no config, no databases, and no APIs
 
 from unicodedata import lookup
 
-import base
 import discord
 import emoji
 import inflect
-from base import auxiliary
+from base import auxiliary, cogs, extension
 from discord.ext import commands
 
 
@@ -19,7 +18,7 @@ async def setup(bot):
     await bot.add_cog(Emojis(bot=bot))
 
 
-class Emojis(base.BaseCog):
+class Emojis(cogs.BaseCog):
     """Class for all the emoji commands"""
 
     KEY_MAP = {"?": "question", "!": "exclamation"}
@@ -151,7 +150,7 @@ class Emojis(base.BaseCog):
     )
     async def emoji(self, ctx):
         """Executed if there are no/invalid args supplied"""
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 
     @auxiliary.with_typing
     @emoji.command(

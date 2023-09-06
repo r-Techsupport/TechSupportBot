@@ -3,15 +3,15 @@
 import asyncio
 import threading
 
-import base
 import botlogging
 import cogs as builtin_cogs
 import ircrelay
 import munch
+from base import advanced, databases
 from botlogging import LogContext, LogLevel
 
 
-class TechSupportBot(base.AdvancedBot):
+class TechSupportBot(advanced.AdvancedBot):
     """The main bot object."""
 
     def __init__(self, *args, **kwargs):
@@ -88,7 +88,7 @@ class TechSupportBot(base.AdvancedBot):
                 console_only=True,
             )
             self.models = munch.DefaultMunch(None)
-            base.databases.setup_models(self)
+            databases.setup_models(self)
             await self.db.gino.create_all()
 
         await self.logger.send_log(
@@ -101,6 +101,9 @@ class TechSupportBot(base.AdvancedBot):
         await self.load_builtin_cog(builtin_cogs.AdminControl)
         await self.load_builtin_cog(builtin_cogs.ConfigControl)
         await self.load_builtin_cog(builtin_cogs.Listener)
+
+        # This is the guild events logging cog
+        await self.load_builtin_cog(botlogging.EventLogger)
 
     async def start_irc(self):
         """Starts the IRC connection in a seperate thread

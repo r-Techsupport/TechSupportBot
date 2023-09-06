@@ -4,11 +4,10 @@
 import json
 import re
 
-import base
 import discord
 import git
 import ui
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -20,7 +19,7 @@ class AdminEmbed(discord.Embed):
         self.color = discord.Color.blurple()
 
 
-class AdminControl(base.BaseCog):
+class AdminControl(cogs.BaseCog):
     """Cog object for admin-only bot control"""
 
     ADMIN_ONLY = True

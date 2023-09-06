@@ -5,10 +5,9 @@ import functools
 import random
 from datetime import timedelta
 
-import base
 import discord
 import ui
-from base import auxiliary
+from base import auxiliary, cogs, extension
 from botlogging import LogContext, LogLevel
 from discord import Color as embed_colors
 from discord.ext import commands
@@ -65,7 +64,7 @@ async def setup(bot):
     bot.add_extension_config("duck", config)
 
 
-class DuckHunt(base.LoopCog):
+class DuckHunt(cogs.LoopCog):
     """Class for the actual duck commands"""
 
     DUCK_PIC_URL = "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
@@ -339,7 +338,7 @@ class DuckHunt(base.LoopCog):
         """Method to make the initial duck command"""
 
         # Executed if there are no/invalid args supplied
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 
     @auxiliary.with_typing
     @commands.guild_only()

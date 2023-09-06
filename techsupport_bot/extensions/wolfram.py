@@ -1,7 +1,6 @@
 """Module for the wolfram extension for the discord bot."""
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -29,7 +28,7 @@ class WolframEmbed(discord.Embed):
         self.set_thumbnail(url=self.ICON_URL)
 
 
-class Wolfram(base.BaseCog):
+class Wolfram(cogs.BaseCog):
     """Class to set up the wolfram extension."""
 
     API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
