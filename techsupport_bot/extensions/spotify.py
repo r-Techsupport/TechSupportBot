@@ -1,8 +1,7 @@
 """Module for the Spotify extension of the discord bot."""
 import aiohttp
-import base
 import ui
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -21,7 +20,7 @@ async def setup(bot):
     await bot.add_cog(Spotify(bot=bot))
 
 
-class Spotify(base.BaseCog):
+class Spotify(cogs.BaseCog):
     """Class for setting up the Spotify extension."""
 
     AUTH_URL = "https://accounts.spotify.com/api/token"

@@ -1,9 +1,8 @@
 """Module for the xkcd extension for the discord bot."""
 import random
 
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs, extension
 from discord.ext import commands
 
 
@@ -12,7 +11,7 @@ async def setup(bot):
     await bot.add_cog(XKCD(bot=bot))
 
 
-class XKCD(base.BaseCog):
+class XKCD(cogs.BaseCog):
     """Class to create the xkcd for the extension."""
 
     MOST_RECENT_API_URL = "https://xkcd.com/info.0.json"
@@ -29,7 +28,7 @@ class XKCD(base.BaseCog):
             await self.numbered_comic(ctx, number)
         else:
             # Executed if there are no/invalid args supplied
-            await base.extension_help(self, ctx, self.__module__[11:])
+            await extension.extension_help(self, ctx, self.__module__[11:])
 
     @xkcd.command(
         name="random",
@@ -81,7 +80,7 @@ class XKCD(base.BaseCog):
         """Method to generate the help entry for the group parent and
         prevent direct invocation."""
         ctx.message.content = f"{ctx.message.content[0]}xkcd invalid"
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 
     async def numbered_comic(self, ctx, number: int):
         """Method to get a specific number comic from xkcd."""

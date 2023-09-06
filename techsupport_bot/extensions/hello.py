@@ -4,8 +4,7 @@ This module has unit tests
 This modules requires no config, no databases, and no APIs
 """
 
-import base
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -14,7 +13,7 @@ async def setup(bot):
     await bot.add_cog(Greeter(bot=bot))
 
 
-class Greeter(base.BaseCog):
+class Greeter(cogs.BaseCog):
     """Class for the greeter command."""
 
     async def hello_command(self, ctx) -> None:

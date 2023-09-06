@@ -1,8 +1,7 @@
 """Module for the google extension for the discord bot."""
-import base
 import discord
 import ui
-from base import auxiliary
+from base import auxiliary, cogs, extension
 from discord.ext import commands
 
 
@@ -44,7 +43,7 @@ class GoogleEmbed(discord.Embed):
         self.set_thumbnail(url=self.ICON_URL)
 
 
-class Googler(base.BaseCog):
+class Googler(cogs.BaseCog):
     """Class for the google extension for the discord bot."""
 
     GOOGLE_URL = "https://www.googleapis.com/customsearch/v1"
@@ -64,7 +63,7 @@ class Googler(base.BaseCog):
         """Method to add command to search google."""
 
         # Executed if there are no/invalid args supplied
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 
     @auxiliary.with_typing
     @commands.guild_only()

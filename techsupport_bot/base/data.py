@@ -10,14 +10,13 @@ import aiohttp
 import expiringdict
 import gino
 import munch
+from base import extension
 from botlogging import LogLevel
 from error import HTTPRateLimit
 from motor import motor_asyncio
 
-from .extension import ExtensionsBot
 
-
-class DataBot(ExtensionsBot):
+class DataBot(extension.ExtensionsBot):
     """Bot that supports Mongo and Postgres."""
 
     def __init__(self, *args, **kwargs):

@@ -2,9 +2,8 @@
 import asyncio
 import random
 
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -57,7 +56,7 @@ class KanyeEmbed(discord.Embed):
         self.description = "Kanye West"
 
 
-class KanyeQuotes(base.LoopCog):
+class KanyeQuotes(cogs.LoopCog):
     """Class to get the Kanye quotes from the api."""
 
     API_URL = "https://api.kanye.rest"

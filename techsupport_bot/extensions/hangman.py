@@ -2,10 +2,9 @@
 import datetime
 import uuid
 
-import base
 import discord
 import ui
-from base import auxiliary
+from base import auxiliary, cogs, extension
 from discord.ext import commands
 
 
@@ -177,7 +176,7 @@ async def can_stop_game(ctx):
     return True
 
 
-class HangmanCog(base.BaseCog):
+class HangmanCog(cogs.BaseCog):
     """Class to define the hangman game."""
 
     async def preconfig(self):
@@ -192,7 +191,7 @@ class HangmanCog(base.BaseCog):
         """Method to use the command to start the hangman game."""
 
         # Executed if there are no/invalid args supplied
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 
     @hangman.command(
         name="start",

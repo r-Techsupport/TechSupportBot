@@ -5,9 +5,8 @@ This modules requires no config, no databases, and no APIs
 """
 import random
 
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -16,7 +15,7 @@ async def setup(bot):
     await bot.add_cog(MagicConch(bot=bot))
 
 
-class MagicConch(base.BaseCog):
+class MagicConch(cogs.BaseCog):
     """Class to create the conch command for discord bot."""
 
     RESPONSES = [
