@@ -1,6 +1,5 @@
 """Module for the urban dictionary extension for the discord bot."""
-import base
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -17,7 +16,7 @@ async def setup(bot):
     await bot.add_cog(Cats(bot=bot))
 
 
-class Cats(base.BaseCog):
+class Cats(cogs.BaseCog):
     """The class for the cat api"""
 
     API_URL = "https://api.thecatapi.com/v1/images/search?limit=1&api_key={}"

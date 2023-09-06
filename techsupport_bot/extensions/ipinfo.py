@@ -1,8 +1,7 @@
 """Module for the ipinfo extension into the bot."""
 
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -11,7 +10,7 @@ async def setup(bot):
     await bot.add_cog(IPInfo(bot=bot))
 
 
-class IPInfo(base.BaseCog):
+class IPInfo(cogs.BaseCog):
     """Class to add ipinfo geodata to the bot."""
 
     API_URL = "https://ipinfo.io"

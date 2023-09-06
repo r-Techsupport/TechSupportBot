@@ -3,9 +3,8 @@ import datetime
 import io
 import json
 
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs, extension
 from discord.ext import commands
 
 
@@ -22,7 +21,7 @@ class RuleEmbed(discord.Embed):
         self.color = discord.Color.gold()
 
 
-class Rules(base.BaseCog):
+class Rules(cogs.BaseCog):
     """Class to define the rules for the extension."""
 
     RULE_ICON_URL = (
@@ -41,7 +40,7 @@ class Rules(base.BaseCog):
         """Method for the rule group."""
 
         # Executed if there are no/invalid args supplied
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 
     @commands.has_permissions(administrator=True)
     @commands.guild_only()

@@ -1,9 +1,8 @@
 """Module to add the extension lenny to the discord bot."""
 import random
 
-import base
 import discord
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -12,7 +11,7 @@ async def setup(bot):
     await bot.add_cog(Lenny(bot=bot))
 
 
-class Lenny(base.BaseCog):
+class Lenny(cogs.BaseCog):
     """Class for lenny extension."""
 
     LENNYS_SELECTION = [

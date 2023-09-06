@@ -1,9 +1,9 @@
 """The file to hold the role extension
 This extension is slash commands"""
 
-import base
 import discord
 import ui
+from base import cogs
 from discord import app_commands
 
 
@@ -46,7 +46,7 @@ async def setup(bot):
     bot.add_extension_config("role", config)
 
 
-class RoleGiver(base.BaseCog):
+class RoleGiver(cogs.BaseCog):
     """The main class for the role commands"""
 
     def __init__(self, bot):

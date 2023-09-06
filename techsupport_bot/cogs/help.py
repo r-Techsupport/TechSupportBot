@@ -1,9 +1,9 @@
 """Module for custom help commands.
 """
 
-import base
 import discord
 import ui
+from base import cogs
 from discord.ext import commands
 
 
@@ -15,7 +15,7 @@ class HelpEmbed(discord.Embed):
         self.color = discord.Color.green()
 
 
-class Helper(base.BaseCog):
+class Helper(cogs.BaseCog):
     """Cog object for help commands."""
 
     EXTENSIONS_PER_GENERAL_PAGE = 15

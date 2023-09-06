@@ -5,14 +5,13 @@ import datetime
 import io
 import json
 
-import base
 import discord
 import ui
-from base import auxiliary
+from base import auxiliary, cogs
 from discord.ext import commands
 
 
-class ConfigControl(base.BaseCog):
+class ConfigControl(cogs.BaseCog):
     """Cog object for per-guild config control."""
 
     @commands.group(

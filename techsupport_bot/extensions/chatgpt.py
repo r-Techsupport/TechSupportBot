@@ -9,11 +9,10 @@ Models: None
 Subcommands: gpt, gptutil (history, clean)
 Defines: None
 """
-import base
 import discord
 import expiringdict
 import ui
-from base import auxiliary
+from base import auxiliary, cogs, extension
 from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
@@ -31,7 +30,7 @@ async def setup(bot):
     await bot.add_cog(ChatGPT(bot=bot))
 
 
-class ChatGPT(base.BaseCog):
+class ChatGPT(cogs.BaseCog):
     """Main extension class"""
 
     API_URL = "https://api.openai.com/v1/chat/completions"
@@ -168,7 +167,7 @@ class ChatGPT(base.BaseCog):
         """
 
         # Executed if there are no/invalid args supplied
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 
     @auxiliary.with_typing
     @gptutil.command(

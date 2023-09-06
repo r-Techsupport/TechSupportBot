@@ -3,10 +3,9 @@ Module for defining the grabs extension
 """
 import random
 
-import base
 import discord
 import ui
-from base import auxiliary
+from base import auxiliary, cogs, extension
 from discord.ext import commands
 
 
@@ -50,7 +49,7 @@ async def invalid_channel(ctx):
     raise commands.CommandError("Grabs are disabled for this channel")
 
 
-class Grabber(base.BaseCog):
+class Grabber(cogs.BaseCog):
     """Class for the actual commands"""
 
     HAS_CONFIG = False
@@ -133,7 +132,7 @@ class Grabber(base.BaseCog):
     async def grabs(self, ctx):
         """Makes the .grab command group"""
         # Executed if there are no/invalid args supplied
-        await base.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[11:])
 
     @auxiliary.with_typing
     @commands.guild_only()
