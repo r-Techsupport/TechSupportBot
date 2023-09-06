@@ -535,6 +535,7 @@ class DuckHunt(cogs.LoopCog):
         return f"{user_text}{user_text_extra}"
 
     @auxiliary.with_typing
+    @commands.cooldown(1, 600)
     @commands.guild_only()
     @duck.command(
         brief="Releases a duck into the wild",
@@ -543,6 +544,7 @@ class DuckHunt(cogs.LoopCog):
     async def release(self, ctx):
         """Method for releasing a duck"""
         duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+        config = await self.bot.get_context_config(guild=ctx.guild)
 
         if not duck_user:
             await auxiliary.send_deny_embed(
@@ -562,7 +564,7 @@ class DuckHunt(cogs.LoopCog):
             message=f"Fly safe! You have {duck_user.befriend_count} ducks left.",
             channel=ctx.channel,
         )
-
+        await self.execute(config, ctx.guild,ctx.channel)
     @auxiliary.with_typing
     @commands.cooldown(1, 600)
     @commands.guild_only()
@@ -720,6 +722,6 @@ class DuckHunt(cogs.LoopCog):
 
         await duck_user.delete()
         await auxiliary.send_confirm_embed(
-            message=f"Succesfully reset {user.mention}s duck stats!",
+            message=f"Successfully reset {user.mention}s duck stats!",
             channel=ctx.channel,
         )
