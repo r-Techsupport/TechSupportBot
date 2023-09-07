@@ -1,11 +1,16 @@
-"""Module for defining the application bot methods."""
+"""Module for defining the application extension"""
+
+from __future__ import annotations
+
 import datetime
 import io
 import json
 import uuid
+from typing import TYPE_CHECKING
 
 import aiocron
 import discord
+import munch
 import ui
 import yaml
 from base import auxiliary, cogs
@@ -13,13 +18,16 @@ from botlogging import LogContext, LogLevel
 from discord import app_commands
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """The setup function to define config and add the cogs to the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    Method to setup the bot, and configure different management role config options for
-    the promotion application framework.
-    """
-    # For the webhook id to add to discord
     config = bot.ExtensionConfig()
     config.add(
         key="management_channel",
@@ -85,7 +93,16 @@ async def setup(bot):
 
 
 class ApplicationNotifier(cogs.LoopCog):
-    async def execute(self, config, guild):
+    """This cog is soley tasked with looping the application reminder for users
+    Everything else is handled in ApplicationManager"""
+
+    async def execute(self, config: munch.Munch, guild: discord.Guild) -> None:
+        """The function that executes the from the LoopCog structure
+
+        Args:
+            config (munch.Munch): The guild config for the executing loop
+            guild (discord.Guild): The guild the loop is executing for
+        """
         channels = config.extensions.application.notification_channels.value
         for channel in channels:
             channel = guild.get_channel(int(channel))
@@ -97,23 +114,32 @@ class ApplicationNotifier(cogs.LoopCog):
                 message=config.extensions.application.application_message.value,
             )
 
-    async def wait(self, config, _):
+    async def wait(self, config: munch.Munch, guild: discord.Guild) -> None:
+        """The function that causes the sleep/delay the from the LoopCog structure
+
+        Args:
+            config (munch.Munch): The guild config for the executing loop
+            guild (discord.Guild): The guild the loop is executing for
+        """
         await aiocron.crontab(
             config.extensions.application.notification_cron_config.value
         ).next()
 
 
 class ApplicationManager(cogs.LoopCog):
-    """Class to manage the application extension of the bot, including getting data and status."""
+    """This cog is responsible for the majority of functions in the application system"""
 
     @app_commands.command(
         name="apply",
         description="Use this to show you are interested in being staff on this server",
     )
-    async def apply(self, interaction: discord.Interaction):
-        # Send the modal with an instance of our `Feedback` class
-        # Since modals require an interaction, they cannot be done as a response to a text command.
-        # They can only be done as a response to either an application command or a button press.
+    async def apply(self, interaction: discord.Interaction) -> None:
+        """The slash command entrance for /apply
+        This handles sending the form and checking if application is valid
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered the slash command
+        """
         can_apply = await self.check_if_can_apply(interaction.user)
         if not can_apply:
             await interaction.response.send_message(
@@ -132,6 +158,16 @@ class ApplicationManager(cogs.LoopCog):
     def build_application_embed(
         self, applicant: discord.Member, background: str, reason: str
     ) -> discord.Embed:
+        """This builds the embed that will be sent to staff
+
+        Args:
+            applicant (discord.Member): The member who has applied
+            background (str): The answer to the background question
+            reason (str): The answer to the reason question
+
+        Returns:
+            discord.Embed: The stylized embed ready to be show to people
+        """
         embed = discord.Embed()
         embed.timestamp = datetime.datetime.utcnow()
         embed.title = "New Application!"
@@ -157,7 +193,14 @@ class ApplicationManager(cogs.LoopCog):
 
     async def handle_new_application(
         self, applicant: discord.Member, background: str, reason: str
-    ):
+    ) -> None:
+        """The function that handles what happens when a new application is sent in
+
+        Args:
+            applicant (discord.Member): The member who has applied
+            background (str): The answer to the background question
+            reason (str): The answer to the reason question
+        """
         # Find the channel to send to
         config = await self.bot.get_context_config(guild=applicant.guild)
         channel = applicant.guild.get_channel(
@@ -168,7 +211,17 @@ class ApplicationManager(cogs.LoopCog):
 
         await channel.send(embed=embed)
 
-    async def check_if_can_apply(self, applicant: discord.Member):
+    async def check_if_can_apply(self, applicant: discord.Member) -> bool:
+        """Checks if a user can apply to
+        Currently does the following checks:
+            - Does the user have the application role
+
+        Args:
+            applicant (discord.Member): The member who as applied
+
+        Returns:
+            bool: True if they can apply, False if they cannot apply
+        """
         config = await self.bot.get_context_config(guild=applicant.guild)
         role = applicant.guild.get_role(
             int(config.extensions.application.application_role.value)
@@ -178,8 +231,13 @@ class ApplicationManager(cogs.LoopCog):
             return False
         return True
 
-    async def execute(self, config, guild):
-        """Method to execute the news command."""
+    async def execute(self, config: munch.Munch, guild: discord.Guild) -> None:
+        """The executes the reminder of pending applications
+
+        Args:
+            config (munch.Munch): The guild config for the executing loop
+            guild (discord.Guild): The guild the loop is executing for
+        """
         channel = guild.get_channel(
             int(config.extensions.application.management_channel.value)
         )
@@ -188,7 +246,13 @@ class ApplicationManager(cogs.LoopCog):
 
         await channel.send("manager")
 
-    async def wait(self, config, _):
+    async def wait(self, config: munch.Munch, guild: discord.Guild) -> None:
+        """The queues the pending application reminder based on the cron config
+
+        Args:
+            config (munch.Munch): The guild config for the executing loop
+            guild (discord.Guild): The guild the loop is executing for
+        """
         await aiocron.crontab(
             config.extensions.application.reminder_cron_config.value
         ).next()
