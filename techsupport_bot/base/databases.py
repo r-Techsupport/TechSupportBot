@@ -29,7 +29,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         applicant_name = bot.db.Column(bot.db.String)
         applicant_id = bot.db.Column(bot.db.String)
         application_stauts = bot.db.Column(bot.db.String)
-        experience = bot.db.Column(bot.db.String)
+        background = bot.db.Column(bot.db.String)
         reason = bot.db.Column(bot.db.String)
         application_time = bot.db.Column(
             bot.db.DateTime, default=datetime.datetime.utcnow
@@ -135,8 +135,8 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         reason = bot.db.Column(bot.db.String)
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
 
-    bot.models.applications = Applications
-    bot.models.appbans = ApplicationBans
+    bot.models.Applications = Applications
+    bot.models.AppBans = ApplicationBans
     bot.models.DuckUser = DuckUser
     bot.models.Factoid = Factoid
     bot.models.FactoidJob = FactoidJob

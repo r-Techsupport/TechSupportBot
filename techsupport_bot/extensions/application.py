@@ -167,7 +167,7 @@ class ApplicationManager(cogs.LoopCog):
             )
             await interaction.response.send_message(embed=embed)
             return
-        ban = self.bot.models.appbans(
+        ban = self.bot.models.AppBans(
             guild_id=str(interaction.guild.id),
             applicant_id=str(member.id),
         )
@@ -201,9 +201,9 @@ class ApplicationManager(cogs.LoopCog):
     # Helper functions
 
     async def get_ban_entry(self, member: discord.Member):
-        query = self.bot.models.appbans.query.where(
-            self.bot.models.appbans.applicant_id == str(member.id)
-        ).where(self.bot.models.appbans.guild_id == str(member.guild.id))
+        query = self.bot.models.AppBans.query.where(
+            self.bot.models.AppBans.applicant_id == str(member.id)
+        ).where(self.bot.models.AppBans.guild_id == str(member.guild.id))
         entry = await query.gino.all()
         return entry
 
@@ -260,14 +260,25 @@ class ApplicationManager(cogs.LoopCog):
             background (str): The answer to the background question
             reason (str): The answer to the reason question
         """
+        # Add application to database
+        application = self.bot.models.Applications(
+            guild_id=str(applicant.guild.id),
+            applicant_name=applicant.name,
+            applicant_id=str(applicant.id),
+            application_stauts="pending",
+            background=background,
+            reason=reason,
+        )
+        await application.create()
+
         # Find the channel to send to
         config = await self.bot.get_context_config(guild=applicant.guild)
         channel = applicant.guild.get_channel(
             int(config.extensions.application.management_channel.value)
         )
 
+        # Send notice to staff channel
         embed = self.build_application_embed(applicant, background, reason)
-
         await channel.send(embed=embed)
 
     async def check_if_can_apply(self, applicant: discord.Member) -> bool:
@@ -349,7 +360,7 @@ class ApplicationManager(cogs.LoopCog):
             config = await self.bot.get_context_config(guild=interaction.guild)
             log_channel = config.get("logging_channel")
             await self.bot.logger.send_log(
-                message=f"An unknown error occurred. {error}",
+                message=f"{error}",
                 level=LogLevel.ERROR,
                 channel=log_channel,
                 context=LogContext(
@@ -359,6 +370,6 @@ class ApplicationManager(cogs.LoopCog):
             )
 
         if interaction.response.is_done():
-            await interaction.followup.send(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed)
         else:
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed)
