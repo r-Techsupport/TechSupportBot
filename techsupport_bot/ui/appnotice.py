@@ -51,22 +51,4 @@ class AppNotice(discord.ui.View):
             button (discord.ui.Button): The button object created by this function
         """
         cog = interaction.client.get_cog("ApplicationManager")
-        can_apply = await cog.check_if_can_apply(interaction.user)
-        if not can_apply:
-            await interaction.response.send_message(
-                "You are not eligible to apply right now. Ask the server moderators if"
-                " you have questions.",
-                ephemeral=True,
-            )
-            return
-
-        form = Application()
-        await interaction.response.send_modal(form)
-        await form.wait()
-        cog = interaction.client.get_cog("ApplicationManager")
-        if not cog:
-            print("ERROR")
-            return
-        await cog.handle_new_application(
-            interaction.user, form.background.value, form.reason.value
-        )
+        await cog.start_application(interaction)

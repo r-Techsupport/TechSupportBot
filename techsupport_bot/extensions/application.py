@@ -147,20 +147,7 @@ class ApplicationManager(cogs.LoopCog):
         Args:
             interaction (discord.Interaction): The interaction that triggered the slash command
         """
-        can_apply = await self.check_if_can_apply(interaction.user)
-        if not can_apply:
-            await interaction.response.send_message(
-                "You are not eligible to apply right now. Ask the server moderators if"
-                " you have questions.",
-                ephemeral=True,
-            )
-            return
-        form = ui.Application()
-        await interaction.response.send_modal(form)
-        await form.wait()
-        await self.handle_new_application(
-            interaction.user, form.background.value, form.reason.value
-        )
+        await self.start_application(interaction)
 
     @application_group.command(
         name="ban", description="Ban someone from making new applications"
@@ -246,12 +233,21 @@ class ApplicationManager(cogs.LoopCog):
 
     # Helper functions
 
-    async def get_ban_entry(self, member: discord.Member):
-        query = self.bot.models.AppBans.query.where(
-            self.bot.models.AppBans.applicant_id == str(member.id)
-        ).where(self.bot.models.AppBans.guild_id == str(member.guild.id))
-        entry = await query.gino.all()
-        return entry
+    async def start_application(self, interaction: discord.Interaction) -> None:
+        can_apply = await self.check_if_can_apply(interaction.user)
+        if not can_apply:
+            await interaction.response.send_message(
+                "You are not eligible to apply right now. Ask the server moderators if"
+                " you have questions.",
+                ephemeral=True,
+            )
+            return
+        form = ui.Application()
+        await interaction.response.send_modal(form)
+        await form.wait()
+        await self.handle_new_application(
+            interaction.user, form.background.value, form.reason.value
+        )
 
     async def check_if_banned(self, member: discord.Member) -> bool:
         entry = await self.get_ban_entry(member)
@@ -370,6 +366,8 @@ class ApplicationManager(cogs.LoopCog):
 
         return True
 
+    # DB Stuff
+
     async def search_for_pending_application(self, member: discord.Member):
         query = (
             self.bot.models.Applications.query.where(
@@ -382,6 +380,13 @@ class ApplicationManager(cogs.LoopCog):
             )
         )
         entry = await query.gino.first()
+        return entry
+
+    async def get_ban_entry(self, member: discord.Member):
+        query = self.bot.models.AppBans.query.where(
+            self.bot.models.AppBans.applicant_id == str(member.id)
+        ).where(self.bot.models.AppBans.guild_id == str(member.guild.id))
+        entry = await query.gino.all()
         return entry
 
     # Loop stuff
