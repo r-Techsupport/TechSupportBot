@@ -214,20 +214,44 @@ class ApplicationManager(cogs.LoopCog):
         name="approve", description="Approves an application of the given user"
     )
     async def approve_application(
-        self, interaction: discord.Interaction, member: discord.Member
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member,
+        message: str = None,
     ) -> None:
         application = await self.search_for_pending_application(member)
         if not application:
             embed = auxiliary.prepare_deny_embed(
                 f"No application could be found for {member.name}"
             )
-        else:
-            await application.update(
-                application_stauts=ApplicationStatus.APPROVED.value
-            ).apply()
-            embed = auxiliary.prepare_confirm_embed(
-                f"{member.name}'s application was successfully approved"
+            await interaction.response.send_message(embed=embed)
+            return
+        await application.update(
+            application_stauts=ApplicationStatus.APPROVED.value
+        ).apply()
+
+        confirm_message = f"{member.name}'s application was successfully approved"
+
+        if message:
+            member = await self.get_application_from_db_entry(
+                interaction.guild, application
             )
+            embed = auxiliary.prepare_confirm_embed(
+                f"Your application in {interaction.guild.name} has been approved!"
+                f" Message from the staff: {message}"
+            )
+            try:
+                await member.send(embed=embed)
+                confirm_message += " and they have been notified"
+            except discord.Forbidden as exception:
+                confirm_message += (
+                    f" but there was an error notifying them: {exception}"
+                )
+
+        else:
+            confirm_message += " silently"
+
+        embed = auxiliary.prepare_confirm_embed(confirm_message)
 
         await interaction.response.send_message(embed=embed)
 
@@ -256,6 +280,12 @@ class ApplicationManager(cogs.LoopCog):
         else:
             return False
 
+    async def get_application_from_db_entry(
+        self, guild: discord.Guild, application: bot.models.Applications
+    ) -> discord.Member:
+        applicant = guild.get_member(int(application.applicant_id))
+        return applicant
+
     async def build_application_embed(
         self,
         guild: discord.Guild,
@@ -274,7 +304,7 @@ class ApplicationManager(cogs.LoopCog):
         """
         if not application:
             return None
-        applicant = guild.get_member(int(application.applicant_id))
+        applicant = await self.get_application_from_db_entry(guild, application)
         if not applicant:
             return None
 
