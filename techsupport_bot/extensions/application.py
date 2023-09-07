@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+from enum import Enum
 from typing import TYPE_CHECKING
 
 import aiocron
@@ -15,6 +16,13 @@ from discord import app_commands
 
 if TYPE_CHECKING:
     import bot
+
+
+class ApplicationStatus(Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    DENIED = "denied"
+    REJECTED = "rejected"
 
 
 async def setup(bot: bot.TechSupportBot) -> None:
@@ -143,7 +151,7 @@ class ApplicationManager(cogs.LoopCog):
         if not can_apply:
             await interaction.response.send_message(
                 "You are not eligible to apply right now. Ask the server moderators if"
-                " you have questions",
+                " you have questions.",
                 ephemeral=True,
             )
             return
@@ -198,6 +206,44 @@ class ApplicationManager(cogs.LoopCog):
         )
         await interaction.response.send_message(embed=embed)
 
+    @application_group.command(
+        name="get", description="Gets the application of the given user"
+    )
+    async def get_application(
+        self, interaction: discord.Interaction, member: discord.Member
+    ) -> None:
+        application = await self.search_for_pending_application(member)
+        if not application:
+            embed = auxiliary.prepare_deny_embed(
+                f"No application could be found for {member.name}"
+            )
+        else:
+            embed = await self.build_application_embed(
+                interaction.guild, application, False
+            )
+        await interaction.response.send_message(embed=embed)
+
+    @application_group.command(
+        name="approve", description="Approves an application of the given user"
+    )
+    async def approve_application(
+        self, interaction: discord.Interaction, member: discord.Member
+    ) -> None:
+        application = await self.search_for_pending_application(member)
+        if not application:
+            embed = auxiliary.prepare_deny_embed(
+                f"No application could be found for {member.name}"
+            )
+        else:
+            await application.update(
+                application_stauts=ApplicationStatus.APPROVED.value
+            ).apply()
+            embed = auxiliary.prepare_confirm_embed(
+                f"{member.name}'s application was successfully approved"
+            )
+
+        await interaction.response.send_message(embed=embed)
+
     # Helper functions
 
     async def get_ban_entry(self, member: discord.Member):
@@ -214,8 +260,11 @@ class ApplicationManager(cogs.LoopCog):
         else:
             return False
 
-    def build_application_embed(
-        self, applicant: discord.Member, background: str, reason: str
+    async def build_application_embed(
+        self,
+        guild: discord.Guild,
+        application: bot.models.Applications,
+        new: bool = True,
     ) -> discord.Embed:
         """This builds the embed that will be sent to staff
 
@@ -227,24 +276,33 @@ class ApplicationManager(cogs.LoopCog):
         Returns:
             discord.Embed: The stylized embed ready to be show to people
         """
+        if not application:
+            return None
+        applicant = guild.get_member(int(application.applicant_id))
+        if not applicant:
+            return None
+
         embed = discord.Embed()
-        embed.timestamp = datetime.datetime.utcnow()
-        embed.title = "New Application!"
+        embed.timestamp = application.application_time
+        if new:
+            embed.title = "New Application!"
+        else:
+            embed.title = "Application"
         embed.color = discord.Color.green()
         embed.set_thumbnail(url=applicant.display_avatar.url)
         embed.add_field(
             name="Name",
-            value=f"{applicant.display_name} ({applicant.name})",
+            value=f"{applicant.display_name} ({application.applicant_name})",
             inline=False,
         )
         embed.add_field(
             name="Do you have any IT or programming experience?",
-            value=background,
+            value=application.background,
             inline=False,
         )
         embed.add_field(
             name="Why do you want to help here?",
-            value=reason,
+            value=application.reason,
             inline=False,
         )
 
@@ -265,7 +323,7 @@ class ApplicationManager(cogs.LoopCog):
             guild_id=str(applicant.guild.id),
             applicant_name=applicant.name,
             applicant_id=str(applicant.id),
-            application_stauts="pending",
+            application_stauts=ApplicationStatus.PENDING.value,
             background=background,
             reason=reason,
         )
@@ -278,13 +336,15 @@ class ApplicationManager(cogs.LoopCog):
         )
 
         # Send notice to staff channel
-        embed = self.build_application_embed(applicant, background, reason)
+        embed = await self.build_application_embed(applicant.guild, application)
         await channel.send(embed=embed)
 
     async def check_if_can_apply(self, applicant: discord.Member) -> bool:
         """Checks if a user can apply to
         Currently does the following checks:
             - Does the user have the application role
+            - Has the user been banned from making applications
+            - Does the user currently have a pending application
 
         Args:
             applicant (discord.Member): The member who as applied
@@ -304,7 +364,25 @@ class ApplicationManager(cogs.LoopCog):
         if await self.check_if_banned(applicant):
             return False
 
+        # Don't allow users with a pending application to apply
+        if await self.search_for_pending_application(applicant):
+            return False
+
         return True
+
+    async def search_for_pending_application(self, member: discord.Member):
+        query = (
+            self.bot.models.Applications.query.where(
+                self.bot.models.Applications.applicant_id == str(member.id)
+            )
+            .where(self.bot.models.Applications.guild_id == str(member.guild.id))
+            .where(
+                self.bot.models.Applications.application_stauts
+                == ApplicationStatus.PENDING.value
+            )
+        )
+        entry = await query.gino.first()
+        return entry
 
     # Loop stuff
 

@@ -55,7 +55,7 @@ class AppNotice(discord.ui.View):
         if not can_apply:
             await interaction.response.send_message(
                 "You are not eligible to apply right now. Ask the server moderators if"
-                " you have questions",
+                " you have questions.",
                 ephemeral=True,
             )
             return
