@@ -5,11 +5,10 @@ import json
 import uuid
 
 import aiocron
-import base
 import discord
 import ui
 import yaml
-from base import auxiliary
+from base import auxiliary, cogs
 from botlogging import LogContext, LogLevel
 from discord import app_commands
 from discord.ext import commands
@@ -66,16 +65,26 @@ async def setup(bot):
         datatype="str",
         title="Message on the application reminder",
         description=(
-            "The message to show users when they are prompted to apply in the notification_channels"
+            "The message to show users when they are prompted to apply in the"
+            " notification_channels"
         ),
         default="Apply now!",
+    )
+    config.add(
+        key="application_role",
+        datatype="str",
+        title="ID of the role to give applicants",
+        description=(
+            "The ID of the role to give applicants when there application is approved"
+        ),
+        default=None,
     )
     await bot.add_cog(ApplicationManager(bot=bot, extension_name="application"))
     await bot.add_cog(ApplicationNotifier(bot=bot, extension_name="application"))
     bot.add_extension_config("application", config)
 
 
-class ApplicationNotifier(base.LoopCog):
+class ApplicationNotifier(cogs.LoopCog):
     async def execute(self, config, guild):
         channels = config.extensions.application.notification_channels.value
         for channel in channels:
@@ -94,7 +103,7 @@ class ApplicationNotifier(base.LoopCog):
         ).next()
 
 
-class ApplicationManager(base.LoopCog):
+class ApplicationManager(cogs.LoopCog):
     """Class to manage the application extension of the bot, including getting data and status."""
 
     @app_commands.command(
@@ -105,6 +114,14 @@ class ApplicationManager(base.LoopCog):
         # Send the modal with an instance of our `Feedback` class
         # Since modals require an interaction, they cannot be done as a response to a text command.
         # They can only be done as a response to either an application command or a button press.
+        can_apply = await self.check_if_can_apply(interaction.user)
+        if not can_apply:
+            await interaction.response.send_message(
+                "You are not eligible to apply right now. Ask the server moderators if"
+                " you have questions",
+                ephemeral=True,
+            )
+            return
         form = ui.Application()
         await interaction.response.send_modal(form)
         await form.wait()
@@ -112,18 +129,9 @@ class ApplicationManager(base.LoopCog):
             interaction.user, form.background.value, form.reason.value
         )
 
-    async def handle_new_application(
+    def build_application_embed(
         self, applicant: discord.Member, background: str, reason: str
-    ):
-        print("NEW APPLICATION")
-
-        # Find the channel to send to
-        config = await self.bot.get_context_config(guild=applicant.guild)
-        channel = applicant.guild.get_channel(
-            int(config.extensions.application.management_channel.value)
-        )
-
-        # Build the embed
+    ) -> discord.Embed:
         embed = discord.Embed()
         embed.timestamp = datetime.datetime.utcnow()
         embed.title = "New Application!"
@@ -145,7 +153,30 @@ class ApplicationManager(base.LoopCog):
             inline=False,
         )
 
+        return embed
+
+    async def handle_new_application(
+        self, applicant: discord.Member, background: str, reason: str
+    ):
+        # Find the channel to send to
+        config = await self.bot.get_context_config(guild=applicant.guild)
+        channel = applicant.guild.get_channel(
+            int(config.extensions.application.management_channel.value)
+        )
+
+        embed = self.build_application_embed(applicant, background, reason)
+
         await channel.send(embed=embed)
+
+    async def check_if_can_apply(self, applicant: discord.Member):
+        config = await self.bot.get_context_config(guild=applicant.guild)
+        role = applicant.guild.get_role(
+            int(config.extensions.application.application_role.value)
+        )
+        # Don't allow people to apply if they already have the role
+        if role in getattr(applicant, "roles", []):
+            return False
+        return True
 
     async def execute(self, config, guild):
         """Method to execute the news command."""

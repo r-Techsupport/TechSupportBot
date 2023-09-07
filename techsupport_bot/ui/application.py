@@ -33,14 +33,17 @@ class Application(discord.ui.Modal, title="Staff interest form"):
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.send_message(
-            f"Thanks for your feedback, {interaction.user.name}!", ephemeral=True
+            f"Your application has been recieved, {interaction.user.display_name}!",
+            ephemeral=True,
         )
 
     async def on_error(
         self, interaction: discord.Interaction, error: Exception
     ) -> None:
         await interaction.response.send_message(
-            "Oops! Something went wrong.", ephemeral=True
+            "Oops! Something went wrong. Try again or tell the server moderators if"
+            " this keeps happening.",
+            ephemeral=True,
         )
 
         # Make sure we know what the error actually is

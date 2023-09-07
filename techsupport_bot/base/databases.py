@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     import bot
 
 
-def setup_models(bot: bot.TechSupportBot):
+def setup_models(bot: bot.TechSupportBot) -> None:
     """A function to setup all of the postgres tables
     This is stored in bot.models variable
 
@@ -27,13 +27,23 @@ def setup_models(bot: bot.TechSupportBot):
         pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
         guild_id = bot.db.Column(bot.db.String)
         applicant_name = bot.db.Column(bot.db.String)
-        applicant_id = bot.db.Column(bot.db.String)
+        applicant_id = bot.db.Column(bot.db.Integer)
         application_stauts = bot.db.Column(bot.db.String)
         experience = bot.db.Column(bot.db.String)
         reason = bot.db.Column(bot.db.String)
         application_time = bot.db.Column(
             bot.db.DateTime, default=datetime.datetime.utcnow
         )
+
+    class ApplicationBans(bot.db.Model):
+        """The postgres table for users banned from applications
+        Currently used in application.py and who.py"""
+
+        __tablename__ = "applications"
+
+        pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
+        guild_id = bot.db.Column(bot.db.String)
+        applicant_id = bot.db.Column(bot.db.Integer)
 
     class DuckUser(bot.db.Model):
         """The postgres table for ducks
@@ -126,6 +136,7 @@ def setup_models(bot: bot.TechSupportBot):
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
 
     # bot.models.applications = Applications
+    # bot.models.appbans = ApplicationBans
     bot.models.DuckUser = DuckUser
     bot.models.Factoid = Factoid
     bot.models.FactoidJob = FactoidJob
