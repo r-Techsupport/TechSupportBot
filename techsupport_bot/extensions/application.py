@@ -3,20 +3,15 @@
 from __future__ import annotations
 
 import datetime
-import io
-import json
-import uuid
 from typing import TYPE_CHECKING
 
 import aiocron
 import discord
 import munch
 import ui
-import yaml
 from base import auxiliary, cogs
 from botlogging import LogContext, LogLevel
 from discord import app_commands
-from discord.ext import commands
 
 if TYPE_CHECKING:
     import bot
@@ -129,6 +124,10 @@ class ApplicationNotifier(cogs.LoopCog):
 class ApplicationManager(cogs.LoopCog):
     """This cog is responsible for the majority of functions in the application system"""
 
+    application_group = app_commands.Group(name="application", description="...")
+
+    # Slash Commands
+
     @app_commands.command(
         name="apply",
         description="Use this to show you are interested in being staff on this server",
@@ -154,6 +153,66 @@ class ApplicationManager(cogs.LoopCog):
         await self.handle_new_application(
             interaction.user, form.background.value, form.reason.value
         )
+
+    @application_group.command(
+        name="ban", description="Ban someone from making new applications"
+    )
+    async def ban_user(
+        self, interaction: discord.Interaction, member: discord.Member
+    ) -> None:
+        is_banned = await self.check_if_banned(member)
+        if is_banned:
+            embed = auxiliary.prepare_deny_embed(
+                f"{member.name} is already banned from making applications"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+        ban = self.bot.models.appbans(
+            guild_id=str(interaction.guild.id),
+            applicant_id=str(member.id),
+        )
+        await ban.create()
+        embed = auxiliary.prepare_confirm_embed(
+            f"{member.name} successfully banned from making applications"
+        )
+        await interaction.response.send_message(embed=embed)
+
+    @application_group.command(
+        name="unban", description="Unban someone and allow them to apply"
+    )
+    async def unban_user(
+        self, interaction: discord.Interaction, member: discord.Member
+    ) -> None:
+        is_banned = await self.check_if_banned(member)
+        if not is_banned:
+            embed = auxiliary.prepare_deny_embed(
+                f"{member.name} is not banned from making applications"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+        bans = await self.get_ban_entry(member)
+        for ban in bans:
+            await ban.delete()
+        embed = auxiliary.prepare_confirm_embed(
+            f"{member.name} successfully unbanned from making applications"
+        )
+        await interaction.response.send_message(embed=embed)
+
+    # Helper functions
+
+    async def get_ban_entry(self, member: discord.Member):
+        query = self.bot.models.appbans.query.where(
+            self.bot.models.appbans.applicant_id == str(member.id)
+        ).where(self.bot.models.appbans.guild_id == str(member.guild.id))
+        entry = await query.gino.all()
+        return entry
+
+    async def check_if_banned(self, member: discord.Member) -> bool:
+        entry = await self.get_ban_entry(member)
+        if entry:
+            return True
+        else:
+            return False
 
     def build_application_embed(
         self, applicant: discord.Member, background: str, reason: str
@@ -229,7 +288,14 @@ class ApplicationManager(cogs.LoopCog):
         # Don't allow people to apply if they already have the role
         if role in getattr(applicant, "roles", []):
             return False
+
+        # Don't allow banned users to apply
+        if await self.check_if_banned(applicant):
+            return False
+
         return True
+
+    # Loop stuff
 
     async def execute(self, config: munch.Munch, guild: discord.Guild) -> None:
         """The executes the reminder of pending applications
@@ -256,3 +322,43 @@ class ApplicationManager(cogs.LoopCog):
         await aiocron.crontab(
             config.extensions.application.reminder_cron_config.value
         ).next()
+
+    # Custom error handling
+
+    async def cog_app_command_error(
+        self,
+        interaction: discord.Interaction[discord.Client],
+        error: app_commands.AppCommandError,
+    ) -> None:
+        """Error handler for the who extension."""
+        message = ""
+        if isinstance(error, app_commands.CommandNotFound):
+            return
+
+        if isinstance(error, app_commands.MissingPermissions):
+            message = (
+                "I am unable to do that because you lack the permission(s):"
+                f" `{', '.join(error.missing_permissions)}`"
+            )
+            embed = auxiliary.prepare_deny_embed(message)
+
+        else:
+            embed = auxiliary.prepare_deny_embed(
+                f"I ran into an error running that command {error}."
+            )
+            config = await self.bot.get_context_config(guild=interaction.guild)
+            log_channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message=f"An unknown error occurred. {error}",
+                level=LogLevel.ERROR,
+                channel=log_channel,
+                context=LogContext(
+                    guild=interaction.guild, channel=interaction.channel
+                ),
+                exception=error,
+            )
+
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        else:
+            await interaction.response.send_message(embed=embed, ephemeral=True)

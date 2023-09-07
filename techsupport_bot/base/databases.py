@@ -27,7 +27,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
         guild_id = bot.db.Column(bot.db.String)
         applicant_name = bot.db.Column(bot.db.String)
-        applicant_id = bot.db.Column(bot.db.Integer)
+        applicant_id = bot.db.Column(bot.db.String)
         application_stauts = bot.db.Column(bot.db.String)
         experience = bot.db.Column(bot.db.String)
         reason = bot.db.Column(bot.db.String)
@@ -39,11 +39,11 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for users banned from applications
         Currently used in application.py and who.py"""
 
-        __tablename__ = "applications"
+        __tablename__ = "appbans"
 
         pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
         guild_id = bot.db.Column(bot.db.String)
-        applicant_id = bot.db.Column(bot.db.Integer)
+        applicant_id = bot.db.Column(bot.db.String)
 
     class DuckUser(bot.db.Model):
         """The postgres table for ducks
@@ -135,8 +135,8 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         reason = bot.db.Column(bot.db.String)
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
 
-    # bot.models.applications = Applications
-    # bot.models.appbans = ApplicationBans
+    bot.models.applications = Applications
+    bot.models.appbans = ApplicationBans
     bot.models.DuckUser = DuckUser
     bot.models.Factoid = Factoid
     bot.models.FactoidJob = FactoidJob
