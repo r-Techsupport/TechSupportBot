@@ -3,7 +3,7 @@ import traceback
 import discord
 
 
-class Feedback(discord.ui.Modal, title="Feedback"):
+class Application(discord.ui.Modal, title="Staff interest form"):
     # Our modal classes MUST subclass `discord.ui.Modal`,
     # but the title can be whatever you want.
 
