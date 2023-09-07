@@ -1,6 +1,8 @@
 """This is a file to house the class for the pagination view
 This allows unlimited pages to be scrolled through"""
 
+from typing import Union
+
 import discord
 
 
@@ -22,13 +24,18 @@ class PaginateView(discord.ui.View):
             if isinstance(embed, discord.Embed):
                 embed.set_footer(text=f"Page {index+1} of {len(self.data)}")
 
-    async def send(self, channel, author, data):
+    async def send(
+        self,
+        channel: discord.abc.Messageable,
+        author: discord.Member,
+        data: list[Union[str, discord.Embed]],
+    ):
         """Entry point for PaginateView
 
         Args:
             channel (discord.abc.Messageable): The channel to send the pages to
             author (discord.Member): The author of the pages command
-            data (List): A list of pages in order, with [0] being the first page
+            data (list[Union[str, discord.Embed]]): A list of pages in order, with [0] being the first page
         """
         self.author = author
         self.data = data

@@ -197,18 +197,15 @@ class ApplicationManager(cogs.LoopCog):
         name="get", description="Gets the application of the given user"
     )
     async def get_application(
-        self, interaction: discord.Interaction, member: discord.Member
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member,
+        allow_old: bool = False,
     ) -> None:
-        application = await self.search_for_pending_application(member)
-        if not application:
-            embed = auxiliary.prepare_deny_embed(
-                f"No application could be found for {member.name}"
-            )
+        if allow_old:
+            await self.get_command_all(interaction, member)
         else:
-            embed = await self.build_application_embed(
-                interaction.guild, application, False
-            )
-        await interaction.response.send_message(embed=embed)
+            await self.get_command_pending(interaction, member)
 
     @application_group.command(
         name="approve", description="Approves an application of the given user"
@@ -253,6 +250,45 @@ class ApplicationManager(cogs.LoopCog):
 
         embed = auxiliary.prepare_confirm_embed(confirm_message)
 
+        await interaction.response.send_message(embed=embed)
+
+    # Get application functions
+
+    async def get_command_all(
+        self, interaction: discord.Interaction, member: discord.Member
+    ):
+        applications = await self.search_for_all_applications(member)
+        if not applications:
+            embed = auxiliary.prepare_deny_embed(
+                f"No applications could be found for {member.name}"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+        await interaction.response.send_message(
+            f"Gathering all applications for {member.name}. There might be a delay"
+        )
+        embeds = [
+            await self.build_application_embed(
+                guild=interaction.guild, application=application, new=False
+            )
+            for application in applications
+        ]
+        # Reverse it so the latest application is page 1
+        embeds.reverse()
+        await ui.PaginateView().send(interaction.channel, interaction.user, embeds)
+
+    async def get_command_pending(
+        self, interaction: discord.Interaction, member: discord.Member
+    ):
+        application = await self.search_for_pending_application(member)
+        if not application:
+            embed = auxiliary.prepare_deny_embed(
+                f"No application could be found for {member.name}"
+            )
+        else:
+            embed = await self.build_application_embed(
+                interaction.guild, application, False
+            )
         await interaction.response.send_message(embed=embed)
 
     # Helper functions
@@ -331,6 +367,11 @@ class ApplicationManager(cogs.LoopCog):
             value=application.reason,
             inline=False,
         )
+        embed.add_field(
+            name="Status",
+            value=application.application_stauts,
+            inline=False,
+        )
 
         return embed
 
@@ -397,6 +438,13 @@ class ApplicationManager(cogs.LoopCog):
         return True
 
     # DB Stuff
+
+    async def search_for_all_applications(self, member: discord.Member):
+        query = self.bot.models.Applications.query.where(
+            self.bot.models.Applications.applicant_id == str(member.id)
+        ).where(self.bot.models.Applications.guild_id == str(member.guild.id))
+        entry = await query.gino.all()
+        return entry
 
     async def search_for_pending_application(self, member: discord.Member):
         query = (
