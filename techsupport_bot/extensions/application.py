@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 import aiocron
 import discord
@@ -94,7 +94,9 @@ async def setup(bot: bot.TechSupportBot) -> None:
         key="manage_roles",
         datatype="list",
         title="Manage application roles",
-        description="The role IDs required to manage the applications (not required to apply)",
+        description=(
+            "The role IDs required to manage the applications (not required to apply)"
+        ),
         default=[""],
     )
     config.add(
@@ -261,7 +263,7 @@ class ApplicationManager(cogs.LoopCog):
 
     @app_commands.check(command_permission_check)
     @application_group.command(
-        name="approve", description="Approves an application of the given user"
+        name="approve", description="Approves the application of the given user"
     )
     async def approve_application(
         self,
@@ -276,34 +278,52 @@ class ApplicationManager(cogs.LoopCog):
             )
             await interaction.response.send_message(embed=embed)
             return
+
+        application_role = await self.get_application_role(interaction.guild)
+        if not application_role:
+            embed = auxiliary.prepare_deny_embed(
+                "This application could not be approved because no role to assign has"
+                " been set in the config"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+
         await application.update(
             application_stauts=ApplicationStatus.APPROVED.value
         ).apply()
 
-        confirm_message = f"{member.name}'s application was successfully approved"
+        await member.add_roles(
+            application_role, reason=f"Application approved by {interaction.user}"
+        )
 
-        if message:
-            member = await self.get_application_from_db_entry(
-                interaction.guild, application
+        await self.notify_for_application_change(
+            message, True, interaction, application, member
+        )
+
+    @app_commands.check(command_permission_check)
+    @application_group.command(
+        name="deny", description="Denies the application of the given user"
+    )
+    async def deny_application(
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member,
+        message: str = None,
+    ) -> None:
+        application = await self.search_for_pending_application(member)
+        if not application:
+            embed = auxiliary.prepare_deny_embed(
+                f"No application could be found for {member.name}"
             )
-            embed = auxiliary.prepare_confirm_embed(
-                f"Your application in {interaction.guild.name} has been approved!"
-                f" Message from the staff: {message}"
-            )
-            try:
-                await member.send(embed=embed)
-                confirm_message += " and they have been notified"
-            except discord.Forbidden as exception:
-                confirm_message += (
-                    f" but there was an error notifying them: {exception}"
-                )
+            await interaction.response.send_message(embed=embed)
+            return
+        await application.update(
+            application_stauts=ApplicationStatus.DENIED.value
+        ).apply()
 
-        else:
-            confirm_message += " silently"
-
-        embed = auxiliary.prepare_confirm_embed(confirm_message)
-
-        await interaction.response.send_message(embed=embed)
+        await self.notify_for_application_change(
+            message, False, interaction, application, member
+        )
 
     # Get application functions
 
@@ -469,6 +489,14 @@ class ApplicationManager(cogs.LoopCog):
             allowed_mentions=discord.AllowedMentions(roles=True),
         )
 
+        try:
+            embed = auxiliary.prepare_confirm_embed(
+                f"Your application in {applicant.guild.name} was successfully received!"
+            )
+            await applicant.send(embed=embed)
+        except discord.Forbidden:
+            pass
+
     async def check_if_can_apply(self, applicant: discord.Member) -> bool:
         """Checks if a user can apply to
         Currently does the following checks:
@@ -510,6 +538,50 @@ class ApplicationManager(cogs.LoopCog):
             return False
 
         return True
+
+    async def get_application_role(self, guild) -> Union[discord.Role, None]:
+        config = await self.bot.get_context_config(guild=guild)
+        role = guild.get_role(int(config.extensions.application.application_role.value))
+        return role
+
+    async def notify_for_application_change(
+        self,
+        message: str,
+        approved: bool,
+        interaction: discord.Interaction,
+        application: bot.models.Applications,
+        member: discord.Member,
+    ):
+        string_status = "approved" if approved else "denied"
+        confirm_message = (
+            f"{member.name}'s application was successfully {string_status}"
+        )
+        if message:
+            member = await self.get_application_from_db_entry(
+                interaction.guild, application
+            )
+            user_message = (
+                f"Your application in {interaction.guild.name} has been"
+                f" {string_status}! Message from the staff: {message}"
+            )
+            if approved:
+                embed = auxiliary.prepare_confirm_embed(user_message)
+            else:
+                embed = auxiliary.prepare_deny_embed(user_message)
+            try:
+                await member.send(embed=embed)
+                confirm_message += " and they have been notified"
+            except discord.Forbidden as exception:
+                confirm_message += (
+                    f" but there was an error notifying them: {exception}"
+                )
+
+        else:
+            confirm_message += " silently"
+
+        embed = auxiliary.prepare_confirm_embed(confirm_message)
+
+        await interaction.response.send_message(embed=embed)
 
     # DB Stuff
 

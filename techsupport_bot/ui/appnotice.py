@@ -1,8 +1,6 @@
 """This contians the view for the periodic application notice to users"""
 import discord
 
-from .application import Application
-
 
 class AppNotice(discord.ui.View):
     """The view containing a button and message encouraging users to apply"""
