@@ -34,7 +34,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     config = bot.ExtensionConfig()
     config.add(
         key="management_channel",
-        datatype="int",
+        datatype="str",
         title="ID of the staff side channel",
         description=(
             "The ID of the channel the application notifications and reminders should"
@@ -64,7 +64,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     config.add(
         key="notification_cron_config",
         datatype="string",
-        title="Cronjob config for the user facting notification",
+        title="Cronjob config for the user facing notification",
         description=(
             "Crontab syntax for users being notified about the application (example: 0"
             " */3 * * *)"
@@ -90,9 +90,57 @@ async def setup(bot: bot.TechSupportBot) -> None:
         ),
         default=None,
     )
+    config.add(
+        key="manage_roles",
+        datatype="list",
+        title="Manage application roles",
+        description="The role IDs required to manage the applications (not required to apply)",
+        default=[""],
+    )
+    config.add(
+        key="ping_role",
+        datatype="str",
+        title="New application ping role",
+        description="The ID of the role to ping when a new application is created",
+        default="",
+    )
     await bot.add_cog(ApplicationManager(bot=bot, extension_name="application"))
     await bot.add_cog(ApplicationNotifier(bot=bot, extension_name="application"))
     bot.add_extension_config("application", config)
+
+
+async def command_permission_check(interaction: discord.Interaction):
+    # Get the bot object for easier access
+    bot = interaction.client
+
+    # Log the command invocation
+    await bot.slash_command_log(interaction)
+
+    # Get the config
+    config = await bot.get_context_config(guild=interaction.guild)
+
+    # Gets permitted roles
+    allowed_roles = []
+    for role_id in config.extensions.application.manage_roles.value:
+        role = interaction.guild.get_role(int(role_id))
+        if not role:
+            continue
+        allowed_roles.append(role)
+
+    if not allowed_roles:
+        raise app_commands.AppCommandError(
+            "No application management roles found in the config file"
+        )
+
+    # Checking against the user to see if they have the roles specified in the config
+    if not any(
+        role in getattr(interaction.user, "roles", []) for role in allowed_roles
+    ):
+        raise app_commands.MissingAnyRole(allowed_roles)
+
+    return True
+
+    ...
 
 
 class ApplicationNotifier(cogs.LoopCog):
@@ -147,8 +195,10 @@ class ApplicationManager(cogs.LoopCog):
         Args:
             interaction (discord.Interaction): The interaction that triggered the slash command
         """
+        await self.bot.slash_command_log(interaction)
         await self.start_application(interaction)
 
+    @app_commands.check(command_permission_check)
     @application_group.command(
         name="ban", description="Ban someone from making new applications"
     )
@@ -172,6 +222,7 @@ class ApplicationManager(cogs.LoopCog):
         )
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.check(command_permission_check)
     @application_group.command(
         name="unban", description="Unban someone and allow them to apply"
     )
@@ -193,6 +244,7 @@ class ApplicationManager(cogs.LoopCog):
         )
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.check(command_permission_check)
     @application_group.command(
         name="get", description="Gets the application of the given user"
     )
@@ -207,6 +259,7 @@ class ApplicationManager(cogs.LoopCog):
         else:
             await self.get_command_pending(interaction, member)
 
+    @app_commands.check(command_permission_check)
     @application_group.command(
         name="approve", description="Approves an application of the given user"
     )
@@ -403,8 +456,18 @@ class ApplicationManager(cogs.LoopCog):
         )
 
         # Send notice to staff channel
+        role = applicant.guild.get_role(
+            int(config.extensions.application.ping_role.value)
+        )
+        content_string = ""
+        if role:
+            content_string = role.mention
         embed = await self.build_application_embed(applicant.guild, application)
-        await channel.send(embed=embed)
+        await channel.send(
+            content=content_string,
+            embed=embed,
+            allowed_mentions=discord.AllowedMentions(roles=True),
+        )
 
     async def check_if_can_apply(self, applicant: discord.Member) -> bool:
         """Checks if a user can apply to
@@ -412,6 +475,7 @@ class ApplicationManager(cogs.LoopCog):
             - Does the user have the application role
             - Has the user been banned from making applications
             - Does the user currently have a pending application
+            - Does the user have the ability to manage applications
 
         Args:
             applicant (discord.Member): The member who as applied
@@ -429,6 +493,16 @@ class ApplicationManager(cogs.LoopCog):
 
         # Don't allow banned users to apply
         if await self.check_if_banned(applicant):
+            return False
+
+        # Don't allow users who can manage the applications to apply
+        allowed_roles = []
+        for role_id in config.extensions.application.manage_roles.value:
+            role = applicant.guild.get_role(int(role_id))
+            if not role:
+                continue
+            allowed_roles.append(role)
+        if any(role in getattr(applicant, "roles", []) for role in allowed_roles):
             return False
 
         # Don't allow users with a pending application to apply
