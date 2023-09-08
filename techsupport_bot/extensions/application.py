@@ -325,6 +325,29 @@ class ApplicationManager(cogs.LoopCog):
             message, False, interaction, application, member
         )
 
+    @app_commands.check(command_permission_check)
+    @application_group.command(
+        name="delete", description="Deletes all applications from a user"
+    )
+    async def delete_applications(
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member,
+    ) -> None:
+        applications = await self.search_for_all_applications(member)
+        if not applications:
+            embed = auxiliary.prepare_deny_embed(
+                f"No applications could be found for {member.name}"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+        for application in applications:
+            await application.delete()
+        embed = auxiliary.prepare_confirm_embed(
+            f"Applications from {member.name} have been successfully deleted"
+        )
+        await interaction.response.send_message(embed=embed)
+
     # Get application functions
 
     async def get_command_all(
@@ -337,9 +360,7 @@ class ApplicationManager(cogs.LoopCog):
             )
             await interaction.response.send_message(embed=embed)
             return
-        await interaction.response.send_message(
-            f"Gathering all applications for {member.name}. There might be a delay"
-        )
+        await interaction.response.defer(ephemeral=False)
         embeds = [
             await self.build_application_embed(
                 guild=interaction.guild, application=application, new=False
@@ -348,7 +369,8 @@ class ApplicationManager(cogs.LoopCog):
         ]
         # Reverse it so the latest application is page 1
         embeds.reverse()
-        await ui.PaginateView().send(interaction.channel, interaction.user, embeds)
+        view = ui.PaginateView()
+        await view.send(interaction.channel, interaction.user, embeds, interaction)
 
     async def get_command_pending(
         self, interaction: discord.Interaction, member: discord.Member

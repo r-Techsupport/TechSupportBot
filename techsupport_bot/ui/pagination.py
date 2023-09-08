@@ -29,6 +29,7 @@ class PaginateView(discord.ui.View):
         channel: discord.abc.Messageable,
         author: discord.Member,
         data: list[Union[str, discord.Embed]],
+        interaction: discord.Interaction | None = None,
     ):
         """Entry point for PaginateView
 
@@ -36,13 +37,20 @@ class PaginateView(discord.ui.View):
             channel (discord.abc.Messageable): The channel to send the pages to
             author (discord.Member): The author of the pages command
             data (list[Union[str, discord.Embed]]): A list of pages in order, with [0] being the first page
+            interaction (discord.Interaction): The interaction this should followup with (Optional)
         """
         self.author = author
         self.data = data
         self.update_buttons()
         if isinstance(self.data[0], discord.Embed):
             self.add_page_numbers()
-        self.message = await channel.send(view=self)
+
+        if interaction:
+            self.followup = interaction.followup
+            self.message = await self.followup.send(view=self)
+        else:
+            self.message = await channel.send(view=self)
+
         if len(self.data) == 1:
             self.remove_item(self.prev_button)
             self.remove_item(self.next_button)
