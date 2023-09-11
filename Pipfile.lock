@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "600097b2487e19b15f6211623cd8b4b6e520639c121adeed7e31479e28fd7d5c"
+            "sha256": "88e2974370a30dd27bf7934dd6173391c66c9bf533b45497c407d9c1e029e898"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -577,11 +577,11 @@
         },
         "hypothesis": {
             "hashes": [
-                "sha256:335a15c07bb1b4a94950e69ccb2089b0b7b5424ba2f537e01dc6185932233ba2",
-                "sha256:65b8309f70ef373cc405a1663176804038144a1c7e9296f7077c50f3b4e3ccd5"
+                "sha256:4dd7de7a341a80c10d3e6beca12c084aab84c48ea270c1b9b8cee7e4aa5d7be2",
+                "sha256:b4117f4138e81986cf62ad4e1410a021adeaa52e4b0326419da626cd7d3b6250"
             ],
             "index": "pypi",
-            "version": "==6.84.1"
+            "version": "==6.84.3"
         },
         "ib3": {
             "hashes": [
@@ -1310,11 +1310,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:3d4dfa6d95f1b101d695a6160a7626e15583af71a5f52176efa5d39a054d475d",
-                "sha256:3d8083eed2d13afc9426f227b24fd1659489ec107c0e86cec2ffdde5c92e790b"
+                "sha256:00478ca80aeebeecb2f288d3206b0de568df5cd2b8fada1209843cc9a8d88a48",
+                "sha256:af3d5949030c3f493f550876b2fd1dd5ec66689c4ee5d5344f009746f71fd5a8"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==68.1.2"
+            "version": "==68.2.0"
         },
         "six": {
             "hashes": [
@@ -1421,11 +1421,11 @@
         },
         "virtualenv": {
             "hashes": [
-                "sha256:29c70bb9b88510f6414ac3e55c8b413a1f96239b6b789ca123437d5e892190cb",
-                "sha256:772b05bfda7ed3b8ecd16021ca9716273ad9f4467c801f27e83ac73430246dca"
+                "sha256:b80039f280f4919c77b30f1c23294ae357c4c8701042086e3fc005963e4e537b",
+                "sha256:e8361967f6da6fbdf1426483bfe9fca8287c242ac0bc30429905721cefbff752"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==20.24.4"
+            "version": "==20.24.5"
         },
         "wrapt": {
             "hashes": [
