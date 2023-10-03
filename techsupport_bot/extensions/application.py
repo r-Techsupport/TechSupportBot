@@ -1,663 +1,996 @@
-"""Module for defining the application bot methods."""
-import datetime
-import io
-import json
-import uuid
+"""Module for defining the application extension"""
+
+from __future__ import annotations
+
+from enum import Enum
+from typing import TYPE_CHECKING, Union
 
 import aiocron
 import discord
+import munch
 import ui
-import yaml
-from base import auxiliary, cogs, extension
-from discord.ext import commands
+from base import auxiliary, cogs
+from botlogging import LogContext, LogLevel
+from discord import app_commands
+
+if TYPE_CHECKING:
+    import bot
 
 
-async def setup(bot):
+class ApplicationStatus(Enum):
+    """Static string mapping of all status
+    This is so the database can always be consistent"""
+
+    PENDING = "pending"
+    APPROVED = "approved"
+    DENIED = "denied"
+    REJECTED = "rejected"
+
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """The setup function to define config and add the cogs to the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    Method to setup the bot, and configure different management role config options for
-    the promotion application framework.
-    """
-    # For the webhook id to add to discord
     config = bot.ExtensionConfig()
     config.add(
-        key="webhook_id",
+        key="management_channel",
         datatype="str",
-        title="Application webhook ID",
-        description="The ID of the webhook that posts the application data",
+        title="ID of the staff side channel",
+        description=(
+            "The ID of the channel the application notifications and reminders should"
+            " appear in"
+        ),
         default=None,
     )
-    # To configure the roles that can manage the applications
     config.add(
-        key="manage_roles",
+        key="notification_channels",
         datatype="list",
-        title="Manage applications roles",
-        description="The list of roles required to manage applications",
-        default=["Applications"],
-    )
-    # To ping roles when an application is recieved
-    config.add(
-        key="ping_roles",
-        datatype="list",
-        title="New application ping roles",
-        description="The list of roles that are pinged on new applications",
-        default=["Applications"],
-    )
-    # for a reminder on recieved applications
-    config.add(
-        key="reminder_on",
-        datatype="bool",
-        title="Reminder feature toggle",
+        title="List of channels to get application",
         description=(
-            "True if the bot should periodically remind of pending applications"
+            "The list of channel IDs that should receive periodic messages about the"
+            " application, with a button to apply"
         ),
-        default=False,
+        default=None,
     )
-    # The syntax for how reminders should work
     config.add(
         key="reminder_cron_config",
         datatype="string",
-        title="Application reminder cron config",
-        description="The cron syntax for automatic application reminders",
+        title="Cronjob config for the reminder about pending applications for staff",
+        description=(
+            "Crontab syntax for executing pending reminder events (example: 0 17 * * *)"
+        ),
         default="0 17 * * *",
     )
-    # The list of approved roles to give when an apllication is approved
     config.add(
-        key="approve_roles",
+        key="notification_cron_config",
+        datatype="string",
+        title="Cronjob config for the user facing notification",
+        description=(
+            "Crontab syntax for users being notified about the application (example: 0"
+            " */3 * * *)"
+        ),
+        default="0 */3 * * *",
+    )
+    config.add(
+        key="application_message",
+        datatype="str",
+        title="Message on the application reminder",
+        description=(
+            "The message to show users when they are prompted to apply in the"
+            " notification_channels"
+        ),
+        default="Apply now!",
+    )
+    config.add(
+        key="application_role",
+        datatype="str",
+        title="ID of the role to give applicants",
+        description=(
+            "The ID of the role to give applicants when there application is approved"
+        ),
+        default=None,
+    )
+    config.add(
+        key="manage_roles",
         datatype="list",
-        title="Approved application roles",
-        description="The list of role names to give someone once they are approved",
-        default=[],
+        title="Manage application roles",
+        description=(
+            "The role IDs required to manage the applications (not required to apply)"
+        ),
+        default=[""],
+    )
+    config.add(
+        key="ping_role",
+        datatype="str",
+        title="New application ping role",
+        description="The ID of the role to ping when a new application is created",
+        default="",
     )
     await bot.add_cog(ApplicationManager(bot=bot, extension_name="application"))
+    await bot.add_cog(ApplicationNotifier(bot=bot, extension_name="application"))
     bot.add_extension_config("application", config)
 
 
-async def has_manage_applications_role(ctx):
-    """Method to define who has mangagment roles"""
-    config = await ctx.bot.get_context_config(ctx)
+async def command_permission_check(interaction: discord.Interaction) -> bool:
+    """This does permission checks and logs slash commands in this module
+    This checks the interaction user against the manage roles config option
 
-    application_roles = []
-    for name in config.extensions.application.manage_roles.value:
-        application_role = discord.utils.get(ctx.guild.roles, name=name)
-        if not application_role:
+    Args:
+        interaction (discord.Interaction): The interaction that was generated from the slash command
+
+    Raises:
+        app_commands.AppCommandError: If there are no roles configured
+        app_commands.MissingAnyRole: If the executing user is missing the required roles
+
+    Returns:
+        bool: Will return true if the command is allowed to execute, false if it should not execute
+    """
+    # Get the bot object for easier access
+    bot = interaction.client
+
+    # Log the command invocation
+    await bot.slash_command_log(interaction)
+
+    # Get the config
+    config = await bot.get_context_config(guild=interaction.guild)
+
+    # Gets permitted roles
+    allowed_roles = []
+    for role_id in config.extensions.application.manage_roles.value:
+        role = interaction.guild.get_role(int(role_id))
+        if not role:
             continue
-        application_roles.append(application_role)
+        allowed_roles.append(role)
 
-    if not application_roles:
-        raise commands.CommandError("No application management roles found")
+    if not allowed_roles:
+        raise app_commands.AppCommandError(
+            "No application management roles found in the config file"
+        )
 
+    # Checking against the user to see if they have the roles specified in the config
     if not any(
-        application_role in getattr(ctx.author, "roles", [])
-        for application_role in application_roles
+        role in getattr(interaction.user, "roles", []) for role in allowed_roles
     ):
-        raise commands.MissingAnyRole(application_roles)
+        raise app_commands.MissingAnyRole(allowed_roles)
 
     return True
 
 
-class ApplicationEmbed(discord.Embed):
-    """Class to change the color and title of the embed to discord."""
+class ApplicationNotifier(cogs.LoopCog):
+    """This cog is soley tasked with looping the application reminder for users
+    Everything else is handled in ApplicationManager"""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.title = "Application Manager"
-        self.color = discord.Color.blurple()
+    async def execute(self, config: munch.Munch, guild: discord.Guild) -> None:
+        """The function that executes the from the LoopCog structure
+
+        Args:
+            config (munch.Munch): The guild config for the executing loop
+            guild (discord.Guild): The guild the loop is executing for
+        """
+        channels = config.extensions.application.notification_channels.value
+        for channel in channels:
+            channel = guild.get_channel(int(channel))
+            if not channel:
+                continue
+
+            await ui.AppNotice(timeout=None).send(
+                channel=channel,
+                message=config.extensions.application.application_message.value,
+            )
+
+    async def wait(self, config: munch.Munch, guild: discord.Guild) -> None:
+        """The function that causes the sleep/delay the from the LoopCog structure
+
+        Args:
+            config (munch.Munch): The guild config for the executing loop
+            guild (discord.Guild): The guild the loop is executing for
+        """
+        await aiocron.crontab(
+            config.extensions.application.notification_cron_config.value
+        ).next()
 
 
-class NoPendingApplications(Exception):
-    """Class for what happens when no applications are recieved."""
+class ApplicationManager(cogs.LoopCog):
+    """This cog is responsible for the majority of functions in the application system"""
 
+    application_group = app_commands.Group(name="application", description="...")
 
-class ApplicationManager(cogs.MatchCog, cogs.LoopCog):
-    """Class to manage the application extension of the bot, including getting data and status."""
+    # Slash Commands
 
-    COLLECTION_NAME = "applications_extension"
-    STALE_APPLICATION_DAYS = 30
-    MAX_REMINDER_FIELDS = 10
+    @app_commands.command(
+        name="apply",
+        description="Use this to show you are interested in being staff on this server",
+    )
+    async def apply(self, interaction: discord.Interaction) -> None:
+        """The slash command entrance for /apply
+        This handles sending the form and checking if application is valid
 
-    async def preconfig(self):
-        """Method to run on first time, used to create mongo collections"""
-        if not self.COLLECTION_NAME in await self.bot.mongo.list_collection_names():
-            await self.bot.mongo.create_collection(self.COLLECTION_NAME)
+        Args:
+            interaction (discord.Interaction): The interaction that triggered the slash command
+        """
+        await self.bot.slash_command_log(interaction)
+        await self.start_application(interaction)
 
-    async def match(self, config, ctx, content):
-        """Method to match webhook id."""
-        if not ctx.message.webhook_id:
+    @app_commands.check(command_permission_check)
+    @application_group.command(
+        name="ban", description="Ban someone from making new applications"
+    )
+    async def ban_user(
+        self, interaction: discord.Interaction, member: discord.Member
+    ) -> None:
+        """Bans a user from making any further applications
+
+        Args:
+            interaction (discord.Interaction): The interaction generated by this slash command
+            member (discord.Member): The member to ban from making applications
+        """
+        is_banned = await self.check_if_banned(member)
+        if is_banned:
+            embed = auxiliary.prepare_deny_embed(
+                f"{member.name} is already banned from making applications"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+        ban = self.bot.models.AppBans(
+            guild_id=str(interaction.guild.id),
+            applicant_id=str(member.id),
+        )
+        await ban.create()
+        embed = auxiliary.prepare_confirm_embed(
+            f"{member.name} successfully banned from making applications"
+        )
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.check(command_permission_check)
+    @application_group.command(
+        name="unban", description="Unban someone and allow them to apply"
+    )
+    async def unban_user(
+        self, interaction: discord.Interaction, member: discord.Member
+    ) -> None:
+        """Unbans a user from making applications
+
+        Args:
+            interaction (discord.Interaction): The interaction generated by this slash command
+            member (discord.Member): The member to unban from making applications
+        """
+        is_banned = await self.check_if_banned(member)
+        if not is_banned:
+            embed = auxiliary.prepare_deny_embed(
+                f"{member.name} is not banned from making applications"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+        bans = await self.get_ban_entry(member)
+        for ban in bans:
+            await ban.delete()
+        embed = auxiliary.prepare_confirm_embed(
+            f"{member.name} successfully unbanned from making applications"
+        )
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.check(command_permission_check)
+    @application_group.command(
+        name="get", description="Gets the application of the given user"
+    )
+    async def get_application(
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member,
+        allow_old: bool = False,
+    ) -> None:
+        """Gets either the latest pending application, or all applications from the given user
+
+        Args:
+            interaction (discord.Interaction): The interaction generated by this slash command
+            member (discord.Member): The member to get applications from
+            allow_old (bool, optional): If this is passed, it will get all applications
+                from the user. Defaults to False.
+        """
+        if allow_old:
+            await self.get_command_all(interaction, member)
+        else:
+            await self.get_command_pending(interaction, member)
+
+    @app_commands.check(command_permission_check)
+    @application_group.command(
+        name="approve", description="Approves the application of the given user"
+    )
+    async def approve_application(
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member,
+        message: str = None,
+    ) -> None:
+        """Approves a pending application of the given user
+
+        Args:
+            interaction (discord.Interaction): The interaction generated by this slash command
+            member (discord.Member): The member whose application should be approved
+            message (str, optional): The message to send to the user.
+                If none is passed, the application is approved silently. Defaults to None.
+        """
+        application = await self.search_for_pending_application(member)
+        if not application:
+            embed = auxiliary.prepare_deny_embed(
+                f"No application could be found for {member.name}"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+
+        application_role = await self.get_application_role(interaction.guild)
+        if not application_role:
+            embed = auxiliary.prepare_deny_embed(
+                "This application could not be approved because no role to assign has"
+                " been set in the config"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+
+        await application.update(
+            application_stauts=ApplicationStatus.APPROVED.value
+        ).apply()
+
+        await member.add_roles(
+            application_role, reason=f"Application approved by {interaction.user}"
+        )
+
+        await self.notify_for_application_change(
+            message, True, interaction, application, member
+        )
+
+    @app_commands.check(command_permission_check)
+    @application_group.command(
+        name="deny", description="Denies the application of the given user"
+    )
+    async def deny_application(
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member,
+        message: str = None,
+    ) -> None:
+        """Denies a pending application of the given user
+
+        Args:
+            interaction (discord.Interaction): The interaction generated by this slash command
+            member (discord.Member): The member whose application should be denied
+            message (str, optional): The message to send to the user.
+                If none is passed, the application is denied silently. Defaults to None.
+        """
+        application = await self.search_for_pending_application(member)
+        if not application:
+            embed = auxiliary.prepare_deny_embed(
+                f"No application could be found for {member.name}"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+        await application.update(
+            application_stauts=ApplicationStatus.DENIED.value
+        ).apply()
+
+        await self.notify_for_application_change(
+            message, False, interaction, application, member
+        )
+
+    @app_commands.check(command_permission_check)
+    @app_commands.checks.has_permissions(administrator=True)
+    @application_group.command(
+        name="delete", description="Deletes all applications from a user"
+    )
+    async def delete_applications(
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member,
+    ) -> None:
+        """Deletes all applications of a given user, regardless of state
+
+        Args:
+            interaction (discord.Interaction): The interaction generated by this slash command
+            member (discord.Member): The member to delete all applications from
+        """
+        applications = await self.search_for_all_applications(member)
+        if not applications:
+            embed = auxiliary.prepare_deny_embed(
+                f"No applications could be found for {member.name}"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+        for application in applications:
+            await application.delete()
+        embed = auxiliary.prepare_confirm_embed(
+            f"Applications from {member.name} have been successfully deleted"
+        )
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.check(command_permission_check)
+    @application_group.command(
+        name="list", description="Lists all applications by a given status"
+    )
+    async def list_applications(
+        self,
+        interaction: discord.Interaction,
+        status: ApplicationStatus,
+    ) -> None:
+        """Returns a paginated list of all applications from a given status
+
+        Args:
+            interaction (discord.Interaction): The interaction genereted by this slash command
+            status (ApplicationStatus): The specified status to get applications from
+        """
+        applications = await self.get_applications_by_status(status, interaction.guild)
+        if len(applications) == 0:
+            embed = auxiliary.prepare_deny_embed(
+                "No applications with that status exist"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+        await interaction.response.defer(ephemeral=False)
+        embeds = await self.make_array_from_applications(
+            applications, interaction.guild
+        )
+        view = ui.PaginateView()
+        await view.send(interaction.channel, interaction.user, embeds, interaction)
+
+    # Get application functions
+
+    async def get_command_all(
+        self, interaction: discord.Interaction, member: discord.Member
+    ) -> None:
+        """Gets all applications for a user, regardless of state, and sends them
+        As a followup using PaginateView
+
+        Args:
+            interaction (discord.Interaction): The interaction generated by this slash command
+            member (discord.Member): The member to get all applications of
+        """
+        applications = await self.search_for_all_applications(member)
+        if not applications:
+            embed = auxiliary.prepare_deny_embed(
+                f"No applications could be found for {member.name}"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+        await interaction.response.defer(ephemeral=False)
+        embeds = await self.make_array_from_applications(
+            applications, interaction.guild
+        )
+        view = ui.PaginateView()
+        await view.send(interaction.channel, interaction.user, embeds, interaction)
+
+    async def get_command_pending(
+        self, interaction: discord.Interaction, member: discord.Member
+    ) -> None:
+        """Gets the most recent pending application of the given user
+
+        Args:
+            interaction (discord.Interaction): The interaction generated by this slash command
+            member (discord.Member): The member to get the application from
+        """
+        application = await self.search_for_pending_application(member)
+        if not application:
+            embed = auxiliary.prepare_deny_embed(
+                f"No pending application could be found for {member.name}"
+            )
+        else:
+            embed = await self.build_application_embed(
+                interaction.guild, application, False
+            )
+        await interaction.response.send_message(embed=embed)
+
+    # Helper functions
+
+    async def make_array_from_applications(
+        self, applications: bot.models.Applications, guild: discord.Guild
+    ) -> list[discord.Embed]:
+        """Makes an array designed for pagination from a list of applications
+
+        Args:
+            applications (bot.models.Applications): The list of applications to convert into embeds
+            guild (discord.Guild): The guild the command is run from
+
+        Returns:
+            list[discord.Embed]: The list of embeds, with the newest application being element 0
+        """
+        embeds = [
+            await self.build_application_embed(
+                guild=guild, application=application, new=False
+            )
+            for application in applications
+        ]
+        # Reverse it so the latest application is page 1
+        embeds.reverse()
+        return embeds
+
+    async def start_application(self, interaction: discord.Interaction) -> None:
+        """Starts the application process and sends the user the modal
+
+        Args:
+            interaction (discord.Interaction): The interaction that requested the application.
+                Can be a button press or slash command
+        """
+        can_apply = await self.check_if_can_apply(interaction.user)
+        if not can_apply:
+            await interaction.response.send_message(
+                "You are not eligible to apply right now. Ask the server moderators if"
+                " you have questions.",
+                ephemeral=True,
+            )
+            return
+        form = ui.Application()
+        await interaction.response.send_modal(form)
+        await form.wait()
+        can_apply = await self.check_if_can_apply(interaction.user)
+        if not can_apply:
+            await interaction.followup.send(
+                "Something went wrong when submitting your application. Try again or"
+                " message the server moderators.",
+                ephemeral=True,
+            )
+            return
+        await self.handle_new_application(
+            interaction.user, form.background.value, form.reason.value
+        )
+
+        await interaction.followup.send(
+            f"Your application has been recieved, {interaction.user.display_name}!",
+            ephemeral=True,
+        )
+
+        try:
+            embed = auxiliary.prepare_confirm_embed(
+                f"Your application in {interaction.guild.name} was successfully"
+                " received!"
+            )
+            await interaction.user.send(embed=embed)
+        except discord.Forbidden:
+            pass
+
+    async def check_if_banned(self, member: discord.Member) -> bool:
+        """Checks if a given user is banned from making applications
+
+        Args:
+            member (discord.Member): The member to check if is banned
+
+        Returns:
+            bool: True if the are banned, false if they aren't
+        """
+        entry = await self.get_ban_entry(member)
+        return bool(entry)
+
+    async def get_application_from_db_entry(
+        self, guild: discord.Guild, application: bot.models.Applications
+    ) -> discord.Member:
+        """Gets the applicant member object from a db entry
+
+        Args:
+            guild (discord.Guild): The guild to search in
+            application (bot.models.Applications): The application database entry
+                to get the member from
+
+        Returns:
+            discord.Member: The member object that is associated with the application
+        """
+        applicant = guild.get_member(int(application.applicant_id))
+        return applicant
+
+    async def build_application_embed(
+        self,
+        guild: discord.Guild,
+        application: bot.models.Applications,
+        new: bool = True,
+    ) -> discord.Embed:
+        """This builds the embed that will be sent to staff
+
+        Args:
+            applicant (discord.Member): The member who has applied
+            background (str): The answer to the background question
+            reason (str): The answer to the reason question
+            new (bool, Optional): If the application is new and the title should include new.
+                Defaults to True
+
+        Returns:
+            discord.Embed: The stylized embed ready to be show to people
+        """
+        if not application:
+            return None
+        applicant = await self.get_application_from_db_entry(guild, application)
+        if not applicant:
+            return None
+
+        embed = discord.Embed()
+        embed.timestamp = application.application_time
+        if new:
+            embed.title = "New Application!"
+        else:
+            embed.title = "Application"
+        embed.color = discord.Color.green()
+        embed.set_thumbnail(url=applicant.display_avatar.url)
+        embed.add_field(
+            name="Name",
+            value=f"{applicant.display_name} ({application.applicant_name})",
+            inline=False,
+        )
+        embed.add_field(
+            name="Do you have any IT or programming experience?",
+            value=application.background,
+            inline=False,
+        )
+        embed.add_field(
+            name="Why do you want to help here?",
+            value=application.reason,
+            inline=False,
+        )
+        embed.add_field(
+            name="Status",
+            value=application.application_stauts,
+            inline=False,
+        )
+
+        return embed
+
+    async def handle_new_application(
+        self, applicant: discord.Member, background: str, reason: str
+    ) -> None:
+        """The function that handles what happens when a new application is sent in
+
+        Args:
+            applicant (discord.Member): The member who has applied
+            background (str): The answer to the background question
+            reason (str): The answer to the reason question
+        """
+        # Add application to database
+        application = self.bot.models.Applications(
+            guild_id=str(applicant.guild.id),
+            applicant_name=applicant.name,
+            applicant_id=str(applicant.id),
+            application_stauts=ApplicationStatus.PENDING.value,
+            background=background,
+            reason=reason,
+        )
+        await application.create()
+
+        # Find the channel to send to
+        config = await self.bot.get_context_config(guild=applicant.guild)
+        channel = applicant.guild.get_channel(
+            int(config.extensions.application.management_channel.value)
+        )
+
+        # Send notice to staff channel
+        role = applicant.guild.get_role(
+            int(config.extensions.application.ping_role.value)
+        )
+        content_string = ""
+        if role:
+            content_string = role.mention
+        embed = await self.build_application_embed(applicant.guild, application)
+        await channel.send(
+            content=content_string,
+            embed=embed,
+            allowed_mentions=discord.AllowedMentions(roles=True),
+        )
+
+    async def check_if_can_apply(self, applicant: discord.Member) -> bool:
+        """Checks if a user can apply to
+        Currently does the following checks:
+            - Does the user have the application role
+            - Has the user been banned from making applications
+            - Does the user currently have a pending application
+            - Does the user have the ability to manage applications
+
+        Args:
+            applicant (discord.Member): The member who as applied
+
+        Returns:
+            bool: True if they can apply, False if they cannot apply
+        """
+        config = await self.bot.get_context_config(guild=applicant.guild)
+        role = applicant.guild.get_role(
+            int(config.extensions.application.application_role.value)
+        )
+        # Don't allow applications if extension is disabled
+        if "application" not in config.enabled_extensions:
             return False
 
-        if (
-            str(ctx.message.webhook_id)
-            != config.extensions.application.webhook_id.value
-        ):
+        # Don't allow people to apply if they already have the role
+        if role in getattr(applicant, "roles", []):
+            return False
+
+        # Don't allow banned users to apply
+        if await self.check_if_banned(applicant):
+            return False
+
+        # Don't allow users who can manage the applications to apply
+        allowed_roles = []
+        for role_id in config.extensions.application.manage_roles.value:
+            role = applicant.guild.get_role(int(role_id))
+            if not role:
+                continue
+            allowed_roles.append(role)
+        if any(role in getattr(applicant, "roles", []) for role in allowed_roles):
+            return False
+
+        # Don't allow users with a pending application to apply
+        if await self.search_for_pending_application(applicant):
             return False
 
         return True
 
-    async def response(self, config, ctx, content, result):
-        """Method to handle the response of an application."""
-        await ctx.message.delete()
+    async def get_application_role(
+        self, guild: discord.Guild
+    ) -> Union[discord.Role, None]:
+        """Gets the guild application role object from the config
 
-        application_payload = json.loads(ctx.message.content)
-        if not application_payload.get("responses"):
-            raise ValueError("received empty responses from application webhook")
+        Args:
+            guild (discord.Guild): The guild to search in
 
-        username = application_payload.get("username")
-        user = ctx.guild.get_member_named(username)
-        if not user:
-            return await self.handle_error_embed(
-                ctx, f"Could not find {username} in server - ignoring application"
-            )
+        Returns:
+            Union[discord.Role, None]: Will return the role object from the guild,
+                or none if the role could not be found
+        """
+        config = await self.bot.get_context_config(guild=guild)
+        role = guild.get_role(int(config.extensions.application.application_role.value))
+        return role
 
-        try:
-            confirmed = await self.confirm_with_user(ctx, user)
-        except discord.Forbidden:
-            return await self.handle_error_embed(
-                ctx,
-                f"Could not confirm application: {user} has direct messages blocked",
-            )
+    async def notify_for_application_change(
+        self,
+        message: str,
+        approved: bool,
+        interaction: discord.Interaction,
+        application: bot.models.Applications,
+        member: discord.Member,
+    ):
+        """Notifies:
+            - The invoker
+            - The user
+            - The management channel
+        For every manual application change
 
-        if not confirmed:
-            return await self.handle_error_embed(
-                ctx, f"{user} has denied making application"
-            )
-
-        application_data = {
-            "id": str(uuid.uuid4()),
-            "responses": application_payload["responses"],
-            "user_id": str(user.id),
-            "username": str(user),
-            "approved": False,
-            "reviewed": False,
-            "yayers": [],
-            "nayers": [],
-            "guild": str(ctx.guild.id),
-            "date": str(datetime.datetime.utcnow()),
-        }
-
-        embed = self.generate_embed(application_data, new=True)
-
-        mention_string = await self.get_mention_string(ctx.guild)
-        await ctx.send(
-            content=mention_string,
-            embed=embed,
-            allowed_mentions=discord.AllowedMentions(roles=True),
-            mention_author=False,
+        Args:
+            message (str): The message provided by the staff.
+                If this is None, no DM will be sent to the user
+            approved (bool): Whether this application has been approved. If False, it is denied
+            interaction (discord.Interaction): The interaction from the slash command
+                that changed the status
+            application (bot.models.Applications): The db entry of the application to update
+            member (discord.Member): The member to approve/deny,
+                only for the purposes of sending a DM
+        """
+        string_status = "approved" if approved else "denied"
+        confirm_message = (
+            f"{member.name}'s application was successfully {string_status}"
         )
+        if message:
+            member = await self.get_application_from_db_entry(
+                interaction.guild, application
+            )
+            user_message = (
+                f"Your application in {interaction.guild.name} has been"
+                f" {string_status}! Message from the staff: {message}"
+            )
+            if approved:
+                embed = auxiliary.prepare_confirm_embed(user_message)
+            else:
+                embed = auxiliary.prepare_deny_embed(user_message)
+            try:
+                await member.send(embed=embed)
+                confirm_message += " and they have been notified"
+            except discord.Forbidden as exception:
+                confirm_message += (
+                    f" but there was an error notifying them: {exception}"
+                )
 
-        collection = self.bot.mongo[self.COLLECTION_NAME]
-        await collection.insert_one(application_data)
+        else:
+            confirm_message += " silently"
 
-    async def handle_error_embed(self, ctx, message_send):
-        """Method to handle if an application recieved an error."""
-        embed = auxiliary.prepare_deny_embed(message=message_send)
-        await ctx.channel.send(embed=embed)
+        embed = auxiliary.prepare_confirm_embed(confirm_message)
 
-    async def execute(self, config, guild):
-        """Method to excute the reminder for pending applications."""
-        if not config.extensions.application.reminder_on.value:
+        await interaction.response.send_message(embed=embed)
+
+    # DB Stuff
+
+    async def search_for_all_applications(
+        self, member: discord.Member
+    ) -> list[bot.models.Applications]:
+        """Gets ALL applications for a given user, regardless of status
+
+        Args:
+            member (discord.Member): The member to lookup applications for
+
+        Returns:
+            list[bot.models.Applications]: A list of all of the applications beloning to the user
+        """
+        query = self.bot.models.Applications.query.where(
+            self.bot.models.Applications.applicant_id == str(member.id)
+        ).where(self.bot.models.Applications.guild_id == str(member.guild.id))
+        entry = await query.gino.all()
+        return entry
+
+    async def get_applications_by_status(
+        self, status: ApplicationStatus, guild: discord.Guild
+    ) -> list[bot.models.Applications]:
+        """Gets all applications of a given status
+
+        Args:
+            status (ApplicationStatus): The status to search for
+            guild (discord.Guild): The guild to get applications from
+
+        Returns:
+            list[bot.models.Applications]: The list of applications in a oldest first order
+        """
+        query = self.bot.models.Applications.query.where(
+            self.bot.models.Applications.application_stauts == status.value
+        ).where(self.bot.models.Applications.guild_id == str(guild.id))
+        entry = await query.gino.all()
+        return entry
+
+    async def search_for_pending_application(
+        self, member: discord.Member
+    ) -> bot.models.Applications:
+        """Finds a pending application from the given user
+
+        Args:
+            member (discord.Member): The member to lookup the application for
+
+        Returns:
+            bot.models.Applications: The pending application object of the given user
+        """
+        query = (
+            self.bot.models.Applications.query.where(
+                self.bot.models.Applications.applicant_id == str(member.id)
+            )
+            .where(self.bot.models.Applications.guild_id == str(member.guild.id))
+            .where(
+                self.bot.models.Applications.application_stauts
+                == ApplicationStatus.PENDING.value
+            )
+        )
+        entry = await query.gino.first()
+        return entry
+
+    async def get_ban_entry(self, member: discord.Member) -> bot.models.AppBans:
+        """Gets the DB entry of a banned user
+
+        Args:
+            member (discord.Member): The member to tlookup the ban for
+
+        Returns:
+            bot.models.AppBans: The DB entry of the ban, if one was found
+        """
+        query = self.bot.models.AppBans.query.where(
+            self.bot.models.AppBans.applicant_id == str(member.id)
+        ).where(self.bot.models.AppBans.guild_id == str(member.guild.id))
+        entry = await query.gino.all()
+        return entry
+
+    # Loop stuff
+
+    async def execute(self, config: munch.Munch, guild: discord.Guild) -> None:
+        """The executes the reminder of pending applications
+
+        Args:
+            config (munch.Munch): The guild config for the executing loop
+            guild (discord.Guild): The guild the loop is executing for
+        """
+        channel = guild.get_channel(
+            int(config.extensions.application.management_channel.value)
+        )
+        if not channel:
             return
 
-        try:
-            await self.send_reminder(config, guild)
-        except NoPendingApplications:
-            pass
+        apps = await self.get_applications_by_status(ApplicationStatus.PENDING, guild)
+        if not apps:
+            return
 
-    async def wait(self, config, _):
-        """Method to get wait value for the reminder."""
+        # Update the database
+        audit_log = []
+        for app in apps:
+            user = guild.get_member(int(app.applicant_id))
+            if not user:
+                audit_log.append(
+                    f"Application by user: `{app.applicant_name}` was rejected because"
+                    " they left"
+                )
+                await app.update(
+                    application_stauts=ApplicationStatus.REJECTED.value
+                ).apply()
+                continue
+
+            if user.name != app.applicant_name:
+                audit_log.append(
+                    f"Application by user: `{user.name}` had the stored name updated"
+                )
+                await app.update(applicant_name=user.name).apply()
+
+            role = guild.get_role(
+                int(config.extensions.application.application_role.value)
+            )
+
+            if role in getattr(user, "roles", []):
+                audit_log.append(
+                    f"Application by user: `{user.name}` was approved since they have"
+                    " the role"
+                )
+                await app.update(
+                    application_stauts=ApplicationStatus.APPROVED.value
+                ).apply()
+        if audit_log:
+            embed = discord.Embed(title="Application manage events")
+            for event in audit_log:
+                if embed.description:
+                    embed.description = f"{embed.description}\n{event}"
+                else:
+                    embed.description = f"{event}"
+            await channel.send(embed=embed)
+
+        apps = await self.get_applications_by_status(ApplicationStatus.PENDING, guild)
+        if not apps:
+            return
+
+        embed = discord.Embed(title="All pending embeds")
+
+        for app in apps:
+            if embed.description:
+                embed.description = (
+                    f"{embed.description}\nApplication by: {app.applicant_name},"
+                    f" applied on: {app.application_time}"
+                )
+            else:
+                embed.description = (
+                    f"Application by: {app.applicant_name}, applied on:"
+                    f" {app.application_time}"
+                )
+
+        await channel.send(embed=embed)
+
+    async def wait(self, config: munch.Munch, guild: discord.Guild) -> None:
+        """The queues the pending application reminder based on the cron config
+
+        Args:
+            config (munch.Munch): The guild config for the executing loop
+            guild (discord.Guild): The guild the loop is executing for
+        """
         await aiocron.crontab(
             config.extensions.application.reminder_cron_config.value
         ).next()
 
-    async def send_reminder(self, config, guild, automated=True):
-        """Method to send the reminder to discord."""
-        try:
-            webhook_id = int(config.extensions.application.webhook_id.value)
-        except TypeError as exc:
-            raise ValueError("applications webhook ID not found in config") from exc
+    # Custom error handling
 
-        try:
-            webhook = await self.bot.fetch_webhook(webhook_id)
-        except discord.NotFound as exc:
-            raise RuntimeError(
-                "application webhook not found from configured ID"
-            ) from exc
+    async def cog_app_command_error(
+        self,
+        interaction: discord.Interaction[discord.Client],
+        error: app_commands.AppCommandError,
+    ) -> None:
+        """Error handler for the who extension."""
+        message = ""
+        if isinstance(error, app_commands.CommandNotFound):
+            return
 
-        applications = await self.get_applications(guild, status="pending")
-        if not applications:
-            raise NoPendingApplications()
-
-        embed = ApplicationEmbed()
-        embed.set_footer(
-            text=(
-                "This is a periodic reminder"
-                if automated
-                else "This reminder was triggered manually"
+        if isinstance(error, app_commands.MissingPermissions):
+            message = (
+                "I am unable to do that because you lack the permission(s):"
+                f" `{', '.join(error.missing_permissions)}`"
             )
-        )
+            embed = auxiliary.prepare_deny_embed(message)
 
-        for app in applications:
-            # remove this until voting implemented
-            app = self.clean_file_data(app)
-
-            if len(embed.fields) < self.MAX_REMINDER_FIELDS:
-                id = app.get("id")
-                if not id:
-                    continue
-                username = app.get("username")
-                if not username:
-                    continue
-                embed.add_field(name=username, value=id, inline=False)
-
-        description = f"Pending applications: {len(applications)}"
-        remaining = (
-            (len(applications) - len(embed.fields)) if len(embed.fields) != 0 else 0
-        )
-
-        file = None
-        if remaining > 0:
-            description = f"{description} - see attached for all applications"
-            file = discord.File(
-                io.StringIO(yaml.dump(applications)),
-                filename=f"pending-apps-for-server-{guild.id}-{datetime.datetime.utcnow()}.yaml",
-            )
-
-        embed.description = description
-
-        mention_string = await self.get_mention_string(guild)
-        await webhook.channel.send(
-            content=mention_string,
-            embed=embed,
-            file=file,
-            allowed_mentions=discord.AllowedMentions(roles=True),
-        )
-
-    @staticmethod
-    def clean_file_data(application_data):
-        """Method to delete db data after an application."""
-        try:
-            del application_data["_id"]
-            del application_data["yayers"]
-            del application_data["nayers"]
-        except KeyError:
-            pass
-        return application_data
-
-    async def get_applications(
-        self, guild, status=None, include_stale=False, limit=100
-    ):
-        """Method to review applications that have been recieved."""
-        returned_applications = []
-
-        query = {"guild": {"$eq": str(guild.id)}}
-
-        status = status.lower() if status else None
-        if status and not status in ["pending", "approved", "denied"]:
-            raise ValueError("status must be one of: pending, approved, denied")
-
-        if status == "pending":
-            query["reviewed"] = {"$eq": False}
-            query["approved"] = {"$eq": False}
-        elif status == "denied":
-            query["reviewed"] = {"$eq": True}
-            query["approved"] = {"$eq": False}
-        elif status == "approved":
-            query["reviewed"] = {"$eq": True}
-            query["approved"] = {"$eq": True}
-
-        applications = []
-        cursor = self.bot.mongo[self.COLLECTION_NAME].find(query)
-        for document in await cursor.to_list(length=limit):
-            applications.append(document)
-        if not applications:
-            return returned_applications
-
-        if include_stale:
-            returned_applications = applications
         else:
-            for application_data in applications:
-                now = datetime.datetime.utcnow()
-                application_date = application_data.get("date", str(now))
-                try:
-                    age = now - datetime.datetime.fromisoformat(application_date)
-                except ValueError:
-                    age = datetime.timedelta(0)
-                if (age).seconds / 86400 > self.STALE_APPLICATION_DAYS:
-                    continue
-                returned_applications.append(application_data)
-
-        return returned_applications
-
-    async def confirm_with_user(self, ctx, user):
-        """Method to confirm application with the user through direct message."""
-        embed = ApplicationEmbed(
-            description=(
-                f"I received an application on the server `{ctx.guild.name}`.\n"
-                "Did you make this application? Please reply with `yes` or `no`"
-            ),
-        )
-        message = await user.send(embed=embed)
-
-        message = await self.bot.wait_for(
-            "message",
-            check=lambda m: m.content.lower() in ["yes", "no"]
-            and m.author.id == user.id
-            and isinstance(m.channel, discord.DMChannel),
-        )
-        await message.add_reaction("✅")
-        return message.content.lower() == "yes"
-
-    @staticmethod
-    def determine_app_status(application_data, lower=False):
-        """Method to determine the current application status (approved or denied)"""
-        approved = application_data.get("approved", False)
-        reviewed = application_data.get("reviewed", False)
-        status = "Pending"
-        if approved:
-            status = "Approved"
-        elif reviewed:
-            status = "Denied"
-        return status.lower() if lower else status
-
-    def generate_embed(self, application_data, new):
-        """Method to generate the embed to send to discord."""
-        embed = ApplicationEmbed(
-            description=("New Application! " if new else "")
-            + f"Application ID: `{application_data['id']}`",
-        )
-        for response in application_data["responses"]:
-            embed.add_field(
-                name=response["question"], value=response["answer"], inline=False
+            embed = auxiliary.prepare_deny_embed(
+                f"I ran into an error running that command {error}."
             )
-
-        embed.set_footer(text=f"Status: {self.determine_app_status(application_data)}")
-
-        return embed
-
-    async def get_mention_string(self, guild):
-        """Method to get the mention string."""
-        config = await self.bot.get_context_config(guild=guild)
-        mention_string = ""
-        for index, role_name in enumerate(
-            config.extensions.application.ping_roles.value
-        ):
-            role = discord.utils.get(guild.roles, name=role_name)
-            if not role:
-                continue
-            mention_string += role.mention + (
-                " "
-                if index != len(config.extensions.application.ping_roles.value) - 1
-                else ""
-            )
-        return mention_string
-
-    @commands.guild_only()
-    @commands.check(has_manage_applications_role)
-    @commands.group(
-        brief="Executes an application command",
-        description="Executes an application command",
-    )
-    async def application(self, ctx):
-        """Method for application."""
-
-        # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[11:])
-
-    @application.command(
-        name="get",
-        brief="Gets an application",
-        description="Gets an application by ID",
-        usage="[application-id]",
-    )
-    async def get_app(self, ctx, application_id: str):
-        """Method to fetch application by ID"""
-        collection = self.bot.mongo[self.COLLECTION_NAME]
-        application_data = await collection.find_one({"id": {"$eq": application_id}})
-        if not application_data:
-            await auxiliary.send_deny_embed(
-                message="I couldn't find an application with that ID",
-                channel=ctx.channel,
-            )
-            return
-
-        embed = self.generate_embed(application_data, new=False)
-        await ctx.send(embed=embed)
-
-    @application.command(
-        name="all",
-        brief="Gets all applications",
-        description="Gets all applications given an optional status",
-        usage="[status (optional: approved/denied/pending)]",
-    )
-    async def get_all_apps(self, ctx, status: str = None):
-        """Method to pull all the applications pending."""
-        applications = await self.get_applications(
-            ctx.guild, status=status, include_stale=True
-        )
-        if not applications:
-            await auxiliary.send_deny_embed(
-                message="I couldn't find any applications", channel=ctx.channel
-            )
-            return
-
-        for app in applications:
-            # remove this from the surface until voting implemented
-            app = self.clean_file_data(app)
-
-        yaml_file = discord.File(
-            io.StringIO(yaml.dump(applications)),
-            filename=f"applications-for-server-{ctx.guild.id}-{datetime.datetime.utcnow()}.yaml",
-        )
-        await ctx.send(file=yaml_file)
-
-    @application.command(
-        name="approve",
-        brief="Approves an application",
-        description="Approves an application by ID",
-        usage="[application-id]",
-    )
-    async def approve_application(self, ctx, application_id: str):
-        """Method to approve the application and assign the role."""
-        collection = self.bot.mongo[self.COLLECTION_NAME]
-        application_data = await collection.find_one({"id": {"$eq": application_id}})
-        if not application_data:
-            await auxiliary.send_deny_embed(
-                message="I couldn't find an application with that ID",
-                channel=ctx.channel,
-            )
-            return
-
-        status = self.determine_app_status(application_data, lower=True)
-
-        if status == "approved":
-            await auxiliary.send_deny_embed(
-                message="That application is already marked as approved",
-                channel=ctx.channel,
-            )
-            return
-
-        if status == "denied":
-            view = ui.Confirm()
-            await view.send(
-                message=(
-                    "That application has been marked as denied. Are you sure you want"
-                    " to approve it?"
+            config = await self.bot.get_context_config(guild=interaction.guild)
+            log_channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message=f"{error}",
+                level=LogLevel.ERROR,
+                channel=log_channel,
+                context=LogContext(
+                    guild=interaction.guild, channel=interaction.channel
                 ),
-                channel=ctx.channel,
-                author=ctx.author,
+                exception=error,
             )
 
-            await view.wait()
-            if view.value is ui.ConfirmResponse.TIMEOUT:
-                return
-            if view.value is ui.ConfirmResponse.DENIED:
-                await auxiliary.send_deny_embed(
-                    message="Application was not approved", channel=ctx.channel
-                )
-                return
-
-        username = application_data.get("username", "the user")
-
-        view = ui.Confirm()
-        await view.send(
-            message=(
-                f"This will attempt to notify `{username}` and approve their"
-                " application"
-            ),
-            channel=ctx.channel,
-            author=ctx.author,
-        )
-        await view.wait()
-        if view.value is ui.ConfirmResponse.TIMEOUT:
-            return
-        if view.value is ui.ConfirmResponse.DENIED:
-            await auxiliary.send_deny_embed(
-                message=(
-                    f"The application was not approved and `{username}` was not"
-                    " notified"
-                ),
-                channel=ctx.channel,
-            )
-            return
-
-        application_data["approved"] = True
-        application_data["reviewed"] = True
-        await collection.replace_one({"id": application_id}, application_data)
-
-        await self.post_update(ctx, application_data, "approved")
-
-    @application.command(
-        name="deny",
-        brief="Denies an application",
-        description="Denies an application by ID",
-        usage="[application-id] [reason]",
-    )
-    async def deny_application(self, ctx, application_id: str, *, reason: str = None):
-        """Method to deny the application with reason to why."""
-        collection = self.bot.mongo[self.COLLECTION_NAME]
-        application_data = await collection.find_one({"id": {"$eq": application_id}})
-        if not application_data:
-            await auxiliary.send_deny_embed(
-                message="I couldn't find an application with that ID",
-                channel=ctx.channel,
-            )
-            return
-
-        status = self.determine_app_status(application_data, lower=True)
-
-        if status == "denied":
-            await auxiliary.send_deny_embed(
-                message="That application is already marked as denied",
-                channel=ctx.channel,
-            )
-            return
-
-        if status == "approved":
-            view = ui.Confirm()
-            await view.send(
-                message="That application has been marked as approved. "
-                + "Are you sure you want to deny it?",
-                channel=ctx.channel,
-                author=ctx.author,
-            )
-            await view.wait()
-            if view.value is ui.ConfirmResponse.TIMEOUT:
-                return
-            if view.value is ui.ConfirmResponse.DENIED:
-                await auxiliary.send_deny_embed(
-                    "Application was not denied", channel=ctx.channel
-                )
-                return
-
-        username = application_data.get("username", "the user")
-
-        view = ui.Confirm()
-        await view.send(
-            message=(
-                f"This will attempt to notify `{username}` and deny their application"
-            ),
-            channel=ctx.channel,
-            author=ctx.author,
-        )
-        await view.wait()
-        if view.value is ui.ConfirmResponse.TIMEOUT:
-            return
-        if view.value is ui.ConfirmResponse.DENIED:
-            await auxiliary.send_deny_embed(
-                message=(
-                    f"The application was not denied and `{username}` was not notified"
-                ),
-                channel=ctx.channel,
-            )
-            return
-
-        application_data["reviewed"] = True
-        # set this in case we are denying after approval
-        application_data["approved"] = False
-        await collection.replace_one({"id": application_id}, application_data)
-
-        await self.post_update(ctx, application_data, "denied", reason)
-
-    @application.command(
-        name="remind",
-        brief="Sends an application reminder",
-        description="Sends an application reminder to the configured channel",
-    )
-    async def remind(self, ctx):
-        """Method for reminding the configured role about pending applications"""
-        config = await self.bot.get_context_config(ctx)
-        try:
-            await self.send_reminder(config, ctx.guild, automated=False)
-        except NoPendingApplications:
-            await auxiliary.send_deny_embed(
-                message="There are no pending applications", channel=ctx.channel
-            )
-
-    async def post_update(self, ctx, application_data, status, reason=None):
-        """Method to update the application after approving or denying."""
-        status = status.lower()
-        if status not in ["approved", "denied"]:
-            raise RuntimeError(
-                f"invalid application status: {status} passed to post-update handler"
-            )
-
-        try:
-            user_id = int(application_data.get("user_id"))
-        except TypeError:
-            user_id = None
-
-        user = ctx.guild.get_member(user_id)
-        message_content = (
-            f"I've {status} that application and notified `{user}`!"
-            if user
-            else (
-                f"I've {status} that application, but the applicant has left the server"
-            )
-        )
-        await auxiliary.send_confirm_embed(message=message_content, channel=ctx.channel)
-
-        embed = ApplicationEmbed(
-            description=(
-                f"Hey, your application in `{ctx.guild.name}` has been {status}!"
-            ),
-        )
-        if reason:
-            embed.description = f"{embed.description} Reason: {reason}"
-
-        if not user:
-            return
-
-        try:
-            await user.send(embed=embed)
-        except discord.Forbidden:
-            pass
-
-        if status == "approved":
-            config = await self.bot.get_context_config(ctx)
-            roles = []
-            for role_name in config.extensions.application.approve_roles.value:
-                role = discord.utils.get(ctx.guild.roles, name=role_name)
-                if not role:
-                    continue
-                roles.append(role)
-
-            await user.add_roles(*roles, reason=f"Application approved by {ctx.author}")
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed)
+        else:
+            await interaction.response.send_message(embed=embed)

@@ -309,8 +309,8 @@ class Who(cogs.BaseCog):
 
         if isinstance(error, app_commands.MissingPermissions):
             message = (
-                "I am unable to do that because you lack the permission(s):           "
-                f"       `{', '.join(error.missing_permissions)}`"
+                "I am unable to do that because you lack the permission(s):"
+                f" `{', '.join(error.missing_permissions)}`"
             )
             embed = auxiliary.prepare_deny_embed(message)
 
