@@ -471,7 +471,7 @@ class ApplicationManager(cogs.LoopCog):
         await form.wait()
         can_apply = await self.check_if_can_apply(interaction.user)
         if not can_apply:
-            await interaction.followup.send_message(
+            await interaction.followup.send(
                 "Something went wrong when submitting your application. Try again or message the server moderators.",
                 ephemeral=True,
             )
@@ -479,6 +479,19 @@ class ApplicationManager(cogs.LoopCog):
         await self.handle_new_application(
             interaction.user, form.background.value, form.reason.value
         )
+
+        await interaction.followup.send(
+            f"Your application has been recieved, {interaction.user.display_name}!",
+            ephemeral=True,
+        )
+
+        try:
+            embed = auxiliary.prepare_confirm_embed(
+                f"Your application in {interaction.guild.name} was successfully received!"
+            )
+            await interaction.user.send(embed=embed)
+        except discord.Forbidden:
+            pass
 
     async def check_if_banned(self, member: discord.Member) -> bool:
         """Checks if a given user is banned from making applications
@@ -605,14 +618,6 @@ class ApplicationManager(cogs.LoopCog):
             allowed_mentions=discord.AllowedMentions(roles=True),
         )
 
-        try:
-            embed = auxiliary.prepare_confirm_embed(
-                f"Your application in {applicant.guild.name} was successfully received!"
-            )
-            await applicant.send(embed=embed)
-        except discord.Forbidden:
-            pass
-
     async def check_if_can_apply(self, applicant: discord.Member) -> bool:
         """Checks if a user can apply to
         Currently does the following checks:
@@ -631,6 +636,10 @@ class ApplicationManager(cogs.LoopCog):
         role = applicant.guild.get_role(
             int(config.extensions.application.application_role.value)
         )
+        # Don't allow applications if extension is disabled
+        if "application" not in config.enabled_extensions:
+            return False
+
         # Don't allow people to apply if they already have the role
         if role in getattr(applicant, "roles", []):
             return False
@@ -741,6 +750,15 @@ class ApplicationManager(cogs.LoopCog):
         entry = await query.gino.all()
         return entry
 
+    async def get_applications_by_status(
+        self, status: ApplicationStatus, guild: discord.Guild
+    ) -> list[bot.models.Applications]:
+        query = self.bot.models.Applications.query.where(
+            self.bot.models.Applications.application_stauts == status.value
+        ).where(self.bot.models.Applications.guild_id == str(guild.id))
+        entry = await query.gino.all()
+        return entry
+
     async def search_for_pending_application(
         self, member: discord.Member
     ) -> bot.models.Applications:
@@ -795,7 +813,62 @@ class ApplicationManager(cogs.LoopCog):
         if not channel:
             return
 
-        await channel.send("manager")
+        apps = await self.get_applications_by_status(ApplicationStatus.PENDING, guild)
+        if not apps:
+            return
+
+        # Update the database
+        audit_log = []
+        for app in apps:
+            user = guild.get_member(int(app.applicant_id))
+            if not user:
+                audit_log.append(
+                    f"Application by user: `{app.applicant_name}` was rejected because they left"
+                )
+                await app.update(
+                    application_stauts=ApplicationStatus.REJECTED.value
+                ).apply()
+                continue
+
+            if user.name != app.applicant_name:
+                audit_log.append(
+                    f"Application by user: `{user.name}` had the stored name updated"
+                )
+                await app.update(applicant_name=user.name).apply()
+
+            role = guild.get_role(
+                int(config.extensions.application.application_role.value)
+            )
+
+            if role in getattr(user, "roles", []):
+                audit_log.append(
+                    f"Application by user: `{user.name}` was approved since they have the role"
+                )
+                await app.update(
+                    application_stauts=ApplicationStatus.APPROVED.value
+                ).apply()
+        if audit_log:
+            embed = discord.Embed(title="Application manage events")
+            for event in audit_log:
+                if embed.description:
+                    embed.description = f"{embed.description}\n{event}"
+                else:
+                    embed.description = f"{event}"
+            await channel.send(embed=embed)
+
+        apps = await self.get_applications_by_status(ApplicationStatus.PENDING, guild)
+        if not apps:
+            return
+
+        embed = discord.Embed(title="All pending embeds")
+
+        for app in apps:
+            if embed.description:
+                embed.description = f"{embed.description}\nApplication by: {app.applicant_name}, applied on: {app.application_time}"
+            else:
+                embed.description = f"Application by: {app.applicant_name}, applied on: {app.application_time}"
+
+        await channel.send(embed=embed)
 
     async def wait(self, config: munch.Munch, guild: discord.Guild) -> None:
         """The queues the pending application reminder based on the cron config

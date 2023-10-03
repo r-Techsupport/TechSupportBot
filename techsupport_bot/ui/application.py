@@ -31,10 +31,8 @@ class Application(discord.ui.Modal, title="Staff interest form"):
         Args:
             interaction (discord.Interaction): The interaction that caused the form to be show
         """
-        await interaction.response.send_message(
-            f"Your application has been recieved, {interaction.user.display_name}!",
-            ephemeral=True,
-        )
+        await interaction.response.defer()
+        return
 
     async def on_error(
         self, interaction: discord.Interaction, error: Exception
