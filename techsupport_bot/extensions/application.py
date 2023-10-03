@@ -557,7 +557,7 @@ class ApplicationManager(cogs.LoopCog):
             bool: True if the are banned, false if they aren't
         """
         entry = await self.get_ban_entry(member)
-        return True if entry else False
+        return bool(entry)
 
     async def get_application_from_db_entry(
         self, guild: discord.Guild, application: bot.models.Applications
