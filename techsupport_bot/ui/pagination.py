@@ -36,7 +36,8 @@ class PaginateView(discord.ui.View):
         Args:
             channel (discord.abc.Messageable): The channel to send the pages to
             author (discord.Member): The author of the pages command
-            data (list[Union[str, discord.Embed]]): A list of pages in order, with [0] being the first page
+            data (list[Union[str, discord.Embed]]): A list of pages in order
+                with [0] being the first page
             interaction (discord.Interaction): The interaction this should followup with (Optional)
         """
         self.author = author

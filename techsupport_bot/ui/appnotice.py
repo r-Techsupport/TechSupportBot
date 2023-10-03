@@ -5,6 +5,8 @@ import discord
 class AppNotice(discord.ui.View):
     """The view containing a button and message encouraging users to apply"""
 
+    ICON = "https://icon-icons.com/downloadimage.php?id=14692&root=80/PNG/256/&file=help_15418.png"
+
     async def send(self, channel: discord.abc.Messageable, message: str) -> None:
         """The entry point to this function, will send a message to the given channel
 
@@ -27,7 +29,7 @@ class AppNotice(discord.ui.View):
         embed = discord.Embed()
         embed.set_author(
             name="Volunteer interest form",
-            icon_url="https://icon-icons.com/downloadimage.php?id=14692&root=80/PNG/256/&file=help_15418.png",
+            icon_url=self.ICON,
         )
         embed.color = discord.Color.red()
         embed.description = message
@@ -45,7 +47,8 @@ class AppNotice(discord.ui.View):
         """This is what happens when the apply now button is pressed
 
         Args:
-            interaction (discord.Interaction): The interaction that was generated when a user pressed the button
+            interaction (discord.Interaction): The interaction that was
+                generated when a user pressed the button
             button (discord.ui.Button): The button object created by this function
         """
         cog = interaction.client.get_cog("ApplicationManager")
