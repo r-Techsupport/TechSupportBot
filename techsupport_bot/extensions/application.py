@@ -408,6 +408,12 @@ class ApplicationManager(cogs.LoopCog):
         interaction: discord.Interaction,
         status: ApplicationStatus,
     ) -> None:
+        """Returns a paginated list of all applications from a given status
+
+        Args:
+            interaction (discord.Interaction): The interaction genereted by this slash command
+            status (ApplicationStatus): The specified status to get applications from
+        """
         applications = await self.get_applications_by_status(status, interaction.guild)
         if len(applications) == 0:
             embed = auxiliary.prepare_deny_embed(
@@ -470,7 +476,18 @@ class ApplicationManager(cogs.LoopCog):
 
     # Helper functions
 
-    async def make_array_from_applications(self, applications, guild):
+    async def make_array_from_applications(
+        self, applications: bot.models.Applications, guild: discord.Guild
+    ) -> list[discord.Embed]:
+        """Makes an array designed for pagination from a list of applications
+
+        Args:
+            applications (bot.models.Applications): The list of applications to convert into embeds
+            guild (discord.Guild): The guild the command is run from
+
+        Returns:
+            list[discord.Embed]: The list of embeds, with the newest application being element 0
+        """
         embeds = [
             await self.build_application_embed(
                 guild=guild, application=application, new=False
@@ -501,7 +518,8 @@ class ApplicationManager(cogs.LoopCog):
         can_apply = await self.check_if_can_apply(interaction.user)
         if not can_apply:
             await interaction.followup.send(
-                "Something went wrong when submitting your application. Try again or message the server moderators.",
+                "Something went wrong when submitting your application. Try again or"
+                " message the server moderators.",
                 ephemeral=True,
             )
             return
@@ -516,7 +534,8 @@ class ApplicationManager(cogs.LoopCog):
 
         try:
             embed = auxiliary.prepare_confirm_embed(
-                f"Your application in {interaction.guild.name} was successfully received!"
+                f"Your application in {interaction.guild.name} was successfully"
+                " received!"
             )
             await interaction.user.send(embed=embed)
         except discord.Forbidden:
@@ -852,7 +871,8 @@ class ApplicationManager(cogs.LoopCog):
             user = guild.get_member(int(app.applicant_id))
             if not user:
                 audit_log.append(
-                    f"Application by user: `{app.applicant_name}` was rejected because they left"
+                    f"Application by user: `{app.applicant_name}` was rejected because"
+                    " they left"
                 )
                 await app.update(
                     application_stauts=ApplicationStatus.REJECTED.value
@@ -871,7 +891,8 @@ class ApplicationManager(cogs.LoopCog):
 
             if role in getattr(user, "roles", []):
                 audit_log.append(
-                    f"Application by user: `{user.name}` was approved since they have the role"
+                    f"Application by user: `{user.name}` was approved since they have"
+                    " the role"
                 )
                 await app.update(
                     application_stauts=ApplicationStatus.APPROVED.value
@@ -893,9 +914,15 @@ class ApplicationManager(cogs.LoopCog):
 
         for app in apps:
             if embed.description:
-                embed.description = f"{embed.description}\nApplication by: {app.applicant_name}, applied on: {app.application_time}"
+                embed.description = (
+                    f"{embed.description}\nApplication by: {app.applicant_name},"
+                    f" applied on: {app.application_time}"
+                )
             else:
-                embed.description = f"Application by: {app.applicant_name}, applied on: {app.application_time}"
+                embed.description = (
+                    f"Application by: {app.applicant_name}, applied on:"
+                    f" {app.application_time}"
+                )
 
         await channel.send(embed=embed)
 

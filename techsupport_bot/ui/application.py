@@ -11,7 +11,6 @@ class Application(discord.ui.Modal, title="Staff interest form"):
 
     background = discord.ui.TextInput(
         label="Do you have any IT or programming experience?",
-        placeholder="I made facebook and I...",
         style=discord.TextStyle.long,
         required=True,
         max_length=300,
@@ -19,7 +18,6 @@ class Application(discord.ui.Modal, title="Staff interest form"):
 
     reason = discord.ui.TextInput(
         label="Why do you want to help here?",
-        placeholder="I am really good at fixing light bulbs...",
         style=discord.TextStyle.long,
         required=True,
         max_length=300,
