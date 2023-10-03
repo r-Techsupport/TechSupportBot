@@ -399,6 +399,29 @@ class ApplicationManager(cogs.LoopCog):
         )
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.check(command_permission_check)
+    @application_group.command(
+        name="list", description="Lists all applications by a given status"
+    )
+    async def list_applications(
+        self,
+        interaction: discord.Interaction,
+        status: ApplicationStatus,
+    ) -> None:
+        applications = await self.get_applications_by_status(status, interaction.guild)
+        if len(applications) == 0:
+            embed = auxiliary.prepare_deny_embed(
+                "No applications with that status exist"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+        await interaction.response.defer(ephemeral=False)
+        embeds = await self.make_array_from_applications(
+            applications, interaction.guild
+        )
+        view = ui.PaginateView()
+        await view.send(interaction.channel, interaction.user, embeds, interaction)
+
     # Get application functions
 
     async def get_command_all(
@@ -419,14 +442,9 @@ class ApplicationManager(cogs.LoopCog):
             await interaction.response.send_message(embed=embed)
             return
         await interaction.response.defer(ephemeral=False)
-        embeds = [
-            await self.build_application_embed(
-                guild=interaction.guild, application=application, new=False
-            )
-            for application in applications
-        ]
-        # Reverse it so the latest application is page 1
-        embeds.reverse()
+        embeds = await self.make_array_from_applications(
+            applications, interaction.guild
+        )
         view = ui.PaginateView()
         await view.send(interaction.channel, interaction.user, embeds, interaction)
 
@@ -442,7 +460,7 @@ class ApplicationManager(cogs.LoopCog):
         application = await self.search_for_pending_application(member)
         if not application:
             embed = auxiliary.prepare_deny_embed(
-                f"No application could be found for {member.name}"
+                f"No pending application could be found for {member.name}"
             )
         else:
             embed = await self.build_application_embed(
@@ -451,6 +469,17 @@ class ApplicationManager(cogs.LoopCog):
         await interaction.response.send_message(embed=embed)
 
     # Helper functions
+
+    async def make_array_from_applications(self, applications, guild):
+        embeds = [
+            await self.build_application_embed(
+                guild=guild, application=application, new=False
+            )
+            for application in applications
+        ]
+        # Reverse it so the latest application is page 1
+        embeds.reverse()
+        return embeds
 
     async def start_application(self, interaction: discord.Interaction) -> None:
         """Starts the application process and sends the user the modal
