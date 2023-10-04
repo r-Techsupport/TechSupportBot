@@ -1,16 +1,15 @@
 """This holds the UI view used by the role extension"""
 import discord
-from base import auxiliary
 
 
 class RoleSelect(discord.ui.Select):
     """This holds the select object for a list of roles"""
 
-    def __init__(self, role_list):
+    def __init__(self, role_list: list[str]):
         """A function to set some defaults
 
         Args:
-            role_list (list): A list of SelectOption to be in the dropdown
+            role_list (list[str]): A list of SelectOption to be in the dropdown
         """
         super().__init__(
             placeholder="Select roles...",
@@ -37,11 +36,11 @@ class RoleSelect(discord.ui.Select):
 class SelectView(discord.ui.View):
     """This is the view that will hold only the dropdown"""
 
-    def __init__(self, role_list):
+    def __init__(self, role_list: list[str]):
         """Adds the dropdown and does nothing else
 
         Args:
-            role_list (list): The list of SelectOptions to add to the dropdown
+            role_list (list[str]): The list of SelectOptions to add to the dropdown
         """
         super().__init__()
         # Adds the dropdown to our view object.
