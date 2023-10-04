@@ -69,6 +69,12 @@ class News(cogs.LoopCog):
 
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
 
+    async def preconfig(self):
+        """Function to check to see if value enter is valid."""
+        self.valid_category = []
+        for item in Category:
+            self.valid_category.append(item.value)
+
     async def get_headlines(self, country_code, category=None):
         """Method to get the headline for the news command."""
         url = self.API_URL.format(
@@ -138,7 +144,7 @@ class News(cogs.LoopCog):
     )
     async def random(self, ctx, category=None):
         """Method to define the random to get a news."""
-        if category is None:
+        if category is None or category.lower() not in self.valid_category:
             category = random.choice(list(Category)).value
         else:
             category.lower()
