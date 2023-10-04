@@ -28,6 +28,7 @@ class RoleSelect(discord.ui.Select):
         self.view.stop()
 
     async def on_timeout(self):
+        """What happens when the view timesout. This is to prevent all roles from being removed."""
         self.values = None
         self.timeout = True
         self.view.stop()

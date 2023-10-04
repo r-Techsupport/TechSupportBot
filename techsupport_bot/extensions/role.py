@@ -267,8 +267,8 @@ class RoleGiver(cogs.BaseCog):
 
         Args:
             config_roles (list[str]): The list of roles allowed to be modified
-            new_roles (list[str]): The list of roles from the config_roles that should be assigned to
-                the user. Any roles not on this list will be removed
+            new_roles (list[str]): The list of roles from the config_roles that should be assigned
+                to the user. Any roles not on this list will be removed
             guild (discord.Guild): The guild to assign the roles in
             user (discord.Member): The member to assign roles to
             resaon (str): The reason to add to the audit log
