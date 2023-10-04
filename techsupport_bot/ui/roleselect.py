@@ -18,6 +18,7 @@ class RoleSelect(discord.ui.Select):
             max_values=len(role_list),
             options=role_list,
         )
+        self.timeout = False
 
     async def callback(self, interaction: discord.Interaction):
         """What happens when the select menu has been used
@@ -25,10 +26,11 @@ class RoleSelect(discord.ui.Select):
         Args:
             interaction (discord.Interaction): The interaction that called this select object
         """
-        embed = auxiliary.prepare_confirm_embed(
-            message=f"Selected: {self.values} roles"
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        self.view.stop()
+
+    async def on_timeout(self):
+        self.values = None
+        self.timeout = True
         self.view.stop()
 
 

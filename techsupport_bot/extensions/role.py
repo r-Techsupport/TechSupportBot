@@ -1,13 +1,20 @@
 """The file to hold the role extension
 This extension is slash commands"""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import discord
 import ui
-from base import cogs
+from base import auxiliary, cogs
+from botlogging import LogContext, LogLevel
 from discord import app_commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
+
+async def setup(bot: bot.TechSupportBot):
     """Adding config and the cog to the bot
 
     Args:
@@ -38,7 +45,7 @@ async def setup(bot):
     config.add(
         key="allow_all_assign",
         datatype="list",
-        title="List of roles allowed to use /role assign",
+        title="List of roles allowed to use /role manage",
         description="The list of roles that are allowed to assign others roles",
         default=[],
     )
@@ -49,7 +56,7 @@ async def setup(bot):
 class RoleGiver(cogs.BaseCog):
     """The main class for the role commands"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: bot.TechSupportBot):
         super().__init__(bot=bot)
         self.ctx_menu = app_commands.ContextMenu(
             name="Manage roles",
@@ -59,8 +66,12 @@ class RoleGiver(cogs.BaseCog):
 
     role_group = app_commands.Group(name="role", description="...")
 
+    async def preconfig(self):
+        """This setups the global lock on the role command, to avoid conflicts"""
+        self.locked = set()
+
     @role_group.command(name="self", description="Assign or remove roles from yourself")
-    async def self_role(self, interaction):
+    async def self_role(self, interaction: discord.Interaction):
         """The base of the self role command
 
         Args:
@@ -81,7 +92,9 @@ class RoleGiver(cogs.BaseCog):
         )
 
     @role_group.command(name="manage", description="Modify roles on a given user")
-    async def assign_role(self, interaction, member: discord.Member):
+    async def assign_role(
+        self, interaction: discord.Interaction, member: discord.Member
+    ):
         """The base of the wide assign command
 
         Args:
@@ -113,15 +126,19 @@ class RoleGiver(cogs.BaseCog):
         await self.role_command_base(interaction, roles, allowed_to_execute, member)
 
     async def role_command_base(
-        self, interaction: discord.Interaction, assignable_roles, allowed_roles, member
+        self,
+        interaction: discord.Interaction,
+        assignable_roles: list[str],
+        allowed_roles: list[str],
+        member: discord.Member,
     ):
         """The base processor for the role commands
         Checks permissions and config, and sends the view
 
         Args:
             interaction (discord.Interaction): The interaction that called this command
-            assignable_roles (list): A list of roles that are assignabled for this command
-            allowed_roles (list): A list of roles that are allowed to execute this command
+            assignable_roles (list[str]): A list of roles that are assignabled for this command
+            allowed_roles (list[str]): A list of roles that are allowed to execute this command
             member (discord.Member): The member to assign roles to
         """
         role_options = self.generate_options(
@@ -132,15 +149,29 @@ class RoleGiver(cogs.BaseCog):
             interaction.user, interaction.guild, allowed_roles
         )
         if not can_execute:
-            await interaction.response.send_message(
-                "You are not allowed to execute this command", ephemeral=True
+            embed = auxiliary.prepare_deny_embed(
+                "You are not allowed to execute this command"
             )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
 
         if len(role_options) == 0:
+            embed = auxiliary.prepare_deny_embed("No self assignable roles are setup")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        identifier = f"{member.id}-{member.guild.id}"
+
+        if identifier in self.locked:
+            embed = auxiliary.prepare_deny_embed(
+                f"{member} is currently being modified by someone else. Try again later."
+            )
             await interaction.response.send_message(
-                "No self assignable roles are setup", ephemeral=True
+                content=None,
+                embed=embed,
+                ephemeral=True,
             )
             return
+        self.locked.add(identifier)
 
         view = ui.SelectView(role_options)
         await interaction.response.send_message(
@@ -149,16 +180,28 @@ class RoleGiver(cogs.BaseCog):
             view=view,
         )
         await view.wait()
+
+        # In the event of a timeout, do not remove any roles, and release the lock
+        if view.select.timeout:
+            embed = auxiliary.prepare_deny_embed("This menu timed out")
+            await interaction.edit_original_response(embed=embed, view=None)
+            self.locked.remove(identifier)
+            return
+
+        # Modify roles, tell user roles were modified
         await self.modify_roles(
             config_roles=assignable_roles,
             new_roles=view.select.values,
             guild=interaction.guild,
             user=member,
             reason=f"Role command, ran by {interaction.user}",
+            interaction=interaction,
         )
+        # Remove user from the lock
+        self.locked.remove(identifier)
 
     def check_permissions(
-        self, user: discord.User, guild: discord.Guild, roles: list
+        self, user: discord.User, guild: discord.Guild, roles: list[str]
     ) -> bool:
         """A function to return a boolean value if the user can run role commands or not
 
@@ -180,13 +223,15 @@ class RoleGiver(cogs.BaseCog):
 
         return False
 
-    def generate_options(self, user, guild, roles):
+    def generate_options(
+        self, user: discord.Member, guild: discord.Guild, roles: list[str]
+    ):
         """A function to turn a list of roles into a set of SelectOptions
 
         Args:
             user (discord.Member): The user that will be getting the roles applied
             guild (discord.Guild): The guild that the roles are from
-            roles (list): A list of roles by name to add to the options
+            roles (list[str]): A list of roles by name to add to the options
 
         Returns:
             list: A list of SelectOption with defaults set
@@ -209,17 +254,29 @@ class RoleGiver(cogs.BaseCog):
             options.append(discord.SelectOption(label=role_name, default=default))
         return options
 
-    async def modify_roles(self, config_roles, new_roles, guild, user, reason):
+    async def modify_roles(
+        self,
+        config_roles: list[str],
+        new_roles: list[str],
+        guild: discord.Guild,
+        user: discord.Member,
+        reason: str,
+        interaction: discord.Interaction,
+    ):
         """Modifies a set of roles based on an input and reference list
 
         Args:
-            config_roles (list): The list of roles allowed to be modified
-            new_roles (list): The list of roles from the config_roles that should be assigned to
+            config_roles (list[str]): The list of roles allowed to be modified
+            new_roles (list[str]): The list of roles from the config_roles that should be assigned to
                 the user. Any roles not on this list will be removed
             guild (discord.Guild): The guild to assign the roles in
             user (discord.Member): The member to assign roles to
             resaon (str): The reason to add to the audit log
+            interaction (discord.Interaction): The interaction to respond to
         """
+        added_roles = []
+        removed_roles = []
+
         for role_name in config_roles:
             real_role = discord.utils.get(guild.roles, name=role_name)
             if not real_role:
@@ -230,5 +287,59 @@ class RoleGiver(cogs.BaseCog):
             # If the role was requested to be added
             if real_role.name in new_roles and real_role not in user_roles:
                 await user.add_roles(real_role, reason=reason)
+                added_roles.append(real_role.name)
             elif real_role.name not in new_roles and real_role in user_roles:
                 await user.remove_roles(real_role, reason=reason)
+                removed_roles.append(real_role.name)
+
+        if not added_roles and not removed_roles:
+            embed = auxiliary.prepare_confirm_embed(
+                "Command was successful, but no roles were modified"
+            )
+        else:
+            embed = auxiliary.prepare_confirm_embed("Roles were successfully modified")
+            if added_roles:
+                embed.add_field(name="Added roles:", value="\n".join(added_roles))
+            if removed_roles:
+                embed.add_field(name="Removed roles:", value="\n".join(removed_roles))
+        await interaction.edit_original_response(content=None, embed=embed, view=None)
+
+    # Custom error handling
+
+    async def cog_app_command_error(
+        self,
+        interaction: discord.Interaction[discord.Client],
+        error: app_commands.AppCommandError,
+    ) -> None:
+        """Error handler for the role extension."""
+        message = ""
+        if isinstance(error, app_commands.CommandNotFound):
+            return
+
+        if isinstance(error, app_commands.MissingPermissions):
+            message = (
+                "I am unable to do that because you lack the permission(s):"
+                f" `{', '.join(error.missing_permissions)}`"
+            )
+            embed = auxiliary.prepare_deny_embed(message)
+
+        else:
+            embed = auxiliary.prepare_deny_embed(
+                f"I ran into an error running that command {error}."
+            )
+            config = await self.bot.get_context_config(guild=interaction.guild)
+            log_channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message=f"{error}",
+                level=LogLevel.ERROR,
+                channel=log_channel,
+                context=LogContext(
+                    guild=interaction.guild, channel=interaction.channel
+                ),
+                exception=error,
+            )
+
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed)
+        else:
+            await interaction.response.send_message(embed=embed)
