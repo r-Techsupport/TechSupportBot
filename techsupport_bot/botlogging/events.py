@@ -536,7 +536,7 @@ class EventLogger(cogs.BaseCog):
                 f"New role with name {role.name} added to guild with ID {role.guild.id}"
             ),
             level=LogLevel.INFO,
-            context=LogContext(guild=role.before),
+            context=LogContext(guild=role.guild),
             channel=log_channel,
             embed=embed,
         )
@@ -554,7 +554,7 @@ class EventLogger(cogs.BaseCog):
                 f"Role with name {role.name} deleted from guild with ID {role.guild.id}"
             ),
             level=LogLevel.INFO,
-            context=LogContext(guild=role.before),
+            context=LogContext(guild=role.guild),
             channel=log_channel,
             embed=embed,
         )
@@ -579,7 +579,7 @@ class EventLogger(cogs.BaseCog):
                 f" {before.guild.id}"
             ),
             level=LogLevel.INFO,
-            context=LogContext(guild=before.before),
+            context=LogContext(guild=before.guild),
             channel=log_channel,
             embed=embed,
         )
