@@ -163,7 +163,8 @@ class RoleGiver(cogs.BaseCog):
 
         if identifier in self.locked:
             embed = auxiliary.prepare_deny_embed(
-                f"{member} is currently being modified by someone else. Try again later."
+                f"{member} is currently being modified by someone else. Try again"
+                " later."
             )
             await interaction.response.send_message(
                 content=None,

@@ -716,7 +716,11 @@ class AdminControl(cogs.BaseCog):
         """
         synced = await self.bot.tree.sync()
         await auxiliary.send_confirm_embed(
-            message=f"{len(synced)}", channel=ctx.channel
+            message=(
+                "Successfully updated the slash command tree. Currently there are"
+                f" {len(synced)} commands in the tree"
+            ),
+            channel=ctx.channel,
         )
 
     @auxiliary.with_typing
