@@ -59,6 +59,13 @@ async def setup(bot):
         description="The success rate of bef/bang messages",
         default=50,
     )
+    config.add(
+        key="allow_manipulation",
+        datatype="bool",
+        title="Whether or not user manipulation is allowed",
+        description="Controls whether release, donate, or kill commands are enabled",
+        default=True,
+    )
 
     await bot.add_cog(DuckHunt(bot=bot, extension_name="duck"))
     bot.add_extension_config("duck", config)
@@ -542,6 +549,13 @@ class DuckHunt(cogs.LoopCog):
     )
     async def release(self, ctx):
         """Method for releasing a duck"""
+        config = await self.bot.get_context_config(ctx)
+        if not config.extensions.duck.allow_manipulation.value:
+            await auxiliary.send_deny_embed(
+                channel=ctx.channel, message="This command is disabled in this server"
+            )
+            return
+
         duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
 
         if not duck_user:
@@ -564,7 +578,6 @@ class DuckHunt(cogs.LoopCog):
         )
 
     @auxiliary.with_typing
-    @commands.cooldown(1, 600)
     @commands.guild_only()
     @duck.command(
         brief="Kills a caputred duck",
@@ -574,6 +587,13 @@ class DuckHunt(cogs.LoopCog):
     )
     async def kill(self, ctx):
         """Method for killing ducks"""
+        config = await self.bot.get_context_config(ctx)
+        if not config.extensions.duck.allow_manipulation.value:
+            await auxiliary.send_deny_embed(
+                channel=ctx.channel, message="This command is disabled in this server"
+            )
+            return
+
         duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
 
         if not duck_user:
@@ -591,7 +611,6 @@ class DuckHunt(cogs.LoopCog):
 
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
 
-        config = await self.bot.get_context_config(ctx)
         weights = (
             config.extensions.duck.success_rate.value,
             100 - config.extensions.duck.success_rate.value,
@@ -613,7 +632,6 @@ class DuckHunt(cogs.LoopCog):
         )
 
     @auxiliary.with_typing
-    @commands.cooldown(1, 600)
     @commands.guild_only()
     @duck.command(
         brief="Donates a duck to someone",
@@ -622,6 +640,13 @@ class DuckHunt(cogs.LoopCog):
     )
     async def donate(self, ctx, user: discord.Member):
         """Method for donating ducks"""
+        config = await self.bot.get_context_config(ctx)
+        if not config.extensions.duck.allow_manipulation.value:
+            await auxiliary.send_deny_embed(
+                channel=ctx.channel, message="This command is disabled in this server"
+            )
+            return
+
         if user.bot:
             await auxiliary.send_deny_embed(
                 message="The only ducks I accept are plated with gold!",
@@ -657,7 +682,6 @@ class DuckHunt(cogs.LoopCog):
 
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
 
-        config = await self.bot.get_context_config(ctx)
         weights = (
             config.extensions.duck.success_rate.value,
             100 - config.extensions.duck.success_rate.value,
