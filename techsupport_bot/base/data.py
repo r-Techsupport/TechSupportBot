@@ -200,57 +200,84 @@ class DataBot(extension.ExtensionsBot):
         if cached_response:
             response_object = cached_response
             log_message = f"Retrieving cached HTTP GET response ({cache_key})"
+            return await self.process_http_response(
+                response_object, method, cache_key, get_raw_response, log_message
+            )
         else:
             async with aiohttp.ClientSession() as client:
                 method_fn = getattr(client, method.lower())
                 async with method_fn(url, *args, **kwargs) as response_object:
-                    if method == "get":
-                        self.http_cache[cache_key] = response_object
                     log_message = (
                         f"Making HTTP {method.upper()} request to URL: {cache_key}"
                     )
-
-                    await self.logger.send_log(
-                        message=log_message,
-                        level=LogLevel.INFO,
-                        console_only=True,
+                    return await self.process_http_response(
+                        response_object,
+                        method,
+                        cache_key,
+                        get_raw_response,
+                        log_message,
                     )
 
-                    if get_raw_response:
-                        response = {
-                            "status": response_object.status,
-                            "text": await response_object.text(),
-                        }
-                    else:
-                        try:
-                            response_json = await response_object.json()
-                        except (
-                            aiohttp.ClientResponseError,
-                            JSONDecodeError,
-                        ) as exception:
-                            response_json = {}
-                            await self.logger.send_log(
-                                message=(
-                                    f"{method.upper()} request to URL:"
-                                    f" {cache_key} failed"
-                                ),
-                                level=LogLevel.ERROR,
-                                console_only=True,
-                                exception=exception,
-                            )
+    async def process_http_response(
+        self,
+        response_object: aiohttp.ClientResponse,
+        method: str,
+        cache_key: str,
+        get_raw_response: bool,
+        log_message: bool,
+    ) -> munch.Munch:
+        """Processes the HTTP response object, both cached and fresh
 
-                        response = (
-                            munch.munchify(response_json)
-                            if response_object
-                            else munch.Munch()
-                        )
-                        try:
-                            response["status_code"] = getattr(
-                                response_object, "status", None
-                            )
-                        except TypeError:
-                            await self.logger.send_log(
-                                message="Failed to add status_code to API response",
-                                level=LogLevel.WARNING,
-                            )
-                    return response
+        Args:
+            response_object (aiohttp.ClientResponse): The raw response object
+            method (str): The HTTP method this request is using
+            cache_key (str): The key for the cache array
+            get_raw_response (bool): Whether the function should return the response raw
+            log_message (bool): The message to send to the log
+
+        Returns:
+            munch.Munch: The resposne object ready for use
+        """
+        if method == "get":
+            self.http_cache[cache_key] = response_object
+
+        await self.logger.send_log(
+            message=log_message,
+            level=LogLevel.INFO,
+            console_only=True,
+        )
+
+        if get_raw_response:
+            response = {
+                "status": response_object.status,
+                "text": await response_object.text(),
+            }
+        else:
+            try:
+                response_json = await response_object.json()
+            except (
+                aiohttp.ClientResponseError,
+                JSONDecodeError,
+            ) as exception:
+                response_json = {}
+                await self.logger.send_log(
+                    message=(
+                        f"{method.upper()} request to URL:" f" {cache_key} failed"
+                    ),
+                    level=LogLevel.ERROR,
+                    console_only=True,
+                    exception=exception,
+                )
+
+            response = (
+                munch.munchify(response_json) if response_object else munch.Munch()
+            )
+            try:
+                response["status_code"] = getattr(response_object, "status", None)
+            except TypeError:
+                await self.logger.send_log(
+                    message="Failed to add status_code to API response",
+                    level=LogLevel.WARNING,
+                )
+
+        return response
