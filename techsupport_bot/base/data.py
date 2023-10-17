@@ -203,20 +203,19 @@ class DataBot(extension.ExtensionsBot):
             return await self.process_http_response(
                 response_object, method, cache_key, get_raw_response, log_message
             )
-        else:
-            async with aiohttp.ClientSession() as client:
-                method_fn = getattr(client, method.lower())
-                async with method_fn(url, *args, **kwargs) as response_object:
-                    log_message = (
-                        f"Making HTTP {method.upper()} request to URL: {cache_key}"
-                    )
-                    return await self.process_http_response(
-                        response_object,
-                        method,
-                        cache_key,
-                        get_raw_response,
-                        log_message,
-                    )
+        async with aiohttp.ClientSession() as client:
+            method_fn = getattr(client, method.lower())
+            async with method_fn(url, *args, **kwargs) as response_object:
+                log_message = (
+                    f"Making HTTP {method.upper()} request to URL: {cache_key}"
+                )
+                return await self.process_http_response(
+                    response_object,
+                    method,
+                    cache_key,
+                    get_raw_response,
+                    log_message,
+                )
 
     async def process_http_response(
         self,
