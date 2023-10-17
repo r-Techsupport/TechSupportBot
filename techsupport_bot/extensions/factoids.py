@@ -683,10 +683,7 @@ class FactoidManager(cogs.MatchCog):
 
         try:
             # define the message and send it
-            await ctx.reply(
-                content=content,
-                embed=embed,
-            )
+            await ctx.reply(content=content, embed=embed, mention_author=not mentions)
             # log it in the logging channel with type info and generic content
             config = await self.bot.get_context_config(ctx)
             log_channel = config.get("logging_channel")
@@ -711,7 +708,10 @@ class FactoidManager(cogs.MatchCog):
                 exception=exception,
             )
             # Sends the raw factoid instead of the embed as fallback
-            await ctx.reply(f"{mentions+' ' if mentions else ''}{factoid.message}")
+            await ctx.reply(
+                f"{mentions+' ' if mentions else ''}{factoid.message}",
+                mention_author=not mentions,
+            )
 
         await self.send_to_irc(ctx.channel, ctx.message, factoid.message)
 
