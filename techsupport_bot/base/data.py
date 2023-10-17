@@ -260,9 +260,7 @@ class DataBot(extension.ExtensionsBot):
             ) as exception:
                 response_json = {}
                 await self.logger.send_log(
-                    message=(
-                        f"{method.upper()} request to URL:" f" {cache_key} failed"
-                    ),
+                    message=f"{method.upper()} request to URL: {cache_key} failed",
                     level=LogLevel.ERROR,
                     console_only=True,
                     exception=exception,
