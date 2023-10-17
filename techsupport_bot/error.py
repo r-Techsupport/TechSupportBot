@@ -11,6 +11,13 @@ class ExtensionDisabled(commands.errors.CheckFailure):
         self.dont_print_trace = True
 
 
+class CommandRateLimit(commands.errors.CheckFailure):
+    """The exception thrown when a user is on rate limit"""
+
+    def __init__(self):
+        self.dont_print_trace = True
+
+
 class FactoidNotFoundError(commands.errors.CommandError):
     """Thrown when a factoid is not found."""
 
@@ -209,6 +216,7 @@ COMMAND_ERROR_RESPONSES = {
     ExtensionDisabled: ErrorResponse(
         "That extension is disabled for this context/server"
     ),
+    CommandRateLimit: ErrorResponse("You are being rate limited for spamming commands"),
 }
 
 IGNORED_ERRORS = set([commands.CommandNotFound])

@@ -5,6 +5,7 @@ import random
 import re
 import string
 import time
+from collections import deque
 
 import discord
 import error
@@ -36,6 +37,11 @@ class AdvancedBot(data.DataBot):
             max_len=self.file_config.cache.guild_config_cache_length,
             max_age_seconds=self.file_config.cache.guild_config_cache_seconds,
         )
+        self.command_rate_limit_bans = expiringdict.ExpiringDict(
+            max_len=5000,
+            max_age_seconds=600,
+        )
+        self.command_execute_history = {}
 
     async def start(self, *args, **kwargs):
         """Function is automatically called when the bot is started by discord.py"""
@@ -154,6 +160,10 @@ class AdvancedBot(data.DataBot):
         config_.enabled_extensions = self.extension_name_list
         config_.nickname_filter = False
         config_.enable_logging = True
+        config_.rate_limit = munch.DefaultMunch(None)
+        config_.rate_limit.enabled = False
+        config_.rate_limit.commands = 4
+        config_.rate_limit.time = 10
 
         config_.extensions = extensions_config
 
@@ -221,11 +231,11 @@ class AdvancedBot(data.DataBot):
 
         return config_object
 
-    async def can_run(self, ctx, *, call_once=False):
+    async def can_run(self, ctx: commands.Context, *, call_once=False):
         """Wraps the default can_run check to evaluate bot-admin permission.
 
         parameters:
-            ctx (discord.ext.Context): the context associated with the command
+            ctx (commands.Context): the context associated with the command
             call_once (bool): True if the check should be retrieved from the call_once attribute
         """
         await self.logger.send_log(
@@ -234,14 +244,43 @@ class AdvancedBot(data.DataBot):
             context=LogContext(guild=ctx.guild, channel=ctx.channel),
             console_only=True,
         )
+        is_bot_admin = await self.is_bot_admin(ctx)
+        config = await self.get_context_config(ctx)
+
+        # Rate limiter
+        if config.rate_limit.get("enabled", False):
+            identifier = f"{ctx.author.id}-{ctx.guild.id}"
+
+            if identifier not in self.command_execute_history:
+                self.command_execute_history[identifier] = deque([], maxlen=20)
+
+            now = time.time()
+            while (
+                self.command_execute_history[identifier]
+                and now - self.command_execute_history[identifier][0]
+                >= config.rate_limit.time
+            ):
+                self.command_execute_history[identifier].popleft()
+
+            self.command_execute_history[identifier].append(now)
+
+            if (
+                len(self.command_execute_history[identifier])
+                > config.rate_limit.commands
+            ):
+                self.command_rate_limit_bans[identifier] = True
+
+            if (
+                identifier in self.command_rate_limit_bans
+                and not ctx.author.guild_permissions.administrator
+            ):
+                raise error.CommandRateLimit
 
         extension_name = self.get_command_extension_name(ctx.command)
         if extension_name:
             config = await self.get_context_config(ctx)
             if not extension_name in config.enabled_extensions:
                 raise error.ExtensionDisabled
-
-        is_bot_admin = await self.is_bot_admin(ctx)
 
         cog = getattr(ctx.command, "cog", None)
         if getattr(cog, "ADMIN_ONLY", False) and not is_bot_admin:
