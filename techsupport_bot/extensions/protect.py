@@ -185,7 +185,7 @@ class Protector(cogs.MatchCog):
         return True
 
     @commands.Cog.listener()
-    async def on_raw_message_edit(self, payload):
+    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
         """Method to edit the raw message."""
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
@@ -201,6 +201,10 @@ class Protector(cogs.MatchCog):
 
         message = await channel.fetch_message(payload.message_id)
         if not message:
+            return
+
+        # Don't trigger if content hasn't changed
+        if payload.cached_message and payload.cached_message.content == message.content:
             return
 
         ctx = await self.bot.get_context(message)
@@ -346,6 +350,12 @@ class Protector(cogs.MatchCog):
                 config, ctx, content, filter_config.message
             )
         else:
+            # Ensure we don't trigger people more than once if the only trigger is a warning
+            cache_key = self.get_cache_key(ctx.guild, ctx.author, filter_config.trigger)
+            if self.string_alert_cache.get(cache_key):
+                return
+
+            self.string_alert_cache[cache_key] = True
             embed = ProtectEmbed(description=filter_config.message)
             await ctx.send(ctx.message.author.mention, embed=embed)
 
@@ -354,12 +364,6 @@ class Protector(cogs.MatchCog):
             ctx,
             f"Message contained trigger: {filter_config.trigger}",
         )
-
-        cache_key = self.get_cache_key(ctx.guild, ctx.author, filter_config.trigger)
-        if self.string_alert_cache.get(cache_key):
-            return
-
-        self.string_alert_cache[cache_key] = True
 
     async def handle_warn(self, ctx, user: discord.Member, reason: str, bypass=False):
         """Method to handle the warn of a user."""
