@@ -553,7 +553,7 @@ class AdvancedBot(data.DataBot):
             attachment_urls = ", ".join(a.url for a in message.attachments)
             content_string = f'"{message.content}"' if message.content else ""
             attachment_string = f"({attachment_urls})" if attachment_urls else ""
-            await self.bot.logger.send_log(
+            await self.logger.send_log(
                 message=(
                     f"PM from `{message.author}`: {content_string} {attachment_string}"
                 ),
