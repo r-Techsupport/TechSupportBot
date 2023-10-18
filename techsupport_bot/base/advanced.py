@@ -8,11 +8,12 @@ import time
 from collections import deque
 
 import discord
-import error
+import error as custom_errors
 import expiringdict
 import munch
 from base import auxiliary, data
 from botlogging import LogContext, LogLevel
+from discord import app_commands
 from discord.ext import commands
 from unidecode import unidecode
 
@@ -42,6 +43,9 @@ class AdvancedBot(data.DataBot):
             max_age_seconds=600,
         )
         self.command_execute_history = {}
+
+        # Set the app command on error function to log errors in slash commands
+        self.tree.on_error = self.on_app_command_error
 
     async def start(self, *args, **kwargs):
         """Function is automatically called when the bot is started by discord.py"""
@@ -274,13 +278,13 @@ class AdvancedBot(data.DataBot):
                 identifier in self.command_rate_limit_bans
                 and not ctx.author.guild_permissions.administrator
             ):
-                raise error.CommandRateLimit
+                raise custom_errors.CommandRateLimit
 
         extension_name = self.get_command_extension_name(ctx.command)
         if extension_name:
             config = await self.get_context_config(ctx)
             if not extension_name in config.enabled_extensions:
-                raise error.ExtensionDisabled
+                raise custom_errors.ExtensionDisabled
 
         cog = getattr(ctx.command, "cog", None)
         if getattr(cog, "ADMIN_ONLY", False) and not is_bot_admin:
@@ -477,6 +481,44 @@ class AdvancedBot(data.DataBot):
                         context=LogContext(guild=member.guild),
                     )
 
+    async def on_app_command_error(
+        self,
+        interaction: discord.Interaction[discord.Client],
+        error: app_commands.AppCommandError,
+    ) -> None:
+        """Error handler for the slowmode extension."""
+        message = ""
+        if isinstance(error, app_commands.CommandNotFound):
+            return
+
+        if isinstance(error, app_commands.MissingPermissions):
+            message = (
+                "I am unable to do that because you lack the permission(s):"
+                f" `{', '.join(error.missing_permissions)}`"
+            )
+            embed = auxiliary.prepare_deny_embed(message)
+
+        else:
+            embed = auxiliary.prepare_deny_embed(
+                f"I ran into an error running that command {error}."
+            )
+            config = await self.get_context_config(guild=interaction.guild)
+            log_channel = config.get("logging_channel")
+            await self.logger.send_log(
+                message=f"{error}",
+                level=LogLevel.ERROR,
+                channel=log_channel,
+                context=LogContext(
+                    guild=interaction.guild, channel=interaction.channel
+                ),
+                exception=error,
+            )
+
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed)
+        else:
+            await interaction.response.send_message(embed=embed)
+
     async def on_command_error(self, context, exception):
         """Catches command errors and sends them to the error logger for processing.
 
@@ -496,14 +538,19 @@ class AdvancedBot(data.DataBot):
             ):
                 return
 
-        message_template = error.COMMAND_ERROR_RESPONSES.get(exception.__class__, "")
+        message_template = custom_errors.COMMAND_ERROR_RESPONSES.get(
+            exception.__class__, ""
+        )
         # see if we have mapped this error to no response (None)
         # or if we have added it to the global ignore list of errors
-        if message_template is None or exception.__class__ in error.IGNORED_ERRORS:
+        if (
+            message_template is None
+            or exception.__class__ in custom_errors.IGNORED_ERRORS
+        ):
             return
         # otherwise set it a default error message
         if message_template == "":
-            message_template = error.ErrorResponse()
+            message_template = custom_errors.ErrorResponse()
 
         error_message = message_template.get_message(exception)
 
