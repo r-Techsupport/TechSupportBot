@@ -538,10 +538,15 @@ class AdvancedBot(data.DataBot):
             ):
                 return
 
-        message_template = custom_errors.COMMAND_ERROR_RESPONSES.get(exception.__class__, "")
+        message_template = custom_errors.COMMAND_ERROR_RESPONSES.get(
+            exception.__class__, ""
+        )
         # see if we have mapped this error to no response (None)
         # or if we have added it to the global ignore list of errors
-        if message_template is None or exception.__class__ in custom_errors.IGNORED_ERRORS:
+        if (
+            message_template is None
+            or exception.__class__ in custom_errors.IGNORED_ERRORS
+        ):
             return
         # otherwise set it a default error message
         if message_template == "":
