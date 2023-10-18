@@ -487,57 +487,34 @@ class AdvancedBot(data.DataBot):
         error: app_commands.AppCommandError,
     ) -> None:
         """Error handler for the slowmode extension."""
-        message = ""
-        if isinstance(error, app_commands.CommandNotFound):
-            return
+        error_message = await self.handle_error(
+            exception=error, channel=interaction.channel, guild=interaction.guild
+        )
 
-        if isinstance(error, app_commands.MissingPermissions):
-            message = (
-                "I am unable to do that because you lack the permission(s):"
-                f" `{', '.join(error.missing_permissions)}`"
-            )
-            embed = auxiliary.prepare_deny_embed(message)
-
-        else:
-            embed = auxiliary.prepare_deny_embed(
-                f"I ran into an error running that command {error}."
-            )
-            config = await self.get_context_config(guild=interaction.guild)
-            log_channel = config.get("logging_channel")
-            await self.logger.send_log(
-                message=f"{error}",
-                level=LogLevel.ERROR,
-                channel=log_channel,
-                context=LogContext(
-                    guild=interaction.guild, channel=interaction.channel
-                ),
-                exception=error,
-            )
+        embed = auxiliary.prepare_deny_embed(message=error_message)
 
         if interaction.response.is_done():
             await interaction.followup.send(embed=embed)
         else:
             await interaction.response.send_message(embed=embed)
 
-    async def on_command_error(self, context, exception):
-        """Catches command errors and sends them to the error logger for processing.
+    async def handle_error(
+        self,
+        exception: Exception,
+        channel: discord.abc.Messageable,
+        guild: discord.Guild,
+    ) -> str:
+        """Handles the formatting and logging of command and app command errors
 
-        parameters:
-            context (discord.ext.Context): the context associated with the exception
-            exception (Exception): the exception object associated with the error
+        Args:
+            exception (Exception): The exception object generated
+            channel (discord.abc.Messageable): The channel the command was run in
+            guild (discord.Guild): The guild the command was run in
+
+        Returns:
+            str: The pretty string format that should be shared with the user
         """
-        if self.extra_events.get("on_command_error", None):
-            return
-        if hasattr(context.command, "on_error"):
-            return
-        if context.cog:
-            # pylint: disable=protected-access
-            if (
-                commands.Cog._get_overridden_method(context.cog.cog_command_error)
-                is not None
-            ):
-                return
-
+        # Get the custom error response we made for the error
         message_template = custom_errors.COMMAND_ERROR_RESPONSES.get(
             exception.__class__, ""
         )
@@ -555,34 +532,54 @@ class AdvancedBot(data.DataBot):
         error_message = message_template.get_message(exception)
 
         log_channel = await self.get_log_channel_from_guild(
-            getattr(context, "guild", None), key="logging_channel"
+            guild=guild, key="logging_channel"
         )
 
-        # 1000 character cap
-        if len(error_message) < 1000:
-            await auxiliary.send_deny_embed(
-                message=error_message, channel=context.channel
-            )
-        else:
-            await auxiliary.send_deny_embed(
-                message=(
-                    "Command raised an error and the error message too long to send!"
-                )
-                + f" First 1000 chars:\n{error_message[:1000]}",
-                channel=context.channel,
+        # Ensure that error messages aren't too long.
+        # This ONLY changes the user facing error, the stack trace isn't impacted
+        if len(error_message) > 1000:
+            error_message = error_message[:1000]
+            error_message += "..."
+
+        # Only log stack trace if you should
+        if not getattr(exception, "dont_print_trace", False):
+            await self.logger.send_log(
+                message=f"Command error: {exception}",
+                level=LogLevel.ERROR,
+                channel=log_channel,
+                context=LogContext(guild=guild, channel=channel),
+                exception=exception,
             )
 
-        # Stops execution if dont_print_trace is True
-        if hasattr(exception, "dont_print_trace") and exception.dont_print_trace:
+        # Return the string error message and allow the context/interaction to respond properly
+        return error_message
+
+    async def on_command_error(
+        self, context: commands.Context, exception: Exception
+    ) -> None:
+        """Catches command errors and sends them to the error logger for processing.
+
+        parameters:
+            context (commands.Context): the context associated with the exception
+            exception (Exception): the exception object associated with the error
+        """
+        if self.extra_events.get("on_command_error", None):
             return
+        if hasattr(context.command, "on_error"):
+            return
+        if context.cog:
+            # pylint: disable=protected-access
+            if (
+                commands.Cog._get_overridden_method(context.cog.cog_command_error)
+                is not None
+            ):
+                return
 
-        await self.logger.send_log(
-            message=f"Command error: {exception}",
-            level=LogLevel.ERROR,
-            channel=log_channel,
-            context=LogContext(guild=context.guild, channel=context.channel),
-            exception=exception,
+        error_message = await self.handle_error(
+            exception=exception, channel=context.channel, guild=context.guild
         )
+
+        await auxiliary.send_deny_embed(message=error_message, channel=context.channel)
 
     async def on_message(self, message):
         """Catches messages and acts appropriately.

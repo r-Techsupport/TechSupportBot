@@ -10,7 +10,6 @@ import discord
 import munch
 import ui
 from base import auxiliary, cogs
-from botlogging import LogContext, LogLevel
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -954,43 +953,3 @@ class ApplicationManager(cogs.LoopCog):
         await aiocron.crontab(
             config.extensions.application.reminder_cron_config.value
         ).next()
-
-    # Custom error handling
-
-    async def cog_app_command_error(
-        self,
-        interaction: discord.Interaction[discord.Client],
-        error: app_commands.AppCommandError,
-    ) -> None:
-        """Error handler for the who extension."""
-        message = ""
-        if isinstance(error, app_commands.CommandNotFound):
-            return
-
-        if isinstance(error, app_commands.MissingPermissions):
-            message = (
-                "I am unable to do that because you lack the permission(s):"
-                f" `{', '.join(error.missing_permissions)}`"
-            )
-            embed = auxiliary.prepare_deny_embed(message)
-
-        else:
-            embed = auxiliary.prepare_deny_embed(
-                f"I ran into an error running that command {error}."
-            )
-            config = await self.bot.get_context_config(guild=interaction.guild)
-            log_channel = config.get("logging_channel")
-            await self.bot.logger.send_log(
-                message=f"{error}",
-                level=LogLevel.ERROR,
-                channel=log_channel,
-                context=LogContext(
-                    guild=interaction.guild, channel=interaction.channel
-                ),
-                exception=error,
-            )
-
-        if interaction.response.is_done():
-            await interaction.followup.send(embed=embed)
-        else:
-            await interaction.response.send_message(embed=embed)
