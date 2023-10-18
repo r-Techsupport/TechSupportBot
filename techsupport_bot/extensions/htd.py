@@ -223,7 +223,7 @@ class Htd(cogs.BaseCog):
         1024, we replace the last 3 characters with full stops
 
         Args:
-            data (str): The raw input to ormat
+            data (str): The raw input to format
 
         Returns:
             str: The string output, either left alone or cropped
