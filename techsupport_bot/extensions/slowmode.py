@@ -48,7 +48,7 @@ class SlowmodeManager(cogs.BaseCog):
             channel (discord.abc.GuildChannel, optional): If specified, the channel to modify
                 slowmode on. Defaults to the channel the command was invoked in.
         """
-        if seconds > 216000 or seconds < 0:
+        if seconds > 21600 or seconds < 0:
             embed = auxiliary.prepare_deny_embed(
                 "Slowmode must be between 0 and 21600 seconds"
             )

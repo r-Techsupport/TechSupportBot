@@ -297,46 +297,6 @@ class Who(cogs.BaseCog):
 
         return user_notes
 
-    async def cog_app_command_error(
-        self,
-        interaction: discord.Interaction[discord.Client],
-        error: app_commands.AppCommandError,
-    ) -> None:
-        """Error handler for the who extension."""
-        message = ""
-        if isinstance(error, app_commands.CommandNotFound):
-            return
-
-        if isinstance(error, app_commands.MissingPermissions):
-            message = (
-                "I am unable to do that because you lack the permission(s):"
-                f" `{', '.join(error.missing_permissions)}`"
-            )
-            embed = auxiliary.prepare_deny_embed(message)
-
-        elif isinstance(error, app_commands.CheckFailure):
-            message = "The requirements for running this command have not been met."
-            embed = auxiliary.prepare_deny_embed(message)
-
-        else:
-            embed = auxiliary.prepare_deny_embed("An unknown error occurred.")
-            config = await self.bot.get_context_config(guild=interaction.guild)
-            log_channel = config.get("logging_channel")
-            await self.bot.logger.send_log(
-                message=f"An unknown error occurred. {error}",
-                level=LogLevel.ERROR,
-                channel=log_channel,
-                context=LogContext(
-                    guild=interaction.guild, channel=interaction.channel
-                ),
-                exception=error,
-            )
-
-        if interaction.response.is_done():
-            await interaction.followup.send(embed=embed, ephemeral=True)
-        else:
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-
     # re-adds note role back to joining users
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:

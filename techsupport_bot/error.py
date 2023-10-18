@@ -1,6 +1,7 @@
 """Module for command error responses.
 """
 import munch
+from discord import app_commands
 from discord.ext import commands
 
 
@@ -174,6 +175,10 @@ COMMAND_ERROR_RESPONSES = {
         "I am unable to do that because you lack the permission(s): `%s`",
         {"key": "missing_perms"},
     ),
+    app_commands.MissingPermissions: ErrorResponse(
+        "I am unable to do that because you lack the permission(s): `%s`",
+        {"key": "missing_perms"},
+    ),
     commands.BotMissingPermissions: ErrorResponse(
         "I am unable to do that because I lack the permission(s): `%s`",
         {"key": "missing_perms"},
@@ -219,4 +224,4 @@ COMMAND_ERROR_RESPONSES = {
     CommandRateLimit: ErrorResponse("You are being rate limited for spamming commands"),
 }
 
-IGNORED_ERRORS = set([commands.CommandNotFound])
+IGNORED_ERRORS = set([commands.CommandNotFound, app_commands.CommandNotFound])
