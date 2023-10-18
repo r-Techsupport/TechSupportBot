@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 import discord
 import ui
 from base import auxiliary, cogs
-from botlogging import LogContext, LogLevel
 from discord import app_commands
 
 if TYPE_CHECKING:
