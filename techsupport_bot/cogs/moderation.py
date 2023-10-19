@@ -43,6 +43,7 @@ class ModerationFunctions(cogs.BaseCog):
 
     async def unmute_user(self, user: discord.Member, reason: str) -> bool:
         await user.timeout(reason=reason)
+        return True
 
     async def warn_user() -> bool:
         ...
