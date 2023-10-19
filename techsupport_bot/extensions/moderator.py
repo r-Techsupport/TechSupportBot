@@ -1,10 +1,17 @@
+from __future__ import annotations
+
 from datetime import datetime, timedelta
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 import dateparser
 import discord
+import ui
 from base import auxiliary, cogs
+from botlogging import LogContext, LogLevel
 from discord import app_commands
+
+if TYPE_CHECKING:
+    import bot
 
 
 async def setup(bot):
@@ -272,7 +279,102 @@ class ProtectCommands(cogs.BaseCog):
     async def handle_warn_user(
         self, interaction: discord.Interaction, target: discord.Member, reason: str
     ):
-        await interaction.channel.send("warn command")
+        permission_check = await self.permission_check(
+            invoker=interaction.user, target=target, action_name="warn"
+        )
+        if permission_check:
+            embed = auxiliary.prepare_deny_embed(message=permission_check)
+            await interaction.response.send_message(embed=embed)
+            return
+
+        if target not in interaction.channel.members:
+            await interaction.response.send_message(
+                message=f"{target} cannot see this warning. No warning was added."
+            )
+            return
+
+        config = await self.bot.get_context_config(guild=interaction.guild)
+
+        new_count_of_warnings = (
+            len(await self.get_all_warnings(target, interaction.guild)) + 1
+        )
+
+        should_ban = False
+        if new_count_of_warnings >= config.extensions.protect.max_warnings.value:
+            await interaction.response.defer(ephemeral=False)
+            view = ui.Confirm()
+            await view.send(
+                message="This user has exceeded the max warnings of "
+                + f"{config.extensions.protect.max_warnings.value}. Would "
+                + "you like to ban them instead?",
+                channel=interaction.channel,
+                author=interaction.user,
+                interaction=interaction,
+            )
+            await view.wait()
+            if view.value is ui.ConfirmResponse.CONFIRMED:
+                should_ban = True
+
+        warn_result = await self.moderation.warn_user(
+            user=target, invoker=interaction.user, reason=reason
+        )
+
+        if should_ban:
+            ban_result = await self.moderation.ban_user(
+                guild=interaction.guild,
+                user=target,
+                delete_days=config.extensions.protect.ban_delete_duration.value,
+                reason=f"Over max warning count {new_count_of_warnings} out of {config.extensions.protect.max_warnings.value} (final warning: {reason}) - banned by {interaction.user}",
+            )
+            if not ban_result:
+                embed = auxiliary.prepare_deny_embed(
+                    message=f"Something went wrong when banning {target}"
+                )
+                if interaction.response.is_done():
+                    await interaction.followup.send(embed=embed)
+                else:
+                    await interaction.response.send_message(embed=embed)
+                return
+
+        if not warn_result:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"Something went wrong when warning {target}"
+            )
+            if interaction.response.is_done():
+                await interaction.followup.send(embed=embed)
+            else:
+                await interaction.response.send_message(embed=embed)
+            return
+
+        await self.send_command_usage_alert(
+            interaction=interaction,
+            command=f"/warn target: {target.display_name}, reason: {reason}",
+            guild=interaction.guild,
+            target=target,
+        )
+
+        embed = self.generate_response_embed(
+            user=target,
+            action="warn",
+            reason=f"{reason} ({new_count_of_warnings} total warnings)",
+        )
+        if interaction.response.is_done():
+            await interaction.followup.send(content=target.mention, embed=embed)
+        else:
+            await interaction.response.send_message(content=target.mention, embed=embed)
+
+        try:
+            await target.send(embed=embed)
+        except (discord.HTTPException, discord.Forbidden):
+            channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message=f"Failed to DM warning to {target}",
+                level=LogLevel.WARNING,
+                channel=channel,
+                context=LogContext(
+                    guild=interaction.guild, channel=interaction.channel
+                ),
+            )
 
     @app_commands.command(name="unwarn", description="Unwarns a user")
     async def handle_unwarn_user(
@@ -400,3 +502,17 @@ class ProtectCommands(cogs.BaseCog):
         embed.color = discord.Color.red()
 
         await alert_channel.send(embed=embed)
+
+    # Database functions
+    async def get_all_warnings(
+        self, user: discord.User, guild: discord.Guild
+    ) -> list[bot.models.Warning]:
+        """Method to get the warnings of a user."""
+        warnings = (
+            await self.bot.models.Warning.query.where(
+                self.bot.models.Warning.user_id == str(user.id)
+            )
+            .where(self.bot.models.Warning.guild_id == str(guild.id))
+            .gino.all()
+        )
+        return warnings

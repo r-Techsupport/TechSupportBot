@@ -45,8 +45,16 @@ class ModerationFunctions(cogs.BaseCog):
         await user.timeout(None, reason=reason)
         return True
 
-    async def warn_user() -> bool:
-        ...
+    async def warn_user(
+        self, user: discord.Member, invoker: discord.Member, reason: str
+    ) -> bool:
+        await self.bot.models.Warning(
+            user_id=str(user.id),
+            guild_id=str(invoker.guild.id),
+            reason=reason,
+            invoker_id=str(invoker.id),
+        ).create()
+        return True
 
-    async def unwarn_user() -> bool:
+    async def unwarn_user(user: discord.Member, warning: str) -> bool:
         ...

@@ -134,6 +134,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild_id = bot.db.Column(bot.db.String)
         reason = bot.db.Column(bot.db.String)
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+        invoker_id = bot.db.Column(bot.db.String)
 
     bot.models.Applications = Applications
     bot.models.AppBans = ApplicationBans
