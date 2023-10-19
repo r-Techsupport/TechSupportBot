@@ -1,3 +1,5 @@
+from typing import Union
+
 import discord
 from base import auxiliary, cogs
 from discord import app_commands
@@ -17,7 +19,13 @@ class ProtectCommands(cogs.BaseCog):
         reason: str,
         delete_days: int = None,
     ):
-        await interaction.channel.send("ban command")
+        permission_check = await self.permission_check(
+            invoker=interaction.user, target=user, action_name="ban"
+        )
+        if permission_check:
+            await interaction.response.send_message(permission_check)
+            return
+        await interaction.response.send_message("ban command")
 
     @app_commands.command(name="unban", description="Unbans a user from the guild")
     async def handle_unban_user(
@@ -64,6 +72,48 @@ class ProtectCommands(cogs.BaseCog):
         await interaction.channel.send("unwarn command")
 
     async def permission_check(
-        self, invoker: discord.User, target: discord.User
+        self,
+        invoker: discord.Member,
+        target: Union[discord.User, discord.Member],
+        action_name: str,
     ) -> str:
-        ...
+        """_summary_
+
+        Args:
+            invoker (discord.Member): The invoker of the action.
+                Either will be the user who ran the command, or the bot itself
+            target (Union[discord.User, discord.Member]): The target of the command.
+                Can be a user or member.
+            action_name (str): The action name to be displayed in messages
+
+        Returns:
+            str: The rejection string, if one exists. Otherwise, None is returned
+        """
+        config = await self.bot.get_context_config(guild=invoker.guild)
+        # Check to see if executed on author
+        if invoker == target:
+            return f"You cannot {action_name} yourself"
+
+        # Check to see if executed on bot
+        if target == self.bot.user:
+            return f"It would be silly to {action_name} myself"
+
+        # Check to see if User or Member
+        if isinstance(target, discord.User):
+            return None
+
+        # Check to see if target has any immune roles
+        for name in config.extensions.protect.immune_roles.value:
+            role_check = discord.utils.get(target.guild.roles, name=name)
+            if role_check and role_check in getattr(target, "roles", []):
+                return f"You cannot {action_name} {target} because they have `{role_check}` role"
+
+        # Check to see if the Bot can execute on the target
+        if invoker.guild.get_member(int(self.bot.user.id)).top_role <= target.top_role:
+            return f"Bot does not have enough permissions to {action_name} `{target}`"
+
+        # Check to see if author top role is higher than targets
+        if invoker.top_role <= target.top_role:
+            return f"You do not have enough permissions to {action_name} `{target}`"
+
+        return None
