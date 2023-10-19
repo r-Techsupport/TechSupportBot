@@ -3,3 +3,4 @@ from .admin import *
 from .config import *
 from .help import *
 from .listen import *
+from .moderation import *

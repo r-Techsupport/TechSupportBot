@@ -100,6 +100,7 @@ class TechSupportBot(advanced.AdvancedBot):
 
         await self.load_builtin_cog(builtin_cogs.AdminControl)
         await self.load_builtin_cog(builtin_cogs.ConfigControl)
+        await self.load_builtin_cog(builtin_cogs.ModerationFunctions)
         await self.load_builtin_cog(builtin_cogs.Listener)
 
         # This is the guild events logging cog
