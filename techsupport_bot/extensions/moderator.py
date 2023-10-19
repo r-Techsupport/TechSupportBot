@@ -1,5 +1,7 @@
+from datetime import datetime, timedelta
 from typing import Union
 
+import dateparser
 import discord
 from base import auxiliary, cogs
 from discord import app_commands
@@ -133,7 +135,34 @@ class ProtectCommands(cogs.BaseCog):
     async def handle_kick_user(
         self, interaction: discord.Interaction, target: discord.Member, reason: str
     ):
-        await interaction.channel.send("kick command")
+        permission_check = await self.permission_check(
+            invoker=interaction.user, target=target, action_name="kick"
+        )
+        if permission_check:
+            embed = auxiliary.prepare_deny_embed(message=permission_check)
+            await interaction.response.send_message(embed=embed)
+            return
+
+        result = await self.moderation.kick_user(
+            guild=interaction.guild,
+            user=target,
+            reason=f"{reason} - kicked by {interaction.user}",
+        )
+        if not result:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"Something went wrong when kicking {target}"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+
+        await self.send_command_usage_alert(
+            interaction=interaction,
+            command=f"/kick target: {target.display_name}, reason: {reason}",
+            guild=interaction.guild,
+            target=target,
+        )
+        embed = self.generate_response_embed(user=target, action="kick", reason=reason)
+        await interaction.response.send_message(content=target.mention, embed=embed)
 
     @app_commands.command(name="mute", description="Times out a user")
     async def handle_mute_user(
@@ -143,13 +172,101 @@ class ProtectCommands(cogs.BaseCog):
         reason: str,
         duration: str = None,
     ):
-        await interaction.channel.send("mute command")
+        permission_check = await self.permission_check(
+            invoker=interaction.user, target=target, action_name="mute"
+        )
+        if permission_check:
+            embed = auxiliary.prepare_deny_embed(message=permission_check)
+            await interaction.response.send_message(embed=embed)
+            return
+
+        # The API prevents administrators from being timed out. Check it here
+        if target.guild_permissions.administrator:
+            await auxiliary.prepare_confirm_embed(
+                message=(
+                    "Someone with the `administrator` permissions cannot be timed out"
+                )
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+
+        delta_duration = None
+
+        if duration:
+            # The date parser defaults to time in the past, so it is second
+            # This could be fixed by appending "in" to your query, but this is simpler
+            try:
+                delta_duration = datetime.now() - dateparser.parse(duration)
+                delta_duration = timedelta(
+                    seconds=round(delta_duration.total_seconds())
+                )
+            except TypeError as exc:
+                raise ValueError("Invalid duration") from exc
+            if not delta_duration:
+                raise ValueError("Invalid duration")
+        else:
+            delta_duration = timedelta(hours=1)
+
+        # Checks to ensure time is valid and within the scope of the API
+        if delta_duration > timedelta(days=28):
+            raise ValueError("Timeout duration cannot be more than 28 days")
+        if delta_duration < timedelta(seconds=1):
+            raise ValueError("Timeout duration cannot be less than 1 second")
+
+        result = await self.moderation.mute_user(
+            user=target,
+            reason=f"{reason} - muted by {interaction.user}",
+            duration=delta_duration,
+        )
+        if not result:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"Something went wrong when muting {target}"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+
+        await self.send_command_usage_alert(
+            interaction=interaction,
+            command=f"/mute target: {target.display_name}, reason: {reason}, duration: {duration}",
+            guild=interaction.guild,
+            target=target,
+        )
+        embed = self.generate_response_embed(user=target, action="mute", reason=reason)
+        await interaction.response.send_message(content=target.mention, embed=embed)
 
     @app_commands.command(name="unmute", description="Removes timeout from a user")
     async def handle_unmute_user(
         self, interaction: discord.Interaction, target: discord.Member, reason: str
     ):
-        await interaction.channel.send("unmute command")
+        permission_check = await self.permission_check(
+            invoker=interaction.user, target=target, action_name="unmute"
+        )
+        if permission_check:
+            embed = auxiliary.prepare_deny_embed(message=permission_check)
+            await interaction.response.send_message(embed=embed)
+            return
+
+        result = await self.moderation.unmute_user(
+            user=target,
+            reason=f"{reason} - unmuted by {interaction.user}",
+        )
+        if not result:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"Something went wrong when unmuting {target}"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+
+        await self.send_command_usage_alert(
+            interaction=interaction,
+            command=f"/unmute target: {target.display_name}, reason: {reason}",
+            guild=interaction.guild,
+            target=target,
+        )
+        embed = self.generate_response_embed(
+            user=target, action="unmute", reason=reason
+        )
+        await interaction.response.send_message(content=target.mention, embed=embed)
 
     @app_commands.command(name="warn", description="Warns a user")
     async def handle_warn_user(
