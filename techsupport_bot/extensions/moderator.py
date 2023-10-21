@@ -1,3 +1,5 @@
+"""Manual moderation commands and helper functions"""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -14,12 +16,19 @@ if TYPE_CHECKING:
     import bot
 
 
-async def setup(bot):
-    """Adding the poll and recation to the config file."""
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Adds the cog to the bot. Setups config
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cog with
+    """
     await bot.add_cog(ProtectCommands(bot=bot))
 
 
 class ProtectCommands(cogs.BaseCog):
+    """The cog for all manual moderation activities
+    These are all slash commands"""
+
     ALERT_ICON_URL = (
         "https://cdn.icon-icons.com/icons2/2063/PNG/512/"
         + "alert_danger_warning_notification_icon_124692.png"
@@ -531,6 +540,14 @@ class ProtectCommands(cogs.BaseCog):
         guild: discord.Guild,
         target: discord.Member,
     ) -> None:
+        """Sends a usage alert to the protect events channel, if configured
+
+        Args:
+            interaction (discord.Interaction): The interaction that trigger the command
+            command (str): The string representation of the command that was run
+            guild (discord.Guild): The guild the command was run in
+            target (discord.Member): The target of the command
+        """
         config = await self.bot.get_context_config(guild=guild)
 
         try:
@@ -569,6 +586,15 @@ class ProtectCommands(cogs.BaseCog):
     async def get_all_warnings(
         self, user: discord.User, guild: discord.Guild
     ) -> list[bot.models.Warning]:
+        """Gets a list of all warnings for a specific user in a specific guild
+
+        Args:
+            user (discord.User): The user that we want warns from
+            guild (discord.Guild): The guild that we want warns from
+
+        Returns:
+            list[bot.models.Warning]: The list of all warnings for the user/guild, if any exist
+        """
         warnings = (
             await self.bot.models.Warning.query.where(
                 self.bot.models.Warning.user_id == str(user.id)
@@ -581,6 +607,15 @@ class ProtectCommands(cogs.BaseCog):
     async def get_warning(
         self, user: discord.Member, warning: str
     ) -> bot.models.Warning:
+        """Gets a specific warning by string for a user
+
+        Args:
+            user (discord.Member): The user to get the warning for
+            warning (str): The warning to look for
+
+        Returns:
+            bot.models.Warning: If it exists, the warning object
+        """
         query = (
             self.bot.models.Warning.query.where(
                 self.bot.models.Warning.guild_id == str(user.guild.id)

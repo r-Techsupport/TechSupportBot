@@ -1,13 +1,28 @@
 """This file will hold the core moderation functions. These functions will:
 Do the proper moderative action and return true if successful, false if not."""
 
+from __future__ import annotations
+
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 import discord
 
+if TYPE_CHECKING:
+    import bot
+
 
 class ModerationFunctions:
-    def __init__(self, bot):
+    """This is the class that holds basic moderation functions
+    And any helper functions to be used by both manual and auto moderation"""
+
+    def __init__(self, bot: bot.TechSupportBot) -> None:
+        """Initilize the moderation functions
+        We need the bot object for database manuipulation
+
+        Args:
+            bot (bot.TechSupportBot): The bot instance
+        """
         self.bot = bot
 
     async def ban_user(
@@ -102,6 +117,16 @@ class ModerationFunctions:
     async def warn_user(
         self, user: discord.Member, invoker: discord.Member, reason: str
     ) -> bool:
+        """Warns a user. Does NOT check config or how many warnings a user has
+
+        Args:
+            user (discord.Member): The user to warn
+            invoker (discord.Member): The person who warned the user
+            reason (str): The reason for the warning
+
+        Returns:
+            bool: True if warning was successful
+        """
         await self.bot.models.Warning(
             user_id=str(user.id),
             guild_id=str(invoker.guild.id),
@@ -111,6 +136,15 @@ class ModerationFunctions:
         return True
 
     async def unwarn_user(self, user: discord.Member, warning: str) -> bool:
+        """Removes a specific warning from a user by string
+
+        Args:
+            user (discord.Member): The member to remove a warning from
+            warning (str): The warning to remove
+
+        Returns:
+            bool: True if unwarning was successful
+        """
         query = (
             self.bot.models.Warning.query.where(
                 self.bot.models.Warning.guild_id == str(user.guild.id)
