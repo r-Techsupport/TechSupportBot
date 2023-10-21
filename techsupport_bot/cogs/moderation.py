@@ -56,5 +56,15 @@ class ModerationFunctions(cogs.BaseCog):
         ).create()
         return True
 
-    async def unwarn_user(user: discord.Member, warning: str) -> bool:
-        ...
+    async def unwarn_user(self, user: discord.Member, warning: str) -> bool:
+        query = (
+            self.bot.models.Warning.query.where(
+                self.bot.models.Warning.guild_id == str(user.id)
+            )
+            .where(self.bot.models.Warning.reason == warning)
+            .where(self.bot.models.Warning.user_id == str(user.id))
+        )
+        if not query:
+            return False
+        await query.delete()
+        return True

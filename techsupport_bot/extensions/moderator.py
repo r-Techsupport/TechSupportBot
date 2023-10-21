@@ -85,7 +85,10 @@ class ProtectCommands(cogs.BaseCog):
 
         await self.send_command_usage_alert(
             interaction=interaction,
-            command=f"/ban target: {target.display_name}, reason: {reason}, delete_days: {delete_days}",
+            command=(
+                f"/ban target: {target.display_name}, reason: {reason}, delete_days:"
+                f" {delete_days}"
+            ),
             guild=interaction.guild,
             target=target,
         )
@@ -138,6 +141,8 @@ class ProtectCommands(cogs.BaseCog):
         embed = self.generate_response_embed(user=target, action="unban", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
+    @app_commands.checks.has_permissions(kick_members=True)
+    @app_commands.checks.bot_has_permissions(kick_members=True)
     @app_commands.command(name="kick", description="Kicks a user from the guild")
     async def handle_kick_user(
         self, interaction: discord.Interaction, target: discord.Member, reason: str
@@ -171,6 +176,8 @@ class ProtectCommands(cogs.BaseCog):
         embed = self.generate_response_embed(user=target, action="kick", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
+    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.bot_has_permissions(moderate_members=True)
     @app_commands.command(name="mute", description="Times out a user")
     async def handle_mute_user(
         self,
@@ -234,13 +241,18 @@ class ProtectCommands(cogs.BaseCog):
 
         await self.send_command_usage_alert(
             interaction=interaction,
-            command=f"/mute target: {target.display_name}, reason: {reason}, duration: {duration}",
+            command=(
+                f"/mute target: {target.display_name}, reason: {reason}, duration:"
+                f" {duration}"
+            ),
             guild=interaction.guild,
             target=target,
         )
         embed = self.generate_response_embed(user=target, action="mute", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
+    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.bot_has_permissions(moderate_members=True)
     @app_commands.command(name="unmute", description="Removes timeout from a user")
     async def handle_unmute_user(
         self, interaction: discord.Interaction, target: discord.Member, reason: str
@@ -275,6 +287,8 @@ class ProtectCommands(cogs.BaseCog):
         )
         await interaction.response.send_message(content=target.mention, embed=embed)
 
+    @app_commands.checks.has_permissions(kick_members=True)
+    @app_commands.checks.bot_has_permissions(kick_members=True)
     @app_commands.command(name="warn", description="Warns a user")
     async def handle_warn_user(
         self, interaction: discord.Interaction, target: discord.Member, reason: str
@@ -324,7 +338,11 @@ class ProtectCommands(cogs.BaseCog):
                 guild=interaction.guild,
                 user=target,
                 delete_days=config.extensions.protect.ban_delete_duration.value,
-                reason=f"Over max warning count {new_count_of_warnings} out of {config.extensions.protect.max_warnings.value} (final warning: {reason}) - banned by {interaction.user}",
+                reason=(
+                    f"Over max warning count {new_count_of_warnings} out of"
+                    f" {config.extensions.protect.max_warnings.value} (final warning:"
+                    f" {reason}) - banned by {interaction.user}"
+                ),
             )
             if not ban_result:
                 embed = auxiliary.prepare_deny_embed(
@@ -376,6 +394,8 @@ class ProtectCommands(cogs.BaseCog):
                 ),
             )
 
+    @app_commands.checks.has_permissions(kick_members=True)
+    @app_commands.checks.bot_has_permissions(kick_members=True)
     @app_commands.command(name="unwarn", description="Unwarns a user")
     async def handle_unwarn_user(
         self,
@@ -429,7 +449,10 @@ class ProtectCommands(cogs.BaseCog):
         for name in config.extensions.protect.immune_roles.value:
             role_check = discord.utils.get(target.guild.roles, name=name)
             if role_check and role_check in getattr(target, "roles", []):
-                return f"You cannot {action_name} {target} because they have `{role_check}` role"
+                return (
+                    f"You cannot {action_name} {target} because they have"
+                    f" `{role_check}` role"
+                )
 
         # Check to see if the Bot can execute on the target
         if invoker.guild.get_member(int(self.bot.user.id)).top_role <= target.top_role:
@@ -504,6 +527,7 @@ class ProtectCommands(cogs.BaseCog):
         await alert_channel.send(embed=embed)
 
     # Database functions
+
     async def get_all_warnings(
         self, user: discord.User, guild: discord.Guild
     ) -> list[bot.models.Warning]:
