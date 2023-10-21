@@ -5,3 +5,4 @@ from .cogs import *
 from .data import *
 from .databases import *
 from .extension import *
+from .moderation import *

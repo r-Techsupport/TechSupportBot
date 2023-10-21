@@ -25,10 +25,6 @@ class ProtectCommands(cogs.BaseCog):
         + "alert_danger_warning_notification_icon_124692.png"
     )
 
-    async def preconfig(self) -> None:
-        # Get the moderation function cog to allow it to be called
-        self.moderation = self.bot.get_cog("ModerationFunctions")
-
     # Commands
 
     @app_commands.checks.has_permissions(ban_members=True)
@@ -70,7 +66,7 @@ class ProtectCommands(cogs.BaseCog):
             delete_days = config.extensions.protect.ban_delete_duration.value
 
         # Ban the user using the core moderation cog
-        result = await self.moderation.ban_user(
+        result = await self.bot.moderation.ban_user(
             guild=interaction.guild,
             user=target,
             delete_days=delete_days,
@@ -120,7 +116,7 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        result = await self.moderation.unban_user(
+        result = await self.bot.moderation.unban_user(
             guild=interaction.guild,
             user=target,
             reason=f"{reason} - unbanned by {interaction.user}",
@@ -155,7 +151,7 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        result = await self.moderation.kick_user(
+        result = await self.bot.moderation.kick_user(
             guild=interaction.guild,
             user=target,
             reason=f"{reason} - kicked by {interaction.user}",
@@ -196,7 +192,7 @@ class ProtectCommands(cogs.BaseCog):
 
         # The API prevents administrators from being timed out. Check it here
         if target.guild_permissions.administrator:
-            await auxiliary.prepare_confirm_embed(
+            embed = auxiliary.prepare_deny_embed(
                 message=(
                     "Someone with the `administrator` permissions cannot be timed out"
                 )
@@ -227,7 +223,7 @@ class ProtectCommands(cogs.BaseCog):
         if delta_duration < timedelta(seconds=1):
             raise ValueError("Timeout duration cannot be less than 1 second")
 
-        result = await self.moderation.mute_user(
+        result = await self.bot.moderation.mute_user(
             user=target,
             reason=f"{reason} - muted by {interaction.user}",
             duration=delta_duration,
@@ -265,7 +261,14 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        result = await self.moderation.unmute_user(
+        if not target.timed_out_until:
+            embed = auxiliary.prepare_deny_embed(
+                message=(f"{target} is not currently muted")
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+
+        result = await self.bot.moderation.unmute_user(
             user=target,
             reason=f"{reason} - unmuted by {interaction.user}",
         )
@@ -302,9 +305,10 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         if target not in interaction.channel.members:
-            await interaction.response.send_message(
+            embed = auxiliary.prepare_deny_embed(
                 message=f"{target} cannot see this warning. No warning was added."
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         config = await self.bot.get_context_config(guild=interaction.guild)
@@ -329,12 +333,12 @@ class ProtectCommands(cogs.BaseCog):
             if view.value is ui.ConfirmResponse.CONFIRMED:
                 should_ban = True
 
-        warn_result = await self.moderation.warn_user(
+        warn_result = await self.bot.moderation.warn_user(
             user=target, invoker=interaction.user, reason=reason
         )
 
         if should_ban:
-            ban_result = await self.moderation.ban_user(
+            ban_result = await self.bot.moderation.ban_user(
                 guild=interaction.guild,
                 user=target,
                 delete_days=config.extensions.protect.ban_delete_duration.value,
@@ -404,7 +408,41 @@ class ProtectCommands(cogs.BaseCog):
         reason: str,
         warning: str,
     ):
-        await interaction.channel.send("unwarn command")
+        permission_check = await self.permission_check(
+            invoker=interaction.user, target=target, action_name="unwarn"
+        )
+        if permission_check:
+            embed = auxiliary.prepare_deny_embed(message=permission_check)
+            await interaction.response.send_message(embed=embed)
+            return
+
+        database_warning = await self.get_warning(user=target, warning=warning)
+
+        if not database_warning:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"{warning} was not found on {target}"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+
+        result = await self.bot.moderation.unwarn_user(user=target, warning=warning)
+        if not result:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"Something went wrong when unwarning {target}"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+
+        await self.send_command_usage_alert(
+            interaction=interaction,
+            command=f"/unwarn target: {target.display_name}, reason: {reason}, warning: {warning}",
+            guild=interaction.guild,
+            target=target,
+        )
+        embed = self.generate_response_embed(
+            user=target, action="unwarn", reason=reason
+        )
+        await interaction.response.send_message(content=target.mention, embed=embed)
 
     # Helper functions
 
@@ -531,7 +569,6 @@ class ProtectCommands(cogs.BaseCog):
     async def get_all_warnings(
         self, user: discord.User, guild: discord.Guild
     ) -> list[bot.models.Warning]:
-        """Method to get the warnings of a user."""
         warnings = (
             await self.bot.models.Warning.query.where(
                 self.bot.models.Warning.user_id == str(user.id)
@@ -540,3 +577,16 @@ class ProtectCommands(cogs.BaseCog):
             .gino.all()
         )
         return warnings
+
+    async def get_warning(
+        self, user: discord.Member, warning: str
+    ) -> bot.models.Warning:
+        query = (
+            self.bot.models.Warning.query.where(
+                self.bot.models.Warning.guild_id == str(user.guild.id)
+            )
+            .where(self.bot.models.Warning.reason == warning)
+            .where(self.bot.models.Warning.user_id == str(user.id))
+        )
+        entry = await query.gino.first()
+        return entry

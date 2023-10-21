@@ -7,7 +7,7 @@ import botlogging
 import cogs as builtin_cogs
 import ircrelay
 import munch
-from base import advanced, databases
+from base import advanced, databases, moderation
 from botlogging import LogContext, LogLevel
 
 
@@ -98,9 +98,12 @@ class TechSupportBot(advanced.AdvancedBot):
         help_cog = builtin_cogs.Helper(self)
         await self.add_cog(help_cog)
 
+        # Setup moderation functions
+        self.moderation = moderation.ModerationFunctions(self)
+
+        # Manually load built in cogs
         await self.load_builtin_cog(builtin_cogs.AdminControl)
         await self.load_builtin_cog(builtin_cogs.ConfigControl)
-        await self.load_builtin_cog(builtin_cogs.ModerationFunctions)
         await self.load_builtin_cog(builtin_cogs.Listener)
 
         # This is the guild events logging cog
