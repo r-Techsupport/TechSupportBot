@@ -128,9 +128,13 @@ class ConfigControl(cogs.BaseCog):
                 if view.value is not ui.ConfirmResponse.CONFIRMED:
                     return
 
-            await self.bot.guild_config_collection.replace_one(
-                {"guild_id": config.get("guild_id")}, uploaded_data
+            # Modify the database
+            await self.bot.write_new_config(
+                str(ctx.guild.id), json.dumps(uploaded_data)
             )
+
+            # Modify the local cache
+            self.bot.guild_configs[str(ctx.guild.id)] = uploaded_data
 
             # Delete config from cache
             if str(ctx.guild.id) in self.bot.guild_config_cache:
@@ -189,9 +193,11 @@ class ConfigControl(cogs.BaseCog):
         config.enabled_extensions.append(extension_name)
         config.enabled_extensions.sort()
 
-        await self.bot.guild_config_collection.replace_one(
-            {"guild_id": config.get("guild_id")}, config
-        )
+        # Modify the database
+        await self.bot.write_new_config(str(ctx.guild.id), json.dumps(config))
+
+        # Modify the local cache
+        self.bot.guild_configs[str(ctx.guild.id)] = config
 
         await auxiliary.send_confirm_embed(
             message="I've enabled that extension for this guild", channel=ctx.channel
@@ -237,9 +243,11 @@ class ConfigControl(cogs.BaseCog):
             if extension != extension_name
         ]
 
-        await self.bot.guild_config_collection.replace_one(
-            {"guild_id": config.get("guild_id")}, config
-        )
+        # Modify the database
+        await self.bot.write_new_config(str(ctx.guild.id), json.dumps(config))
+
+        # Modify the local cache
+        self.bot.guild_configs[str(ctx.guild.id)] = config
 
         await auxiliary.send_confirm_embed(
             message="I've disabled that extension for this guild", channel=ctx.channel
@@ -273,9 +281,12 @@ class ConfigControl(cogs.BaseCog):
             return
         if view.value == ui.ConfirmResponse.TIMEOUT:
             return
-        await self.bot.guild_config_collection.delete_one(
-            {"guild_id": str(ctx.guild.id)}
-        )
+
+        # Modify the database
+        await self.bot.write_new_config(str(ctx.guild.id), "false")
+
+        # Modify the local cache
+        self.bot.guild_configs[str(ctx.guild.id)] = False
         await self.bot.create_new_context_config(lookup=str(ctx.guild.id))
         await auxiliary.send_confirm_embed(
             message="I've reset the config for this guild", channel=ctx.channel

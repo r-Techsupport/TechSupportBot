@@ -136,6 +136,16 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         reason = bot.db.Column(bot.db.String)
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
 
+    class Config(bot.db.Model):
+        """The postgres table for guild config
+        Currently used nearly everywhere"""
+
+        __tablename__ = "guild_config"
+        pk = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild_id = bot.db.Column(bot.db.String)
+        config = bot.db.Column(bot.db.String)
+        update_time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+
     bot.models.Applications = Applications
     bot.models.AppBans = ApplicationBans
     bot.models.DuckUser = DuckUser
@@ -145,3 +155,4 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.IRCChannelMapping = IRCChannelMapping
     bot.models.UserNote = UserNote
     bot.models.Warning = Warning
+    bot.models.Config = Config

@@ -2,6 +2,7 @@
 
 import asyncio
 import datetime
+import json
 import random
 import re
 import string
@@ -24,15 +25,14 @@ class AdvancedBot(data.DataBot):
     including per-guild config and event logging.
     """
 
-    GUILD_CONFIG_COLLECTION = "guild_config"
     CONFIG_RECEIVE_WARNING_TIME_MS = 1000
     DM_GUILD_ID = "dmcontext"
 
     def __init__(self, *args, **kwargs):
         self.owner = None
         self.__startup_time = None
-        self.guild_config_collection = None
         self.guild_config_lock = None
+        self.guild_configs = {}
         super().__init__(*args, prefix=self.get_prefix, **kwargs)
         self.guild_config_cache = expiringdict.ExpiringDict(
             max_len=self.file_config.cache.guild_config_cache_length,
@@ -63,19 +63,6 @@ class AdvancedBot(data.DataBot):
             guild_config, "command_prefix", self.file_config.bot_config.default_prefix
         )
 
-    async def get_all_context_configs(self, projection, limit=100):
-        """Gets all context configs.
-
-        parameters:
-            projection (dict): the MongoDB projection for returned data
-            limit (int): the max number of config objects to return
-        """
-        configs = []
-        cursor = self.guild_config_collection.find({}, projection)
-        for document in await cursor.to_list(length=limit):
-            configs.append(munch.DefaultMunch.fromDict(document, None))
-        return configs
-
     async def get_context_config(
         self, ctx=None, guild=None, create_if_none=True, get_from_cache=True
     ):
@@ -87,6 +74,7 @@ class AdvancedBot(data.DataBot):
             create_if_none (bool): True if the config should be created if not found
             get_from_cache (bool): True if the config should be fetched from the cache
         """
+        print("GET CONTEXT CONFIG CALLED")
         start = time.time()
 
         if ctx:
@@ -107,9 +95,10 @@ class AdvancedBot(data.DataBot):
         if not config_:
             # locking prevents duplicate configs being made
             async with self.guild_config_lock:
-                config_ = await self.guild_config_collection.find_one(
-                    {"guild_id": {"$eq": lookup}}
-                )
+                try:
+                    config_ = self.guild_configs[lookup]
+                except KeyError:
+                    config_ = None
 
                 if not config_:
                     await self.logger.send_log(
@@ -138,6 +127,17 @@ class AdvancedBot(data.DataBot):
             )
 
         return config_
+
+    async def register_new_guild_config(self, guild: str):
+        async with self.guild_config_lock:
+            try:
+                config = self.guild_configs[guild]
+            except KeyError:
+                config = None
+            if not config:
+                await self.create_new_context_config(guild)
+                return True
+            return False
 
     async def create_new_context_config(self, lookup: str):
         """Creates a new guild config based on a lookup key (usually a guild ID).
@@ -178,7 +178,12 @@ class AdvancedBot(data.DataBot):
                 context=LogContext(guild=self.get_guild(lookup)),
                 console_only=True,
             )
-            await self.guild_config_collection.insert_one(config_)
+            # Modify the database
+            await self.write_new_config(str(lookup), json.dumps(config_))
+
+            # Modify the local cache
+            self.guild_configs[lookup] = config_
+
         except Exception as exception:
             # safely finish because the new config is still useful
             await self.logger.send_log(
@@ -189,6 +194,21 @@ class AdvancedBot(data.DataBot):
             )
 
         return config_
+
+    async def write_new_config(self, guild_id: str, config):
+        print(f"WRTING NEW CONFIG: {guild_id}")
+        database_config = await self.models.Config.query.where(
+            self.models.Config.guild_id == guild_id
+        ).gino.first()
+        if database_config:
+            await database_config.update(config=str(config)).apply()
+        else:
+            new_database_config = self.models.Config(
+                guild_id=str(guild_id),
+                config=str(config),
+            )
+            query = self.models.Factoid.query
+            await new_database_config.create()
 
     async def sync_config(self, config_object):
         """Syncs the given config with the currently loaded extensions.
@@ -229,9 +249,13 @@ class AdvancedBot(data.DataBot):
                 context=LogContext(guild=self.get_guild(config_object.guild_id)),
                 console_only=True,
             )
-            await self.guild_config_collection.replace_one(
-                {"_id": config_object.get("_id")}, config_object
+            # Modify the database
+            await self.write_new_config(
+                str(config_object.guild_id), json.dumps(config_object)
             )
+
+            # Modify the local cache
+            self.guild_configs[config_object.guild_id] = config_object
 
         return config_object
 
@@ -263,8 +287,6 @@ class AdvancedBot(data.DataBot):
 
             if ctx.message.id not in self.command_execute_history[identifier]:
                 self.command_execute_history[identifier][ctx.message.id] = True
-
-            print(self.command_execute_history[identifier])
 
             if (
                 len(self.command_execute_history[identifier])
