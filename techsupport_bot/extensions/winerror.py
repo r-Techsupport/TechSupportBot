@@ -110,7 +110,7 @@ class WindowsError(cogs.BaseCog):
         # hresult error - this might exist
         if hex_code != trunc_hex_code:
             hresult_errors = self.handle_hresult_errors(
-                hex_code, severity, facility_code
+                trunc_hex_code, severity, facility_code
             )
             if hresult_errors:
                 categories.append(hresult_errors)
@@ -169,8 +169,9 @@ class WindowsError(cogs.BaseCog):
             if x["hex"] == hex(trunc_hex_code)
             and (x["header"] == "winerror.h" or x["header"] == "winbio_err.h")
         ]
-        if len(valid_errors_trunc):
+        if len(valid_errors_trunc) == 0:
             return None
+
         category = ErrorCategory(
             f"As an HRESULT: Severity: {severity}, Facility: {hex(facility_code)},"
             f" Code: {hex(trunc_hex_code)}",
