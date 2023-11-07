@@ -1,4 +1,5 @@
 """Module for the dumpdbg command on discord bot."""
+
 import json
 
 import discord

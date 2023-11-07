@@ -1,4 +1,5 @@
 """Module for the wolfram extension for the discord bot."""
+
 import discord
 from base import auxiliary, cogs
 from discord.ext import commands

@@ -1,4 +1,5 @@
 """Module for the urban dictionary extension for the discord bot."""
+
 import discord
 import ui
 from base import auxiliary, cogs

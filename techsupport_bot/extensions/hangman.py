@@ -1,4 +1,5 @@
 """Module for the hangman extension for the bot."""
+
 import datetime
 import uuid
 

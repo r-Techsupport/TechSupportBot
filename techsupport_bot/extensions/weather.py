@@ -1,4 +1,5 @@
 """Module for the weather extension for the discord bot."""
+
 import discord
 import munch
 from base import auxiliary, cogs

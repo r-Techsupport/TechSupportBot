@@ -1,4 +1,5 @@
 """Module for the autoreact extension for the discord bot."""
+
 from base import auxiliary, cogs
 
 

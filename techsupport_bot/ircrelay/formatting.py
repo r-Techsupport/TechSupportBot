@@ -1,4 +1,5 @@
 """A bunch of functions to format messages going to and from IRC"""
+
 from typing import Dict, List
 
 import discord

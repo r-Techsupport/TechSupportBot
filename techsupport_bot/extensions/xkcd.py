@@ -1,4 +1,5 @@
 """Module for the xkcd extension for the discord bot."""
+
 import random
 
 import discord

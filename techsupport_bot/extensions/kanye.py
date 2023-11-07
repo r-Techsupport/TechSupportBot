@@ -1,4 +1,5 @@
 """Module for the kanye extension for the discord bot."""
+
 import asyncio
 import random
 

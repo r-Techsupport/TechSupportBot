@@ -9,6 +9,7 @@ Models: None
 Subcommands: .lint
 Defines: check_syntax
 """
+
 import json
 
 import discord

@@ -1,4 +1,5 @@
 """This is the discord side of the IRC->Discord relay"""
+
 from typing import Dict, List, Union
 
 import discord

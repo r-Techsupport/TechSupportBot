@@ -1,4 +1,5 @@
 """Module for the who extension for the discord bot."""
+
 import datetime
 import io
 

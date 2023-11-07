@@ -1,6 +1,7 @@
 """
 Module for defining the grabs extension
 """
+
 import random
 
 import discord

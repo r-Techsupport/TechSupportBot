@@ -1,4 +1,5 @@
 """Module to add the extension lenny to the discord bot."""
+
 import random
 
 import discord
