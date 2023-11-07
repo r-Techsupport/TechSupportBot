@@ -491,6 +491,9 @@ class AdvancedBot(data.DataBot):
             exception=error, channel=interaction.channel, guild=interaction.guild
         )
 
+        if not error_message:
+            return
+
         embed = auxiliary.prepare_deny_embed(message=error_message)
 
         if interaction.response.is_done():
@@ -578,6 +581,8 @@ class AdvancedBot(data.DataBot):
         error_message = await self.handle_error(
             exception=exception, channel=context.channel, guild=context.guild
         )
+        if not error_message:
+            return
 
         await auxiliary.send_deny_embed(message=error_message, channel=context.channel)
 
