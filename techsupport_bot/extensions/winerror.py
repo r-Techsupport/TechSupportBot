@@ -1,4 +1,4 @@
-"""Module for the urban dictionary extension for the discord bot."""
+"""Module for the win error dictionary extension for the discord bot."""
 
 from __future__ import annotations
 
@@ -27,6 +27,12 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 @dataclass
 class Error:
+    """The data to pull for the error.
+    name - the name of the error
+    source - the header file where the error is from
+    description - (optional) the description of the error
+    """
+
     name: str
     source: str
     description: str
@@ -34,11 +40,16 @@ class Error:
 
 @dataclass
 class ErrorCategory:
+    """A category of errors, based on how the error was found
+    This contains the name of the category and a list of errors"""
+
     name: str
     errors: list[Error]
 
 
 class WindowsError(cogs.BaseCog):
+    """The core of the /winerror extension"""
+
     async def preconfig(self):
         """Loads the winerrors.json file as self.errors"""
         errors_file = open("resources/winerrors.json", "r")
@@ -65,7 +76,9 @@ class WindowsError(cogs.BaseCog):
         decimal_code = self.try_parse_decimal(search_term)
         hex_code = self.try_parse_hex(search_term)
 
-        # winerror searches for the full error code as well as an HRESULT structure. Here we pad out the given argument to ensure the string is 10 digits (0x), then break out the padded code into its HRESULT structure.
+        # winerror searches for the full error code as well as an HRESULT structure. Here we pad
+        # out the given argument to ensure the string is 10 digits (0x), then break out the padded
+        # code into its HRESULT structure.
         padded_hex_code = self.pad_hex(hex(hex_code))
         trunc_hex_code = int(padded_hex_code[6:10], 16)
         severity = "FAILURE (1)"
@@ -78,7 +91,9 @@ class WindowsError(cogs.BaseCog):
                 severity = "SUCCESS (0)"
                 facility_code = upper_sixteen
         except ValueError:
-            # this should never happen. the 32-bit checks in tryParseHex along with the 10 digit check in padhex() should prevent the failure. The catch is here just in case I missed an edge case.
+            # this should never happen. the 32-bit checks in tryParseHex along with the 10 digit
+            # check in padhex() should prevent the failure. The catch is here just in case I
+            # missed an edge case.
             raise ValueError(
                 f"ValueError: {padded_hex_code}, {hex_code}, {upper_sixteen}"
             )
@@ -238,7 +253,8 @@ class WindowsError(cogs.BaseCog):
         # check if the target error code is a base 10 integer
         try:
             return_val = int(val, 10)
-            # Error codes are unsigned. If a negative number is input, the only code we're interested in is the hex equivalent.
+            # Error codes are unsigned. If a negative number is input, the only code we're
+            # interested in is the hex equivalent.
             if return_val <= 0:
                 return 0
             return return_val
@@ -258,14 +274,14 @@ class WindowsError(cogs.BaseCog):
         """
         # check if the target error code is a base 16 integer
         try:
-            # if the number is a negative decimal number, we need its unsigned hexadecimal equivalent.
+            # if the number is a negative decimal number, we need its unsigned hexadecimal
+            # equivalent.
             if int(val, 16) < 0:
                 if abs(int(val)) > 0xFFFFFFFF:
                     return 0xFFFF
-                return self.reverse_twos_comp(
-                    int(val), 32
-                )  # the integer conversion here is deliberately a base 10 conversion. The command should fail if a negative hex number is queried.
-
+                # the integer conversion here is deliberately a base 10 conversion. The command
+                # should fail if a negative hex number is queried.
+                return self.reverse_twos_comp(int(val), 32)
             # check if the number is larger than 32 bits
             if abs(int(val, 16)) > 0xFFFFFFFF:
                 return 0xFFFF
@@ -284,7 +300,8 @@ class WindowsError(cogs.BaseCog):
         Returns:
             str: The padded value
         """
-        # this string should never be over 10 characters, however this check is here just in case there's a bug in the code.
+        # this string should never be over 10 characters, however this check is here
+        # just in case there's a bug in the code.
         if len(input) > 10:
             return "0xFFFF"
 
