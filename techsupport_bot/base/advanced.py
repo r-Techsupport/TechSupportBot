@@ -256,17 +256,15 @@ class AdvancedBot(data.DataBot):
             identifier = f"{ctx.author.id}-{ctx.guild.id}"
 
             if identifier not in self.command_execute_history:
-                self.command_execute_history[identifier] = deque([], maxlen=20)
+                self.command_execute_history[identifier] = expiringdict.ExpiringDict(
+                    max_len=20,
+                    max_age_seconds=config.rate_limit.time,
+                )
 
-            now = time.time()
-            while (
-                self.command_execute_history[identifier]
-                and now - self.command_execute_history[identifier][0]
-                >= config.rate_limit.time
-            ):
-                self.command_execute_history[identifier].popleft()
+            if ctx.message.id not in self.command_execute_history[identifier]:
+                self.command_execute_history[identifier][ctx.message.id] = True
 
-            self.command_execute_history[identifier].append(now)
+            print(self.command_execute_history[identifier])
 
             if (
                 len(self.command_execute_history[identifier])
