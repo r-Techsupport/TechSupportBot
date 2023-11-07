@@ -52,7 +52,7 @@ class WindowsError(cogs.BaseCog):
 
     async def preconfig(self):
         """Loads the winerrors.json file as self.errors"""
-        errors_file = "resources/winerrors.json", "r"
+        errors_file = "resources/winerrors.json"
         with open(errors_file, "r", encoding="utf-8") as file:
             self.errors = json.load(file)
 
