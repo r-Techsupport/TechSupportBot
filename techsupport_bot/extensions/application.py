@@ -621,11 +621,12 @@ class ApplicationManager(cogs.LoopCog):
             value=application.reason,
             inline=False,
         )
-        embed.add_field(
-            name="Status",
-            value=application.application_stauts,
-            inline=False,
-        )
+        if not new:
+            embed.add_field(
+                name="Status",
+                value=application.application_stauts,
+                inline=False,
+            )
 
         return embed
 
@@ -927,7 +928,7 @@ class ApplicationManager(cogs.LoopCog):
         if not apps:
             return
 
-        embed = discord.Embed(title="All pending embeds")
+        embed = discord.Embed(title="All pending applcations")
 
         for app in apps:
             if embed.description:
