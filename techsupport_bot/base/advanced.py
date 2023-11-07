@@ -1,4 +1,5 @@
 """Module for defining the advanced bot methods."""
+
 import asyncio
 import datetime
 import random

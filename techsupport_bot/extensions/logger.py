@@ -1,4 +1,5 @@
 """Module for the logger extension for the discord bot."""
+
 import datetime
 
 import discord

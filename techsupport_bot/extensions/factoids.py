@@ -10,6 +10,7 @@ Subcommands: remember, forget, info, json, all, search, loop, deloop, job, jobs,
              alias, dealias
 Defines: has_manage_factoids_role
 """
+
 import asyncio
 import datetime
 import io

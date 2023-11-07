@@ -1,4 +1,5 @@
 """Module for the Spotify extension of the discord bot."""
+
 import aiohttp
 import ui
 from base import auxiliary, cogs

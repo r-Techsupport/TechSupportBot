@@ -1,4 +1,5 @@
 """Module for the duck extension"""
+
 import asyncio
 import datetime
 import functools

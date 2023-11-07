@@ -1,4 +1,5 @@
 """Module for the hug extention for the bot."""
+
 import random
 
 import discord

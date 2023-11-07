@@ -1,5 +1,6 @@
 """The file to hold the role extension
 This extension is slash commands"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

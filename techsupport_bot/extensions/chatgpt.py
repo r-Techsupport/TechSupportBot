@@ -9,6 +9,7 @@ Models: None
 Subcommands: gpt, gptutil (history, clean)
 Defines: None
 """
+
 import discord
 import expiringdict
 import ui

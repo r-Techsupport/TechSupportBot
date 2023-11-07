@@ -2,6 +2,7 @@
 This is a file to test the extensions/wyr.py file
 This contains 7 tests
 """
+
 import importlib
 import random
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch

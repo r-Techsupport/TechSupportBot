@@ -1,4 +1,5 @@
 """Module for the news extension for the discord bot."""
+
 import enum
 import random
 

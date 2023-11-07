@@ -59,6 +59,7 @@ class SlowmodeManager(cogs.BaseCog):
             channel = interaction.channel
         await channel.edit(slowmode_delay=seconds)
         embed = auxiliary.prepare_confirm_embed(
-            f"Slowmode successfully modified in channel {channel.mention} to {seconds} seconds"
+            f"Slowmode successfully modified in channel {channel.mention} to"
+            f" {seconds} seconds"
         )
         await interaction.response.send_message(embed=embed)

@@ -1,4 +1,5 @@
 """Module for the protect extension of the discord bot."""
+
 import datetime
 import io
 import re

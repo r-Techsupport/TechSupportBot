@@ -1,4 +1,5 @@
 """Module for the wyr extension for the discord bot."""
+
 import random
 
 import discord

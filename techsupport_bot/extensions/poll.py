@@ -1,4 +1,5 @@
 """Module for the poll extension for the discord bot."""
+
 import asyncio
 import io
 import json

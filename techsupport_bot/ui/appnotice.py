@@ -1,4 +1,5 @@
 """This contians the view for the periodic application notice to users"""
+
 import discord
 
 

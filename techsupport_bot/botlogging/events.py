@@ -1,4 +1,5 @@
 """All of the discord event listeners where they used for logging"""
+
 import datetime
 import sys
 from typing import Optional, Sequence, Union

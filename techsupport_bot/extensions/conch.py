@@ -3,6 +3,7 @@ Module for the conch command on the discord bot.
 This module has unit tests
 This modules requires no config, no databases, and no APIs
 """
+
 import random
 
 import discord

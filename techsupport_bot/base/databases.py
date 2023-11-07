@@ -1,6 +1,7 @@
 """This file stores all of the postgres table declarations
 All models can be used by any extension
 """
+
 from __future__ import annotations
 
 import datetime

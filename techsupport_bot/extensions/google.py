@@ -1,4 +1,5 @@
 """Module for the google extension for the discord bot."""
+
 import discord
 import ui
 from base import auxiliary, cogs, extension

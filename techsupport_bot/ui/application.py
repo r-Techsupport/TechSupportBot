@@ -1,4 +1,5 @@
 """This is the ui object for the popup application form"""
+
 import traceback
 
 import discord
