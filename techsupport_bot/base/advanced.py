@@ -5,7 +5,6 @@ import random
 import re
 import string
 import time
-from collections import deque
 
 import discord
 import error as custom_errors
