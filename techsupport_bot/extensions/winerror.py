@@ -145,7 +145,7 @@ class WindowsError(cogs.BaseCog):
                 embed.add_field(
                     name=f"{error.name} - {error.source}",
                     value=error.description,
-                    inline=True,
+                    inline=False,
                 )
 
         await interaction.response.send_message(embed=embed)
