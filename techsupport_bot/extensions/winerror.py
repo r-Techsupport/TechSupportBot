@@ -52,8 +52,9 @@ class WindowsError(cogs.BaseCog):
 
     async def preconfig(self):
         """Loads the winerrors.json file as self.errors"""
-        errors_file = open("resources/winerrors.json", "r")
-        self.errors = json.load(errors_file)
+        errors_file = "resources/winerrors.json", "r"
+        with open(errors_file, "r", encoding="utf-8") as file:
+            self.errors = json.load(file)
 
     @app_commands.command(
         name="winerror",
@@ -90,13 +91,13 @@ class WindowsError(cogs.BaseCog):
             else:
                 severity = "SUCCESS (0)"
                 facility_code = upper_sixteen
-        except ValueError:
+        except ValueError as exc:
             # this should never happen. the 32-bit checks in tryParseHex along with the 10 digit
             # check in padhex() should prevent the failure. The catch is here just in case I
             # missed an edge case.
             raise ValueError(
                 f"ValueError: {padded_hex_code}, {hex_code}, {upper_sixteen}"
-            )
+            ) from exc
 
         # A list of all categories with at least one error
         categories: list[ErrorCategory] = []
