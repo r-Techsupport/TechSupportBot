@@ -890,7 +890,7 @@ class Protector(cogs.MatchCog):
         description="Purges the current channel's messages based on amount",
         usage="[amount]",
     )
-    async def purge_amount(self, ctx, amount: int = 1):
+    async def purge_amount(self, ctx: commands.Context, amount: int = 1):
         """Method to get the amount to purge messages in discord."""
         config = await self.bot.get_context_config(ctx)
 
