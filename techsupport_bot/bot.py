@@ -42,22 +42,9 @@ class TechSupportBot(advanced.AdvancedBot):
 
         # this is required for the bot
         await self.logger.send_log(
-            message="Connecting to MongoDB...", level=LogLevel.DEBUG, console_only=True
-        )
-        self.mongo = self.get_mongo_ref()
-
-        await self.logger.send_log(
             message="Connecting to Postgres...", level=LogLevel.DEBUG, console_only=True
         )
-        try:
-            self.db = await self.get_postgres_ref()
-        except Exception as exception:
-            await self.logger.send_log(
-                message=f"Could not connect to Postgres: {exception}",
-                level=LogLevel.WARNING,
-                exception=exception,
-                console_only=True,
-            )
+        self.db = await self.get_postgres_ref()
 
         await self.logger.send_log(
             message="Logging into Discord...", level=LogLevel.DEBUG, console_only=True

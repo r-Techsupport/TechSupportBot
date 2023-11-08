@@ -13,14 +13,12 @@ import munch
 from base import extension
 from botlogging import LogLevel
 from error import HTTPRateLimit
-from motor import motor_asyncio
 
 
 class DataBot(extension.ExtensionsBot):
-    """Bot that supports Mongo and Postgres."""
+    """Bot that supports Postgres."""
 
     def __init__(self, *args, **kwargs):
-        self.mongo = None
         self.db = None
         super().__init__(*args, **kwargs)
         self.http_cache = expiringdict.ExpiringDict(
@@ -67,13 +65,9 @@ class DataBot(extension.ExtensionsBot):
         except AttributeError:
             print("No linx API URL found. Not rate limiting linx")
 
-    def generate_db_url(self, postgres=True):
-        """Dynamically converts config to a Postgres/MongoDB url.
-
-        parameters:
-            postgres (bool): True if the URL for Postgres should be retrieved
-        """
-        db_type = "postgres" if postgres else "mongodb"
+    def generate_db_url(self):
+        """Dynamically converts config to a Postgres url."""
+        db_type = "postgres"
 
         try:
             config_child = getattr(self.file_config.database, db_type)
@@ -81,7 +75,7 @@ class DataBot(extension.ExtensionsBot):
             user = config_child.user
             password = config_child.password
 
-            name = getattr(config_child, "name") if postgres else None
+            name = getattr(config_child, "name")
 
             host = config_child.host
             port = config_child.port
@@ -121,16 +115,6 @@ class DataBot(extension.ExtensionsBot):
         db_ref.Model.__table_args__ = {"extend_existing": True}
 
         return db_ref
-
-    def get_mongo_ref(self):
-        """Grabs the MongoDB ref to the bot's configured table."""
-        self.logger.console.debug("Obtaining MongoDB client")
-
-        mongo_client = motor_asyncio.AsyncIOMotorClient(
-            self.generate_db_url(postgres=False)
-        )
-
-        return mongo_client[self.file_config.database.mongodb.name]
 
     async def http_call(self, method, url, *args, **kwargs):
         """Makes an HTTP request.

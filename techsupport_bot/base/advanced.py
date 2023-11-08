@@ -129,7 +129,7 @@ class AdvancedBot(data.DataBot):
         except Exception as exception:
             # safely finish because the new config is still useful
             await self.logger.send_log(
-                message="Could not insert guild config into MongoDB",
+                message="Could not insert guild config into Postgres",
                 level=LogLevel.ERROR,
                 context=LogContext(guild=self.get_guild(lookup)),
                 exception=exception,
