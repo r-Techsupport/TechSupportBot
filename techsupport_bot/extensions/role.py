@@ -117,8 +117,6 @@ class RoleGiver(cogs.BaseCog):
 
         # Pull config
         config = self.bot.guild_configs[str(interaction.guild.id)]
-        print(config.extensions)
-        print(type(config.extensions))
 
         # Get needed config items
         roles = config.extensions.role.all_assignable_roles.value

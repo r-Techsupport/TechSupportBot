@@ -6,7 +6,6 @@ import json
 import random
 import re
 import string
-import time
 
 import discord
 import error as custom_errors
@@ -63,7 +62,15 @@ class AdvancedBot(data.DataBot):
             guild_config, "command_prefix", self.file_config.bot_config.default_prefix
         )
 
-    async def register_new_guild_config(self, guild: str):
+    async def register_new_guild_config(self, guild: str) -> bool:
+        """This creates a config for a new guild if needed
+
+        Args:
+            guild (str): The id of the guild to create config for, in string form
+
+        Returns:
+            bool: True if a config was created, False if a config already existed
+        """
         async with self.guild_config_lock:
             try:
                 config = self.guild_configs[guild]
@@ -130,8 +137,14 @@ class AdvancedBot(data.DataBot):
 
         return config_
 
-    async def write_new_config(self, guild_id: str, config):
-        print(f"WRTING NEW CONFIG: {guild_id}")
+    async def write_new_config(self, guild_id: str, config: str) -> None:
+        """Takes a config and guild and updates the config in the database
+        This is rarely needed
+
+        Args:
+            guild_id (str): The str ID of the guild the config belongs to
+            config (str): The str representation of the json config
+        """
         database_config = await self.models.Config.query.where(
             self.models.Config.guild_id == guild_id
         ).gino.first()
@@ -142,7 +155,6 @@ class AdvancedBot(data.DataBot):
                 guild_id=str(guild_id),
                 config=str(config),
             )
-            query = self.models.Factoid.query
             await new_database_config.create()
 
     async def sync_config(self, config_object):
