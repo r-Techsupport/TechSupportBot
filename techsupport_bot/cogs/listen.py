@@ -1,13 +1,18 @@
 """Module for channel listening.
 """
+from __future__ import annotations
 
 import datetime
+from typing import TYPE_CHECKING
 
 import discord
 import expiringdict
 import ui
 from base import auxiliary, cogs
 from discord.ext import commands
+
+if TYPE_CHECKING:
+    import bot
 
 
 class ListenChannel(commands.Converter):
@@ -72,7 +77,6 @@ class Listener(cogs.BaseCog):
     ADMIN_ONLY = True
     MAX_DESTINATIONS = 10
     CACHE_TIME = 60
-    COLLECTION_NAME = "listener"
 
     async def preconfig(self):
         """Preconfigures the listener cog."""
@@ -80,8 +84,6 @@ class Listener(cogs.BaseCog):
             max_len=1000,
             max_age_seconds=1200,
         )
-        if not self.COLLECTION_NAME in await self.bot.mongo.list_collection_names():
-            await self.bot.mongo.create_collection(self.COLLECTION_NAME)
 
     async def get_destinations(self, src):
         """Gets channel object destinations for a given source channel.
@@ -104,17 +106,18 @@ class Listener(cogs.BaseCog):
             src (discord.TextChannel): the source channel to build for
         """
         destination_data = await self.get_destination_data(src)
-        destination_ids = (
-            destination_data.get("destinations", []) if destination_data else []
-        )
-        destinations = await self.build_destinations(destination_ids)
+        if not destination_data:
+            return None
+        destinations = await self.build_destinations(destination_data)
         return destinations
 
-    async def build_destinations(self, destination_ids):
+    async def build_destinations(
+        self, destination_ids: list[int]
+    ) -> list[discord.abc.Messageable]:
         """Converts destination ID's to their actual channels objects.
 
         parameters:
-            destination_ids ([int]): the destination ID's to reference
+            destination_ids (list[int]): the destination ID's to reference
         """
         destinations = set()
         for did in destination_ids:
@@ -132,16 +135,55 @@ class Listener(cogs.BaseCog):
 
         return destinations
 
-    async def get_destination_data(self, src):
+    async def get_destination_data(self, src: discord.TextChannel) -> list[str]:
         """Retrieves raw destination data given a source channel.
 
         parameters:
             src (discord.TextChannel): the source channel to build for
         """
-        destination_data = await self.bot.mongo[self.COLLECTION_NAME].find_one(
-            {"source_id": {"$eq": str(src.id)}}
+        destination_data = await self.bot.models.Listener.query.where(
+            self.bot.models.Listener.src_id == str(src.id)
+        ).gino.all()
+        if not destination_data:
+            return None
+
+        return [listener.dst_id for listener in destination_data]
+
+    def build_list_of_sources(
+        self, listeners: list[bot.db.model.Listener]
+    ) -> list[str]:
+        """Builds a list of unique sources from the raw database output
+
+        Args:
+            listeners (list[bot.db.model.Listener]): The entire database dumped into a list
+
+        Returns:
+            list[str]: The list of unique src channel strings
+        """
+        src_id_list = [listener.src_id for listener in listeners]
+        final_list = list(set(src_id_list))
+        return final_list
+
+    async def get_specific_listener(
+        self, src: discord.TextChannel, dst: discord.TextChannel
+    ) -> bot.db.models.Listener:
+        """Gets a database object of the given listener pair
+
+        Args:
+            src (discord.TextChannel): The source channel
+            dst (discord.TextChannel): The destination channel
+
+        Returns:
+            bot.db.models.Listener: The db object, if the listener exists
+        """
+        listener = (
+            await self.bot.models.Listener.query.where(
+                self.bot.models.Listener.src_id == str(src.id)
+            )
+            .where(self.bot.models.Listener.dst_id == str(dst.id))
+            .gino.first()
         )
-        return destination_data
+        return listener
 
     async def get_all_sources(self):
         """Gets all source data.
@@ -149,17 +191,21 @@ class Listener(cogs.BaseCog):
         This is kind of expensive, so use lightly.
         """
         source_objects = []
-        cursor = self.bot.mongo[self.COLLECTION_NAME].find({})
-        for doc in await cursor.to_list(length=50):
-            src_ch = self.bot.get_channel(int(doc.get("source_id"), 0))
+        all_listens = await self.bot.models.Listener.query.gino.all()
+        source_list = self.build_list_of_sources(all_listens)
+        for src in source_list:
+            src_ch = self.bot.get_channel(int(src))
             if not src_ch:
                 continue
 
-            destination_ids = doc.get("destinations")
-            if not destination_ids:
+            destination_ids = await self.bot.models.Listener.query.where(
+                self.bot.models.Listener.src_id == src
+            ).gino.all()
+            dst_id_list = [listener.dst_id for listener in destination_ids]
+            if not dst_id_list:
                 continue
 
-            destinations = await self.build_destinations(destination_ids)
+            destinations = await self.build_destinations(dst_id_list)
             if not destinations:
                 continue
 
@@ -169,18 +215,20 @@ class Listener(cogs.BaseCog):
 
         return source_objects
 
-    async def update_destinations(self, src, destination_ids):
+    async def update_destinations(
+        self, src: discord.TextChannel, dst: discord.TextChannel
+    ) -> None:
         """Updates destinations in Mongo given a src.
 
         parameters:
             src (discord.TextChannel): the source channel to build for
-            destination_ids ([int]): the destination ID's to reference
+            dst (discord.TextChannel): the destination channel to build for
         """
-        as_str = str(src.id)
-        new_data = {"source_id": as_str, "destinations": list(set(destination_ids))}
-        await self.bot.mongo[self.COLLECTION_NAME].replace_one(
-            {"source_id": as_str}, new_data, upsert=True
+        new_listener = self.bot.models.Listener(
+            src_id=str(src.id),
+            dst_id=str(dst.id),
         )
+        await new_listener.create()
         try:
             del self.destination_cache[src.id]
         except KeyError:
@@ -251,13 +299,15 @@ class Listener(cogs.BaseCog):
     @listen.command(
         description="Starts a listening job", usage="[src-channel] [dst-channel]"
     )
-    async def start(self, ctx, src: ListenChannel, dst: ListenChannel):
+    async def start(
+        self, ctx: commands.Context, src: ListenChannel, dst: ListenChannel
+    ):
         """Executes a start-listening command.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.ext.Context): the context object for the message
+            ctx (commands.Context): the context object for the message
             src (ListenChannel): the source channel ID
             dst (ListenChannel): the destination channel ID
         """
@@ -268,26 +318,14 @@ class Listener(cogs.BaseCog):
             )
             return
 
-        destination_data = await self.get_destination_data(src)
-        destinations = (
-            destination_data.get("destinations", []) if destination_data else []
-        )
-
-        if str(dst.id) in destinations:
+        listener_object = await self.get_specific_listener(src, dst)
+        if listener_object:
             await auxiliary.send_deny_embed(
                 message="That source and destination already exist", channel=ctx.channel
             )
             return
 
-        if len(destinations) > self.MAX_DESTINATIONS:
-            await auxiliary.send_deny_embed(
-                message="There are too many destinations for that source",
-                channel=ctx.channel,
-            )
-            return
-
-        destinations.append(str(dst.id))
-        await self.update_destinations(src, destinations)
+        await self.update_destinations(src, dst)
 
         await auxiliary.send_confirm_embed(
             message="Listening registered!", channel=ctx.channel
@@ -313,19 +351,14 @@ class Listener(cogs.BaseCog):
             )
             return
 
-        destination_data = await self.get_destination_data(src)
-        destinations = (
-            destination_data.get("destinations", []) if destination_data else []
-        )
-        if str(dst.id) not in destinations:
+        listener_object = await self.get_specific_listener(src, dst)
+        if not listener_object:
             await auxiliary.send_deny_embed(
                 message="That destination is not registered with that source",
                 channel=ctx.channel,
             )
             return
-
-        destinations.remove(str(dst.id))
-        await self.update_destinations(src, destinations)
+        await listener_object.delete()
 
         await auxiliary.send_confirm_embed(
             message="Listening deregistered!", channel=ctx.channel
@@ -342,7 +375,9 @@ class Listener(cogs.BaseCog):
         parameters:
             ctx (discord.ext.Context): the context object for the message
         """
-        await self.bot.mongo[self.COLLECTION_NAME].delete_many({})
+        all_listens = await self.bot.models.Listener.query.gino.all()
+        for listener in all_listens:
+            await listener.delete()
         self.destination_cache.clear()
 
         await auxiliary.send_confirm_embed(
@@ -389,7 +424,7 @@ class Listener(cogs.BaseCog):
         await ctx.send(embed=embed)
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         """Listens to message events.
 
         parameters:
@@ -400,6 +435,8 @@ class Listener(cogs.BaseCog):
         if isinstance(message.channel, discord.DMChannel):
             return
         destinations = await self.get_destinations(message.channel)
+        if not destinations:
+            return
         for dst in destinations:
             embed = MessageEmbed(message=message)
             await dst.send(embed=embed)
