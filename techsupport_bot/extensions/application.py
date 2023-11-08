@@ -133,7 +133,7 @@ async def command_permission_check(interaction: discord.Interaction) -> bool:
     await bot.slash_command_log(interaction)
 
     # Get the config
-    config = await bot.get_context_config(guild=interaction.guild)
+    config = bot.guild_configs[str(interaction.guild.id)]
 
     # Gets permitted roles
     allowed_roles = []
@@ -652,7 +652,7 @@ class ApplicationManager(cogs.LoopCog):
         await application.create()
 
         # Find the channel to send to
-        config = await self.bot.get_context_config(guild=applicant.guild)
+        config = self.bot.guild_configs[str(applicant.guild.id)]
         channel = applicant.guild.get_channel(
             int(config.extensions.application.management_channel.value)
         )
@@ -685,7 +685,7 @@ class ApplicationManager(cogs.LoopCog):
         Returns:
             bool: True if they can apply, False if they cannot apply
         """
-        config = await self.bot.get_context_config(guild=applicant.guild)
+        config = self.bot.guild_configs[str(applicant.guild.id)]
         role = applicant.guild.get_role(
             int(config.extensions.application.application_role.value)
         )
@@ -729,7 +729,7 @@ class ApplicationManager(cogs.LoopCog):
             Union[discord.Role, None]: Will return the role object from the guild,
                 or none if the role could not be found
         """
-        config = await self.bot.get_context_config(guild=guild)
+        config = self.bot.guild_configs[str(guild.id)]
         role = guild.get_role(int(config.extensions.application.application_role.value))
         return role
 

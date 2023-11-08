@@ -87,7 +87,9 @@ class TechSupportBot(advanced.AdvancedBot):
         # Load all guild config objects into self.guild_configs object
         all_config = await self.models.Config.query.gino.all()
         for config in all_config:
-            self.guild_configs[config.guild_id] = munch.Munch(json.loads(config.config))
+            self.guild_configs[config.guild_id] = munch.munchify(
+                json.loads(config.config)
+            )
 
         # Ensure all guilds have a config
         for guild in self.guilds:

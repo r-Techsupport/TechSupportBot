@@ -55,7 +55,7 @@ class Who(cogs.BaseCog):
     async def is_reader(interaction: discord.Interaction) -> bool:
         """Checks whether invoker can read notes. If at least one reader
         role is not set, all members can read notes."""
-        config = await interaction.client.get_context_config(interaction)
+        config = interaction.client.guild_configs[str(interaction.guild.id)]
         if reader_roles := config.extensions.who.note_readers.value:
             roles = (
                 discord.utils.get(interaction.guild.roles, name=role)
@@ -158,7 +158,7 @@ class Who(cogs.BaseCog):
             body=body,
         )
 
-        config = await self.bot.get_context_config(interaction)
+        config = self.bot.guild_configs[str(interaction.guild.id)]
 
         # Check to make sure notes are allowed to be assigned
         for name in config.extensions.who.note_bypass.value:
@@ -236,7 +236,7 @@ class Who(cogs.BaseCog):
         for note in notes:
             await note.delete()
 
-        config = await self.bot.get_context_config(interaction)
+        config = self.bot.guild_configs[str(interaction.guild.id)]
         role = discord.utils.get(
             interaction.guild.roles, name=config.extensions.who.note_role.value
         )
@@ -302,7 +302,7 @@ class Who(cogs.BaseCog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
         """Method to get the member on joining the guild."""
-        config = await self.bot.get_context_config(guild=member.guild)
+        config = self.bot.guild_configs[str(member.guild.id)]
         if not self.extension_enabled(config):
             return
 

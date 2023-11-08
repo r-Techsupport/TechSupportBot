@@ -99,7 +99,7 @@ class ServerGate(cogs.MatchCog):
         if content.lower() == config.extensions.gate.verify_text.value:
             roles = await self.get_roles(config, ctx)
             if not roles:
-                config = await self.bot.get_context_config(ctx)
+                config = self.bot.guild_configs[str(ctx.guild.id)]
                 log_channel = config.get("logging_channel")
                 await self.bot.logger.send_log(
                     message=(
@@ -159,7 +159,7 @@ class ServerGate(cogs.MatchCog):
     )
     async def intro_message(self, ctx):
         """Method to add a message to the gate channel."""
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
 
         if ctx.channel.id != int(config.extensions.gate.channel.value):
             await auxiliary.send_deny_embed(

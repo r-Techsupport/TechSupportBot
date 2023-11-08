@@ -192,7 +192,7 @@ class Protector(cogs.MatchCog):
         if not guild:
             return
 
-        config = await self.bot.get_context_config(guild=guild)
+        config = self.bot.guild_configs[str(guild.id)]
         if not self.extension_enabled(config):
             return
 
@@ -377,7 +377,7 @@ class Protector(cogs.MatchCog):
 
         new_count = len(warnings) + 1
 
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
 
         if new_count >= config.extensions.protect.max_warnings.value:
             # Start by assuming we don't want to ban someone
@@ -481,7 +481,7 @@ class Protector(cogs.MatchCog):
                 )
                 return
 
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         await ctx.guild.ban(
             user,
             reason=reason,
@@ -546,10 +546,10 @@ class Protector(cogs.MatchCog):
         """Method to get the cache key of the user."""
         return f"{guild.id}_{user.id}_{trigger}"
 
-    async def can_execute(self, ctx, target: discord.User):
+    async def can_execute(self, ctx: commands.Context, target: discord.User):
         """Method to not execute on admin users."""
         action = ctx.command.name or "do that to"
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
 
         # Check to see if executed on author
         if target == ctx.author:
@@ -689,7 +689,7 @@ class Protector(cogs.MatchCog):
         else:
             await self.handle_ban(ctx, user, reason)
 
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         await self.send_alert(config, ctx, "Ban command")
 
     @commands.has_permissions(ban_members=True)
@@ -722,7 +722,7 @@ class Protector(cogs.MatchCog):
         """Method to kick a user from discord."""
         await self.handle_kick(ctx, user, reason)
 
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         await self.send_alert(config, ctx, "Kick command")
 
     @commands.has_permissions(kick_members=True)
@@ -737,7 +737,7 @@ class Protector(cogs.MatchCog):
         """Method to warn a user of wrongdoing in discord."""
         await self.handle_warn(ctx, user, reason)
 
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         await self.send_alert(config, ctx, "Warn command")
 
     @commands.has_permissions(kick_members=True)
@@ -844,7 +844,7 @@ class Protector(cogs.MatchCog):
 
         await ctx.send(embed=embed)
 
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         await self.send_alert(config, ctx, "Mute command")
 
     @commands.has_permissions(moderate_members=True)
@@ -892,7 +892,7 @@ class Protector(cogs.MatchCog):
     )
     async def purge_amount(self, ctx, amount: int = 1):
         """Method to get the amount to purge messages in discord."""
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
 
         if amount <= 0 or amount > config.extensions.protect.max_purge_amount.value:
             amount = config.extensions.protect.max_purge_amount.value
@@ -920,7 +920,7 @@ class Protector(cogs.MatchCog):
             minutes=duration_minutes
         )
 
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
 
         await ctx.channel.purge(
             after=timestamp, limit=config.extensions.protect.max_purge_amount.value

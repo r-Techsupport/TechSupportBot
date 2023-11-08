@@ -90,7 +90,7 @@ class Googler(cogs.BaseCog):
             )
             return
 
-        config = await self.bot.get_context_config(guild=ctx.guild)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
 
         embed = None
         embeds = []

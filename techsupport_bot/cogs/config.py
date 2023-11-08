@@ -99,7 +99,7 @@ class ConfigControl(cogs.BaseCog):
         parameters:
             ctx (discord.ext.Context): the context object for the message
         """
-        config = await self.bot.get_context_config(ctx, get_from_cache=False)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
 
         uploaded_data = await auxiliary.get_json_from_attachments(ctx.message)
         if uploaded_data:
@@ -182,7 +182,7 @@ class ConfigControl(cogs.BaseCog):
             )
             return
 
-        config = await self.bot.get_context_config(ctx, get_from_cache=False)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         if extension_name in config.enabled_extensions:
             await auxiliary.send_deny_embed(
                 message="That extension is already enabled for this guild",
@@ -229,7 +229,7 @@ class ConfigControl(cogs.BaseCog):
             )
             return
 
-        config = await self.bot.get_context_config(ctx, get_from_cache=False)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         if not extension_name in config.enabled_extensions:
             await auxiliary.send_deny_embed(
                 message="That extension is already disabled for this guild",

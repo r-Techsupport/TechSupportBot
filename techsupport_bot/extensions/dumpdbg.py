@@ -93,7 +93,7 @@ class Dumpdbg(cogs.BaseCog):
                     valid_URLs.append(attachment.url)
             return valid_URLs
 
-        config = await self.bot.get_context_config(guild=ctx.guild)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         api_endpoint = self.bot.file_config.api.api_url.dumpdbg
         permitted_roles = config.extensions.dumpdbg.roles.value
 

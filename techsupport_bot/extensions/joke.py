@@ -62,7 +62,7 @@ class Joker(cogs.BaseCog):
     )
     async def joke(self, ctx):
         """Method to call to get all the joke together."""
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         response = await self.call_api(ctx, config)
         text = response["text"]
         embed = self.generate_embed(text)

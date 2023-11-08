@@ -52,81 +52,16 @@ class AdvancedBot(data.DataBot):
         self.guild_config_lock = asyncio.Lock()
         await super().start(*args, **kwargs)
 
-    async def get_prefix(self, message):
+    async def get_prefix(self, message: discord.Message) -> str:
         """Gets the appropriate prefix for a command.
 
         parameters:
             message (discord.Message): the message to check against
         """
-        guild_config = await self.get_context_config(guild=message.guild)
+        guild_config = self.guild_configs[str(message.guild.id)]
         return getattr(
             guild_config, "command_prefix", self.file_config.bot_config.default_prefix
         )
-
-    async def get_context_config(
-        self, ctx=None, guild=None, create_if_none=True, get_from_cache=True
-    ):
-        """Gets the appropriate config for the context.
-
-        parameters:
-            ctx (discord.ext.Context): the context of the config
-            guild (discord.Guild): the guild associated with the config (provided instead of ctx)
-            create_if_none (bool): True if the config should be created if not found
-            get_from_cache (bool): True if the config should be fetched from the cache
-        """
-        print("GET CONTEXT CONFIG CALLED")
-        start = time.time()
-
-        if ctx:
-            guild_from_ctx = getattr(ctx, "guild", None)
-            lookup = guild_from_ctx.id if guild_from_ctx else self.DM_GUILD_ID
-        elif guild:
-            lookup = guild.id
-        else:
-            return None
-
-        lookup = str(lookup)
-
-        config_ = None
-
-        if get_from_cache:
-            config_ = self.guild_config_cache.get(lookup)
-
-        if not config_:
-            # locking prevents duplicate configs being made
-            async with self.guild_config_lock:
-                try:
-                    config_ = self.guild_configs[lookup]
-                except KeyError:
-                    config_ = None
-
-                if not config_:
-                    await self.logger.send_log(
-                        message="No config found in MongoDB",
-                        level=LogLevel.DEBUG,
-                        console_only=True,
-                    )
-                    if create_if_none:
-                        config_ = await self.create_new_context_config(lookup)
-                else:
-                    config_ = await self.sync_config(config_)
-
-                if config_:
-                    self.guild_config_cache[lookup] = config_
-
-        time_taken = (time.time() - start) * 1000.0
-
-        if time_taken > self.CONFIG_RECEIVE_WARNING_TIME_MS:
-            await self.logger.send_log(
-                message=(
-                    f"Context config receive time = {time_taken} ms (over"
-                    f" {self.CONFIG_RECEIVE_WARNING_TIME_MS} threshold)"
-                ),
-                level=LogLevel.WARNING,
-                context=LogContext(guild=self.get_guild(lookup)),
-            )
-
-        return config_
 
     async def register_new_guild_config(self, guild: str):
         async with self.guild_config_lock:
@@ -273,7 +208,7 @@ class AdvancedBot(data.DataBot):
             console_only=True,
         )
         is_bot_admin = await self.is_bot_admin(ctx)
-        config = await self.get_context_config(ctx)
+        config = self.guild_configs[str(ctx.guild.id)]
 
         # Rate limiter
         if config.rate_limit.get("enabled", False):
@@ -302,7 +237,7 @@ class AdvancedBot(data.DataBot):
 
         extension_name = self.get_command_extension_name(ctx.command)
         if extension_name:
-            config = await self.get_context_config(ctx)
+            config = self.guild_configs[str(ctx.guild.id)]
             if not extension_name in config.enabled_extensions:
                 raise custom_errors.ExtensionDisabled
 
@@ -376,7 +311,7 @@ class AdvancedBot(data.DataBot):
         """Gets the startup timestamp of the bot."""
         return self.__startup_time
 
-    async def get_log_channel_from_guild(self, guild, key):
+    async def get_log_channel_from_guild(self, guild: discord.Guild, key: str):
         """Gets the log channel ID associated with the given guild.
 
         This also checks if the channel exists in the correct guild.
@@ -388,8 +323,8 @@ class AdvancedBot(data.DataBot):
         if not guild:
             return None
 
-        config_ = await self.get_context_config(guild=guild)
-        channel_id = config_.get(key)
+        config = self.guild_configs[str(guild.id)]
+        channel_id = config.get(key)
 
         if not channel_id:
             return None
@@ -481,7 +416,7 @@ class AdvancedBot(data.DataBot):
 
     async def on_member_join(self, member: discord.Member):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
-        config = await self.get_context_config(guild=member.guild)
+        config = self.guild_configs[str(member.guild.id)]
 
         if config.get("nickname_filter", False):
             temp_name = self.format_username(member.display_name)

@@ -128,7 +128,7 @@ class BotLogger:
             return True
 
         # Get the guilds config
-        config = await self.bot.get_context_config(guild=context.guild)
+        config = self.bot.guild_configs[str(context.guild.id)]
 
         # Checking to see if guild logging is enabled
         if not config.enable_logging:

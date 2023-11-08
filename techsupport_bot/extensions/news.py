@@ -150,7 +150,7 @@ class News(cogs.LoopCog):
         else:
             category.lower()
 
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
 
         url = None
         while not url:
