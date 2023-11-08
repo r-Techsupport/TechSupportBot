@@ -136,6 +136,15 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         reason = bot.db.Column(bot.db.String)
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
 
+    class Listener(bot.db.Model):
+        """The postgres table for listeners
+        Currently used in listen.py"""
+
+        __tablename__ = "listeners"
+        pk = bot.db.Column(bot.db.Integer, primary_key=True)
+        src_id = bot.db.Column(bot.db.String)
+        dst_id = bot.db.Column(bot.db.String)
+
     bot.models.Applications = Applications
     bot.models.AppBans = ApplicationBans
     bot.models.DuckUser = DuckUser
@@ -145,3 +154,4 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.IRCChannelMapping = IRCChannelMapping
     bot.models.UserNote = UserNote
     bot.models.Warning = Warning
+    bot.models.Listener = Listener
