@@ -137,6 +137,9 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
 
     class Rule(bot.db.Model):
+        """The postgres table for rules
+        Currently used in rules.py"""
+
         __tablename__ = "guild_rules"
         pk = bot.db.Column(bot.db.Integer, primary_key=True)
         guild_id = bot.db.Column(bot.db.String)

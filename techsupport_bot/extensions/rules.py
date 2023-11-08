@@ -69,8 +69,7 @@ class Rules(cogs.BaseCog):
             new_rules = munch.munchify(json.loads(rules_data))
             await self.write_new_rules(guild=guild, rules=new_rules)
             return munch.munchify(json.loads(rules_data))
-        else:
-            return munch.munchify(json.loads(query.rules))
+        return munch.munchify(json.loads(query.rules))
 
     async def write_new_rules(self, guild: discord.Guild, rules: munch.Munch) -> None:
         """This converts the munchified rules into a string and writes it to the database
