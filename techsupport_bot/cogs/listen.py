@@ -167,6 +167,15 @@ class Listener(cogs.BaseCog):
     async def get_specific_listener(
         self, src: discord.TextChannel, dst: discord.TextChannel
     ) -> bot.db.models.Listener:
+        """Gets a database object of the given listener pair
+
+        Args:
+            src (discord.TextChannel): The source channel
+            dst (discord.TextChannel): The destination channel
+
+        Returns:
+            bot.db.models.Listener: The db object, if the listener exists
+        """
         listener = (
             await self.bot.models.Listener.query.where(
                 self.bot.models.Listener.src_id == str(src.id)
