@@ -145,6 +145,15 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         src_id = bot.db.Column(bot.db.String)
         dst_id = bot.db.Column(bot.db.String)
 
+    class Rule(bot.db.Model):
+        """The postgres table for rules
+        Currently used in rules.py"""
+
+        __tablename__ = "guild_rules"
+        pk = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild_id = bot.db.Column(bot.db.String)
+        rules = bot.db.Column(bot.db.String)
+
     bot.models.Applications = Applications
     bot.models.AppBans = ApplicationBans
     bot.models.DuckUser = DuckUser
@@ -155,3 +164,4 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.UserNote = UserNote
     bot.models.Warning = Warning
     bot.models.Listener = Listener
+    bot.models.Rule = Rule
