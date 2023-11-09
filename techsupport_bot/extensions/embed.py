@@ -43,7 +43,7 @@ async def has_embed_role(ctx: commands.Context) -> bool:
     Returns:
         bool: Whether the invoker has the role
     """
-    config = await ctx.bot.get_context_config(ctx)
+    config = ctx.bot.guild_configs[str(ctx.guild.id)]
     embed_roles = []
     # Gets the embed roles from the config if they exist
     for name in config.extensions.embed.embed_roles.value:

@@ -76,7 +76,7 @@ async def has_manage_factoids_role(ctx: commands.Context):
     Returns:
         bool: Whether the invoker has a factoid management role
     """
-    config = await ctx.bot.get_context_config(ctx)
+    config = ctx.bot.guild_configs[str(ctx.guild.id)]
     factoid_roles = []
     # Gets permitted roles
     for name in config.extensions.factoids.manage_roles.value:
@@ -686,7 +686,7 @@ class FactoidManager(cogs.MatchCog):
             # define the message and send it
             await ctx.reply(content=content, embed=embed, mention_author=not mentions)
             # log it in the logging channel with type info and generic content
-            config = await self.bot.get_context_config(ctx)
+            config = self.bot.guild_configs[str(ctx.guild.id)]
             log_channel = config.get("logging_channel")
             await self.bot.logger.send_log(
                 message=(
@@ -699,7 +699,7 @@ class FactoidManager(cogs.MatchCog):
             )
         # If something breaks, also log it
         except discord.errors.HTTPException as exception:
-            config = await self.bot.get_context_config(ctx)
+            config = self.bot.guild_configs[str(ctx.guild.id)]
             log_channel = config.get("logging_channel")
             await self.bot.logger.send_log(
                 message="Could not send factoid",
@@ -774,7 +774,7 @@ class FactoidManager(cogs.MatchCog):
                     log_context = None
 
                     if ctx:
-                        config = await self.bot.get_context_config(ctx)
+                        config = self.bot.guild_configs[str(ctx.guild.id)]
                         channel = config.get("logging_channel")
                         log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
 
@@ -800,7 +800,7 @@ class FactoidManager(cogs.MatchCog):
                 log_context = None
 
                 if ctx:
-                    config = await self.bot.get_context_config(ctx)
+                    config = self.bot.guild_configs[str(ctx.guild.id)]
                     channel = config.get("logging_channel")
                     log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
 
@@ -822,7 +822,7 @@ class FactoidManager(cogs.MatchCog):
                 log_context = None
 
                 if ctx:
-                    config = await self.bot.get_context_config(ctx)
+                    config = self.bot.guild_configs[str(ctx.guild.id)]
                     channel = config.get("logging_channel")
                     log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
 
@@ -847,7 +847,7 @@ class FactoidManager(cogs.MatchCog):
                 log_context = None
 
                 if ctx:
-                    config = await self.bot.get_context_config(ctx)
+                    config = self.bot.guild_configs[str(ctx.guild.id)]
                     channel = config.get("logging_channel")
                     log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
 
@@ -866,7 +866,7 @@ class FactoidManager(cogs.MatchCog):
                 message = await channel.send(content=content, embed=embed)
 
             except discord.errors.HTTPException as exception:
-                config = await self.bot.get_context_config(ctx)
+                config = self.bot.guild_configs[str(ctx.guild.id)]
                 log_channel = config.get("logging_channel")
                 await self.bot.logger.send_log(
                     message="Could not send looped factoid",
@@ -1381,7 +1381,7 @@ class FactoidManager(cogs.MatchCog):
 
         # If an error happened while calling the api
         except (gaierror, InvalidURL) as exception:
-            config = await self.bot.get_context_config(ctx)
+            config = self.bot.guild_configs[str(ctx.guild.id)]
             log_channel = config.get("logging_channel")
             await self.bot.logger.send_log(
                 message="Could not render/send all-factoid HTML",
@@ -1884,7 +1884,7 @@ class FactoidManager(cogs.MatchCog):
         )
 
         # Logs the new parent change
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         log_channel = config.get("logging_channel")
         await self.bot.logger.send_log(
             message=(

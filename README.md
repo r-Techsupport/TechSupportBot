@@ -25,7 +25,7 @@ cp config.default.yml config.yml
 ```
 ### .env file
 The first file we will edit is the .env file. This is where you will store database information.  
-You will need to create a username and password for mongodb and postgres. These credentials do not have to be different.  
+You will need to create a username and password postgres.
 You will also need to create a db name for postgres. This works best when it is all lowercase, but it is not strictly required.  
 When filling in the information, do not include spaces or quotes. Just put the content directly after the equals sign.  
 You will need all of this information again, so make sure to keep note of it.  
@@ -35,9 +35,6 @@ First, configure the token and admin ID. The token is the discord token you got 
 For the admin ID, get your user ID by right clicking on your name, either on the side bar or after you sent a message, and clicking "Copy ID". Put your ID in single quotes in the array.  
 #### postgres
 For postgres, you will need the username, password, and DB name you created previously. Enter it exactly as found in your .env file.  
-Do not change the port or host.  
-#### mongodb
-For mongodb, you will need the username and password you created previously. You will also need to create a DB name here. Enter the username and password exactly as found in your .env file. Just like postgres, the DB name works best with all lowercase, but it is not a requirement.  
 Do not change the port or host.  
 #### Additional configuration
 All the additional configuration is optional, and is not required to start the bot. This includes all API keys. The default settings everywhere else work, but can be changed later if desired.
@@ -89,4 +86,4 @@ class Greeter(cogs.BaseCog):
     async def hello(self, ctx):
         await self.hello_command(ctx)
 ```
-Extensions can be configured per-guild with settings saved on MongoDB. There are several extensions included in the main repo, so please reference them for more advanced examples.
+Extensions can be configured per-guild with settings saved on Postgres. There are several extensions included in the main repo, so please reference them for more advanced examples.

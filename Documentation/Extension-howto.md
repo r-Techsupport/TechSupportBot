@@ -267,7 +267,7 @@ self.bot.file_config.group.subgroup.key
 ---
 To access the json config, you can add the following line of code, which loads the guild config file:
 ```py
-config = await self.bot.get_context_config(guild=ctx.guild)
+config = self.bot.guild_configs[guild_id]
 ```
 
 Afterwards you can access the values with 

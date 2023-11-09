@@ -13,12 +13,6 @@ database:
         name:
         host: postgres
         port: 5432
-    mongodb:
-        user:
-        password:
-        name:
-        host: mongodb
-        port: 27017
 api:
     github:
         api_key:

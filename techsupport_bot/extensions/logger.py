@@ -56,7 +56,7 @@ class Logger(cogs.MatchCog):
 
         # Don't log stuff cross-guild
         if channel.guild.id != ctx.guild.id:
-            config = await self.bot.get_context_config(ctx)
+            config = self.bot.guild_configs[str(ctx.guild.id)]
             log_channel = config.get("logging_channel")
             await self.bot.logger.send_log(
                 message="Configured channel not in associated guild - aborting log",

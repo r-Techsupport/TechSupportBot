@@ -109,7 +109,7 @@ class MatchCog(BaseCog):
 
         ctx = await self.bot.get_context(message)
 
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         if not config:
             return
 
@@ -128,7 +128,7 @@ class MatchCog(BaseCog):
                 level=LogLevel.DEBUG,
                 context=LogContext(guild=ctx.guild, channel=ctx.channel),
             )
-            config = await self.bot.get_context_config(ctx)
+            config = self.bot.guild_configs[str(ctx.guild.id)]
             channel = config.get("logging_channel")
             await self.bot.logger.send_log(
                 message=f"Match cog error: {self.__class__.__name__} {exception}!",
@@ -184,7 +184,7 @@ class LoopCog(BaseCog):
         parameters:
             guild (discord.Guild): the guild to add the tasks for
         """
-        config = await self.bot.get_context_config(guild=guild)
+        config = self.bot.guild_configs[str(guild.id)]
         channels = (
             config.extensions.get(self.extension_name, {})
             .get(self.CHANNELS_KEY, {})
@@ -249,7 +249,7 @@ class LoopCog(BaseCog):
             )
             for guild_id, registered_channels in self.channels.items():
                 guild = self.bot.get_guild(guild_id)
-                config = await self.bot.get_context_config(guild=guild)
+                config = self.bot.guild_configs[str(guild.id)]
                 configured_channels = (
                     config.extensions.get(self.extension_name, {})
                     .get(self.CHANNELS_KEY, {})
@@ -309,7 +309,7 @@ class LoopCog(BaseCog):
         parameters:
             guild (discord.Guild): the guild associated with the execution
         """
-        config = await self.bot.get_context_config(guild=guild)
+        config = self.bot.guild_configs[str(guild.id)]
 
         if not self.ON_START:
             await self.wait(config, guild)
@@ -321,7 +321,7 @@ class LoopCog(BaseCog):
                 break
 
             # refresh the config on every loop step
-            config = await self.bot.get_context_config(guild=guild)
+            config = self.bot.guild_configs[str(guild.id)]
 
             if target_channel and not str(target_channel.id) in config.extensions.get(
                 self.extension_name, {}

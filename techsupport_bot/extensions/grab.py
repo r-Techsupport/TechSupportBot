@@ -40,7 +40,7 @@ async def invalid_channel(ctx):
 
     This is expected to be used in a @commands.check call
     """
-    config = await ctx.bot.get_context_config(ctx)
+    config = ctx.bot.guild_configs[str(ctx.guild.id)]
     # Check if list is empty. If it is, allow all channels
     if not config.extensions.grab.allowed_channels.value:
         return True
@@ -148,7 +148,7 @@ class Grabber(cogs.BaseCog):
         """Lists all grabs for an user"""
         is_nsfw = ctx.channel.is_nsfw()
 
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
 
         if user_to_grab.bot:
             await auxiliary.send_deny_embed(

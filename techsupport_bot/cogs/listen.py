@@ -218,7 +218,7 @@ class Listener(cogs.BaseCog):
     async def update_destinations(
         self, src: discord.TextChannel, dst: discord.TextChannel
     ) -> None:
-        """Updates destinations in Mongo given a src.
+        """Updates destinations in Postgres given a src.
 
         parameters:
             src (discord.TextChannel): the source channel to build for

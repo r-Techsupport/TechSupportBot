@@ -80,7 +80,7 @@ class RoleGiver(cogs.BaseCog):
         await self.bot.slash_command_log(interaction)
 
         # Pull config
-        config = await self.bot.get_context_config(guild=interaction.guild)
+        config = self.bot.guild_configs[str(interaction.guild.id)]
 
         # Get needed config items
         roles = config.extensions.role.self_assignable_roles.value
@@ -116,7 +116,7 @@ class RoleGiver(cogs.BaseCog):
         await self.bot.slash_command_log(interaction)
 
         # Pull config
-        config = await self.bot.get_context_config(guild=interaction.guild)
+        config = self.bot.guild_configs[str(interaction.guild.id)]
 
         # Get needed config items
         roles = config.extensions.role.all_assignable_roles.value

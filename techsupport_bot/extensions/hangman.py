@@ -160,7 +160,7 @@ async def can_stop_game(ctx):
     if getattr(user, "id", 0) == ctx.author.id:
         return True
 
-    config = await ctx.bot.get_context_config(ctx)
+    config = ctx.bot.guild_configs[str(ctx.guild.id)]
     roles = []
     for role_name in config.extensions.hangman.hangman_roles.value:
         role = discord.utils.get(ctx.guild.roles, name=role_name)

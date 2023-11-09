@@ -16,7 +16,6 @@ services:
             - all
         depends_on:
             - postgres
-            - mongodb
 
     postgres:
         image: postgres:15.3-alpine
@@ -30,20 +29,6 @@ services:
             - POSTGRES_USER=${POSTGRES_DB_USER}
             - POSTGRES_PASSWORD=${POSTGRES_DB_PASSWORD}
             - POSTGRES_DB=${POSTGRES_DB_NAME}
-        networks:
-            - all
-
-    mongodb:
-        image: mongo:6.0.7
-        container_name: mongodb
-        volumes:
-            - ../DBs/mongo:/data/db
-        ports:
-            - "127.0.0.1:27017:27017"
-        environment:
-            - MONGO_INITDB_ROOT_PASSWORD=${MONGO_DB_PASSWORD}
-            - MONGO_INITDB_ROOT_USERNAME=${MONGO_DB_USER}
-        restart: unless-stopped
         networks:
             - all
 

@@ -174,7 +174,7 @@ class Helper(cogs.BaseCog):
                 embed.description = "That extension is not currently loaded"
             return embed
 
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         if not extension_name in config.enabled_extensions:
             embed.description = (
                 "That extension has been disabled by the guild administrators"

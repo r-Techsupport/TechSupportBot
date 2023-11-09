@@ -100,7 +100,7 @@ class DuckHunt(cogs.LoopCog):
     async def execute(self, config, guild, channel):
         """Method for sending the duck"""
         if not channel:
-            config = await self.bot.get_context_config(guild=guild)
+            config = self.bot.guild_configs[str(guild.id)]
             log_channel = config.get("logging_channel")
             await self.bot.logger.send_log(
                 message="Channel not found for Duckhunt loop - continuing",
@@ -135,7 +135,7 @@ class DuckHunt(cogs.LoopCog):
         except asyncio.TimeoutError:
             pass
         except Exception as exception:
-            config = await self.bot.get_context_config(guild=guild)
+            config = self.bot.guild_configs[str(guild.id)]
             log_channel = config.get("logging_channel")
             await self.bot.logger.send_log(
                 message="Exception thrown waiting for duckhunt input",
@@ -179,7 +179,7 @@ class DuckHunt(cogs.LoopCog):
         raw_duration -> A datetime object of the time since the duck spawned
         channel -> The channel in which the duck game happened in
         """
-        config_ = await self.bot.get_context_config(guild=guild)
+        config_ = self.bot.guild_configs[str(guild.id)]
         log_channel = config_.get("logging_channel")
         await self.bot.logger.send_log(
             message=f"Duck {action} by {winner} in #{channel.name}",
@@ -550,7 +550,7 @@ class DuckHunt(cogs.LoopCog):
     )
     async def release(self, ctx):
         """Method for releasing a duck"""
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         if not config.extensions.duck.allow_manipulation.value:
             await auxiliary.send_deny_embed(
                 channel=ctx.channel, message="This command is disabled in this server"
@@ -588,7 +588,7 @@ class DuckHunt(cogs.LoopCog):
     )
     async def kill(self, ctx):
         """Method for killing ducks"""
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         if not config.extensions.duck.allow_manipulation.value:
             await auxiliary.send_deny_embed(
                 channel=ctx.channel, message="This command is disabled in this server"
@@ -639,9 +639,9 @@ class DuckHunt(cogs.LoopCog):
         description="Gives someone the gift of a live duck",
         usage="[user]",
     )
-    async def donate(self, ctx, user: discord.Member):
+    async def donate(self, ctx: commands.Context, user: discord.Member):
         """Method for donating ducks"""
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         if not config.extensions.duck.allow_manipulation.value:
             await auxiliary.send_deny_embed(
                 channel=ctx.channel, message="This command is disabled in this server"

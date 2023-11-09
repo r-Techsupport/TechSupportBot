@@ -41,7 +41,7 @@ class UrbanDictionary(cogs.BaseCog):
         response = await self.bot.http_call("get", f"{self.BASE_URL}{query}")
         definitions = response.get("list")
 
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
 
         if not definitions:
             await auxiliary.send_deny_embed(
