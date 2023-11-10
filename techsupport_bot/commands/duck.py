@@ -7,6 +7,7 @@ import random
 from datetime import timedelta
 
 import discord
+import munch
 import ui
 from base import auxiliary, cogs, extension
 from botlogging import LogContext, LogLevel
@@ -104,7 +105,7 @@ class DuckHunt(cogs.LoopCog):
             )
         )
 
-    async def execute(self, config, guild, channel):
+    async def execute(self, config, guild, channel, banned_user: discord.User = None):
         """Method for sending the duck"""
         if not channel:
             config = self.bot.guild_configs[str(guild.id)]
@@ -136,7 +137,7 @@ class DuckHunt(cogs.LoopCog):
                 timeout=config.extensions.duck.timeout.value,
                 # can't pull the config in a non-coroutine
                 check=functools.partial(
-                    self.message_check, config, channel, duck_message
+                    self.message_check, config, channel, duck_message, banned_user
                 ),
             )
         except asyncio.TimeoutError:
@@ -254,7 +255,14 @@ class DuckHunt(cogs.LoopCog):
             random_line = random.choice(lines)
             return random_line.strip()
 
-    def message_check(self, config, channel, duck_message, message):
+    def message_check(
+        self,
+        config: munch.Munch,
+        channel: discord.abc.GuildChannel,
+        duck_message: discord.Message,
+        banned_user: discord.User,
+        message: discord.Message,
+    ):
         """Method to check if 'bef' or 'bang' was typed"""
         # ignore other channels
         if message.channel.id != channel.id:
@@ -264,6 +272,11 @@ class DuckHunt(cogs.LoopCog):
             return False
 
         if not message.content.lower() in ["bef", "bang"]:
+            return False
+
+        if banned_user and message.author == banned_user:
+            embed = auxiliary.prepare_deny_embed("You cannot hunt a duck you released")
+            asyncio.create_task(channel.send(content=banned_user.mention, embed=embed))
             return False
 
         cooldowns = self.cooldowns.get(message.guild.id, {})
@@ -550,13 +563,12 @@ class DuckHunt(cogs.LoopCog):
         return f"{user_text}{user_text_extra}"
 
     @auxiliary.with_typing
-    @commands.cooldown(1, 600)
     @commands.guild_only()
     @duck.command(
         brief="Releases a duck into the wild",
         description="Returns a befriended duck to its natural habitat",
     )
-    async def release(self, ctx):
+    async def release(self, ctx: commands.Context) -> None:
         """Method for releasing a duck"""
         config = self.bot.guild_configs[str(ctx.guild.id)]
         if not config.extensions.duck.allow_manipulation.value:
@@ -566,7 +578,6 @@ class DuckHunt(cogs.LoopCog):
             return
 
         duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
-        config = await self.bot.get_context_config(guild=ctx.guild)
 
         if not duck_user:
             await auxiliary.send_deny_embed(
@@ -587,7 +598,7 @@ class DuckHunt(cogs.LoopCog):
             channel=ctx.channel,
         )
 
-        await self.execute(config, ctx.guild, ctx.channel)
+        await self.execute(config, ctx.guild, ctx.channel, banned_user=ctx.author)
 
     @auxiliary.with_typing
     @commands.guild_only()
