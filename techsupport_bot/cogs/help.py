@@ -1,18 +1,21 @@
 """Module for custom help commands.
 """
 
+from dataclasses import dataclass
+
 import discord
 import ui
-from base import cogs
+from base import auxiliary, cogs
+from discord import app_commands
 from discord.ext import commands
 
 
-class HelpEmbed(discord.Embed):
-    """Base embed for admin commands."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.color = discord.Color.green()
+@dataclass
+class PrintableCommand:
+    prefix: str
+    name: str
+    usage: str
+    description: str
 
 
 class Helper(cogs.BaseCog):
@@ -21,254 +24,122 @@ class Helper(cogs.BaseCog):
     EXTENSIONS_PER_GENERAL_PAGE = 15
 
     @commands.group(name="help")
-    async def help_command(self, ctx):
+    async def help_command(self, ctx: commands.Context, search_term: str) -> None:
         """Main comand interface for getting help with bot commands.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.ext.Context): the context object for the message
+            ctx (commands.Context): the context object for the message
         """
-        if ctx.invoked_subcommand:
+        # Build raw lists of commands
+        prefix_command_list = list(self.bot.walk_commands())
+        app_command_list = list(self.bot.tree.walk_commands())
+
+        command_prefix = await self.bot.get_prefix(ctx.message)
+
+        # Build a list of custom command objects from the lists
+        # Will include aliases and full command names
+        all_command_list: list[PrintableCommand] = []
+
+        # Looping through all the prefix commands
+        for command in prefix_command_list:
+            # If the command is a group, ignore it
+            if issubclass(command.__class__, commands.Group):
+                continue
+
+            # Append the base command to the list
+            all_command_list.append(
+                PrintableCommand(
+                    prefix=command_prefix,
+                    name=command.qualified_name,
+                    usage=command.usage if command.usage else "",
+                    description=command.description,
+                )
+            )
+
+            # Prefix commands can have aliases, so make sure we append those as well
+            parent_name = f"{command.full_parent_name} "
+            for alias in command.aliases:
+                all_command_list.append(
+                    PrintableCommand(
+                        prefix=command_prefix,
+                        name=f"{parent_name.lstrip()}{alias.lstrip()}",
+                        usage=command.usage if command.usage else "",
+                        description=command.description,
+                    )
+                )
+
+        # Loop through all the slash commands
+        for command in app_command_list:
+            # Ignore the command in a group
+            if issubclass(command.__class__, app_commands.Group):
+                continue
+
+            # We have to manually build a string representation of the usage
+            # We are given it in a list
+            command_usage = ""
+            for param in command.parameters:
+                command_usage += f"[{param.name}] "
+
+            # Append the app commands.
+            # App commands cannot have aliases, so no need to thin about that
+            all_command_list.append(
+                PrintableCommand(
+                    prefix="/",
+                    name=command.qualified_name,
+                    usage=command_usage.strip(),
+                    description=command.description,
+                )
+            )
+
+        # Sort and search the commands
+        sorted_commands = sorted(all_command_list, key=lambda x: x.name)
+        filtered_commands = [
+            command
+            for command in sorted_commands
+            if search_term.lower() in command.name.lower()
+            or search_term.lower() in command.description.lower()
+        ]
+
+        # Ensure at least a single command was found
+        if not filtered_commands:
+            await auxiliary.send_deny_embed(
+                message=f"No commands matching `{search_term}` have been found",
+                channel=ctx.channel,
+            )
             return
 
-        command_prefix = await self.bot.get_prefix(ctx.message)
+        # Use pages to ensure we don't overflow the max embed size
+        embeds = self.build_embeds_from_list(filtered_commands, search_term)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
-        embed = HelpEmbed(title="Choose commands to get help with")
-        help_command_name = getattr(self.help_command, "name")
-        embed.add_field(
-            name="Builtin help",
-            value=f"`{command_prefix}{help_command_name} builtin`",
-            inline=False,
-        )
-        embed.add_field(
-            name="Extension help",
-            value=f"`{command_prefix}{help_command_name} extension`",
-            inline=False,
-        )
+    def build_embeds_from_list(
+        self, commands: list[PrintableCommand], search_term: str
+    ) -> list[discord.Embed]:
+        """Takes a list of commands and returns a list of embeds ready to be paginated
 
-        await ctx.send(embed=embed)
+        Args:
+            commands (list[PrintableCommand]): A list of the dataclass PrintableCommand
+            search_term (str): The string for the search term
 
-    @help_command.command(name="builtin")
-    async def builtin_help_command(self, ctx):
-        """Command interface for help with builtin commands.
-
-        This is a command and should be accessed via Discord.
-
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
+        Returns:
+            list[discord.Embed]: The list of embeds always of at least size 1 ready
+                to be shown to the user
         """
-        command_prefix = await self.bot.get_prefix(ctx.message)
-        embed = HelpEmbed(title="Builtin commands")
-        embed_fields = {}
-
-        for cog_name in self.bot.builtin_cogs:
-            cog = self.bot.get_cog(cog_name)
-            if not cog:
-                continue
-            embed_fields = self.add_cog_command_fields(
-                cog, embed_fields, command_prefix
+        sublists: list[list[PrintableCommand]] = [
+            commands[i : i + 10] for i in range(0, len(commands), 10)
+        ]
+        final_embeds: list[discord.Embed] = []
+        for command_list in sublists:
+            embed = discord.Embed(
+                title=f"Commands matching `{search_term}`", color=discord.Color.green()
             )
-
-        # Sorts all embed_fields alphabetically
-        embed_fields = {
-            field: embed_fields[field]
-            for field in sorted(embed_fields, key=lambda x: x[1:])
-        }
-
-        # Adds them to the embed
-        for field in embed_fields:
-            embed.add_field(
-                name=field,
-                value=embed_fields[field],
-                inline=False,
-            )
-
-        await ctx.send(embed=embed)
-
-    @help_command.command(name="extension")
-    async def extension_help_command(self, ctx, extension_name: str = None):
-        """Command interface for help with extension commands.
-
-        This is a command and should be accessed via Discord.
-
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
-            extension_name (str): the extension name to get help with
-        """
-        if extension_name:
-            embed = await self.generate_extension_embed(ctx, extension_name)
-            await ctx.send(embed=embed)
-        else:
-            embeds = await self.generate_general_embeds(ctx)
-            await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
-
-    def get_extension_names(self):
-        """Gets a list of extension names loaded by bot."""
-        extension_names = []
-        for full_extension_name in self.bot.extensions.keys():
-            if not full_extension_name.startswith(f"{self.bot.EXTENSIONS_DIR_NAME}."):
-                continue
-            extension_names.append(full_extension_name.split(".")[1])
-
-        extension_names.sort()
-
-        return extension_names
-
-    async def generate_general_embeds(self, ctx):
-        """Generates paginated embeds for the bot's loaded extensions.
-
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
-        """
-        extension_names = self.get_extension_names()
-
-        embeds = []
-        extension_name_chunks = self.chunks(
-            extension_names, self.EXTENSIONS_PER_GENERAL_PAGE
-        )
-        for chunk in extension_name_chunks:
-            embed = await self.generate_general_embed(ctx, chunk)
-            embeds.append(embed)
-
-        return embeds
-
-    async def generate_general_embed(self, ctx, extension_names):
-        """Generates a single embed for a list of extension names.
-
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
-            extension_names (List[str]): the extension names to use
-        """
-        extension_name_text = "- " + str.join("\n- ", extension_names)
-
-        command_prefix = await self.bot.get_prefix(ctx.message)
-        embed = HelpEmbed(
-            title=(
-                f"Use `{command_prefix}{self.help_command.name} "
-                + f"{self.extension_help_command.name} <extension_name>`"
-                " to see extension commands"
-            ),
-            description=extension_name_text,
-        )
-
-        return embed
-
-    async def generate_extension_embed(self, ctx, extension_name):
-        """Generates a single embed for a given extension.
-
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
-            extension_name (str): the extension name to get help with
-        """
-        embed = HelpEmbed(title=f"Extension Commands: `{extension_name}`")
-
-        if not self.bot.extensions.get(
-            f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}"
-        ):
-            if not await self.bot.check_extension_exists(extension_name):
-                embed.description = "That extension could not be found"
-            elif extension_name in self.bot.file_config.bot_config.disabled_extensions:
-                embed.description = "That extension has been disabled by the bot owner"
-            else:
-                embed.description = "That extension is not currently loaded"
-            return embed
-
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-        if not extension_name in config.enabled_extensions:
-            embed.description = (
-                "That extension has been disabled by the guild administrators"
-            )
-            return embed
-
-        command_prefix = await self.bot.get_prefix(ctx.message)
-
-        embed = self.add_extension_command_fields(extension_name, embed, command_prefix)
-
-        if len(embed.fields) == 0:
-            embed.description = "There are no commands for this extension"
-
-        return embed
-
-    def add_cog_command_fields(self, cog, embed_fields, command_prefix) -> dict:
-        """Adds embed embed_field for each command in a given cog.
-
-        parameters:
-            cog (commands.Cog): The cog to get the commands of
-            embed_fields (dict): Field list where Name: description
-            command_prefix (str): the command prefix for the bot
-
-        returns:
-            dict: The modified field list
-        """
-
-        # Sorts commands alphabetically
-        command_list = list(cog.walk_commands())
-        command_list.sort(key=lambda command: command.name)
-
-        for command in command_list:
-            if issubclass(command.__class__, commands.Group):
-                continue
-
-            if command.full_parent_name == "":
-                syntax = f"{command_prefix}{command.name}"
-            else:
-                syntax = f"{command_prefix}{command.full_parent_name} {command.name}"
-
-            usage = command.usage or ""
-
-            embed_fields[f"`{syntax} {usage}`"] = (
-                command.description or "No description available"
-            )
-
-        return embed_fields
-
-    def add_extension_command_fields(self, extension_name, embed, command_prefix):
-        """Adds embed fields for each command in a given cog.
-
-        parameters:
-            extension_name (str): the name of the extension
-            embed (discord.Embed): the embed to add fields to
-            command_prefix (str): the command prefix for the bot
-        """
-
-        # Sorts commands alphabetically
-        command_list = list(self.bot.walk_commands())
-        command_list.sort(key=lambda command: command.name)
-
-        for command in command_list:
-            command_extension_name = self.bot.get_command_extension_name(command)
-            if extension_name != command_extension_name:
-                continue
-
-            if issubclass(command.__class__, commands.Group):
-                continue
-
-            if command.full_parent_name == "":
-                syntax = f"{command_prefix}{command.name}"
-            else:
-                syntax = f"{command_prefix}{command.full_parent_name} {command.name}"
-
-            usage = command.usage or ""
-
-            embed.add_field(
-                name=f"`{syntax} {usage}`",
-                value=command.description or "No description available",
-                inline=False,
-            )
-
-        return embed
-
-    @staticmethod
-    def chunks(input_list, size):
-        """Return chunks of an input list.
-
-        parameters:
-            input_list (list): the list to split up
-            size (int): the size of each nested list
-        """
-        chunks = []
-        for ind in range(0, len(input_list), size):
-            chunks.append(input_list[ind : ind + size])
-
-        return chunks
+            for command in command_list:
+                embed.add_field(
+                    name=f"{command.prefix}{command.name} {command.usage}",
+                    value=command.description,
+                    inline=False,
+                )
+            final_embeds.append(embed)
+        return final_embeds
