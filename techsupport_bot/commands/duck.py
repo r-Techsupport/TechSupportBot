@@ -62,7 +62,7 @@ async def setup(bot):
     )
     config.add(
         key="spawn_user",
-        datatype="int",
+        datatype="list[int]",
         title="Allow user to spawn duck",
         description="Set up who you want to allow to spawn a duck",
         default=[],
