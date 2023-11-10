@@ -19,6 +19,17 @@ from discord.ext import commands
 
 async def setup(bot):
     """Registers the IssueCreator Cog"""
+    try:
+        if not bot.file_config.api.github.api_key:
+            raise AttributeError("IssueCreator was not loaded due to missing API key")
+        if not bot.file_config.api.github.username:
+            raise AttributeError("IssueCreator was not loaded due to missing API key")
+        if not bot.file_config.api.github.repo:
+            raise AttributeError("IssueCreator was not loaded due to missing API key")
+    except AttributeError as exc:
+        raise AttributeError(
+            "IssueCreator was not loaded due to missing API key"
+        ) from exc
     await bot.add_cog(IssueCreator(bot=bot))
 
 
