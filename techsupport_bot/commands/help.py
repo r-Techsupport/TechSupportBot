@@ -22,6 +22,10 @@ class PrintableCommand:
     description: str
 
 
+async def setup(bot):
+    await bot.add_cog(Helper(bot=bot))
+
+
 class Helper(cogs.BaseCog):
     """Cog object for help commands."""
 

@@ -9,6 +9,7 @@ from .config import *
 from .correct import *
 from .emoji import *
 from .hello import *
+from .help import *
 from .htd import *
 from .hug import *
 from .lenny import *
