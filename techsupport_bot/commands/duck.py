@@ -61,6 +61,13 @@ async def setup(bot):
         default=50,
     )
     config.add(
+        key="spawn_user",
+        datatype="list[int]",
+        title="Allow user to spawn duck",
+        description="Set up who you want to allow to spawn a duck",
+        default=[],
+    )
+    config.add(
         key="allow_manipulation",
         datatype="bool",
         title="Whether or not user manipulation is allowed",
@@ -558,6 +565,7 @@ class DuckHunt(cogs.LoopCog):
             return
 
         duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+        config = await self.bot.get_context_config(guild=ctx.guild)
 
         if not duck_user:
             await auxiliary.send_deny_embed(
@@ -577,6 +585,7 @@ class DuckHunt(cogs.LoopCog):
             message=f"Fly safe! You have {duck_user.befriend_count} ducks left.",
             channel=ctx.channel,
         )
+        await self.execute(config, ctx.guild, ctx.channel)
 
     @auxiliary.with_typing
     @commands.guild_only()
@@ -745,6 +754,29 @@ class DuckHunt(cogs.LoopCog):
 
         await duck_user.delete()
         await auxiliary.send_confirm_embed(
-            message=f"Succesfully reset {user.mention}s duck stats!",
+            message=f"Successfully reset {user.mention}s duck stats!",
+            channel=ctx.channel,
+        )
+
+    @auxiliary.with_typing
+    @commands.guild_only()
+    @duck.command(
+        brief="Spawns a duck on command",
+        description="Will spawn a duck with the command",
+    )
+    async def spawn(self, ctx: commands.Context) -> None:
+        """A debug focused command to force spawn a duck in any channel
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
+        spawn_user = config.extensions.duck.spawn_user.value
+        for person in spawn_user:
+            if ctx.author.id == int(person):
+                await self.execute(config, ctx.guild, ctx.channel)
+                return
+        await auxiliary.send_deny_embed(
+            message="It looks like you don't have permissions to spawn a duck",
             channel=ctx.channel,
         )
