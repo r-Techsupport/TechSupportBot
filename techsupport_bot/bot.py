@@ -89,8 +89,6 @@ class TechSupportBot(advanced.AdvancedBot):
         help_cog = builtin_cogs.Helper(self)
         await self.add_cog(help_cog)
 
-        await self.load_builtin_cog(builtin_cogs.AdminControl)
-
         # This is the guild events logging cog
         await self.load_builtin_cog(botlogging.EventLogger)
 

@@ -250,7 +250,10 @@ class AdvancedBot(data.DataBot):
         extension_name = self.get_command_extension_name(ctx.command)
         if extension_name:
             config = self.guild_configs[str(ctx.guild.id)]
-            if not extension_name in config.enabled_extensions:
+            if (
+                not extension_name in config.enabled_extensions
+                and extension_name != "config"
+            ):
                 raise custom_errors.ExtensionDisabled
 
         cog = getattr(ctx.command, "cog", None)
