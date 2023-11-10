@@ -3,9 +3,6 @@
 import asyncio
 import datetime
 import json
-import random
-import re
-import string
 
 import discord
 import error as custom_errors
@@ -15,7 +12,6 @@ from base import auxiliary, data
 from botlogging import LogContext, LogLevel
 from discord import app_commands
 from discord.ext import commands
-from unidecode import unidecode
 
 
 class AdvancedBot(data.DataBot):
