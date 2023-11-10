@@ -15,6 +15,11 @@ if TYPE_CHECKING:
     import bot
 
 
+async def setup(bot):
+    """Method to add burn command to config."""
+    await bot.add_cog(Listener(bot=bot))
+
+
 class ListenChannel(commands.Converter):
     """Converter for grabbing a channel via the API.
 

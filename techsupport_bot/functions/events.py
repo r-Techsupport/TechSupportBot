@@ -6,9 +6,13 @@ from typing import Optional, Sequence, Union
 
 import discord
 from base import auxiliary, cogs
+from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
-from .common import LogContext, LogLevel
+
+async def setup(bot):
+    """Registers the EventLogger Cog"""
+    await bot.add_cog(EventLogger(bot=bot))
 
 
 class EventLogger(cogs.BaseCog):

@@ -11,6 +11,11 @@ from base import auxiliary, cogs
 from discord.ext import commands
 
 
+async def setup(bot):
+    """Method to add burn command to config."""
+    await bot.add_cog(ConfigControl(bot=bot))
+
+
 class ConfigControl(cogs.BaseCog):
     """Cog object for per-guild config control."""
 
@@ -173,8 +178,9 @@ class ConfigControl(cogs.BaseCog):
             ctx (discord.ext.Context): the context object for the message
             extension_name (str): the extension subname to enable
         """
-        if not self.bot.extensions.get(
-            f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}"
+        if not (
+            f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}" in self.bot.extensions
+            or f"{self.bot.FUNCTIONS_DIR_NAME}.{extension_name}" in self.bot.extensions
         ):
             await auxiliary.send_deny_embed(
                 message="I could not find that extension, or it's not loaded",
@@ -220,8 +226,9 @@ class ConfigControl(cogs.BaseCog):
             ctx (discord.ext.Context): the context object for the message
             extension_name (str): the extension subname to disable
         """
-        if not self.bot.extensions.get(
-            f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}"
+        if not (
+            f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}" in self.bot.extensions
+            or f"{self.bot.FUNCTIONS_DIR_NAME}.{extension_name}" in self.bot.extensions
         ):
             await auxiliary.send_deny_embed(
                 message="I could not find that extension, or it's not loaded",

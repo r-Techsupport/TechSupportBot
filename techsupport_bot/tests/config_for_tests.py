@@ -10,7 +10,7 @@ A FakeDiscordEnv for creating a discord environment 100% out of mock ojects
 import random
 from unittest.mock import patch
 
-from extensions import Burn, Corrector, Emojis, Greeter, MagicConch
+from commands import Burn, Corrector, Emojis, Greeter, MagicConch
 from hypothesis.strategies import composite, integers, text
 
 from .helpers import (

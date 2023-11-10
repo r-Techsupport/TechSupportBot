@@ -6,7 +6,6 @@ import json
 import threading
 
 import botlogging
-import cogs as builtin_cogs
 import discord
 import ircrelay
 import munch
@@ -58,6 +57,7 @@ class TechSupportBot(advanced.AdvancedBot):
         await self.logger.send_log(
             message="Loading extensions...", level=LogLevel.DEBUG, console_only=True
         )
+        self.remove_command("help")
         self.extension_name_list = []
         await self.load_extensions()
 
@@ -85,16 +85,6 @@ class TechSupportBot(advanced.AdvancedBot):
         await self.logger.send_log(
             message="Loading Help commands...", level=LogLevel.DEBUG, console_only=True
         )
-        self.remove_command("help")
-        help_cog = builtin_cogs.Helper(self)
-        await self.add_cog(help_cog)
-
-        await self.load_builtin_cog(builtin_cogs.AdminControl)
-        await self.load_builtin_cog(builtin_cogs.ConfigControl)
-        await self.load_builtin_cog(builtin_cogs.Listener)
-
-        # This is the guild events logging cog
-        await self.load_builtin_cog(botlogging.EventLogger)
 
     async def start_irc(self):
         """Starts the IRC connection in a seperate thread

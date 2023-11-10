@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from base import auxiliary
-from extensions import mock
+from commands import mock
 from hypothesis import given
 from hypothesis.strategies import text
 
