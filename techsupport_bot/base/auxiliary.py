@@ -8,6 +8,7 @@ from functools import wraps
 
 import discord
 import munch
+from discord.ext import commands
 
 
 def generate_basic_embed(
@@ -256,13 +257,13 @@ def config_schema_matches(input_config: dict, current_config: dict) -> list[str]
     return None
 
 
-def with_typing(command: discord.ext.commands.Command) -> discord.ext.commands.Command:
+def with_typing(command: commands.Command) -> commands.Command:
     """Decorator for commands to utilize "async with" ctx.typing()
 
     This will show the bot as typing... until the command completes
 
     parameters:
-        command (discord.ext.commands.Command): the command object to modify
+        command (commands.Command): the command object to modify
     """
     original_callback = command.callback
 

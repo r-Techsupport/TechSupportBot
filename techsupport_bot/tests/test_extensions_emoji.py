@@ -3,7 +3,6 @@ This is a file to test the extensions/emoji.py file
 This contains 14 tests
 """
 
-
 import importlib
 from unittest.mock import AsyncMock, MagicMock
 

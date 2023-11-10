@@ -1,10 +1,12 @@
 """The main bot functions.
 """
+
 import asyncio
+import json
 import threading
 
 import botlogging
-import cogs as builtin_cogs
+import discord
 import ircrelay
 import munch
 from base import advanced, databases
@@ -39,32 +41,9 @@ class TechSupportBot(advanced.AdvancedBot):
 
         # this is required for the bot
         await self.logger.send_log(
-            message="Connecting to MongoDB...", level=LogLevel.DEBUG, console_only=True
-        )
-        self.mongo = self.get_mongo_ref()
-
-        if not self.GUILD_CONFIG_COLLECTION in await self.mongo.list_collection_names():
-            await self.logger.send_log(
-                message="Creating new MongoDB guild config collection...",
-                level=LogLevel.DEBUG,
-                console_only=True,
-            )
-            await self.mongo.create_collection(self.GUILD_CONFIG_COLLECTION)
-
-        self.guild_config_collection = self.mongo[self.GUILD_CONFIG_COLLECTION]
-
-        await self.logger.send_log(
             message="Connecting to Postgres...", level=LogLevel.DEBUG, console_only=True
         )
-        try:
-            self.db = await self.get_postgres_ref()
-        except Exception as exception:
-            await self.logger.send_log(
-                message=f"Could not connect to Postgres: {exception}",
-                level=LogLevel.WARNING,
-                exception=exception,
-                console_only=True,
-            )
+        self.db = await self.get_postgres_ref()
 
         await self.logger.send_log(
             message="Logging into Discord...", level=LogLevel.DEBUG, console_only=True
@@ -78,6 +57,7 @@ class TechSupportBot(advanced.AdvancedBot):
         await self.logger.send_log(
             message="Loading extensions...", level=LogLevel.DEBUG, console_only=True
         )
+        self.remove_command("help")
         self.extension_name_list = []
         await self.load_extensions()
 
@@ -91,19 +71,20 @@ class TechSupportBot(advanced.AdvancedBot):
             databases.setup_models(self)
             await self.db.gino.create_all()
 
+        # Load all guild config objects into self.guild_configs object
+        all_config = await self.models.Config.query.gino.all()
+        for config in all_config:
+            self.guild_configs[config.guild_id] = munch.munchify(
+                json.loads(config.config)
+            )
+
+        # Ensure all guilds have a config
+        for guild in self.guilds:
+            await self.register_new_guild_config(str(guild.id))
+
         await self.logger.send_log(
             message="Loading Help commands...", level=LogLevel.DEBUG, console_only=True
         )
-        self.remove_command("help")
-        help_cog = builtin_cogs.Helper(self)
-        await self.add_cog(help_cog)
-
-        await self.load_builtin_cog(builtin_cogs.AdminControl)
-        await self.load_builtin_cog(builtin_cogs.ConfigControl)
-        await self.load_builtin_cog(builtin_cogs.Listener)
-
-        # This is the guild events logging cog
-        await self.load_builtin_cog(botlogging.EventLogger)
 
     async def start_irc(self):
         """Starts the IRC connection in a seperate thread
@@ -158,12 +139,13 @@ class TechSupportBot(advanced.AdvancedBot):
         )
         await super().close()
 
-    async def on_guild_join(self, guild):
+    async def on_guild_join(self, guild: discord.Guild) -> None:
         """Configures a new guild upon joining.
 
         parameters:
             guild (discord.Guild): the guild that was joined
         """
+        self.register_new_guild_config(str(guild.id))
         for cog in self.cogs.values():
             if getattr(cog, "COG_TYPE", "").lower() == "loop":
                 try:

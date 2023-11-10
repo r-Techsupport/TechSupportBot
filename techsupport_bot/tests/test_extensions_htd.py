@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 import discord
 import pytest
 from base import auxiliary
-from extensions import htd
+from commands import htd
 
 from . import config_for_tests
 

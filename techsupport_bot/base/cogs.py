@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, List
 
+import discord
 import gino
 import munch
 from botlogging import LogContext, LogLevel
@@ -68,14 +69,14 @@ class BaseCog(commands.Cog):
             if not self.KEEP_COG_ON_FAILURE:
                 await self.bot.remove_cog(self)
 
-    async def _preconfig(self):
+    async def _preconfig(self) -> None:
         """Blocks the preconfig until the bot is ready."""
         await self._handle_preconfig(self.preconfig)
 
-    async def preconfig(self):
+    async def preconfig(self) -> None:
         """Preconfigures the environment before starting the cog."""
 
-    def extension_enabled(self, config):
+    def extension_enabled(self, config: munch.Munch) -> bool:
         """Checks if an extension is currently enabled for a given config.
 
         parameters:
@@ -98,7 +99,7 @@ class MatchCog(BaseCog):
     COG_TYPE = "Match"
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message) -> None:
         """Listens for a message and passes it to the response handler if valid.
 
         parameters:
@@ -109,7 +110,7 @@ class MatchCog(BaseCog):
 
         ctx = await self.bot.get_context(message)
 
-        config = await self.bot.get_context_config(ctx)
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         if not config:
             return
 
@@ -128,7 +129,7 @@ class MatchCog(BaseCog):
                 level=LogLevel.DEBUG,
                 context=LogContext(guild=ctx.guild, channel=ctx.channel),
             )
-            config = await self.bot.get_context_config(ctx)
+            config = self.bot.guild_configs[str(ctx.guild.id)]
             channel = config.get("logging_channel")
             await self.bot.logger.send_log(
                 message=f"Match cog error: {self.__class__.__name__} {exception}!",
@@ -138,7 +139,9 @@ class MatchCog(BaseCog):
                 exception=exception,
             )
 
-    async def match(self, _config, _ctx, _content):
+    async def match(
+        self, _config: munch.Munch, _ctx: commands.Context, _content: str
+    ) -> bool:
         """Runs a boolean check on message content.
 
         parameters:
@@ -148,7 +151,9 @@ class MatchCog(BaseCog):
         """
         return True
 
-    async def response(self, _config, _ctx, _content, _result):
+    async def response(
+        self, _config: munch.Munch, _ctx: commands.Context, _content: str, _result: bool
+    ) -> None:
         """Performs a response if the match is valid.
 
         parameters:
@@ -167,24 +172,24 @@ class LoopCog(BaseCog):
         bot (Bot): the bot object
     """
 
-    COG_TYPE = "Loop"
-    DEFAULT_WAIT = 300
-    TRACKER_WAIT = 300
-    ON_START = False
-    CHANNELS_KEY = "channels"
+    COG_TYPE: str = "Loop"
+    DEFAULT_WAIT: int = 300
+    TRACKER_WAIT: int = 300
+    ON_START: bool = False
+    CHANNELS_KEY: str = "channels"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         asyncio.create_task(self._loop_preconfig())
         self.channels = {}
 
-    async def register_new_tasks(self, guild):
+    async def register_new_tasks(self, guild: discord.Guild) -> None:
         """Creates the configured loop tasks for a given guild.
 
         parameters:
             guild (discord.Guild): the guild to add the tasks for
         """
-        config = await self.bot.get_context_config(guild=guild)
+        config = self.bot.guild_configs[str(guild.id)]
         channels = (
             config.extensions.get(self.extension_name, {})
             .get(self.CHANNELS_KEY, {})
@@ -212,7 +217,7 @@ class LoopCog(BaseCog):
             )
             asyncio.create_task(self._loop_execute(guild))
 
-    async def _loop_preconfig(self):
+    async def _loop_preconfig(self) -> None:
         """Blocks the loop_preconfig until the bot is ready."""
         await self._handle_preconfig(self.loop_preconfig)
 
@@ -229,7 +234,7 @@ class LoopCog(BaseCog):
 
         asyncio.create_task(self._track_new_channels())
 
-    async def _track_new_channels(self):
+    async def _track_new_channels(self) -> None:
         """Periodifically kicks off new per-channel tasks based on updated channels config."""
         while True:
             await self.bot.logger.send_log(
@@ -249,7 +254,7 @@ class LoopCog(BaseCog):
             )
             for guild_id, registered_channels in self.channels.items():
                 guild = self.bot.get_guild(guild_id)
-                config = await self.bot.get_context_config(guild=guild)
+                config = self.bot.guild_configs[str(guild.id)]
                 configured_channels = (
                     config.extensions.get(self.extension_name, {})
                     .get(self.CHANNELS_KEY, {})
@@ -300,66 +305,74 @@ class LoopCog(BaseCog):
 
                 registered_channels = new_registered_channels
 
-    async def loop_preconfig(self):
+    async def loop_preconfig(self) -> None:
         """Preconfigures the environment before starting the loop."""
 
-    async def _loop_execute(self, guild, target_channel=None):
+    async def _loop_execute(self, guild: discord.Guild, target_channel=None) -> None:
         """Loops through the execution method.
 
         parameters:
             guild (discord.Guild): the guild associated with the execution
         """
-        config = await self.bot.get_context_config(guild=guild)
+        config = self.bot.guild_configs[str(guild.id)]
 
         if not self.ON_START:
             await self.wait(config, guild)
 
-        while self.bot.extensions.get(
-            f"{self.bot.EXTENSIONS_DIR_NAME}.{self.extension_name}"
-        ):
-            if guild and guild not in self.bot.guilds:
-                break
+        for folder_dir in [self.bot.EXTENSIONS_DIR_NAME, self.bot.FUNCTIONS_DIR_NAME]:
+            while self.bot.extensions.get(f"{folder_dir}.{self.extension_name}"):
+                if guild and guild not in self.bot.guilds:
+                    break
 
-            # refresh the config on every loop step
-            config = await self.bot.get_context_config(guild=guild)
+                # refresh the config on every loop step
+                config = self.bot.guild_configs[str(guild.id)]
 
-            if target_channel and not str(target_channel.id) in config.extensions.get(
-                self.extension_name, {}
-            ).get(self.CHANNELS_KEY, {}).get("value", []):
-                # exit task if the channel is no longer configured
-                break
+                if target_channel and not str(
+                    target_channel.id
+                ) in config.extensions.get(self.extension_name, {}).get(
+                    self.CHANNELS_KEY, {}
+                ).get(
+                    "value", []
+                ):
+                    # exit task if the channel is no longer configured
+                    break
 
-            if guild is None or self.extension_name in getattr(
-                config, "enabled_extensions", []
-            ):
+                if guild is None or self.extension_name in getattr(
+                    config, "enabled_extensions", []
+                ):
+                    try:
+                        if target_channel:
+                            await self.execute(config, guild, target_channel)
+                        else:
+                            await self.execute(config, guild)
+                    except Exception as exception:
+                        # always try to wait even when execute fails
+                        await self.bot.logger.send_log(
+                            message=f"Loop cog execute error: {self.__class__.__name__}!",
+                            level=LogLevel.ERROR,
+                            channel=getattr(config, "logging_channel", None),
+                            context=LogContext(guild=guild),
+                            exception=exception,
+                        )
+
                 try:
-                    if target_channel:
-                        await self.execute(config, guild, target_channel)
-                    else:
-                        await self.execute(config, guild)
+                    await self.wait(config, guild)
                 except Exception as exception:
-                    # always try to wait even when execute fails
                     await self.bot.logger.send_log(
-                        message=f"Loop cog execute error: {self.__class__.__name__}!",
+                        message=f"Loop wait cog error: {self.__class__.__name__}!",
                         level=LogLevel.ERROR,
-                        channel=getattr(config, "logging_channel", None),
                         context=LogContext(guild=guild),
                         exception=exception,
                     )
+                    # avoid spamming
+                    await self._default_wait()
 
-            try:
-                await self.wait(config, guild)
-            except Exception as exception:
-                await self.bot.logger.send_log(
-                    message=f"Loop wait cog error: {self.__class__.__name__}!",
-                    level=LogLevel.ERROR,
-                    context=LogContext(guild=guild),
-                    exception=exception,
-                )
-                # avoid spamming
-                await self._default_wait()
-
-    async def execute(self, _config, _guild, _target_channel=None):
+    async def execute(
+        self,
+        _config: munch.Munch,
+        _guild: discord.Guild,
+        _target_channel: discord.abc.Messageable = None,
+    ) -> None:
         """Runs sequentially after each wait method.
 
         parameters:
@@ -368,11 +381,11 @@ class LoopCog(BaseCog):
             target_channel (discord.Channel): the channel object to use
         """
 
-    async def _default_wait(self):
+    async def _default_wait(self) -> None:
         """The default method used for waiting."""
         await asyncio.sleep(self.DEFAULT_WAIT)
 
-    async def wait(self, _config, _guild):
+    async def wait(self, _config: munch.Munch, _guild: discord.Guild) -> None:
         """The default wait method.
 
         parameters:

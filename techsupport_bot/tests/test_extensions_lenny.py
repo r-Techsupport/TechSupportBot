@@ -6,7 +6,7 @@ This contains 2 tests
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from extensions import lenny
+from commands import lenny
 
 from . import config_for_tests
 

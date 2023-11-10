@@ -1,5 +1,6 @@
 """Module for log embeds.
 """
+
 import datetime
 
 import discord

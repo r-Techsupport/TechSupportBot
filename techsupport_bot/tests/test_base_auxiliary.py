@@ -3,7 +3,6 @@ This is a file to test the base/auxiliary.py file
 This contains 23 tests
 """
 
-
 import importlib
 from unittest.mock import AsyncMock, MagicMock, call
 
