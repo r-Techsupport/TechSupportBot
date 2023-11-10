@@ -32,7 +32,12 @@ class Helper(cogs.BaseCog):
 
     EXTENSIONS_PER_GENERAL_PAGE = 15
 
-    @commands.group(name="help")
+    @commands.command(
+        name="help",
+        brief="Displays helpful infromation",
+        description="Searches commands for your query and dispays usage info",
+        usage="[search]",
+    )
     async def help_command(self, ctx: commands.Context, search_term: str = "") -> None:
         """Main comand interface for getting help with bot commands.
 
