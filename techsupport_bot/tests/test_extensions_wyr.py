@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 import discord
 import pytest
 from base import auxiliary
-from extensions import wyr
+from commands import wyr
 
 from . import config_for_tests
 

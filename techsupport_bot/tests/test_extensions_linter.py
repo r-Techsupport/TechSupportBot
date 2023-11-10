@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from base import auxiliary
-from extensions import linter
+from commands import linter
 
 from . import config_for_tests
 

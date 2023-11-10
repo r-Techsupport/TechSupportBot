@@ -11,6 +11,11 @@ from base import auxiliary, cogs
 from discord.ext import commands
 
 
+async def setup(bot):
+    """Method to add burn command to config."""
+    await bot.add_cog(ConfigControl(bot=bot))
+
+
 class ConfigControl(cogs.BaseCog):
     """Cog object for per-guild config control."""
 

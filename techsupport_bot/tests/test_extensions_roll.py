@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import discord
 import pytest
 from base import auxiliary
-from extensions import roll
+from commands import roll
 from hypothesis import given
 from hypothesis.strategies import integers
 

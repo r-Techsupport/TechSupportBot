@@ -42,7 +42,7 @@ class ExtensionsBot(commands.Bot):
     """Parent bot object that supports extensions and basic file config."""
 
     CONFIG_PATH = "./config.yml"
-    EXTENSIONS_DIR_NAME = "extensions"
+    EXTENSIONS_DIR_NAME = "commands"
     EXTENSIONS_DIR = (
         f"{os.path.join(os.path.dirname(__file__))}/../{EXTENSIONS_DIR_NAME}"
     )
