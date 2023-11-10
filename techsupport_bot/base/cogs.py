@@ -10,6 +10,7 @@ import gino
 import munch
 from botlogging import LogContext, LogLevel
 from discord.ext import commands
+import discord
 
 if TYPE_CHECKING:
     import bot
@@ -68,14 +69,14 @@ class BaseCog(commands.Cog):
             if not self.KEEP_COG_ON_FAILURE:
                 await self.bot.remove_cog(self)
 
-    async def _preconfig(self):
+    async def _preconfig(self) -> None:
         """Blocks the preconfig until the bot is ready."""
         await self._handle_preconfig(self.preconfig)
 
-    async def preconfig(self):
+    async def preconfig(self) -> None:
         """Preconfigures the environment before starting the cog."""
 
-    def extension_enabled(self, config):
+    def extension_enabled(self, config: munch.Munch) -> bool:
         """Checks if an extension is currently enabled for a given config.
 
         parameters:
@@ -98,7 +99,7 @@ class MatchCog(BaseCog):
     COG_TYPE = "Match"
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message) -> None:
         """Listens for a message and passes it to the response handler if valid.
 
         parameters:
@@ -138,7 +139,7 @@ class MatchCog(BaseCog):
                 exception=exception,
             )
 
-    async def match(self, _config, _ctx, _content):
+    async def match(self, _config: munch.Munch, _ctx: commands.Context, _content: str) -> bool:
         """Runs a boolean check on message content.
 
         parameters:
@@ -148,7 +149,7 @@ class MatchCog(BaseCog):
         """
         return True
 
-    async def response(self, _config, _ctx, _content, _result):
+    async def response(self, _config: munch.Munch, _ctx: commands.Context, _content: str, _result: bool) -> None:
         """Performs a response if the match is valid.
 
         parameters:
@@ -167,11 +168,11 @@ class LoopCog(BaseCog):
         bot (Bot): the bot object
     """
 
-    COG_TYPE = "Loop"
-    DEFAULT_WAIT = 300
-    TRACKER_WAIT = 300
-    ON_START = False
-    CHANNELS_KEY = "channels"
+    COG_TYPE: str = "Loop"
+    DEFAULT_WAIT: int = 300
+    TRACKER_WAIT: int = 300
+    ON_START: bool = False
+    CHANNELS_KEY: str = "channels"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
