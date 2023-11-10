@@ -24,24 +24,22 @@ class AdvancedBot(data.DataBot):
     including per-guild config and event logging.
     """
 
-    CONFIG_RECEIVE_WARNING_TIME_MS = 1000
-    DM_GUILD_ID = "dmcontext"
+    CONFIG_RECEIVE_WARNING_TIME_MS: int = 1000
+    DM_GUILD_ID: str = "dmcontext"
 
     def __init__(self, *args, **kwargs):
-        self.owner = None
-        self.__startup_time = None
+        self.owner: discord.User = None
+        self.__startup_time: datetime = None
         self.guild_config_lock = None
-        self.guild_configs = {}
+        self.guild_configs: dict[str, munch.Munch] = {}
         super().__init__(*args, prefix=self.get_prefix, **kwargs)
-        self.guild_config_cache = expiringdict.ExpiringDict(
-            max_len=self.file_config.cache.guild_config_cache_length,
-            max_age_seconds=self.file_config.cache.guild_config_cache_seconds,
-        )
-        self.command_rate_limit_bans = expiringdict.ExpiringDict(
+        self.command_rate_limit_bans: expiringdict.ExpiringDict[
+            str, bool
+        ] = expiringdict.ExpiringDict(
             max_len=5000,
             max_age_seconds=600,
         )
-        self.command_execute_history = {}
+        self.command_execute_history: dict[str, dict[int, bool]] = {}
 
         # Set the app command on error function to log errors in slash commands
         self.tree.on_error = self.on_app_command_error
@@ -72,6 +70,7 @@ class AdvancedBot(data.DataBot):
             bool: True if a config was created, False if a config already existed
         """
         async with self.guild_config_lock:
+            print(f"TYPE HINTING {type(self.guild_config_lock)}")
             try:
                 config = self.guild_configs[guild]
             except KeyError:
@@ -81,7 +80,7 @@ class AdvancedBot(data.DataBot):
                 return True
             return False
 
-    async def create_new_context_config(self, lookup: str):
+    async def create_new_context_config(self, lookup: str) -> munch.Munch:
         """Creates a new guild config based on a lookup key (usually a guild ID).
 
         parameters:
@@ -157,56 +156,7 @@ class AdvancedBot(data.DataBot):
             )
             await new_database_config.create()
 
-    async def sync_config(self, config_object):
-        """Syncs the given config with the currently loaded extensions.
-
-        parameters:
-            config_object (dict): the guild config object
-        """
-        config_object = munch.munchify(config_object)
-
-        should_update = False
-
-        for (
-            extension_name,
-            extension_config_from_data,
-        ) in self.extension_configs.items():
-            extension_config = config_object.extensions.get(extension_name)
-            if not extension_config and extension_config_from_data:
-                should_update = True
-                await self.logger.send_log(
-                    message=(
-                        f"Found extension {extension_name} not in config with ID"
-                        f" {config_object.guild_id}"
-                    ),
-                    level=LogLevel.DEBUG,
-                    context=LogContext(guild=self.get_guild(config_object.guild_id)),
-                    console_only=True,
-                )
-                config_object.extensions[
-                    extension_name
-                ] = extension_config_from_data.data
-
-        if should_update:
-            await self.logger.send_log(
-                message=(
-                    f"Updating guild config for lookup key: {config_object.guild_id}"
-                ),
-                level=LogLevel.DEBUG,
-                context=LogContext(guild=self.get_guild(config_object.guild_id)),
-                console_only=True,
-            )
-            # Modify the database
-            await self.write_new_config(
-                str(config_object.guild_id), json.dumps(config_object)
-            )
-
-            # Modify the local cache
-            self.guild_configs[config_object.guild_id] = config_object
-
-        return config_object
-
-    async def can_run(self, ctx: commands.Context, *, call_once=False):
+    async def can_run(self, ctx: commands.Context, *, call_once=False) -> bool:
         """Wraps the default can_run check to evaluate bot-admin permission.
 
         parameters:
@@ -268,7 +218,7 @@ class AdvancedBot(data.DataBot):
 
         return result
 
-    async def is_bot_admin(self, ctx):
+    async def is_bot_admin(self, ctx: commands.Context) -> bool:
         """Processes command context against admin/owner data.
 
         Command checks are disabled if the context author is the owner.
@@ -304,7 +254,7 @@ class AdvancedBot(data.DataBot):
 
         return False
 
-    async def get_owner(self):
+    async def get_owner(self) -> discord.User:
         """Gets the owner object from the bot application."""
         if not self.owner:
             try:
@@ -322,11 +272,13 @@ class AdvancedBot(data.DataBot):
         return self.owner
 
     @property
-    def startup_time(self):
+    def startup_time(self) -> datetime:
         """Gets the startup timestamp of the bot."""
         return self.__startup_time
 
-    async def get_log_channel_from_guild(self, guild: discord.Guild, key: str):
+    async def get_log_channel_from_guild(
+        self, guild: discord.Guild, key: str
+    ) -> str | None:
         """Gets the log channel ID associated with the given guild.
 
         This also checks if the channel exists in the correct guild.
@@ -349,7 +301,7 @@ class AdvancedBot(data.DataBot):
 
         return channel_id
 
-    async def slash_command_log(self, interaction):
+    async def slash_command_log(self, interaction: discord.Interaction) -> None:
         """A command to log the call of a slash command
 
         Args:
@@ -378,7 +330,7 @@ class AdvancedBot(data.DataBot):
             embed=embed,
         )
 
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         """Callback for when the bot is finished starting up."""
         self.__startup_time = datetime.datetime.utcnow()
         await self.logger.send_log(
@@ -429,7 +381,7 @@ class AdvancedBot(data.DataBot):
 
         return username
 
-    async def on_member_join(self, member: discord.Member):
+    async def on_member_join(self, member: discord.Member) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
         config = self.guild_configs[str(member.guild.id)]
 
@@ -556,7 +508,7 @@ class AdvancedBot(data.DataBot):
 
         await auxiliary.send_deny_embed(message=error_message, channel=context.channel)
 
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message) -> None:
         """Catches messages and acts appropriately.
 
         parameters:
