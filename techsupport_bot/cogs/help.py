@@ -12,6 +12,10 @@ from discord.ext import commands
 
 @dataclass
 class PrintableCommand:
+    """A custom class to store formatted information about a command
+    With a priority on being sortable and searchable
+    """
+
     prefix: str
     name: str
     usage: str
@@ -115,12 +119,12 @@ class Helper(cogs.BaseCog):
         await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
     def build_embeds_from_list(
-        self, commands: list[PrintableCommand], search_term: str
+        self, commands_list: list[PrintableCommand], search_term: str
     ) -> list[discord.Embed]:
         """Takes a list of commands and returns a list of embeds ready to be paginated
 
         Args:
-            commands (list[PrintableCommand]): A list of the dataclass PrintableCommand
+            commands_list (list[PrintableCommand]): A list of the dataclass PrintableCommand
             search_term (str): The string for the search term
 
         Returns:
@@ -128,7 +132,7 @@ class Helper(cogs.BaseCog):
                 to be shown to the user
         """
         sublists: list[list[PrintableCommand]] = [
-            commands[i : i + 10] for i in range(0, len(commands), 10)
+            commands_list[i : i + 10] for i in range(0, len(commands_list), 10)
         ]
         final_embeds: list[discord.Embed] = []
         for command_list in sublists:
