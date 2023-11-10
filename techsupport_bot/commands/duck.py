@@ -550,7 +550,6 @@ class DuckHunt(cogs.LoopCog):
         return f"{user_text}{user_text_extra}"
 
     @auxiliary.with_typing
-    @commands.cooldown(1, 600)
     @commands.guild_only()
     @duck.command(
         brief="Releases a duck into the wild",
