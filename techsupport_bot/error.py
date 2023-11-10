@@ -1,11 +1,20 @@
 """Module for command error responses.
 """
+
 import munch
+from discord import app_commands
 from discord.ext import commands
 
 
 class ExtensionDisabled(commands.errors.CheckFailure):
     """The exception thrown when an extension is disabled."""
+
+    def __init__(self):
+        self.dont_print_trace = True
+
+
+class CommandRateLimit(commands.errors.CheckFailure):
+    """The exception thrown when a user is on rate limit"""
 
     def __init__(self):
         self.dont_print_trace = True
@@ -167,6 +176,10 @@ COMMAND_ERROR_RESPONSES = {
         "I am unable to do that because you lack the permission(s): `%s`",
         {"key": "missing_perms"},
     ),
+    app_commands.MissingPermissions: ErrorResponse(
+        "I am unable to do that because you lack the permission(s): `%s`",
+        {"key": "missing_perms"},
+    ),
     commands.BotMissingPermissions: ErrorResponse(
         "I am unable to do that because I lack the permission(s): `%s`",
         {"key": "missing_perms"},
@@ -209,6 +222,7 @@ COMMAND_ERROR_RESPONSES = {
     ExtensionDisabled: ErrorResponse(
         "That extension is disabled for this context/server"
     ),
+    CommandRateLimit: ErrorResponse("You are being rate limited for spamming commands"),
 }
 
-IGNORED_ERRORS = set([commands.CommandNotFound])
+IGNORED_ERRORS = set([commands.CommandNotFound, app_commands.CommandNotFound])

@@ -1,6 +1,6 @@
 # Application
 Uses Google forum for Application
-Uses Mongo for storing the application
+Uses Postgres for storing the application
 Config setup
 ## Command Restrictions
 .application get <application_id>
@@ -713,7 +713,7 @@ Discord Library Random
 	Will send a deny embed "I ran into an error processing your command: Converting to "int" failed for parameter "max"." if cannot find an int for second parameter
 
 # Rules
-Uses Mongo
+Uses Postgres
 ## Command Restrictions
 .rule
 	None

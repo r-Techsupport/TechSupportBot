@@ -1,4 +1,5 @@
 """A class to handle the confirm request"""
+
 from enum import Enum, auto
 
 import discord

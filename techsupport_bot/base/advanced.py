@@ -1,17 +1,19 @@
 """Module for defining the advanced bot methods."""
+
 import asyncio
 import datetime
+import json
 import random
 import re
 import string
-import time
 
 import discord
-import error
+import error as custom_errors
 import expiringdict
 import munch
 from base import auxiliary, data
 from botlogging import LogContext, LogLevel
+from discord import app_commands
 from discord.ext import commands
 from unidecode import unidecode
 
@@ -22,112 +24,62 @@ class AdvancedBot(data.DataBot):
     including per-guild config and event logging.
     """
 
-    GUILD_CONFIG_COLLECTION = "guild_config"
     CONFIG_RECEIVE_WARNING_TIME_MS = 1000
     DM_GUILD_ID = "dmcontext"
 
     def __init__(self, *args, **kwargs):
         self.owner = None
         self.__startup_time = None
-        self.guild_config_collection = None
         self.guild_config_lock = None
+        self.guild_configs = {}
         super().__init__(*args, prefix=self.get_prefix, **kwargs)
         self.guild_config_cache = expiringdict.ExpiringDict(
             max_len=self.file_config.cache.guild_config_cache_length,
             max_age_seconds=self.file_config.cache.guild_config_cache_seconds,
         )
+        self.command_rate_limit_bans = expiringdict.ExpiringDict(
+            max_len=5000,
+            max_age_seconds=600,
+        )
+        self.command_execute_history = {}
+
+        # Set the app command on error function to log errors in slash commands
+        self.tree.on_error = self.on_app_command_error
 
     async def start(self, *args, **kwargs):
         """Function is automatically called when the bot is started by discord.py"""
         self.guild_config_lock = asyncio.Lock()
         await super().start(*args, **kwargs)
 
-    async def get_prefix(self, message):
+    async def get_prefix(self, message: discord.Message) -> str:
         """Gets the appropriate prefix for a command.
 
         parameters:
             message (discord.Message): the message to check against
         """
-        guild_config = await self.get_context_config(guild=message.guild)
+        guild_config = self.guild_configs[str(message.guild.id)]
         return getattr(
             guild_config, "command_prefix", self.file_config.bot_config.default_prefix
         )
 
-    async def get_all_context_configs(self, projection, limit=100):
-        """Gets all context configs.
+    async def register_new_guild_config(self, guild: str) -> bool:
+        """This creates a config for a new guild if needed
 
-        parameters:
-            projection (dict): the MongoDB projection for returned data
-            limit (int): the max number of config objects to return
+        Args:
+            guild (str): The id of the guild to create config for, in string form
+
+        Returns:
+            bool: True if a config was created, False if a config already existed
         """
-        configs = []
-        cursor = self.guild_config_collection.find({}, projection)
-        for document in await cursor.to_list(length=limit):
-            configs.append(munch.DefaultMunch.fromDict(document, None))
-        return configs
-
-    async def get_context_config(
-        self, ctx=None, guild=None, create_if_none=True, get_from_cache=True
-    ):
-        """Gets the appropriate config for the context.
-
-        parameters:
-            ctx (discord.ext.Context): the context of the config
-            guild (discord.Guild): the guild associated with the config (provided instead of ctx)
-            create_if_none (bool): True if the config should be created if not found
-            get_from_cache (bool): True if the config should be fetched from the cache
-        """
-        start = time.time()
-
-        if ctx:
-            guild_from_ctx = getattr(ctx, "guild", None)
-            lookup = guild_from_ctx.id if guild_from_ctx else self.DM_GUILD_ID
-        elif guild:
-            lookup = guild.id
-        else:
-            return None
-
-        lookup = str(lookup)
-
-        config_ = None
-
-        if get_from_cache:
-            config_ = self.guild_config_cache.get(lookup)
-
-        if not config_:
-            # locking prevents duplicate configs being made
-            async with self.guild_config_lock:
-                config_ = await self.guild_config_collection.find_one(
-                    {"guild_id": {"$eq": lookup}}
-                )
-
-                if not config_:
-                    await self.logger.send_log(
-                        message="No config found in MongoDB",
-                        level=LogLevel.DEBUG,
-                        console_only=True,
-                    )
-                    if create_if_none:
-                        config_ = await self.create_new_context_config(lookup)
-                else:
-                    config_ = await self.sync_config(config_)
-
-                if config_:
-                    self.guild_config_cache[lookup] = config_
-
-        time_taken = (time.time() - start) * 1000.0
-
-        if time_taken > self.CONFIG_RECEIVE_WARNING_TIME_MS:
-            await self.logger.send_log(
-                message=(
-                    f"Context config receive time = {time_taken} ms (over"
-                    f" {self.CONFIG_RECEIVE_WARNING_TIME_MS} threshold)"
-                ),
-                level=LogLevel.WARNING,
-                context=LogContext(guild=self.get_guild(lookup)),
-            )
-
-        return config_
+        async with self.guild_config_lock:
+            try:
+                config = self.guild_configs[guild]
+            except KeyError:
+                config = None
+            if not config:
+                await self.create_new_context_config(guild)
+                return True
+            return False
 
     async def create_new_context_config(self, lookup: str):
         """Creates a new guild config based on a lookup key (usually a guild ID).
@@ -154,6 +106,10 @@ class AdvancedBot(data.DataBot):
         config_.enabled_extensions = self.extension_name_list
         config_.nickname_filter = False
         config_.enable_logging = True
+        config_.rate_limit = munch.DefaultMunch(None)
+        config_.rate_limit.enabled = False
+        config_.rate_limit.commands = 4
+        config_.rate_limit.time = 10
 
         config_.extensions = extensions_config
 
@@ -164,17 +120,42 @@ class AdvancedBot(data.DataBot):
                 context=LogContext(guild=self.get_guild(lookup)),
                 console_only=True,
             )
-            await self.guild_config_collection.insert_one(config_)
+            # Modify the database
+            await self.write_new_config(str(lookup), json.dumps(config_))
+
+            # Modify the local cache
+            self.guild_configs[lookup] = config_
+
         except Exception as exception:
             # safely finish because the new config is still useful
             await self.logger.send_log(
-                message="Could not insert guild config into MongoDB",
+                message="Could not insert guild config into Postgres",
                 level=LogLevel.ERROR,
                 context=LogContext(guild=self.get_guild(lookup)),
                 exception=exception,
             )
 
         return config_
+
+    async def write_new_config(self, guild_id: str, config: str) -> None:
+        """Takes a config and guild and updates the config in the database
+        This is rarely needed
+
+        Args:
+            guild_id (str): The str ID of the guild the config belongs to
+            config (str): The str representation of the json config
+        """
+        database_config = await self.models.Config.query.where(
+            self.models.Config.guild_id == guild_id
+        ).gino.first()
+        if database_config:
+            await database_config.update(config=str(config)).apply()
+        else:
+            new_database_config = self.models.Config(
+                guild_id=str(guild_id),
+                config=str(config),
+            )
+            await new_database_config.create()
 
     async def sync_config(self, config_object):
         """Syncs the given config with the currently loaded extensions.
@@ -215,17 +196,21 @@ class AdvancedBot(data.DataBot):
                 context=LogContext(guild=self.get_guild(config_object.guild_id)),
                 console_only=True,
             )
-            await self.guild_config_collection.replace_one(
-                {"_id": config_object.get("_id")}, config_object
+            # Modify the database
+            await self.write_new_config(
+                str(config_object.guild_id), json.dumps(config_object)
             )
+
+            # Modify the local cache
+            self.guild_configs[config_object.guild_id] = config_object
 
         return config_object
 
-    async def can_run(self, ctx, *, call_once=False):
+    async def can_run(self, ctx: commands.Context, *, call_once=False):
         """Wraps the default can_run check to evaluate bot-admin permission.
 
         parameters:
-            ctx (discord.ext.Context): the context associated with the command
+            ctx (commands.Context): the context associated with the command
             call_once (bool): True if the check should be retrieved from the call_once attribute
         """
         await self.logger.send_log(
@@ -234,14 +219,42 @@ class AdvancedBot(data.DataBot):
             context=LogContext(guild=ctx.guild, channel=ctx.channel),
             console_only=True,
         )
+        is_bot_admin = await self.is_bot_admin(ctx)
+        config = self.guild_configs[str(ctx.guild.id)]
+
+        # Rate limiter
+        if config.rate_limit.get("enabled", False):
+            identifier = f"{ctx.author.id}-{ctx.guild.id}"
+
+            if identifier not in self.command_execute_history:
+                self.command_execute_history[identifier] = expiringdict.ExpiringDict(
+                    max_len=20,
+                    max_age_seconds=config.rate_limit.time,
+                )
+
+            if ctx.message.id not in self.command_execute_history[identifier]:
+                self.command_execute_history[identifier][ctx.message.id] = True
+
+            if (
+                len(self.command_execute_history[identifier])
+                > config.rate_limit.commands
+            ):
+                self.command_rate_limit_bans[identifier] = True
+
+            if (
+                identifier in self.command_rate_limit_bans
+                and not ctx.author.guild_permissions.administrator
+            ):
+                raise custom_errors.CommandRateLimit
 
         extension_name = self.get_command_extension_name(ctx.command)
         if extension_name:
-            config = await self.get_context_config(ctx)
-            if not extension_name in config.enabled_extensions:
-                raise error.ExtensionDisabled
-
-        is_bot_admin = await self.is_bot_admin(ctx)
+            config = self.guild_configs[str(ctx.guild.id)]
+            if (
+                not extension_name in config.enabled_extensions
+                and extension_name != "config"
+            ):
+                raise custom_errors.ExtensionDisabled
 
         cog = getattr(ctx.command, "cog", None)
         if getattr(cog, "ADMIN_ONLY", False) and not is_bot_admin:
@@ -313,7 +326,7 @@ class AdvancedBot(data.DataBot):
         """Gets the startup timestamp of the bot."""
         return self.__startup_time
 
-    async def get_log_channel_from_guild(self, guild, key):
+    async def get_log_channel_from_guild(self, guild: discord.Guild, key: str):
         """Gets the log channel ID associated with the given guild.
 
         This also checks if the channel exists in the correct guild.
@@ -325,8 +338,8 @@ class AdvancedBot(data.DataBot):
         if not guild:
             return None
 
-        config_ = await self.get_context_config(guild=guild)
-        channel_id = config_.get(key)
+        config = self.guild_configs[str(guild.id)]
+        channel_id = config.get(key)
 
         if not channel_id:
             return None
@@ -418,7 +431,7 @@ class AdvancedBot(data.DataBot):
 
     async def on_member_join(self, member: discord.Member):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
-        config = await self.get_context_config(guild=member.guild)
+        config = self.guild_configs[str(member.guild.id)]
 
         if config.get("nickname_filter", False):
             temp_name = self.format_username(member.display_name)
@@ -438,11 +451,89 @@ class AdvancedBot(data.DataBot):
                         context=LogContext(guild=member.guild),
                     )
 
-    async def on_command_error(self, context, exception):
+    async def on_app_command_error(
+        self,
+        interaction: discord.Interaction[discord.Client],
+        error: app_commands.AppCommandError,
+    ) -> None:
+        """Error handler for the slowmode extension."""
+        error_message = await self.handle_error(
+            exception=error, channel=interaction.channel, guild=interaction.guild
+        )
+
+        if not error_message:
+            return
+
+        embed = auxiliary.prepare_deny_embed(message=error_message)
+
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed)
+        else:
+            await interaction.response.send_message(embed=embed)
+
+    async def handle_error(
+        self,
+        exception: Exception,
+        channel: discord.abc.Messageable,
+        guild: discord.Guild,
+    ) -> str:
+        """Handles the formatting and logging of command and app command errors
+
+        Args:
+            exception (Exception): The exception object generated
+            channel (discord.abc.Messageable): The channel the command was run in
+            guild (discord.Guild): The guild the command was run in
+
+        Returns:
+            str: The pretty string format that should be shared with the user
+        """
+        # Get the custom error response we made for the error
+        message_template = custom_errors.COMMAND_ERROR_RESPONSES.get(
+            exception.__class__, ""
+        )
+        # see if we have mapped this error to no response (None)
+        # or if we have added it to the global ignore list of errors
+        if (
+            message_template is None
+            or exception.__class__ in custom_errors.IGNORED_ERRORS
+        ):
+            return
+        # otherwise set it a default error message
+        if message_template == "":
+            message_template = custom_errors.ErrorResponse()
+
+        error_message = message_template.get_message(exception)
+
+        log_channel = await self.get_log_channel_from_guild(
+            guild=guild, key="logging_channel"
+        )
+
+        # Ensure that error messages aren't too long.
+        # This ONLY changes the user facing error, the stack trace isn't impacted
+        if len(error_message) > 1000:
+            error_message = error_message[:1000]
+            error_message += "..."
+
+        # Only log stack trace if you should
+        if not getattr(exception, "dont_print_trace", False):
+            await self.logger.send_log(
+                message=f"Command error: {exception}",
+                level=LogLevel.ERROR,
+                channel=log_channel,
+                context=LogContext(guild=guild, channel=channel),
+                exception=exception,
+            )
+
+        # Return the string error message and allow the context/interaction to respond properly
+        return error_message
+
+    async def on_command_error(
+        self, context: commands.Context, exception: Exception
+    ) -> None:
         """Catches command errors and sends them to the error logger for processing.
 
         parameters:
-            context (discord.ext.Context): the context associated with the exception
+            context (commands.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
         if self.extra_events.get("on_command_error", None):
@@ -457,46 +548,13 @@ class AdvancedBot(data.DataBot):
             ):
                 return
 
-        message_template = error.COMMAND_ERROR_RESPONSES.get(exception.__class__, "")
-        # see if we have mapped this error to no response (None)
-        # or if we have added it to the global ignore list of errors
-        if message_template is None or exception.__class__ in error.IGNORED_ERRORS:
-            return
-        # otherwise set it a default error message
-        if message_template == "":
-            message_template = error.ErrorResponse()
-
-        error_message = message_template.get_message(exception)
-
-        log_channel = await self.get_log_channel_from_guild(
-            getattr(context, "guild", None), key="logging_channel"
+        error_message = await self.handle_error(
+            exception=exception, channel=context.channel, guild=context.guild
         )
-
-        # 1000 character cap
-        if len(error_message) < 1000:
-            await auxiliary.send_deny_embed(
-                message=error_message, channel=context.channel
-            )
-        else:
-            await auxiliary.send_deny_embed(
-                message=(
-                    "Command raised an error and the error message too long to send!"
-                )
-                + f" First 1000 chars:\n{error_message[:1000]}",
-                channel=context.channel,
-            )
-
-        # Stops execution if dont_print_trace is True
-        if hasattr(exception, "dont_print_trace") and exception.dont_print_trace:
+        if not error_message:
             return
 
-        await self.logger.send_log(
-            message=f"Command error: {exception}",
-            level=LogLevel.ERROR,
-            channel=log_channel,
-            context=LogContext(guild=context.guild, channel=context.channel),
-            exception=exception,
-        )
+        await auxiliary.send_deny_embed(message=error_message, channel=context.channel)
 
     async def on_message(self, message):
         """Catches messages and acts appropriately.
@@ -514,7 +572,7 @@ class AdvancedBot(data.DataBot):
             attachment_urls = ", ".join(a.url for a in message.attachments)
             content_string = f'"{message.content}"' if message.content else ""
             attachment_string = f"({attachment_urls})" if attachment_urls else ""
-            await self.bot.logger.send_log(
+            await self.logger.send_log(
                 message=(
                     f"PM from `{message.author}`: {content_string} {attachment_string}"
                 ),

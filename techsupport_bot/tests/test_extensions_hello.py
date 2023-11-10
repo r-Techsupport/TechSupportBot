@@ -3,7 +3,6 @@ This is a file to test the extensions/hello.py file
 This contains 1 test
 """
 
-
 import importlib
 from unittest.mock import AsyncMock
 
