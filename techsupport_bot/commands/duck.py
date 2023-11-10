@@ -765,11 +765,14 @@ class DuckHunt(cogs.LoopCog):
         description="Will spawn a duck with the command",
     )
     async def spawn(self, ctx: commands.Context) -> None:
+        """A debug focused command to force spawn a duck in any channel
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
         config = self.bot.guild_configs[str(ctx.guild.id)]
         spawn_user = config.extensions.duck.spawn_user.value
-        print(f"Spawn_user {config.extensions.duck.spawn_user.value}")
         for person in spawn_user:
-            print(f"id vs person {ctx.author.id == int(person)}")
             if ctx.author.id == int(person):
                 await self.execute(config, ctx.guild, ctx.channel)
                 return
