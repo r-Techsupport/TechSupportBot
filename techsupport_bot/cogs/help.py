@@ -28,13 +28,15 @@ class Helper(cogs.BaseCog):
     EXTENSIONS_PER_GENERAL_PAGE = 15
 
     @commands.group(name="help")
-    async def help_command(self, ctx: commands.Context, search_term: str) -> None:
+    async def help_command(self, ctx: commands.Context, search_term: str = "") -> None:
         """Main comand interface for getting help with bot commands.
 
         This is a command and should be accessed via Discord.
 
         parameters:
             ctx (commands.Context): the context object for the message
+            search_term (str) [Optional]; The term to search command name and descriptions for.
+                Will default to empty string
         """
         # Build raw lists of commands
         prefix_command_list = list(self.bot.walk_commands())
@@ -125,7 +127,7 @@ class Helper(cogs.BaseCog):
 
         Args:
             commands_list (list[PrintableCommand]): A list of the dataclass PrintableCommand
-            search_term (str): The string for the search term
+            search_term (str): The string for the search term.
 
         Returns:
             list[discord.Embed]: The list of embeds always of at least size 1 ready
