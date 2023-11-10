@@ -141,10 +141,6 @@ class ConfigControl(cogs.BaseCog):
             # Modify the local cache
             self.bot.guild_configs[str(ctx.guild.id)] = uploaded_data
 
-            # Delete config from cache
-            if str(ctx.guild.id) in self.bot.guild_config_cache:
-                del self.bot.guild_config_cache[str(ctx.guild.id)]
-
             await auxiliary.send_confirm_embed(
                 message="I've updated that config", channel=ctx.channel
             )
