@@ -585,7 +585,8 @@ class DuckHunt(cogs.LoopCog):
             message=f"Fly safe! You have {duck_user.befriend_count} ducks left.",
             channel=ctx.channel,
         )
-        await self.execute(config, ctx.guild,ctx.channel)
+        await self.execute(config, ctx.guild, ctx.channel)
+
     @auxiliary.with_typing
     @commands.guild_only()
     @duck.command(
@@ -761,7 +762,7 @@ class DuckHunt(cogs.LoopCog):
     @commands.guild_only()
     @duck.command(
         brief="Spawns a duck on command",
-        description="Will spawn a duck with the command"
+        description="Will spawn a duck with the command",
     )
     async def spawn(self, ctx):
         config = await self.bot.get_context_config(ctx)
@@ -770,11 +771,9 @@ class DuckHunt(cogs.LoopCog):
         for person in spawn_user:
             print(f"id vs person {ctx.author.id == int(person)}")
             if ctx.author.id == int(person):
-                await self.execute(config,ctx.guild,ctx.channel)
+                await self.execute(config, ctx.guild, ctx.channel)
                 return
         await auxiliary.send_deny_embed(
             message="It looks like you don't have permissions to spawn a duck",
             channel=ctx.channel,
         )
-        
-        
