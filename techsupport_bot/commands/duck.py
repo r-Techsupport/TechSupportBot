@@ -764,8 +764,8 @@ class DuckHunt(cogs.LoopCog):
         brief="Spawns a duck on command",
         description="Will spawn a duck with the command",
     )
-    async def spawn(self, ctx):
-        config = await self.bot.get_context_config(ctx)
+    async def spawn(self, ctx: commands.Context) -> None:
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         spawn_user = config.extensions.duck.spawn_user.value
         print(f"Spawn_user {config.extensions.duck.spawn_user.value}")
         for person in spawn_user:
