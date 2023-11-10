@@ -23,6 +23,7 @@ class PrintableCommand:
 
 
 async def setup(bot):
+    """Registers the Helper Cog"""
     await bot.add_cog(Helper(bot=bot))
 
 

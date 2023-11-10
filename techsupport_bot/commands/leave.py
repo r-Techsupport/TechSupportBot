@@ -1,13 +1,27 @@
+"""
+Commands which allows the bot to leave a guild
+The cog in the file is named:
+    Leaver
+
+This file contains 1 commands:
+    .leave
+"""
+
 import discord
 from base import auxiliary, cogs
 from discord.ext import commands
 
 
 async def setup(bot):
+    """Registers the Leaver Cog"""
     await bot.add_cog(Leaver(bot=bot))
 
 
 class Leaver(cogs.BaseCog):
+    """
+    The class that holds the leave command
+    """
+
     ADMIN_ONLY = True
 
     @commands.command(

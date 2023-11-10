@@ -11,6 +11,7 @@ from discord.ext import commands
 
 
 async def setup(bot):
+    """Registers the EventLogger Cog"""
     await bot.add_cog(EventLogger(bot=bot))
 
 
