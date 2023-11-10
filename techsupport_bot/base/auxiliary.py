@@ -10,6 +10,7 @@ import discord
 import munch
 from discord.ext import commands
 
+
 def generate_basic_embed(
     title: str, description: str, color: discord.Color, url: str = ""
 ) -> discord.Embed:
