@@ -92,18 +92,24 @@ class ExtensionControl(cogs.BaseCog):
             ctx (discord.ext.Context): the context object for the message
             extension_name (str): the name of the extension
         """
-        status = (
+        extensions_status = (
             "loaded"
             if ctx.bot.extensions.get(
                 f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}"
             )
             else "unloaded"
         )
+        functions_status = (
+            "loaded"
+            if ctx.bot.extensions.get(f"{self.bot.FUNCTIONS_DIR_NAME}.{extension_name}")
+            else "unloaded"
+        )
         embed = discord.Embed(
-            title=f"Extension status for `{extension_name}`", description=status
+            title=f"Extension status for `{extension_name}`",
+            description=f"Extension: {extensions_status}\nFunction: {functions_status}",
         )
 
-        if status == "loaded":
+        if functions_status == "loaded" or extensions_status == "loaded":
             embed.color = discord.Color.green()
         else:
             embed.color = discord.Color.gold()

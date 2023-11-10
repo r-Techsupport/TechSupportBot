@@ -46,6 +46,8 @@ class ExtensionsBot(commands.Bot):
     EXTENSIONS_DIR = (
         f"{os.path.join(os.path.dirname(__file__))}/../{EXTENSIONS_DIR_NAME}"
     )
+    FUNCTIONS_DIR_NAME = "functions"
+    FUNCTIONS_DIR = f"{os.path.join(os.path.dirname(__file__))}/../{FUNCTIONS_DIR_NAME}"
     ExtensionConfig = ExtensionConfig
 
     def __init__(self, prefix=".", intents=None, allowed_mentions=None):
@@ -119,13 +121,26 @@ class ExtensionsBot(commands.Bot):
                 )
 
     async def get_potential_extensions(self):
-        """Gets the current list of extensions in the defined directory."""
+        """Gets the current list of extensions in the defined directory.
+        This ONLY gets commands, not functions"""
         self.logger.console.info(f"Searching {self.EXTENSIONS_DIR} for extensions")
-        return [
+        extensions_list = [
             os.path.basename(f)[:-3]
             for f in glob.glob(f"{self.EXTENSIONS_DIR}/*.py")
             if os.path.isfile(f) and not f.endswith("__init__.py")
         ]
+        return extensions_list
+
+    async def get_potential_function_extensions(self):
+        """Gets the current list of extensions in the defined directory.
+        This ONLY gets functions, not commands"""
+        self.logger.console.info(f"Searching {self.FUNCTIONS_DIR} for extensions")
+        extensions_list = [
+            os.path.basename(f)[:-3]
+            for f in glob.glob(f"{self.FUNCTIONS_DIR}/*.py")
+            if os.path.isfile(f) and not f.endswith("__init__.py")
+        ]
+        return extensions_list
 
     async def check_extension_exists(self, extension):
         """A function to check if an extension exists, by extension name
@@ -146,7 +161,7 @@ class ExtensionsBot(commands.Bot):
         parameters:
             graceful (bool): True if extensions should gracefully fail to load
         """
-        self.logger.console.debug("Retrieving extensions")
+        self.logger.console.debug("Retrieving commands")
         for extension_name in await self.get_potential_extensions():
             if extension_name in self.file_config.bot_config.disabled_extensions:
                 self.logger.console.debug(
@@ -158,6 +173,24 @@ class ExtensionsBot(commands.Bot):
                 await self.load_extension(
                     f"{self.EXTENSIONS_DIR_NAME}.{extension_name}"
                 )
+                self.extension_name_list.append(extension_name)
+            except Exception as exception:
+                self.logger.console.error(
+                    f"Failed to load extension {extension_name}: {exception}"
+                )
+                if not graceful:
+                    raise exception
+
+        self.logger.console.debug("Retrieving functions")
+        for extension_name in await self.get_potential_function_extensions():
+            if extension_name in self.file_config.bot_config.disabled_extensions:
+                self.logger.console.debug(
+                    f"{extension_name} is disabled on startup - ignoring load"
+                )
+                continue
+
+            try:
+                await self.load_extension(f"{self.FUNCTIONS_DIR_NAME}.{extension_name}")
                 self.extension_name_list.append(extension_name)
             except Exception as exception:
                 self.logger.console.error(
@@ -179,6 +212,7 @@ class ExtensionsBot(commands.Bot):
 
     def get_command_extension_name(self, command):
         """Gets the subname of an extension from a command.
+        Used only for commands, should never be run for a function
 
         parameters:
             command (discord.ext.commands.Command): the command to reference
