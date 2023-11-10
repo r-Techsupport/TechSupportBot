@@ -1,3 +1,12 @@
+"""
+Commands which allow information about the bot to be shown
+The cog in the file is named:
+    BotInfo
+
+This file contains 1 command:
+    .bot
+"""
+
 import re
 
 import discord
@@ -7,10 +16,15 @@ from discord.ext import commands
 
 
 async def setup(bot):
+    """Registers the BotInfo Cog"""
     await bot.add_cog(BotInfo(bot=bot))
 
 
 class BotInfo(cogs.BaseCog):
+    """
+    The class that holds the bot command
+    """
+
     ADMIN_ONLY = True
 
     @commands.command(name="bot", description="Provides bot info")

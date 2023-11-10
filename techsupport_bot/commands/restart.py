@@ -1,13 +1,27 @@
-import discord
+"""
+Commands which allows the bot to be restarted
+The cog in the file is named:
+    Restarter
+
+This file contains 2 commands:
+    .restart
+    .reboot
+"""
+
 from base import auxiliary, cogs
 from discord.ext import commands
 
 
 async def setup(bot):
+    """Registers the Restarter Cog"""
     await bot.add_cog(Restarter(bot=bot))
 
 
 class Restarter(cogs.BaseCog):
+    """
+    The class that holds the reboot command
+    """
+
     ADMIN_ONLY = True
 
     @commands.command(

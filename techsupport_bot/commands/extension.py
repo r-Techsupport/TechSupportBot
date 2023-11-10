@@ -1,3 +1,15 @@
+"""
+Commands which allow control over loaded extensions
+The cog in the file is named:
+    ExtensionControl
+
+This file contains 4 commands:
+    .extension status
+    .extension load
+    .extension unload
+    .extension register
+"""
+
 import discord
 import ui
 from base import auxiliary, cogs
@@ -5,10 +17,15 @@ from discord.ext import commands
 
 
 async def setup(bot):
+    """Registers the ExtensionControl Cog"""
     await bot.add_cog(ExtensionControl(bot=bot))
 
 
 class ExtensionControl(cogs.BaseCog):
+    """
+    The class that holds the extension commands
+    """
+
     ADMIN_ONLY = True
 
     @commands.group(

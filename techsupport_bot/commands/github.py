@@ -1,3 +1,15 @@
+"""
+Commands which allows the admin to create github issues on linked repo
+The cog in the file is named:
+    IssueCreator
+
+This file contains 4 commands:
+    .botish
+    .botissue
+    .ish
+    .issue
+"""
+
 import json
 
 import discord
@@ -6,10 +18,15 @@ from discord.ext import commands
 
 
 async def setup(bot):
+    """Registers the IssueCreator Cog"""
     await bot.add_cog(IssueCreator(bot=bot))
 
 
 class IssueCreator(cogs.BaseCog):
+    """
+    The class that holds the issue commands
+    """
+
     ADMIN_ONLY = True
     GITHUB_API_BASE_URL = "https://api.github.com"
 

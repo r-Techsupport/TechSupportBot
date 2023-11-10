@@ -1,12 +1,26 @@
+"""
+Commands which allows the app command tree to be updated
+The cog in the file is named:
+    AppCommandSync
+
+This file contains 1 commands:
+    .sync
+"""
+
 from base import auxiliary, cogs
 from discord.ext import commands
 
 
 async def setup(bot):
+    """Registers the AppCommandSync Cog"""
     await bot.add_cog(AppCommandSync(bot=bot))
 
 
 class AppCommandSync(cogs.BaseCog):
+    """
+    The class that holds the sync command
+    """
+
     ADMIN_ONLY = True
 
     @auxiliary.with_typing

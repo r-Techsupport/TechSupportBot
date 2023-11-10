@@ -1,3 +1,13 @@
+"""
+Commands which allow control over various bot profile properties
+The cog in the file is named:
+    Setter
+
+This file contains 2 commands:
+    .set nick
+    .set game
+"""
+
 import discord
 import ui
 from base import auxiliary, cogs
@@ -5,10 +15,15 @@ from discord.ext import commands
 
 
 async def setup(bot):
+    """Registers the ExtensionControl Cog"""
     await bot.add_cog(Setter(bot=bot))
 
 
 class Setter(cogs.BaseCog):
+    """
+    The class that holds the set commands
+    """
+
     ADMIN_ONLY = True
 
     @commands.group(

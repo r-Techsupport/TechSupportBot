@@ -1,3 +1,13 @@
+"""
+Commands which allow control over what commands are allowed to be run
+The cog in the file is named:
+    CommandControl
+
+This file contains 2 commands:
+    .command disable
+    .command enable
+"""
+
 import discord
 import ui
 from base import auxiliary, cogs
@@ -5,10 +15,15 @@ from discord.ext import commands
 
 
 async def setup(bot):
+    """Registers the CommandControl Cog"""
     await bot.add_cog(CommandControl(bot=bot))
 
 
 class CommandControl(cogs.BaseCog):
+    """
+    The class that holds the command control commands
+    """
+
     ADMIN_ONLY = True
 
     @commands.group(

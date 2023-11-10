@@ -1,3 +1,13 @@
+"""
+Commands which allow admins to echo messages from the bot
+The cog in the file is named:
+    MessageEcho
+
+This file contains 2 commands:
+    .echo user
+    .echo channel
+"""
+
 import discord
 import ui
 from base import auxiliary, cogs
@@ -5,10 +15,15 @@ from discord.ext import commands
 
 
 async def setup(bot):
+    """Registers the MessageEcho Cog"""
     await bot.add_cog(MessageEcho(bot=bot))
 
 
 class MessageEcho(cogs.BaseCog):
+    """
+    The class that holds the echo commands
+    """
+
     ADMIN_ONLY = True
 
     @commands.group(
