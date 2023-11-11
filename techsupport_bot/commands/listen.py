@@ -78,7 +78,6 @@ class InfoEmbed(discord.Embed):
 class Listener(cogs.BaseCog):
     """Cog object for listening to channels."""
 
-    ADMIN_ONLY = True
     MAX_DESTINATIONS = 10
     CACHE_TIME = 60
 
@@ -238,6 +237,7 @@ class Listener(cogs.BaseCog):
         except KeyError:
             pass
 
+    @commands.check(auxiliary.bot_admin_check_context)
     @commands.group(description="Executes a listen command")
     async def listen(self, ctx):
         """Command group for listen commands.

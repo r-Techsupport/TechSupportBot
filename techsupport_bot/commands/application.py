@@ -191,13 +191,16 @@ class ApplicationNotifier(cogs.LoopCog):
 class ApplicationManager(cogs.LoopCog):
     """This cog is responsible for the majority of functions in the application system"""
 
-    application_group = app_commands.Group(name="application", description="...")
+    application_group = app_commands.Group(
+        name="application", description="...", extras={"module": "application"}
+    )
 
     # Slash Commands
 
     @app_commands.command(
         name="apply",
         description="Use this to show you are interested in being staff on this server",
+        extras={"module": "application"},
     )
     async def apply(self, interaction: discord.Interaction) -> None:
         """The slash command entrance for /apply
@@ -210,7 +213,9 @@ class ApplicationManager(cogs.LoopCog):
 
     @app_commands.check(command_permission_check)
     @application_group.command(
-        name="ban", description="Ban someone from making new applications"
+        name="ban",
+        description="Ban someone from making new applications",
+        extras={"module": "application"},
     )
     async def ban_user(
         self, interaction: discord.Interaction, member: discord.Member
@@ -240,7 +245,9 @@ class ApplicationManager(cogs.LoopCog):
 
     @app_commands.check(command_permission_check)
     @application_group.command(
-        name="unban", description="Unban someone and allow them to apply"
+        name="unban",
+        description="Unban someone and allow them to apply",
+        extras={"module": "application"},
     )
     async def unban_user(
         self, interaction: discord.Interaction, member: discord.Member
@@ -268,7 +275,9 @@ class ApplicationManager(cogs.LoopCog):
 
     @app_commands.check(command_permission_check)
     @application_group.command(
-        name="get", description="Gets the application of the given user"
+        name="get",
+        description="Gets the application of the given user",
+        extras={"module": "application"},
     )
     async def get_application(
         self,
@@ -291,7 +300,9 @@ class ApplicationManager(cogs.LoopCog):
 
     @app_commands.check(command_permission_check)
     @application_group.command(
-        name="approve", description="Approves the application of the given user"
+        name="approve",
+        description="Approves the application of the given user",
+        extras={"module": "application"},
     )
     async def approve_application(
         self,
@@ -338,7 +349,9 @@ class ApplicationManager(cogs.LoopCog):
 
     @app_commands.check(command_permission_check)
     @application_group.command(
-        name="deny", description="Denies the application of the given user"
+        name="deny",
+        description="Denies the application of the given user",
+        extras={"module": "application"},
     )
     async def deny_application(
         self,
@@ -372,7 +385,9 @@ class ApplicationManager(cogs.LoopCog):
     @app_commands.check(command_permission_check)
     @app_commands.checks.has_permissions(administrator=True)
     @application_group.command(
-        name="delete", description="Deletes all applications from a user"
+        name="delete",
+        description="Deletes all applications from a user",
+        extras={"module": "application"},
     )
     async def delete_applications(
         self,
@@ -401,7 +416,9 @@ class ApplicationManager(cogs.LoopCog):
 
     @app_commands.check(command_permission_check)
     @application_group.command(
-        name="list", description="Lists all applications by a given status"
+        name="list",
+        description="Lists all applications by a given status",
+        extras={"module": "application"},
     )
     async def list_applications(
         self,

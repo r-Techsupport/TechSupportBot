@@ -22,7 +22,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
         bot (bot.TechSupportBot): The bot to register the extensions
     """
 
-    await bot.add_cog(WindowsError(bot=bot, extension_name="winerrer"))
+    await bot.add_cog(WindowsError(bot=bot, extension_name="winerror"))
 
 
 @dataclass
@@ -59,6 +59,7 @@ class WindowsError(cogs.BaseCog):
     @app_commands.command(
         name="winerror",
         description="Searches the windows error database based on input",
+        extras={"module": "winerror"},
     )
     async def winerror(
         self, interaction: discord.Interaction, search_term: str

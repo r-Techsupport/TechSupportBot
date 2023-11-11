@@ -22,8 +22,7 @@ class Restarter(cogs.BaseCog):
     The class that holds the reboot command
     """
 
-    ADMIN_ONLY = True
-
+    @commands.check(auxiliary.bot_admin_check_context)
     @commands.command(
         name="restart",
         description="Restarts the bot at the container level",

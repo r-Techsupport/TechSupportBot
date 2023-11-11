@@ -480,3 +480,10 @@ async def extension_help(self, ctx: commands.Context, extension_name: str) -> No
                 self, extension_name, await self.bot.get_prefix(ctx.message)
             )
         )
+
+
+async def bot_admin_check_context(ctx: commands.Context):
+    is_admin = await ctx.bot.is_bot_admin(ctx.author)
+    if not is_admin:
+        raise commands.MissingPermissions(["bot_admin"])
+    return True

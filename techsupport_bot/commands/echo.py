@@ -22,8 +22,7 @@ class MessageEcho(cogs.BaseCog):
     The class that holds the echo commands
     """
 
-    ADMIN_ONLY = True
-
+    @commands.check(auxiliary.bot_admin_check_context)
     @commands.group(
         brief="Executes an echo bot command", description="Executes an echo bot command"
     )

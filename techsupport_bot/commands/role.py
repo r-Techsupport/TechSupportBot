@@ -61,6 +61,7 @@ class RoleGiver(cogs.BaseCog):
         self.ctx_menu = app_commands.ContextMenu(
             name="Manage roles",
             callback=self.assign_role_command,
+            extras={"module": "role"},
         )
         self.bot.tree.add_command(self.ctx_menu)
 
@@ -70,7 +71,11 @@ class RoleGiver(cogs.BaseCog):
         """This setups the global lock on the role command, to avoid conflicts"""
         self.locked = set()
 
-    @role_group.command(name="self", description="Assign or remove roles from yourself")
+    @role_group.command(
+        name="self",
+        description="Assign or remove roles from yourself",
+        extras={"module": "role"},
+    )
     async def self_role(self, interaction: discord.Interaction):
         """The base of the self role command
 
@@ -89,7 +94,11 @@ class RoleGiver(cogs.BaseCog):
             interaction, roles, allowed_to_execute, interaction.user
         )
 
-    @role_group.command(name="manage", description="Modify roles on a given user")
+    @role_group.command(
+        name="manage",
+        description="Modify roles on a given user",
+        extras={"module": "role"},
+    )
     async def assign_role(
         self, interaction: discord.Interaction, member: discord.Member
     ):

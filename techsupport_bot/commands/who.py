@@ -76,7 +76,7 @@ class Who(cogs.BaseCog):
     @app_commands.command(
         name="whois",
         description="Gets Discord user information",
-        extras={"brief": "Gets user data", "usage": "@user"},
+        extras={"brief": "Gets user data", "usage": "@user", "module": "who"},
     )
     async def get_note(
         self, interaction: discord.Interaction, user: discord.Member
@@ -135,7 +135,11 @@ class Who(cogs.BaseCog):
     @notes.command(
         name="set",
         description="Sets a note for a user, which can be read later from their whois",
-        extras={"brief": "Sets a note for a user", "usage": "@user [note]"},
+        extras={
+            "brief": "Sets a note for a user",
+            "usage": "@user [note]",
+            "module": "who",
+        },
     )
     async def set_note(
         self, interaction: discord.Interaction, user: discord.Member, body: str
@@ -193,7 +197,11 @@ class Who(cogs.BaseCog):
     @notes.command(
         name="clear",
         description="Clears all existing notes for a user",
-        extras={"brief": "Clears all notes for a user", "usage": "@user"},
+        extras={
+            "brief": "Clears all notes for a user",
+            "usage": "@user",
+            "module": "who",
+        },
     )
     async def clear_notes(
         self, interaction: discord.Interaction, user: discord.Member
@@ -248,7 +256,11 @@ class Who(cogs.BaseCog):
     @notes.command(
         name="all",
         description="Gets all notes for a user instead of just new ones",
-        extras={"brief": "Gets all notes for a user", "usage": "@user"},
+        extras={
+            "brief": "Gets all notes for a user",
+            "usage": "@user",
+            "module": "who",
+        },
     )
     async def all_notes(
         self, interaction: discord.Interaction, user: discord.Member

@@ -11,7 +11,7 @@ import re
 
 import discord
 import git
-from core import cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -25,8 +25,7 @@ class BotInfo(cogs.BaseCog):
     The class that holds the bot command
     """
 
-    ADMIN_ONLY = True
-
+    @commands.check(auxiliary.bot_admin_check_context)
     @commands.command(name="bot", description="Provides bot info")
     async def get_bot_data(self, ctx):
         """Gets various data about the bot.

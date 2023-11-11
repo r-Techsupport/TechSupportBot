@@ -26,8 +26,7 @@ class ExtensionControl(cogs.BaseCog):
     The class that holds the extension commands
     """
 
-    ADMIN_ONLY = True
-
+    @commands.check(auxiliary.bot_admin_check_context)
     @commands.group(
         name="extension",
         brief="Executes an extension bot command",
