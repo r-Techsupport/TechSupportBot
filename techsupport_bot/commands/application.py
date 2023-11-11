@@ -129,9 +129,6 @@ async def command_permission_check(interaction: discord.Interaction) -> bool:
     # Get the bot object for easier access
     bot = interaction.client
 
-    # Log the command invocation
-    await bot.slash_command_log(interaction)
-
     # Get the config
     config = bot.guild_configs[str(interaction.guild.id)]
 
@@ -209,7 +206,6 @@ class ApplicationManager(cogs.LoopCog):
         Args:
             interaction (discord.Interaction): The interaction that triggered the slash command
         """
-        await self.bot.slash_command_log(interaction)
         await self.start_application(interaction)
 
     @app_commands.check(command_permission_check)

@@ -98,6 +98,11 @@ class TechSupportBot(commands.Bot):
         # Set the app command on error function to log errors in slash commands
         self.tree.on_error = self.on_app_command_error
 
+        # On interaction will allow us to not run commands if they are disabled
+        # And log the calling of commands
+        # This will basically replace can_run and on_command for prefix commands
+        self.tree.interaction_check = self.interaction_check
+
     # Entry point
 
     async def start(self) -> None:
@@ -799,6 +804,10 @@ class TechSupportBot(commands.Bot):
         )
 
     # Other stuff
+
+    async def interaction_check(self, interaction: discord.Interaction) -> None:
+        await self.slash_command_log(interaction)
+        return True
 
     async def slash_command_log(self, interaction: discord.Interaction) -> None:
         """A command to log the call of a slash command

@@ -77,8 +77,6 @@ class RoleGiver(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that called this command
         """
-        await self.bot.slash_command_log(interaction)
-
         # Pull config
         config = self.bot.guild_configs[str(interaction.guild.id)]
 
@@ -113,8 +111,6 @@ class RoleGiver(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that triggered this
             member (discord.Member): The member to modify roles of
         """
-        await self.bot.slash_command_log(interaction)
-
         # Pull config
         config = self.bot.guild_configs[str(interaction.guild.id)]
 
