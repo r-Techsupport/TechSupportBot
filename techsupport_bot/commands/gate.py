@@ -87,9 +87,9 @@ class ServerGate(cogs.MatchCog):
 
         return ctx.channel.id == int(config.extensions.gate.channel.value)
 
-    async def response(self, config, ctx, content, _):
+    async def response(self, config, ctx: commands.Context, content, _):
         """Method for a response from the gate extension."""
-        is_admin = await self.bot.is_bot_admin(ctx)
+        is_admin = await self.bot.is_bot_admin(ctx.author)
 
         if is_admin:
             return

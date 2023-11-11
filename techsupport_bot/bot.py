@@ -203,68 +203,6 @@ class TechSupportBot(commands.Bot):
                         exception=exception,
                     )
 
-    async def can_run(self, ctx: commands.Context, *, call_once=False) -> bool:
-        """Wraps the default can_run check to evaluate bot-admin permission.
-
-        parameters:
-            ctx (commands.Context): the context associated with the command
-            call_once (bool): True if the check should be retrieved from the call_once attribute
-        """
-        await self.logger.send_log(
-            message="Checking if command can run",
-            level=LogLevel.DEBUG,
-            context=LogContext(guild=ctx.guild, channel=ctx.channel),
-            console_only=True,
-        )
-        is_bot_admin = await self.is_bot_admin(ctx)
-        config = self.guild_configs[str(ctx.guild.id)]
-
-        # Rate limiter
-        if config.rate_limit.get("enabled", False):
-            identifier = f"{ctx.author.id}-{ctx.guild.id}"
-
-            if identifier not in self.command_execute_history:
-                self.command_execute_history[identifier] = expiringdict.ExpiringDict(
-                    max_len=20,
-                    max_age_seconds=config.rate_limit.time,
-                )
-
-            if ctx.message.id not in self.command_execute_history[identifier]:
-                self.command_execute_history[identifier][ctx.message.id] = True
-
-            if (
-                len(self.command_execute_history[identifier])
-                > config.rate_limit.commands
-            ):
-                self.command_rate_limit_bans[identifier] = True
-
-            if (
-                identifier in self.command_rate_limit_bans
-                and not ctx.author.guild_permissions.administrator
-            ):
-                raise custom_errors.CommandRateLimit
-
-        extension_name = self.get_command_extension_name(ctx.command)
-        if extension_name:
-            config = self.guild_configs[str(ctx.guild.id)]
-            if (
-                not extension_name in config.enabled_extensions
-                and extension_name != "config"
-            ):
-                raise custom_errors.ExtensionDisabled
-
-        cog = getattr(ctx.command, "cog", None)
-        if getattr(cog, "ADMIN_ONLY", False) and not is_bot_admin:
-            # treat this as a command error to be caught by the dispatcher
-            raise commands.MissingPermissions(["bot_admin"])
-
-        if is_bot_admin:
-            result = True
-        else:
-            result = await super().can_run(ctx, call_once=call_once)
-
-        return result
-
     async def on_ready(self) -> None:
         """Callback for when the bot is finished starting up.
         This function may be called more than once and should not have discord interactions in it
@@ -738,7 +676,7 @@ class TechSupportBot(commands.Bot):
 
     # Bot properties
 
-    async def is_bot_admin(self, ctx: commands.Context) -> bool:
+    async def is_bot_admin(self, member: discord.Member) -> bool:
         """Processes command context against admin/owner data.
 
         Command checks are disabled if the context author is the owner.
@@ -746,26 +684,26 @@ class TechSupportBot(commands.Bot):
         They are also ignored if the author is bot admin in the config.
 
         Args:
-            ctx (commands.Context): the context associated with the command
+            member (discord.Member): the context associated with the command
         """
         await self.logger.send_log(
             message="Checking context against bot admins",
             level=LogLevel.DEBUG,
-            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            context=LogContext(guild=member.guild),
             console_only=True,
         )
 
         owner = await self.get_owner()
-        if getattr(owner, "id", None) == ctx.author.id:
+        if getattr(owner, "id", None) == member.id:
             return True
 
-        if ctx.message.author.id in [
+        if member.id in [
             int(id) for id in self.file_config.bot_config.admins.ids
         ]:
             return True
 
         role_is_admin = False
-        for role in getattr(ctx.message.author, "roles", []):
+        for role in getattr(member, "roles", []):
             if role.name in self.file_config.bot_config.admins.roles:
                 role_is_admin = True
                 break
@@ -803,9 +741,18 @@ class TechSupportBot(commands.Bot):
             guild_config, "command_prefix", self.file_config.bot_config.default_prefix
         )
 
-    # Other stuff
+    # Logging and checking permissions on commands
 
-    async def interaction_check(self, interaction: discord.Interaction) -> None:
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        """This is a default function of the command tree that always returns true
+        We can use this to log and evaluate if commands should be run
+
+        Args:
+            interaction (discord.Interaction): The interaction that started the command
+
+        Returns:
+            bool: True if the command should be run, false if it shouldn't be run
+        """
         await self.slash_command_log(interaction)
         return True
 
@@ -837,6 +784,73 @@ class TechSupportBot(commands.Bot):
             channel=log_channel,
             embed=embed,
         )
+    
+    async def command_run_admin_check(self, member: discord.Member) -> bool:
+        return await self.is_bot_admin(member)
+
+    async def can_run(self, ctx: commands.Context, *, call_once=False) -> bool:
+        """Wraps the default can_run check to evaluate bot-admin permission.
+
+        parameters:
+            ctx (commands.Context): the context associated with the command
+            call_once (bool): True if the check should be retrieved from the call_once attribute
+        """
+        await self.logger.send_log(
+            message="Checking if command can run",
+            level=LogLevel.DEBUG,
+            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            console_only=True,
+        )
+        is_bot_admin = await self.is_bot_admin(ctx)
+        config = self.guild_configs[str(ctx.guild.id)]
+
+        # Rate limiter
+        if config.rate_limit.get("enabled", False):
+            identifier = f"{ctx.author.id}-{ctx.guild.id}"
+
+            if identifier not in self.command_execute_history:
+                self.command_execute_history[identifier] = expiringdict.ExpiringDict(
+                    max_len=20,
+                    max_age_seconds=config.rate_limit.time,
+                )
+
+            if ctx.message.id not in self.command_execute_history[identifier]:
+                self.command_execute_history[identifier][ctx.message.id] = True
+
+            if (
+                len(self.command_execute_history[identifier])
+                > config.rate_limit.commands
+            ):
+                self.command_rate_limit_bans[identifier] = True
+
+            if (
+                identifier in self.command_rate_limit_bans
+                and not ctx.author.guild_permissions.administrator
+            ):
+                raise custom_errors.CommandRateLimit
+
+        extension_name = self.get_command_extension_name(ctx.command)
+        if extension_name:
+            config = self.guild_configs[str(ctx.guild.id)]
+            if (
+                not extension_name in config.enabled_extensions
+                and extension_name != "config"
+            ):
+                raise custom_errors.ExtensionDisabled
+
+        cog = getattr(ctx.command, "cog", None)
+        if getattr(cog, "ADMIN_ONLY", False) and not is_bot_admin:
+            # treat this as a command error to be caught by the dispatcher
+            raise commands.MissingPermissions(["bot_admin"])
+
+        if is_bot_admin:
+            result = True
+        else:
+            result = await super().can_run(ctx, call_once=call_once)
+
+        return result
+
+    # IRC Stuff
 
     async def start_irc(self):
         """Starts the IRC connection in a seperate thread
