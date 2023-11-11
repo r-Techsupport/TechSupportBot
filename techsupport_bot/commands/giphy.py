@@ -40,7 +40,7 @@ class Giphy(cogs.BaseCog):
     )
     async def giphy(self, ctx, *, query: str):
         """Method to send giphy to discord."""
-        response = await self.bot.http_call(
+        response = await self.bot.http_functions.http_call(
             "get",
             self.GIPHY_URL.format(
                 query.replace(" ", "+"),

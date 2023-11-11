@@ -82,7 +82,7 @@ class ChatGPT(cogs.BaseCog):
                 + [{"role": "user", "content": prompt}]
             ),
         }
-        response = await self.bot.http_call(
+        response = await self.bot.http_functions.http_call(
             "post", self.API_URL, headers=headers, json=data
         )
         return response

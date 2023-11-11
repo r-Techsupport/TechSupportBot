@@ -1360,7 +1360,7 @@ class FactoidManager(cogs.MatchCog):
             headers = {
                 "Content-Type": "text/plain",
             }
-            response = await self.bot.http_call(
+            response = await self.bot.http_functions.http_call(
                 "put",
                 self.bot.file_config.api.api_url.linx,
                 headers=headers,

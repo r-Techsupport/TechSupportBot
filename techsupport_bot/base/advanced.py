@@ -8,7 +8,7 @@ import discord
 import error as custom_errors
 import expiringdict
 import munch
-from base import auxiliary, data
+from base import auxiliary, data, http
 from botlogging import LogContext, LogLevel
 from discord import app_commands
 from discord.ext import commands
@@ -36,6 +36,7 @@ class AdvancedBot(data.DataBot):
             max_age_seconds=600,
         )
         self.command_execute_history: dict[str, dict[int, bool]] = {}
+        self.http_functions = http.HTTPCalls(self)
 
         # Set the app command on error function to log errors in slash commands
         self.tree.on_error = self.on_app_command_error

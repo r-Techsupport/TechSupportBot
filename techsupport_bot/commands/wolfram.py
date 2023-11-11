@@ -49,7 +49,9 @@ class Wolfram(cogs.BaseCog):
             query,
         )
 
-        response = await self.bot.http_call("get", url, get_raw_response=True)
+        response = await self.bot.http_functions.http_call(
+            "get", url, get_raw_response=True
+        )
         if response["status"] == 501:
             await auxiliary.send_deny_embed(
                 message="Wolfram|Alpha did not like that question", channel=ctx.channel

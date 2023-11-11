@@ -52,7 +52,9 @@ class Googler(cogs.BaseCog):
 
     async def get_items(self, url, data):
         """Method to get an item from google's api."""
-        response = await self.bot.http_call("get", url, params=data, use_cache=True)
+        response = await self.bot.http_functions.http_call(
+            "get", url, params=data, use_cache=True
+        )
         return response.get("items")
 
     @commands.group(
