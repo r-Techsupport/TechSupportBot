@@ -23,6 +23,10 @@ async def setup(bot):
 
 
 class AutoNickName(cogs.BaseCog):
+    """
+    The class that holds the listener and functions to auto change peoples nicknames
+    """
+
     def format_username(self, username: str) -> str:
         """Formats a username to be all ascii and easily readable and pingable
 
