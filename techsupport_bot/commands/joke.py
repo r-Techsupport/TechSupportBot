@@ -1,7 +1,7 @@
 """Module for the joke extension for the discord bot."""
 
 import discord
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 

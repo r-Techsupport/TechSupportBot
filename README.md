@@ -68,7 +68,7 @@ On startup, the bot will load all extension files in the `techsupport_bot/extens
 
 A (very) simple example:
 ```python
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 async def setup(bot):
     await bot.add_cog(Greeter(bot=bot))

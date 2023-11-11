@@ -6,7 +6,7 @@ import random
 
 import discord
 import ui
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 

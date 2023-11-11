@@ -1,7 +1,7 @@
 """Module for giphy extension in the bot."""
 
 import ui
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 

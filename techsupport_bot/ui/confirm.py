@@ -3,7 +3,7 @@
 from enum import Enum, auto
 
 import discord
-from base import auxiliary
+from core import auxiliary
 
 
 class ConfirmResponse(Enum):

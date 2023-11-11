@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, call
 
 import discord
 import pytest
-from base import auxiliary
+from core import auxiliary
 from hypothesis import given
 from hypothesis.strategies import text
 

@@ -6,7 +6,7 @@ import json
 
 import discord
 import emoji
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 

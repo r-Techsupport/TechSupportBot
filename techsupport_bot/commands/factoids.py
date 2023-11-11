@@ -24,8 +24,8 @@ import expiringdict
 import ui
 import yaml
 from aiohttp.client_exceptions import InvalidURL
-from base import auxiliary, cogs
 from botlogging import LogContext, LogLevel
+from core import auxiliary, cogs
 from croniter import CroniterBadCronError
 from discord.ext import commands
 from error import FactoidNotFoundError, TooLongFactoidMessageError

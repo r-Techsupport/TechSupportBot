@@ -8,7 +8,7 @@ This file contains 2 commands:
     .command enable
 """
 
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 

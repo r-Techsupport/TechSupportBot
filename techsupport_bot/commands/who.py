@@ -6,8 +6,8 @@ import io
 import discord
 import ui
 import yaml
-from base import auxiliary, cogs
 from botlogging import LogContext, LogLevel
+from core import auxiliary, cogs
 from discord import app_commands
 from discord.ext import commands
 

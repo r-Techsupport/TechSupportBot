@@ -16,8 +16,8 @@ import gino
 import ircrelay
 import munch
 import yaml
-from base import auxiliary, databases, http
 from botlogging import LogContext, LogLevel
+from core import auxiliary, databases, http
 from discord import app_commands
 from discord.ext import commands
 

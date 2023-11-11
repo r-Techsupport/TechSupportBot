@@ -7,7 +7,7 @@ import importlib
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from base import auxiliary
+from core import auxiliary
 
 from . import config_for_tests
 

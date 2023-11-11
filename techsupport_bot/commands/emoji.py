@@ -9,7 +9,7 @@ from unicodedata import lookup
 import discord
 import emoji
 import inflect
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 

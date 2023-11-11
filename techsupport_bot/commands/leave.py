@@ -8,7 +8,7 @@ This file contains 1 commands:
 """
 
 import discord
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 

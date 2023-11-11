@@ -8,8 +8,8 @@ import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from base import auxiliary
 from commands import linter
+from core import auxiliary
 
 from . import config_for_tests
 

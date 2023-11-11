@@ -5,8 +5,8 @@ from typing import Dict, List, Union
 import discord
 import munch
 import ui
-from base import auxiliary, cogs
 from bidict import bidict
+from core import auxiliary, cogs
 from discord.ext import commands
 
 

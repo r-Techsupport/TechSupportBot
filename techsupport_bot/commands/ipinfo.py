@@ -1,7 +1,7 @@
 """Module for the ipinfo extension into the bot."""
 
 import discord
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 

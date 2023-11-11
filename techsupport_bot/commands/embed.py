@@ -11,7 +11,7 @@ Defines: has_embed_role
 """
 
 import discord
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 

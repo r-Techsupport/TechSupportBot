@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import discord
 import ui
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord import app_commands
 
 if TYPE_CHECKING:

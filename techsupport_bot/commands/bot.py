@@ -11,7 +11,7 @@ import re
 
 import discord
 import git
-from base import cogs
+from core import cogs
 from discord.ext import commands
 
 

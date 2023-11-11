@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import discord
 import munch
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 if TYPE_CHECKING:

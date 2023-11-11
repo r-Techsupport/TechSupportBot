@@ -1,6 +1,6 @@
 """Module for the urban dictionary extension for the discord bot."""
 
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 

@@ -1,6 +1,6 @@
 """Module for the autoreact extension for the discord bot."""
 
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 
 
 async def setup(bot):
