@@ -13,6 +13,7 @@ import string
 import discord
 from base import cogs
 from botlogging import LogContext, LogLevel
+from discord.ext import commands
 from unidecode import unidecode
 
 
@@ -65,24 +66,32 @@ class AutoNickName(cogs.BaseCog):
 
         return username
 
+    @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
-        config = self.guild_configs[str(member.guild.id)]
+        config = self.bot.guild_configs[str(member.guild.id)]
 
-        if config.get("nickname_filter", False):
-            temp_name = self.format_username(member.display_name)
-            if temp_name != member.display_name:
-                await member.edit(nick=temp_name)
-                try:
-                    await member.send(
-                        "Your nickname has been changed to make it easy to read and"
-                        f" ping your name. Your new nickname is {temp_name}."
-                    )
-                except discord.Forbidden:
-                    channel = config.get("logging_channel")
-                    await self.logger.send_log(
-                        message=f"Could not DM {member.name} about nickname changes",
-                        level=LogLevel.WARNING,
-                        channel=channel,
-                        context=LogContext(guild=member.guild),
-                    )
+        # Don't do anything if the filter is off for the guild
+        if not config.get("nickname_filter", False):
+            return
+
+        modified_name = self.format_username(member.display_name)
+
+        # If the name didn't change for the user, do nothing
+        if modified_name == member.display_name:
+            return
+
+        await member.edit(nick=modified_name)
+        try:
+            await member.send(
+                "Your nickname has been changed to make it easy to read and"
+                f" ping your name. Your new nickname is {modified_name}."
+            )
+        except discord.Forbidden:
+            channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message=f"Could not DM {member.name} about nickname changes",
+                level=LogLevel.WARNING,
+                channel=channel,
+                context=LogContext(guild=member.guild),
+            )
