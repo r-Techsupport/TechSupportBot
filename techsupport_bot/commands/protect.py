@@ -10,7 +10,7 @@ import discord
 import expiringdict
 import munch
 import ui
-from base import auxiliary, cogs
+from base import auxiliary, cogs, extension
 from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
@@ -882,6 +882,7 @@ class Protector(cogs.MatchCog):
     )
     async def purge(self, ctx):
         """Method to purge messages in discord."""
+        await extension.extension_help(self, ctx, self.__module__[9:])
 
     @purge.command(
         name="amount",

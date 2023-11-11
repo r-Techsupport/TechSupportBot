@@ -192,7 +192,7 @@ class HangmanCog(cogs.BaseCog):
         """Method to use the command to start the hangman game."""
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[9:])
 
     @hangman.command(
         name="start",
