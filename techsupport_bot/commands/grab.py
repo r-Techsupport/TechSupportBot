@@ -133,7 +133,7 @@ class Grabber(cogs.BaseCog):
     async def grabs(self, ctx):
         """Makes the .grab command group"""
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @auxiliary.with_typing
     @commands.guild_only()

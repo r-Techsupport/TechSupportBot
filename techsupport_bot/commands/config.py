@@ -34,7 +34,7 @@ class ConfigControl(cogs.BaseCog):
         """
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @commands.has_permissions(administrator=True)
     @commands.guild_only()

@@ -246,7 +246,7 @@ class Listener(cogs.BaseCog):
         """
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @listen.command(
         description="Starts a listening job", usage="[src-channel] [dst-channel]"
