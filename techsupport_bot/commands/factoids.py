@@ -25,10 +25,9 @@ import ui
 import yaml
 from aiohttp.client_exceptions import InvalidURL
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs
+from core import auxiliary, cogs, custom_errors
 from croniter import CroniterBadCronError
 from discord.ext import commands
-from error import FactoidNotFoundError, TooLongFactoidMessageError
 
 
 async def setup(bot):
@@ -176,10 +175,10 @@ class FactoidManager(cogs.MatchCog):
             alias (str, optional): The parent factoid. Defaults to None.
 
             Raises:
-            TooLongFactoidMessageError: When the message argument is over 2k chars, discords limit
+            custom_errors.TooLongFactoidMessageError: When the message argument is over 2k chars, discords limit
         """
         if len(message) > 2000:
-            raise TooLongFactoidMessageError
+            raise custom_errors.TooLongFactoidMessageError
 
         # Removes the `factoid all` cache since it has become outdated
         if guild in self.factoid_all_cache:
@@ -215,10 +214,10 @@ class FactoidManager(cogs.MatchCog):
             alias (str, optional): New parent factoid. Defaults to None.
 
         Raises:
-            TooLongFactoidMessageError: When the message argument is over 2k chars, discords limit
+            custom_errors.TooLongFactoidMessageError: When the message argument is over 2k chars, discords limit
         """
         if message and len(message) > 2000:
-            raise TooLongFactoidMessageError
+            raise custom_errors.TooLongFactoidMessageError
 
         # Removes the `factoid all` cache since it has become outdated
         if hidden not in [None, False] and factoid.guild in self.factoid_all_cache:
@@ -480,7 +479,7 @@ class FactoidManager(cogs.MatchCog):
 
             # If the factoid doesn't exist
             if not factoid:
-                raise FactoidNotFoundError(factoid=factoid_name)
+                raise custom_errors.FactoidNotFoundError(factoid=factoid_name)
 
             # Caches it
             self.factoid_cache[cache_key] = factoid
@@ -495,7 +494,7 @@ class FactoidManager(cogs.MatchCog):
             guild (str): The id of the guild for the factoid
 
         Raises:
-            FactoidNotFoundError: If the factoid wasn't found
+            custom_errors.FactoidNotFoundError: If the factoid wasn't found
 
         Returns:
             Factoid: The factoid
@@ -508,7 +507,7 @@ class FactoidManager(cogs.MatchCog):
             factoid_name = factoid.name
 
         if not factoid:
-            raise FactoidNotFoundError(factoid=factoid_name)
+            raise custom_errors.FactoidNotFoundError(factoid=factoid_name)
 
         return factoid
 
@@ -542,7 +541,7 @@ class FactoidManager(cogs.MatchCog):
             name = factoid.name.lower()  # Name of the parent
 
         # Adds the factoid if it doesn't exist already
-        except FactoidNotFoundError:
+        except custom_errors.FactoidNotFoundError:
             # If remember was called with an embed but not a message and the factoid does not exist
             if not message:
                 await auxiliary.send_deny_embed(
@@ -647,8 +646,8 @@ class FactoidManager(cogs.MatchCog):
             _ (bool): Result, unused
 
         Raises:
-            FactoidNotFoundError: Raised if a broken alias is present in the DB
-            TooLongFactoidMessageError: Raised when the raw message content is over discords
+            custom_errors.FactoidNotFoundError: Raised if a broken alias is present in the DB
+            custom_errors.TooLongFactoidMessageError: Raised when the raw message content is over discords
                                         2000 chat limit
         """
         if not ctx.guild:
@@ -659,7 +658,7 @@ class FactoidManager(cogs.MatchCog):
         try:
             factoid = await self.get_factoid(query, str(ctx.guild.id))
 
-        except FactoidNotFoundError:
+        except custom_errors.FactoidNotFoundError:
             await self.bot.logger.send_log(
                 message=f"Invalid factoid call {query} from {ctx.guild.id}",
                 level=LogLevel.DEBUG,
@@ -680,7 +679,7 @@ class FactoidManager(cogs.MatchCog):
                 + "The factoid message is longer than the discord size limit (2000)",
                 channel=ctx.channel,
             )
-            raise TooLongFactoidMessageError
+            raise custom_errors.TooLongFactoidMessageError
 
         try:
             # define the message and send it
@@ -1729,7 +1728,7 @@ class FactoidManager(cogs.MatchCog):
             )
 
         # No handling needs to be done if it doesn't exist
-        except FactoidNotFoundError:
+        except custom_errors.FactoidNotFoundError:
             pass
 
         # Handling if it does already exist

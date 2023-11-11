@@ -15,7 +15,7 @@ import aiohttp
 import expiringdict
 import munch
 from botlogging import LogLevel
-from error import HTTPRateLimit
+from core import custom_errors
 
 if TYPE_CHECKING:
     import bot
@@ -119,7 +119,7 @@ class HTTPCalls:
                     now - self.url_rate_limit_history[root_url][0]
                 )
                 time_to_wait = max(time_to_wait, 0)
-                raise HTTPRateLimit(time_to_wait)
+                raise custom_errors.HTTPRateLimit(time_to_wait)
 
             # Add an entry for this call with the timestamp the call was placed
             self.url_rate_limit_history[root_url].append(now)

@@ -378,6 +378,57 @@ def add_diff_fields(embed: discord.Embed, diff: dict) -> discord.Embed:
     return embed
 
 
+def get_help_embed_for_extension(self, extension_name, command_prefix):
+    """Gets the help embed for an extension.
+
+    Defined so it doesn't have to be written out twice
+
+    parameters:
+        extension_name (str): the name of the extension to show the help for
+        command_prefix (str): passed to the func as it has to be awaited
+
+    returns:
+        embed (discord.Embed): Embed containing all commands with their description
+    """
+    embed = discord.Embed()
+    embed.title = f"Extension Commands: `{extension_name}`"
+
+    # Sorts commands alphabetically
+    command_list = list(self.bot.walk_commands())
+    command_list.sort(key=lambda command: command.name)
+
+    # Loops through every command in the bots library
+    for command in command_list:
+        # Gets the command name
+        command_extension_name = self.bot.get_command_extension_name(command)
+
+        # Continues the loop if the command isn't a part of the target extension
+        if extension_name != command_extension_name or issubclass(
+            command.__class__, commands.Group
+        ):
+            continue
+
+        if command.full_parent_name == "":
+            syntax = f"{command_prefix}{command.name}"
+
+        else:
+            syntax = f"{command_prefix}{command.full_parent_name} {command.name}"
+
+        usage = command.usage or ""
+
+        embed.add_field(
+            name=f"`{syntax} {usage}`",
+            value=command.description or "No description available",
+            inline=False,
+        )
+
+    # Default for when no matching commands were found
+    if len(embed.fields) == 0:
+        embed.description = "There are no commands for this extension"
+
+    return embed
+
+
 async def extension_help(self, ctx: commands.Context, extension_name: str) -> None:
     """Automatically prompts for help if improper syntax for an extension is called.
 
@@ -389,56 +440,6 @@ async def extension_help(self, ctx: commands.Context, extension_name: str) -> No
         ctx (commands.Context): context of the message
         extension_name (str): the name of the extension to show the help for
     """
-
-    def get_help_embed_for_extension(self, extension_name, command_prefix):
-        """Gets the help embed for an extension.
-
-        Defined so it doesn't have to be written out twice
-
-        parameters:
-            extension_name (str): the name of the extension to show the help for
-            command_prefix (str): passed to the func as it has to be awaited
-
-        returns:
-            embed (discord.Embed): Embed containing all commands with their description
-        """
-        embed = discord.Embed()
-        embed.title = f"Extension Commands: `{extension_name}`"
-
-        # Sorts commands alphabetically
-        command_list = list(self.bot.walk_commands())
-        command_list.sort(key=lambda command: command.name)
-
-        # Loops through every command in the bots library
-        for command in command_list:
-            # Gets the command name
-            command_extension_name = self.bot.get_command_extension_name(command)
-
-            # Continues the loop if the command isn't a part of the target extension
-            if extension_name != command_extension_name or issubclass(
-                command.__class__, commands.Group
-            ):
-                continue
-
-            if command.full_parent_name == "":
-                syntax = f"{command_prefix}{command.name}"
-
-            else:
-                syntax = f"{command_prefix}{command.full_parent_name} {command.name}"
-
-            usage = command.usage or ""
-
-            embed.add_field(
-                name=f"`{syntax} {usage}`",
-                value=command.description or "No description available",
-                inline=False,
-            )
-
-        # Default for when no matching commands were found
-        if len(embed.fields) == 0:
-            embed.description = "There are no commands for this extension"
-
-        return embed
 
     # Checks whether the first given argument is valid if an argument is supplied
     if len(ctx.message.content.split()) > 1:

@@ -10,14 +10,13 @@ import threading
 
 import botlogging
 import discord
-import error as custom_errors
 import expiringdict
 import gino
 import ircrelay
 import munch
 import yaml
 from botlogging import LogContext, LogLevel
-from core import auxiliary, databases, http
+from core import auxiliary, custom_errors, databases, http
 from discord import app_commands
 from discord.ext import commands
 
@@ -63,7 +62,6 @@ class TechSupportBot(commands.Bot):
 
     def __init__(self, intents=None, allowed_mentions=None):
         self._startup_time = None
-        self.builtin_cogs = []
 
         self.owner: discord.User = None
         self.__startup_time: datetime = None
