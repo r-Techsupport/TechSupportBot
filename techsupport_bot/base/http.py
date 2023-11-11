@@ -1,3 +1,7 @@
+"""
+Defines the wrapper around HTTP calling allow true async, caching, and rate limiting
+This has no commands
+"""
 from __future__ import annotations
 
 import time
@@ -18,6 +22,11 @@ if TYPE_CHECKING:
 
 
 class HTTPCalls:
+    """
+    This requires a class so it can store the bot variable upon setup
+    This allows access to the config file and logging
+    """
+
     def __init__(self, bot: bot.TechSupportBot) -> None:
         self.bot = bot
         self.http_cache = expiringdict.ExpiringDict(
