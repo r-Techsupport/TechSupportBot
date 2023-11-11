@@ -132,7 +132,7 @@ class DiscordToIRC(cogs.MatchCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        await extension.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[9:])
 
     @irc.command(name="maps", description="List all the maps for IRC")
     async def irc_maps(self, ctx: commands.Context) -> None:

@@ -148,7 +148,7 @@ class ServerGate(cogs.MatchCog):
         """Method to create the command for gate extension."""
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[9:])
 
     @commands.has_permissions(manage_messages=True)
     @commands.guild_only()

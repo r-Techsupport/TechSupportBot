@@ -888,7 +888,7 @@ class FactoidManager(cogs.MatchCog):
         """Method to create the factoid command group."""
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[9:])
 
     @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)

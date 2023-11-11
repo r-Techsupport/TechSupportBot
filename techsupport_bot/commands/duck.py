@@ -366,7 +366,7 @@ class DuckHunt(cogs.LoopCog):
         """Method to make the initial duck command"""
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[9:])
 
     @auxiliary.with_typing
     @commands.guild_only()

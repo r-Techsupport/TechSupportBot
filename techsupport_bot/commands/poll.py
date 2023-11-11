@@ -108,7 +108,7 @@ class ReactionPoller(PollGenerator):
         """Method to create the poll command."""
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[9:])
 
     @auxiliary.with_typing
     @poll.command(
@@ -272,7 +272,7 @@ class StrawPoller(PollGenerator):
         """Method to give an exmaple poll with json."""
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[11:])
+        await extension.extension_help(self, ctx, self.__module__[9:])
 
     @auxiliary.with_typing
     @strawpoll.command(
