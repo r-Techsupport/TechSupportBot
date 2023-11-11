@@ -80,7 +80,7 @@ class IssueCreator(cogs.BaseCog):
             "Content-Type": "text/plain",
         }
 
-        response = await self.bot.http_call(
+        response = await self.bot.http_functions.http_call(
             "post",
             f"{self.GITHUB_API_BASE_URL}/repos/{self.bot.file_config.api.github.username}"
             + f"/{self.bot.file_config.api.github.repo}/issues",

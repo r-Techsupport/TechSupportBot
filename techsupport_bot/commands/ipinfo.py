@@ -27,7 +27,9 @@ class IPInfo(cogs.BaseCog):
     )
     async def get_info(self, ctx, ip_address: str):
         """Method to get the info for the ipinfo command for the bot."""
-        response = await self.bot.http_call("get", f"{self.API_URL}/{ip_address}/json")
+        response = await self.bot.http_functions.http_call(
+            "get", f"{self.API_URL}/{ip_address}/json"
+        )
 
         if not response.get("ip"):
             await auxiliary.send_deny_embed(

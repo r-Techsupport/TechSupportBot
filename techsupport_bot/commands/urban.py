@@ -38,7 +38,9 @@ class UrbanDictionary(cogs.BaseCog):
     )
     async def urban(self, ctx, *, query: str):
         """Method to get a call from the urban dictionary API."""
-        response = await self.bot.http_call("get", f"{self.BASE_URL}{query}")
+        response = await self.bot.http_functions.http_call(
+            "get", f"{self.BASE_URL}{query}"
+        )
         definitions = response.get("list")
 
         config = self.bot.guild_configs[str(ctx.guild.id)]

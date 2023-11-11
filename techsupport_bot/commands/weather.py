@@ -48,7 +48,7 @@ class Weather(cogs.BaseCog):
         self, ctx, city_name: str, state_code: str = None, country_code: str = None
     ):
         """Method to define the weather for the command."""
-        response = await self.bot.http_call(
+        response = await self.bot.http_functions.http_call(
             "get", self.get_url([city_name, state_code, country_code])
         )
 

@@ -651,7 +651,7 @@ class Protector(cogs.MatchCog):
             "Accept": "application/json",
         }
         file = {"file": io.StringIO(content)}
-        response = await self.bot.http_call(
+        response = await self.bot.http_functions.http_call(
             "post", self.bot.file_config.api.api_url.linx, headers=headers, data=file
         )
 

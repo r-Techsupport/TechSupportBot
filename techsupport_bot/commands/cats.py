@@ -33,5 +33,5 @@ class Cats(cogs.BaseCog):
         url = self.API_URL.format(
             self.bot.file_config.api.api_keys.cat,
         )
-        response = await self.bot.http_call("get", url)
+        response = await self.bot.http_functions.http_call("get", url)
         await ctx.send(response[0].url)

@@ -85,7 +85,7 @@ class News(cogs.LoopCog):
         if category:
             url = f"{url}&category={category}"
 
-        response = await self.bot.http_call("get", url)
+        response = await self.bot.http_functions.http_call("get", url)
 
         articles = response.get("articles")
         if not articles:

@@ -30,7 +30,9 @@ class Joker(cogs.BaseCog):
     async def call_api(self, ctx, config):
         """Method to call the api to get the joke from."""
         url = self.build_url(ctx, config)
-        response = await self.bot.http_call("get", url, get_raw_response=True)
+        response = await self.bot.http_functions.http_call(
+            "get", url, get_raw_response=True
+        )
         return response
 
     def build_url(self, ctx, config):

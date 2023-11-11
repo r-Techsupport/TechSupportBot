@@ -288,7 +288,7 @@ The response is returned as a dictionary.
     
 An example from dumpdbg.py:
 ```py
-response = await self.bot.http_call(
+response = await self.bot.http_functions.http_call(
     "post",
     api_endpoint,
     data=json_data,
