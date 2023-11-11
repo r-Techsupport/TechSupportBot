@@ -13,7 +13,8 @@ This code is run when loading the extension, is used to add model classes and co
 ## Config entries
 
 ```py
-config = bot.ExtensionConfig()
+from core import extensionconfig
+config = extensionconfig.ExtensionConfig()
 config.add(
     key="<key>",
     datatype="<datatype",

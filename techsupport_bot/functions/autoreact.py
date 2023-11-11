@@ -1,11 +1,11 @@
 """Module for the autoreact extension for the discord bot."""
 
-from core import auxiliary, cogs
+from core import auxiliary, cogs, extensionconfig
 
 
 async def setup(bot):
     """Adding the autoreact extension to the config file to get info."""
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="react_map",
         datatype="dict",

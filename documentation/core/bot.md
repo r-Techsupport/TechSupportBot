@@ -11,8 +11,6 @@ The bot.py file is the primary file of the program. It contains all of the core 
 
 ### setup_hook
 
-### cleanup
-
 ### on_guild_join
 
 ### can_run
@@ -70,8 +68,6 @@ The bot.py file is the primary file of the program. It contains all of the core 
 ### is_bot_admin
 
 ### get_owner
-
-### startup_time
 
 ### get_prefix
 

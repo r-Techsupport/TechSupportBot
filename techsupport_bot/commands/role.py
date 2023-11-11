@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import discord
 import ui
-from core import auxiliary, cogs
+from core import auxiliary, cogs, extensionconfig
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -20,7 +20,7 @@ async def setup(bot: bot.TechSupportBot):
     Args:
         bot (commands.Bot): The bot object
     """
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="self_assignable_roles",
         datatype="list",

@@ -9,7 +9,7 @@ import aiocron
 import discord
 import munch
 import ui
-from core import auxiliary, cogs
+from core import auxiliary, cogs, extensionconfig
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -32,7 +32,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="management_channel",
         datatype="str",

@@ -5,13 +5,13 @@ import datetime
 import discord
 import munch
 from botlogging import LogContext, LogLevel
-from core import cogs
+from core import cogs, extensionconfig
 from discord.ext import commands
 
 
 async def setup(bot):
     """Adding the logger extension to the config file to get info."""
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="channel_map",
         datatype="dict",

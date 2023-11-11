@@ -5,7 +5,7 @@ import random
 
 import aiocron
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs
+from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 
@@ -19,7 +19,7 @@ async def setup(bot):
     except AttributeError as exc:
         raise AttributeError("News was not loaded due to missing API key") from exc
 
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="channel",
         datatype="int",

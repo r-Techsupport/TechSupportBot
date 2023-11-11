@@ -1,4 +1,6 @@
-"""The main bot functions.
+"""
+This is the core bot file. It contains config and database setup functions,
+discord and irc login, and a few property and helper functions
 """
 
 import asyncio
@@ -16,61 +18,56 @@ import ircrelay
 import munch
 import yaml
 from botlogging import LogContext, LogLevel
-from core import auxiliary, custom_errors, databases, http
+from core import auxiliary, custom_errors, databases, extensionconfig, http
 from discord import app_commands
 from discord.ext import commands
-
-
-class ExtensionConfig:
-    """Represents the config of an extension."""
-
-    def __init__(self):
-        self.data = munch.DefaultMunch(None)
-
-    def add(self, key, datatype, title, description, default):
-        """Adds a new entry to the config.
-
-        This is usually used in the extensions's setup function.
-
-        parameters:
-            key (str): the lookup key for the entry
-            datatype (str): the datatype metadata for the entry
-            title (str): the title of the entry
-            description (str): the description of the entry
-            default (Any): the default value to use for the entry
-        """
-        self.data[key] = {
-            "datatype": datatype,
-            "title": title,
-            "description": description,
-            "default": default,
-            "value": default,
-        }
 
 
 class TechSupportBot(commands.Bot):
     """The main bot object."""
 
-    CONFIG_RECEIVE_WARNING_TIME_MS: int = 1000
-    DM_GUILD_ID: str = "dmcontext"
-    CONFIG_PATH = "./config.yml"
-    EXTENSIONS_DIR_NAME = "commands"
-    EXTENSIONS_DIR = f"{os.path.join(os.path.dirname(__file__))}/{EXTENSIONS_DIR_NAME}"
-    FUNCTIONS_DIR_NAME = "functions"
-    FUNCTIONS_DIR = f"{os.path.join(os.path.dirname(__file__))}/{FUNCTIONS_DIR_NAME}"
-    ExtensionConfig = ExtensionConfig
+    CONFIG_PATH: str = "./config.yml"
+    EXTENSIONS_DIR_NAME: str = "commands"
+    EXTENSIONS_DIR: str = (
+        f"{os.path.join(os.path.dirname(__file__))}/{EXTENSIONS_DIR_NAME}"
+    )
+    FUNCTIONS_DIR_NAME: str = "functions"
+    FUNCTIONS_DIR: str = (
+        f"{os.path.join(os.path.dirname(__file__))}/{FUNCTIONS_DIR_NAME}"
+    )
 
-    def __init__(self, intents=None, allowed_mentions=None):
-        self._startup_time = None
+    def __init__(
+        self, intents: discord.Intents, allowed_mentions: discord.AllowedMentions
+    ) -> None:
+        """Sets up a new TechSupportBot object.
+        This does NOT start the bot, the start function must be called for that
 
+        Args:
+            intents (discord.Intents): The list of intents that
+                the bot needs to request from discord
+            allowed_mentions (discord.AllowedMentions): What the bot is, or is not,
+                allowed to mention
+        """
+        # Sets a few properires to None to avoid ValueErrors later on
+        self.startup_time: datetime = None
         self.owner: discord.User = None
-        self.__startup_time: datetime = None
         self.guild_config_lock = None
-        self.guild_configs: dict[str, munch.Munch] = {}
         self.db = None
+        self.file_config = None
+
+        # Sets up some dicts and arrays
+        self.guild_configs: dict[str, munch.Munch] = {}
         self.extension_configs = munch.DefaultMunch(None)
         self.extension_states = munch.DefaultMunch(None)
-        self.file_config = None
+        self.command_rate_limit_bans: expiringdict.ExpiringDict[
+            str, bool
+        ] = expiringdict.ExpiringDict(
+            max_len=5000,
+            max_age_seconds=600,
+        )
+        self.command_execute_history: dict[str, dict[int, bool]] = {}
+
+        # Loads the file config, which includes things like the token
         self.load_file_config()
 
         # Call the discord.py init function to create a new commands.Bot object
@@ -80,6 +77,7 @@ class TechSupportBot(commands.Bot):
             allowed_mentions=allowed_mentions,
         )
 
+        # Setup the regular or delayed logger, depending on the file config
         if self.file_config.logging.queue_enabled:
             self.logger = botlogging.DelayedLogger(
                 discord_bot=self,
@@ -87,7 +85,6 @@ class TechSupportBot(commands.Bot):
                 send=not self.file_config.logging.block_discord_send,
                 wait_time=self.file_config.logging.queue_wait_seconds,
             )
-
         else:
             self.logger = botlogging.BotLogger(
                 discord_bot=self,
@@ -95,13 +92,7 @@ class TechSupportBot(commands.Bot):
                 send=not self.file_config.logging.block_discord_send,
             )
 
-        self.command_rate_limit_bans: expiringdict.ExpiringDict[
-            str, bool
-        ] = expiringdict.ExpiringDict(
-            max_len=5000,
-            max_age_seconds=600,
-        )
-        self.command_execute_history: dict[str, dict[int, bool]] = {}
+        # Creates a http calls class and a reference to it to the bot
         self.http_functions = http.HTTPCalls(self)
 
         # Set the app command on error function to log errors in slash commands
@@ -109,8 +100,11 @@ class TechSupportBot(commands.Bot):
 
     # Entry point
 
-    async def start(self):
-        """Starts the event loop and blocks until interrupted."""
+    async def start(self) -> None:
+        """Starts the bot, connects to discord, irc, and postgres
+        This function should not be used to interact with discord in any way
+        Any discord interactions should be done with setup_hook
+        """
 
         if isinstance(self.logger, botlogging.DelayedLogger):
             self.logger.register_queue()
@@ -140,26 +134,30 @@ class TechSupportBot(commands.Bot):
 
     # Discord.py called functions
 
-    async def setup_hook(self):
+    async def setup_hook(self) -> None:
         """This function is automatically called after the bot has been logged into discord
-        This loads postgres, extensions, and the help menu
+        This creates postgres tables if needed, registers new guild configs if needed,
+        Loads extensions, registers the custom help command
+        and loads guild configs from the database.
+
+        This function is called only one time, and should never be manually called
         """
+
+        # We have to remove the built in help command
         await self.logger.send_log(
-            message="Loading extensions...", level=LogLevel.DEBUG, console_only=True
+            message="Loading Help commands...", level=LogLevel.DEBUG, console_only=True
         )
         self.remove_command("help")
-        self.extension_name_list = []
-        await self.load_extensions()
 
-        if self.db:
-            await self.logger.send_log(
-                message="Syncing Postgres tables...",
-                level=LogLevel.DEBUG,
-                console_only=True,
-            )
-            self.models = munch.DefaultMunch(None)
-            databases.setup_models(self)
-            await self.db.gino.create_all()
+        # Get all the tables setup and create them all if needed
+        await self.logger.send_log(
+            message="Syncing Postgres tables...",
+            level=LogLevel.DEBUG,
+            console_only=True,
+        )
+        self.models = munch.DefaultMunch(None)
+        databases.setup_models(self)
+        await self.db.gino.create_all()
 
         # Load all guild config objects into self.guild_configs object
         all_config = await self.models.Config.query.gino.all()
@@ -172,19 +170,17 @@ class TechSupportBot(commands.Bot):
         for guild in self.guilds:
             await self.register_new_guild_config(str(guild.id))
 
+        # The very last step should be loading extensions
+        # Some extensions will require the database or config when loading
         await self.logger.send_log(
-            message="Loading Help commands...", level=LogLevel.DEBUG, console_only=True
+            message="Loading extensions...", level=LogLevel.DEBUG, console_only=True
         )
-
-    async def cleanup(self):
-        """Cleans up after the event loop is interupted."""
-        await self.logger.send_log(
-            message="Cleaning up...", level=LogLevel.DEBUG, console_only=True
-        )
-        await super().close()
+        self.extension_name_list = []
+        await self.load_extensions()
 
     async def on_guild_join(self, guild: discord.Guild) -> None:
         """Configures a new guild upon joining.
+        This registers a new guild config, and starts any loop jobs that are configured
 
         parameters:
             guild (discord.Guild): the guild that was joined
@@ -201,8 +197,6 @@ class TechSupportBot(commands.Bot):
                         context=LogContext(guild=guild),
                         exception=exception,
                     )
-
-        await super().on_guild_join(guild)
 
     async def can_run(self, ctx: commands.Context, *, call_once=False) -> bool:
         """Wraps the default can_run check to evaluate bot-admin permission.
@@ -267,15 +261,17 @@ class TechSupportBot(commands.Bot):
         return result
 
     async def on_ready(self) -> None:
-        """Callback for when the bot is finished starting up."""
-        self.__startup_time = datetime.datetime.utcnow()
+        """Callback for when the bot is finished starting up.
+        This function may be called more than once and should not have discord interactions in it
+        """
+        self.startup_time = datetime.datetime.utcnow()
         await self.logger.send_log(
             message="Bot online", level=LogLevel.INFO, console_only=True
         )
         await self.get_owner()
 
     async def on_message(self, message: discord.Message) -> None:
-        """Catches messages and acts appropriately.
+        """Logs DMs and ensure that commands are processed
 
         parameters:
             message (discord.Message): the message object
@@ -301,30 +297,30 @@ class TechSupportBot(commands.Bot):
 
     # Guild config management functions
 
-    async def register_new_guild_config(self, guild: str) -> bool:
+    async def register_new_guild_config(self, guild_id: str) -> bool:
         """This creates a config for a new guild if needed
 
         Args:
-            guild (str): The id of the guild to create config for, in string form
+            guild_id (str): The id of the guild to create config for, in string form
 
         Returns:
             bool: True if a config was created, False if a config already existed
         """
         async with self.guild_config_lock:
             try:
-                config = self.guild_configs[guild]
+                config = self.guild_configs[guild_id]
             except KeyError:
                 config = None
             if not config:
-                await self.create_new_context_config(guild)
+                await self.create_new_context_config(guild_id)
                 return True
             return False
 
-    async def create_new_context_config(self, lookup: str) -> munch.Munch:
-        """Creates a new guild config based on a lookup key (usually a guild ID).
+    async def create_new_context_config(self, guild_id: str) -> munch.Munch:
+        """Creates a new guild config for a given guild.
 
         parameters:
-            lookup (str): the primary key for the guild config document object
+            guild_id (str): The guild ID the config will be for. Only used for storing the config
         """
         extensions_config = munch.DefaultMunch(None)
 
@@ -336,7 +332,7 @@ class TechSupportBot(commands.Bot):
 
         config_ = munch.DefaultMunch(None)
 
-        config_.guild_id = str(lookup)
+        config_.guild_id = str(guild_id)
         config_.command_prefix = self.file_config.bot_config.default_prefix
         config_.logging_channel = None
         config_.member_events_channel = None
@@ -354,23 +350,23 @@ class TechSupportBot(commands.Bot):
 
         try:
             await self.logger.send_log(
-                message=f"Inserting new config for lookup key: {lookup}",
+                message=f"Inserting new config for lookup key: {guild_id}",
                 level=LogLevel.DEBUG,
-                context=LogContext(guild=self.get_guild(lookup)),
+                context=LogContext(guild=self.get_guild(guild_id)),
                 console_only=True,
             )
             # Modify the database
-            await self.write_new_config(str(lookup), json.dumps(config_))
+            await self.write_new_config(str(guild_id), json.dumps(config_))
 
             # Modify the local cache
-            self.guild_configs[lookup] = config_
+            self.guild_configs[guild_id] = config_
 
         except Exception as exception:
             # safely finish because the new config is still useful
             await self.logger.send_log(
                 message="Could not insert guild config into Postgres",
                 level=LogLevel.ERROR,
-                context=LogContext(guild=self.get_guild(lookup)),
+                context=LogContext(guild=self.get_guild(guild_id)),
                 exception=exception,
             )
 
@@ -378,7 +374,7 @@ class TechSupportBot(commands.Bot):
 
     async def write_new_config(self, guild_id: str, config: str) -> None:
         """Takes a config and guild and updates the config in the database
-        This is rarely needed
+        This is only needed when a new guild is joined or the config is modifed
 
         Args:
             guild_id (str): The str ID of the guild the config belongs to
@@ -388,7 +384,9 @@ class TechSupportBot(commands.Bot):
             self.models.Config.guild_id == guild_id
         ).gino.first()
         if database_config:
-            await database_config.update(config=str(config)).apply()
+            await database_config.update(
+                config=str(config), update_time=datetime.datetime.utcnow()
+            ).apply()
         else:
             new_database_config = self.models.Config(
                 guild_id=str(guild_id),
@@ -396,15 +394,20 @@ class TechSupportBot(commands.Bot):
             )
             await new_database_config.create()
 
-    def add_extension_config(self, extension_name, config):
-        """Adds a base config object for a given extension.
+    def add_extension_config(
+        self, extension_name: str, config: extensionconfig.ExtensionConfig
+    ) -> None:
+        """Adds an extensions defined config to the guild config as a whole
 
-        parameters:
-            extension_name (str): the name of the extension
-            config (ExtensionConfig): the extension config object
+        Args:
+            extension_name (str): The name of the extension to add config for. Will be the key in the config file
+            config (extensionconfig.ExtensionConfig): The config class with all of the config keys to add
+
+        Raises:
+            ValueError: Will be raised if config is not an extensionconfig.ExtensionConfig
         """
-        if not isinstance(config, self.ExtensionConfig):
-            raise ValueError("config must be of type ExtensionConfig")
+        if not isinstance(config, extensionconfig.ExtensionConfig):
+            raise ValueError("config must be of type extensionconfig.ExtensionConfig")
         self.extension_configs[extension_name] = config
 
     async def get_log_channel_from_guild(
@@ -414,7 +417,7 @@ class TechSupportBot(commands.Bot):
 
         This also checks if the channel exists in the correct guild.
 
-        parameters:
+        Args:
             guild (discord.Guild): the guild object to reference
             key (string): the key to use when looking up the channel
         """
@@ -434,10 +437,10 @@ class TechSupportBot(commands.Bot):
 
     # File config loading functions
 
-    def load_file_config(self, validate=True):
+    def load_file_config(self, validate: bool = True):
         """Loads the config yaml file into a bot object.
 
-        parameters:
+        Args:
             validate (bool): True if validations should be ran on the file
         """
         with open(self.CONFIG_PATH, encoding="utf8") as iostream:
@@ -455,12 +458,15 @@ class TechSupportBot(commands.Bot):
         for subsection in ["required"]:
             self.validate_bot_config_subsection("bot_config", subsection)
 
-    def validate_bot_config_subsection(self, section, subsection):
+    def validate_bot_config_subsection(self, section: str, subsection: str):
         """Loops through a config subsection to check for missing values.
 
-        parameters:
+        Args:
             section (str): the section name containing the subsection
             subsection (str): the subsection name
+
+        Raises:
+            ValueError: If the subsection validating is missing any keys
         """
         for key, value in self.file_config.get(section, {}).get(subsection, {}).items():
             error_key = None
@@ -479,10 +485,15 @@ class TechSupportBot(commands.Bot):
 
     async def on_app_command_error(
         self,
-        interaction: discord.Interaction[discord.Client],
+        interaction: discord.Interaction,
         error: app_commands.AppCommandError,
     ) -> None:
-        """Error handler for the slowmode extension."""
+        """This is called upon any error originating from an app command
+
+        Args:
+            interaction (discord.Interaction): The interaction where the error occured at
+            error (app_commands.AppCommandError): The error object that occured
+        """
         error_message = await self.handle_error(
             exception=error, channel=interaction.channel, guild=interaction.guild
         )
@@ -558,7 +569,7 @@ class TechSupportBot(commands.Bot):
     ) -> None:
         """Catches command errors and sends them to the error logger for processing.
 
-        parameters:
+        Args:
             context (commands.Context): the context associated with the exception
             exception (Exception): the exception object associated with the error
         """
@@ -582,44 +593,11 @@ class TechSupportBot(commands.Bot):
 
         await auxiliary.send_deny_embed(message=error_message, channel=context.channel)
 
-    # Postgres setup functions
+    # Postgres setup function
 
-    def generate_db_url(self):
-        """Dynamically converts config to a Postgres url."""
-        db_type = "postgres"
-
-        try:
-            config_child = getattr(self.file_config.database, db_type)
-
-            user = config_child.user
-            password = config_child.password
-
-            name = getattr(config_child, "name")
-
-            host = config_child.host
-            port = config_child.port
-
-        except AttributeError as exception:
-            self.logger.console.warning(
-                f"Could not generate DB URL for {db_type.upper()}: {exception}"
-            )
-            return None
-
-        url = f"{db_type}://{user}:{password}@{host}:{port}"
-        url_filtered = f"{db_type}://{user}:********@{host}:{port}"
-
-        if name:
-            url = f"{url}/{name}"
-
-        # don't log the password
-        self.logger.console.debug(f"Generated DB URL: {url_filtered}")
-
-        return url
-
-    async def get_postgres_ref(self):
-        """Grabs the main DB reference.
-
-        This doesn't follow a singleton pattern (use bot.db instead).
+    async def get_postgres_ref(self) -> None:
+        """Connects to postgres based on the database login defined the in the file_config
+        Adds self.db to be the database reference
         """
         await self.logger.send_log(
             message="Obtaining and binding to Gino instance",
@@ -628,7 +606,25 @@ class TechSupportBot(commands.Bot):
         )
 
         db_ref = gino.Gino()
-        db_url = self.generate_db_url()
+
+        # Pull information from postgres out of the file config
+        config_child = getattr(self.file_config.database, "postgres")
+        user = config_child.user
+        password = config_child.password
+        name = config_child.name
+        host = config_child.host
+        port = config_child.port
+
+        db_url = f"postgres://{user}:{password}@{host}:{port}/{name}"
+        url_filtered = f"postgres://{user}:********@{host}:{port}/{name}"
+
+        # don't log the password
+        await self.logger.send_log(
+            message=f"Generated DB URL: {url_filtered}",
+            level=LogLevel.DEBUG,
+            console_only=True,
+        )
+
         await db_ref.set_bind(db_url)
 
         db_ref.Model.__table_args__ = {"extend_existing": True}
@@ -637,7 +633,7 @@ class TechSupportBot(commands.Bot):
 
     # Extension loading and management functions
 
-    async def get_potential_extensions(self):
+    async def get_potential_extensions(self) -> list[str]:
         """Gets the current list of extensions in the defined directory.
         This ONLY gets commands, not functions"""
         self.logger.console.info(f"Searching {self.EXTENSIONS_DIR} for extensions")
@@ -648,7 +644,7 @@ class TechSupportBot(commands.Bot):
         ]
         return extensions_list
 
-    async def get_potential_function_extensions(self):
+    async def get_potential_function_extensions(self) -> list[str]:
         """Gets the current list of extensions in the defined directory.
         This ONLY gets functions, not commands"""
         self.logger.console.info(f"Searching {self.FUNCTIONS_DIR} for extensions")
@@ -659,10 +655,10 @@ class TechSupportBot(commands.Bot):
         ]
         return extensions_list
 
-    async def load_extensions(self, graceful=True):
+    async def load_extensions(self, graceful: bool = True) -> None:
         """Loads all extensions currently in the extensions directory.
 
-        parameters:
+        Args:
             graceful (bool): True if extensions should gracefully fail to load
         """
         self.logger.console.debug("Retrieving commands")
@@ -703,24 +699,24 @@ class TechSupportBot(commands.Bot):
                 if not graceful:
                     raise exception
 
-    def get_command_extension_name(self, command):
+    def get_command_extension_name(self, command: commands.Command) -> str:
         """Gets the subname of an extension from a command.
         Used only for commands, should never be run for a function
 
-        parameters:
-            command (discord.ext.commands.Command): the command to reference
+        Args:
+            command (commands.Command): the command to reference
         """
         if not command.module.startswith(f"{self.EXTENSIONS_DIR_NAME}."):
             return None
         extension_name = command.module.split(".")[1]
         return extension_name
 
-    async def register_file_extension(self, extension_name, fp):
+    async def register_file_extension(self, extension_name: str, fp) -> None:
         """Offers an interface for loading an extension from an external source.
 
         This saves the external file data to the OS, without any validation.
 
-        parameters:
+        Args:
             extension_name (str): the name of the extension to register
             fp (io.BufferedIOBase): the file-like object to save to disk
         """
@@ -744,8 +740,8 @@ class TechSupportBot(commands.Bot):
 
         They are also ignored if the author is bot admin in the config.
 
-        parameters:
-            ctx (discord.ext.Context): the context associated with the command
+        Args:
+            ctx (commands.Context): the context associated with the command
         """
         await self.logger.send_log(
             message="Checking context against bot admins",
@@ -773,7 +769,7 @@ class TechSupportBot(commands.Bot):
 
         return False
 
-    async def get_owner(self) -> discord.User:
+    async def get_owner(self) -> discord.User | None:
         """Gets the owner object from the bot application."""
         if not self.owner:
             try:
@@ -790,13 +786,9 @@ class TechSupportBot(commands.Bot):
 
         return self.owner
 
-    @property
-    def startup_time(self) -> datetime:
-        """Gets the startup timestamp of the bot."""
-        return self.__startup_time
-
     async def get_prefix(self, message: discord.Message) -> str:
         """Gets the appropriate prefix for a command.
+        This is called by discord.py and must be async
 
         parameters:
             message (discord.Message): the message to check against

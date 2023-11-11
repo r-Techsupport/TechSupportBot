@@ -25,7 +25,7 @@ import ui
 import yaml
 from aiohttp.client_exceptions import InvalidURL
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, custom_errors
+from core import auxiliary, cogs, custom_errors, extensionconfig
 from croniter import CroniterBadCronError
 from discord.ext import commands
 
@@ -36,7 +36,7 @@ async def setup(bot):
     """
 
     # Sets up the config
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="manage_roles",
         datatype="list",

@@ -7,7 +7,7 @@ import discord
 import ui
 import yaml
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs
+from core import auxiliary, cogs, extensionconfig
 from discord import app_commands
 from discord.ext import commands
 
@@ -15,7 +15,7 @@ from discord.ext import commands
 async def setup(bot):
     """Adding the who configuration to the config file."""
 
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="note_role",
         datatype="str",

@@ -11,14 +11,14 @@ import expiringdict
 import munch
 import ui
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs
+from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 
 async def setup(bot):
     """Class to set up the protect options in the config file."""
 
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="channels",
         datatype="list",

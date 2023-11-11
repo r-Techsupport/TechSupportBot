@@ -5,13 +5,13 @@ import uuid
 
 import discord
 import ui
-from core import auxiliary, cogs
+from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 
 async def setup(bot):
     """Add hangman extension to the config file."""
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="hangman_roles",
         datatype="list",

@@ -238,7 +238,7 @@ class ConfigControl(cogs.BaseCog):
 
         # Modify the local cache
         self.bot.guild_configs[str(ctx.guild.id)] = False
-        await self.bot.create_new_context_config(lookup=str(ctx.guild.id))
+        await self.bot.create_new_context_config(guild_id=str(ctx.guild.id))
         await auxiliary.send_confirm_embed(
             message="I've reset the config for this guild", channel=ctx.channel
         )
