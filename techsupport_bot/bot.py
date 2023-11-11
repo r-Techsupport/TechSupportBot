@@ -111,7 +111,7 @@ class TechSupportBot(commands.Bot):
 
     # Entry point
 
-    async def start(self, *args, **kwargs):
+    async def start(self):
         """Starts the event loop and blocks until interrupted."""
 
         if isinstance(self.logger, botlogging.DelayedLogger):
@@ -138,7 +138,7 @@ class TechSupportBot(commands.Bot):
             message="Logging into Discord...", level=LogLevel.DEBUG, console_only=True
         )
         self.guild_config_lock = asyncio.Lock()
-        await super().start(self.file_config.bot_config.auth_token, *args, **kwargs)
+        await super().start(self.file_config.bot_config.auth_token)
 
     # Discord.py called functions
 
@@ -276,6 +276,31 @@ class TechSupportBot(commands.Bot):
         )
         await self.get_owner()
 
+    async def on_message(self, message: discord.Message) -> None:
+        """Catches messages and acts appropriately.
+
+        parameters:
+            message (discord.Message): the message object
+        """
+        owner = await self.get_owner()
+        if (
+            owner
+            and isinstance(message.channel, discord.DMChannel)
+            and message.author.id != owner.id
+            and not message.author.bot
+        ):
+            attachment_urls = ", ".join(a.url for a in message.attachments)
+            content_string = f'"{message.content}"' if message.content else ""
+            attachment_string = f"({attachment_urls})" if attachment_urls else ""
+            await self.logger.send_log(
+                message=(
+                    f"PM from `{message.author}`: {content_string} {attachment_string}"
+                ),
+                level=LogLevel.INFO,
+            )
+
+        await self.process_commands(message)
+
     # Guild config management functions
 
     async def register_new_guild_config(self, guild: str) -> bool:
@@ -383,6 +408,74 @@ class TechSupportBot(commands.Bot):
         if not isinstance(config, self.ExtensionConfig):
             raise ValueError("config must be of type ExtensionConfig")
         self.extension_configs[extension_name] = config
+
+    async def get_log_channel_from_guild(
+        self, guild: discord.Guild, key: str
+    ) -> str | None:
+        """Gets the log channel ID associated with the given guild.
+
+        This also checks if the channel exists in the correct guild.
+
+        parameters:
+            guild (discord.Guild): the guild object to reference
+            key (string): the key to use when looking up the channel
+        """
+        if not guild:
+            return None
+
+        config = self.guild_configs[str(guild.id)]
+        channel_id = config.get(key)
+
+        if not channel_id:
+            return None
+
+        if not guild.get_channel(int(channel_id)):
+            return None
+
+        return channel_id
+
+    # File config loading functions
+
+    def load_file_config(self, validate=True):
+        """Loads the config yaml file into a bot object.
+
+        parameters:
+            validate (bool): True if validations should be ran on the file
+        """
+        with open(self.CONFIG_PATH, encoding="utf8") as iostream:
+            config_ = yaml.safe_load(iostream)
+
+        self.file_config = munch.munchify(config_)
+
+        self.file_config.bot_config.disabled_extensions = (
+            self.file_config.bot_config.disabled_extensions or []
+        )
+
+        if not validate:
+            return
+
+        for subsection in ["required"]:
+            self.validate_bot_config_subsection("bot_config", subsection)
+
+    def validate_bot_config_subsection(self, section, subsection):
+        """Loops through a config subsection to check for missing values.
+
+        parameters:
+            section (str): the section name containing the subsection
+            subsection (str): the subsection name
+        """
+        for key, value in self.file_config.get(section, {}).get(subsection, {}).items():
+            error_key = None
+            if value is None:
+                error_key = key
+            elif isinstance(value, dict):
+                for k, v in value.items():
+                    if v is None:
+                        error_key = k
+            if error_key:
+                raise ValueError(
+                    f"Config key {error_key} from {section}.{subsection} not supplied"
+                )
 
     # Error handling and logging functions
 
@@ -544,185 +637,7 @@ class TechSupportBot(commands.Bot):
 
         return db_ref
 
-
-
-    async def is_bot_admin(self, ctx: commands.Context) -> bool:
-        """Processes command context against admin/owner data.
-
-        Command checks are disabled if the context author is the owner.
-
-        They are also ignored if the author is bot admin in the config.
-
-        parameters:
-            ctx (discord.ext.Context): the context associated with the command
-        """
-        await self.logger.send_log(
-            message="Checking context against bot admins",
-            level=LogLevel.DEBUG,
-            context=LogContext(guild=ctx.guild, channel=ctx.channel),
-            console_only=True,
-        )
-
-        owner = await self.get_owner()
-        if getattr(owner, "id", None) == ctx.author.id:
-            return True
-
-        if ctx.message.author.id in [
-            int(id) for id in self.file_config.bot_config.admins.ids
-        ]:
-            return True
-
-        role_is_admin = False
-        for role in getattr(ctx.message.author, "roles", []):
-            if role.name in self.file_config.bot_config.admins.roles:
-                role_is_admin = True
-                break
-        if role_is_admin:
-            return True
-
-        return False
-
-    async def get_owner(self) -> discord.User:
-        """Gets the owner object from the bot application."""
-        if not self.owner:
-            try:
-                # If this isn't console only, it is a forever recursion
-                await self.logger.send_log(
-                    message="Looking up bot owner",
-                    level=LogLevel.DEBUG,
-                    console_only=True,
-                )
-                app_info = await self.application_info()
-                self.owner = app_info.owner
-            except discord.errors.HTTPException:
-                self.owner = None
-
-        return self.owner
-
-    @property
-    def startup_time(self) -> datetime:
-        """Gets the startup timestamp of the bot."""
-        return self.__startup_time
-
-    async def get_log_channel_from_guild(
-        self, guild: discord.Guild, key: str
-    ) -> str | None:
-        """Gets the log channel ID associated with the given guild.
-
-        This also checks if the channel exists in the correct guild.
-
-        parameters:
-            guild (discord.Guild): the guild object to reference
-            key (string): the key to use when looking up the channel
-        """
-        if not guild:
-            return None
-
-        config = self.guild_configs[str(guild.id)]
-        channel_id = config.get(key)
-
-        if not channel_id:
-            return None
-
-        if not guild.get_channel(int(channel_id)):
-            return None
-
-        return channel_id
-
-    async def slash_command_log(self, interaction: discord.Interaction) -> None:
-        """A command to log the call of a slash command
-
-        Args:
-            interaction (discord.Interaction): The interaction the slash command generated
-        """
-        embed = discord.Embed()
-        embed.add_field(name="User", value=interaction.user)
-        embed.add_field(
-            name="Channel", value=getattr(interaction.channel, "name", "DM")
-        )
-        embed.add_field(name="Server", value=getattr(interaction.guild, "name", "None"))
-        embed.add_field(name="Namespace", value=f"{interaction.namespace}")
-
-        log_channel = await self.get_log_channel_from_guild(
-            interaction.guild, key="logging_channel"
-        )
-
-        sliced_content = interaction.command.qualified_name[:100]
-        message = f"Command detected: `/{sliced_content}`"
-
-        await self.logger.send_log(
-            message=message,
-            level=LogLevel.INFO,
-            context=LogContext(guild=interaction.guild, channel=interaction.channel),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    async def on_message(self, message: discord.Message) -> None:
-        """Catches messages and acts appropriately.
-
-        parameters:
-            message (discord.Message): the message object
-        """
-        owner = await self.get_owner()
-        if (
-            owner
-            and isinstance(message.channel, discord.DMChannel)
-            and message.author.id != owner.id
-            and not message.author.bot
-        ):
-            attachment_urls = ", ".join(a.url for a in message.attachments)
-            content_string = f'"{message.content}"' if message.content else ""
-            attachment_string = f"({attachment_urls})" if attachment_urls else ""
-            await self.logger.send_log(
-                message=(
-                    f"PM from `{message.author}`: {content_string} {attachment_string}"
-                ),
-                level=LogLevel.INFO,
-            )
-
-        await self.process_commands(message)
-
-    def load_file_config(self, validate=True):
-        """Loads the config yaml file into a bot object.
-
-        parameters:
-            validate (bool): True if validations should be ran on the file
-        """
-        with open(self.CONFIG_PATH, encoding="utf8") as iostream:
-            config_ = yaml.safe_load(iostream)
-
-        self.file_config = munch.munchify(config_)
-
-        self.file_config.bot_config.disabled_extensions = (
-            self.file_config.bot_config.disabled_extensions or []
-        )
-
-        if not validate:
-            return
-
-        for subsection in ["required"]:
-            self.validate_bot_config_subsection("bot_config", subsection)
-
-    def validate_bot_config_subsection(self, section, subsection):
-        """Loops through a config subsection to check for missing values.
-
-        parameters:
-            section (str): the section name containing the subsection
-            subsection (str): the subsection name
-        """
-        for key, value in self.file_config.get(section, {}).get(subsection, {}).items():
-            error_key = None
-            if value is None:
-                error_key = key
-            elif isinstance(value, dict):
-                for k, v in value.items():
-                    if v is None:
-                        error_key = k
-            if error_key:
-                raise ValueError(
-                    f"Config key {error_key} from {section}.{subsection} not supplied"
-                )
+    # Extension loading and management functions
 
     async def get_potential_extensions(self):
         """Gets the current list of extensions in the defined directory.
@@ -745,19 +660,6 @@ class TechSupportBot(commands.Bot):
             if os.path.isfile(f) and not f.endswith("__init__.py")
         ]
         return extensions_list
-
-    async def check_extension_exists(self, extension):
-        """A function to check if an extension exists, by extension name
-
-        Args:
-            extension (str): The name of the extension
-
-        Returns:
-            bool: True if exists, False if it doesn't exist
-        """
-        if extension in await self.get_potential_extensions():
-            return True
-        return False
 
     async def load_extensions(self, graceful=True):
         """Loads all extensions currently in the extensions directory.
@@ -835,6 +737,108 @@ class TechSupportBot(commands.Bot):
         with open(f"{self.EXTENSIONS_DIR}/{extension_name}.py", "wb") as file_handle:
             file_handle.write(fp)
 
+    # Bot properties
+
+    async def is_bot_admin(self, ctx: commands.Context) -> bool:
+        """Processes command context against admin/owner data.
+
+        Command checks are disabled if the context author is the owner.
+
+        They are also ignored if the author is bot admin in the config.
+
+        parameters:
+            ctx (discord.ext.Context): the context associated with the command
+        """
+        await self.logger.send_log(
+            message="Checking context against bot admins",
+            level=LogLevel.DEBUG,
+            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            console_only=True,
+        )
+
+        owner = await self.get_owner()
+        if getattr(owner, "id", None) == ctx.author.id:
+            return True
+
+        if ctx.message.author.id in [
+            int(id) for id in self.file_config.bot_config.admins.ids
+        ]:
+            return True
+
+        role_is_admin = False
+        for role in getattr(ctx.message.author, "roles", []):
+            if role.name in self.file_config.bot_config.admins.roles:
+                role_is_admin = True
+                break
+        if role_is_admin:
+            return True
+
+        return False
+
+    async def get_owner(self) -> discord.User:
+        """Gets the owner object from the bot application."""
+        if not self.owner:
+            try:
+                # If this isn't console only, it is a forever recursion
+                await self.logger.send_log(
+                    message="Looking up bot owner",
+                    level=LogLevel.DEBUG,
+                    console_only=True,
+                )
+                app_info = await self.application_info()
+                self.owner = app_info.owner
+            except discord.errors.HTTPException:
+                self.owner = None
+
+        return self.owner
+
+    @property
+    def startup_time(self) -> datetime:
+        """Gets the startup timestamp of the bot."""
+        return self.__startup_time
+
+    async def get_prefix(self, message: discord.Message) -> str:
+        """Gets the appropriate prefix for a command.
+
+        parameters:
+            message (discord.Message): the message to check against
+        """
+        guild_config = self.guild_configs[str(message.guild.id)]
+        return getattr(
+            guild_config, "command_prefix", self.file_config.bot_config.default_prefix
+        )
+
+    # Other stuff
+
+    async def slash_command_log(self, interaction: discord.Interaction) -> None:
+        """A command to log the call of a slash command
+
+        Args:
+            interaction (discord.Interaction): The interaction the slash command generated
+        """
+        embed = discord.Embed()
+        embed.add_field(name="User", value=interaction.user)
+        embed.add_field(
+            name="Channel", value=getattr(interaction.channel, "name", "DM")
+        )
+        embed.add_field(name="Server", value=getattr(interaction.guild, "name", "None"))
+        embed.add_field(name="Namespace", value=f"{interaction.namespace}")
+
+        log_channel = await self.get_log_channel_from_guild(
+            interaction.guild, key="logging_channel"
+        )
+
+        sliced_content = interaction.command.qualified_name[:100]
+        message = f"Command detected: `/{sliced_content}`"
+
+        await self.logger.send_log(
+            message=message,
+            level=LogLevel.INFO,
+            context=LogContext(guild=interaction.guild, channel=interaction.channel),
+            channel=log_channel,
+            embed=embed,
+        )
+
     async def start_irc(self):
         """Starts the IRC connection in a seperate thread
 
@@ -862,14 +866,3 @@ class TechSupportBot(commands.Bot):
             message="Logging in to IRC", level=LogLevel.INFO, console_only=True
         )
         irc_thread.start()
-
-    async def get_prefix(self, message: discord.Message) -> str:
-        """Gets the appropriate prefix for a command.
-
-        parameters:
-            message (discord.Message): the message to check against
-        """
-        guild_config = self.guild_configs[str(message.guild.id)]
-        return getattr(
-            guild_config, "command_prefix", self.file_config.bot_config.default_prefix
-        )
