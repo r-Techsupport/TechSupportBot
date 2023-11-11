@@ -61,7 +61,7 @@ class TechSupportBot(commands.Bot):
     FUNCTIONS_DIR = f"{os.path.join(os.path.dirname(__file__))}/{FUNCTIONS_DIR_NAME}"
     ExtensionConfig = ExtensionConfig
 
-    def __init__(self, intents=None, allowed_mentions=None, *args, **kwargs):
+    def __init__(self, intents=None, allowed_mentions=None):
         self._startup_time = None
         self.builtin_cogs = []
 
@@ -75,6 +75,7 @@ class TechSupportBot(commands.Bot):
         self.file_config = None
         self.load_file_config()
 
+        # Call the discord.py init function to create a new commands.Bot object
         super().__init__(
             command_prefix=self.get_prefix,
             intents=intents,
@@ -95,6 +96,7 @@ class TechSupportBot(commands.Bot):
                 name=self.__class__.__name__,
                 send=not self.file_config.logging.block_discord_send,
             )
+
         self.command_rate_limit_bans: expiringdict.ExpiringDict[
             str, bool
         ] = expiringdict.ExpiringDict(
@@ -106,6 +108,8 @@ class TechSupportBot(commands.Bot):
 
         # Set the app command on error function to log errors in slash commands
         self.tree.on_error = self.on_app_command_error
+
+    # Entry point
 
     async def start(self, *args, **kwargs):
         """Starts the event loop and blocks until interrupted."""
@@ -135,6 +139,8 @@ class TechSupportBot(commands.Bot):
         )
         self.guild_config_lock = asyncio.Lock()
         await super().start(self.file_config.bot_config.auth_token, *args, **kwargs)
+
+    # Discord.py called functions
 
     async def setup_hook(self):
         """This function is automatically called after the bot has been logged into discord
@@ -172,52 +178,6 @@ class TechSupportBot(commands.Bot):
             message="Loading Help commands...", level=LogLevel.DEBUG, console_only=True
         )
 
-    async def start_irc(self):
-        """Starts the IRC connection in a seperate thread
-
-        Args:
-            irc (irc.IRC): The IRC object to start the socket on
-
-        Returns:
-            bool: True if the connection was successful, False if it was not
-        """
-        irc_config = getattr(self.file_config.api, "irc")
-        loop = asyncio.get_running_loop()
-
-        irc_bot = ircrelay.IRCBot(
-            loop=loop,
-            server=irc_config.server,
-            port=irc_config.port,
-            channels=irc_config.channels,
-            username=irc_config.name,
-            password=irc_config.password,
-        )
-        self.irc = irc_bot
-
-        irc_thread = threading.Thread(target=irc_bot.start)
-        await self.logger.send_log(
-            message="Logging in to IRC", level=LogLevel.INFO, console_only=True
-        )
-        irc_thread.start()
-
-    async def load_builtin_cog(self, cog):
-        """Loads a cog as a builtin.
-
-        parameters:
-            cog (discord.commands.ext.Cog): the cog to load
-        """
-        try:
-            cog = cog(self)
-            await self.add_cog(cog)
-            self.builtin_cogs.append(cog.qualified_name)
-        except Exception as exception:
-            await self.logger.send_log(
-                message=f"Could not load builtin cog {cog.__name__}: {exception}",
-                level=LogLevel.WARNING,
-                exception=exception,
-                console_only=True,
-            )
-
     async def cleanup(self):
         """Cleans up after the event loop is interupted."""
         await self.logger.send_log(
@@ -246,16 +206,77 @@ class TechSupportBot(commands.Bot):
 
         await super().on_guild_join(guild)
 
-    async def get_prefix(self, message: discord.Message) -> str:
-        """Gets the appropriate prefix for a command.
+    async def can_run(self, ctx: commands.Context, *, call_once=False) -> bool:
+        """Wraps the default can_run check to evaluate bot-admin permission.
 
         parameters:
-            message (discord.Message): the message to check against
+            ctx (commands.Context): the context associated with the command
+            call_once (bool): True if the check should be retrieved from the call_once attribute
         """
-        guild_config = self.guild_configs[str(message.guild.id)]
-        return getattr(
-            guild_config, "command_prefix", self.file_config.bot_config.default_prefix
+        await self.logger.send_log(
+            message="Checking if command can run",
+            level=LogLevel.DEBUG,
+            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            console_only=True,
         )
+        is_bot_admin = await self.is_bot_admin(ctx)
+        config = self.guild_configs[str(ctx.guild.id)]
+
+        # Rate limiter
+        if config.rate_limit.get("enabled", False):
+            identifier = f"{ctx.author.id}-{ctx.guild.id}"
+
+            if identifier not in self.command_execute_history:
+                self.command_execute_history[identifier] = expiringdict.ExpiringDict(
+                    max_len=20,
+                    max_age_seconds=config.rate_limit.time,
+                )
+
+            if ctx.message.id not in self.command_execute_history[identifier]:
+                self.command_execute_history[identifier][ctx.message.id] = True
+
+            if (
+                len(self.command_execute_history[identifier])
+                > config.rate_limit.commands
+            ):
+                self.command_rate_limit_bans[identifier] = True
+
+            if (
+                identifier in self.command_rate_limit_bans
+                and not ctx.author.guild_permissions.administrator
+            ):
+                raise custom_errors.CommandRateLimit
+
+        extension_name = self.get_command_extension_name(ctx.command)
+        if extension_name:
+            config = self.guild_configs[str(ctx.guild.id)]
+            if (
+                not extension_name in config.enabled_extensions
+                and extension_name != "config"
+            ):
+                raise custom_errors.ExtensionDisabled
+
+        cog = getattr(ctx.command, "cog", None)
+        if getattr(cog, "ADMIN_ONLY", False) and not is_bot_admin:
+            # treat this as a command error to be caught by the dispatcher
+            raise commands.MissingPermissions(["bot_admin"])
+
+        if is_bot_admin:
+            result = True
+        else:
+            result = await super().can_run(ctx, call_once=call_once)
+
+        return result
+
+    async def on_ready(self) -> None:
+        """Callback for when the bot is finished starting up."""
+        self.__startup_time = datetime.datetime.utcnow()
+        await self.logger.send_log(
+            message="Bot online", level=LogLevel.INFO, console_only=True
+        )
+        await self.get_owner()
+
+    # Guild config management functions
 
     async def register_new_guild_config(self, guild: str) -> bool:
         """This creates a config for a new guild if needed
@@ -267,7 +288,6 @@ class TechSupportBot(commands.Bot):
             bool: True if a config was created, False if a config already existed
         """
         async with self.guild_config_lock:
-            print(f"TYPE HINTING {type(self.guild_config_lock)}")
             try:
                 config = self.guild_configs[guild]
             except KeyError:
@@ -353,67 +373,178 @@ class TechSupportBot(commands.Bot):
             )
             await new_database_config.create()
 
-    async def can_run(self, ctx: commands.Context, *, call_once=False) -> bool:
-        """Wraps the default can_run check to evaluate bot-admin permission.
+    def add_extension_config(self, extension_name, config):
+        """Adds a base config object for a given extension.
 
         parameters:
-            ctx (commands.Context): the context associated with the command
-            call_once (bool): True if the check should be retrieved from the call_once attribute
+            extension_name (str): the name of the extension
+            config (ExtensionConfig): the extension config object
+        """
+        if not isinstance(config, self.ExtensionConfig):
+            raise ValueError("config must be of type ExtensionConfig")
+        self.extension_configs[extension_name] = config
+
+    # Error handling and logging functions
+
+    async def on_app_command_error(
+        self,
+        interaction: discord.Interaction[discord.Client],
+        error: app_commands.AppCommandError,
+    ) -> None:
+        """Error handler for the slowmode extension."""
+        error_message = await self.handle_error(
+            exception=error, channel=interaction.channel, guild=interaction.guild
+        )
+
+        if not error_message:
+            return
+
+        embed = auxiliary.prepare_deny_embed(message=error_message)
+
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed)
+        else:
+            await interaction.response.send_message(embed=embed)
+
+    async def handle_error(
+        self,
+        exception: Exception,
+        channel: discord.abc.Messageable,
+        guild: discord.Guild,
+    ) -> str:
+        """Handles the formatting and logging of command and app command errors
+
+        Args:
+            exception (Exception): The exception object generated
+            channel (discord.abc.Messageable): The channel the command was run in
+            guild (discord.Guild): The guild the command was run in
+
+        Returns:
+            str: The pretty string format that should be shared with the user
+        """
+        # Get the custom error response we made for the error
+        message_template = custom_errors.COMMAND_ERROR_RESPONSES.get(
+            exception.__class__, ""
+        )
+        # see if we have mapped this error to no response (None)
+        # or if we have added it to the global ignore list of errors
+        if (
+            message_template is None
+            or exception.__class__ in custom_errors.IGNORED_ERRORS
+        ):
+            return
+        # otherwise set it a default error message
+        if message_template == "":
+            message_template = custom_errors.ErrorResponse()
+
+        error_message = message_template.get_message(exception)
+
+        log_channel = await self.get_log_channel_from_guild(
+            guild=guild, key="logging_channel"
+        )
+
+        # Ensure that error messages aren't too long.
+        # This ONLY changes the user facing error, the stack trace isn't impacted
+        if len(error_message) > 1000:
+            error_message = error_message[:1000]
+            error_message += "..."
+
+        # Only log stack trace if you should
+        if not getattr(exception, "dont_print_trace", False):
+            await self.logger.send_log(
+                message=f"Command error: {exception}",
+                level=LogLevel.ERROR,
+                channel=log_channel,
+                context=LogContext(guild=guild, channel=channel),
+                exception=exception,
+            )
+
+        # Return the string error message and allow the context/interaction to respond properly
+        return error_message
+
+    async def on_command_error(
+        self, context: commands.Context, exception: Exception
+    ) -> None:
+        """Catches command errors and sends them to the error logger for processing.
+
+        parameters:
+            context (commands.Context): the context associated with the exception
+            exception (Exception): the exception object associated with the error
+        """
+        if self.extra_events.get("on_command_error", None):
+            return
+        if hasattr(context.command, "on_error"):
+            return
+        if context.cog:
+            # pylint: disable=protected-access
+            if (
+                commands.Cog._get_overridden_method(context.cog.cog_command_error)
+                is not None
+            ):
+                return
+
+        error_message = await self.handle_error(
+            exception=exception, channel=context.channel, guild=context.guild
+        )
+        if not error_message:
+            return
+
+        await auxiliary.send_deny_embed(message=error_message, channel=context.channel)
+
+    # Postgres setup functions
+
+    def generate_db_url(self):
+        """Dynamically converts config to a Postgres url."""
+        db_type = "postgres"
+
+        try:
+            config_child = getattr(self.file_config.database, db_type)
+
+            user = config_child.user
+            password = config_child.password
+
+            name = getattr(config_child, "name")
+
+            host = config_child.host
+            port = config_child.port
+
+        except AttributeError as exception:
+            self.logger.console.warning(
+                f"Could not generate DB URL for {db_type.upper()}: {exception}"
+            )
+            return None
+
+        url = f"{db_type}://{user}:{password}@{host}:{port}"
+        url_filtered = f"{db_type}://{user}:********@{host}:{port}"
+
+        if name:
+            url = f"{url}/{name}"
+
+        # don't log the password
+        self.logger.console.debug(f"Generated DB URL: {url_filtered}")
+
+        return url
+
+    async def get_postgres_ref(self):
+        """Grabs the main DB reference.
+
+        This doesn't follow a singleton pattern (use bot.db instead).
         """
         await self.logger.send_log(
-            message="Checking if command can run",
+            message="Obtaining and binding to Gino instance",
             level=LogLevel.DEBUG,
-            context=LogContext(guild=ctx.guild, channel=ctx.channel),
             console_only=True,
         )
-        is_bot_admin = await self.is_bot_admin(ctx)
-        config = self.guild_configs[str(ctx.guild.id)]
 
-        # Rate limiter
-        if config.rate_limit.get("enabled", False):
-            identifier = f"{ctx.author.id}-{ctx.guild.id}"
+        db_ref = gino.Gino()
+        db_url = self.generate_db_url()
+        await db_ref.set_bind(db_url)
 
-            if identifier not in self.command_execute_history:
-                self.command_execute_history[identifier] = expiringdict.ExpiringDict(
-                    max_len=20,
-                    max_age_seconds=config.rate_limit.time,
-                )
+        db_ref.Model.__table_args__ = {"extend_existing": True}
 
-            if ctx.message.id not in self.command_execute_history[identifier]:
-                self.command_execute_history[identifier][ctx.message.id] = True
+        return db_ref
 
-            if (
-                len(self.command_execute_history[identifier])
-                > config.rate_limit.commands
-            ):
-                self.command_rate_limit_bans[identifier] = True
 
-            if (
-                identifier in self.command_rate_limit_bans
-                and not ctx.author.guild_permissions.administrator
-            ):
-                raise custom_errors.CommandRateLimit
-
-        extension_name = self.get_command_extension_name(ctx.command)
-        if extension_name:
-            config = self.guild_configs[str(ctx.guild.id)]
-            if (
-                not extension_name in config.enabled_extensions
-                and extension_name != "config"
-            ):
-                raise custom_errors.ExtensionDisabled
-
-        cog = getattr(ctx.command, "cog", None)
-        if getattr(cog, "ADMIN_ONLY", False) and not is_bot_admin:
-            # treat this as a command error to be caught by the dispatcher
-            raise commands.MissingPermissions(["bot_admin"])
-
-        if is_bot_admin:
-            result = True
-        else:
-            result = await super().can_run(ctx, call_once=call_once)
-
-        return result
 
     async def is_bot_admin(self, ctx: commands.Context) -> bool:
         """Processes command context against admin/owner data.
@@ -527,119 +658,6 @@ class TechSupportBot(commands.Bot):
             embed=embed,
         )
 
-    async def on_ready(self) -> None:
-        """Callback for when the bot is finished starting up."""
-        self.__startup_time = datetime.datetime.utcnow()
-        await self.logger.send_log(
-            message="Bot online", level=LogLevel.INFO, console_only=True
-        )
-        await self.get_owner()
-
-    async def on_app_command_error(
-        self,
-        interaction: discord.Interaction[discord.Client],
-        error: app_commands.AppCommandError,
-    ) -> None:
-        """Error handler for the slowmode extension."""
-        error_message = await self.handle_error(
-            exception=error, channel=interaction.channel, guild=interaction.guild
-        )
-
-        if not error_message:
-            return
-
-        embed = auxiliary.prepare_deny_embed(message=error_message)
-
-        if interaction.response.is_done():
-            await interaction.followup.send(embed=embed)
-        else:
-            await interaction.response.send_message(embed=embed)
-
-    async def handle_error(
-        self,
-        exception: Exception,
-        channel: discord.abc.Messageable,
-        guild: discord.Guild,
-    ) -> str:
-        """Handles the formatting and logging of command and app command errors
-
-        Args:
-            exception (Exception): The exception object generated
-            channel (discord.abc.Messageable): The channel the command was run in
-            guild (discord.Guild): The guild the command was run in
-
-        Returns:
-            str: The pretty string format that should be shared with the user
-        """
-        # Get the custom error response we made for the error
-        message_template = custom_errors.COMMAND_ERROR_RESPONSES.get(
-            exception.__class__, ""
-        )
-        # see if we have mapped this error to no response (None)
-        # or if we have added it to the global ignore list of errors
-        if (
-            message_template is None
-            or exception.__class__ in custom_errors.IGNORED_ERRORS
-        ):
-            return
-        # otherwise set it a default error message
-        if message_template == "":
-            message_template = custom_errors.ErrorResponse()
-
-        error_message = message_template.get_message(exception)
-
-        log_channel = await self.get_log_channel_from_guild(
-            guild=guild, key="logging_channel"
-        )
-
-        # Ensure that error messages aren't too long.
-        # This ONLY changes the user facing error, the stack trace isn't impacted
-        if len(error_message) > 1000:
-            error_message = error_message[:1000]
-            error_message += "..."
-
-        # Only log stack trace if you should
-        if not getattr(exception, "dont_print_trace", False):
-            await self.logger.send_log(
-                message=f"Command error: {exception}",
-                level=LogLevel.ERROR,
-                channel=log_channel,
-                context=LogContext(guild=guild, channel=channel),
-                exception=exception,
-            )
-
-        # Return the string error message and allow the context/interaction to respond properly
-        return error_message
-
-    async def on_command_error(
-        self, context: commands.Context, exception: Exception
-    ) -> None:
-        """Catches command errors and sends them to the error logger for processing.
-
-        parameters:
-            context (commands.Context): the context associated with the exception
-            exception (Exception): the exception object associated with the error
-        """
-        if self.extra_events.get("on_command_error", None):
-            return
-        if hasattr(context.command, "on_error"):
-            return
-        if context.cog:
-            # pylint: disable=protected-access
-            if (
-                commands.Cog._get_overridden_method(context.cog.cog_command_error)
-                is not None
-            ):
-                return
-
-        error_message = await self.handle_error(
-            exception=exception, channel=context.channel, guild=context.guild
-        )
-        if not error_message:
-            return
-
-        await auxiliary.send_deny_embed(message=error_message, channel=context.channel)
-
     async def on_message(self, message: discord.Message) -> None:
         """Catches messages and acts appropriately.
 
@@ -664,61 +682,6 @@ class TechSupportBot(commands.Bot):
             )
 
         await self.process_commands(message)
-
-    def generate_db_url(self):
-        """Dynamically converts config to a Postgres url."""
-        db_type = "postgres"
-
-        try:
-            config_child = getattr(self.file_config.database, db_type)
-
-            user = config_child.user
-            password = config_child.password
-
-            name = getattr(config_child, "name")
-
-            host = config_child.host
-            port = config_child.port
-
-        except AttributeError as exception:
-            self.logger.console.warning(
-                f"Could not generate DB URL for {db_type.upper()}: {exception}"
-            )
-            return None
-
-        url = f"{db_type}://{user}:{password}@{host}:{port}"
-        url_filtered = f"{db_type}://{user}:********@{host}:{port}"
-
-        if name:
-            url = f"{url}/{name}"
-
-        # don't log the password
-        self.logger.console.debug(f"Generated DB URL: {url_filtered}")
-
-        return url
-
-    async def get_postgres_ref(self):
-        """Grabs the main DB reference.
-
-        This doesn't follow a singleton pattern (use bot.db instead).
-        """
-        await self.logger.send_log(
-            message="Obtaining and binding to Gino instance",
-            level=LogLevel.DEBUG,
-            console_only=True,
-        )
-
-        db_ref = gino.Gino()
-        db_url = self.generate_db_url()
-        await db_ref.set_bind(db_url)
-
-        db_ref.Model.__table_args__ = {"extend_existing": True}
-
-        return db_ref
-
-    def run(self, *args, **kwargs):
-        """Runs the bot, but uses the file config auth token instead of args."""
-        super().run(self.file_config.bot_config.auth_token, *args, **kwargs)
 
     def load_file_config(self, validate=True):
         """Loads the config yaml file into a bot object.
@@ -840,17 +803,6 @@ class TechSupportBot(commands.Bot):
                 if not graceful:
                     raise exception
 
-    def add_extension_config(self, extension_name, config):
-        """Adds a base config object for a given extension.
-
-        parameters:
-            extension_name (str): the name of the extension
-            config (ExtensionConfig): the extension config object
-        """
-        if not isinstance(config, self.ExtensionConfig):
-            raise ValueError("config must be of type ExtensionConfig")
-        self.extension_configs[extension_name] = config
-
     def get_command_extension_name(self, command):
         """Gets the subname of an extension from a command.
         Used only for commands, should never be run for a function
@@ -882,3 +834,42 @@ class TechSupportBot(commands.Bot):
 
         with open(f"{self.EXTENSIONS_DIR}/{extension_name}.py", "wb") as file_handle:
             file_handle.write(fp)
+
+    async def start_irc(self):
+        """Starts the IRC connection in a seperate thread
+
+        Args:
+            irc (irc.IRC): The IRC object to start the socket on
+
+        Returns:
+            bool: True if the connection was successful, False if it was not
+        """
+        irc_config = getattr(self.file_config.api, "irc")
+        loop = asyncio.get_running_loop()
+
+        irc_bot = ircrelay.IRCBot(
+            loop=loop,
+            server=irc_config.server,
+            port=irc_config.port,
+            channels=irc_config.channels,
+            username=irc_config.name,
+            password=irc_config.password,
+        )
+        self.irc = irc_bot
+
+        irc_thread = threading.Thread(target=irc_bot.start)
+        await self.logger.send_log(
+            message="Logging in to IRC", level=LogLevel.INFO, console_only=True
+        )
+        irc_thread.start()
+
+    async def get_prefix(self, message: discord.Message) -> str:
+        """Gets the appropriate prefix for a command.
+
+        parameters:
+            message (discord.Message): the message to check against
+        """
+        guild_config = self.guild_configs[str(message.guild.id)]
+        return getattr(
+            guild_config, "command_prefix", self.file_config.bot_config.default_prefix
+        )

@@ -9,7 +9,7 @@ from datetime import timedelta
 import discord
 import munch
 import ui
-from base import auxiliary, cogs, extension
+from base import auxiliary, cogs
 from botlogging import LogContext, LogLevel
 from discord import Color as embed_colors
 from discord.ext import commands

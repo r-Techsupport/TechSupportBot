@@ -1,7 +1,7 @@
 """Module for defining the gate extension for the bot."""
 
 import discord
-from base import auxiliary, cogs, extension
+from base import auxiliary, cogs
 from botlogging import LogContext, LogLevel
 from discord.ext import commands
 

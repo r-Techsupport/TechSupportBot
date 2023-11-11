@@ -2,7 +2,7 @@
 
 import discord
 import ui
-from base import auxiliary, cogs, extension
+from base import auxiliary, cogs
 from discord.ext import commands
 
 

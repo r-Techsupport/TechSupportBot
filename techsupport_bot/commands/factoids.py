@@ -24,7 +24,7 @@ import expiringdict
 import ui
 import yaml
 from aiohttp.client_exceptions import InvalidURL
-from base import auxiliary, cogs, extension
+from base import auxiliary, cogs
 from botlogging import LogContext, LogLevel
 from croniter import CroniterBadCronError
 from discord.ext import commands
