@@ -57,42 +57,6 @@ class Dumpdbg(cogs.BaseCog):
     async def debug_dump(self, ctx):
         """Method for the actual debugging"""
 
-        async def get_files(ctx):
-            """Gets files from passed message and checks if they are valid .dmp files
-
-            Params:
-              -> ctx (discord.Context) = The message to check
-
-            Returns:
-              -> Valid_URLs (list) = The list of valid .dmp CDN links
-            """
-
-            # Checks if attachments were supplied
-            if len(ctx.message.attachments) == 0:
-                return []
-
-            # -> Getting valid dump files <-
-
-            valid_URLs = []  # File CDN URLs to PUT to the API for debugging
-            dump_no = 0  # Used for error message
-
-            # Checks attachments for dump files, disregards 0 byte dumps
-            for attachment in ctx.message.attachments:
-                if attachment.filename.endswith(".dmp"):
-                    dump_no += 1
-                    #  Disregards any empty dumps
-                    if attachment.size == 0:
-                        await ctx.send(
-                            embed=DumpdbgEmbed(
-                                title="Invalid dump detected (Size 0)",
-                                description=f"Skipping dump number {dump_no}...",
-                            )
-                        )
-                        continue
-
-                    valid_URLs.append(attachment.url)
-            return valid_URLs
-
         config = self.bot.guild_configs[str(ctx.guild.id)]
         api_endpoint = self.bot.file_config.api.api_url.dumpdbg
         permitted_roles = config.extensions.dumpdbg.roles.value
@@ -109,7 +73,7 @@ class Dumpdbg(cogs.BaseCog):
         if not any(role.name in permitted_roles for role in ctx.message.author.roles):
             return
 
-        valid_URLs = await get_files(ctx)
+        valid_URLs = await self.get_files(ctx)
 
         if len(valid_URLs) == 0:
             await auxiliary.send_deny_embed(
@@ -197,3 +161,39 @@ class Dumpdbg(cogs.BaseCog):
                     description="\n".join(result_urls),
                 )
             )
+
+    async def get_files(ctx):
+        """Gets files from passed message and checks if they are valid .dmp files
+
+        Params:
+            -> ctx (discord.Context) = The message to check
+
+        Returns:
+            -> Valid_URLs (list) = The list of valid .dmp CDN links
+        """
+
+        # Checks if attachments were supplied
+        if len(ctx.message.attachments) == 0:
+            return []
+
+        # -> Getting valid dump files <-
+
+        valid_URLs = []  # File CDN URLs to PUT to the API for debugging
+        dump_no = 0  # Used for error message
+
+        # Checks attachments for dump files, disregards 0 byte dumps
+        for attachment in ctx.message.attachments:
+            if attachment.filename.endswith(".dmp"):
+                dump_no += 1
+                #  Disregards any empty dumps
+                if attachment.size == 0:
+                    await ctx.send(
+                        embed=DumpdbgEmbed(
+                            title="Invalid dump detected (Size 0)",
+                            description=f"Skipping dump number {dump_no}...",
+                        )
+                    )
+                    continue
+
+                valid_URLs.append(attachment.url)
+        return valid_URLs
