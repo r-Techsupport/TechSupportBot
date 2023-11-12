@@ -129,6 +129,8 @@ query = (
 )
 entry = await query.gino.first()
 ```
+This is creating a query and calling it separatly.  
+The query is searching the Applications table for a specific application with a status of pending, made by a specific user, in a specific guild. The `gino.first()` means it will only return a single entry
 
 ### Order by
 There may be a time you wish to order your results by something othe than the primary key. If this is the case, you can add `.order_by()` to your database query. The placement of this must be after the `.query` term, but can be in any relation to the `.where()` terms. You can use any column from the table to sort by. Here is an example (from commands/who.py):
