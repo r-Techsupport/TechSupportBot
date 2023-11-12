@@ -1,6 +1,7 @@
 # The (command/function) development guide
 The purpose of this document is to highlight how common things you will need to interact with during modification or creation of extensions of the bot.  
-This is mainly focused on extensions, but parts of this can be reused in core development as well
+This is mainly focused on extensions, but parts of this can be reused in core development as well.  
+In this document, commands and functions are referred to as collective extensions. See Cog Types.md to determine if you need to make a command or a function.
 
 ## Basic extension setup
 Creating the most basic extension layout requires 3 things:
