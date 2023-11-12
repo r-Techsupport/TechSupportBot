@@ -52,7 +52,7 @@ bot.db.Integer, bot.db.String, bot.db.DateTime, bot.db.Boolean, bot.db.Float
 To create a new table, you must have the following:
 - A table name. This must be globally unique.
 - An Integer primary key
-- At least one not primary key entry
+- At least one not primary key entry. The primary key can be named anything.  
 Here is an example (example from from the rule database):
 ```py
 class Rule(bot.db.Model):
@@ -63,6 +63,10 @@ class Rule(bot.db.Model):
 It is mandatory that your table name doesn't contain spaces.  
 It is recommended that your table name is all lowercase.  
 
+You can assign default values to your columns, like so (example from grabs):
+```py
+nsfw = bot.db.Column(bot.db.Boolean, default=False)
+```
 
 Additionally, in order to make your table accessible, you must add it to the bot.models dict at the bottom of the file.  
 Failing to do this will still cause your table to be created, but it will not be accessible.  
