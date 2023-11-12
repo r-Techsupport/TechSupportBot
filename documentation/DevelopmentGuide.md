@@ -67,6 +67,7 @@ You can assign default values to your columns, like so (example from grabs):
 ```py
 nsfw = bot.db.Column(bot.db.Boolean, default=False)
 ```
+These will not be retroactivly assigned to existing rows in the database, but will be added to all new rows that don't specify a value
 
 Additionally, in order to make your table accessible, you must add it to the bot.models dict at the bottom of the file.  
 Failing to do this will still cause your table to be created, but it will not be accessible.  
@@ -76,7 +77,71 @@ bot.models.Applications = Applications
 ```
 You do not have to match the name in the models, however it is recommended you do.
 
-## Accessing postgres tables
+## Reading data from postgres
+You can access a specific table by calling `bot.models.TableClassName`.
+
+There are two ways to get data from the database:
+- gino.first()
+- gino.all()
+
+gino.first() will return the first matching entry in the database, as a database object.  
+gino.all() will return a list of all matching queries, or an empty list. The list will be of database objects.
+
+A query is made up of 3 components:
+- The table you would like to query
+- The conditions you are filtering for
+- The amount of entries you want back
+
+The table is very simple to get, by using the above `bot.models.TableClassName`. This can be accessed anywhere you have the bot object accessible to you.  
+Following that, you need to add `.query` and `.where()`. The query line is mandatory, but if you don't want to filter the output at all, you can omit the where.  
+Finally, you need to end your query with `.gino.first()` or `.gino.all()`. These are async functions and will require to be called with await.  
+
+If you desire, you can omit the `.gino.first()` or `.gino.all()` and just build a query object without actually calling the database. You will need to call `.gino.first()` or `.gino.all()` on the query object you made later
+
+### Query and where usage
+The most basic query is one without any where statements. This will search the entire database, and either return all or the first. Example (from bot.py):
+```py
+all_config = await self.models.Config.query.gino.all()
+```
+This will get all entries from the Config database and return it as a list.  
+
+A more complex query is one where you need to use the `.where()` clause to filter your output. Filtering the output is based on the column name you want to filter. You can stack as many filters on a single query, by just stacking `.where()`. Here is a simple example (from commands/factoids.py):
+```py
+jobs = await self.bot.models.FactoidJob.query.where(
+    self.bot.models.FactoidJob.factoid == factoid.factoid_id
+).gino.all()
+```
+This will return a list of all entries in the FactoidJob database, where the factoid column matches `factoid.factoid_id`.  
+If you wish to stack queries, you can do that as well. There is no limit to how much you can stack. Here is an example (from commands/application.py):
+```py
+query = (
+    self.bot.models.Applications.query.where(
+        self.bot.models.Applications.applicant_id == str(member.id)
+    )
+    .where(self.bot.models.Applications.guild_id == str(member.guild.id))
+    .where(
+        self.bot.models.Applications.application_stauts
+        == ApplicationStatus.PENDING.value
+    )
+)
+entry = await query.gino.first()
+```
+
+### Order by
+There may be a time you wish to order your results by something othe than the primary key. If this is the case, you can add `.order_by()` to your database query. The placement of this must be after the `.query` term, but can be in any relation to the `.where()` terms. You can use any column from the table to sort by. Here is an example (from commands/who.py):
+```py
+user_notes = (
+    await self.bot.models.UserNote.query.where(
+        self.bot.models.UserNote.user_id == str(user.id)
+    )
+    .where(self.bot.models.UserNote.guild_id == str(guild.id))
+    .order_by(self.bot.models.UserNote.updated.desc())
+    .gino.all()
+)
+```
+This is sorting in a descending order by the updated column.
+
+## Modifying data from postgres
 
 ## HTTP Calls
 
