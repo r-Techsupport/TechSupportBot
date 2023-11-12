@@ -154,6 +154,42 @@ This is sorting in a descending order by the updated column.
 ## HTTP Calls
 
 ## Error handling
+Any errors raised by you or a library you are using raises will be handled by a central error handler.  
+If you don't want the command to abort or have some other custom handling, a try/except statement is what you want. Avoid using a bare except or a generic except. Catching specific errors is good practice and avoids hiding bugs that will later show up and be hard to find.  
+An error should always mean that something went wrong, and that whatever function or command you are running is not recoverable.
+
+### Making custom errors
+Custom errors can allow you to have custom output by the default error handler, ensuring more consistency and allowing you to tell the user what they need to know. Custom errors are defined in `core/custom_errors.py`.  
+To make a custom error, you need to make a class that inherits from a command or app_command error, depending on if you will be raising it from a prefix or app command.  
+Here is some example code (from the http rate limit error):
+```py
+class HTTPRateLimit(commands.errors.CommandError):
+    """An API call is on rate limit"""
+
+    def __init__(self, wait):
+        self.wait = wait
+```
+This error inherits from commands.errors, so it will only work correct if called from a prefix command. If called from an application command, the error will be displayed on in the console with no special user side handling
+
+In these errors, you can define as many properties as you would like, with any names. In the example above, there is a wait variable, which is supposed to indicate how long a user must wait before using a given API again.  
+You can define a special property, `self.dont_print_trace`, for the errors that don't need a stack trace printed. Use this cautiously and only when you are sure that the stack trace will provide zero useful information. This option will prevent the stack trace from being sent anywhere, **including the console**.
+
+You can additionally have custom output for these errors, by adding an entry to the COMMAND_ERROR_RESPONSES array, in the `core/custom_errors.py` file. Here are some examples:
+```py
+HTTPRateLimit: ErrorResponse(
+    "That API is on cooldown. Try again in %.2f seconds",
+    {"key": "wait"},
+),
+ExtensionDisabled: ErrorResponse(
+    "That extension is disabled for this context/server"
+),
+```
+These errors are formatted using the printf strings, and a key that points back to the custom variables defined in your error class.  
+After these two, when you want to raise your error, you need to import the custom errors class from core:
+```py
+from core import custom_errors
+raise custom_errors.HTTPRateLimit
+```
 
 ## Creating slash commands
 
@@ -198,3 +234,5 @@ This is sorting in a descending order by the updated column.
 ## Getting bot from context or interaction
 
 ## Setup function
+
+## Adding new python libraries
