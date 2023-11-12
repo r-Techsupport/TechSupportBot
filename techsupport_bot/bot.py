@@ -797,7 +797,6 @@ class TechSupportBot(commands.Bot):
         Returns:
             bool: True if the command should be run, false if it shouldn't be run
         """
-
         # Since we can't do it anywhere else, log slash command here
         await self.slash_command_log(interaction)
 
@@ -812,7 +811,6 @@ class TechSupportBot(commands.Bot):
         # Check 1 - Ensure extension is enabled
         try:
             extension_name = interaction.command.extras["module"]
-            print(interaction.command.extras["module"])
         except KeyError:
             # Skip extension enabled check if no extras module has been defined
             self.logger.console.warning(
@@ -838,7 +836,7 @@ class TechSupportBot(commands.Bot):
             if not self.command_run_rate_limit_check(
                 member=interaction.user,
                 guild=interaction.guild,
-                command_id=interaction.message.id,
+                command_id=interaction.id,
             ):
                 raise custom_errors.AppCommandRateLimit
 
