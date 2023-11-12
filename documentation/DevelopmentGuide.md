@@ -78,6 +78,8 @@ bot.models.Applications = Applications
 You do not have to match the name in the models, however it is recommended you do.
 
 ## Reading data from postgres
+Disclaimer: gino is a massive library, there are dozens more ways to interaction with the database than are listed here or used anywhere in this code. This is not a definitive guild of what you are allowed to do, but rather a summary of what we currently do
+
 You can access a specific table by calling `bot.models.TableClassName`.
 
 There are two ways to get data from the database:
