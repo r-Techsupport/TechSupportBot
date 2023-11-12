@@ -188,7 +188,8 @@ These errors are formatted using the printf strings, and a key that points back 
 After these two, when you want to raise your error, you need to import the custom errors class from core:
 ```py
 from core import custom_errors
-raise custom_errors.HTTPRateLimit
+raise custom_errors.HTTPRateLimit(4.5)
+raise custom_errors.ExtensionDisabled
 ```
 
 ## Creating slash commands
