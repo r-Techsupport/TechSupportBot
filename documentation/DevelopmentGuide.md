@@ -276,6 +276,14 @@ There are times where these recommendations do not make sense, such as in `core/
 ## IRC
 
 ## Typing
+Note: This feature is only avaiable to prefix commands. App commands have interaction.defer, which accomplishes something similar
+
+On the command declaration function, you may add a decorater as such:
+```py
+@auxiliary.with_typing
+```
+This will wrap the original function and make the bot say typing until the function has been completed. There will be a brief pause after a message has been sent, but it will return if you are thinking for a followup or waiting for user input (like a confirm).  
+While there are other ways to do typing, this is a quick, reliable, and consistent way to add typing and not make the code more complex.
 
 ## Permissions checking
 
