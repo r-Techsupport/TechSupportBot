@@ -207,6 +207,63 @@ raise custom_errors.ExtensionDisabled
 ## Pagination
 
 ## Confirmation
+The ui module provide a library for having the user confirm some action. This will provide the user a prompt and request they select a confirm or cancel option.  
+The buttons in this library will stop working in the event the bot gets restarted, so there will be no phantom inputs from the view.  
+There are three possible outcomes from the confirmation, defined in the ConfirmResponse enum:
+- The user confirmed (CONFIRMED)
+- The user denied (DENIED)
+- No options were selected within 1 minute (TIMEOUT)
+
+You will have to import the ui package in order to use the confirmation function. This confirmation system is avaiable to both prefix commands and app commands. The confirmation package does no lock or collision checking, any error handling based on 2 events to the same item must be done in the extension.
+
+Creating and sending the confirm message requires you create the class instance and call the send function. Example (from commands/extension.py):
+```py
+view = ui.Confirm()
+await view.send(
+    message=f"Warning! This will replace the current `{extension_name}.py` "
+    + "extension! Are you SURE?",
+    channel=ctx.channel,
+    author=ctx.author,
+)
+```
+Required arguments for send are:
+- message: The message to add to the message prompted to the user
+- channel: The channel to send the message to
+- author: The user who is in control of the confirmation. They are the only ones allowed to interact with it
+
+You MAY add:
+- timeout: A custom amount of seconds to wait before defaulting to the timeout response. Default is 60 seconds
+
+If you are calling this from an app command:
+- interaction: Is required to properly respond to interactions, the original interaction to reply or follow up with
+- ephemeral: If you would like the confirmation message to be sent in an ephemeral form. Optional, defaults to false. This is not available with prefix commands
+
+Additionally, if you are calling this from an app command, you must defer the response (examples below from commands/who.py):
+```py
+await interaction.response.defer(ephemeral=True)
+```
+Ephemeral is not required there, but if you pass ephemeral as True to the confirmation window, you must pass it as true to the defer function as well.  
+For any additional followups to the message, you must use the view followup variable:
+```py
+view.followup.send
+```
+
+After calling send, you must wait for the view to be completed, by running:
+```py
+await view.wait()
+```
+
+After this line, you can guarantee that you have a `view.value` variable, and it is properly set to what the user picked unless there was a timeout. This value will match the enum values above, you can compare it to:
+- ui.ConfirmResponse.CONFIRMED
+- ui.ConfirmResponse.DENIED
+- ui.ConfirmResponse.TIMEOUT
+
+It is highly recommended that:
+- Confirmed - You do the action and inform the user the action was completed
+- Denied - You inform the user that the action was cancelled
+- Timeout - You silently do nothing
+
+There are times where these recommendations do not make sense, such as in `core/auxiliary.py` in the extension_help function
 
 ## Creating guild configuration
 
