@@ -78,6 +78,9 @@ bot.models.Applications = Applications
 ```
 You do not have to match the name in the models, however it is recommended you do.
 
+### Foreign Key
+
+
 ## Reading data from postgres
 Disclaimer: gino is a massive library, there are dozens more ways to interact with the database than are listed here or used anywhere in this code. This is not a definitive guide of what you are allowed to use, but rather a summary of what we currently use.
 
