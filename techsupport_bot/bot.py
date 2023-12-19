@@ -171,10 +171,6 @@ class TechSupportBot(commands.Bot):
                 json.loads(config.config)
             )
 
-        # Ensure all guilds have a config
-        for guild in self.guilds:
-            await self.register_new_guild_config(str(guild.id))
-
         # The very last step should be loading extensions
         # Some extensions will require the database or config when loading
         await self.logger.send_log(
@@ -212,6 +208,10 @@ class TechSupportBot(commands.Bot):
             message="Bot online", level=LogLevel.INFO, console_only=True
         )
         await self.get_owner()
+
+        # Ensure all guilds have a config
+        for guild in self.guilds:
+            await self.register_new_guild_config(str(guild.id))
 
     async def on_message(self, message: discord.Message) -> None:
         """Logs DMs and ensure that commands are processed
