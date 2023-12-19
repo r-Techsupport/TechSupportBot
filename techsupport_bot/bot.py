@@ -343,8 +343,10 @@ class TechSupportBot(commands.Bot):
         """Adds an extensions defined config to the guild config as a whole
 
         Args:
-            extension_name (str): The name of the extension to add config for. Will be the key in the config file
-            config (extensionconfig.ExtensionConfig): The config class with all of the config keys to add
+            extension_name (str): The name of the extension to add config for.
+                Will be the key in the config file
+            config (extensionconfig.ExtensionConfig): The config class with all
+                of the config keys to add
 
         Raises:
             ValueError: Will be raised if config is not an extensionconfig.ExtensionConfig
@@ -742,11 +744,30 @@ class TechSupportBot(commands.Bot):
     # Can run command checks
 
     async def command_run_admin_check(self, member: discord.Member) -> bool:
+        """Part of the can_run function set. This is responsible for checking if
+        the caller is a bot admin
+
+        Args:
+            member (discord.Member): The member who called the command
+
+        Returns:
+            bool: True if they are bot admin, false if they aren't
+        """
         return await self.is_bot_admin(member)
 
     def command_run_rate_limit_check(
         self, member: discord.Member, guild: discord.Guild, command_id: int
     ) -> bool:
+        """Handle the command rate limiter
+
+        Args:
+            member (discord.Member): The member who called the command
+            guild (discord.Guild): The guild it was called in
+            command_id (int): The ID of the message or interaction
+
+        Returns:
+            bool: True if the command should be run, False if under rate limit
+        """
         # Assume this is only run if rate limit is enabled
         config = self.guild_configs[str(guild.id)]
         identifier = f"{member.id}-{guild.id}"
@@ -780,6 +801,16 @@ class TechSupportBot(commands.Bot):
     def command_run_extension_disabled_check(
         self, guild: discord.Guild, extension_name: str
     ) -> bool:
+        """Checks if the extension is disabled
+        Works for both prefix and slash commands
+
+        Args:
+            guild (discord.Guild): The guild the command was run in
+            extension_name (str): The name of the extension to check
+
+        Returns:
+            bool: False if disabled, True if enabled
+        """
         config = self.guild_configs[str(guild.id)]
         if not extension_name in config.enabled_extensions:
             return False

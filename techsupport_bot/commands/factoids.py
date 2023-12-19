@@ -175,7 +175,8 @@ class FactoidManager(cogs.MatchCog):
             alias (str, optional): The parent factoid. Defaults to None.
 
             Raises:
-            custom_errors.TooLongFactoidMessageError: When the message argument is over 2k chars, discords limit
+            custom_errors.TooLongFactoidMessageError:
+                When the message argument is over 2k chars, discords limit
         """
         if len(message) > 2000:
             raise custom_errors.TooLongFactoidMessageError
@@ -214,7 +215,8 @@ class FactoidManager(cogs.MatchCog):
             alias (str, optional): New parent factoid. Defaults to None.
 
         Raises:
-            custom_errors.TooLongFactoidMessageError: When the message argument is over 2k chars, discords limit
+            custom_errors.TooLongFactoidMessageError:
+                When the message argument is over 2k chars, discords limit
         """
         if message and len(message) > 2000:
             raise custom_errors.TooLongFactoidMessageError
@@ -647,8 +649,8 @@ class FactoidManager(cogs.MatchCog):
 
         Raises:
             custom_errors.FactoidNotFoundError: Raised if a broken alias is present in the DB
-            custom_errors.TooLongFactoidMessageError: Raised when the raw message content is over discords
-                                        2000 chat limit
+            custom_errors.TooLongFactoidMessageError:
+                Raised when the raw message content is over discords 2000 char limit
         """
         if not ctx.guild:
             return

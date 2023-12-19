@@ -1,3 +1,4 @@
+"""This represents an extension config item when building in the setup function"""
 import munch
 
 

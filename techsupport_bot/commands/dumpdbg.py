@@ -162,7 +162,7 @@ class Dumpdbg(cogs.BaseCog):
                 )
             )
 
-    async def get_files(ctx):
+    async def get_files(self, ctx):
         """Gets files from passed message and checks if they are valid .dmp files
 
         Params:

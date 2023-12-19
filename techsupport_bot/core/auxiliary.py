@@ -482,7 +482,18 @@ async def extension_help(self, ctx: commands.Context, extension_name: str) -> No
         )
 
 
-async def bot_admin_check_context(ctx: commands.Context):
+async def bot_admin_check_context(ctx: commands.Context) -> bool:
+    """A simple check to put on a prefix command function to ensure that the caller is an admin
+
+    Args:
+        ctx (commands.Context): The context that the command was called in
+
+    Raises:
+        commands.MissingPermissions: If the user is not a bot admin
+
+    Returns:
+        bool: True if can run
+    """
     is_admin = await ctx.bot.is_bot_admin(ctx.author)
     if not is_admin:
         raise commands.MissingPermissions(["bot_admin"])
