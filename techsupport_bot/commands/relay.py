@@ -5,8 +5,8 @@ from typing import Dict, List, Union
 import discord
 import munch
 import ui
-from base import auxiliary, cogs, extension
 from bidict import bidict
+from core import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -132,7 +132,7 @@ class DiscordToIRC(cogs.MatchCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @irc.command(name="maps", description="List all the maps for IRC")
     async def irc_maps(self, ctx: commands.Context) -> None:

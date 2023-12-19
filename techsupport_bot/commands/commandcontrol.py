@@ -8,7 +8,7 @@ This file contains 2 commands:
     .command enable
 """
 
-from base import auxiliary, cogs, extension
+from core import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -22,8 +22,7 @@ class CommandControl(cogs.BaseCog):
     The class that holds the command control commands
     """
 
-    ADMIN_ONLY = True
-
+    @commands.check(auxiliary.bot_admin_check_context)
     @commands.group(
         name="command",
         brief="Executes a commands bot command",
@@ -37,7 +36,7 @@ class CommandControl(cogs.BaseCog):
         """
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @auxiliary.with_typing
     @command_group.command(

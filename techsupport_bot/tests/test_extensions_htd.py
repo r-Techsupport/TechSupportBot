@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import discord
 import pytest
-from base import auxiliary
 from commands import htd
+from core import auxiliary
 
 from . import config_for_tests
 

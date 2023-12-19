@@ -8,6 +8,7 @@ from functools import wraps
 
 import discord
 import munch
+import ui
 from discord.ext import commands
 
 
@@ -375,3 +376,125 @@ def add_diff_fields(embed: discord.Embed, diff: dict) -> discord.Embed:
             embed.add_field(name=f"{attru} (before)", value=diff_data.before or None)
             embed.add_field(name=f"{attru} (after)", value=diff_data.after or None)
     return embed
+
+
+def get_help_embed_for_extension(self, extension_name, command_prefix):
+    """Gets the help embed for an extension.
+
+    Defined so it doesn't have to be written out twice
+
+    parameters:
+        extension_name (str): the name of the extension to show the help for
+        command_prefix (str): passed to the func as it has to be awaited
+
+    returns:
+        embed (discord.Embed): Embed containing all commands with their description
+    """
+    embed = discord.Embed()
+    embed.title = f"Extension Commands: `{extension_name}`"
+
+    # Sorts commands alphabetically
+    command_list = list(self.bot.walk_commands())
+    command_list.sort(key=lambda command: command.name)
+
+    # Loops through every command in the bots library
+    for command in command_list:
+        # Gets the command name
+        command_extension_name = self.bot.get_command_extension_name(command)
+
+        # Continues the loop if the command isn't a part of the target extension
+        if extension_name != command_extension_name or issubclass(
+            command.__class__, commands.Group
+        ):
+            continue
+
+        if command.full_parent_name == "":
+            syntax = f"{command_prefix}{command.name}"
+
+        else:
+            syntax = f"{command_prefix}{command.full_parent_name} {command.name}"
+
+        usage = command.usage or ""
+
+        embed.add_field(
+            name=f"`{syntax} {usage}`",
+            value=command.description or "No description available",
+            inline=False,
+        )
+
+    # Default for when no matching commands were found
+    if len(embed.fields) == 0:
+        embed.description = "There are no commands for this extension"
+
+    return embed
+
+
+async def extension_help(self, ctx: commands.Context, extension_name: str) -> None:
+    """Automatically prompts for help if improper syntax for an extension is called.
+
+    The format for extension_name that's used is `self.__module__[11:]`, because
+    all extensions have the value set to extension.<name>, it's the most reliable
+    way to get the extension name regardless of aliases
+
+    parameters:
+        ctx (commands.Context): context of the message
+        extension_name (str): the name of the extension to show the help for
+    """
+
+    # Checks whether the first given argument is valid if an argument is supplied
+    if len(ctx.message.content.split()) > 1:
+        arg = ctx.message.content.split().pop(1)
+        valid_commands = []
+        valid_args = []
+        # Loops through each command for said extension
+        for command in self.bot.get_cog(self.qualified_name).walk_commands():
+            valid_commands.append(command.name)
+            valid_args.append(command.aliases)
+
+        # Flatmaps nested lists, because aliases are returned as lists.
+        valid_args = [item for sublist in valid_args for item in sublist]
+
+        # If argument isn't a valid command or alias, wait for confirmation to show help page
+        if arg not in valid_args and arg not in valid_commands:
+            view = ui.Confirm()
+            await view.send(
+                message="Invalid argument! Show help command?",
+                channel=ctx.channel,
+                author=ctx.author,
+                timeout=10,
+            )
+            await view.wait()
+            if view.value != ui.ConfirmResponse.CONFIRMED:
+                return
+
+            await ctx.send(
+                embed=get_help_embed_for_extension(
+                    self, extension_name, await self.bot.get_prefix(ctx.message)
+                )
+            )
+
+    # Executed if no arguments were supplied
+    elif len(ctx.message.content.split()) == 1:
+        await ctx.send(
+            embed=get_help_embed_for_extension(
+                self, extension_name, await self.bot.get_prefix(ctx.message)
+            )
+        )
+
+
+async def bot_admin_check_context(ctx: commands.Context) -> bool:
+    """A simple check to put on a prefix command function to ensure that the caller is an admin
+
+    Args:
+        ctx (commands.Context): The context that the command was called in
+
+    Raises:
+        commands.MissingPermissions: If the user is not a bot admin
+
+    Returns:
+        bool: True if can run
+    """
+    is_admin = await ctx.bot.is_bot_admin(ctx.author)
+    if not is_admin:
+        raise commands.MissingPermissions(["bot_admin"])
+    return True

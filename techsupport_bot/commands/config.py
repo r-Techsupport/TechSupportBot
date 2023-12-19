@@ -7,7 +7,7 @@ import json
 
 import discord
 import ui
-from base import auxiliary, cogs, extension
+from core import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -34,7 +34,7 @@ class ConfigControl(cogs.BaseCog):
         """
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
@@ -238,7 +238,7 @@ class ConfigControl(cogs.BaseCog):
 
         # Modify the local cache
         self.bot.guild_configs[str(ctx.guild.id)] = False
-        await self.bot.create_new_context_config(lookup=str(ctx.guild.id))
+        await self.bot.create_new_context_config(guild_id=str(ctx.guild.id))
         await auxiliary.send_confirm_embed(
             message="I've reset the config for this guild", channel=ctx.channel
         )

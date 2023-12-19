@@ -13,7 +13,7 @@ This file contains 4 commands:
 import json
 
 import discord
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -38,9 +38,9 @@ class IssueCreator(cogs.BaseCog):
     The class that holds the issue commands
     """
 
-    ADMIN_ONLY = True
     GITHUB_API_BASE_URL = "https://api.github.com"
 
+    @commands.check(auxiliary.bot_admin_check_context)
     @auxiliary.with_typing
     @commands.command(
         name="issue",

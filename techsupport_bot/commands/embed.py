@@ -11,13 +11,13 @@ Defines: has_embed_role
 """
 
 import discord
-from base import auxiliary, cogs
+from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 
 async def setup(bot):
     """Registers the extension and its config"""
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="embed_roles",
         datatype="list",

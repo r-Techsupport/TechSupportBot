@@ -26,7 +26,6 @@ class BaseCog(commands.Cog):
     """
 
     COG_TYPE = "Base"
-    ADMIN_ONLY = False
     KEEP_COG_ON_FAILURE = False
 
     def __init__(

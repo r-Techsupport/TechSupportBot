@@ -6,14 +6,14 @@ import random
 
 import discord
 import ui
-from base import auxiliary, cogs, extension
+from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 
 async def setup(bot):
     """Setup to add Grab to the config file"""
 
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="per_page",
         datatype="int",
@@ -133,7 +133,7 @@ class Grabber(cogs.BaseCog):
     async def grabs(self, ctx):
         """Makes the .grab command group"""
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @auxiliary.with_typing
     @commands.guild_only()

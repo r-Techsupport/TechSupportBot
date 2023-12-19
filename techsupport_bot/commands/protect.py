@@ -10,15 +10,15 @@ import discord
 import expiringdict
 import munch
 import ui
-from base import auxiliary, cogs, extension
 from botlogging import LogContext, LogLevel
+from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 
 async def setup(bot):
     """Class to set up the protect options in the config file."""
 
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="channels",
         datatype="list",
@@ -882,7 +882,7 @@ class Protector(cogs.MatchCog):
     )
     async def purge(self, ctx):
         """Method to purge messages in discord."""
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @purge.command(
         name="amount",

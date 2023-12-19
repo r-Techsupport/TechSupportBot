@@ -12,7 +12,7 @@ This file contains 4 commands:
 
 import discord
 import ui
-from base import auxiliary, cogs, extension
+from core import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -26,8 +26,7 @@ class ExtensionControl(cogs.BaseCog):
     The class that holds the extension commands
     """
 
-    ADMIN_ONLY = True
-
+    @commands.check(auxiliary.bot_admin_check_context)
     @commands.group(
         name="extension",
         brief="Executes an extension bot command",
@@ -41,7 +40,7 @@ class ExtensionControl(cogs.BaseCog):
         """
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @auxiliary.with_typing
     @extension_group.command(

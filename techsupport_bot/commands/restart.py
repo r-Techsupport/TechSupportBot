@@ -8,7 +8,7 @@ This file contains 2 commands:
     .reboot
 """
 
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -22,8 +22,7 @@ class Restarter(cogs.BaseCog):
     The class that holds the reboot command
     """
 
-    ADMIN_ONLY = True
-
+    @commands.check(auxiliary.bot_admin_check_context)
     @commands.command(
         name="restart",
         description="Restarts the bot at the container level",

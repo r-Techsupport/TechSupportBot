@@ -9,7 +9,7 @@ from unicodedata import lookup
 import discord
 import emoji
 import inflect
-from base import auxiliary, cogs, extension
+from core import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -150,7 +150,7 @@ class Emojis(cogs.BaseCog):
     )
     async def emoji(self, ctx):
         """Executed if there are no/invalid args supplied"""
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @auxiliary.with_typing
     @emoji.command(

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import discord
 import ui
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord import app_commands
 from discord.ext import commands
 

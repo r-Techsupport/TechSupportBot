@@ -8,7 +8,7 @@ This file contains 1 commands:
 """
 
 import discord
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -22,8 +22,7 @@ class Leaver(cogs.BaseCog):
     The class that holds the leave command
     """
 
-    ADMIN_ONLY = True
-
+    @commands.check(auxiliary.bot_admin_check_context)
     @commands.command(
         name="leave", description="Leaves a guild by ID", usage="[guild-id]"
     )

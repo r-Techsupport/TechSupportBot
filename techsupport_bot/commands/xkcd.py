@@ -3,7 +3,7 @@
 import random
 
 import discord
-from base import auxiliary, cogs, extension
+from core import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -29,7 +29,7 @@ class XKCD(cogs.BaseCog):
             await self.numbered_comic(ctx, number)
         else:
             # Executed if there are no/invalid args supplied
-            await extension.extension_help(self, ctx, self.__module__[9:])
+            await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @xkcd.command(
         name="random",
@@ -81,7 +81,7 @@ class XKCD(cogs.BaseCog):
         """Method to generate the help entry for the group parent and
         prevent direct invocation."""
         ctx.message.content = f"{ctx.message.content[0]}xkcd invalid"
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     async def numbered_comic(self, ctx, number: int):
         """Method to get a specific number comic from xkcd."""

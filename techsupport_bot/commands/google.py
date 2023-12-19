@@ -2,7 +2,7 @@
 
 import discord
 import ui
-from base import auxiliary, cogs, extension
+from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 
@@ -18,7 +18,7 @@ async def setup(bot):
     except AttributeError as exc:
         raise AttributeError("Googler was not loaded due to missing API key") from exc
 
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="max_responses",
         datatype="int",
@@ -66,7 +66,7 @@ class Googler(cogs.BaseCog):
         """Method to add command to search google."""
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @auxiliary.with_typing
     @commands.guild_only()

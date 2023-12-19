@@ -13,7 +13,21 @@ class ExtensionDisabled(commands.errors.CheckFailure):
         self.dont_print_trace = True
 
 
+class AppCommandExtensionDisabled(app_commands.CheckFailure):
+    """The exception thrown when an extension is disabled."""
+
+    def __init__(self):
+        self.dont_print_trace = True
+
+
 class CommandRateLimit(commands.errors.CheckFailure):
+    """The exception thrown when a user is on rate limit"""
+
+    def __init__(self):
+        self.dont_print_trace = True
+
+
+class AppCommandRateLimit(app_commands.CheckFailure):
     """The exception thrown when a user is on rate limit"""
 
     def __init__(self):
@@ -223,6 +237,12 @@ COMMAND_ERROR_RESPONSES = {
         "That extension is disabled for this context/server"
     ),
     CommandRateLimit: ErrorResponse("You are being rate limited for spamming commands"),
+    AppCommandExtensionDisabled: ErrorResponse(
+        "That extension is disabled for this context/server"
+    ),
+    AppCommandRateLimit: ErrorResponse(
+        "You are being rate limited for spamming commands"
+    ),
 }
 
 IGNORED_ERRORS = set([commands.CommandNotFound, app_commands.CommandNotFound])

@@ -11,8 +11,8 @@ import re
 import string
 
 import discord
-from base import cogs
 from botlogging import LogContext, LogLevel
+from core import cogs
 from discord.ext import commands
 from unidecode import unidecode
 

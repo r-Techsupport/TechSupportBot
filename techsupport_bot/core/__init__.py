@@ -1,8 +1,7 @@
 """Module for providing base classes."""
 
-from .advanced import *
 from .auxiliary import *
 from .cogs import *
-from .data import *
+from .custom_errors import *
 from .databases import *
-from .extension import *
+from .http import *

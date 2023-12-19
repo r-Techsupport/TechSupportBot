@@ -4,8 +4,8 @@ import enum
 import random
 
 import aiocron
-from base import cogs, extension
 from botlogging import LogContext, LogLevel
+from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 
@@ -19,7 +19,7 @@ async def setup(bot):
     except AttributeError as exc:
         raise AttributeError("News was not loaded due to missing API key") from exc
 
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="channel",
         datatype="int",
@@ -135,7 +135,7 @@ class News(cogs.LoopCog):
         """Method to set up the news command."""
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @news.command(
         name="random",

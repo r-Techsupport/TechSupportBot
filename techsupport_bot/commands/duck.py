@@ -9,8 +9,8 @@ from datetime import timedelta
 import discord
 import munch
 import ui
-from base import auxiliary, cogs, extension
 from botlogging import LogContext, LogLevel
+from core import auxiliary, cogs, extensionconfig
 from discord import Color as embed_colors
 from discord.ext import commands
 
@@ -18,7 +18,7 @@ from discord.ext import commands
 async def setup(bot):
     """Method to add duck into the config file"""
 
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="hunt_channels",
         datatype="list",
@@ -366,7 +366,7 @@ class DuckHunt(cogs.LoopCog):
         """Method to make the initial duck command"""
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @auxiliary.with_typing
     @commands.guild_only()

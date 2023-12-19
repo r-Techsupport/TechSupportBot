@@ -4,13 +4,13 @@ import asyncio
 import random
 
 import discord
-from base import auxiliary, cogs
+from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 
 async def setup(bot):
     """Adding the config for kanye to the config file."""
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="channel",
         datatype="int",

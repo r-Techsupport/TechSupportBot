@@ -6,8 +6,8 @@ import io
 import discord
 import ui
 import yaml
-from base import auxiliary, cogs
 from botlogging import LogContext, LogLevel
+from core import auxiliary, cogs, extensionconfig
 from discord import app_commands
 from discord.ext import commands
 
@@ -15,7 +15,7 @@ from discord.ext import commands
 async def setup(bot):
     """Adding the who configuration to the config file."""
 
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="note_role",
         datatype="str",
@@ -76,14 +76,12 @@ class Who(cogs.BaseCog):
     @app_commands.command(
         name="whois",
         description="Gets Discord user information",
-        extras={"brief": "Gets user data", "usage": "@user"},
+        extras={"brief": "Gets user data", "usage": "@user", "module": "who"},
     )
     async def get_note(
         self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         """ "Method to get notes assigned to a user."""
-        await self.bot.slash_command_log(interaction)
-
         embed = discord.Embed(
             title=f"User info for `{user}`",
             description="**Note: this is a bot account!**" if user.bot else "",
@@ -137,13 +135,16 @@ class Who(cogs.BaseCog):
     @notes.command(
         name="set",
         description="Sets a note for a user, which can be read later from their whois",
-        extras={"brief": "Sets a note for a user", "usage": "@user [note]"},
+        extras={
+            "brief": "Sets a note for a user",
+            "usage": "@user [note]",
+            "module": "who",
+        },
     )
     async def set_note(
         self, interaction: discord.Interaction, user: discord.Member, body: str
     ) -> None:
         """Method to set a note on a user."""
-        await self.bot.slash_command_log(interaction)
         if interaction.user.id == user.id:
             embed = auxiliary.prepare_deny_embed(
                 message="You cannot add a note for yourself"
@@ -196,13 +197,16 @@ class Who(cogs.BaseCog):
     @notes.command(
         name="clear",
         description="Clears all existing notes for a user",
-        extras={"brief": "Clears all notes for a user", "usage": "@user"},
+        extras={
+            "brief": "Clears all notes for a user",
+            "usage": "@user",
+            "module": "who",
+        },
     )
     async def clear_notes(
         self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         """Method to clear notes on a user."""
-        await self.bot.slash_command_log(interaction)
         notes = await self.get_notes(user, interaction.guild)
 
         if not notes:
@@ -252,13 +256,16 @@ class Who(cogs.BaseCog):
     @notes.command(
         name="all",
         description="Gets all notes for a user instead of just new ones",
-        extras={"brief": "Gets all notes for a user", "usage": "@user"},
+        extras={
+            "brief": "Gets all notes for a user",
+            "usage": "@user",
+            "module": "who",
+        },
     )
     async def all_notes(
         self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         """Method to get all notes for a user."""
-        await self.bot.slash_command_log(interaction)
         notes = await self.get_notes(user, interaction.guild)
 
         if not notes:

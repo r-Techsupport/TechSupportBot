@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import discord
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -32,6 +32,7 @@ class SlowmodeManager(cogs.BaseCog):
         extras={
             "brief": "Changes time for slowmode",
             "usage": "seconds, [optional] channel",
+            "module": "slowmode",
         },
     )
     async def slowmode(

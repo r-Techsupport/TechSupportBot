@@ -1,14 +1,14 @@
 """Module for defining the gate extension for the bot."""
 
 import discord
-from base import auxiliary, cogs, extension
 from botlogging import LogContext, LogLevel
+from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 
 async def setup(bot):
     """Setup to add the gate config to the config file."""
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="channel",
         datatype="int",
@@ -87,9 +87,9 @@ class ServerGate(cogs.MatchCog):
 
         return ctx.channel.id == int(config.extensions.gate.channel.value)
 
-    async def response(self, config, ctx, content, _):
+    async def response(self, config, ctx: commands.Context, content, _):
         """Method for a response from the gate extension."""
-        is_admin = await self.bot.is_bot_admin(ctx)
+        is_admin = await self.bot.is_bot_admin(ctx.author)
 
         if is_admin:
             return
@@ -148,7 +148,7 @@ class ServerGate(cogs.MatchCog):
         """Method to create the command for gate extension."""
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @commands.has_permissions(manage_messages=True)
     @commands.guild_only()

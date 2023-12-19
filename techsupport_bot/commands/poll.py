@@ -6,7 +6,7 @@ import json
 
 import discord
 import emoji
-from base import auxiliary, cogs, extension
+from core import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -108,7 +108,7 @@ class ReactionPoller(PollGenerator):
         """Method to create the poll command."""
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @auxiliary.with_typing
     @poll.command(
@@ -272,7 +272,7 @@ class StrawPoller(PollGenerator):
         """Method to give an exmaple poll with json."""
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @auxiliary.with_typing
     @strawpoll.command(

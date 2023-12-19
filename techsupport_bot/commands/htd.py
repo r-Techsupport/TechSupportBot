@@ -3,7 +3,7 @@ Convert a value or evalute a mathematical expression to decimal, hex, binary, an
 """
 
 import discord
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 

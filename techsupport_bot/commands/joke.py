@@ -1,13 +1,13 @@
 """Module for the joke extension for the discord bot."""
 
 import discord
-from base import auxiliary, cogs
+from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 
 async def setup(bot):
     """Method to add the joke extension to the config file."""
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="pc_jokes",
         datatype="bool",

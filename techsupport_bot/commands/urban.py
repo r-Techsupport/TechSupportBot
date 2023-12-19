@@ -2,13 +2,13 @@
 
 import discord
 import ui
-from base import auxiliary, cogs
+from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 
 async def setup(bot):
     """Adding the configuration of the urban extension to the config file."""
-    config = bot.ExtensionConfig()
+    config = extensionconfig.ExtensionConfig()
     config.add(
         key="max_responses",
         datatype="int",

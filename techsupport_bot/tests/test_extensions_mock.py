@@ -7,8 +7,8 @@ import importlib
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from base import auxiliary
 from commands import mock
+from core import auxiliary
 from hypothesis import given
 from hypothesis.strategies import text
 

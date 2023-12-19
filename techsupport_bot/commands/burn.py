@@ -7,7 +7,7 @@ This modules requires no config, no databases, and no APIs
 import random
 
 import discord
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 

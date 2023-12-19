@@ -7,7 +7,7 @@ This file contains 1 commands:
     .sync
 """
 
-from base import auxiliary, cogs
+from core import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -21,8 +21,7 @@ class AppCommandSync(cogs.BaseCog):
     The class that holds the sync command
     """
 
-    ADMIN_ONLY = True
-
+    @commands.check(auxiliary.bot_admin_check_context)
     @auxiliary.with_typing
     @commands.command(
         name="sync",

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import discord
 import munch
-from base import auxiliary, cogs, extension
+from core import auxiliary, cogs
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -41,7 +41,7 @@ class Rules(cogs.BaseCog):
         """Method for the rule group."""
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     async def get_guild_rules(self, guild: discord.Guild) -> munch.Munch:
         """Gets the munchified rules for a given guild.

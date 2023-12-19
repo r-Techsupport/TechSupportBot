@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 import discord
 import expiringdict
-from base import auxiliary, cogs, extension
+from core import auxiliary, cogs
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -78,7 +78,6 @@ class InfoEmbed(discord.Embed):
 class Listener(cogs.BaseCog):
     """Cog object for listening to channels."""
 
-    ADMIN_ONLY = True
     MAX_DESTINATIONS = 10
     CACHE_TIME = 60
 
@@ -238,6 +237,7 @@ class Listener(cogs.BaseCog):
         except KeyError:
             pass
 
+    @commands.check(auxiliary.bot_admin_check_context)
     @commands.group(description="Executes a listen command")
     async def listen(self, ctx):
         """Command group for listen commands.
@@ -246,7 +246,7 @@ class Listener(cogs.BaseCog):
         """
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @listen.command(
         description="Starts a listening job", usage="[src-channel] [dst-channel]"

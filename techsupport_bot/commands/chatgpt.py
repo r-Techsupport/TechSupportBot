@@ -13,8 +13,8 @@ Defines: None
 import discord
 import expiringdict
 import ui
-from base import auxiliary, cogs, extension
 from botlogging import LogContext, LogLevel
+from core import auxiliary, cogs
 from discord.ext import commands
 
 
@@ -168,7 +168,7 @@ class ChatGPT(cogs.BaseCog):
         """
 
         # Executed if there are no/invalid args supplied
-        await extension.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @auxiliary.with_typing
     @gptutil.command(
