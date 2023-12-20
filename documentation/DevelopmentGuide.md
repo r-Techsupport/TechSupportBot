@@ -152,6 +152,35 @@ This is sorting in a descending order by the updated column.
 ## Modifying data from postgres
 
 ## HTTP Calls
+Extensions requiring the use of an API will require you to make an HTTP call. There is an async HTTP function built into the bot ready for you to use. 
+
+In order to access this function, all you need to do is call it using the `bot` object (example from cat.py):
+```py
+await self.bot.http_functions.http_call("get", url)
+```
+You can use both a get and post call with this function. And you can pass any arguments by any name. Here is a more complex example from spotify.py:
+```py
+response = await self.bot.http_functions.http_call(
+    "post",
+    self.AUTH_URL,
+    data=data,
+    auth=aiohttp.BasicAuth(
+        self.bot.file_config.api.api_keys.spotify_client,
+        self.bot.file_config.api.api_keys.spotify_key,
+    ),
+)
+```
+
+This will return a munch dictionary. If you have a need for the raw response, you are able to get that by adding a get_raw_response parameter. Example from wolfram.py:
+```py
+response = await self.bot.http_functions.http_call(
+    "get", url, get_raw_response=True
+)
+```
+
+To avoid hanging the bot, do not use any other http call function, as these may hold up anything from happening on the bot until the call has finished.  
+When adding a new API to the bot, you should add a rate limit to the API by editing core/http.py. Add a new entry in the `rate_limits` dict. Put the base URL with a tuple of (calls, seconds). 
+
 
 ## Error handling
 Any errors raised by you or a library you are using raises will be handled by a central error handler.  
@@ -268,6 +297,16 @@ There are times where these recommendations do not make sense, such as in `core/
 ## Creating guild configuration
 
 ## Accessing guild configuration
+The guild config is where almost everything should be stored. You need to first get the config for the correct guild. All of the guild configs are stored in a guild_configs list, accessible through the bot object.
+```py
+config = self.bot.guild_configs[str(guild.id)]
+```
+You need a guild id in order to get the config.  
+Once you have the config, access it using dot notation, like so:
+```py
+config.extensions.duck.allow_manipulation.value
+```
+If you attempt to access config that isn't there, you will get a ValueError
 
 ## Environment Variables
 
