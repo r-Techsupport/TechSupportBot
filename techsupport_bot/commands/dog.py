@@ -16,12 +16,11 @@ class Dogs(cogs.BaseCog):
 
     @auxiliary.with_typing
     @commands.command(name="dog", brief="Gets a dog")
-    async def dog(self, ctx):
+    async def dog(self, ctx: commands.Context):
         """Prints a dog to discord
 
         Args:
             ctx (commands.Context): The context in which the command was run
         """
         response = await self.bot.http_functions.http_call("get", self.API_URL)
-        print(f"Response {response}")
         await ctx.send(response.message)
