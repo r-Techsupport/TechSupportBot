@@ -335,6 +335,11 @@ While there are other ways to do typing, this is a quick, reliable, and consiste
 ## LoopCog
 
 ## Accessing other cogs
+In order to access the class instance of another cog, you can use the get_cog function.
+```py
+cog = bot.get_cog("HangmanCog")
+```
+This will get the class instance of the given cog. You can use this to call other functions in a differnet cog, or read data from a different cog
 
 ## Getting bot from context or interaction
 
