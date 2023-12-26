@@ -222,6 +222,29 @@ raise custom_errors.ExtensionDisabled
 ```
 
 ## Creating slash commands
+In order to create a slash command, you need to import the app commands features from discord.py.
+```py
+from discord import app_commands
+```
+
+Then, inside of the command class, add the following decorator to a function:
+```py
+@app_commands.command(
+        name="NAME",
+        description="DESC",
+        extras={"module": "MODULE_NAME"},
+    )
+async def command(self, interaction: discord.Interaction)
+```
+The function must take an argument of the discord interaction.
+This will make a command `/NAME` avaiable, and it will be enabled if the extras module name is marked as enabled in the guild.
+
+In order to make a command group, you can do this:
+```py
+role_group = app_commands.Group(name="role", description="...")
+```
+This will create a group with a name, so all commands in that group will be under `/role command`
+In order to use this group, use the same thing as above, but replace `@app_commands` with the name of your group, `@role_group`
 
 ## Creating context menu entires
 
@@ -295,6 +318,39 @@ It is highly recommended that:
 There are times where these recommendations do not make sense, such as in `core/auxiliary.py` in the extension_help function
 
 ## Creating guild configuration
+For any global guild config, config outside of any particular extension, add a line in the `create_new_context_config` in the core bot.py file.
+Add a line such as this:
+```py
+config_.logging_channel = None
+```
+To create a new config object, this one is called "logging_channel", and it's under the root config object.
+If you wish to make a sub category, do the following:
+```py
+config_.rate_limit = munch.DefaultMunch(None)
+config_.rate_limit.enabled = False
+config_.rate_limit.commands = 4
+```
+This creates, under the root section, a config item under "rate_limit" and then add "enabled" and "commands"
+
+
+For adding an extension config entry, import the extensionconfig from core:
+```py
+from core import extensionconfig
+```
+In the setup function of the extension, create a config object:
+```py
+config = extensionconfig.ExtensionConfig()
+config.add(
+    key="manage_roles",
+    datatype="list",
+    title="Manage factoids roles",
+    description="The roles required to manage factoids",
+    default=["Factoids"],
+)
+```
+This will create a config item under extensions.MODULE_NAME.key
+
+**Root config, and config for existing extensions will not be created automatically. Upon running a new extensions for the first time, the default config will be added**
 
 ## Accessing guild configuration
 The guild config is where almost everything should be stored. You need to first get the config for the correct guild. All of the guild configs are stored in a guild_configs list, accessible through the bot object.
@@ -309,8 +365,25 @@ config.extensions.duck.allow_manipulation.value
 If you attempt to access config that isn't there, you will get a ValueError
 
 ## Environment Variables
+The environment variables are stored in the .env file. Not all variables are loaded to the discord bot, check the docker-compose.yml file for names and what is passed.
+
+In order to access environment variables, first make sure they are passed to the container in the docker-compose.yml file.  
+Second, in the file import os:
+```py
+import os
+```
+You can read the environment variables like so:
+```py
+os.environ.get("DEBUG", 0)
+```
+
+These can be read from any file.  
+Environment variables should not be used for much, it is only preferred to be used for things that also impact the OS or other container things.
 
 ## File config
+The file config is stored in config.yml  
+You can access the file config anywhere from the bot object, using `bot.file_config`. You do not need to use await/async.  
+This object will give you the root, so `bot.file_config.bot_config.auth_token` will get you the bot auth token
 
 ## IRC
 
@@ -327,6 +400,31 @@ While there are other ways to do typing, this is a quick, reliable, and consiste
 ## Permissions checking
 
 ## Logging
+
+To use the bots logging system, you will need to import the following:
+```py
+from botlogging import LogContext, LogLevel
+```
+The LogLevel is always required, the LogContext is not needed in every log, but will probably be needed
+
+After you have imported, use the following function to log
+```py
+await self.bot.logger.send_log(
+    message=(
+        "Could not find factoid referenced by job - will retry after waiting"
+    ),
+    level=LogLevel.WARNING,
+    channel=log_channel,
+    context=LogContext(guild=ctx.guild, channel=ctx.channel),
+    exception=exception,
+)
+```
+The "message" and "level" arguments are required, the rest are optional.  
+The "message" parameter is the text, the logger system will add an embed around this.  
+The "level" parameter is using the LogLevel import. You can pick DEBUG, INFO, WARNING, or ERROR.  
+The "channel" parameter is what channel to send the log to, provided the guild logging is enabled.  
+The "contxt" parameter is the context that the log was generated in. If a command was run in channel X, use that channel in the context. Your context can be only a guild or only a channel if the context demands it.  
+The "exception" parameter is an exception object. You can add this regardless of the log level, and an exception will always be printed.
 
 ## Event listener
 
@@ -346,3 +444,6 @@ This will get the class instance of the given cog. You can use this to call othe
 ## Setup function
 
 ## Adding new python libraries
+If you need to add a new python library to the bot, start by modifying the `Pipfile` file. Add the library you want and the version, ideally the most up to date version.  
+Then, run `pipenv lock` in the terminal from the root of the bot. This will update the `Pipfile.lock` file to add depedencies and your new library.  
+After that, upon rebuilding the bot container, that library will be installed and able to be used.

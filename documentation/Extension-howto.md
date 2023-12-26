@@ -10,66 +10,6 @@ async def setup(bot):
 ```
 This code is run when loading the extension, is used to add model classes and config entries.
 
-## Config entries
-
-```py
-from core import extensionconfig
-config = extensionconfig.ExtensionConfig()
-config.add(
-    key="<key>",
-    datatype="<datatype",
-    title="<title>",
-    description="<description>",
-    default="<default-value>",
-)
-```
-This defines the config, then defines its values.
-The config.json returned by `.config patch` will have the following value added to it:
-```json
-"<extension-name>": {
-    "<key>": {
-        "datatype": "<datatype>",
-        "title": "<title>",
-        "description": "<description>",
-        "default": "<default>",
-        "value": "<default>"
-        }
-}
-```
-NOTE: The entry might not automatically get added to the file and will have to be added in manually according to the template above.
-
-
-## Registering the extension
-
-```py
-await bot.add_cog(extension-name(bot=bot))
-bot.add_extension_config("extension-name", config)
-```
-This registers the extension, assumes the extension name is the filename if the `extension_name` argument wasn't supplied.
-
-The second line adds the extension to the config .json file.
-
-## Optional: Postgres
-
-This defines any database models used in this extension.
-
-```py
-class Model_name(bot.db.Model):
-    __tablename__ = "<table-name>"
-
-    Int_Entry = bot.db.Column(bot.db.Integer, primary_key=True)
-    Str_Entry = bot.db.Column(bot.db.String, default=None)
-    guild = bot.db.Column(bot.db.String)
-```
-This creates a table called `<table-name>` and adds the columns `Int_entry`, `Str_entry`and `guild` to it. 
-Make sure to include `guild` along with handling for it so the entry is only callable in the server a command was invoked from.
-The `default` argument is optional but preferred, since an exception will be thrown if there wasn't a value assigned but it is attempted to be accessed.
-
-Add this to the base/databases.py file, and register it in the bot.models variable at the bottom of the file.
-You can access it by "self.bot.models.Model_name"
-
-
-
 ## Optional: Command checks
 
 This defines checks used for commands, it should return a bool value.
@@ -93,27 +33,6 @@ async def no_mentions(ctx):
 (Example taken from the factoids extension)
 
 
-## DEPRACATED: Embed class
-
-Some extensions have a class for its specific embed, this has been replaced because of its complexity and repetitiveness.
-It's included for the sake of completency, but new code should always use the `generate_basic_embed` from auxiliary.py instead of this class.
-
-```py
-class AbcEmbed(discord.Embed):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.color = discord.Color.green()
-```
-This creates a class for the embed accesible from the main extension class, its values will be defined by the arguments it is called with. 
-In this example the color will automatically be set to green.
-
-Example:
-```py
-embed = AbcEmbed(title="Hello world", description="Sample text")
-```
-
-
-
 # The main command class
 
 ```py
@@ -135,17 +54,6 @@ The arguments to supply:
 - `description` - The description of the embed
 - `color` - The color of the embed
 - `url` - The thumbnail picture URL
-
-
-## Optional: Preconfig
-
-```py
-async def preconfig(self):
-    self.nice_value_bro = {}
-    await self.start_doing_your_thing()
-```
-The rough equivalent of `__init__` - It is run one time before the extension is ever ran.
-Defines attributes, starts any tasks. 
 
 
 ## Defining command groups
@@ -209,22 +117,6 @@ Please make sure to use type hints for the arguments of the command method.
 Now that the command method is defined, you can start writing its code.
 
 
-## Querying the DB
-
-The bot uses the `gino` module to query database entries.
-
-The following query checks for any entires of Model_name where Value-1 is "Sample text", the guild is the same as the one where the command was invoked.
-
-```py
-(await self.models.<Model_name>.query.where(self.models.<Model_name>.Value-1 == "Sample text")
-.where(self.models.<Model_name>.guild == str(guild.id))
-.gino.all())
-```
-Make sure to include the `guild` line so only entries that were added from the server a command was invoked from are returned.
-
-You can also use `gino.first()` to get the first value instead of a list of the entries.
-
-
 ## Adding a DB entry
 
 To add an entry to the DB, add it using the `self.models.<Model_name>.create()` followed by awaiting the `.create()` method.
@@ -253,61 +145,6 @@ sample = (
     )
 await sample.delete()
 ```
-
-## Accessing the config
-
-The bot uses two types of config:
-- config.yml - Used primarily for API keys
-- json config - Accessed via `.config patch`, holdso ther misc values
-
-To add values to config.yml, you have to manually append them to it and config.default.yml respectively.
-To access the values, you can use the following:
-```py
-self.bot.file_config.group.subgroup.key
-```
----
-To access the json config, you can add the following line of code, which loads the guild config file:
-```py
-config = self.bot.guild_configs[guild_id]
-```
-
-Afterwards you can access the values with 
-```py
-config.extensions.<Ext-name>.<Value-name>.value
-```
-
-## Calling an API
-
-All API calls use the `http_call` method defined in data.py
-The arguments to supply:
-- `method` - The http call method (PUT/POST etc.)
-- `url` - The endpoint URL to send the request to
-- `data` (kwarg) - Data to send to the API
-- `headers` (kwarg) - Headers to send to the api
-    
-The response is returned as a dictionary.
-    
-An example from dumpdbg.py:
-```py
-response = await self.bot.http_functions.http_call(
-    "post",
-    api_endpoint,
-    data=json_data,
-    headers={"Content-Type": "application/json"},
-)
-```
-## Logging
-
-Logging can be done with the following:
-```py
-await self.bot.logger.send_log(
-            message="Message",
-            level=LogLevel.INFO,
-            context=LogContext(guild=ctx.guild, channel=ctx.channel),
-            channel=log_channel,
-        )
-```
-If applicable, add the content guild and channel
 
 ## Returning a message
 
