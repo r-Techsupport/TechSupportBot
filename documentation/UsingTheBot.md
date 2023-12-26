@@ -12,7 +12,8 @@ After you have done that, look through the extension configuration and configure
 Once you have modified the config, upload the json file and run `.config patch` to apply the new config. The config is updated instatly.
 
 ## Enabling or disabling extensions
-Instead of downloding
+Instead of downloding the entire config file, you are able to run commands to enable or disable extensions.  
+`.config enable-extension {name}` and `.config disable-extension {name}`  
 
 ## Application command tree
 The application command tree isn't automatically updated or created. After you have started the bot, all of the application commands will not be avaiable. Run the `.sync` command update the application command tree.  
