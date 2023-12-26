@@ -400,7 +400,6 @@ While there are other ways to do typing, this is a quick, reliable, and consiste
 ## Permissions checking
 
 ## Logging
-
 To use the bots logging system, you will need to import the following:
 ```py
 from botlogging import LogContext, LogLevel

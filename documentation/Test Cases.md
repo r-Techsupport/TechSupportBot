@@ -1037,13 +1037,6 @@ Disabling `command` means you cannot enable any commands you disabled per sessio
 	Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
 
 ## Normal use
-.bot
-	Return an embed with time started, latency, description, and server
-## Expected errors
-.bot
-	Return a deny embed "I ran into an error processing your command: You are missing Bot Admin permission(s) to run this command." if not bot admin
-
-## Normal use
 .issue [title] [description]
 	Return an embed saying the issue was created with issue number and url
 ## Expected errors
