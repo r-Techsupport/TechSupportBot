@@ -111,26 +111,32 @@ class TechSupportBot(commands.Bot):
         Any discord interactions should be done with setup_hook
         """
 
+        # If the config.yml file has delayed logger setup, we need to do some extra setup
+        # Otherwise, the __init__ function has done all the setup we need
+        # Nothing can be logged until this is done
         if isinstance(self.logger, botlogging.DelayedLogger):
             self.logger.register_queue()
             asyncio.create_task(self.logger.run())
 
-        # Start the IRC bot in an asynchronous task
+        # Get the irc config and check if irc is enabled globally
+        # If it is, start the IRC bot in an asynchronous task
         irc_config = getattr(self.file_config.api, "irc")
         if irc_config.enable_irc:
             await self.logger.send_log(
                 message="Connecting to IRC...", level=LogLevel.DEBUG, console_only=True
             )
-            # Make the IRC class in such a way to allow reload without desctruction
+            # Make the IRC class in such a way to allow reload without destruction
             # We need to pass it the running loop so it can interact with discord
             await self.start_irc()
 
-        # this is required for the bot
+        # Postgres is required for the bots operation, a handful of core features are stored here
         await self.logger.send_log(
             message="Connecting to Postgres...", level=LogLevel.DEBUG, console_only=True
         )
         self.db = await self.get_postgres_ref()
 
+        # Login to discord using the auto token specified in the config.yml file
+        # This must be done last as this will trigger actions that rely on the setup above
         await self.logger.send_log(
             message="Logging into Discord...", level=LogLevel.DEBUG, console_only=True
         )
@@ -148,7 +154,11 @@ class TechSupportBot(commands.Bot):
         This function is called only one time, and should never be manually called
         """
 
-        # We have to remove the built in help command
+        # Discord.py provides a help command by default.
+        # Commands cannot be replaced, and if you try to register a command that already exists
+        # you will get an error.
+        # In order to prevent this, we have to remove the built in help command, so our custom
+        # one can be loaded
         await self.logger.send_log(
             message="Loading Help commands...", level=LogLevel.DEBUG, console_only=True
         )
@@ -186,7 +196,10 @@ class TechSupportBot(commands.Bot):
         parameters:
             guild (discord.Guild): the guild that was joined
         """
+        # If a guild is joined, make sure they have a config first
         self.register_new_guild_config(str(guild.id))
+
+        # After we are sure a guild config exists, register loop jobs
         for cog in self.cogs.values():
             if getattr(cog, "COG_TYPE", "").lower() == "loop":
                 try:
