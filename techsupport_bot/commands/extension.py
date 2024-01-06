@@ -94,7 +94,10 @@ class ExtensionControl(cogs.BaseCog):
             ctx (discord.ext.Context): the context object for the message
             extension_name (str): the name of the extension
         """
-        await ctx.bot.load_extension(f"extensions.{extension_name}")
+        try:
+            await ctx.bot.load_extension(f"functions.{extension_name}")
+        except:
+            await ctx.bot.load_extension(f"commands.{extension_name}")
         await auxiliary.send_confirm_embed(
             message="I've loaded that extension", channel=ctx.channel
         )
@@ -114,7 +117,10 @@ class ExtensionControl(cogs.BaseCog):
             ctx (discord.ext.Context): the context object for the message
             extension_name (str): the name of the extension
         """
-        await ctx.bot.unload_extension(f"extensions.{extension_name}")
+        try:
+            await ctx.bot.unload_extension(f"functions.{extension_name}")
+        except:
+            await ctx.bot.unload_extension(f"commands.{extension_name}")
         await auxiliary.send_confirm_embed(
             message="I've unloaded that extension", channel=ctx.channel
         )
