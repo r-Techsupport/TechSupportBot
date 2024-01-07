@@ -13,7 +13,10 @@ from discord.ext import commands
 
 
 def generate_basic_embed(
-    title: str, description: str, color: discord.Color, url: str = ""
+    title: str = "",
+    description: str = "",
+    color: discord.Color = discord.Color.blurple(),
+    url: str = "",
 ) -> discord.Embed:
     """Generates a basic embed
 
