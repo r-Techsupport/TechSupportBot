@@ -149,7 +149,7 @@ class Who(cogs.BaseCog):
         for warning in warnings:
             warning_str += f"{warning.reason} - {warning.time.date()}\n"
         embed.add_field(
-            name=f"**Warnings**",
+            name="**Warnings**",
             value=warning_str,
             inline=True,
         )
@@ -162,7 +162,10 @@ class Who(cogs.BaseCog):
             is_banned = await application_cog.get_ban_entry(user)
             embed.add_field(
                 name="Application information:",
-                value=f"Has pending application: {True if has_application else False}\nIs banned from making applications: {True if is_banned else False}",
+                value=(
+                    f"Has pending application: {bool(has_application)}\nIs banned from"
+                    f" making applications: {bool(is_banned)}"
+                ),
                 inline=True,
             )
         return embed
