@@ -210,6 +210,15 @@ class Rules(cogs.BaseCog):
         await ctx.send(embed=embed, mention_author=False)
 
     async def get_rule_count(self, guild: discord.Guild) -> int:
+        """Gets the rule count as an integer for the given guild
+        This will create rules should it be called without any rules
+
+        Args:
+            guild (discord.Guild): The guild to get the count for
+
+        Returns:
+            int: The number of rules in the given guild
+        """
         rules_data = await self.get_guild_rules(guild)
         if not rules_data or not rules_data.get("rules"):
             return 0
