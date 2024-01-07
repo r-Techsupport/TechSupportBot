@@ -22,6 +22,9 @@ from core import auxiliary, custom_errors, databases, extensionconfig, http
 from discord import app_commands
 from discord.ext import commands
 
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
 
 class TechSupportBot(commands.Bot):
     """The main bot object."""
@@ -623,7 +626,7 @@ class TechSupportBot(commands.Bot):
                 self.logger.console.error(
                     f"Failed to load extension {extension_name}: {exception}"
                 )
-                if not graceful:
+                if not graceful or extension_name == "modmail":
                     raise exception
 
         self.logger.console.debug("Retrieving functions")
