@@ -126,7 +126,17 @@ class Who(cogs.BaseCog):
         interaction: discord.Interaction,
         user: discord.Member,
         embed: discord.Embed,
-    ):
+    ) -> discord.Embed:
+        """Makes modifications to the whois embed to add mod only information
+
+        Args:
+            interaction (discord.Interaction): The interaction where the /whois command was called
+            user (discord.Member): The user being looked up
+            embed (discord.Embed): The embed already filled with whois information
+
+        Returns:
+            discord.Embed: The embed with mod only information added
+        """
         # If the user has warnings, add them
         warnings = (
             await self.bot.models.Warning.query.where(
