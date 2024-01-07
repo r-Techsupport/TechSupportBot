@@ -2,6 +2,7 @@
 """
 
 from dataclasses import dataclass
+from itertools import product
 
 import discord
 import ui
@@ -64,23 +65,34 @@ class Helper(cogs.BaseCog):
             if issubclass(command.__class__, commands.Group):
                 continue
 
-            # Append the base command to the list
-            all_command_list.append(
-                PrintableCommand(
-                    prefix=command_prefix,
-                    name=command.qualified_name,
-                    usage=command.usage if command.usage else "",
-                    description=command.description,
-                )
-            )
+            # Check if extension is enabled
+            extension_name = self.bot.get_command_extension_name(command)
+            config = self.bot.guild_configs[str(ctx.guild.id)]
+            if extension_name not in config.enabled_extensions:
+                continue
 
-            # Prefix commands can have aliases, so make sure we append those as well
-            parent_name = f"{command.full_parent_name} "
-            for alias in command.aliases:
+            # Deal with aliases by looping through all parent groups and alises
+            # Then, make all permutations and get a string
+            # of all full command names (parents alias)
+            all_lists = []
+            # Loop through all parents
+            for parent in command.parents:
+                all_lists.append(parent.aliases + [parent.name])
+
+            # Since discord.py makes the parents array opposite of how you would call, reverse
+            all_lists.reverse()
+            all_lists.append(command.aliases + [command.name])
+
+            # Use itertools to get all permutations
+            all_permutations = list(product(*all_lists))
+            all_commands = [" ".join(map(str, perm)) for perm in all_permutations]
+
+            # Add all possible permutations to the help menu
+            for command_name in all_commands:
                 all_command_list.append(
                     PrintableCommand(
                         prefix=command_prefix,
-                        name=f"{parent_name.lstrip()}{alias.lstrip()}",
+                        name=command_name,
                         usage=command.usage if command.usage else "",
                         description=command.description,
                     )
@@ -92,6 +104,12 @@ class Helper(cogs.BaseCog):
             if issubclass(command.__class__, app_commands.Group):
                 continue
 
+            # Check if extension is enabled
+            extension_name = command.extras["module"]
+            config = self.bot.guild_configs[str(ctx.guild.id)]
+            if extension_name not in config.enabled_extensions:
+                continue
+
             # We have to manually build a string representation of the usage
             # We are given it in a list
             command_usage = ""
@@ -99,7 +117,7 @@ class Helper(cogs.BaseCog):
                 command_usage += f"[{param.name}] "
 
             # Append the app commands.
-            # App commands cannot have aliases, so no need to thin about that
+            # App commands cannot have aliases, so no need to think about that
             all_command_list.append(
                 PrintableCommand(
                     prefix="/",
@@ -143,14 +161,13 @@ class Helper(cogs.BaseCog):
             list[discord.Embed]: The list of embeds always of at least size 1 ready
                 to be shown to the user
         """
+        title = f"Commands matching `{search_term}`" if search_term else "All commands"
         sublists: list[list[PrintableCommand]] = [
             commands_list[i : i + 10] for i in range(0, len(commands_list), 10)
         ]
         final_embeds: list[discord.Embed] = []
         for command_list in sublists:
-            embed = discord.Embed(
-                title=f"Commands matching `{search_term}`", color=discord.Color.green()
-            )
+            embed = discord.Embed(title=title, color=discord.Color.green())
             for command in command_list:
                 embed.add_field(
                     name=f"{command.prefix}{command.name} {command.usage}",
