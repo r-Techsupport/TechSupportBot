@@ -21,9 +21,10 @@ def generate_basic_embed(
     """Generates a basic embed
 
     Args:
-        title (str): The title to be assigned to the embed
-        description (str): The description to be assigned to the embed
-        color (discord.Color): The color to be assigned to the embed
+        title (str, optional): The title to be assigned to the embed. Defaults to "".
+        description (str, optional): The description to be assigned to the embed. Defaults to "".
+        color (discord.Color, optional): The color to be assigned to the embed. 
+            Defaults to blurple.
         url (str, optional): A URL for a thumbnail picture. Defaults to "".
 
     Returns:
