@@ -1,11 +1,24 @@
-"""Module for the protect extension of the discord bot."""
+"""
+Todo:
+	Purge to slash commands
+	Unwarn has autofill
+	Get all warnings command
+	
+	Make all of automod
+	Simplify paste
+    Make paste not work if message would be DELETED by automod
+	Create a ban logging system like carl - Needs a database for ban history
 
-import datetime
-import io
+Ban logs need to be more centralized:
+	Auto bans, command bans, and manual bans all need to be logged with a single message
+	A modlog highscores command, in a modlog.py command
+
+Move all config over to specific new files
+"""
+
+
 import re
-from datetime import timedelta
 
-import dateparser
 import discord
 import expiringdict
 import munch
@@ -153,7 +166,6 @@ class Protector(cogs.MatchCog):
     CLIPBOARD_ICON_URL = (
         "https://icon-icons.com/icons2/203/PNG/128/diagram-30_24487.png"
     )
-    CHARS_PER_NEWLINE = 80
 
     async def preconfig(self):
         """Method to preconfig the protect."""
@@ -272,54 +284,6 @@ class Protector(cogs.MatchCog):
             if triggered_config.get("delete"):
                 # the message is deleted, no need to pastebin it
                 return
-
-        # check length of content
-        if len(content) > config.extensions.protect.length_limit.value or content.count(
-            "\n"
-        ) > self.max_newlines(config.extensions.protect.length_limit.value):
-            await self.handle_length_alert(config, ctx, content)
-
-    def max_newlines(self, max_length):
-        """Method to set up the number of max lines."""
-        return int(max_length / self.CHARS_PER_NEWLINE) + 1
-
-    async def handle_length_alert(self, config, ctx, content) -> None:
-        """Method to handle alert for the protect extension."""
-        attachments: list[discord.File] = []
-        if ctx.message.attachments:
-            total_attachment_size = 0
-            for attch in ctx.message.attachments:
-                if (
-                    total_attachment_size := total_attachment_size + attch.size
-                ) <= ctx.filesize_limit:
-                    attachments.append(await attch.to_file())
-            if (lf := len(ctx.message.attachments) - len(attachments)) != 0:
-                log_channel = config.get("logging_channel")
-                await self.bot.logger.send_log(
-                    message=(
-                        f"Protect did not reupload {lf} file(s) due to file size limit."
-                    ),
-                    level=LogLevel.INFO,
-                    channel=log_channel,
-                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
-                )
-        await ctx.message.delete()
-
-        reason = "message too long (too many newlines or characters)"
-
-        if not self.bot.file_config.api.api_url.linx:
-            await self.send_default_delete_response(config, ctx, content, reason)
-            return
-
-        linx_embed = await self.create_linx_embed(config, ctx, content)
-        if not linx_embed:
-            await self.send_default_delete_response(config, ctx, content, reason)
-            await self.send_alert(config, ctx, "Could not convert text to Linx paste")
-            return
-
-        await ctx.send(
-            ctx.message.author.mention, embed=linx_embed, files=attachments[:10]
-        )
 
     async def handle_mass_mention_alert(self, config, ctx, content):
         """Method for handling mass mentions in an alert."""
@@ -447,26 +411,6 @@ class Protector(cogs.MatchCog):
             user_id=str(user.id), guild_id=str(ctx.guild.id), reason=reason
         ).create()
 
-    async def handle_unwarn(self, ctx, user, reason, bypass=False):
-        """Method to handle an unwarn of a user."""
-        # Always allow admins to unwarn other admins
-        if not bypass and not ctx.message.author.guild_permissions.administrator:
-            can_execute = await self.can_execute(ctx, user)
-            if not can_execute:
-                return
-
-        warnings = await self.get_warnings(user, ctx.guild)
-        if not warnings:
-            await auxiliary.send_deny_embed(
-                message="There are no warnings for that user", channel=ctx.channel
-            )
-            return
-
-        await self.clear_warnings(user, ctx.guild)
-
-        embed = await self.generate_user_modified_embed(user, "unwarn", reason)
-        await ctx.send(embed=embed)
-
     async def handle_ban(self, ctx, user, reason, bypass=False):
         """Method to handle the ban of a user."""
         if not bypass:
@@ -489,39 +433,6 @@ class Protector(cogs.MatchCog):
         )
 
         embed = await self.generate_user_modified_embed(user, "ban", reason)
-
-        await ctx.send(embed=embed)
-
-    async def handle_unban(self, ctx, user, reason, bypass=False):
-        """Method to handle an unban of a user."""
-        if not bypass:
-            can_execute = await self.can_execute(ctx, user)
-            if not can_execute:
-                return
-
-        try:
-            await ctx.guild.unban(user, reason=reason)
-        except discord.NotFound:
-            await auxiliary.send_deny_embed(
-                message="This user is not banned, or does not exist",
-                channel=ctx.channel,
-            )
-            return
-
-        embed = await self.generate_user_modified_embed(user, "unban", reason)
-
-        await ctx.send(embed=embed)
-
-    async def handle_kick(self, ctx, user, reason, bypass=False):
-        """Method to handle the kicking from the discord of a user."""
-        if not bypass:
-            can_execute = await self.can_execute(ctx, user)
-            if not can_execute:
-                return
-
-        await ctx.guild.kick(user, reason=reason)
-
-        embed = await self.generate_user_modified_embed(user, "kick", reason)
 
         await ctx.send(embed=embed)
 
@@ -640,37 +551,6 @@ class Protector(cogs.MatchCog):
         )
         return warnings
 
-    async def create_linx_embed(self, config, ctx, content):
-        """Method to create a link for long messages."""
-        if not content:
-            return None
-
-        headers = {
-            "Linx-Expiry": "1800",
-            "Linx-Randomize": "yes",
-            "Accept": "application/json",
-        }
-        file = {"file": io.StringIO(content)}
-        response = await self.bot.http_functions.http_call(
-            "post", self.bot.file_config.api.api_url.linx, headers=headers, data=file
-        )
-
-        url = response.get("url")
-        if not url:
-            return None
-
-        embed = discord.Embed(description=url)
-
-        embed.add_field(name="Paste Link", value=url)
-        embed.description = content[0:100].replace("\n", " ")
-        embed.set_author(
-            name=f"Paste by {ctx.author}", icon_url=ctx.author.display_avatar.url
-        )
-        embed.set_footer(text=config.extensions.protect.paste_footer_message.value)
-        embed.color = discord.Color.blue()
-
-        return embed
-
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
     @commands.command(
@@ -697,58 +577,3 @@ class Protector(cogs.MatchCog):
         embed.color = discord.Color.red()
 
         await ctx.send(embed=embed)
-
-    @commands.has_permissions(manage_messages=True)
-    @commands.bot_has_permissions(manage_messages=True)
-    @commands.group(
-        brief="Executes a purge command",
-        description="Executes a purge command",
-    )
-    async def purge(self, ctx):
-        """Method to purge messages in discord."""
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
-
-    @purge.command(
-        name="amount",
-        aliases=["x"],
-        brief="Purges messages by amount",
-        description="Purges the current channel's messages based on amount",
-        usage="[amount]",
-    )
-    async def purge_amount(self, ctx, amount: int = 1):
-        """Method to get the amount to purge messages in discord."""
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-
-        if amount <= 0 or amount > config.extensions.protect.max_purge_amount.value:
-            amount = config.extensions.protect.max_purge_amount.value
-
-        await ctx.channel.purge(limit=amount)
-
-        await self.send_alert(config, ctx, "Purge command")
-
-    @purge.command(
-        name="duration",
-        aliases=["d"],
-        brief="Purges messages by duration",
-        description="Purges the current channel's messages up to a time",
-        usage="[duration (minutes)]",
-    )
-    async def purge_duration(self, ctx, duration_minutes: int):
-        """Method to purge a channel's message up to a time."""
-        if duration_minutes < 0:
-            await auxiliary.send_deny_embed(
-                message="I can't use that input", channel=ctx.channel
-            )
-            return
-
-        timestamp = datetime.datetime.utcnow() - datetime.timedelta(
-            minutes=duration_minutes
-        )
-
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-
-        await ctx.channel.purge(
-            after=timestamp, limit=config.extensions.protect.max_purge_amount.value
-        )
-
-        await self.send_alert(config, ctx, "Purge command")
