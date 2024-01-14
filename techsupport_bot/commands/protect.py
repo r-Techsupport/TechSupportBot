@@ -8,6 +8,7 @@ Todo:
 	Simplify paste
     Make paste not work if message would be DELETED by automod
 	Create a ban logging system like carl - Needs a database for ban history
+        Central unban logging but NO database needed
 
 Ban logs need to be more centralized:
 	Auto bans, command bans, and manual bans all need to be logged with a single message

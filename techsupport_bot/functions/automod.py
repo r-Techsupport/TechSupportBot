@@ -57,7 +57,7 @@ class AutoMod(cogs.MatchCog):
         ...
 
 
-async def run_all_checks(
+def run_all_checks(
     guild: discord.Guild, config, message: discord.Message
 ) -> list[AutoModPunishment]:
     # Automod will only ever be a framework to say something needs to be done
@@ -66,31 +66,44 @@ async def run_all_checks(
     ...
 
 
-async def run_only_string_checks(
+def run_only_string_checks(
     guild: discord.Guild, config, content: str
 ) -> list[AutoModPunishment]:
     ...
 
 
-async def handle_file_extensions(
-    guild: discord.Guild, config, attachments: list[discord.Attachment]
+def handle_file_extensions(
+    config, attachments: list[discord.Attachment]
 ) -> list[AutoModPunishment]:
-    ...
+    violations = []
+    for attachment in attachments:
+        if (
+            attachment.filename.split(".")[-1]
+            in config.extensions.protect.banned_file_extensions.value
+        ):
+            violations.append(
+                AutoModPunishment(
+                    f"{attachment.filename} has a suspicious file extension", True, True
+                )
+            )
+    return violations
 
 
-async def handle_mentions(
-    guild: discord.Guild, config, message: discord.Message
-) -> list[AutoModPunishment]:
-    ...
+def handle_mentions(config, message: discord.Message) -> list[AutoModPunishment]:
+    if len(message.mentions) > config.extensions.protect.max_mentions.value:
+        return [AutoModPunishment("Mass Mentions", True, True)]
+    return []
 
 
-async def handle_exact_string(
-    guild: discord.Guild, config, content: str
-) -> list[AutoModPunishment]:
-    ...
+def handle_exact_string(config, content: str) -> list[AutoModPunishment]:
+    violations = []
+    for rule in config.extensions.protect.block_strings.value:
+        if rule.string.lower() in content.lower():
+            violations.append(AutoModPunishment(rule.message, rule.delete, rule.warn))
+    return violations
 
 
-async def handle_regex_string(
+def handle_regex_string(
     guild: discord.Guild, config, content: str
 ) -> list[AutoModPunishment]:
     ...
