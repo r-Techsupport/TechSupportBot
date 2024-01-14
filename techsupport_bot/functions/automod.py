@@ -4,7 +4,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import discord
+import munch
 from core import cogs
+from discord.ext import commands
 
 if TYPE_CHECKING:
     import bot
@@ -36,13 +38,22 @@ class AutoModPunishment:
 
 
 class AutoMod(cogs.MatchCog):
-    async def match(self, config, ctx, content):
+    async def match(
+        self, config: munch.Munch, ctx: commands.Context, content: str
+    ) -> bool:
         ...
 
-    async def response(self, config, ctx, content, _):
+    async def response(
+        self, config: munch.Munch, ctx: commands.Context, content: str, result: bool
+    ) -> None:
         ...
 
-    async def should_ban_or_warn(member: discord.Member):
+    async def should_ban_instead_of_warn(self, member: discord.Member) -> bool:
+        ...
+
+    async def send_automod_alert(
+        self, message: discord.Message, violation: AutoModPunishment
+    ) -> None:
         ...
 
 
