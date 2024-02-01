@@ -1,5 +1,4 @@
-"""TechSupport Bot main thread.
-"""
+"""TechSupport Bot main thread."""
 
 import asyncio
 import logging

@@ -1,4 +1,5 @@
 """Module for the rules extension of the discord bot."""
+
 from __future__ import annotations
 
 import datetime

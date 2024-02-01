@@ -1,5 +1,4 @@
-"""Module for command error responses.
-"""
+"""Module for command error responses."""
 
 import munch
 from discord import app_commands
