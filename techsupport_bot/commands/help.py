@@ -1,5 +1,4 @@
-"""Module for custom help commands.
-"""
+"""Module for custom help commands."""
 
 from dataclasses import dataclass
 

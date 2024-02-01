@@ -1,4 +1,4 @@
-"""This is the core of the IRC bot. It connects to IRC and handles 
+"""This is the core of the IRC bot. It connects to IRC and handles
 message tranmissions to discord"""
 
 import asyncio

@@ -2,6 +2,7 @@
 Defines the wrapper around HTTP calling allow true async, caching, and rate limiting
 This has no commands
 """
+
 from __future__ import annotations
 
 import time

@@ -1,5 +1,6 @@
 """
 Convert a value or evalute a mathematical expression to decimal, hex, binary, and ascii encoding
+
 """
 
 import discord

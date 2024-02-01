@@ -1,5 +1,4 @@
-"""Module for delayed logging.
-"""
+"""Module for delayed logging."""
 
 import asyncio
 import os
