@@ -69,6 +69,13 @@ async def setup(bot):
         default=[],
     )
     config.add(
+        key="release_percentage",
+        datatype="int",
+        title="Multiple Duck Release",
+        description="Percentage to release more than one duck",
+        default=[],
+    )
+    config.add(
         key="allow_manipulation",
         datatype="bool",
         title="Whether or not user manipulation is allowed",
@@ -562,7 +569,6 @@ class DuckHunt(cogs.LoopCog):
             user_text_extra = ""
         return f"{user_text}{user_text_extra}"
 
-    @auxiliary.with_typing
     @commands.guild_only()
     @duck.command(
         brief="Releases a duck into the wild",
@@ -592,13 +598,36 @@ class DuckHunt(cogs.LoopCog):
             )
             return
 
-        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
-        await auxiliary.send_confirm_embed(
-            message=f"Fly safe! You have {duck_user.befriend_count} ducks left.",
-            channel=ctx.channel,
-        )
+        duck_number = random.randint(1, duck_user.befriend_count)
 
-        await self.execute(config, ctx.guild, ctx.channel, banned_user=ctx.author)
+        # Check if the random percentage is below or equal to the defined chance
+        if random.randint(1, 100) <= config.extensions.duck.release_percentage.value:
+            # Creating a list of asynchronous tasks
+            duck_tasks = [
+                duck_user.update(befriend_count=duck_user.befriend_count - duck_number).apply(),
+                auxiliary.send_confirm_embed(
+                    message=f"Fly safe! You have {duck_user.befriend_count} ducks left.",
+                    channel=ctx.channel,
+                )
+            ]
+
+            # Adding the for loop task to the list of tasks
+            duck_tasks.extend([
+                self.execute(config, ctx.guild, ctx.channel, banned_user=ctx.author)
+                for duck in range(duck_number)
+            ])
+
+            # Using asyncio.gather to run all tasks concurrently
+            await asyncio.gather(*duck_tasks)
+        else:
+            # If the random percentage is above the defined chance, only execute sequentially
+            await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+            await auxiliary.send_confirm_embed(
+                message=f"Fly safe! You have {duck_user.befriend_count} ducks left.",
+                channel=ctx.channel,
+            )
+            for duck in range(duck_number):
+                await self.execute(config, ctx.guild, ctx.channel, banned_user=ctx.author)
 
     @auxiliary.with_typing
     @commands.guild_only()
