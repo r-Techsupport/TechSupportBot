@@ -12,7 +12,7 @@ from core import auxiliary
 from hypothesis import given
 from hypothesis.strategies import text
 
-from . import config_for_tests
+from tests import config_for_tests
 
 
 def setup_local_extension(bot=None):
