@@ -10,7 +10,6 @@ import discord
 import pytest
 from commands import htd
 from core import auxiliary
-
 from tests import config_for_tests
 
 

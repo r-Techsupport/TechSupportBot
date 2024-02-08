@@ -10,7 +10,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from commands import linter
 from core import auxiliary
-
 from tests import config_for_tests
 
 

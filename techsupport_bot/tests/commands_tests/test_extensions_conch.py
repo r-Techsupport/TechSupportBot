@@ -5,7 +5,6 @@ This contains 3 tests
 
 from hypothesis import given
 from hypothesis.strategies import text
-
 from tests import config_for_tests
 
 

@@ -8,7 +8,6 @@ from unittest.mock import AsyncMock
 
 import pytest
 from core import auxiliary
-
 from tests import config_for_tests
 
 

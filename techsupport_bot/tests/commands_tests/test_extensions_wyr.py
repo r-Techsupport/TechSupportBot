@@ -11,7 +11,6 @@ import discord
 import pytest
 from commands import wyr
 from core import auxiliary
-
 from tests import config_for_tests
 
 

@@ -9,7 +9,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from commands import hug
 from core import auxiliary
-
 from tests import config_for_tests
 
 
