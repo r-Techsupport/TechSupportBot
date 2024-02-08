@@ -7,8 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from commands import lenny
-
-from . import config_for_tests
+from tests import config_for_tests
 
 
 def setup_local_extension(bot=None):
