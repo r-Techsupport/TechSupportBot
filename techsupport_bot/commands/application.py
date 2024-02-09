@@ -640,6 +640,7 @@ class ApplicationManager(cogs.LoopCog):
                 value=application.application_stauts,
                 inline=False,
             )
+        embed.set_footer(text=f"User ID: {applicant.id}")
 
         return embed
 
