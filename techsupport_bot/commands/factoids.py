@@ -1081,8 +1081,32 @@ class FactoidManager(cogs.MatchCog):
             channel (discord.TextChannel): The channel to loop the factoid in
             cron_config (str): The cron config of the loop
         """
-
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
+
+        if factoid.protected:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid.name.lower()}` is protected and cannot be modified",
+                channel=ctx.channel,
+            )
+            return
+
+        if (
+            factoid.restricted
+            and str(channel.id) not in config.extensions.factoids.restricted_list.value
+        ):
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid.name.lower()}` is restricted and cannot be used in that channel",
+                channel=ctx.channel,
+            )
+            return
+
+        if factoid.disabled:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid.name.lower()}` is disabled and new loops cannot be made",
+                channel=ctx.channel,
+            )
+            return
 
         # Check if loop already exists
         job = (
@@ -1147,6 +1171,13 @@ class FactoidManager(cogs.MatchCog):
         """
 
         factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
+
+        if factoid.protected:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name.lower()}` is already protected",
+                channel=ctx.channel,
+            )
+            return
 
         job = (
             await self.bot.models.FactoidJob.query.where(
