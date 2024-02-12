@@ -2220,7 +2220,7 @@ class FactoidManager(cogs.MatchCog):
         description="Unrestricts a factoid and allows it to be called anywhere",
         usage="[factoid-name]",
     )
-    async def unrestricted(
+    async def unrestrict(
         self,
         ctx: commands.Context,
         factoid_name: str,
