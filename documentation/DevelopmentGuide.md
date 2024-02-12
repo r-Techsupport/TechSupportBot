@@ -126,7 +126,7 @@ query = (
     )
     .where(self.bot.models.Applications.guild_id == str(member.guild.id))
     .where(
-        self.bot.models.Applications.application_stauts
+        self.bot.models.Applications.application_status
         == ApplicationStatus.PENDING.value
     )
 )

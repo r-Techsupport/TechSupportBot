@@ -29,7 +29,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild_id = bot.db.Column(bot.db.String)
         applicant_name = bot.db.Column(bot.db.String)
         applicant_id = bot.db.Column(bot.db.String)
-        application_stauts = bot.db.Column(bot.db.String)
+        application_status = bot.db.Column(bot.db.String)
         background = bot.db.Column(bot.db.String)
         reason = bot.db.Column(bot.db.String)
         application_time = bot.db.Column(
