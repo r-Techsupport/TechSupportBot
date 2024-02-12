@@ -46,9 +46,7 @@ class NicknameFixer(cogs.BaseCog):
             member (discord.Member): The member to update the nickname for
         """
         if member.bot:
-            embed = auxiliary.prepare_deny_embed(
-                f"Bots don't get new nicknames"
-            )
+            embed = auxiliary.prepare_deny_embed("Bots don't get new nicknames")
             return
         new_nickname = nickname.format_username(member.display_name)
         if new_nickname == member.display_name:
