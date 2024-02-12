@@ -107,6 +107,10 @@ async def has_manage_factoids_role(ctx: commands.Context):
 
 @dataclass
 class CalledFactoid:
+    """A class to allow keeping the original factoid name in tact
+    Without having to call the database lookup function every time
+    """
+
     original_call_str: str
     factoid_db_entry: bot.models.Factoid
 
@@ -615,7 +619,10 @@ class FactoidManager(cogs.MatchCog):
 
         view = ui.Confirm()
         await view.send(
-            message=f"This will remove the factoid `{called_factoid.original_call_str}` and all of it's aliases forever. Are you sure?",
+            message=(
+                f"This will remove the factoid `{called_factoid.original_call_str}` "
+                "and all of it's aliases forever. Are you sure?"
+            ),
             channel=ctx.channel,
             author=ctx.author,
         )
@@ -635,7 +642,10 @@ class FactoidManager(cogs.MatchCog):
 
         # Don't send the confirmation message if this is an alias either
         await auxiliary.send_confirm_embed(
-            f"Successfully deleted the factoid `{called_factoid.original_call_str}` and all of it's aliases",
+            (
+                f"Successfully deleted the factoid `{called_factoid.original_call_str}`"
+                "and all of it's aliases"
+            ),
             channel=ctx.channel,
         )
         return True
