@@ -1091,19 +1091,22 @@ class FactoidManager(cogs.MatchCog):
             )
             return
 
+        if factoid.disabled:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid.name.lower()}` is disabled and new loops cannot be made",
+                channel=ctx.channel,
+            )
+            return
+
         if (
             factoid.restricted
             and str(channel.id) not in config.extensions.factoids.restricted_list.value
         ):
             await auxiliary.send_deny_embed(
-                message=f"`{factoid.name.lower()}` is restricted and cannot be used in that channel",
-                channel=ctx.channel,
-            )
-            return
-
-        if factoid.disabled:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid.name.lower()}` is disabled and new loops cannot be made",
+                message=(
+                    f"`{factoid.name.lower()}` is restricted "
+                    f"and cannot be used in {channel.mention}"
+                ),
                 channel=ctx.channel,
             )
             return
