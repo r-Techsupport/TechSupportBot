@@ -38,6 +38,7 @@ class Cats(cogs.BaseCog):
         response = await self.bot.http_functions.http_call("get", url)
         await ctx.send(response[0].url)
 
+
 class Dogs(cogs.BaseCog):
     """The class for the dog api"""
 
@@ -54,6 +55,7 @@ class Dogs(cogs.BaseCog):
         response = await self.bot.http_functions.http_call("get", self.API_URL)
         await ctx.send(response.message)
 
+
 class Frogs(cogs.BaseCog):
     """The class for the frog api"""
 
@@ -67,5 +69,5 @@ class Frogs(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        response = await self.bot.http_functions.http_call("get",self.API_BASE_URL)
+        response = await self.bot.http_functions.http_call("get", self.API_BASE_URL)
         await ctx.send(response.url)
