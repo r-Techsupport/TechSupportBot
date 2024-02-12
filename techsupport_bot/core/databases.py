@@ -164,6 +164,27 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild_id = bot.db.Column(bot.db.String)
         rules = bot.db.Column(bot.db.String)
 
+    class RegularTracking(bot.db.Model):
+        """The postgres table for tracking regulars
+        is_regular - has the regular role
+        is_active - Is considered active (regular) based on config rules, excluding streak
+        Currently used in rules.py"""
+
+        __tablename__ = "regular_tracking"
+        pk = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild_id = bot.db.Column(bot.db.String)
+        user_id = bot.db.Column(bot.db.String)
+        day_0_messages = bot.db.Column(bot.db.Integer, default=0)
+        day_1_messages = bot.db.Column(bot.db.Integer, default=0)
+        day_2_messages = bot.db.Column(bot.db.Integer, default=0)
+        day_3_messages = bot.db.Column(bot.db.Integer, default=0)
+        day_4_messages = bot.db.Column(bot.db.Integer, default=0)
+        day_5_messages = bot.db.Column(bot.db.Integer, default=0)
+        day_6_messages = bot.db.Column(bot.db.Integer, default=0)
+        is_regular = bot.db.Column(bot.db.Boolean, default=False)
+        is_active = bot.db.Column(bot.db.Boolean, default=False)
+        streak = bot.db.Column(bot.db.Integer, default=0)
+
     bot.models.Applications = Applications
     bot.models.AppBans = ApplicationBans
     bot.models.DuckUser = DuckUser
@@ -176,3 +197,4 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.Config = Config
     bot.models.Listener = Listener
     bot.models.Rule = Rule
+    bot.models.RegularTracking = RegularTracking
