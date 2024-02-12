@@ -32,7 +32,7 @@ class NicknameFixer(cogs.BaseCog):
         description="Auto adjusts a nickname of the given member",
         extras={
             "usage": "member",
-            "module": "fixnickname",
+            "module": "nicknamefix",
         },
     )
     async def fixnickname(
@@ -45,6 +45,11 @@ class NicknameFixer(cogs.BaseCog):
             interaction (discord.Interaction): The interaction the command was called at
             member (discord.Member): The member to update the nickname for
         """
+        if member.bot:
+            embed = auxiliary.prepare_deny_embed(
+                f"Bots don't get new nicknames"
+            )
+            return
         new_nickname = nickname.format_username(member.display_name)
         if new_nickname == member.display_name:
             embed = auxiliary.prepare_deny_embed(
