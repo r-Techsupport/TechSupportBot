@@ -28,7 +28,7 @@ async def setup(bot):
         datatype="list",
         title="Note bypass list",
         description=(
-            "A list of roles that shouldn't have notes set or the note roll assigned"
+            "A list of roles that shouldn't have notes set or the note role assigned"
         ),
         default=["Moderator"],
     )
