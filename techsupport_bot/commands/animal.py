@@ -57,7 +57,7 @@ class Dogs(cogs.BaseCog):
 class Frogs(cogs.BaseCog):
     """The class for the frog api"""
 
-    API_URL = "http://allaboutfrogs.org/funstuff/randomfrog.html"
+    API_BASE_URL = "https://frogs.media/api/random"
 
     @auxiliary.with_typing
     @commands.command(name="frog", brief="Gets a frog", description="Gets a frog")
@@ -67,5 +67,5 @@ class Frogs(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        response = await self.bot.http_functions.http_call("get", self.API_URL)
-        await ctx.send(response.message)
+        response = await self.bot.http_functions.http_call("get",self.API_BASE_URL)
+        await ctx.send(response.url)
