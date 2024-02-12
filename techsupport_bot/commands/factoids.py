@@ -52,11 +52,25 @@ async def setup(bot):
         default=["Factoids"],
     )
     config.add(
+        key="admin_roles",
+        datatype="list",
+        title="Admin factoids roles",
+        description="The roles required to administrate factoids",
+        default=["Admin"],
+    )
+    config.add(
         key="prefix",
         datatype="str",
         title="Factoid prefix",
         description="Prefix for calling factoids",
         default="?",
+    )
+    config.add(
+        key="restricted_list",
+        datatype="list",
+        title="Restricted channels list",
+        description="List of channel IDs that restricted factoids are allowed to be used in",
+        default=[],
     )
 
     await bot.add_cog(
@@ -68,7 +82,39 @@ async def setup(bot):
     bot.add_extension_config("factoids", config)
 
 
-async def has_manage_factoids_role(ctx: commands.Context):
+async def has_manage_factoids_role(ctx: commands.Context) -> bool:
+    """A command check to determine if the invoker is allowed to modify basic factoids
+
+    Args:
+        ctx (commands.Context): The context the command was run
+
+    Returns:
+        bool: True if the command can be run, False if it can't
+    """
+    config = ctx.bot.guild_configs[str(ctx.guild.id)]
+    return await has_given_factoids_role(
+        ctx, config.extensions.factoids.manage_roles.value
+    )
+
+
+async def has_admin_factoids_role(ctx: commands.Context) -> bool:
+    """A command check to determine if the invoker is allowed to modify factoid properties
+
+    Args:
+        ctx (commands.Context): The context the command was run
+
+    Returns:
+        bool: True if the command can be run, False if it can't
+    """
+    config = ctx.bot.guild_configs[str(ctx.guild.id)]
+    return await has_given_factoids_role(
+        ctx, config.extensions.factoids.admin_roles.value
+    )
+
+
+async def has_given_factoids_role(
+    ctx: commands.Context, check_roles: list[str]
+) -> bool:
     """-COMMAND CHECK-
     Checks if the invoker has a factoid management role
 
@@ -82,10 +128,9 @@ async def has_manage_factoids_role(ctx: commands.Context):
     Returns:
         bool: Whether the invoker has a factoid management role
     """
-    config = ctx.bot.guild_configs[str(ctx.guild.id)]
     factoid_roles = []
     # Gets permitted roles
-    for name in config.extensions.factoids.manage_roles.value:
+    for name in check_roles:
         factoid_role = discord.utils.get(ctx.guild.roles, name=name)
         if not factoid_role:
             continue
@@ -215,11 +260,6 @@ class FactoidManager(cogs.MatchCog):
     async def modify_factoid_call(
         self,
         factoid,
-        factoid_name: str = None,
-        message: str = None,
-        embed_config: str = None,
-        hidden: bool = None,
-        alias: str = None,
     ):
         """Makes a DB call to modify a factoid
 
@@ -235,21 +275,22 @@ class FactoidManager(cogs.MatchCog):
             custom_errors.TooLongFactoidMessageError:
                 When the message argument is over 2k chars, discords limit
         """
-        if message and len(message) > 2000:
+        if len(factoid.message) > 2000:
             raise custom_errors.TooLongFactoidMessageError
 
         # Removes the `factoid all` cache since it has become outdated
-        if hidden not in [None, False] and factoid.guild in self.factoid_all_cache:
+        if factoid.guild in self.factoid_all_cache:
             del self.factoid_all_cache[factoid.guild]
 
         await factoid.update(
-            name=factoid_name.lower() if factoid_name is not None else factoid.name,
-            message=message if message is not None else factoid.message,
-            embed_config=(
-                embed_config if embed_config is not None else factoid.embed_config
-            ),
-            hidden=hidden if hidden is not None else factoid.hidden,
-            alias=alias if alias is not None else None,
+            name=factoid.name,
+            message=factoid.message,
+            embed_config=factoid.embed_config,
+            hidden=factoid.hidden,
+            protected=factoid.protected,
+            disabled=factoid.disabled,
+            restricted=factoid.restricted,
+            alias=factoid.alias,
         ).apply()
 
         await self.handle_cache(factoid.guild, factoid.name)
@@ -341,7 +382,8 @@ class FactoidManager(cogs.MatchCog):
             if alias.name == new_name:
                 continue
             # Updates the existing aliases to point to the new parent
-            await self.modify_factoid_call(factoid=alias, alias=new_name)
+            alias.alias = new_name
+            await self.modify_factoid_call(factoid=alias)
             await self.handle_cache(str(ctx.guild.id), alias.name)
 
     async def check_alias_recursion(
@@ -383,7 +425,7 @@ class FactoidManager(cogs.MatchCog):
         # (.factoid alias b a, where b has a set already)
         if factoid_name in [alias.name for alias in factoid_aliases]:
             await auxiliary.send_deny_embed(
-                message=f"`{alias_name.lower()}` already has `{factoid_name.lower()}`"
+                message=f"`{alias_name}` already has `{factoid_name}`"
                 + "set as an alias!",
                 channel=channel,
             )
@@ -557,6 +599,12 @@ class FactoidManager(cogs.MatchCog):
         # Checks if the factoid exists already
         try:
             factoid = await self.get_factoid(factoid_name, guild)
+            if factoid.protected:
+                await auxiliary.send_deny_embed(
+                    message=f"`{factoid.name}` is protected and cannot be modified",
+                    channel=ctx.channel,
+                )
+                return
             name = factoid.name.lower()  # Name of the parent
 
         # Adds the factoid if it doesn't exist already
@@ -585,13 +633,12 @@ class FactoidManager(cogs.MatchCog):
                 return
 
             # Modifies the old entry
-            await self.modify_factoid_call(
-                factoid=await self.get_raw_factoid_entry(name, str(ctx.guild.id)),
-                factoid_name=name,
-                message=message,
-                embed_config=embed_config,
-                alias=alias,
-            )
+            factoid = await self.get_raw_factoid_entry(name, str(ctx.guild.id))
+            factoid.name = name
+            factoid.message = message
+            factoid.embed_config = embed_config
+            factoid.alias = alias
+            await self.modify_factoid_call(factoid=factoid)
 
         # Removes the factoid from the cache
         await self.handle_cache(guild, name)
@@ -692,6 +739,17 @@ class FactoidManager(cogs.MatchCog):
                 level=LogLevel.DEBUG,
                 context=LogContext(guild=ctx.guild, channel=ctx.channel),
             )
+            return
+
+        # Checking for disabled or restricted
+        if factoid.disabled:
+            return
+
+        if (
+            factoid.restricted
+            and str(ctx.channel.id)
+            not in config.extensions.factoids.restricted_list.value
+        ):
             return
 
         embed = self.get_embed_from_factoid(factoid)
@@ -868,6 +926,17 @@ class FactoidManager(cogs.MatchCog):
                 )
                 continue
 
+            # Checking for disabled or restricted
+            if factoid.disabled:
+                return
+
+            if (
+                factoid.restricted
+                and str(ctx.channel.id)
+                not in config.extensions.factoids.restricted_list.value
+            ):
+                return
+
             # Get_embed accepts job as a factoid object
             embed = self.get_embed_from_factoid(factoid)
             try:
@@ -993,6 +1062,13 @@ class FactoidManager(cogs.MatchCog):
 
         factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
 
+        if factoid.protected:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid.name}` is protected and cannot be modified",
+                channel=ctx.channel,
+            )
+            return
+
         factoid_called = CalledFactoid(
             original_call_str=factoid_name, factoid_db_entry=factoid
         )
@@ -1035,8 +1111,35 @@ class FactoidManager(cogs.MatchCog):
             channel (discord.TextChannel): The channel to loop the factoid in
             cron_config (str): The cron config of the loop
         """
-
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
+
+        if factoid.protected:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is protected and cannot be modified",
+                channel=ctx.channel,
+            )
+            return
+
+        if factoid.disabled:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is disabled and new loops cannot be made",
+                channel=ctx.channel,
+            )
+            return
+
+        if (
+            factoid.restricted
+            and str(channel.id) not in config.extensions.factoids.restricted_list.value
+        ):
+            await auxiliary.send_deny_embed(
+                message=(
+                    f"`{factoid_name}` is restricted "
+                    f"and cannot be used in {channel.mention}"
+                ),
+                channel=ctx.channel,
+            )
+            return
 
         # Check if loop already exists
         job = (
@@ -1101,6 +1204,13 @@ class FactoidManager(cogs.MatchCog):
         """
 
         factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
+
+        if factoid.protected:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is already protected",
+                channel=ctx.channel,
+            )
+            return
 
         job = (
             await self.bot.models.FactoidJob.query.where(
@@ -1308,7 +1418,16 @@ class FactoidManager(cogs.MatchCog):
         embed.add_field(name="Embed", value=bool(factoid.embed_config))
         embed.add_field(name="Contents", value=factoid.message)
         embed.add_field(name="Date of creation", value=factoid.time)
-        embed.add_field(name="Hidden", value=factoid.hidden)
+
+        # Get all the special properties of a factoid, if any are set
+        factoid_properties = ["hidden", "restricted", "disabled", "protected"]
+        factoid_string = ", ".join(
+            property
+            for property in factoid_properties
+            if getattr(factoid, property, False)
+        )
+        result = factoid_string if factoid_string else "None"
+        embed.add_field(name="Properties", value=result)
 
         if jobs:
             for job in jobs[:10]:
@@ -1662,75 +1781,6 @@ class FactoidManager(cogs.MatchCog):
     @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
-        brief="Hides a factoid",
-        description="Hides a factoid from showing in the all response",
-        usage="[factoid-name]",
-    )
-    async def hide(
-        self,
-        ctx: commands.Context,
-        factoid_name: str,
-    ):
-        """Command to hide a factoid from the .factoid all command
-
-        Args:
-            ctx (commands.Context): Context of the invokation
-            factoid_name (str): Name of the factoid to hide
-        """
-
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        if factoid.hidden:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is already hidden",
-                channel=ctx.channel,
-            )
-            return
-
-        await self.modify_factoid_call(factoid=factoid, hidden=True)
-
-        await auxiliary.send_confirm_embed(
-            message=f"`{factoid_name}` is now hidden", channel=ctx.channel
-        )
-
-    @auxiliary.with_typing
-    @commands.check(has_manage_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Unhides a factoid",
-        description="Unhides a factoid from showing in the all response",
-        usage="[factoid-name]",
-    )
-    async def unhide(
-        self,
-        ctx: commands.Context,
-        factoid_name: str,
-    ):
-        """Command to unhide a factoid from the .factoid all list
-
-        Args:
-            ctx (commands.Context): Context of the invokation
-            factoid_name (str): The name of the factoid to unhide
-        """
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        if not factoid.hidden:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is already unhidden",
-                channel=ctx.channel,
-            )
-            return
-
-        await self.modify_factoid_call(factoid=factoid, hidden=False)
-
-        await auxiliary.send_confirm_embed(
-            message=f"`{factoid_name}` is now unhidden", channel=ctx.channel
-        )
-
-    @auxiliary.with_typing
-    @commands.check(has_manage_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
         brief="Adds a factoid alias",
         description="Adds an alternate way to call a factoid",
         usage="[new-alias-name] [original-factoid-name]",
@@ -1753,6 +1803,13 @@ class FactoidManager(cogs.MatchCog):
 
         # Gets the parent factoid
         factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
+
+        if factoid.protected:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid.name}` is protected and cannot be modified",
+                channel=ctx.channel,
+            )
+            return
 
         # Stops execution if the target is in the alias list already
         if await self.check_alias_recursion(
@@ -1816,13 +1873,12 @@ class FactoidManager(cogs.MatchCog):
                         aliases[0].name, str(ctx.guild.id)
                     )
 
-                    await self.modify_factoid_call(
-                        factoid=alias_entry,
-                        factoid_name=aliases[0].name,
-                        message=target_entry.message,
-                        embed_config=target_entry.embed_config,
-                        alias="",
-                    )
+                    alias_entry.name = aliases[0].name
+                    alias_entry.message = target_entry.message
+                    alias_entry.embed_config = target_entry.embed_config
+                    alias_entry.alias = None
+
+                    await self.modify_factoid_call(factoid=alias_entry)
 
                     await self.handle_parent_change(ctx, aliases, aliases[0].name)
 
@@ -1864,6 +1920,13 @@ class FactoidManager(cogs.MatchCog):
         """
 
         factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
+
+        if factoid.protected:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid.name}` is protected and cannot be modified",
+                channel=ctx.channel,
+            )
+            return
 
         # -- Handling for aliases  --
         # (They just get deleted, no parent handling needs to be done)
@@ -1914,13 +1977,11 @@ class FactoidManager(cogs.MatchCog):
             )
 
         new_entry = await self.get_raw_factoid_entry(new_name, str(ctx.guild.id))
-        await self.modify_factoid_call(
-            factoid=new_entry,
-            factoid_name=new_name,
-            message=factoid.message,
-            embed_config=factoid.embed_config,
-            alias="",
-        )
+        new_entry.name = new_name
+        new_entry.message = factoid.message
+        new_entry.embed_config = factoid.embed_config
+        new_entry.alias = None
+        await self.modify_factoid_call(factoid=new_entry)
 
         # Updates old aliases
         await self.handle_parent_change(ctx, aliases, new_name)
@@ -1988,4 +2049,329 @@ class FactoidManager(cogs.MatchCog):
         await auxiliary.send_confirm_embed(
             message=f"Factoid caches for `{str(ctx.guild.id)}` succesfully flushed!",
             channel=ctx.channel,
+        )
+
+    # -- Property Commands --
+
+    # Hiding
+
+    @auxiliary.with_typing
+    @commands.check(has_admin_factoids_role)
+    @commands.guild_only()
+    @factoid.command(
+        brief="Hides a factoid",
+        description="Hides a factoid from showing in the all response",
+        usage="[factoid-name]",
+    )
+    async def hide(
+        self,
+        ctx: commands.Context,
+        factoid_name: str,
+    ):
+        """Command to hide a factoid from the .factoid all command
+
+        Args:
+            ctx (commands.Context): Context of the invokation
+            factoid_name (str): Name of the factoid to hide
+        """
+
+        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
+
+        if factoid.protected:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is protected and cannot be modified",
+                channel=ctx.channel,
+            )
+            return
+
+        if factoid.hidden:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is already hidden",
+                channel=ctx.channel,
+            )
+            return
+        factoid.hidden = True
+        await self.modify_factoid_call(factoid=factoid)
+
+        await auxiliary.send_confirm_embed(
+            message=f"`{factoid_name}` is now hidden", channel=ctx.channel
+        )
+
+    @auxiliary.with_typing
+    @commands.check(has_admin_factoids_role)
+    @commands.guild_only()
+    @factoid.command(
+        brief="Unhides a factoid",
+        description="Unhides a factoid from showing in the all response",
+        usage="[factoid-name]",
+    )
+    async def unhide(
+        self,
+        ctx: commands.Context,
+        factoid_name: str,
+    ):
+        """Command to unhide a factoid from the .factoid all list
+
+        Args:
+            ctx (commands.Context): Context of the invokation
+            factoid_name (str): The name of the factoid to unhide
+        """
+        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
+
+        if factoid.protected:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is protected and cannot be modified",
+                channel=ctx.channel,
+            )
+            return
+
+        if not factoid.hidden:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is already unhidden",
+                channel=ctx.channel,
+            )
+            return
+
+        factoid.hidden = False
+        await self.modify_factoid_call(factoid=factoid)
+
+        await auxiliary.send_confirm_embed(
+            message=f"`{factoid_name}` is now unhidden", channel=ctx.channel
+        )
+
+    # Protecting
+
+    @auxiliary.with_typing
+    @commands.check(has_admin_factoids_role)
+    @commands.guild_only()
+    @factoid.command(
+        brief="Protects a factoid",
+        description="Protects a factoid and prevents modification or deletion",
+        usage="[factoid-name]",
+    )
+    async def protect(
+        self,
+        ctx: commands.Context,
+        factoid_name: str,
+    ):
+        """Command to protect a factoid from being deleted or modified
+
+        Args:
+            ctx (commands.Context): Context of the invokation
+            factoid_name (str): Name of the factoid to hide
+        """
+
+        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
+
+        if factoid.protected:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is already protected",
+                channel=ctx.channel,
+            )
+            return
+        factoid.protected = True
+        await self.modify_factoid_call(factoid=factoid)
+
+        await auxiliary.send_confirm_embed(
+            message=f"`{factoid_name}` is now protected", channel=ctx.channel
+        )
+
+    @auxiliary.with_typing
+    @commands.check(has_admin_factoids_role)
+    @commands.guild_only()
+    @factoid.command(
+        brief="Unprotects a factoid",
+        description="Allows a protected factoid to be modified or deleted",
+        usage="[factoid-name]",
+    )
+    async def unprotect(
+        self,
+        ctx: commands.Context,
+        factoid_name: str,
+    ):
+        """Command to unprotect a factoid and allow it to be deleted or modified
+
+        Args:
+            ctx (commands.Context): Context of the invokation
+            factoid_name (str): The name of the factoid to unhide
+        """
+        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
+
+        factoid.protected = False
+        await self.modify_factoid_call(factoid=factoid)
+
+        await auxiliary.send_confirm_embed(
+            message=f"`{factoid_name}` is now unprotected", channel=ctx.channel
+        )
+
+    # Restricting
+
+    @auxiliary.with_typing
+    @commands.check(has_admin_factoids_role)
+    @commands.guild_only()
+    @factoid.command(
+        brief="Restricts a factoid",
+        description="Restricts a factoid and only allows it to be called in certain channels",
+        usage="[factoid-name]",
+    )
+    async def restrict(
+        self,
+        ctx: commands.Context,
+        factoid_name: str,
+    ):
+        """Command to restrict a factoid to only certain channels
+
+        Args:
+            ctx (commands.Context): Context of the invokation
+            factoid_name (str): Name of the factoid to hide
+        """
+
+        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
+
+        if factoid.protected:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is protected and cannot be modified",
+                channel=ctx.channel,
+            )
+            return
+
+        if factoid.restricted:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is already restricted",
+                channel=ctx.channel,
+            )
+            return
+        factoid.restricted = True
+        await self.modify_factoid_call(factoid=factoid)
+
+        await auxiliary.send_confirm_embed(
+            message=f"`{factoid_name}` is now restricted", channel=ctx.channel
+        )
+
+    @auxiliary.with_typing
+    @commands.check(has_admin_factoids_role)
+    @commands.guild_only()
+    @factoid.command(
+        brief="Unrestricts a factoid",
+        description="Unrestricts a factoid and allows it to be called anywhere",
+        usage="[factoid-name]",
+    )
+    async def unrestrict(
+        self,
+        ctx: commands.Context,
+        factoid_name: str,
+    ):
+        """Command to allow a factoid to be called anywhere
+
+        Args:
+            ctx (commands.Context): Context of the invokation
+            factoid_name (str): The name of the factoid to unhide
+        """
+        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
+
+        if factoid.protected:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is protected and cannot be modified",
+                channel=ctx.channel,
+            )
+            return
+
+        if not factoid.restricted:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is already unrestricted",
+                channel=ctx.channel,
+            )
+            return
+
+        factoid.restricted = False
+        await self.modify_factoid_call(factoid=factoid)
+
+        await auxiliary.send_confirm_embed(
+            message=f"`{factoid_name}` is now unrestricted", channel=ctx.channel
+        )
+
+    # Disabling
+
+    @auxiliary.with_typing
+    @commands.check(has_admin_factoids_role)
+    @commands.guild_only()
+    @factoid.command(
+        brief="Disables a factoid",
+        description="Disables a factoid and prevents it from being called anywhere",
+        usage="[factoid-name]",
+    )
+    async def disable(
+        self,
+        ctx: commands.Context,
+        factoid_name: str,
+    ):
+        """Command to completely prevent a factoid from being called
+
+        Args:
+            ctx (commands.Context): Context of the invokation
+            factoid_name (str): Name of the factoid to hide
+        """
+
+        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
+
+        if factoid.protected:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is protected and cannot be modified",
+                channel=ctx.channel,
+            )
+            return
+
+        if factoid.disabled:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is already disabled",
+                channel=ctx.channel,
+            )
+            return
+        factoid.disabled = True
+        await self.modify_factoid_call(factoid=factoid)
+
+        await auxiliary.send_confirm_embed(
+            message=f"`{factoid_name}` is now disabled", channel=ctx.channel
+        )
+
+    @auxiliary.with_typing
+    @commands.check(has_admin_factoids_role)
+    @commands.guild_only()
+    @factoid.command(
+        brief="Enables a factoid",
+        description="Enables a factoid and allows it to be called",
+        usage="[factoid-name]",
+    )
+    async def enable(
+        self,
+        ctx: commands.Context,
+        factoid_name: str,
+    ):
+        """Command to allow a factoid to be called
+
+        Args:
+            ctx (commands.Context): Context of the invokation
+            factoid_name (str): The name of the factoid to unhide
+        """
+        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
+
+        if factoid.protected:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is protected and cannot be modified",
+                channel=ctx.channel,
+            )
+            return
+
+        if not factoid.disabled:
+            await auxiliary.send_deny_embed(
+                message=f"`{factoid_name}` is already enabled",
+                channel=ctx.channel,
+            )
+            return
+
+        factoid.disabled = False
+        await self.modify_factoid_call(factoid=factoid)
+
+        await auxiliary.send_confirm_embed(
+            message=f"`{factoid_name}` is now enabled", channel=ctx.channel
         )

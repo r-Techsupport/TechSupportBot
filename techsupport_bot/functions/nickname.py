@@ -22,53 +22,54 @@ async def setup(bot):
     await bot.add_cog(AutoNickName(bot=bot))
 
 
+def format_username(username: str) -> str:
+    """Formats a username to be all ascii and easily readable and pingable
+
+    Args:
+        username (str): The original users username
+
+    Returns:
+        str: The new username with all formatting applied
+    """
+
+    # Prepare a random string, just in case
+    random_string = "".join(random.choice(string.ascii_letters) for _ in range(10))
+
+    # Step 1 - Force all ascii
+    username = unidecode(username)
+
+    # Step 2 - Remove all markdown
+    markdown_pattern = r"(\*\*|__|\*|_|\~\~|`|#+|-{3,}|\|{3,}|>)"
+    username = re.sub(markdown_pattern, "", username)
+
+    # Step 3 - Strip
+    username = username.strip()
+
+    # Step 4 - Fix dumb spaces
+    username = re.sub(r"\s+", " ", username)
+    username = re.sub(r"(\b\w) ", r"\1", username)
+
+    # Step 5 - Start with letter
+    match = re.search(r"[A-Za-z]", username)
+    if match:
+        username = username[match.start() :]
+    else:
+        username = ""
+
+    # Step 6 - Length check
+    if len(username) < 3 and len(username) > 0:
+        username = f"{username}-USER-{random_string}"
+    elif len(username) == 0:
+        username = f"USER-{random_string}"
+    username = username[:32]
+
+    return username
+
+
 class AutoNickName(cogs.BaseCog):
     """
     The class that holds the listener and functions to auto change peoples nicknames
     """
-
-    def format_username(self, username: str) -> str:
-        """Formats a username to be all ascii and easily readable and pingable
-
-        Args:
-            username (str): The original users username
-
-        Returns:
-            str: The new username with all formatting applied
-        """
-
-        # Prepare a random string, just in case
-        random_string = "".join(random.choice(string.ascii_letters) for _ in range(10))
-
-        # Step 1 - Force all ascii
-        username = unidecode(username)
-
-        # Step 2 - Remove all markdown
-        markdown_pattern = r"(\*\*|__|\*|_|\~\~|`|#+|-{3,}|\|{3,}|>)"
-        username = re.sub(markdown_pattern, "", username)
-
-        # Step 3 - Strip
-        username = username.strip()
-
-        # Step 4 - Fix dumb spaces
-        username = re.sub(r"\s+", " ", username)
-        username = re.sub(r"(\b\w) ", r"\1", username)
-
-        # Step 5 - Start with letter
-        match = re.search(r"[A-Za-z]", username)
-        if match:
-            username = username[match.start() :]
-        else:
-            username = ""
-
-        # Step 6 - Length check
-        if len(username) < 3 and len(username) > 0:
-            username = f"{username}-USER-{random_string}"
-        elif len(username) == 0:
-            username = f"USER-{random_string}"
-        username = username[:32]
-
-        return username
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
@@ -79,7 +80,7 @@ class AutoNickName(cogs.BaseCog):
         if not config.get("nickname_filter", False):
             return
 
-        modified_name = self.format_username(member.display_name)
+        modified_name = format_username(member.display_name)
 
         # If the name didn't change for the user, do nothing
         if modified_name == member.display_name:
