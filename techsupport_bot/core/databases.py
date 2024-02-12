@@ -73,6 +73,9 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
         embed_config = bot.db.Column(bot.db.String, default=None)
         hidden = bot.db.Column(bot.db.Boolean, default=False)
+        protected = bot.db.Column(bot.db.Boolean, default=False)
+        disabled = bot.db.Column(bot.db.Boolean, default=False)
+        restricted = bot.db.Column(bot.db.Boolean, default=False)
         alias = bot.db.Column(bot.db.String, default=None)
 
     class FactoidJob(bot.db.Model):
