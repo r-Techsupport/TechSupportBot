@@ -59,11 +59,11 @@ class TechSupportBot(commands.Bot):
         self.guild_configs: dict[str, munch.Munch] = {}
         self.extension_configs = munch.DefaultMunch(None)
         self.extension_states = munch.DefaultMunch(None)
-        self.command_rate_limit_bans: expiringdict.ExpiringDict[
-            str, bool
-        ] = expiringdict.ExpiringDict(
-            max_len=5000,
-            max_age_seconds=600,
+        self.command_rate_limit_bans: expiringdict.ExpiringDict[str, bool] = (
+            expiringdict.ExpiringDict(
+                max_len=5000,
+                max_age_seconds=600,
+            )
         )
         self.command_execute_history: dict[str, dict[int, bool]] = {}
 

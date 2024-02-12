@@ -4,9 +4,9 @@ Info: Converts an attached .json file to an embed
 Unit tests: None
 Config: embed_roles
 API: None
-Databases: None 
+Databases: None
 Models: None
-Subcommands: embed 
+Subcommands: embed
 Defines: has_embed_role
 """
 

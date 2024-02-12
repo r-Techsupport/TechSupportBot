@@ -671,7 +671,11 @@ class FactoidManager(cogs.MatchCog):
         embed = self.get_embed_from_factoid(factoid)
         # if the json doesn't include non embed argument, then don't send anything
         # otherwise send message text with embed
-        plaintext_content = factoid.message if not embed else None
+        try:
+            plaintext_content = factoid.message if not embed else None
+        except ValueError:
+            # The not embed causes a ValueError in certain cases. This ensures fallback works
+            plaintext_content = factoid.message
         mentions = auxiliary.construct_mention_string(ctx.message.mentions)
 
         content = " ".join(filter(None, [mentions, plaintext_content])) or None
@@ -840,7 +844,11 @@ class FactoidManager(cogs.MatchCog):
 
             # Get_embed accepts job as a factoid object
             embed = self.get_embed_from_factoid(factoid)
-            content = factoid.message if not embed else None
+            try:
+                content = factoid.message if not embed else None
+            except ValueError:
+                # The not embed causes a ValueError in certian places. This ensures fallback works
+                content = factoid.message
 
             channel = self.bot.get_channel(int(job.channel))
             if not channel:
@@ -1266,6 +1274,7 @@ class FactoidManager(cogs.MatchCog):
         embed.add_field(name="Embed", value=bool(factoid.embed_config))
         embed.add_field(name="Contents", value=factoid.message)
         embed.add_field(name="Date of creation", value=factoid.time)
+        embed.add_field(name="Hidden", value=factoid.hidden)
 
         if jobs:
             for job in jobs[:10]:

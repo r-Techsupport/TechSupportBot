@@ -1,5 +1,4 @@
-"""Module for log embeds.
-"""
+"""Module for log embeds."""
 
 import datetime
 

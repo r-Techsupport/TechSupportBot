@@ -306,7 +306,7 @@ class DuckHunt(cogs.LoopCog):
             quote = self.pick_quote()
             embed = auxiliary.prepare_deny_embed(message=quote)
             embed.set_footer(
-                text=f"Try again in {config.extensions.duck.cooldown.value} seconds"
+                text=f"You missed. Try again in {config.extensions.duck.cooldown.value} seconds"
             )
             # Only attempt timeout if we know we can do it
             if (

@@ -9,8 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from commands import hug
 from core import auxiliary
-
-from . import config_for_tests
+from tests import config_for_tests
 
 
 def setup_local_extension(bot=None):

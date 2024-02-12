@@ -1,5 +1,4 @@
-"""Base cogs for making extentions.
-"""
+"""Base cogs for making extentions."""
 
 from __future__ import annotations
 

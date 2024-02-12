@@ -1,5 +1,4 @@
-"""Module for logging bot events.
-"""
+"""Module for logging bot events."""
 
 from __future__ import annotations
 

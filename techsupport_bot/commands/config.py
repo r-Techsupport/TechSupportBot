@@ -1,5 +1,4 @@
-"""Module for config commands.
-"""
+"""Module for config commands."""
 
 import datetime
 import io

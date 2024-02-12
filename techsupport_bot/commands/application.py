@@ -836,6 +836,7 @@ class ApplicationManager(cogs.LoopCog):
             self.bot.models.Applications.application_stauts == status.value
         ).where(self.bot.models.Applications.guild_id == str(guild.id))
         entry = await query.gino.all()
+        entry.sort(key=lambda entry: entry.application_time)
         return entry
 
     async def search_for_pending_application(
@@ -912,7 +913,8 @@ class ApplicationManager(cogs.LoopCog):
 
             if user.name != app.applicant_name:
                 audit_log.append(
-                    f"Application by user: `{user.name}` had the stored name updated"
+                    f"Application by user: `{app.applicant_name}` had the stored name"
+                    f" updated to `{user.name}`"
                 )
                 await app.update(applicant_name=user.name).apply()
 
@@ -923,7 +925,7 @@ class ApplicationManager(cogs.LoopCog):
             if role in getattr(user, "roles", []):
                 audit_log.append(
                     f"Application by user: `{user.name}` was approved since they have"
-                    " the role"
+                    f" the `{role.name}` role"
                 )
                 await app.update(
                     application_stauts=ApplicationStatus.APPROVED.value

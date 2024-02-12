@@ -1,5 +1,5 @@
-"""Module for channel listening.
-"""
+"""Module for channel listening."""
+
 from __future__ import annotations
 
 import datetime
