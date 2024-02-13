@@ -4,14 +4,14 @@ Modmail stuff
 
 
 import asyncio
+import re
 from datetime import datetime
 
 import discord
-from botlogging import LogContext, LogLevel
 import expiringdict
 import ui
-import re
-from core import auxiliary, cogs, extensionconfig, custom_errors
+from botlogging import LogContext, LogLevel
+from core import auxiliary, cogs, custom_errors, extensionconfig
 from discord.ext import commands
 
 
@@ -56,7 +56,6 @@ class Modmail_bot(discord.Client):
     """The bot used to send and receive DM messages"""
 
     async def on_message(self, message: discord.Message) -> None:
-
         """Listen to DMs, forward them to handle_dm for proper handling when applicable
 
         Args:
@@ -83,8 +82,10 @@ class Modmail_bot(discord.Client):
             # Finally, normal handling
             await message.add_reaction("✅")
             await handle_dm(message)
-        
-    async def on_typing(self, channel: discord.DMChannel, user: discord.User, _: datetime):
+
+    async def on_typing(
+        self, channel: discord.DMChannel, user: discord.User, _: datetime
+    ):
         """When someone starts typing in modmails dms, starts typing in the corresponding thread
 
         Args:
@@ -232,15 +233,15 @@ async def create_thread(
         embed.timestamp = datetime.utcnow()
 
         await thread[0].send(embed=embed)
-    
+
     # --> AUTORESPONSE HANDLING <--
     for regex in AUTOMATIC_RESPONSES:
         if re.match(regex, content):
             await reply_to_thread(
                 content=AUTOMATIC_RESPONSES[regex],
-                author=Ts_client.user, # Set for the sake of consistency, is not actually used
+                author=Ts_client.user,  # Set for the sake of consistency, is not actually used
                 thread=thread,
-                anonymous=True
+                anonymous=True,
             )
             return
 
@@ -358,8 +359,6 @@ async def close_thread(
     await user.send(embed=embed)
 
 
-
-
 async def log_closure(thread, user, log_channel, closed_by: discord.User):
     embed = discord.Embed(
         color=discord.Color.red(),
@@ -394,7 +393,6 @@ async def setup(bot):
         description="If someone sends a message containing a key, sends its value",
         default={},
     )
-
 
     config.add(
         key="modmail_roles",
@@ -440,7 +438,6 @@ class Modmail(cogs.BaseCog):
         global MODMAIL_LOG_CHANNEL_ID
         MODMAIL_LOG_CHANNEL_ID = int(bot.file_config.modmail_config.modmail_log_channel)
 
-
         config = bot.guild_configs[str(bot.file_config.modmail_config.modmail_guild)]
 
         # Makes all role IDs to ping when thread is being created global
@@ -452,7 +449,6 @@ class Modmail(cogs.BaseCog):
         # pylint: disable=W0603
         global AUTOMATIC_RESPONSES
         AUTOMATIC_RESPONSES = config.extensions.modmail.automatic_responses.value
-
 
         self.prefix = bot.file_config.modmail_config.modmail_prefix
         self.bot = bot
@@ -567,16 +563,16 @@ class Modmail(cogs.BaseCog):
                     return
 
                 closure_jobs[message.channel.id] = asyncio.create_task(
-                close_thread(
-                thread=message.channel,
-                silent=True,
-                timed=True,
-                user=self.bot.get_user(
-                    int(message.channel.name.split("|")[-1].strip())
-                ),
-                log_channel=self.bot.get_channel(MODMAIL_LOG_CHANNEL_ID),
-                closed_by=message.author,
-                )
+                    close_thread(
+                        thread=message.channel,
+                        silent=True,
+                        timed=True,
+                        user=self.bot.get_user(
+                            int(message.channel.name.split("|")[-1].strip())
+                        ),
+                        log_channel=self.bot.get_channel(MODMAIL_LOG_CHANNEL_ID),
+                        closed_by=message.author,
+                    )
                 )
 
             # - Replies -
@@ -600,7 +596,6 @@ class Modmail(cogs.BaseCog):
                 )
                 return
 
-
             # Sends a factoid
             case "send":
                 # Replaces \n with spaces so factoid can be called even with newlines
@@ -614,16 +609,18 @@ class Modmail(cogs.BaseCog):
                 )
 
                 if not factoid:
-                    await auxiliary.send_deny_embed(message=f"Couldn't find the factoid `{query}`", channel=message.channel)
+                    await auxiliary.send_deny_embed(
+                        message=f"Couldn't find the factoid `{query}`",
+                        channel=message.channel,
+                    )
                     return
 
                 await reply_to_thread(
                     content=factoid.message,
                     author=message.author,
                     thread=message.channel,
-                    anonymous=True
+                    anonymous=True,
                 )
-            
 
         # Checks if it is an alias instead
         config = self.bot.guild_configs[str(self.modmail_forum.guild.id)]
