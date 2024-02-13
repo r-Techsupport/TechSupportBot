@@ -87,7 +87,6 @@ class Who(cogs.BaseCog):
 
         raise commands.CommandError(message)
 
-    @app_commands.check(is_reader)
     @app_commands.command(
         name="whois",
         description="Gets Discord user information",
@@ -103,6 +102,12 @@ class Who(cogs.BaseCog):
         self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         """Method to get notes assigned to a user."""
+        # Check if user is a note reader
+        if not await self.is_reader(interaction):
+            embed = auxiliary.prepare_deny_embed(message="You cannot run whois")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
         embed = discord.Embed(
             title=f"User info for `{user}`",
             description="**Note: this is a bot account!**" if user.bot else "",
