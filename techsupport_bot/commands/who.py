@@ -148,11 +148,12 @@ class Who(cogs.BaseCog):
         warning_str = ""
         for warning in warnings:
             warning_str += f"{warning.reason} - {warning.time.date()}\n"
-        embed.add_field(
-            name="**Warnings**",
-            value=warning_str,
-            inline=True,
-        )
+        if warning_str:
+            embed.add_field(
+                name="**Warnings**",
+                value=warning_str,
+                inline=True,
+            )
 
         # If the user has a pending application, show it
         # If the user is banned from making applications, show it
