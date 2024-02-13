@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
-
 import datetime
 import io
+from typing import TYPE_CHECKING
 
 import discord
 import ui
@@ -69,7 +68,8 @@ class Who(cogs.BaseCog):
 
     @staticmethod
     async def is_reader(interaction: discord.Interaction) -> bool:
-        """Checks whether invoker can read notes. If no reader role is set, all members can read notes."""
+        """Checks whether invoker can read notes.
+        If no reader role is set, all members can read notes."""
         config = interaction.client.guild_configs[str(interaction.guild.id)]
         if reader_roles := config.extensions.who.note_readers.value:
             roles = (
