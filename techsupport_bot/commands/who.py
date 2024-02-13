@@ -1,5 +1,9 @@
 """Module for the who extension for the discord bot."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List
+
 import datetime
 import io
 
@@ -10,6 +14,9 @@ from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, extensionconfig
 from discord import app_commands
 from discord.ext import commands
+
+if TYPE_CHECKING:
+    import bot
 
 
 async def setup(bot):
@@ -47,14 +54,22 @@ async def setup(bot):
 class Who(cogs.BaseCog):
     """Class to set up who for the extension."""
 
+    def __init__(self, bot: bot.TechSupportBot, extension_name):
+        super().__init__(bot, extension_name=extension_name)
+        self.ctx_menu = app_commands.ContextMenu(
+            name="Whois",
+            callback=self.get_note_command,
+            extras={"brief": "Gets user data", "usage": "@user", "module": "who"},
+        )
+        self.bot.tree.add_command(self.ctx_menu)
+
     notes = app_commands.Group(
         name="note", description="Command Group for the Notes Extension"
     )
 
     @staticmethod
     async def is_reader(interaction: discord.Interaction) -> bool:
-        """Checks whether invoker can read notes. If at least one reader
-        role is not set, all members can read notes."""
+        """Checks whether invoker can read notes. If no reader role is set, all members can read notes."""
         config = interaction.client.guild_configs[str(interaction.guild.id)]
         if reader_roles := config.extensions.who.note_readers.value:
             roles = (
@@ -64,7 +79,7 @@ class Who(cogs.BaseCog):
 
             return any((role in interaction.user.roles for role in roles))
 
-        # Reader_roles are empty (not set)
+        # Reader_roles is empty (not set)
         message = "There aren't any `note_readers` roles set in the config!"
         embed = auxiliary.prepare_deny_embed(message=message)
 
@@ -81,7 +96,13 @@ class Who(cogs.BaseCog):
     async def get_note(
         self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
-        """ "Method to get notes assigned to a user."""
+        """The base of the get_note command"""
+        await self.get_note_command(interaction, user)
+
+    async def get_note_command(
+        self, interaction: discord.Interaction, user: discord.Member
+    ) -> None:
+        """Method to get notes assigned to a user."""
         embed = discord.Embed(
             title=f"User info for `{user}`",
             description="**Note: this is a bot account!**" if user.bot else "",
