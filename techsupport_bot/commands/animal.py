@@ -17,6 +17,7 @@ async def setup(bot):
     await bot.add_cog(Cats(bot=bot))
     await bot.add_cog(Dogs(bot=bot))
     await bot.add_cog(Frogs(bot=bot))
+    await bot.add_cog(Fox(bot=bot))
 
 
 class Cats(cogs.BaseCog):
@@ -71,3 +72,21 @@ class Frogs(cogs.BaseCog):
         """
         response = await self.bot.http_functions.http_call("get", self.API_BASE_URL)
         await ctx.send(response.url)
+
+
+class Fox(cogs.BaseCog):
+    """The class for the fox api"""
+
+    API_BASE_URL = "https://randomfox.ca/floof/"
+
+    @auxiliary.with_typing
+    @commands.command(name="fox", brief="Gets a fox", description="Gets a fox")
+    async def fox(self, ctx: commands.Context):
+        """Prints a fox to discord
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
+        response = await self.bot.http_functions.http_call("get", self.API_BASE_URL)
+        print(f"Response: {response}")
+        await ctx.send(response.image)

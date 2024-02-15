@@ -59,6 +59,7 @@ class HTTPCalls:
             "api.thecatapi.com": (10, 60),
             "dog.ceo": (10, 60),
             "frogs.media": (3, 60),
+            "randomfox.ca": (4, 60),
         }
         # For the variable APIs, if they don't exist, don't rate limit them
         try:
