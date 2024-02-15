@@ -887,6 +887,7 @@ class TechSupportBot(commands.Bot):
         )
         embed.add_field(name="Server", value=getattr(interaction.guild, "name", "None"))
         embed.add_field(name="Namespace", value=f"{interaction.namespace}")
+        embed.set_footer(text=f"Requested by {interaction.user.id}")
 
         log_channel = await self.get_log_channel_from_guild(
             interaction.guild, key="logging_channel"

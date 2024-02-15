@@ -55,7 +55,10 @@ class NicknameFixer(cogs.BaseCog):
             )
             await interaction.response.send_message(embed=embed)
             return
-        await member.edit(nick=new_nickname)
+        await member.edit(
+            nick=new_nickname,
+            reason=f"Change nickname command, ran by {interaction.user}",
+        )
         embed = auxiliary.prepare_confirm_embed(
             f"{member.mention} name changed to {new_nickname}"
         )
