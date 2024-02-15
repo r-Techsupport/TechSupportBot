@@ -948,8 +948,8 @@ class ApplicationManager(cogs.LoopCog):
 
         embed.description = "\n".join(
             [
-                f"Application by: `{guild.get_member(int(app.applicant_id)).display_name} 
-                    ({app.applicant_name})`, applied on: {app.application_time}"
+                f"""Application by: `{guild.get_member(int(app.applicant_id)).display_name} 
+                    ({app.applicant_name})`, applied on: {app.application_time}"""
                 for app in apps
             ]
         )
