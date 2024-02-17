@@ -1,7 +1,6 @@
 """TechSupport Bot main thread.
 """
 
-import asyncio
 import logging
 import os
 
