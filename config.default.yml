@@ -7,6 +7,7 @@ bot_config:
     default_prefix: "."
     global_alerts_channel: ""
 modmail_config:
+    disable_thread_creation: False
     modmail_auth_token:
     modmail_prefix:
     modmail_guild:

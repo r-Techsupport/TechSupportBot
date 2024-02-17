@@ -626,7 +626,7 @@ class TechSupportBot(commands.Bot):
                 self.logger.console.error(
                     f"Failed to load extension {extension_name}: {exception}"
                 )
-                if not graceful or extension_name == "modmail":
+                if not graceful:
                     raise exception
 
         self.logger.console.debug("Retrieving functions")
