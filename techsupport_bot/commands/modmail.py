@@ -218,19 +218,16 @@ async def handle_dm(message: discord.Message) -> None:
     # No thread was found, create one
     confirmation = ui.Confirm()
     await confirmation.send(
-        message=(f"Create a Modmail thread?"),
+        message=("Create a Modmail thread?"),
         channel=message.channel,
         author=message.author,
     )
 
     await confirmation.wait()
 
-    if (
-        confirmation.value == ui.ConfirmResponse.DENIED
-        or confirmation.value == ui.ConfirmResponse.TIMEOUT
-    ):
+    if confirmation.value in (ui.ConfirmResponse.DENIED, ui.ConfirmResponse.TIMEOUT):
         await auxiliary.send_deny_embed(
-            message=f"Thread creation cancelled.",
+            message="Thread creation cancelled.",
             channel=message.channel,
         )
         return
@@ -929,7 +926,8 @@ class Modmail(cogs.BaseCog):
                 ).create()
 
                 return await auxiliary.send_confirm_embed(
-                    message=f"{user.mention} was succesfully banned from creating future modmail threads.",
+                    message=f"{user.mention} was succesfully banned from creating future modmail"
+                    + "threads.",
                     channel=ctx.channel,
                 )
 
