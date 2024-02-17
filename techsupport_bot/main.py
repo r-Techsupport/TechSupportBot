@@ -32,7 +32,7 @@ bot_ = bot.TechSupportBot(
     intents=intents,
     allowed_mentions=discord.AllowedMentions(everyone=False, roles=False),
 )
-# Starts a custom event loop for the bot, because Modmail runs its own one as well,
+# Creates & starts a custom event loop for the bot, because Modmail runs its own one as well and
 # you can not run nested asyncio loops
 
 bot.loop.create_task(bot_.start())
