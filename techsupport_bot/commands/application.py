@@ -336,7 +336,7 @@ class ApplicationManager(cogs.LoopCog):
             return
 
         await application.update(
-            application_stauts=ApplicationStatus.APPROVED.value
+            application_status=ApplicationStatus.APPROVED.value
         ).apply()
 
         await member.add_roles(
@@ -375,7 +375,7 @@ class ApplicationManager(cogs.LoopCog):
             await interaction.response.send_message(embed=embed)
             return
         await application.update(
-            application_stauts=ApplicationStatus.DENIED.value
+            application_status=ApplicationStatus.DENIED.value
         ).apply()
 
         await self.notify_for_application_change(
@@ -637,9 +637,10 @@ class ApplicationManager(cogs.LoopCog):
         if not new:
             embed.add_field(
                 name="Status",
-                value=application.application_stauts,
+                value=application.application_status,
                 inline=False,
             )
+        embed.set_footer(text=f"User ID: {applicant.id}")
 
         return embed
 
@@ -658,7 +659,7 @@ class ApplicationManager(cogs.LoopCog):
             guild_id=str(applicant.guild.id),
             applicant_name=applicant.name,
             applicant_id=str(applicant.id),
-            application_stauts=ApplicationStatus.PENDING.value,
+            application_status=ApplicationStatus.PENDING.value,
             background=background,
             reason=reason,
         )
@@ -833,9 +834,10 @@ class ApplicationManager(cogs.LoopCog):
             list[bot.models.Applications]: The list of applications in a oldest first order
         """
         query = self.bot.models.Applications.query.where(
-            self.bot.models.Applications.application_stauts == status.value
+            self.bot.models.Applications.application_status == status.value
         ).where(self.bot.models.Applications.guild_id == str(guild.id))
         entry = await query.gino.all()
+        entry.sort(key=lambda entry: entry.application_time)
         return entry
 
     async def search_for_pending_application(
@@ -855,7 +857,7 @@ class ApplicationManager(cogs.LoopCog):
             )
             .where(self.bot.models.Applications.guild_id == str(member.guild.id))
             .where(
-                self.bot.models.Applications.application_stauts
+                self.bot.models.Applications.application_status
                 == ApplicationStatus.PENDING.value
             )
         )
@@ -906,13 +908,14 @@ class ApplicationManager(cogs.LoopCog):
                     " they left"
                 )
                 await app.update(
-                    application_stauts=ApplicationStatus.REJECTED.value
+                    application_status=ApplicationStatus.REJECTED.value
                 ).apply()
                 continue
 
             if user.name != app.applicant_name:
                 audit_log.append(
-                    f"Application by user: `{user.name}` had the stored name updated"
+                    f"Application by user: `{app.applicant_name}` had the stored name"
+                    f" updated to `{user.name}`"
                 )
                 await app.update(applicant_name=user.name).apply()
 
@@ -923,10 +926,10 @@ class ApplicationManager(cogs.LoopCog):
             if role in getattr(user, "roles", []):
                 audit_log.append(
                     f"Application by user: `{user.name}` was approved since they have"
-                    " the role"
+                    f" the `{role.name}` role"
                 )
                 await app.update(
-                    application_stauts=ApplicationStatus.APPROVED.value
+                    application_status=ApplicationStatus.APPROVED.value
                 ).apply()
         if audit_log:
             embed = discord.Embed(title="Application manage events")

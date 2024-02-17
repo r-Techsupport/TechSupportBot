@@ -1,4 +1,5 @@
 """Module for the rules extension of the discord bot."""
+
 from __future__ import annotations
 
 import datetime
@@ -130,11 +131,8 @@ class Rules(cogs.BaseCog):
     )
     async def get_rule(self, ctx: commands.Context, content: str):
         """Method to get specified rules from rule number/s specified in content."""
-        first = True
-
+        # A list of all the rule numbers to get. It starts empty
         numbers = []
-        already_done = []
-        errors = []
 
         # Splits content string, and adds each item to number list
         # Catches ValueError when no number is specified
@@ -146,53 +144,39 @@ class Rules(cogs.BaseCog):
             )
             return
 
-        for number in numbers:
-            if number < 1:
-                await auxiliary.send_deny_embed(
-                    message="That rule number is invalid", channel=ctx.channel
-                )
-                return
+        # Stort and deduplicate all the numbers
+        numbers = sorted(set(numbers))
+        # Get the max rule number
+        max_rule = await self.get_rule_count(ctx.guild)
 
-            rules_data = await self.get_guild_rules(ctx.guild)
-
-            if not rules_data or not rules_data.get("rules"):
-                await auxiliary.send_deny_embed(
-                    message="There are no rules for this server", channel=ctx.channel
-                )
-                return
-            rules = rules_data.get("rules")
-            if number in already_done:
-                continue
-
-            try:
-                rule = rules[number - 1]
-            except IndexError:
-                errors.append(number)
-                continue
-
-            embed = RuleEmbed(
-                title=f"Rule {number}", description=rule.get("description", "None")
-            )
-
-            embed.set_thumbnail(url=self.RULE_ICON_URL)
-            embed.color = discord.Color.gold()
-
-            # Checks if first embed sent
-            if first:
-                await ctx.send(
-                    embed=embed,
-                    content=auxiliary.construct_mention_string(ctx.message.mentions),
-                )
-                first = False
-            else:
-                await ctx.send(embed=embed, mention_author=False)
-
-            already_done.append(number)
-
-        for error in errors:
+        # Ensure that all rules are valid
+        if numbers[0] <= 0 or numbers[len(numbers) - 1] > max_rule:
             await auxiliary.send_deny_embed(
-                message=f"Rule number {error} doesn't exist", channel=ctx.channel
+                message="Invalid rule numbers", channel=ctx.channel
             )
+            return
+
+        # Build an embed that contains all the given rules
+        embed = auxiliary.generate_basic_embed(
+            title="Server Rules",
+            description="",
+            color=discord.Color.gold(),
+            url=self.RULE_ICON_URL,
+        )
+        raw_rules = await self.get_guild_rules(ctx.guild)
+        guild_rules = raw_rules.get("rules")
+        for rule_number in numbers:
+            embed.add_field(
+                name=f"Rule {rule_number}",
+                value=guild_rules[rule_number - 1].get("description", "None"),
+                inline=False,
+            )
+
+        # Send it, and mention anyone origially mentioned
+        await ctx.send(
+            content=auxiliary.construct_mention_string(ctx.message.mentions),
+            embed=embed,
+        )
 
     @commands.guild_only()
     @rule_group.command(
@@ -225,3 +209,19 @@ class Rules(cogs.BaseCog):
         embed.color = discord.Color.gold()
 
         await ctx.send(embed=embed, mention_author=False)
+
+    async def get_rule_count(self, guild: discord.Guild) -> int:
+        """Gets the rule count as an integer for the given guild
+        This will create rules should it be called without any rules
+
+        Args:
+            guild (discord.Guild): The guild to get the count for
+
+        Returns:
+            int: The number of rules in the given guild
+        """
+        rules_data = await self.get_guild_rules(guild)
+        if not rules_data or not rules_data.get("rules"):
+            return 0
+
+        return len(rules_data.get("rules"))

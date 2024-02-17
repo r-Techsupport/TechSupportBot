@@ -29,7 +29,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild_id = bot.db.Column(bot.db.String)
         applicant_name = bot.db.Column(bot.db.String)
         applicant_id = bot.db.Column(bot.db.String)
-        application_stauts = bot.db.Column(bot.db.String)
+        application_status = bot.db.Column(bot.db.String)
         background = bot.db.Column(bot.db.String)
         reason = bot.db.Column(bot.db.String)
         application_time = bot.db.Column(
@@ -73,6 +73,9 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
         embed_config = bot.db.Column(bot.db.String, default=None)
         hidden = bot.db.Column(bot.db.Boolean, default=False)
+        protected = bot.db.Column(bot.db.Boolean, default=False)
+        disabled = bot.db.Column(bot.db.Boolean, default=False)
+        restricted = bot.db.Column(bot.db.Boolean, default=False)
         alias = bot.db.Column(bot.db.String, default=None)
 
     class FactoidJob(bot.db.Model):

@@ -28,7 +28,7 @@ async def setup(bot):
         datatype="list",
         title="Note bypass list",
         description=(
-            "A list of roles that shouldn't have notes set or the note roll assigned"
+            "A list of roles that shouldn't have notes set or the note role assigned"
         ),
         default=["Moderator"],
     )
@@ -91,27 +91,17 @@ class Who(cogs.BaseCog):
 
         embed.add_field(name="Created at", value=user.created_at.replace(microsecond=0))
         embed.add_field(name="Joined at", value=user.joined_at.replace(microsecond=0))
-        embed.add_field(name="Status", value=user.status)
+        embed.add_field(
+            name="Status", value=interaction.guild.get_member(user.id).status
+        )
         embed.add_field(name="Nickname", value=user.display_name)
 
         role_string = ", ".join(role.name for role in user.roles[1:])
         embed.add_field(name="Roles", value=role_string or "No roles")
 
-        # Gets all warnings for an user and adds them to the embed (Mod only)
+        # Adds special information only visible to mods
         if interaction.permissions.kick_members:
-            warnings = (
-                await self.bot.models.Warning.query.where(
-                    self.bot.models.Warning.user_id == str(user.id)
-                )
-                .where(self.bot.models.Warning.guild_id == str(interaction.guild.id))
-                .gino.all()
-            )
-            for warning in warnings:
-                embed.add_field(
-                    name=f"**Warning ({warning.time.date()})**",
-                    value=f"*{warning.reason}*",
-                    inline=False,
-                )
+            embed = await self.modify_embed_for_mods(interaction, user, embed)
 
         user_notes = await self.get_notes(user, interaction.guild)
         total_notes = 0
@@ -130,6 +120,56 @@ class Who(cogs.BaseCog):
             )
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    async def modify_embed_for_mods(
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member,
+        embed: discord.Embed,
+    ) -> discord.Embed:
+        """Makes modifications to the whois embed to add mod only information
+
+        Args:
+            interaction (discord.Interaction): The interaction where the /whois command was called
+            user (discord.Member): The user being looked up
+            embed (discord.Embed): The embed already filled with whois information
+
+        Returns:
+            discord.Embed: The embed with mod only information added
+        """
+        # If the user has warnings, add them
+        warnings = (
+            await self.bot.models.Warning.query.where(
+                self.bot.models.Warning.user_id == str(user.id)
+            )
+            .where(self.bot.models.Warning.guild_id == str(interaction.guild.id))
+            .gino.all()
+        )
+        warning_str = ""
+        for warning in warnings:
+            warning_str += f"{warning.reason} - {warning.time.date()}\n"
+        if warning_str:
+            embed.add_field(
+                name="**Warnings**",
+                value=warning_str,
+                inline=True,
+            )
+
+        # If the user has a pending application, show it
+        # If the user is banned from making applications, show it
+        application_cog = interaction.client.get_cog("ApplicationManager")
+        if application_cog:
+            has_application = await application_cog.search_for_pending_application(user)
+            is_banned = await application_cog.get_ban_entry(user)
+            embed.add_field(
+                name="Application information:",
+                value=(
+                    f"Has pending application: {bool(has_application)}\nIs banned from"
+                    f" making applications: {bool(is_banned)}"
+                ),
+                inline=True,
+            )
+        return embed
 
     @app_commands.checks.has_permissions(kick_members=True)
     @notes.command(
