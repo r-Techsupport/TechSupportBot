@@ -10,6 +10,7 @@ Postgresql: True
 Models: ModmailBan
 Commands: contact, modmail ban, modmail unban
 """
+
 from __future__ import annotations
 
 import asyncio
