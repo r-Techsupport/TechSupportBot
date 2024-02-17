@@ -115,6 +115,13 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         discord_channel_id = bot.db.Column(bot.db.String, default=None)
         irc_channel_id = bot.db.Column(bot.db.String, default=None)
 
+    class ModmailBan(bot.db.Model):
+        """The postgres table for modmail bans
+        Currently used in modmail.py"""
+
+        __tablename__ = "modmail_bans"
+        user_id = bot.db.Column(bot.db.String, default=None, primary_key=True)
+
     class UserNote(bot.db.Model):
         """The postgres table for notes
         Currently used in who.py"""
@@ -174,6 +181,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.FactoidJob = FactoidJob
     bot.models.Grab = Grab
     bot.models.IRCChannelMapping = IRCChannelMapping
+    bot.models.ModmailBan = ModmailBan
     bot.models.UserNote = UserNote
     bot.models.Warning = Warning
     bot.models.Config = Config
