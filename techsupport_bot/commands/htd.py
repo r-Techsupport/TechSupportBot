@@ -128,7 +128,7 @@ class Htd(cogs.BaseCog):
             " encodings (bianary, hex, base 10, and ascii)"
         ),
         usage=(
-            "`htd [value]`\nAccepts numbers in the following formats:\n0x"
+            "`[value]`\nAccepts numbers in the following formats:\n0x"
             " (hex)\n0b (binary) \nNo prefix (assumed ascii)"
         ),
     )
