@@ -179,7 +179,7 @@ async def handle_dm(message: discord.Message) -> None:
     # The bot is not ready to handle dms yet, this should only take a few seconds after startup
     if not Ts_client or not MODMAIL_FORUM_ID:
         await message.channel.send(
-            discord.Embed(
+            embed=auxiliary.generate_basic_embed(
                 color=discord.Color.light_gray(),
                 description="Bot is still starting, please wait...",
             )
@@ -194,9 +194,14 @@ async def handle_dm(message: discord.Message) -> None:
         await message.add_reaction("📨")
 
         embed = discord.Embed(color=discord.Color.blue(), description=message.content)
-        embed.set_author(name=message.author, icon_url=message.author.avatar.url)
         embed.set_footer(text=f"Message ID: {message.id}")
         embed.timestamp = datetime.utcnow()
+        if message.author.avatar:
+            embed.set_author(name=message.author, icon_url=message.author.avatar.url)
+        else:
+            embed.set_author(
+                name=message.author, icon_url=message.author.default_avatar.url
+            )
 
         thread = Ts_client.get_channel(active_threads[message.author.id])
         await thread.send(embed=embed)
@@ -391,8 +396,11 @@ async def reply_to_thread(
     # - Modmail thread side -
     embed = discord.Embed(color=discord.Color.green(), description=content)
     embed.timestamp = datetime.utcnow()
-    embed.set_author(name=author, icon_url=author.avatar.url)
     embed.set_footer(text="Response")
+    if author.avatar:
+        embed.set_author(name=author, icon_url=author.avatar.url)
+    else:
+        embed.set_author(name=author, icon_url=author.default_avatar.url)
 
     if author == Ts_client.user:
         embed.set_footer(text="[Automatic] Response")
@@ -597,6 +605,11 @@ class Modmail(cogs.BaseCog):
         self.prefix = bot.file_config.modmail_config.modmail_prefix
         self.bot = bot
 
+    async def handle_reboot(self):
+        """Ram when the bot is restarted"""
+
+        await Modmail_client.close()
+
     @commands.Cog.listener()
     async def on_ready(self):
         """Fetches the modmail channel only once ready
@@ -612,24 +625,15 @@ class Modmail(cogs.BaseCog):
                 # [username, date, id]
                 active_threads[int(thread.name.split(" | ")[3])] = thread.id
 
-        guild_id = str(self.bot.file_config.modmail_config.modmail_guild)
-        config = self.bot.guild_configs[guild_id]
-
-        self.modmail_roles = []
-        # Gets permitted roles
-        for role_id in config.extensions.modmail.modmail_roles.value:
-            modmail_role = discord.utils.get(guild_id, id=role_id)
-            if not modmail_role:
-                continue
-
-            self.modmail_roles.append(modmail_role)
-
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         """Processes messages sent in a modmail thread, basically a manual command handler
 
         Args:
             message (discord.Message): The sent message
+
+        Raises:
+            commands.MissingAnyRole: When the invoker doesn't have a modmail role
         """
         if (
             not message.content.startswith(self.prefix)
@@ -638,7 +642,28 @@ class Modmail(cogs.BaseCog):
             or message.channel.name.startswith("[CLOSED]")
         ):
             return
+        # Makes sure the person is actually allowed to run modmail commands
 
+        config = self.bot.guild_configs[str(message.guild.id)]
+        modmail_roles = []
+
+        # Gets permitted roles
+        for role_id in config.extensions.modmail.modmail_roles.value:
+            modmail_role = discord.utils.get(message.guild.roles, id=role_id)
+            if not modmail_role:
+                continue
+
+            modmail_roles.append(modmail_role)
+
+        if not any(
+            modmail_role in getattr(message.author, "roles", [])
+            for modmail_role in modmail_roles
+        ):
+            await auxiliary.send_deny_embed(
+                channel=message.channel,
+                message="You don't have permission to use that command!",
+            )
+            return
         # Gets the content without the prefix
         content = message.content.partition(self.prefix)[2]
 
@@ -765,7 +790,6 @@ class Modmail(cogs.BaseCog):
                 )
 
         # Checks if the command was an alias
-        config = self.bot.guild_configs[str(self.modmail_forum.guild.id)]
         aliases = config.extensions.modmail.aliases.value
 
         for alias in aliases:
@@ -777,6 +801,7 @@ class Modmail(cogs.BaseCog):
             return
 
     @auxiliary.with_typing
+    @commands.check(has_modmail_management_role)
     @commands.command(
         name="contact",
         brief="Creates a modmail thread with a user",
@@ -859,14 +884,25 @@ class Modmail(cogs.BaseCog):
             return
 
         # Checking against the user to see if they have the roles specified in the config
+        config = self.bot.guild_configs[str(ctx.guild.id)]
+        modmail_roles = []
+
+        # Gets permitted roles
+        for role_id in config.extensions.modmail.modmail_roles.value:
+            modmail_role = discord.utils.get(ctx.guild.roles, id=role_id)
+            if not modmail_role:
+                continue
+
+            modmail_roles.append(modmail_role)
+
         if any(
-            modmail_role in getattr(user, "roles", [])
-            for modmail_role in self.modmail_roles
+            modmail_role in getattr(user, "roles", []) for modmail_role in modmail_roles
         ):
-            return await auxiliary.send_deny_embed(
+            await auxiliary.send_deny_embed(
                 message="You cannot ban someone with a modmail role!",
                 channel=ctx.channel,
             )
+            return
 
         view = ui.Confirm()
         await view.send(

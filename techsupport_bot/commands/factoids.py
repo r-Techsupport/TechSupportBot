@@ -44,7 +44,6 @@ async def setup(bot):
         description="The roles required to manage factoids",
         default=["Factoids"],
     )
-
     config.add(
         key="prefix",
         datatype="str",
