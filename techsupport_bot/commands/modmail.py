@@ -10,16 +10,21 @@ Postgresql: True
 Models: ModmailBan
 Commands: contact, modmail ban, modmail unban
 """
+from __future__ import annotations
 
 import asyncio
 import re
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import discord
 import expiringdict
 import ui
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
+
+if TYPE_CHECKING:
+    import bot
 
 
 async def has_modmail_management_role(ctx: commands.Context) -> bool:
@@ -105,7 +110,7 @@ class Modmail_bot(discord.Client):
         """When someone starts typing in modmails dms, starts typing in the corresponding thread
 
         Args:
-            channel (discord.Channel): The channel where osmeone started typing
+            channel (discord.Channel): The channel where someone started typing
             user (discord.User): The user who started typing
             _ (datetime.datetime): The timestamp of when typing started, unused
         """
@@ -218,7 +223,7 @@ async def handle_dm(message: discord.Message) -> None:
     # No thread was found, create one
     confirmation = ui.Confirm()
     await confirmation.send(
-        message=("Create a Modmail thread?"),
+        message="Create a Modmail thread?",
         channel=message.channel,
         author=message.author,
     )
@@ -367,7 +372,7 @@ async def reply_to_thread(
     """Replies to a modmail thread on both the dm side and the modmail thread side
 
     Args:
-        raw_content (str): The content to send
+        content (str): The content to send
         author (discord.user): The author of the outgoing message
         thread (discord.Thread): The thread to reply to
         anonymous (bool): Whether to reply anonymously
@@ -460,7 +465,7 @@ async def close_thread(
     await thread.send(
         embed=auxiliary.generate_basic_embed(
             color=discord.Color.red(),
-            title="Thread closed.",
+            title="Thread Closed.",
             description="",
         )
     )
@@ -483,7 +488,7 @@ async def close_thread(
         color=discord.Color.light_gray(),
         description="Please wait 24 hours before creating a new one.",
     )
-    embed.set_author(name="Thread closed")
+    embed.set_author(name="Thread Closed")
     embed.timestamp = datetime.utcnow()
 
     await user.send(embed=embed)
@@ -561,8 +566,9 @@ async def setup(bot):
 class Modmail(cogs.BaseCog):
     """The modmail cog class"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: bot.TechSupportBot):
         """Init is used to make variables global so they can be used on the modmail side"""
+        super().__init__(bot=bot)
 
         # Makes the TS client available globally for creating threads and populating them with info
         # pylint: disable=W0603
@@ -848,7 +854,7 @@ class Modmail(cogs.BaseCog):
                 await create_thread(self.bot.get_channel(MODMAIL_FORUM_ID), user=user)
 
                 await auxiliary.send_confirm_embed(
-                    message="Thread succesfully created!", channel=ctx.channel
+                    message="Thread successfully created!", channel=ctx.channel
                 )
 
     @commands.group(name="modmail")
@@ -903,7 +909,7 @@ class Modmail(cogs.BaseCog):
 
         view = ui.Confirm()
         await view.send(
-            message=(f"Ban {user.mention} from creating modmail threads?"),
+            message=f"Ban {user.mention} from creating modmail threads?",
             channel=ctx.channel,
             author=ctx.author,
         )
@@ -926,7 +932,7 @@ class Modmail(cogs.BaseCog):
                 ).create()
 
                 return await auxiliary.send_confirm_embed(
-                    message=f"{user.mention} was succesfully banned from creating future modmail"
+                    message=f"{user.mention} was successfully banned from creating future modmail"
                     + "threads.",
                     channel=ctx.channel,
                 )
@@ -935,7 +941,7 @@ class Modmail(cogs.BaseCog):
     @commands.check(has_modmail_management_role)
     @modmail.command(
         name="unban",
-        brief="Unans a user from creating future modmail threads",
+        brief="Unbans a user from creating future modmail threads",
         usage="[user-to-unban]",
     )
     async def modmail_unban(self, ctx: commands.Context, user: discord.User):
@@ -958,6 +964,6 @@ class Modmail(cogs.BaseCog):
         await ban_entry.delete()
 
         return await auxiliary.send_confirm_embed(
-            message=f"{user.mention} was succesfully unbanned from creating modmail threads!",
+            message=f"{user.mention} was successfully unbanned from creating modmail threads!",
             channel=ctx.channel,
         )
