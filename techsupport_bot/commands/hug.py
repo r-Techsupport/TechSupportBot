@@ -1,4 +1,4 @@
-"""Module for the hug extention for the bot."""
+"""Module for the hug extension for the bot."""
 
 import random
 
@@ -41,13 +41,23 @@ class Hugger(cogs.BaseCog):
         description="Hugs a mentioned user using an embed",
         usage="@user",
     )
-    async def hug(self, ctx: commands.Context, user_to_hug: discord.Member):
+    async def hug(self, ctx: commands.Context, user_to_hug: discord.Member = None):
         """The .hug discord command function
 
         Args:
             ctx (commands.Context): The context in which the command was run in
             user_to_hug (discord.Member): The user to hug
         """
+        if user_to_hug is None:
+            # check if the message is a reply
+            if ctx.message.reference is None:
+                await auxiliary.send_deny_embed(
+                    message="You need to mention someone to hug", channel=ctx.channel
+                )
+                return
+
+            user_to_hug = ctx.message.reference.resolved.author
+
         await self.hug_command(ctx, user_to_hug)
 
     def check_hug_eligibility(
