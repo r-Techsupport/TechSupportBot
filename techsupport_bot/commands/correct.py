@@ -55,6 +55,13 @@ class Corrector(cogs.BaseCog):
         updated_message = self.prepare_message(
             message_to_correct.content, to_replace, replacement
         )
+
+        if len(updated_message) > 4096:
+            await auxiliary.send_deny_embed(
+                message="The corrected message is too long to send", channel=ctx.channel
+            )
+            return
+
         embed = auxiliary.generate_basic_embed(
             title="Correction!",
             description=f"{updated_message} :white_check_mark:",
