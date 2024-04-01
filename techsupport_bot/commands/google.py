@@ -58,7 +58,7 @@ class Googler(cogs.BaseCog):
         return response.get("items")
 
     @commands.group(
-        aliases=["g"],
+        aliases=["g", "G"],
         brief="Executes a Google command",
         description="Executes a Google command",
     )
@@ -71,7 +71,7 @@ class Googler(cogs.BaseCog):
     @auxiliary.with_typing
     @commands.guild_only()
     @google.command(
-        aliases=["s"],
+        aliases=["s", "S"],
         brief="Searches Google",
         description="Returns the top Google search result",
         usage="[query]",
@@ -121,7 +121,7 @@ class Googler(cogs.BaseCog):
     @auxiliary.with_typing
     @commands.guild_only()
     @google.command(
-        aliases=["i", "is"],
+        aliases=["i", "is", "I", "IS"],
         brief="Searches Google Images",
         description="Returns the top Google Images search result",
         usage="[query]",
@@ -162,7 +162,7 @@ class Googler(cogs.BaseCog):
     @auxiliary.with_typing
     @commands.guild_only()
     @commands.command(
-        aliases=["yt"],
+        aliases=["yt", "YT"],
         brief="Searches YouTube",
         description="Returns the top YouTube search result",
         usage="[query]",
