@@ -145,7 +145,7 @@ async def has_given_factoids_role(
 
 class FactoidManager(cogs.MatchCog):
     """
-    Manages all facttoid features
+    Manages all factoid features
     """
 
     CRON_REGEX = (
@@ -618,7 +618,9 @@ class FactoidManager(cogs.MatchCog):
             # Modifies the old entry
             factoid = await self.get_raw_factoid_entry(name, str(ctx.guild.id))
             factoid.name = name
-            factoid.message = message
+            # if no message was supplied, keep the original factoid's message.
+            if message:
+                factoid.message = message
             factoid.embed_config = embed_config
             factoid.alias = alias
             await self.modify_factoid_call(factoid=factoid)
