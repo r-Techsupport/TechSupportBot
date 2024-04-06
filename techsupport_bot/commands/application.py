@@ -946,17 +946,13 @@ class ApplicationManager(cogs.LoopCog):
 
         embed = discord.Embed(title="All pending applcations")
 
-        for app in apps:
-            if embed.description:
-                embed.description = (
-                    f"{embed.description}\nApplication by: {app.applicant_name},"
-                    f" applied on: {app.application_time}"
-                )
-            else:
-                embed.description = (
-                    f"Application by: {app.applicant_name}, applied on:"
-                    f" {app.application_time}"
-                )
+        embed.description = "\n".join(
+            [
+                f"Application by: `{guild.get_member(int(app.applicant_id)).display_name} "
+                f"({app.applicant_name})`, applied on: {app.application_time}"
+                for app in apps
+            ]
+        )
 
         await channel.send(embed=embed)
 
