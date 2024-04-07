@@ -302,7 +302,7 @@ async def handle_dm(message: discord.Message) -> None:
         )
         return
 
-    elif confirmation.value == ui.ConfirmResponse.TIMEOUT:
+    if confirmation.value == ui.ConfirmResponse.TIMEOUT:
         await auxiliary.send_deny_embed(
             message="Thread confirmation prompt timed out, please hit `Confirm` or `Deny` when "
             + "creating a new thread. You are welcome to send another message.",
@@ -1035,7 +1035,11 @@ class Modmail(cogs.BaseCog):
         usage="[user-to-ban]",
     )
     async def modmail_commands(self, ctx: commands.Context):
+        """Lists all commands usable in modmail threads
 
+        Args:
+            ctx (commands.Context): Context of the command execution
+        """
         prefix = self.bot.file_config.modmail_config.modmail_prefix
         embed = discord.Embed(
             color=discord.Color.green(),
@@ -1049,8 +1053,8 @@ class Modmail(cogs.BaseCog):
             name="areply", value="Sends a message anonymously"
         ).add_field(name="send", value="Sends the user a factoid").add_field(
             # ZWSP used to separate the replies from closes, makes the fields a bit prettier
-            name="​",
-            value="​",
+            name="\u200B",
+            value="\u200B",
             inline=False,
         ).add_field(
             name="close", value="Closes the thread, sends the user a closure message"
