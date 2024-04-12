@@ -687,6 +687,7 @@ async def close_thread(
 
     # Removes closure job from queue if it's there
     if thread.id in closure_jobs:
+        # Makes sure the close job doesn't kill itself
         if not timed:
             closure_jobs[thread.id].cancel()
 
