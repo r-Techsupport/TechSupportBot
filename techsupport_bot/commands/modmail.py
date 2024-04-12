@@ -325,6 +325,10 @@ async def handle_dm(message: discord.Message) -> None:
 
             attachments = await build_attachments(thread=thread, message=message)
 
+        # This should only happen if a sticker was sent, is here so an empty message isn't sent
+        if not embed.description:
+            return
+
         await thread.send(embed=embed, files=attachments)
 
         await message.add_reaction("📨")
