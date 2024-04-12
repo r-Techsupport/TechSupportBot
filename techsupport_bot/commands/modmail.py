@@ -165,7 +165,7 @@ class Modmail_bot(discord.Client):
                 )
 
             # Length handling has to be here, 1024 is the limit for inividual fields
-            elif len(before.content) > 1024 or len(after.content) > 1024:
+            elif len(before.content) > 1016 or len(after.content) > 1016:
                 embed.set_footer(
                     text="Edit was too long to send! Sending just the result instead..."
                 )
@@ -175,9 +175,9 @@ class Modmail_bot(discord.Client):
 
             # Length is fine, send as usual
             else:
-                embed.add_field(name="Before", value=before.content).add_field(
-                    name="After", value=after.content
-                )
+                embed.add_field(
+                    name="Before", value=f"```{before.content}```"
+                ).add_field(name="After", value=f"```{after.content}```")
 
             await thread.send(embed=embed)
 
@@ -687,7 +687,9 @@ async def close_thread(
 
     # Removes closure job from queue if it's there
     if thread.id in closure_jobs:
-        closure_jobs[thread.id].cancel()
+        if not timed:
+            closure_jobs[thread.id].cancel()
+
         del closure_jobs[thread.id]
 
     # Archives and locks the thread
