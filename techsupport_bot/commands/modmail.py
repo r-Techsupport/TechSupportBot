@@ -342,6 +342,7 @@ async def handle_dm(message: discord.Message) -> None:
     await confirmation.wait()
 
     if confirmation.value == ui.ConfirmResponse.DENIED:
+        awaiting_confirmation.remove(message.author.id)
         await auxiliary.send_deny_embed(
             message="Thread creation cancelled.",
             channel=message.channel,
@@ -349,6 +350,7 @@ async def handle_dm(message: discord.Message) -> None:
         return
 
     if confirmation.value == ui.ConfirmResponse.TIMEOUT:
+        awaiting_confirmation.remove(message.author.id)
         await auxiliary.send_deny_embed(
             message="Thread confirmation prompt timed out, please hit `Confirm` or `Cancel` when "
             + "creating a new thread. You are welcome to send another message.",
