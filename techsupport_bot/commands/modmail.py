@@ -102,6 +102,16 @@ class Modmail_bot(discord.Client):
                 )
                 return
 
+            # Makes sure existing threads can still be responded to
+            if message.author.id not in active_threads and DISABLE_THREAD_CREATION:
+                await message.add_reaction("❌")
+                await auxiliary.send_deny_embed(
+                    message="Modmail isn't accepting messages right now. "
+                    + "Please try again later.",
+                    channel=message.channel,
+                )
+                return
+
             # Everything looks good - handle dm properly
             await handle_dm(message)
 
@@ -177,6 +187,22 @@ class Modmail_bot(discord.Client):
             )
             await thread.send(embed=embed)
 
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member) -> None:
+        """Sends a message into a thread if the addressee joined the guild with an active thread
+
+        Args:
+            member (discord.Member): The member who joined
+        """
+        if member.id in active_threads:
+            thread = self.get_channel(active_threads[member.id])
+            embed = discord.Embed(
+                color=discord.Color.blue(),
+                title="Member joined",
+                description=f"{member.mention} has rejoined the guild.",
+            )
+            await thread.send(embed=embed)
+
 
 # These get assigned in the __init__, are needed for inter-bot comm
 # It is a goofy solution but given that this extension is only used in ONE guild, it's good enough
@@ -188,9 +214,9 @@ AUTOMATIC_RESPONSES = None
 ROLES_TO_PING = None
 THREAD_CREATION_MESSAGE = None
 
-active_threads = {}
+active_threads = {}  # User id: Thread id
 closure_jobs = {}  # Used in timed closes
-# Is a dict because expiringDict only has expiring dictionaries... go figure
+# Is a dict because expiringDict only has dictionaries... go figure
 delayed_people = expiringdict.ExpiringDict(
     max_age_seconds=93600, max_len=1000  # max_len has to be set for some reason
 )
@@ -272,8 +298,6 @@ async def handle_dm(message: discord.Message) -> None:
                 )
             )
 
-        await message.add_reaction("📨")
-
         embed = discord.Embed(color=discord.Color.blue(), description=message.content)
         embed.set_footer(text=f"Message ID: {message.id}")
         embed.timestamp = datetime.utcnow()
@@ -293,6 +317,8 @@ async def handle_dm(message: discord.Message) -> None:
 
         await thread.send(embed=embed, files=attachments)
 
+        await message.add_reaction("📨")
+
         return
 
     # - No thread was found, create one -
@@ -301,16 +327,6 @@ async def handle_dm(message: discord.Message) -> None:
         await auxiliary.send_deny_embed(
             message="Please respond to the existing prompt before trying to open a new modmail"
             + " thread!",
-            channel=message.channel,
-        )
-        return
-
-    # Not run in the initial on_message to allow existing threads to continue
-    if DISABLE_THREAD_CREATION:
-        await message.add_reaction("❌")
-        await auxiliary.send_deny_embed(
-            message="Modmail isn't accepting messages right now. "
-            + "Please try again later.",
             channel=message.channel,
         )
         return
@@ -346,15 +362,9 @@ async def handle_dm(message: discord.Message) -> None:
         message=message,
     )
 
-    embed = discord.Embed(
-        color=discord.Color.green(),
-        description="The staff will get back to you as soon as possible.",
-    )
-    embed.set_author(name="Thread Created")
-    embed.set_footer(text="Your message has been sent.")
-    embed.timestamp = datetime.utcnow()
+    await message.add_reaction("📨")
 
-    await message.author.send(embed=embed)
+    awaiting_confirmation.remove(message.author.id)
 
 
 async def create_thread(
@@ -370,6 +380,24 @@ async def create_thread(
         user (discord.User): The user who sent the DM or is being contacted
         message (discord.Message, optional): The incoming message
     """
+    # --> CHECKS <--
+
+    # These checks can be triggered on both the users and server side using .contact
+    # The code adjusts the error for formatting purposes
+    if user.id in active_threads:
+        if message.guild:
+            fmt_message = (
+                f"User already has an open thread! <#{active_threads[user.id]}>",
+            )
+        else:
+            fmt_message = ("You already have an open thread!",)
+
+        await auxiliary.send_deny_embed(
+            message=fmt_message,
+            channel=message.channel,
+        )
+        return
+
     # --> WELCOME MESSAGE <--
     embed = discord.Embed(color=discord.Color.blue())
 
@@ -402,7 +430,9 @@ async def create_thread(
         role_string = "None"
         roles = []
 
-        for role in sorted(member.roles, key=lambda x: x.position, reverse=True):
+        deduplicated_roles = list(dict.fromkeys(member.roles))
+
+        for role in sorted(deduplicated_roles, key=lambda x: x.position, reverse=True):
             if role.is_default():
                 continue
             roles.append(role.mention)
@@ -449,6 +479,7 @@ async def create_thread(
 
     # The thread creation was invoked from an incoming message
     if message:
+        # - Server side -
         embed = discord.Embed(color=discord.Color.blue(), description=message.content)
         embed.set_author(name=user, icon_url=url)
         embed.set_footer(text=f"Message ID: {message.id}")
@@ -463,6 +494,18 @@ async def create_thread(
 
         await thread[0].send(embed=embed, files=attachments)
 
+        # - User side -
+        embed = discord.Embed(
+            color=discord.Color.green(),
+            description="The staff will get back to you as soon as possible.",
+        )
+        embed.set_author(name="Thread Created")
+        embed.set_footer(text="Your message has been sent.")
+        embed.timestamp = datetime.utcnow()
+
+        await message.author.send(embed=embed)
+
+        # - Auto responses -
         for regex in AUTOMATIC_RESPONSES:
             if re.match(regex, message.content):
                 await reply_to_thread(
@@ -567,7 +610,9 @@ async def reply_to_thread(
     embed.set_footer(text="Response")
 
     if anonymous:
-        embed.set_author(name="rTechSupport Moderator", icon_url=thread.guild.icon.url)
+        embed.set_author(
+            name=f"{thread.guild.name} Moderator", icon_url=thread.guild.icon.url
+        )
 
     # Refetches the user from modmails client so it can reply to it instead of TS
     user = Modmail_client.get_user(target_member.id)
@@ -642,12 +687,18 @@ async def close_thread(
         locked=True,
     )
 
+    del active_threads[user.id]
+
     await log_closure(thread, user_id, log_channel, closed_by, silent)
 
     # User has left the guild
     if not user:
+        # No value needed, just has to exist in the dictionary
         delayed_people[int(thread.name.split("|")[-1].strip())] = ""
         return
+
+    # No value needed, just has to exist in the dictionary
+    delayed_people[user.id] = ""
 
     if silent:
         return
@@ -661,11 +712,6 @@ async def close_thread(
     embed.timestamp = datetime.utcnow()
 
     await user.send(embed=embed)
-
-    # No value needed, just has to exist
-    delayed_people[user.id] = ""
-
-    del active_threads[user.id]
 
 
 async def log_closure(
@@ -997,7 +1043,7 @@ class Modmail(cogs.BaseCog):
 
                 if factoid.disabled or (
                     factoid.restricted
-                    and str(message.channel.id)
+                    and str(MODMAIL_FORUM_ID)
                     not in config.extensions.factoids.restricted_list.value
                 ):
                     return
@@ -1049,6 +1095,14 @@ class Modmail(cogs.BaseCog):
         if user.id in active_threads:
             await auxiliary.send_deny_embed(
                 message=f"User already has an open thread! <#{active_threads[user.id]}>",
+                channel=ctx.channel,
+            )
+            return
+
+        if user.id in awaiting_confirmation:
+            await auxiliary.send_deny_embed(
+                message="User has already messaged modmail, is currently facing the confirmation"
+                + " prompt!",
                 channel=ctx.channel,
             )
             return
@@ -1129,8 +1183,8 @@ class Modmail(cogs.BaseCog):
             name="sclose", value="Closes a thread without sending the user anything"
         ).add_field(
             name="tsclose",
-            value="Closes a thread in 5 minutes unlress rerun or a message"
-            + "is sent, closes without sending the user anything",
+            value="Closes a thread in 5 minutes unless rerun or a message"
+            + " is sent, closes without sending the user anything",
         )
 
         await ctx.send(embed=embed)
