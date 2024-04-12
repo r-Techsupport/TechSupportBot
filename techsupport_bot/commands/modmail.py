@@ -368,12 +368,13 @@ async def handle_dm(message: discord.Message) -> None:
         )
         return
 
-    await create_thread(
+    if not await create_thread(
         channel=Ts_client.get_channel(MODMAIL_FORUM_ID),
         user=message.author,
         source_channel=message.channel,
         message=message,
-    )
+    ):
+        return
 
     await message.add_reaction("📨")
 
