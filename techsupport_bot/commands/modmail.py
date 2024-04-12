@@ -936,7 +936,7 @@ class Modmail(cogs.BaseCog):
             or not isinstance(message.channel, discord.Thread)
             or message.channel.parent_id != self.modmail_forum.id
             or message.channel.name.startswith("[CLOSED]")
-        ):
+        ) and not message.author.bot:
             return
 
         # Makes sure the person is actually allowed to run modmail commands
