@@ -2,8 +2,8 @@
 Runs a bot that can be messaged to create modmail threads
 Unit tests: False
 Config: 
-    File: disable_thread_creation, modmail_auth_token, modmail_prefix, modmail_guild, 
-          modmail_forum_channel, modmail_log_channel
+    File: enable_modmail, disable_thread_creation, modmail_auth_token, modmail_prefix, 
+          modmail_guild, modmail_forum_channel, modmail_log_channel
     Command: aliases, automatic_responses, modmail_roles, roles_to_ping, thread_creation_message
 API: None
 Postgresql: True
@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 import discord
 import expiringdict
 import ui
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs, custom_errors, extensionconfig
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -43,13 +43,19 @@ async def has_modmail_management_role(ctx: commands.Context, config=None) -> boo
     Returns:
         bool: Whether the invoker has a modmail management role
     """
+    # Only running this line of code if config isn't manually defined allows the use of
+    # a discord.Message object in place of ctx
     if not config:
         config = ctx.bot.guild_configs[str(ctx.guild.id)]
     user_roles = getattr(ctx.author, "roles", [])
+    unparsed_roles = config.extensions.modmail.modmail_roles.value
     modmail_roles = []
 
-    if not config.extensions.modmail.modmail_roles.value:
+    if not unparsed_roles:
         raise commands.CommandError("No modmail roles were assigned in the config file")
+
+    # Deduplicates the list
+    unparsed_roles = list(dict.fromkeys(unparsed_roles))
 
     # Two for loops are needed, because an array containing all modmail roles is needed for
     # the error thrown when the user doesn't have any relevant roles.
@@ -91,16 +97,7 @@ class Modmail_bot(discord.Client):
                 await auxiliary.send_deny_embed(
                     message="To restrict spam, you are timed out from creating new threads. "
                     + "You are welcome to create a new thread after 24 hours since your previous"
-                    + "thread's closing.",
-                    channel=message.channel,
-                )
-                return
-
-            if DISABLE_THREAD_CREATION:
-                await message.add_reaction("❌")
-                await auxiliary.send_deny_embed(
-                    message="Modmail isn't accepting messages right now. "
-                    + "Please try again later.",
+                    + " thread's closing.",
                     channel=message.channel,
                 )
                 return
@@ -136,6 +133,12 @@ class Modmail_bot(discord.Client):
             isinstance(before.channel, discord.DMChannel)
             and before.author.id in active_threads
         ):
+
+            if await Ts_client.models.ModmailBan.query.where(
+                Ts_client.models.ModmailBan.user_id == str(before.author.id)
+            ).gino.first():
+                return
+
             thread = self.get_channel(active_threads[before.author.id])
             embed = discord.Embed(
                 color=discord.Color.blue(),
@@ -191,6 +194,10 @@ closure_jobs = {}  # Used in timed closes
 delayed_people = expiringdict.ExpiringDict(
     max_age_seconds=93600, max_len=1000  # max_len has to be set for some reason
 )
+
+# This is needed to prevent being able to open more than one thread by sending several messages
+# and then clicking the confirmations really quickly
+awaiting_confirmation = []
 
 # Prepares the Modmail client with the Members intent used for lookups
 # Is started in __init__ of the modmail exntension, the client is defined here
@@ -279,13 +286,35 @@ async def handle_dm(message: discord.Message) -> None:
 
         attachments = None
         if message.attachments:
+            if not message.content:
+                embed.description = "*<Attachment>*"
+
             attachments = await build_attachments(thread=thread, message=message)
 
         await thread.send(embed=embed, files=attachments)
 
         return
 
-    # No thread was found, create one
+    # - No thread was found, create one -
+
+    if message.author.id in awaiting_confirmation:
+        await auxiliary.send_deny_embed(
+            message="Please respond to the existing prompt before trying to open a new modmail"
+            + " thread!",
+            channel=message.channel,
+        )
+        return
+
+    # Not run in the initial on_message to allow existing threads to continue
+    if DISABLE_THREAD_CREATION:
+        await message.add_reaction("❌")
+        await auxiliary.send_deny_embed(
+            message="Modmail isn't accepting messages right now. "
+            + "Please try again later.",
+            channel=message.channel,
+        )
+        return
+
     confirmation = ui.Confirm()
     await confirmation.send(
         message=THREAD_CREATION_MESSAGE,
@@ -293,6 +322,7 @@ async def handle_dm(message: discord.Message) -> None:
         author=message.author,
     )
 
+    awaiting_confirmation.append(message.author.id)
     await confirmation.wait()
 
     if confirmation.value == ui.ConfirmResponse.DENIED:
@@ -304,19 +334,17 @@ async def handle_dm(message: discord.Message) -> None:
 
     if confirmation.value == ui.ConfirmResponse.TIMEOUT:
         await auxiliary.send_deny_embed(
-            message="Thread confirmation prompt timed out, please hit `Confirm` or `Deny` when "
+            message="Thread confirmation prompt timed out, please hit `Confirm` or `Cancel` when "
             + "creating a new thread. You are welcome to send another message.",
             channel=message.channel,
         )
         return
 
-    # Is here in case the user sent multiple messages without hitting confirm, then hit them all
-    # at once.
-    if message.author.id in active_threads:
-        await auxiliary.send_deny_embed(
-            message="You already opened a thread!", channel=message.channel
-        )
-        return
+    await create_thread(
+        channel=Ts_client.get_channel(MODMAIL_FORUM_ID),
+        user=message.author,
+        message=message,
+    )
 
     embed = discord.Embed(
         color=discord.Color.green(),
@@ -327,12 +355,6 @@ async def handle_dm(message: discord.Message) -> None:
     embed.timestamp = datetime.utcnow()
 
     await message.author.send(embed=embed)
-
-    await create_thread(
-        channel=Ts_client.get_channel(MODMAIL_FORUM_ID),
-        user=message.author,
-        message=message,
-    )
 
 
 async def create_thread(
@@ -421,7 +443,7 @@ async def create_thread(
     thread = await channel.create_thread(
         name=f"[OPEN] | {user} | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | {user.id}",
         embed=embed,
-        content=role_string.rstrip(),
+        content=role_string.rstrip()[:2000],
     )
     active_threads[user.id] = thread[0].id
 
@@ -435,7 +457,7 @@ async def create_thread(
         attachments = None
         if message.attachments:
             if not message.content:
-                embed.description = "*<Image>*"
+                embed.description = "*<Attachment>*"
 
             attachments = await build_attachments(thread=thread[0], message=message)
 
@@ -511,7 +533,7 @@ async def reply_to_thread(
     # Properly handles any attachments
     if message.attachments:
         if not raw_contents:
-            embed.description = "*<Image>*"
+            embed.description = "*<Attachment>*"
 
         attachments = await build_attachments(thread=thread, message=message)
 
@@ -620,7 +642,7 @@ async def close_thread(
         locked=True,
     )
 
-    await log_closure(thread, user_id, log_channel, closed_by)
+    await log_closure(thread, user_id, log_channel, closed_by, silent)
 
     # User has left the guild
     if not user:
@@ -641,6 +663,8 @@ async def close_thread(
     await user.send(embed=embed)
 
     # No value needed, just has to exist
+    delayed_people[user.id] = ""
+
     del active_threads[user.id]
 
 
@@ -649,6 +673,7 @@ async def log_closure(
     user_id: int,
     log_channel: discord.TextChannel,
     closed_by: discord.User,
+    silent: bool,
 ) -> None:
     """Sends a closure message to the log channel
 
@@ -658,6 +683,7 @@ async def log_closure(
                              be able to include the ID even if the user leaves the guild
         log_channel (discord.TextChannel): The log channel to send the closure message to
         closed_by (discord.User): The person who closed the thread
+        silent (bool): Whether the thread was closed silently
     """
     user = Modmail_client.get_user(user_id)
 
@@ -673,10 +699,17 @@ async def log_closure(
             description=f"<#{thread.id}>",
             title=f"{user.name} `{user.id}`",
         )
-    embed.set_footer(
-        icon_url=closed_by.avatar.url,
-        text=f"Thread closed by {closed_by.name}",
-    )
+
+    if silent:
+        embed.set_footer(
+            icon_url=closed_by.avatar.url,
+            text=f"Thread silently closed by {closed_by.name}",
+        )
+    else:
+        embed.set_footer(
+            icon_url=closed_by.avatar.url,
+            text=f"Thread closed by {closed_by.name}",
+        )
     embed.timestamp = datetime.utcnow()
 
     await log_channel.send(embed=embed)
@@ -735,6 +768,12 @@ class Modmail(cogs.BaseCog):
     def __init__(self, bot: bot.TechSupportBot):
         """Init is used to make variables global so they can be used on the modmail side"""
         super().__init__(bot=bot)
+
+        # Only runs if modmail is enabled
+        if not bot.file_config.modmail_config.enable_modmail:
+            # Raising an exception makes the extension loading mark as failed, this is surprisingly
+            # the most reliable way to ensure the modmail bot or code doesn't run
+            raise custom_errors.AppCommandExtensionDisabled
 
         # Makes the TS client available globally for creating threads and populating them with info
         # pylint: disable=W0603
@@ -936,11 +975,31 @@ class Modmail(cogs.BaseCog):
                     .gino.first()
                 )
 
+                # Handling if the call is an alias
+                if factoid and factoid.alias not in ["", None]:
+                    factoid = (
+                        await self.bot.models.Factoid.query.where(
+                            self.bot.models.Factoid.name == factoid.alias
+                        )
+                        .where(self.bot.models.Factoid.guild == str(message.guild.id))
+                        .gino.first()
+                    )
+
                 if not factoid:
                     await auxiliary.send_deny_embed(
                         message=f"Couldn't find the factoid `{query}`",
                         channel=message.channel,
                     )
+                    return
+
+                # Checks for restricted and disabled factoids
+                config = self.bot.guild_configs[str(message.guild.id)]
+
+                if factoid.disabled or (
+                    factoid.restricted
+                    and str(message.channel.id)
+                    not in config.extensions.factoids.restricted_list.value
+                ):
                     return
 
                 await reply_to_thread(
@@ -958,14 +1017,19 @@ class Modmail(cogs.BaseCog):
                 continue
 
             await message.delete()
-            await reply_to_thread(aliases[alias], message.author, message.channel, True)
+            await reply_to_thread(
+                raw_contents=aliases[alias],
+                message=message,
+                thread=message.channel,
+                anonymous=True,
+            )
             return
 
     @auxiliary.with_typing
     @commands.check(has_modmail_management_role)
     @commands.command(
         name="contact",
-        brief="Creates a modmail thread with a user",
+        description="Creates a modmail thread with a user",
         usage="[user-to-contact]",
     )
     async def contact(self, ctx: commands.Context, user: discord.User):
@@ -1031,7 +1095,7 @@ class Modmail(cogs.BaseCog):
     @commands.check(has_modmail_management_role)
     @modmail.command(
         name="commands",
-        brief="Lists all commands you can use in modmail threads",
+        description="Lists all commands you can use in modmail threads",
         usage="[user-to-ban]",
     )
     async def modmail_commands(self, ctx: commands.Context):
@@ -1075,7 +1139,7 @@ class Modmail(cogs.BaseCog):
     @commands.check(has_modmail_management_role)
     @modmail.command(
         name="ban",
-        brief="Bans a user from creating future modmail threads",
+        description="Bans a user from creating future modmail threads",
         usage="[user-to-ban]",
     )
     async def modmail_ban(self, ctx: commands.Context, user: discord.User):
@@ -1096,7 +1160,11 @@ class Modmail(cogs.BaseCog):
         # Checking against the user to see if they have the roles specified in the config
         config = self.bot.guild_configs[str(ctx.guild.id)]
         user_roles = getattr(user, "roles", [])
-        modmail_roles = []
+        unparsed_roles = config.extensions.modmail.modmail_roles.value
+        modmail_roles = list(dict.fromkeys(unparsed_roles))
+
+        # No error has to be thrown if unparsed_roles is None, it's already checked in
+        # has_modmail_management_role
 
         # Gets permitted roles
         for role_id in config.extensions.modmail.modmail_roles.value:
@@ -1137,7 +1205,7 @@ class Modmail(cogs.BaseCog):
 
                 return await auxiliary.send_confirm_embed(
                     message=f"{user.mention} was successfully banned from creating future modmail"
-                    + "threads.",
+                    + " threads.",
                     channel=ctx.channel,
                 )
 
@@ -1145,7 +1213,7 @@ class Modmail(cogs.BaseCog):
     @commands.check(has_modmail_management_role)
     @modmail.command(
         name="unban",
-        brief="Unbans a user from creating future modmail threads",
+        description="Unbans a user from creating future modmail threads",
         usage="[user-to-unban]",
     )
     async def modmail_unban(self, ctx: commands.Context, user: discord.User):

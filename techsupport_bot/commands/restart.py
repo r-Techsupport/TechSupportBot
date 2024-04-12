@@ -46,7 +46,8 @@ class Restarter(cogs.BaseCog):
 
         # Exit modmail if it's enabled
         modmail_cog = ctx.bot.get_cog("Modmail")
-        await modmail_cog.handle_reboot()
+        if modmail_cog:
+            await modmail_cog.handle_reboot()
 
         # Ending the event loop
         self.bot.loop.stop()
