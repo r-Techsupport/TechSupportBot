@@ -359,6 +359,7 @@ async def handle_dm(message: discord.Message) -> None:
     await create_thread(
         channel=Ts_client.get_channel(MODMAIL_FORUM_ID),
         user=message.author,
+        source_channel=message.channel,
         message=message,
     )
 
@@ -370,33 +371,39 @@ async def handle_dm(message: discord.Message) -> None:
 async def create_thread(
     channel: discord.TextChannel,
     user: discord.User,
+    source_channel: discord.TextChannel,
     message: discord.Message = None,
-) -> None:
+) -> bool:
     """Creates a thread from a DM message.
     The message is left blank when invoked by the contact command
 
     Args:
         channel (discord.TextChannel): The forum channel to create the thread in
         user (discord.User): The user who sent the DM or is being contacted
+        source_channel (discord.TextChannel): Used for error handling
         message (discord.Message, optional): The incoming message
+
+    Returns:
+        bool: Whether the thread was created succesfully
     """
     # --> CHECKS <--
 
     # These checks can be triggered on both the users and server side using .contact
     # The code adjusts the error for formatting purposes
     if user.id in active_threads:
-        if message.guild:
-            fmt_message = (
-                f"User already has an open thread! <#{active_threads[user.id]}>",
+        # Ran from a DM
+        if message:
+            await auxiliary.send_deny_embed(
+                message=f"You already have an open thread!",
+                channel=source_channel,
             )
         else:
-            fmt_message = ("You already have an open thread!",)
+            await auxiliary.send_deny_embed(
+                message=f"User already has an open thread! <#{active_threads[user.id]}>",
+                channel=source_channel,
+            )
 
-        await auxiliary.send_deny_embed(
-            message=fmt_message,
-            channel=message.channel,
-        )
-        return
+        return False
 
     # --> WELCOME MESSAGE <--
     embed = discord.Embed(color=discord.Color.blue())
@@ -513,8 +520,11 @@ async def create_thread(
                     message=message,
                     thread=thread[0],
                     anonymous=True,
+                    automatic=True,
                 )
-                return
+                return True
+
+    return True
 
 
 async def reply_to_thread(
@@ -522,14 +532,16 @@ async def reply_to_thread(
     message: discord.Message,
     thread: discord.Thread,
     anonymous: bool,
+    automatic: bool = False,
 ) -> None:
     """Replies to a modmail thread on both the dm side and the modmail thread side
 
     Args:
         raw_contents (str): The raw content string
-        message (discord.Message): The outgoing message, used solely for attachments
+        message (discord.Message): The outgoing message, used for attachments and author handling
         thread (discord.Thread): The thread to reply to
         anonymous (bool): Whether to reply anonymously
+        automatic (bool, optional): Whether this response was automatic
     """
     # If thread was going to be closed, cancel the task
     if thread.id in closure_jobs:
@@ -591,14 +603,18 @@ async def reply_to_thread(
     embed.timestamp = datetime.utcnow()
     embed.set_footer(text="Response")
 
-    if message.author.avatar:
+    if automatic:
+        embed.set_author(name=thread.guild, icon_url=thread.guild.icon.url)
+    elif message.author.avatar:
         embed.set_author(name=message.author, icon_url=message.author.avatar.url)
     else:
         embed.set_author(
             name=message.author, icon_url=message.author.default_avatar.url
         )
 
-    if message.author == Ts_client.user:
+    if automatic:
+        embed.set_footer(text="[Automatic] Response")
+    elif message.author == Ts_client.user:
         embed.set_footer(text="[Automatic] Response")
     elif anonymous:
         embed.set_footer(text="[Anonymous] Response")
@@ -1135,11 +1151,77 @@ class Modmail(cogs.BaseCog):
                 if user.id in delayed_people:
                     del delayed_people[user.id]
 
-                await create_thread(self.bot.get_channel(MODMAIL_FORUM_ID), user=user)
+                if await create_thread(
+                    channel=self.bot.get_channel(MODMAIL_FORUM_ID),
+                    user=user,
+                    source_channel=ctx.channel,
+                ):
 
-                await auxiliary.send_confirm_embed(
-                    message="Thread successfully created!", channel=ctx.channel
+                    await auxiliary.send_confirm_embed(
+                        message="Thread successfully created!", channel=ctx.channel
+                    )
+
+    @auxiliary.with_typing
+    @commands.check(has_modmail_management_role)
+    @commands.command(
+        name="selfcontact",
+        description="Creates a modmail thread with yourself, doesn't ping anyone when doing so",
+        usage="[user-to-contact]",
+    )
+    async def selfcontact(self, ctx: commands.Context):
+        """Opens a modmail thread with yourself
+
+        Args:
+            ctx (commands.Context): Context of the command execution
+        """
+        if ctx.author.id in active_threads:
+            await auxiliary.send_deny_embed(
+                message=f"You already have an open thread! <#{active_threads[ctx.author.id]}>",
+                channel=ctx.channel,
+            )
+            return
+
+        if ctx.author.id in awaiting_confirmation:
+            await auxiliary.send_deny_embed(
+                message="You already have a confirmation prompt in DMs!",
+                channel=ctx.channel,
+            )
+            return
+
+        confirmation = ui.Confirm()
+        await confirmation.send(
+            message=(f"Create a new modmail thread with yourself?"),
+            channel=ctx.channel,
+            author=ctx.author,
+        )
+
+        await confirmation.wait()
+
+        match confirmation.value:
+            case ui.ConfirmResponse.TIMEOUT:
+                pass
+
+            case ui.ConfirmResponse.DENIED:
+                await auxiliary.send_deny_embed(
+                    message="The thread was not created.",
+                    channel=ctx.channel,
                 )
+
+            case ui.ConfirmResponse.CONFIRMED:
+
+                # Makes sure the user can reply if they were timed out from creating threads
+                if ctx.author in delayed_people:
+                    del delayed_people[ctx.author.id]
+
+                if await create_thread(
+                    channel=self.bot.get_channel(MODMAIL_FORUM_ID),
+                    user=ctx.author,
+                    source_channel=ctx.channel,
+                ):
+
+                    await auxiliary.send_confirm_embed(
+                        message="Thread successfully created!", channel=ctx.channel
+                    )
 
     @commands.group(name="modmail")
     async def modmail(self, ctx):
