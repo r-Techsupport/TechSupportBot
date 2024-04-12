@@ -773,7 +773,7 @@ class Modmail(cogs.BaseCog):
         if not bot.file_config.modmail_config.enable_modmail:
             # Raising an exception makes the extension loading mark as failed, this is surprisingly
             # the most reliable way to ensure the modmail bot or code doesn't run
-            raise custom_errors.AppCommandExtensionDisabled
+            raise AttributeError("Modmail was not loaded because it's disabled")
 
         # Makes the TS client available globally for creating threads and populating them with info
         # pylint: disable=W0603
