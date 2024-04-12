@@ -439,9 +439,7 @@ async def create_thread(
         role_string = "None"
         roles = []
 
-        deduplicated_roles = list(dict.fromkeys(member.roles))
-
-        for role in sorted(deduplicated_roles, key=lambda x: x.position, reverse=True):
+        for role in sorted(member.roles, key=lambda x: x.position, reverse=True):
             if role.is_default():
                 continue
             roles.append(role.mention)
@@ -874,7 +872,10 @@ class Modmail(cogs.BaseCog):
 
         # pylint: disable=W0603
         global ROLES_TO_PING
-        ROLES_TO_PING = config.extensions.modmail.roles_to_ping.value
+        # dict.fromkeys() to deduplicate the list
+        ROLES_TO_PING = list(
+            dict.fromkeys(config.extensions.modmail.roles_to_ping.value)
+        )
 
         # pylint: disable=W0603
         global THREAD_CREATION_MESSAGE
