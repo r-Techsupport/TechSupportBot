@@ -91,6 +91,16 @@ class Modmail_bot(discord.Client):
                 await message.add_reaction("❌")
                 return
 
+            # Makes sure existing threads can still be responded to
+            if message.author.id not in active_threads and DISABLE_THREAD_CREATION:
+                await message.add_reaction("❌")
+                await auxiliary.send_deny_embed(
+                    message="Modmail isn't accepting messages right now. "
+                    + "Please try again later.",
+                    channel=message.channel,
+                )
+                return
+
             # Spam protection
             if message.author.id in delayed_people:
                 await message.add_reaction("🕒")
@@ -98,16 +108,6 @@ class Modmail_bot(discord.Client):
                     message="To restrict spam, you are timed out from creating new threads. "
                     + "You are welcome to create a new thread after 24 hours since your previous"
                     + " thread's closing.",
-                    channel=message.channel,
-                )
-                return
-
-            # Makes sure existing threads can still be responded to
-            if message.author.id not in active_threads and DISABLE_THREAD_CREATION:
-                await message.add_reaction("❌")
-                await auxiliary.send_deny_embed(
-                    message="Modmail isn't accepting messages right now. "
-                    + "Please try again later.",
                     channel=message.channel,
                 )
                 return
@@ -164,6 +164,16 @@ class Modmail_bot(discord.Client):
                     name="After", value="<The contents are unchanged>"
                 )
 
+            # Length handling has to be here, 1024 is the limit for inividual fields
+            elif len(before.content) > 1024 or len(after.content) > 1024:
+                embed.set_footer(
+                    text="Edit was too long to send! Sending just the result instead..."
+                )
+                embed.description += (
+                    f"\n\n**New contents:**\n```{after.content[:5975]}```"
+                )
+
+            # Length is fine, send as usual
             else:
                 embed.add_field(name="Before", value=before.content).add_field(
                     name="After", value=after.content
@@ -675,8 +685,9 @@ async def close_thread(
 
     # - Actually starts closing the thread -
 
-    # Removes closure job from queue
-    if timed:
+    # Removes closure job from queue if it's there
+    if thread.id in closure_jobs:
+        closure_jobs[thread.id].cancel()
         del closure_jobs[thread.id]
 
     # Archives and locks the thread
@@ -1121,14 +1132,6 @@ class Modmail(cogs.BaseCog):
             )
             return
 
-        if user.id in awaiting_confirmation:
-            await auxiliary.send_deny_embed(
-                message="User has already messaged modmail, is currently facing the confirmation"
-                + " prompt!",
-                channel=ctx.channel,
-            )
-            return
-
         confirmation = ui.Confirm()
         await confirmation.send(
             message=(f"Create a new modmail thread with {user.mention}?"),
@@ -1276,6 +1279,38 @@ class Modmail(cogs.BaseCog):
         )
 
         await ctx.send(embed=embed)
+
+    @auxiliary.with_typing
+    @commands.check(has_modmail_management_role)
+    @modmail.command(
+        name="aliases",
+        description="Lists all existing modmail aliases",
+        usage="",
+    )
+    async def list_aliases(self, ctx: commands.context):
+        """Lists all existing modmail aliases
+
+        Args:
+            ctx (commands.context): Context of the command execution
+        """
+
+        config = self.bot.guild_configs[str(ctx.guild.id)]
+
+        # Checks if the command was an alias
+        aliases = config.extensions.modmail.aliases.value
+        if not aliases:
+            embed = auxiliary.generate_basic_embed(
+                color=discord.Color.green(),
+                description="There are no aliases registered for this guild",
+            )
+
+        for alias in aliases:
+            embed = discord.Embed(
+                color=discord.Color.green(), title="Registered aliases for this guild:"
+            )
+            embed.add_field(name=f"{self.prefix}{alias}", value=aliases[alias])
+
+        await ctx.channel.send(embed=embed)
 
     @auxiliary.with_typing
     @commands.check(has_modmail_management_role)
