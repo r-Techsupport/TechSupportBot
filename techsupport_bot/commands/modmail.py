@@ -687,15 +687,18 @@ async def close_thread(
         locked=True,
     )
 
-    del active_threads[user.id]
-
     await log_closure(thread, user_id, log_channel, closed_by, silent)
 
     # User has left the guild
     if not user:
+        del active_threads[user_id]
+
         # No value needed, just has to exist in the dictionary
-        delayed_people[int(thread.name.split("|")[-1].strip())] = ""
+        delayed_people[user_id] = ""
         return
+
+    # User can't be None anymore
+    del active_threads[user.id]
 
     # No value needed, just has to exist in the dictionary
     delayed_people[user.id] = ""
@@ -737,7 +740,7 @@ async def log_closure(
         embed = discord.Embed(
             color=discord.Color.red(),
             description=f"<#{thread.id}>",
-            title=f"<<@!{user_id}> has left the guild> `{user_id}`",
+            title=f"<User has left the guild> `{user_id}`",
         )
     else:
         embed = discord.Embed(
@@ -1087,7 +1090,7 @@ class Modmail(cogs.BaseCog):
         """
         if user.bot:
             await auxiliary.send_deny_embed(
-                message="I only talk to other bots using 1s and 0s!",
+                message="I only talk to other bots using 0s and 1s!",
                 channel=ctx.channel,
             )
             return
