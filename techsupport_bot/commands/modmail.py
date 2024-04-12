@@ -394,7 +394,7 @@ async def create_thread(
         # Ran from a DM
         if message:
             await auxiliary.send_deny_embed(
-                message=f"You already have an open thread!",
+                message="You already have an open thread!",
                 channel=source_channel,
             )
         else:
@@ -1190,7 +1190,7 @@ class Modmail(cogs.BaseCog):
 
         confirmation = ui.Confirm()
         await confirmation.send(
-            message=(f"Create a new modmail thread with yourself?"),
+            message=("Create a new modmail thread with yourself?"),
             channel=ctx.channel,
             author=ctx.author,
         )
