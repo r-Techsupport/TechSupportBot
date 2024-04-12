@@ -712,7 +712,7 @@ async def close_thread(
         )
 
     await thread.edit(
-        name=f"[CLOSED] {thread.name[6:]}",
+        name=f"[CLOSED] {thread.name[7:]}",
         archived=True,
         locked=True,
     )
