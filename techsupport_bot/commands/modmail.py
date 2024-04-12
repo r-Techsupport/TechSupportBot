@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 import discord
 import expiringdict
 import ui
-from core import auxiliary, cogs, custom_errors, extensionconfig
+from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 if TYPE_CHECKING:
