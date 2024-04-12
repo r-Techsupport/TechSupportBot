@@ -992,7 +992,7 @@ class Modmail(cogs.BaseCog):
             case "reply":
                 await message.delete()
                 await reply_to_thread(
-                    raw_contents=content.partition(" ")[2],
+                    raw_contents=content[5:],
                     message=message,
                     thread=message.channel,
                     anonymous=False,
@@ -1002,7 +1002,7 @@ class Modmail(cogs.BaseCog):
             case "areply":
                 await message.delete()
                 await reply_to_thread(
-                    raw_contents=content.partition(" ")[2],
+                    raw_contents=content[6:],
                     message=message,
                     thread=message.channel,
                     anonymous=True,
