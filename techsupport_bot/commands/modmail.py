@@ -176,8 +176,8 @@ class Modmail_bot(discord.Client):
             # Length is fine, send as usual
             else:
                 embed.add_field(
-                    name="Before", value=f"```{before.content}```"
-                ).add_field(name="After", value=f"```{after.content}```")
+                    name="Before", value=f"```\n{before.content}```"
+                ).add_field(name="After", value=f"```\n{after.content}```")
 
             await thread.send(embed=embed)
 
@@ -940,7 +940,8 @@ class Modmail(cogs.BaseCog):
             or not isinstance(message.channel, discord.Thread)
             or message.channel.parent_id != self.modmail_forum.id
             or message.channel.name.startswith("[CLOSED]")
-        ) and not message.author.bot:
+            or message.author.bot
+        ):
             return
 
         # Makes sure the person is actually allowed to run modmail commands
