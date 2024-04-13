@@ -496,6 +496,7 @@ async def create_thread(
         name=f"[OPEN] | {user} | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | {user.id}",
         embed=embed,
         content=role_string.rstrip()[:2000],
+        allowed_mentions=discord.AllowedMentions(roles=True),
     )
     active_threads[user.id] = thread[0].id
 
@@ -911,13 +912,12 @@ class Modmail(cogs.BaseCog):
 
         await Modmail_client.close()
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        """Fetches the modmail channel only once ready
-        Not done in preconfig because that breaks stuff for some reason"""
+    async def preconfig(self):
+        """Fetches modmail threads once ready"""
+        # Bot has to wait for websocket connection to be estabilished
         await self.bot.wait_until_ready()
-        # Has to be done in here, putting into preconfig breaks stuff for some reason
-        self.modmail_forum = self.bot.get_channel(MODMAIL_FORUM_ID)
+
+        self.modmail_forum = await self.bot.fetch_channel(MODMAIL_FORUM_ID)
 
         # Populates the currently active threads
         for thread in self.modmail_forum.threads:
