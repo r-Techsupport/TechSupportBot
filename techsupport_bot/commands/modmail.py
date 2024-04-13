@@ -914,9 +914,6 @@ class Modmail(cogs.BaseCog):
 
     async def preconfig(self):
         """Fetches modmail threads once ready"""
-        # Bot has to wait for websocket connection to be estabilished
-        await self.bot.wait_until_ready()
-
         self.modmail_forum = await self.bot.fetch_channel(MODMAIL_FORUM_ID)
 
         # Populates the currently active threads
