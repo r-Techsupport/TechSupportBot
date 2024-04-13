@@ -22,6 +22,9 @@ from core import auxiliary, custom_errors, databases, extensionconfig, http
 from discord import app_commands
 from discord.ext import commands
 
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
 
 class TechSupportBot(commands.Bot):
     """The main bot object."""
@@ -957,10 +960,10 @@ class TechSupportBot(commands.Bot):
             bool: True if the connection was successful, False if it was not
         """
         irc_config = getattr(self.file_config.api, "irc")
-        loop = asyncio.get_running_loop()
+        main_loop = asyncio.get_running_loop()
 
         irc_bot = ircrelay.IRCBot(
-            loop=loop,
+            loop=main_loop,
             server=irc_config.server,
             port=irc_config.port,
             channels=irc_config.channels,

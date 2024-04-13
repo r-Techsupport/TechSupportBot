@@ -6,6 +6,14 @@ bot_config:
     disabled_extensions: ["kanye"]
     default_prefix: "."
     global_alerts_channel: ""
+modmail_config:
+    enable_modmail: False
+    disable_thread_creation: False
+    modmail_auth_token:
+    modmail_prefix:
+    modmail_guild:
+    modmail_forum_channel:
+    modmail_log_channel:
 database:
     postgres:
         user:
