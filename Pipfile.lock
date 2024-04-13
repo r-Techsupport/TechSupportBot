@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "7e7e4b94c1ebdf2047ce562f0cee6701966f5650bbf4c89ef9ace8357825df66"
+            "sha256": "c88a5b71819176f9f49f362482d5b6fbf86c8d0ee0167c36a20cb1fca88606a0"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -612,12 +612,12 @@
         },
         "inflect": {
             "hashes": [
-                "sha256:63da9325ad29da81ec23e055b41225795ab793b4ecb483be5dc1fa363fd4717e",
-                "sha256:9544afed6182176e43955c44b1acdaed30f9b2b56c16d1fc5b222d98218b546e"
+                "sha256:32feacfacfcae2f22e6fccdea10f0ddf26a638fac434d0dddaafbca0034f3784",
+                "sha256:b41e1677ea799f26f371a5d6d57b9eb966a5f9ba3b341a96464a6cac50aeccf3"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==7.0.0"
+            "version": "==7.2.0"
         },
         "iniconfig": {
             "hashes": [
@@ -703,11 +703,11 @@
         },
         "more-itertools": {
             "hashes": [
-                "sha256:626c369fa0eb37bac0291bce8259b332fd59ac792fa5497b59837309cd5b114a",
-                "sha256:64e0735fcfdc6f3464ea133afe8ea4483b1c5fe3a3d69852e6503b43a0b222e6"
+                "sha256:686b06abe565edfab151cb8fd385a05651e1fdf8f0a14191e4439283421f8684",
+                "sha256:8fccb480c43d3e99a00087634c06dd02b0d50fbf088b380de5a41a015ec239e1"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==10.1.0"
+            "version": "==10.2.0"
         },
         "multidict": {
             "hashes": [
@@ -1269,6 +1269,14 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==0.12.4"
+        },
+        "typeguard": {
+            "hashes": [
+                "sha256:24bb8f05ccaee423309daf980ba19e978b18766334ee01994503b853fc44efde",
+                "sha256:2aeae510750fca88d0a2ceca3e86de7f71aa43b6c3e6c267737ce1f5effc4b34"
+            ],
+            "markers": "python_version >= '3.8'",
+            "version": "==4.2.0"
         },
         "typing-extensions": {
             "hashes": [
