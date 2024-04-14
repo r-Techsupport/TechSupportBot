@@ -16,7 +16,7 @@ from __future__ import annotations
 import asyncio
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 import discord
 import expiringdict
@@ -1242,12 +1242,47 @@ class Modmail(cogs.BaseCog):
         # Executed if there are no/invalid args supplied
         await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
+    def modmail_commands_list(self) -> list[Tuple[str, str, str, str]]:
+        """
+        Builds a list of commands to allow both .modmail commands and .help to use them
+        Commands are sorted into a 4 part tuple:
+        [0] - prefix
+        [1] - command name
+        [2] - command usage
+        [3] - command description
+        """
+        prefix = self.bot.file_config.modmail_config.modmail_prefix
+        commands_list = [
+            (prefix, "reply", "[message]", "Sends a message"),
+            (prefix, "areply", "[message]", "Sends a message anonymously"),
+            (prefix, "send", "[factoid]", "Sends the user a factoid"),
+            (
+                prefix,
+                "close",
+                "",
+                "Closes the thread, sends the user a closure message",
+            ),
+            (
+                prefix,
+                "tclose",
+                "",
+                "Closes a thread in 5 minutes unless rerun or a message is sent",
+            ),
+            (prefix, "sclose", "", "Closes a thread without sending the user anything"),
+            (
+                prefix,
+                "tsclose",
+                "",
+                "Closes a thread in 5 minutes unless rerun or a message is sent, closes without sending the user anything",
+            ),
+        ]
+        return commands_list
+
     @auxiliary.with_typing
     @commands.check(has_modmail_management_role)
     @modmail.command(
         name="commands",
         description="Lists all commands you can use in modmail threads",
-        usage="[user-to-ban]",
     )
     async def modmail_commands(self, ctx: commands.Context):
         """Lists all commands usable in modmail threads
@@ -1255,6 +1290,7 @@ class Modmail(cogs.BaseCog):
         Args:
             ctx (commands.Context): Context of the command execution
         """
+        commands = self.modmail_commands_list()
         prefix = self.bot.file_config.modmail_config.modmail_prefix
         embed = discord.Embed(
             color=discord.Color.green(),
@@ -1263,26 +1299,16 @@ class Modmail(cogs.BaseCog):
         )
         embed.timestamp = datetime.utcnow()
 
-        # I hate this
-        embed.add_field(name="reply", value="Sends a message").add_field(
-            name="areply", value="Sends a message anonymously"
-        ).add_field(name="send", value="Sends the user a factoid").add_field(
-            # ZWSP used to separate the replies from closes, makes the fields a bit prettier
-            name="\u200B",
-            value="\u200B",
-            inline=False,
-        ).add_field(
-            name="close", value="Closes the thread, sends the user a closure message"
-        ).add_field(
-            name="tclose",
-            value="Closes a thread in 5 minutes unless rerun or a message " + "is sent",
-        ).add_field(
-            name="sclose", value="Closes a thread without sending the user anything"
-        ).add_field(
-            name="tsclose",
-            value="Closes a thread in 5 minutes unless rerun or a message"
-            + " is sent, closes without sending the user anything",
-        )
+        # First three are reply commands
+        for command in commands[:3]:
+            embed.add_field(name=command[1], value=command[3])
+
+        # ZWSP used to separate the replies from closes, makes the fields a bit prettier
+        embed.add_field(name="\u200B", value="\u200B", inline=False)
+
+        # Last four are closing commands
+        for command in commands[3:]:
+            embed.add_field(name=command[1], value=command[3])
 
         await ctx.send(embed=embed)
 
