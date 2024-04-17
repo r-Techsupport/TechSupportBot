@@ -81,8 +81,8 @@ class HTTPCalls:
 
     async def http_call(
         self,
-        method,
-        url,
+        method: str,
+        url: str,
         use_cache: bool = False,
         get_raw_response: bool = False,
         *args,
