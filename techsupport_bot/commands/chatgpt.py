@@ -10,6 +10,10 @@ Subcommands: gpt, gptutil (history, clean)
 Defines: None
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import discord
 import expiringdict
 import ui
@@ -17,9 +21,19 @@ from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot) -> None:
-    """Registers the extension"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the ChatGPT plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+
+    Raises:
+        AttributeError: Raised if an API key is missing to prevent unusable commands from loading
+    """
 
     # Don't load without the API key
     try:

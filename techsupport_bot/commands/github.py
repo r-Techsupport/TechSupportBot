@@ -10,15 +10,28 @@ This file contains 4 commands:
     .issue
 """
 
+from __future__ import annotations
+
 import json
+from typing import TYPE_CHECKING, Self
 
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Registers the IssueCreator Cog"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Github plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+
+    Raises:
+        AttributeError: Raised if an API key is missing to prevent unusable commands from loading
+    """
     try:
         if not bot.file_config.api.github.api_key:
             raise AttributeError("IssueCreator was not loaded due to missing API key")
@@ -48,7 +61,7 @@ class IssueCreator(cogs.BaseCog):
         description="Creates a Github issue on the configured bot repo",
         usage="[title] [description]",
     )
-    async def issue(self, ctx, title: str, description: str):
+    async def issue(self: Self, ctx, title: str, description: str):
         """Creates an issue in the bot's Github Repo
 
         This is a command and should be accessed via Discord.

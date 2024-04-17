@@ -10,14 +10,25 @@ This file contains 4 commands:
     .extension register
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 import discord
 import ui
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot) -> None:
-    """Registers the ExtensionControl Cog"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Extension Control plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(ExtensionControl(bot=bot))
 
 
@@ -32,7 +43,7 @@ class ExtensionControl(cogs.BaseCog):
         brief="Executes an extension bot command",
         description="Executes an extension bot command",
     )
-    async def extension_group(self, ctx: commands.Context) -> None:
+    async def extension_group(self: Self, ctx: commands.Context) -> None:
         """The bare .extension command. This does nothing but generate the help message
 
         Args:

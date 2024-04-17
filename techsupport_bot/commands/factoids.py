@@ -39,8 +39,10 @@ if TYPE_CHECKING:
 
 
 async def setup(bot: bot.TechSupportBot) -> None:
-    """
-    Define database tables, registers configs, registers extension
+    """Loading the Factoid plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
     """
 
     # Sets up the config
@@ -999,7 +1001,11 @@ class FactoidManager(cogs.MatchCog):
         description="Executes a factoid command",
     )
     async def factoid(self: Self, ctx: commands.Context) -> None:
-        """Method to create the factoid command group."""
+        """The bare .factoid command. This does nothing but generate the help message
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
 
         # Executed if there are no/invalid args supplied
         await auxiliary.extension_help(self, ctx, self.__module__[9:])

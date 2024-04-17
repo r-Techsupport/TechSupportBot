@@ -1,11 +1,22 @@
 """Module for the animal extension for the discord bot."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot) -> None:
-    """Loading the animal plugin"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the animals plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
 
     await bot.add_cog(Animals(bot=bot))
 
