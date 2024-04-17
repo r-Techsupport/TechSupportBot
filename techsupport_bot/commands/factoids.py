@@ -707,7 +707,6 @@ class FactoidManager(cogs.MatchCog):
 
         Args:
             config (Config): The config to get the prefix from
-            _ (commands.Context): Ctx, not used
             message_contents (str): The message to check
 
         Returns:
