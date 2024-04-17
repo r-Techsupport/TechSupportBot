@@ -79,7 +79,7 @@ class HTTPCalls:
         except AttributeError:
             print("No linx API URL found. Not rate limiting linx")
 
-    async def http_call(self, method, url, *args, **kwargs):
+    async def http_call(self, method: str, url: str, *args, **kwargs):
         """Makes an HTTP request.
 
         By default this returns JSON/dict with the status code injected.

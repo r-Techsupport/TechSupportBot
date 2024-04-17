@@ -265,11 +265,6 @@ class FactoidManager(cogs.MatchCog):
 
         Args:
             factoid (Factoid): Factoid to modify.
-            factoid_name (str, optional): New factoid name. Defaults to None.
-            message (str, optional): New factoid message. Defaults to None.
-            embed_config (str, optional): Whether the factoid has an embed set up. Defaults to None.
-            hidden (bool, optional): Whether the factoid is hidden. Defaults to None.
-            alias (str, optional): New parent factoid. Defaults to None.
 
         Raises:
             custom_errors.TooLongFactoidMessageError:
@@ -657,7 +652,7 @@ class FactoidManager(cogs.MatchCog):
 
         Args:
             ctx (commands.Context): Context to send the confirmation message to
-            factoid_name (CalledFactoid): The factoid to remove
+            called_factoid (CalledFactoid): The factoid to remove
 
         Returns:
             (bool): Whether the factoid was deleted
@@ -816,7 +811,7 @@ class FactoidManager(cogs.MatchCog):
         """Send a factoid to IRC channel, if it was called in a linked channel
 
         Args:
-            ctx (discord.abc.Messageable): The channel the factoid was sent in
+            channel (discord.abc.Messageable): The channel the factoid was sent in
             message (discord.Message): The message object of the invocation
             factoid_message (str): The text of the factoid to send
         """

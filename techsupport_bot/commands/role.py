@@ -278,7 +278,7 @@ class RoleGiver(cogs.BaseCog):
                 to the user. Any roles not on this list will be removed
             guild (discord.Guild): The guild to assign the roles in
             user (discord.Member): The member to assign roles to
-            resaon (str): The reason to add to the audit log
+            reason (str): The reason to add to the audit log
             interaction (discord.Interaction): The interaction to respond to
         """
         added_roles = []

@@ -772,7 +772,7 @@ async def log_closure(
 
     Args:
         thread (discord.Thread): The thread that got closed
-        user (int): The id of the person who created the thread, not an user object to
+        user_id (int): The id of the person who created the thread, not an user object to
                              be able to include the ID even if the user leaves the guild
         log_channel (discord.TextChannel): The log channel to send the closure message to
         closed_by (discord.User): The person who closed the thread

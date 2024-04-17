@@ -596,11 +596,10 @@ class ApplicationManager(cogs.LoopCog):
         """This builds the embed that will be sent to staff
 
         Args:
-            applicant (discord.Member): The member who has applied
-            background (str): The answer to the background question
-            reason (str): The answer to the reason question
-            new (bool, Optional): If the application is new and the title should include new.
-                Defaults to True
+            guild (discord.Guild): The guild the user has applied to
+            application (bot.models.Applications): The database entry of the application
+            new (bool, optional): If the application is new and the title should
+                include new. Defaults to True.
 
         Returns:
             discord.Embed: The stylized embed ready to be show to people
