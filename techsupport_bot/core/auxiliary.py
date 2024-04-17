@@ -204,7 +204,6 @@ async def get_json_from_attachments(
     """Returns concatted JSON from a message's attachments.
 
     parameters:
-        ctx (discord.ext.Context): the context object for the message
         message (Message): the message object
         as_string (bool): True if the serialized JSON should be returned
         allow_failure (bool): True if an exception should be ignored when parsing attachments

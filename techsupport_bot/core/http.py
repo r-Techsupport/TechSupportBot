@@ -79,7 +79,15 @@ class HTTPCalls:
         except AttributeError:
             print("No linx API URL found. Not rate limiting linx")
 
-    async def http_call(self, method, url, *args, **kwargs):
+    async def http_call(
+        self,
+        method,
+        url,
+        use_cache: bool = False,
+        get_raw_response: bool = False,
+        *args,
+        **kwargs,
+    ):
         """Makes an HTTP request.
 
         By default this returns JSON/dict with the status code injected.
@@ -131,8 +139,6 @@ class HTTPCalls:
         url = url.replace(" ", "%20").replace("+", "%2b")
 
         method = method.lower()
-        use_cache = kwargs.pop("use_cache", False)
-        get_raw_response = kwargs.pop("get_raw_response", False)
 
         cache_key = url.lower()
         if kwargs.get("params"):
