@@ -134,6 +134,7 @@ class DiscordToIRC(cogs.MatchCog):
         )
 
     @commands.group(
+        name="irc",
         brief="Executes an irc command",
         description="Executes an irc command",
     )
