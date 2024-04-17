@@ -11,11 +11,13 @@ import munch
 import ui
 from discord.ext import commands
 
+default_color = discord.Color.blurple()
+
 
 def generate_basic_embed(
     title: str = "",
     description: str = "",
-    color: discord.Color = discord.Color.blurple(),
+    color: discord.Color = default_color,
     url: str = "",
 ) -> discord.Embed:
     """Generates a basic embed

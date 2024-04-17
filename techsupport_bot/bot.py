@@ -951,11 +951,7 @@ class TechSupportBot(commands.Bot):
     # IRC Stuff
 
     async def start_irc(self):
-        """Starts the IRC connection in a seperate thread
-
-        Args:
-            irc (irc.IRC): The IRC object to start the socket on
-        """
+        """Starts the IRC connection in a seperate thread"""
         irc_config = getattr(self.file_config.api, "irc")
         main_loop = asyncio.get_running_loop()
 

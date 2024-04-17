@@ -158,6 +158,7 @@ class RoleGiver(cogs.BaseCog):
                 "You are not allowed to execute this command"
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
 
         if len(role_options) == 0:
             embed = auxiliary.prepare_deny_embed("No self assignable roles are setup")
