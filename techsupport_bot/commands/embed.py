@@ -10,8 +10,8 @@ Subcommands: embed
 Defines: has_embed_role
 """
 
-import munch
 import discord
+import munch
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 

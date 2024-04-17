@@ -81,7 +81,11 @@ class Emojis(cogs.BaseCog):
         return emoji_list
 
     async def emoji_commands(
-        self, ctx: commands.Context, message: str, add_reactions: bool, react_user: discord.Member = None
+        self,
+        ctx: commands.Context,
+        message: str,
+        add_reactions: bool,
+        react_user: discord.Member = None,
     ):
         """A method to handle the core of both emoji message and reaction
 

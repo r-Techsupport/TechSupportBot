@@ -3,12 +3,12 @@
 from typing import Dict, List, Union
 
 import discord
+import irc.client
 import munch
 import ui
 from bidict import bidict
 from core import auxiliary, cogs
 from discord.ext import commands
-import irc.client
 
 
 async def setup(bot: commands.Bot) -> None:

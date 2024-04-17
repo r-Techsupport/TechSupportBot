@@ -17,7 +17,9 @@ async def setup(bot):
 class Corrector(cogs.BaseCog):
     """Class for the correct command for the discord bot."""
 
-    async def correct_command(self, ctx: commands.Context, to_replace: str, replacement: str) -> None:
+    async def correct_command(
+        self, ctx: commands.Context, to_replace: str, replacement: str
+    ) -> None:
         """This is the main processing for the correct command
 
         Args:
