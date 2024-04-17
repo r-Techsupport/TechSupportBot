@@ -1,6 +1,5 @@
 """Module for the google extension for the discord bot."""
 
-import discord
 import ui
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands

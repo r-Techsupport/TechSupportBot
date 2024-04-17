@@ -2,7 +2,6 @@
 
 import datetime
 import uuid
-from typing import Any
 
 import discord
 import ui
