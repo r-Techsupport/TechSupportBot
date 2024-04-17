@@ -372,9 +372,9 @@ class FactoidManager(cogs.MatchCog):
         """Changes the list of aliases to point to a new name
 
         Args:
+            ctx (commands.Context): Used for cache handling
             aliases (list): A list of aliases to change
             new_name (str): The name of the new parent
-            ctx (commands.Context): Used for cache handling
         """
 
         for alias in aliases:
@@ -1338,7 +1338,7 @@ class FactoidManager(cogs.MatchCog):
         description="Gets embed JSON for a factoid",
         usage="[factoid-name]",
     )
-    async def _json(self, ctx: commands.Context, factoid_name: str):
+    async def _json(self, ctx: commands.Context, factoid_name: str) -> None:
         """Gets the json of a factoid
 
         Args:

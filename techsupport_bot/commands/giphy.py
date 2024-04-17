@@ -25,7 +25,7 @@ class Giphy(cogs.BaseCog):
     SEARCH_LIMIT = 10
 
     @staticmethod
-    def parse_url(url):
+    def parse_url(url: str) -> str:
         """Method to parse the url."""
         index = url.find("?cid=")
         return url[:index]

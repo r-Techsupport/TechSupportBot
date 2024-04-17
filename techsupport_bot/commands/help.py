@@ -126,8 +126,25 @@ class Helper(cogs.BaseCog):
                 )
             )
 
+        # Deal with special modmail commands, if this is the modmail guild
+        if self.bot.file_config.modmail_config.enable_modmail and ctx.guild.id == int(
+            self.bot.file_config.modmail_config.modmail_guild
+        ):
+            modmail_cog = ctx.bot.get_cog("Modmail")
+            if modmail_cog:
+                modmail_commands = modmail_cog.modmail_commands_list()
+                for command in modmail_commands:
+                    all_command_list.append(
+                        PrintableCommand(
+                            prefix=command[0],
+                            name=command[1],
+                            usage=command[2].strip(),
+                            description=f"Modmail only: {command[3]}",
+                        )
+                    )
+
         # Sort and search the commands
-        sorted_commands = sorted(all_command_list, key=lambda x: x.name)
+        sorted_commands = sorted(all_command_list, key=lambda x: x.name.lower())
         filtered_commands = [
             command
             for command in sorted_commands
