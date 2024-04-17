@@ -1,8 +1,8 @@
 """
 Runs a bot that can be messaged to create modmail threads
 Unit tests: False
-Config: 
-    File: enable_modmail, disable_thread_creation, modmail_auth_token, modmail_prefix, 
+Config:
+    File: enable_modmail, disable_thread_creation, modmail_auth_token, modmail_prefix,
           modmail_guild, modmail_forum_channel, modmail_log_channel
     Command: aliases, automatic_responses, modmail_roles, roles_to_ping, thread_creation_message
 API: None
@@ -1273,7 +1273,10 @@ class Modmail(cogs.BaseCog):
                 prefix,
                 "tsclose",
                 "",
-                "Closes a thread in 5 minutes unless rerun or a message is sent, closes without sending the user anything",
+                (
+                    "Closes a thread in 5 minutes unless rerun or a message is sent, closes "
+                    "without sending the user anything"
+                ),
             ),
         ]
         return commands_list
@@ -1290,7 +1293,7 @@ class Modmail(cogs.BaseCog):
         Args:
             ctx (commands.Context): Context of the command execution
         """
-        commands = self.modmail_commands_list()
+        list_of_modmail_commands = self.modmail_commands_list()
         prefix = self.bot.file_config.modmail_config.modmail_prefix
         embed = discord.Embed(
             color=discord.Color.green(),
@@ -1300,14 +1303,14 @@ class Modmail(cogs.BaseCog):
         embed.timestamp = datetime.utcnow()
 
         # First three are reply commands
-        for command in commands[:3]:
+        for command in list_of_modmail_commands[:3]:
             embed.add_field(name=command[1], value=command[3])
 
         # ZWSP used to separate the replies from closes, makes the fields a bit prettier
-        embed.add_field(name="\u200B", value="\u200B", inline=False)
+        embed.add_field(name="\u200b", value="\u200b", inline=False)
 
         # Last four are closing commands
-        for command in commands[3:]:
+        for command in list_of_modmail_commands[3:]:
             embed.add_field(name=command[1], value=command[3])
 
         await ctx.send(embed=embed)
