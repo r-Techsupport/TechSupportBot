@@ -29,7 +29,7 @@ class Burn(cogs.BaseCog):
     ]
 
     async def handle_burn(
-        self, ctx, user: discord.Member, message: discord.Message
+        self, ctx: commands.Context, user: discord.Member, message: discord.Message
     ) -> None:
         """The core logic to handle the burn command
 

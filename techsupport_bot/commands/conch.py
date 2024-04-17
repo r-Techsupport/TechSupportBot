@@ -58,7 +58,7 @@ class MagicConch(cogs.BaseCog):
             question += "?"
         return question
 
-    async def conch_command(self, ctx, question: str = "") -> None:
+    async def conch_command(self, ctx: commands.Context, question: str = "") -> None:
         """Method for the core logic of the conch command
 
         Args:

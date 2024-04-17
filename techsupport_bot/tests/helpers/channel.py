@@ -18,7 +18,7 @@ class MockChannel:
     def __init__(self, history=None):
         self.message_history = history
 
-    async def history(self, limit) -> AsyncGenerator[str, None]:
+    async def history(self, limit: int) -> AsyncGenerator[str, None]:
         """Replication of the async history method
         As history is not expected to be massive, this just yields every message
 

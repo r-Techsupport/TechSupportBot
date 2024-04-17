@@ -131,7 +131,7 @@ class Htd(cogs.BaseCog):
             " (hex)\n0b (binary) \nNo prefix (assumed decimal)"
         ),
     )
-    async def htd(self, ctx, *, val_to_convert):
+    async def htd(self, ctx: commands.Context, *, val_to_convert: str):
         """This discord command for .htd
 
         Args:
@@ -290,7 +290,7 @@ class Htd(cogs.BaseCog):
         """The main logic for the htd command
 
         Args:
-            ctx (command.Context): The context in which the command was run it
+            ctx (commands.Context): The context in which the command was run it
             val_to_convert (str): The raw user input
         """
         val_to_convert = self.clean_input(val_to_convert)

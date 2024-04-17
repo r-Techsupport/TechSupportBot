@@ -18,7 +18,7 @@ async def setup(bot: bot.TechSupportBot):
     """Adding config and the cog to the bot
 
     Args:
-        bot (commands.Bot): The bot object
+        bot (bot.TechSupportBot): The bot object
     """
     config = extensionconfig.ExtensionConfig()
     config.add(
@@ -215,7 +215,7 @@ class RoleGiver(cogs.BaseCog):
         Args:
             user (discord.User): The user executing the command
             guild (discord.Guild): The guild the command was run in
-            roles (list): A list of the roles allowed to execute
+            roles (list[str]): A list of the roles allowed to execute
 
         Returns:
             bool: True if can execute, false if cannot

@@ -3,6 +3,7 @@
 from typing import Dict, List, Union
 
 import discord
+import irc.client
 import munch
 import ui
 from bidict import bidict
@@ -126,7 +127,7 @@ class DiscordToIRC(cogs.MatchCog):
         brief="Executes an irc command",
         description="Executes an irc command",
     )
-    async def irc(self, ctx: commands.Context) -> None:
+    async def irc_base(self, ctx: commands.Context) -> None:
         """The base set of IRC commands
 
         Args:
@@ -495,7 +496,7 @@ class DiscordToIRC(cogs.MatchCog):
             reaction=reaction, user=user, channel=self.mapping[str(channel.id)]
         )
 
-    async def handle_dm_from_irc(self, message: str, event) -> None:
+    async def handle_dm_from_irc(self, message: str, event: irc.client.Event) -> None:
         """Sends a DM to the owner of the bot based on a message from IRC
 
         Args:

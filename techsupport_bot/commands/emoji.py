@@ -24,7 +24,7 @@ class Emojis(cogs.BaseCog):
     KEY_MAP = {"?": "question", "!": "exclamation"}
 
     @classmethod
-    def emoji_from_char(cls, char):
+    def emoji_from_char(cls, char: str):
         """Gets an unicode emoji from a character
 
         Args:
@@ -55,7 +55,7 @@ class Emojis(cogs.BaseCog):
         return len(set(string.lower())) == len(string.lower())
 
     @classmethod
-    def generate_emoji_string(cls, string, only_emoji=False):
+    def generate_emoji_string(cls, string: str, only_emoji: bool = False):
         """This takes a string and returns a string or list of emojis
 
         Args:
@@ -81,7 +81,11 @@ class Emojis(cogs.BaseCog):
         return emoji_list
 
     async def emoji_commands(
-        self, ctx, message: str, add_reactions: bool, react_user: discord.Member = None
+        self,
+        ctx: commands.Context,
+        message: str,
+        add_reactions: bool,
+        react_user: discord.Member = None,
     ):
         """A method to handle the core of both emoji message and reaction
 

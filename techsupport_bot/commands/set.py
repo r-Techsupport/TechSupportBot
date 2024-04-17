@@ -29,7 +29,7 @@ class Setter(cogs.BaseCog):
         brief="Executes a `set X` bot command",
         description="Executes a `set X` bot command",
     )
-    async def set_group(self, ctx):
+    async def set_group(self, ctx: commands.Context):
         """The bare .set command. This does nothing but generate the help message
 
         Args:

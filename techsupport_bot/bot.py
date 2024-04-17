@@ -6,6 +6,7 @@ discord and irc login, and a few property and helper functions
 import asyncio
 import datetime
 import glob
+import io
 import json
 import os
 import threading
@@ -383,7 +384,7 @@ class TechSupportBot(commands.Bot):
 
         Args:
             guild (discord.Guild): the guild object to reference
-            key (string): the key to use when looking up the channel
+            key (str): the key to use when looking up the channel
         """
         if not guild:
             return None
@@ -675,7 +676,9 @@ class TechSupportBot(commands.Bot):
         extension_name = command.module.split(".")[1]
         return extension_name
 
-    async def register_file_extension(self, extension_name: str, fp) -> None:
+    async def register_file_extension(
+        self, extension_name: str, fp: io.BufferedIOBase
+    ) -> None:
         """Offers an interface for loading an extension from an external source.
 
         This saves the external file data to the OS, without any validation.

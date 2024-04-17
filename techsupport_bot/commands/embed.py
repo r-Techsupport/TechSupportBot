@@ -11,6 +11,7 @@ Defines: has_embed_role
 """
 
 import discord
+import munch
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
@@ -152,7 +153,7 @@ class Embedder(cogs.BaseCog):
                 "I couldn't generate all of your embeds, so I gave you a blank slate",
             )
 
-    async def process_request(self, request_body) -> list[discord.Embed]:
+    async def process_request(self, request_body: munch.Munch) -> list[discord.Embed]:
         """Returns a list of discord.Embed objects from a request_body
 
         Args:

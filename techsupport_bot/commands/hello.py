@@ -16,7 +16,7 @@ async def setup(bot):
 class Greeter(cogs.BaseCog):
     """Class for the greeter command."""
 
-    async def hello_command(self, ctx) -> None:
+    async def hello_command(self, ctx: commands.Context) -> None:
         """A simple function to add HEY reactions to the command invocation
 
         Args:

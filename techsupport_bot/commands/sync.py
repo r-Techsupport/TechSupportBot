@@ -28,7 +28,7 @@ class AppCommandSync(cogs.BaseCog):
         description="Syncs slash commands",
         usage="",
     )
-    async def sync_slash_commands(self, ctx):
+    async def sync_slash_commands(self, ctx: commands.Context):
         """A simple command to manually sync slash commands
 
         Args:
