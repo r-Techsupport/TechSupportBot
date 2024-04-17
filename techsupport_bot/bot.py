@@ -187,7 +187,7 @@ class TechSupportBot(commands.Bot):
         """Configures a new guild upon joining.
         This registers a new guild config, and starts any loop jobs that are configured
 
-        parameters:
+        Args:
             guild (discord.Guild): the guild that was joined
         """
         self.register_new_guild_config(str(guild.id))
@@ -237,7 +237,7 @@ class TechSupportBot(commands.Bot):
     async def on_message(self, message: discord.Message) -> None:
         """Logs DMs and ensure that commands are processed
 
-        parameters:
+        Args:
             message (discord.Message): the message object
         """
         owner = await self.get_owner()
@@ -282,7 +282,7 @@ class TechSupportBot(commands.Bot):
     async def create_new_context_config(self, guild_id: str) -> munch.Munch:
         """Creates a new guild config for a given guild.
 
-        parameters:
+        Args:
             guild_id (str): The guild ID the config will be for. Only used for storing the config
         """
         extensions_config = munch.DefaultMunch(None)
@@ -764,7 +764,7 @@ class TechSupportBot(commands.Bot):
         """Gets the appropriate prefix for a command.
         This is called by discord.py and must be async
 
-        parameters:
+        Args:
             message (discord.Message): the message to check against
         """
         guild_config = self.guild_configs[str(message.guild.id)]

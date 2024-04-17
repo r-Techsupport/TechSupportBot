@@ -42,7 +42,7 @@ class BotInfo(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (discord.ext.Context): the context object for the calling message
         """
         embed = discord.Embed(title=self.bot.user.name, color=discord.Color.blurple())

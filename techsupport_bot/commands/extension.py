@@ -66,7 +66,7 @@ class ExtensionControl(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the message
             extension_name (str): the name of the extension
         """
@@ -105,7 +105,7 @@ class ExtensionControl(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the message
             extension_name (str): the name of the extension
         """
@@ -130,7 +130,7 @@ class ExtensionControl(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the message
             extension_name (str): the name of the extension
         """
@@ -155,7 +155,7 @@ class ExtensionControl(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the message
             extension_name (str): the name of the extension
         """

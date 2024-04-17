@@ -33,7 +33,7 @@ class Restarter(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the calling message
         """
         await auxiliary.send_confirm_embed(

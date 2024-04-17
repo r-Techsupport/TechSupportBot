@@ -10,7 +10,7 @@ from botlogging import logger
 class DelayedLogger(logger.BotLogger):
     """Logging interface that queues log events to be sent over time.
 
-    parameters:
+    Args:
         bot (bot.TechSupportBot): the bot object
         name (str): the name of the logging channel
         send (bool): Whether or not to allow sending of logs to discord

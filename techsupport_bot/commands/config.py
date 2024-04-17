@@ -38,7 +38,7 @@ class ConfigControl(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (discord.ext.Context): the context object for the message
         """
 
@@ -58,7 +58,7 @@ class ConfigControl(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the message
         """
         config = self.bot.guild_configs[str(ctx.guild.id)]
@@ -129,7 +129,7 @@ class ConfigControl(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the message
             extension_name (str): the extension subname to enable
         """
@@ -179,7 +179,7 @@ class ConfigControl(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the message
             extension_name (str): the extension subname to disable
         """

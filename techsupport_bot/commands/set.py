@@ -48,7 +48,7 @@ class Setter(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (discord.ext.Context): the context object for the message
             game_name (str): the name of the game
         """
@@ -66,7 +66,7 @@ class Setter(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (discord.ext.Context): the context object for the message
             nick (str): the bot nickname
         """

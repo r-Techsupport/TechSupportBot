@@ -31,7 +31,7 @@ class Leaver(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the calling message
             guild_id (int): the ID of the guild to leave
         """
