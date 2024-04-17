@@ -236,7 +236,7 @@ class FactoidManager(cogs.MatchCog):
             embed_config (str): Whether the factoid has an embed set up
             alias (str, optional): The parent factoid. Defaults to None.
 
-            Raises:
+        Raises:
             custom_errors.TooLongFactoidMessageError:
                 When the message argument is over 2k chars, discords limit
         """
@@ -428,11 +428,11 @@ class FactoidManager(cogs.MatchCog):
 
         return False
 
-    def get_embed_from_factoid(self, factoid) -> discord.Embed:
+    def get_embed_from_factoid(self, factoid: bot.models.Factoid) -> discord.Embed:
         """Gets the factoid embed from its message.
 
         Args:
-            (Factoid) factoid: The factoid to get the json of
+            factoid (bot.models.Factoid): The factoid to get the json of
 
         Returns:
             discord.Embed: The embed of the factoid

@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Tuple
 
 import discord
 import expiringdict
+import munch
 import ui
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
@@ -28,13 +29,15 @@ if TYPE_CHECKING:
     import bot
 
 
-async def has_modmail_management_role(ctx: commands.Context, config=None) -> bool:
+async def has_modmail_management_role(
+    ctx: commands.Context, config: munch.Munch = None
+) -> bool:
     """-COMMAND CHECK-
     Checks if the invoker has a modmail management role
 
     Args:
         ctx (commands.Context): Context used for getting the config file
-        config (): Can be defined manually to run this without providing actual ctx
+        config (munch.Munch): Can be defined manually to run this without providing actual ctx
 
     Raises:
         commands.CommandError: No modmail management roles were assigned in the config
