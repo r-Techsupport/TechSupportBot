@@ -699,7 +699,7 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_error(self, event_method, *_args, **_kwargs):
+    async def on_error(self, event_method):
         """Catches non-command errors and sends them to the error logger for processing.
 
         parameters:

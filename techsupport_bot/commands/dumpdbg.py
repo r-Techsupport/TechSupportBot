@@ -31,14 +31,6 @@ async def setup(bot):
     bot.add_extension_config("dumpdbg", config)
 
 
-class DumpdbgEmbed(discord.Embed):
-    """Class to set up the dumpdbg embed."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.color = discord.Color.green()
-
-
 class Dumpdbg(cogs.BaseCog):
     """Class for the dump debugger on the discord bot."""
 
@@ -148,17 +140,19 @@ class Dumpdbg(cogs.BaseCog):
         # Formatting for several files because it looks prettier
         if len(result_urls) == 1:
             await ctx.send(
-                embed=DumpdbgEmbed(
+                embed=auxiliary.generate_basic_embed(
                     title="Dump succesfully debugged! \nResult links:",
                     description="\n".join(result_urls),
+                    color=discord.Color.green(),
                 ),
                 content=auxiliary.construct_mention_string([ctx.author]),
             )
         else:
             await ctx.send(
-                embed=DumpdbgEmbed(
+                embed=auxiliary.generate_basic_embed(
                     title="Dumps succesfully debugged! \nResult links:",
                     description="\n".join(result_urls),
+                    color=discord.Color.green(),
                 )
             )
 
@@ -188,9 +182,10 @@ class Dumpdbg(cogs.BaseCog):
                 #  Disregards any empty dumps
                 if attachment.size == 0:
                     await ctx.send(
-                        embed=DumpdbgEmbed(
+                        embed=auxiliary.generate_basic_embed(
                             title="Invalid dump detected (Size 0)",
                             description=f"Skipping dump number {dump_no}...",
+                            color=discord.Color.green(),
                         )
                     )
                     continue

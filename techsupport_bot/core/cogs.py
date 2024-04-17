@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Any, List
 
 import discord
 import gino
@@ -176,7 +176,7 @@ class LoopCog(BaseCog):
     ON_START: bool = False
     CHANNELS_KEY: str = "channels"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: tuple, **kwargs: dict[str, Any]):
         super().__init__(*args, **kwargs)
         asyncio.create_task(self._loop_preconfig())
         self.channels = {}

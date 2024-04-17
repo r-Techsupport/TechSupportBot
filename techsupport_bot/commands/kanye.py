@@ -37,9 +37,10 @@ async def setup(bot):
     bot.add_extension_config("kanye", config)
 
 
-class KanyeEmbed(discord.Embed):
-    """Class for the Kanye embed for discord."""
+class KanyeQuotes(cogs.LoopCog):
+    """Class to get the Kanye quotes from the api."""
 
+    API_URL = "https://api.kanye.rest"
     KANYE_PICS = [
         "https://i.imgur.com/ITmTXGz.jpg",
         "https://i.imgur.com/o8BkPrL.jpg",
@@ -48,19 +49,23 @@ class KanyeEmbed(discord.Embed):
         "https://i.imgur.com/g1o2Gro.jpg",
     ]
 
-    def __init__(self, *args, **kwargs):
-        quote = kwargs.pop("quote")
-        super().__init__(*args, **kwargs)
-        self.set_thumbnail(url=random.choice(self.KANYE_PICS))
-        self.color = discord.Color.dark_gold()
-        self.title = f'"{quote}"'
-        self.description = "Kanye West"
+    def generate_themed_embed(self, quote: str) -> discord.Embed:
+        """Generates a themed embed for the kayne plugin
+        Includes adding the quote, changing the color, and adding an icon
 
+        Args:
+            quote (str): The quote to put in the embed
 
-class KanyeQuotes(cogs.LoopCog):
-    """Class to get the Kanye quotes from the api."""
-
-    API_URL = "https://api.kanye.rest"
+        Returns:
+            discord.Embed: The formatted embed, ready to be sent
+        """
+        embed = auxiliary.generate_basic_embed(
+            title=f'"{quote}"',
+            description="Kanye West",
+            color=discord.Color.dark_gold(),
+            url=random.choice(self.KANYE_PICS),
+        )
+        return embed
 
     async def get_quote(self):
         """Method to get the quote from the api."""
@@ -70,7 +75,7 @@ class KanyeQuotes(cogs.LoopCog):
     async def execute(self, config, guild):
         """Method to execute and give the quote to discord."""
         quote = await self.get_quote()
-        embed = KanyeEmbed(quote=quote)
+        embed = self.generate_themed_embed(quote=quote)
 
         channel = guild.get_channel(int(config.extensions.kanye.channel.value))
         if not channel:
@@ -95,6 +100,6 @@ class KanyeQuotes(cogs.LoopCog):
     async def kanye(self, ctx):
         """Method to call the command on discord."""
         quote = await self.get_quote()
-        embed = KanyeEmbed(quote=quote)
+        embed = self.generate_themed_embed(quote=quote)
 
         await ctx.send(embed=embed)

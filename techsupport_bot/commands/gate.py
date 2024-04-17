@@ -64,19 +64,6 @@ async def setup(bot):
     bot.add_extension_config("gate", config)
 
 
-class WelcomeEmbed(discord.Embed):
-    """Class to welcome a user to the discord, then delete the message."""
-
-    def __init__(self, *args, **kwargs):
-        welcome_message = kwargs.pop("welcome_message")
-        delete_wait = kwargs.pop("delete_wait")
-        super().__init__(*args, **kwargs)
-        self.title = "Server Gate"
-        self.description = welcome_message
-        self.set_footer(text=f"This message will be deleted in {delete_wait} seconds")
-        self.color = discord.Color.green()
-
-
 class ServerGate(cogs.MatchCog):
     """Class to get the server gate from config."""
 
@@ -117,8 +104,13 @@ class ServerGate(cogs.MatchCog):
             welcome_message = config.extensions.gate.welcome_message.value
             delete_wait = config.extensions.gate.delete_wait.value
 
-            embed = WelcomeEmbed(
-                welcome_message=welcome_message, delete_wait=delete_wait
+            embed = auxiliary.generate_basic_embed(
+                title="Server Gate",
+                description=welcome_message,
+                color=discord.Color.green(),
+            )
+            embed.set_footer(
+                text=f"This message will be deleted in {delete_wait} seconds"
             )
             await ctx.send(
                 embed=embed,

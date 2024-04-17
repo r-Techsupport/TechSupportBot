@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+from typing import Any
 
 from botlogging import logger
 
@@ -17,13 +18,13 @@ class DelayedLogger(logger.BotLogger):
         queue_size (int): the max number of queue events
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: tuple, **kwargs: dict[str, Any]) -> None:
         self.wait_time = kwargs.pop("wait_time", 1)
         self.queue_size = kwargs.pop("queue_size", 1000)
         self.__send_queue = None
         super().__init__(*args, **kwargs)
 
-    async def send_log(self, *args, **kwargs):
+    async def send_log(self, *args: tuple, **kwargs: dict[str, Any]) -> None:
         """Adds a log to the queue
         Does nothing different than the Logger send_log function()
         Will disregard debug logs if debug is off
