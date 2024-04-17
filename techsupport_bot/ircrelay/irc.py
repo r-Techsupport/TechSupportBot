@@ -82,7 +82,6 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
 
         Args:
             connection (irc.client.ServerConnection): The IRC connection
-            _ (irc.client.Event): The event object that triggered this function
         """
         connection.nick(connection.get_nickname() + "_")
 
@@ -95,7 +94,6 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
 
         Args:
             connection (irc.client.ServerConnection): The IRC connection
-            _ (irc.client.Event): The event object that triggered this function
         """
         self.console.info("Connected to IRC")
         self.ready = True
@@ -143,7 +141,6 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         Currently just sends a message to the discord bot owners DMs
 
         Args:
-            _ (irc.client.ServerConnection): The IRC connection
             event (irc.client.Event): The event object that triggered this function
         """
         asyncio.run_coroutine_threadsafe(
@@ -158,7 +155,6 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         If the channel is linked to a discord channel, the message will get sent to discord
 
         Args:
-           _ (irc.client.ServerConnection): The IRC connection
            event (irc.client.Event): The event object that triggered this function
         """
         split_message = formatting.parse_irc_message(event=event)
@@ -272,7 +268,6 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         Currently just handles ban notifications
 
         Args:
-            _ (irc.client.ServerConnection): The IRC connection
             event (irc.client.Event): The event object that triggered this function
         """
         # Parse the mode change event

@@ -700,7 +700,6 @@ class FactoidManager(cogs.MatchCog):
 
         Args:
             config (Config): The config to get the prefix from
-            _ (commands.Context): Ctx, not used
             message_contents (str): The message to check
 
         Returns:
@@ -715,7 +714,6 @@ class FactoidManager(cogs.MatchCog):
             config (Config): The server config
             ctx (commands.Context): Context of the call
             message_content (str): Content of the call
-            _ (bool): Result, unused
 
         Raises:
             custom_errors.FactoidNotFoundError: Raised if a broken alias is present in the DB
