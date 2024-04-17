@@ -25,7 +25,6 @@ class DelayedLogger(logger.BotLogger):
         super().__init__(*args, **kwargs)
 
     async def send_log(self, *args: tuple, **kwargs: dict[str, Any]) -> None:
-
         """Adds a log to the queue
         Does nothing different than the Logger send_log function()
         Will disregard debug logs if debug is off
