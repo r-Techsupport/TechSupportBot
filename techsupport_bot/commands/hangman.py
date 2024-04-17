@@ -2,6 +2,7 @@
 
 import datetime
 import uuid
+from typing import Self
 
 import discord
 import ui
@@ -25,7 +26,11 @@ async def setup(bot):
 
 
 class HangmanGame:
-    """Class for the game hangman."""
+    """Class for the game hangman.
+
+    Raises:
+        ValueError: A valid alphabetic word wasn't provided
+    """
 
     HANG_PICS = [
         """
@@ -109,8 +114,19 @@ class HangmanGame:
         """Method to draw the current state of the game."""
         return self.HANG_PICS[self.step]
 
-    def guess(self, letter):
-        """Method to define a guess."""
+    def guess(self: Self, letter: str) -> bool:
+        """Registers a guess to the given game
+
+        Args:
+            letter (str): The single letter to guess
+
+        Raises:
+            ValueError: Raised if letter isn't a single character
+            RuntimeError: Raised if the game is finished
+
+        Returns:
+            bool: True if the letter is in the game, false if it isn't
+        """
         found = True
         if len(letter) > 1:
             raise ValueError("guess must be letter")
@@ -139,8 +155,19 @@ class HangmanGame:
             return True
         return False
 
-    def guessed(self, letter):
-        """Method to know if a guess has already been guessed."""
+    def guessed(self: Self, letter: str) -> bool:
+        """Method to know if a letter has already been guessed
+
+        Args:
+            letter (str): The letter to check if it has been guessed
+
+        Raises:
+            ValueError: Raised if the letter isn't a single character
+
+        Returns:
+            bool: True if it's been guessed, False if it hasn't
+        """
+
         if len(letter) > 1:
             raise ValueError("guess must be letter")
         if letter.lower() in self.guesses:
@@ -148,8 +175,20 @@ class HangmanGame:
         return False
 
 
-async def can_stop_game(ctx):
-    """Method to stop the game of hangman at any time."""
+async def can_stop_game(ctx: commands.Context) -> bool:
+    """Checks if a user has the ability to stop the running game
+
+    Args:
+        ctx (commands.Context): The context in which the stop command was run
+
+    Raises:
+        AttributeError: The Hangman game could not be found
+        CommandError: No admin roles have been defined in the config
+        MissingAnyRole: The doesn't have the admin roles needed to stop the game
+
+    Returns:
+        bool: True the user can stop the game, False they cannot
+    """
     cog = ctx.bot.get_cog("HangmanCog")
     if not cog:
         raise AttributeError("could not find hangman cog when checking game states")

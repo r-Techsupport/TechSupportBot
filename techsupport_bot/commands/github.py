@@ -66,7 +66,7 @@ class IssueCreator(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (discord.ext.Context): the context object for the calling message
             title: the title of the issue
             description: the description of the issue

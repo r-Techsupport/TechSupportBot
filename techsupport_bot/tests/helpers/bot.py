@@ -14,8 +14,8 @@ class MockBot:
     wait_until_ready() -> always returns true
     """
 
-    def __init__(self, id=None):
-        self.id = id
+    def __init__(self, input_id=None):
+        self.id = input_id
 
     async def get_prefix(self, message=None):
         """A mock function to get the prefix of the bot"""

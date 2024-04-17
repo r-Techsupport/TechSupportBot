@@ -60,7 +60,7 @@ class MessageEcho(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (discord.ext.Context): the context object for the calling message
             channel_id (int): the ID of the channel to send the echoed message
             message (str): the message to echo
@@ -89,7 +89,7 @@ class MessageEcho(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the calling message
             user_id (int): the ID of the user to send the echoed message
             message (str): the message to echo

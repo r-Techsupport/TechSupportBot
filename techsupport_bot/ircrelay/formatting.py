@@ -167,7 +167,7 @@ def get_file_links(message_attachments: List[discord.Attachment]) -> str:
 
     Args:
         message_attachments (List[discord.Attachment]): The list of attachments from a
-        discord.Message object
+            discord.Message object
 
     Returns:
         str: The str containing space a seperated list of urls

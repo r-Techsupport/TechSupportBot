@@ -14,7 +14,7 @@ class ExtensionConfig:
 
         This is usually used in the extensions's setup function.
 
-        parameters:
+        Args:
             key (str): the lookup key for the entry
             datatype (str): the datatype metadata for the entry
             title (str): the title of the entry

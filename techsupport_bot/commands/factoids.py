@@ -123,10 +123,11 @@ async def has_given_factoids_role(
 
     Args:
         ctx (commands.Context): Context used for getting the config file
+        check_roles (list[str]): The list of string names of roles
 
     Raises:
-        commands.CommandError: No management roles assigned in the config
-        commands.MissingAnyRole: Invoker doesn't have a factoid management role
+        CommandError: No management roles assigned in the config
+        MissingAnyRole: Invoker doesn't have a factoid management role
 
     Returns:
         bool: Whether the invoker has a factoid management role
@@ -242,7 +243,7 @@ class FactoidManager(cogs.MatchCog):
             alias (str, optional): The parent factoid. Defaults to None.
 
         Raises:
-            custom_errors.TooLongFactoidMessageError:
+            TooLongFactoidMessageError:
                 When the message argument is over 2k chars, discords limit
         """
         if len(message) > 2000:
@@ -272,7 +273,7 @@ class FactoidManager(cogs.MatchCog):
             factoid (bot.models.Factoid): Factoid to modify.
 
         Raises:
-            custom_errors.TooLongFactoidMessageError:
+            TooLongFactoidMessageError:
                 When the message argument is over 2k chars, discords limit
         """
         if len(factoid.message) > 2000:
@@ -525,6 +526,9 @@ class FactoidManager(cogs.MatchCog):
             factoid_name (str): The name of the factoid to get
             guild (str): The id of the guild for the factoid
 
+        Raises:
+            FactoidNotFoundError: Raised when the provided factoid doesn't exist
+
         Returns:
             bot.models.Factoid: The factoid
         """
@@ -559,7 +563,7 @@ class FactoidManager(cogs.MatchCog):
             guild (str): The id of the guild for the factoid
 
         Raises:
-            custom_errors.FactoidNotFoundError: If the factoid wasn't found
+            FactoidNotFoundError: If the factoid wasn't found
 
         Returns:
             bot.models.Factoid: The factoid
@@ -704,11 +708,13 @@ class FactoidManager(cogs.MatchCog):
         return True
 
     # -- Getting and responding with a factoid --
-    async def match(self, config, _: commands.Context, message_contents: str) -> bool:
+    async def match(
+        self: Self, config: munch.Munch, _: commands.Context, message_contents: str
+    ) -> bool:
         """Checks if a message started with the prefix from the config
 
         Args:
-            config (Config): The config to get the prefix from
+            config (munch.Munch): The config to get the prefix from
             message_contents (str): The message to check
 
         Returns:
@@ -731,8 +737,8 @@ class FactoidManager(cogs.MatchCog):
             message_content (str): Content of the call
 
         Raises:
-            custom_errors.FactoidNotFoundError: Raised if a broken alias is present in the DB
-            custom_errors.TooLongFactoidMessageError:
+            FactoidNotFoundError: Raised if a broken alias is present in the DB
+            TooLongFactoidMessageError:
                 Raised when the raw message content is over discords 2000 char limit
         """
         if not ctx.guild:
@@ -829,7 +835,7 @@ class FactoidManager(cogs.MatchCog):
             factoid_message (str): The text of the factoid to send
         """
         # Don't attempt to send a message if irc if irc is disabled
-        irc_config = getattr(self.bot.file_config.api, "irc")
+        irc_config = self.bot.file_config.api.irc
         if not irc_config.enable_irc:
             return None
 
@@ -1484,7 +1490,7 @@ class FactoidManager(cogs.MatchCog):
                                   Defaults to an empty string.
 
         Raises:
-            commands.MissingPermission: Raised when someone tries to call .factoid all with
+            MissingPermissions: Raised when someone tries to call .factoid all with
                                         the hidden flag without administrator permissions
         """
         flags = flag.lower().split()

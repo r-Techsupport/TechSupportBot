@@ -58,7 +58,7 @@ class HTTPRateLimit(commands.errors.CommandError):
 class ErrorResponse:
     """Object for generating a custom error message from an exception.
 
-    parameters:
+    Args:
         message_format (str): the substition formatted (%s) message
         lookups (Union[str, list]): the lookup objects to reference
     """
@@ -85,7 +85,7 @@ class ErrorResponse:
     def default_message(self, exception=None):
         """Handles default message generation.
 
-        parameters:
+        Args:
             exception (Exception): the exception to reference
         """
         return (
@@ -97,7 +97,7 @@ class ErrorResponse:
     def get_message(self, exception=None):
         """Gets a response message from a given exception.
 
-        parameters:
+        Args:
             exception (Exception): the exception to reference
         """
         if not self.message_format:

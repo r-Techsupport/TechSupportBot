@@ -11,15 +11,15 @@ from commands import mock
 from core import auxiliary
 from hypothesis import given
 from hypothesis.strategies import text
-from tests import config_for_tests
+from tests import config_for_tests, helpers
 
 
-def setup_local_extension(bot=None):
+def setup_local_extension(bot: helpers.MockBot = None):
     """A simple function to setup an instance of the mock extension
 
     Args:
-        bot (MockBot, optional): A fake bot object. Should be used if using a
-        fake_discord_env in the test. Defaults to None.
+        bot (helpers.MockBot, optional): A fake bot object. Should be used if using a
+            fake_discord_env in the test. Defaults to None.
 
     Returns:
         Mocker: The instance of the Mocker class

@@ -4,14 +4,14 @@ import discord
 
 
 class RoleSelect(discord.ui.Select):
-    """This holds the select object for a list of roles"""
+    """This holds the select object for a list of roles
+
+    Args:
+        role_list (list[str]): A list of SelectOption to be in the dropdown
+    """
 
     def __init__(self, role_list: list[str]):
-        """A function to set some defaults
 
-        Args:
-            role_list (list[str]): A list of SelectOption to be in the dropdown
-        """
         super().__init__(
             placeholder="Select roles...",
             min_values=0,
@@ -36,14 +36,13 @@ class RoleSelect(discord.ui.Select):
 
 
 class SelectView(discord.ui.View):
-    """This is the view that will hold only the dropdown"""
+    """This is the view that will hold only the dropdown
+    Adds the dropdown and does nothing else
+    Args:
+        role_list (list[str]): The list of SelectOptions to add to the dropdown
+    """
 
     def __init__(self, role_list: list[str]):
-        """Adds the dropdown and does nothing else
-
-        Args:
-            role_list (list[str]): The list of SelectOptions to add to the dropdown
-        """
         super().__init__()
         # Adds the dropdown to our view object.
         self.select = RoleSelect(role_list)

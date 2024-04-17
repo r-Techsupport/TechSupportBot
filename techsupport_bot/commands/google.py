@@ -1,13 +1,26 @@
 """Module for the google extension for the discord bot."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import ui
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding google extension config to the config file."""
 
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Google plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+
+    Raises:
+        AttributeError: Raised if an API key is missing to prevent unusable commands from loading
+    """
     # Don't load without the API key
     try:
         if not bot.file_config.api.api_keys.google:
@@ -90,10 +103,13 @@ class Googler(cogs.BaseCog):
             for index, item in enumerate(items):
                 link = item.get("link")
                 snippet = item.get("snippet", "<Details Unknown>").replace("\n", "")
-                if field_counter == 1:
-                    embed = auxiliary.generate_basic_embed(
+                embed = (
+                    auxiliary.generate_basic_embed(
                         title=f"Results for {query}", url=self.ICON_URL
                     )
+                    if field_counter == 1
+                    else embed
+                )
 
                 embed.add_field(name=link, value=snippet, inline=False)
                 if (

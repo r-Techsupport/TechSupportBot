@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, Self
 
 import discord
 import gino
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class BaseCog(commands.Cog):
     """The base cog to use when making extensions.
 
-    parameters:
+    Args:
         bot (Bot): the bot object
         models (List[gino.Model]): the Postgres models for the extension
         no_guild (bool): True if the extension should run globally
@@ -51,7 +51,7 @@ class BaseCog(commands.Cog):
 
         This makes the extension unload when there is an error.
 
-        parameters:
+        Args:
             handler (asyncio.coroutine): the preconfig handler
         """
         await self.bot.wait_until_ready()
@@ -77,7 +77,7 @@ class BaseCog(commands.Cog):
     def extension_enabled(self, config: munch.Munch) -> bool:
         """Checks if an extension is currently enabled for a given config.
 
-        parameters:
+        Args:
             config (dict): the context/guild config
         """
         if config is None:
@@ -100,7 +100,7 @@ class MatchCog(BaseCog):
     async def on_message(self, message: discord.Message) -> None:
         """Listens for a message and passes it to the response handler if valid.
 
-        parameters:
+        Args:
             message (message): the message object
         """
         if message.author == self.bot.user:
@@ -142,7 +142,7 @@ class MatchCog(BaseCog):
     ) -> bool:
         """Runs a boolean check on message content.
 
-        parameters:
+        Args:
             _config (dict): the config associated with the context
             _ctx (context): the context object
             _content (str): the message content
@@ -154,7 +154,7 @@ class MatchCog(BaseCog):
     ) -> None:
         """Performs a response if the match is valid.
 
-        parameters:
+        Args:
             _config (dict): the config associated with the context
             _ctx (context): the context object
             _content (str): the message content
@@ -166,7 +166,7 @@ class LoopCog(BaseCog):
 
     This currently doesn't utilize the tasks library.
 
-    parameters:
+    Args:
         bot (Bot): the bot object
     """
 
@@ -184,7 +184,7 @@ class LoopCog(BaseCog):
     async def register_new_tasks(self, guild: discord.Guild) -> None:
         """Creates the configured loop tasks for a given guild.
 
-        parameters:
+        Args:
             guild (discord.Guild): the guild to add the tasks for
         """
         config = self.bot.guild_configs[str(guild.id)]
@@ -306,11 +306,15 @@ class LoopCog(BaseCog):
     async def loop_preconfig(self) -> None:
         """Preconfigures the environment before starting the loop."""
 
-    async def _loop_execute(self, guild: discord.Guild, target_channel=None) -> None:
+    async def _loop_execute(
+        self: Self, guild: discord.Guild, target_channel: discord.abc.Messageable = None
+    ) -> None:
         """Loops through the execution method.
 
-        parameters:
+        Args:
             guild (discord.Guild): the guild associated with the execution
+            target_channel (discord.abc.Messageable): The channel to run the loop in,
+                if the loop is channel specific
         """
         config = self.bot.guild_configs[str(guild.id)]
 
@@ -373,7 +377,7 @@ class LoopCog(BaseCog):
     ) -> None:
         """Runs sequentially after each wait method.
 
-        parameters:
+        Args:
             _config (munch.Munch): the config object for the guild
             _guild (discord.Guild): the guild associated with the execution
             _target_channel (discord.Channel): the channel object to use
@@ -386,7 +390,7 @@ class LoopCog(BaseCog):
     async def wait(self, _config: munch.Munch, _guild: discord.Guild) -> None:
         """The default wait method.
 
-        parameters:
+        Args:
             _config (munch.Munch): the config object for the guild
             _guild (discord.Guild): the guild associated with the execution
         """

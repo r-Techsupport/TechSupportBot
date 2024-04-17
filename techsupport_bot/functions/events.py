@@ -462,7 +462,7 @@ class EventLogger(cogs.BaseCog):
     async def on_guild_join(self, guild: discord.Guild):
         """Configures a new guild upon joining.
 
-        parameters:
+        Args:
             guild (discord.Guild): the guild that was joined
         """
         embed = discord.Embed()
@@ -702,7 +702,7 @@ class EventLogger(cogs.BaseCog):
     async def on_error(self, event_method):
         """Catches non-command errors and sends them to the error logger for processing.
 
-        parameters:
+        Args:
             event_method (str): the event method name associated with the error (eg. on_message)
         """
         _, exception, _ = sys.exc_info()

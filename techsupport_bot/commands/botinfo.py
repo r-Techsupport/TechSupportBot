@@ -42,7 +42,7 @@ class BotInfo(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (discord.ext.Context): the context object for the calling message
         """
         embed = discord.Embed(title=self.bot.user.name, color=discord.Color.blurple())
@@ -65,7 +65,7 @@ class BotInfo(cogs.BaseCog):
             value=", ".join(f"{guild.name} ({guild.id})" for guild in self.bot.guilds),
             inline=True,
         )
-        irc_config = getattr(self.bot.file_config.api, "irc")
+        irc_config = self.bot.file_config.api.irc
         if not irc_config.enable_irc:
             embed.add_field(
                 name="IRC",

@@ -58,7 +58,7 @@ class CommandControl(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (discord.ext.Context): the context object for the message
             command_name (str): the name of the command
         """
@@ -91,7 +91,7 @@ class CommandControl(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (discord.ext.Context): the context object for the message
             command_name (str): the name of the command
         """

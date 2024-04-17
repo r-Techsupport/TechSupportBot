@@ -93,7 +93,7 @@ async def add_list_of_reactions(message: discord.Message, reactions: list) -> No
 def construct_mention_string(targets: list[discord.User]) -> str:
     """Builds a string of mentions from a list of users.
 
-    parameters:
+    Args:
         targets ([]discord.User): the list of users to mention
     """
     constructed = set()
@@ -204,11 +204,20 @@ async def get_json_from_attachments(
 ) -> munch.Munch | str | None:
     """Returns concatted JSON from a message's attachments.
 
-    parameters:
-        message (Message): the message object
-        as_string (bool): True if the serialized JSON should be returned
-        allow_failure (bool): True if an exception should be ignored when parsing attachments
+    Args:
+        message (discord.Message): the message object
+        as_string (bool, optional): True if the serialized JSON should be returned.
+            Defaults to False.
+        allow_failure (bool, optional): True if an exception should be ignored when
+            parsing attachments. Defaults to False.
+
+    Raises:
+        exception: If allow_failure is False, this raises ANY exception caught while parsing
+
+    Returns:
+        munch.Munch | str | None: The json formatted as requested by as_string and allow_failure
     """
+
     if not message.attachments:
         return None
 
@@ -233,7 +242,7 @@ async def get_json_from_attachments(
 def config_schema_matches(input_config: dict, current_config: dict) -> list[str] | None:
     """Performs a schema check on an input guild config.
 
-    parameters:
+    Args:
         input_config (dict): the config to be added
         current_config (dict): the current config
     """
@@ -269,7 +278,7 @@ def with_typing(command: commands.Command) -> commands.Command:
 
     This will show the bot as typing... until the command completes
 
-    parameters:
+    Args:
         command (commands.Command): the command object to modify
     """
     original_callback = command.callback
@@ -331,7 +340,7 @@ def get_object_diff(
 def add_diff_fields(embed: discord.Embed, diff: dict) -> discord.Embed:
     """Adds fields to an embed based on diff data.
 
-    parameters:
+    Args:
         embed (discord.Embed): the embed object
         diff (dict): the diff data for an object
     """
@@ -390,7 +399,7 @@ def get_help_embed_for_extension(self, extension_name, command_prefix):
 
     Defined so it doesn't have to be written out twice
 
-    parameters:
+    Args:
         extension_name (str): the name of the extension to show the help for
         command_prefix (str): passed to the func as it has to be awaited
 
@@ -443,7 +452,7 @@ async def extension_help(self, ctx: commands.Context, extension_name: str) -> No
     all extensions have the value set to extension.<name>, it's the most reliable
     way to get the extension name regardless of aliases
 
-    parameters:
+    Args:
         ctx (commands.Context): context of the message
         extension_name (str): the name of the extension to show the help for
     """
@@ -496,7 +505,7 @@ async def bot_admin_check_context(ctx: commands.Context) -> bool:
         ctx (commands.Context): The context that the command was called in
 
     Raises:
-        commands.MissingPermissions: If the user is not a bot admin
+        MissingPermissions: If the user is not a bot admin
 
     Returns:
         bool: True if can run

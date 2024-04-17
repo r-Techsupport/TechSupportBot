@@ -33,14 +33,14 @@ class Restarter(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the calling message
         """
         await auxiliary.send_confirm_embed(
             message="Rebooting! Beep boop!", channel=ctx.channel
         )
         # Exit IRC if it's enabled
-        irc_config = getattr(self.bot.file_config.api, "irc")
+        irc_config = self.bot.file_config.api.irc
         if irc_config.enable_irc:
             self.bot.irc.exit_irc()
 

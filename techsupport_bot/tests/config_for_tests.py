@@ -59,13 +59,13 @@ class FakeDiscordEnv:
 
         # member objects
         self.person1 = MockMember(
-            bot=False, id=1, name="person1", display_avatar=self.asset1
+            bot=False, input_id=1, name="person1", display_avatar=self.asset1
         )
         self.person2 = MockMember(
-            bot=False, id=2, name="person2", display_avatar=self.asset2
+            bot=False, input_id=2, name="person2", display_avatar=self.asset2
         )
         self.person3_bot = MockMember(
-            bot=True, id=3, name="bot", display_avatar=self.asset1
+            bot=True, input_id=3, name="bot", display_avatar=self.asset1
         )
 
         # attachment objects

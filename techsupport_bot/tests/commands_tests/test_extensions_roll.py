@@ -12,15 +12,15 @@ from commands import roll
 from core import auxiliary
 from hypothesis import given
 from hypothesis.strategies import integers
-from tests import config_for_tests
+from tests import config_for_tests, helpers
 
 
-def setup_local_extension(bot=None):
+def setup_local_extension(bot: helpers.MockBot = None):
     """A simple function to setup an instance of the roll extension
 
     Args:
-        bot (MockBot, optional): A fake bot object. Should be used if using a
-        fake_discord_env in the test. Defaults to None.
+        bot (helpers.MockBot, optional): A fake bot object. Should be used if using a
+            fake_discord_env in the test. Defaults to None.
 
     Returns:
         Roller: The instance of the Roller class
@@ -43,7 +43,7 @@ class Test_RollCommand:
         discord_env.context.send = AsyncMock()
 
         # Step 2 - Call the function
-        await roller.roll_command(ctx=discord_env.context, min=1, max=10)
+        await roller.roll_command(ctx=discord_env.context, min_value=1, max_value=10)
 
         # Step 3 - Assert that everything works
         auxiliary.generate_basic_embed.assert_called_once_with(
@@ -67,7 +67,7 @@ class Test_RollCommand:
         discord_env.context.send = AsyncMock()
 
         # Step 2 - Call the function
-        await roller.roll_command(ctx=discord_env.context, min=1, max=10)
+        await roller.roll_command(ctx=discord_env.context, min_value=1, max_value=10)
 
         # Step 3 - Assert that everything works
         discord_env.context.send.assert_called_once_with(embed="embed")
@@ -80,18 +80,18 @@ class Test_RandomNumber:
     """A single test to test get_roll_number"""
 
     @given(integers(), integers())
-    def test_random_numbers(self, min, max):
+    def test_random_numbers(self, min_value, max_value):
         """A property test to ensure that random number doesn't return anything unexpected"""
         # Step 1 - Setup env
         roller = setup_local_extension()
-        if min > max:
-            temp = min
-            max = min
-            min = temp
+        if min_value > max_value:
+            temp = min_value
+            max_value = min_value
+            min_value = temp
 
         # Step 2 - Call the function
-        result = roller.get_roll_number(min=min, max=max)
+        result = roller.get_roll_number(min_value=min_value, max_value=max_value)
 
         # Step 3 - Assert that everything works
         assert isinstance(result, int)
-        assert min <= result <= max
+        assert min_value <= result <= max_value

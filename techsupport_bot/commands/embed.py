@@ -49,8 +49,8 @@ async def has_embed_role(ctx: commands.Context) -> bool:
         ctx (commands.Context): Context of the invokation
 
     Raises:
-        commands.CommandError: Raised if embed_roles isn't set up
-        commands.MissingAnyRole: Raised if the invoker is missing a role
+        CommandError: Raised if embed_roles isn't set up
+        MissingAnyRole: Raised if the invoker is missing a role
 
     Returns:
         bool: Whether the invoker has the role

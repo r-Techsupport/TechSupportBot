@@ -28,7 +28,7 @@ class ListenChannel(commands.Converter):
     async def convert(self, ctx, argument: int):
         """Convert method for the converter.
 
-        parameters:
+        Args:
             ctx (discord.ext.commands.Context): the context object
             argument (int): the channel ID to convert
         """
@@ -80,7 +80,7 @@ class Listener(cogs.BaseCog):
     async def get_destinations(self, src):
         """Gets channel object destinations for a given source channel.
 
-        parameters:
+        Args:
             src (discord.TextChannel): the source channel to build for
         """
         destinations = self.destination_cache.get(src.id)
@@ -94,7 +94,7 @@ class Listener(cogs.BaseCog):
     async def build_destinations_from_src(self, src):
         """Builds channel objects for a given src.
 
-        parameters:
+        Args:
             src (discord.TextChannel): the source channel to build for
         """
         destination_data = await self.get_destination_data(src)
@@ -108,7 +108,7 @@ class Listener(cogs.BaseCog):
     ) -> list[discord.abc.Messageable]:
         """Converts destination ID's to their actual channels objects.
 
-        parameters:
+        Args:
             destination_ids (list[int]): the destination ID's to reference
         """
         destinations = set()
@@ -130,7 +130,7 @@ class Listener(cogs.BaseCog):
     async def get_destination_data(self, src: discord.TextChannel) -> list[str]:
         """Retrieves raw destination data given a source channel.
 
-        parameters:
+        Args:
             src (discord.TextChannel): the source channel to build for
         """
         destination_data = await self.bot.models.Listener.query.where(
@@ -212,7 +212,7 @@ class Listener(cogs.BaseCog):
     ) -> None:
         """Updates destinations in Postgres given a src.
 
-        parameters:
+        Args:
             src (discord.TextChannel): the source channel to build for
             dst (discord.TextChannel): the destination channel to build for
         """
@@ -247,7 +247,7 @@ class Listener(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the message
             src (ListenChannel): the source channel ID
             dst (ListenChannel): the destination channel ID
@@ -280,7 +280,7 @@ class Listener(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (discord.ext.Context): the context object for the message
             src (ListenChannel): the source channel ID
             dst (ListenChannel): the destination channel ID
@@ -313,7 +313,7 @@ class Listener(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (discord.ext.Context): the context object for the message
         """
         all_listens = await self.bot.models.Listener.query.gino.all()
@@ -333,7 +333,7 @@ class Listener(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (discord.ext.Context): the context object for the message
         """
         source_objects = await self.get_all_sources()
@@ -369,7 +369,7 @@ class Listener(cogs.BaseCog):
     async def on_message(self, message: discord.Message):
         """Listens to message events.
 
-        parameters:
+        Args:
             message (discord.Message): the message that triggered the event
         """
         if message.author.bot:
@@ -387,7 +387,7 @@ class Listener(cogs.BaseCog):
     async def on_extension_listener_event(self, payload):
         """Listens for custom extension-based events.
 
-        parameters:
+        Args:
             payload (dict): the data associated with the event
         """
         if not isinstance(getattr(payload, "embed", None), discord.Embed):

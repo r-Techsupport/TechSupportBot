@@ -22,7 +22,7 @@ class LogContext:
     """A very simple class to store a few contextual items about the log
     This is used to determine if some guild settings means the log shouldn't be logged
 
-    parameters:
+    Args:
         guild (discord.Guild): The guild the log occured with. Optional
         channel (discord.abc.Messageble): The channel, DM, thread,
             or other messagable the log occured in

@@ -211,23 +211,23 @@ class DuckHunt(cogs.LoopCog):
         await channel.send(embed=embed)
 
     async def handle_winner(
-        self,
+        self: Self,
         winner: discord.Member,
         guild: discord.Guild,
         action: str,
         raw_duration: datetime.datetime,
         channel: discord.abc.Messageable,
     ) -> None:
-        """
-        This is a function to update the database based on a winner
+        """This is a function to update the database based on a winner
 
-        Parameters:
-        winner -> A discord.Member object for the winner
-        guild -> A discord.Guild object for the guild the winner is a part of
-        action -> A string, either "befriended" or "killed", depending on the action
-        raw_duration -> A datetime object of the time since the duck spawned
-        channel -> The channel in which the duck game happened in
+        Args:
+            winner (discord.Member): A discord.Member object for the winner
+            guild (discord.Guild): A discord.Guild object for the guild the winner is a part of
+            action (str): A string, either "befriended" or "killed", depending on the action
+            raw_duration (datetime.datetime): A datetime object of the time since the duck spawned
+            channel (discord.abc.Messageable): The channel in which the duck game happened in
         """
+
         config_ = self.bot.guild_configs[str(guild.id)]
         log_channel = config_.get("logging_channel")
         await self.bot.logger.send_log(
@@ -386,7 +386,6 @@ class DuckHunt(cogs.LoopCog):
         """If it exists, will return the duck winner database entry
 
         Args:
-            self (Self): _description_
             user_id (int): The integer ID of the user
             guild_id (int): The guild ID of where the user belongs to
 
@@ -452,7 +451,6 @@ class DuckHunt(cogs.LoopCog):
         """Discord command for getting duck stats for a given user
 
         Args:
-            self (Self): _description_
             ctx (commands.Context): The context in which the command was run
             user (discord.Member, optional): The member to lookup stats for.
                 Defaults to ctx.message.author.
@@ -775,7 +773,6 @@ class DuckHunt(cogs.LoopCog):
         This is a discord command
 
         Args:
-            self (Self): _description_
             ctx (commands.Context): The context in which the command was run
             user (discord.Member): The user to donate a duck to
         """
@@ -854,7 +851,6 @@ class DuckHunt(cogs.LoopCog):
         This is a discord command
 
         Args:
-            self (Self): _description_
             ctx (commands.Context): The context in which the command was run
             user (discord.Member): The user to reset
         """

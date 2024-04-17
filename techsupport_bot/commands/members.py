@@ -12,6 +12,7 @@ Defines: get_members_with_role
 
 import datetime
 import io
+from typing import Self, Sequence
 
 import discord
 import yaml
@@ -28,14 +29,17 @@ class Members(cogs.BaseCog):
     """Class for the Member command on the discord bot."""
 
     async def get_members_with_role(
-        self, ctx: commands.Context, member_list: list, role_name: str
+        self: Self,
+        ctx: commands.Context,
+        member_list: Sequence[discord.Member],
+        role_name: str,
     ):
         """
         Gets a list of members with role_name for the invokers guild.
 
         Args:
-            ctx (command.Context): Used to return a message
-            member_list (list): A list of members to parse
+            ctx (commands.Context): Used to return a message
+            member_list (Sequence[discord.Member]): A list of members to parse
             role_name (str): The role to check for
         """
         # All roles are handled using a shorthand for loop because all

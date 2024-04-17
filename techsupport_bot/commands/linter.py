@@ -11,6 +11,7 @@ Defines: check_syntax
 """
 
 import json
+from typing import Self
 
 import discord
 from core import auxiliary, cogs
@@ -25,13 +26,14 @@ async def setup(bot):
 class Lint(cogs.BaseCog):
     """Class to add the lint command on the discord bot."""
 
-    async def check_syntax(self, message: discord.Message) -> str:
+    async def check_syntax(self: Self, message: discord.Message) -> str:
         """Checks if the json syntax is valid by trying to load it.
+
         Args:
-            message (discord.Message) - The message to check the json file of
+            message (discord.Message): The message to check the json file of
 
         Returns:
-            (str) - The thrown error
+            str: The thrown error
         """
         # The called method returns JSONDecodeError if the syntax is not valid.
         try:
@@ -46,10 +48,11 @@ class Lint(cogs.BaseCog):
         description="Checks the syntax of an attached json file",
         usage="|json-file|",
     )
-    async def lint(self, ctx: commands.Context):
+    async def lint(self: Self, ctx: commands.Context) -> None:
         """Method to add the lint command to the discord bot.
+
         Args:
-            ctx (commands.Context) - The context in which the command was run
+            ctx (commands.Context): The context in which the command was run
         """
         await self.lint_command(ctx)
 

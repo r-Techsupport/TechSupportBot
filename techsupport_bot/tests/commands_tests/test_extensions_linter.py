@@ -10,15 +10,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from commands import linter
 from core import auxiliary
-from tests import config_for_tests
+from tests import config_for_tests, helpers
 
 
-def setup_local_extension(bot=None):
+def setup_local_extension(bot: helpers.MockBot = None):
     """A simple function to setup an instance of the linter extension
 
     Args:
-        bot (MockBot, optional): A fake bot object. Should be used if using a
-        fake_discord_env in the test. Defaults to None.
+        bot (helpers.MockBot, optional): A fake bot object. Should be used if using a
+            fake_discord_env in the test. Defaults to None.
 
     Returns:
         Lint: The instance of the Lint class

@@ -46,7 +46,7 @@ class IPInfo(cogs.BaseCog):
     def generate_embed(self, ip: str, fields: dict[str, str]) -> discord.Embed:
         """Generates an embed from a set of key, values.
 
-        parameters:
+        Args:
             ip (str): the ip address
             fields (dict): dictionary containing embed field titles and
             their contents

@@ -43,9 +43,9 @@ class Helper(cogs.BaseCog):
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the message
-            search_term (str) [Optional]; The term to search command name and descriptions for.
+            search_term (str, Optional): The term to search command name and descriptions for.
                 Will default to empty string
         """
         # Build raw lists of commands

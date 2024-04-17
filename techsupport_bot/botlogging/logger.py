@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class BotLogger:
     """Logging interface for Discord bots.
 
-    parameters:
+    Args:
         bot (bot.TechSupportBot): the bot object
         name (str): the name of the logging channel
         send (bool): Whether or not to allow sending of logs to discord

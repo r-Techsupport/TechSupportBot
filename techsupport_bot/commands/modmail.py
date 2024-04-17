@@ -16,7 +16,7 @@ from __future__ import annotations
 import asyncio
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Self, Tuple
 
 import discord
 import expiringdict
@@ -40,8 +40,8 @@ async def has_modmail_management_role(
         config (munch.Munch): Can be defined manually to run this without providing actual ctx
 
     Raises:
-        commands.CommandError: No modmail management roles were assigned in the config
-        commands.MissingAnyRole: Invoker doesn't have a modmail role
+        CommandError: No modmail management roles were assigned in the config
+        MissingAnyRole: Invoker doesn't have a modmail role
 
     Returns:
         bool: Whether the invoker has a modmail management role
@@ -128,12 +128,12 @@ class Modmail_bot(discord.Client):
 
     @commands.Cog.listener()
     async def on_typing(
-        self, channel: discord.DMChannel, user: discord.User, _: datetime
+        self: Self, channel: discord.DMChannel, user: discord.User, _: datetime
     ) -> None:
         """When someone starts typing in modmails dms, start typing in the corresponding thread
 
         Args:
-            channel (discord.Channel): The channel where someone started typing
+            channel (discord.DMChannel): The channel where someone started typing
             user (discord.User): The user who started typing
         """
         if isinstance(channel, discord.DMChannel) and user.id in active_threads:
@@ -259,7 +259,6 @@ async def build_attachments(
     """Returns a list of as many files from a message as the bot can send to the given channel
 
     Args:
-
         thread (discord.Thread): The thread the attachments are going to be sent to
                                  (To get the maximum file size)
         message (discord.Message): The message to get the attachments from
@@ -858,10 +857,14 @@ async def setup(bot):
 
 
 class Modmail(cogs.BaseCog):
-    """The modmail cog class"""
+    """The modmail cog class
 
-    def __init__(self, bot: bot.TechSupportBot):
-        """Init is used to make variables global so they can be used on the modmail side"""
+    Raises:
+        AttributeError: Modmail aborting loading due to being disabled
+    """
+
+    def __init__(self: Self, bot: bot.TechSupportBot):
+        # Init is used to make variables global so they can be used on the modmail side
         super().__init__(bot=bot)
 
         # Only runs if modmail is enabled

@@ -9,7 +9,7 @@ import time
 import urllib
 from collections import deque
 from json import JSONDecodeError
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Self
 from urllib.parse import urlparse
 
 import aiohttp
@@ -80,18 +80,25 @@ class HTTPCalls:
             print("No linx API URL found. Not rate limiting linx")
 
     async def http_call(
-        self, method: str, url: str, *args: tuple, **kwargs: dict[str, Any]
+        self: Self, method: str, url: str, *args: tuple, **kwargs: dict[str, Any]
     ):
         """Makes an HTTP request.
 
         By default this returns JSON/dict with the status code injected.
 
-        parameters:
+        Args:
             method (str): the HTTP method to use
             url (str): the URL to call
-            use_cache (bool): True if the GET result should be grabbed from cache
+            use_cache (bool):  True if the GET result should be grabbed from cache
             get_raw_response (bool): True if the actual response object should be returned
+
+        Raises:
+            HTTPRateLimit: Raised if the API is currently on cooldown
+
+        Returns:
+            _type_: _description_
         """
+
         # Get the URL not the endpoint being called
         ignore_rate_limit = False
         root_url = urlparse(url).netloc

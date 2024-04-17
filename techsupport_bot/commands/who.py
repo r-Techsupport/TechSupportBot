@@ -54,7 +54,18 @@ class Who(cogs.BaseCog):
     @staticmethod
     async def is_reader(interaction: discord.Interaction) -> bool:
         """Checks whether invoker can read notes. If at least one reader
-        role is not set, all members can read notes."""
+        role is not set, all members can read notes
+
+        Args:
+            interaction (discord.Interaction): The interaction in which the whois command occured
+
+        Raises:
+            CommandError: Raised if there are no note_readers set in the config
+
+        Returns:
+            bool: True if the user can run, False if they cannot
+        """
+
         config = interaction.client.guild_configs[str(interaction.guild.id)]
         if reader_roles := config.extensions.who.note_readers.value:
             roles = (
