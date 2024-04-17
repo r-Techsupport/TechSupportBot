@@ -8,12 +8,23 @@ This file contains 2 commands:
     .command enable
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot) -> None:
-    """Registers the CommandControl Cog"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Command Control plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(CommandControl(bot=bot))
 
 

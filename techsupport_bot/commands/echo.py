@@ -8,12 +8,23 @@ This file contains 2 commands:
     .echo channel
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot) -> None:
-    """Registers the MessageEcho Cog"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Echo plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(MessageEcho(bot=bot))
 
 
@@ -26,7 +37,7 @@ class MessageEcho(cogs.BaseCog):
     @commands.group(
         brief="Executes an echo bot command", description="Executes an echo bot command"
     )
-    async def echo(self, ctx: commands.Context) -> None:
+    async def echo(self: Self, ctx: commands.Context) -> None:
         """The bare .echo command. This does nothing but generate the help message
 
         Args:

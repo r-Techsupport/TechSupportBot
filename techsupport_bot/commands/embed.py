@@ -10,14 +10,25 @@ Subcommands: embed
 Defines: has_embed_role
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 import discord
 import munch
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot) -> None:
-    """Registers the extension and its config"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Embed plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     config = extensionconfig.ExtensionConfig()
     config.add(
         key="embed_roles",

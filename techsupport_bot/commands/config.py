@@ -1,17 +1,27 @@
 """Module for config commands."""
 
+from __future__ import annotations
+
 import datetime
 import io
 import json
+from typing import TYPE_CHECKING
 
 import discord
 import ui
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot) -> None:
-    """Method to add burn command to config."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Guild Config plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(ConfigControl(bot=bot))
 
 

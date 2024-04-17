@@ -4,6 +4,9 @@ This module has unit tests
 This modules requires no config, no databases, and no APIs
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
 from unicodedata import lookup
 
 import discord
@@ -12,9 +15,16 @@ import inflect
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot) -> None:
-    """Method to add emoji commands to config."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Emoji plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(Emojis(bot=bot))
 
 
@@ -152,8 +162,12 @@ class Emojis(cogs.BaseCog):
         brief="Executes an emoji command",
         description="Executes a emoji command",
     )
-    async def emoji(self, ctx: commands.Context) -> None:
-        """Executed if there are no/invalid args supplied"""
+    async def emoji(self: Self, ctx: commands.Context) -> None:
+        """The bare .emoji command. This does nothing but generate the help message
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
         await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @auxiliary.with_typing
@@ -163,9 +177,13 @@ class Emojis(cogs.BaseCog):
         description="Creates an emoji message",
         usage="[message]",
     )
-    async def message(self, ctx: commands.Context, *, message: str) -> None:
-        """This is a command and should be run via discord
-        This is for generating a message of emojis"""
+    async def message(self: Self, ctx: commands.Context, *, message: str) -> None:
+        """Entry point for the message generation emoji command
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+            message (str): The string to turn into emojis
+        """
         await self.emoji_commands(ctx, message, False)
 
     @commands.has_permissions(add_reactions=True)
@@ -178,7 +196,11 @@ class Emojis(cogs.BaseCog):
     async def reaction(
         self, ctx: commands.Context, message: str, react_user: discord.Member
     ) -> None:
-        """This is a command and should be run via discord
-        This is for reacting to a message with emojis
-        The message must be unique in this command"""
+        """Entry point for the reaction emoji command
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+            message (str): The string to add as reactions
+            react_user (discord.Member): The member whose message is to be reacted to
+        """
         await self.emoji_commands(ctx, message, True, react_user)
