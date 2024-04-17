@@ -46,7 +46,7 @@ class BaseCog(commands.Cog):
 
         asyncio.create_task(self._preconfig())
 
-    async def _handle_preconfig(self, handler):
+    async def _handle_preconfig(self, handler) -> None:
         """Wrapper for performing preconfig on an extension.
 
         This makes the extension unload when there is an error.
