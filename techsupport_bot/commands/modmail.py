@@ -928,9 +928,6 @@ class Modmail(cogs.BaseCog):
 
         Args:
             message (discord.Message): The sent message
-
-        Raises:
-            commands.MissingAnyRole: When the invoker doesn't have a modmail role
         """
         if (
             not message.content.startswith(self.prefix)
