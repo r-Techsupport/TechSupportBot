@@ -402,7 +402,7 @@ class TechSupportBot(commands.Bot):
 
     # File config loading functions
 
-    def load_file_config(self, validate: bool = True):
+    def load_file_config(self, validate: bool = True) -> None:
         """Loads the config yaml file into a bot object.
 
         Args:
@@ -423,7 +423,7 @@ class TechSupportBot(commands.Bot):
         for subsection in ["required"]:
             self.validate_bot_config_subsection("bot_config", subsection)
 
-    def validate_bot_config_subsection(self, section: str, subsection: str):
+    def validate_bot_config_subsection(self, section: str, subsection: str) -> None:
         """Loops through a config subsection to check for missing values.
 
         Args:
@@ -969,7 +969,7 @@ class TechSupportBot(commands.Bot):
 
     # IRC Stuff
 
-    async def start_irc(self):
+    async def start_irc(self) -> None:
         """Starts the IRC connection in a seperate thread"""
         irc_config = getattr(self.file_config.api, "irc")
         main_loop = asyncio.get_running_loop()

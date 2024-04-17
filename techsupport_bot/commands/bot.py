@@ -15,7 +15,7 @@ from core import auxiliary, cogs
 from discord.ext import commands
 
 
-async def setup(bot):
+async def setup(bot) -> None:
     """Registers the BotInfo Cog"""
     await bot.add_cog(BotInfo(bot=bot))
 
@@ -27,7 +27,7 @@ class BotInfo(cogs.BaseCog):
 
     @commands.check(auxiliary.bot_admin_check_context)
     @commands.command(name="bot", description="Provides bot info")
-    async def get_bot_data(self, ctx):
+    async def get_bot_data(self, ctx) -> None:
         """Gets various data about the bot.
 
         This is a command and should be accessed via Discord.

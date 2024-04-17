@@ -16,7 +16,7 @@ from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 
-async def setup(bot):
+async def setup(bot) -> None:
     """Registers the extension and its config"""
     config = extensionconfig.ExtensionConfig()
     config.add(
@@ -79,7 +79,7 @@ class Embedder(cogs.BaseCog):
         + "(see: https://discord.com/developers/docs/resources/channel#embed-object)",
         usage="[keep-succesful-if-one-fails] |embed-list-json-upload|",
     )
-    async def embed(self, ctx: commands.Context, *, keep_option: str = None):
+    async def embed(self, ctx: commands.Context, *, keep_option: str = None) -> None:
         """Command to convert an attached .json to an embed
 
         Args:

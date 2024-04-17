@@ -1,10 +1,13 @@
 """Module for the duck extension"""
 
+from __future__ import annotations
+
 import asyncio
 import datetime
 import functools
 import random
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 import discord
 import munch
@@ -14,8 +17,11 @@ from core import auxiliary, cogs, extensionconfig
 from discord import Color as embed_colors
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
+
+async def setup(bot) -> None:
     """Method to add duck into the config file"""
 
     config = extensionconfig.ExtensionConfig()
@@ -92,11 +98,11 @@ class DuckHunt(cogs.LoopCog):
     ON_START = False
     CHANNELS_KEY = "hunt_channels"
 
-    async def loop_preconfig(self):
+    async def loop_preconfig(self) -> None:
         """Preconfig for cooldowns"""
         self.cooldowns = {}
 
-    async def wait(self, config, _):
+    async def wait(self, config, _) -> None:
         """Method for the duck loop"""
         await asyncio.sleep(
             random.randint(
@@ -105,7 +111,9 @@ class DuckHunt(cogs.LoopCog):
             )
         )
 
-    async def execute(self, config, guild, channel, banned_user: discord.User = None):
+    async def execute(
+        self, config, guild, channel, banned_user: discord.User = None
+    ) -> None:
         """Method for sending the duck"""
         if not channel:
             config = self.bot.guild_configs[str(guild.id)]
@@ -166,7 +174,7 @@ class DuckHunt(cogs.LoopCog):
         else:
             await self.got_away(channel)
 
-    async def got_away(self, channel):
+    async def got_away(self, channel) -> None:
         """Sends a "got away!" embed when timeout passes"""
         embed = discord.Embed(
             title="A duck got away!",
@@ -176,7 +184,14 @@ class DuckHunt(cogs.LoopCog):
 
         await channel.send(embed=embed)
 
-    async def handle_winner(self, winner, guild, action, raw_duration, channel):
+    async def handle_winner(
+        self,
+        winner: discord.Member,
+        guild: discord.Guild,
+        action: str,
+        raw_duration: datetime.datetime,
+        channel: discord.abc.Messageable,
+    ) -> None:
         """
         This is a function to update the database based on a winner
 
@@ -262,7 +277,7 @@ class DuckHunt(cogs.LoopCog):
         duck_message: discord.Message,
         banned_user: discord.User,
         message: discord.Message,
-    ):
+    ) -> bool:
         """Method to check if 'bef' or 'bang' was typed"""
         # ignore other channels
         if message.channel.id != channel.id:
@@ -328,7 +343,7 @@ class DuckHunt(cogs.LoopCog):
 
         return choice_
 
-    async def get_duck_user(self, user_id, guild_id):
+    async def get_duck_user(self, user_id, guild_id) -> bot.models.DuckUser:
         """Method to get the duck winner"""
         duck_user = (
             await self.bot.models.DuckUser.query.where(
@@ -340,7 +355,7 @@ class DuckHunt(cogs.LoopCog):
 
         return duck_user
 
-    async def get_global_record(self, guild_id):
+    async def get_global_record(self, guild_id) -> float:
         """
         This is a function to get the current global speed record in a given guild
 
@@ -362,7 +377,7 @@ class DuckHunt(cogs.LoopCog):
         brief="Executes a duck command",
         description="Executes a duck command",
     )
-    async def duck(self, ctx):
+    async def duck(self, ctx: commands.Context) -> None:
         """Method to make the initial duck command"""
 
         # Executed if there are no/invalid args supplied
@@ -375,7 +390,9 @@ class DuckHunt(cogs.LoopCog):
         description="Gets duck friendships and kills for yourself or another user",
         usage="@user (defaults to yourself)",
     )
-    async def stats(self, ctx, *, user: discord.Member = None):
+    async def stats(
+        self, ctx: commands.Context, *, user: discord.Member = None
+    ) -> None:
         """Method for viewing duck stats"""
         if not user:
             user = ctx.message.author
@@ -413,7 +430,7 @@ class DuckHunt(cogs.LoopCog):
         brief="Get duck friendship scores",
         description="Gets duck friendship scores for all users",
     )
-    async def friends(self, ctx):
+    async def friends(self, ctx: commands.Context) -> None:
         """Method for viewing top friend counts"""
         duck_users = (
             await self.bot.models.DuckUser.query.order_by(
@@ -468,7 +485,7 @@ class DuckHunt(cogs.LoopCog):
         brief="Get the record holder",
         description="Gets the current speed record holder, and their time",
     )
-    async def record(self, ctx):
+    async def record(self, ctx: commands.Context) -> None:
         """
         This is a command and should be run via discord
 
@@ -503,7 +520,7 @@ class DuckHunt(cogs.LoopCog):
         brief="Get duck kill scores",
         description="Gets duck kill scores for all users",
     )
-    async def killers(self, ctx):
+    async def killers(self, ctx: commands.Context) -> None:
         """Method for viewing top killer counts"""
         duck_users = (
             await self.bot.models.DuckUser.query.order_by(
@@ -551,7 +568,7 @@ class DuckHunt(cogs.LoopCog):
 
         await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
-    def get_user_text(self, duck_user):
+    def get_user_text(self, duck_user) -> str:
         """Method to get the user for the top commands"""
         user = self.bot.get_user(int(duck_user.author_id))
         if user:
@@ -608,7 +625,7 @@ class DuckHunt(cogs.LoopCog):
             "Adds a duck to your kill count. Why would you even want to do that?!"
         ),
     )
-    async def kill(self, ctx):
+    async def kill(self, ctx: commands.Context) -> None:
         """Method for killing ducks"""
         config = self.bot.guild_configs[str(ctx.guild.id)]
         if not config.extensions.duck.allow_manipulation.value:
@@ -661,7 +678,7 @@ class DuckHunt(cogs.LoopCog):
         description="Gives someone the gift of a live duck",
         usage="[user]",
     )
-    async def donate(self, ctx: commands.Context, user: discord.Member):
+    async def donate(self, ctx: commands.Context, user: discord.Member) -> None:
         """Method for donating ducks"""
         config = self.bot.guild_configs[str(ctx.guild.id)]
         if not config.extensions.duck.allow_manipulation.value:
@@ -733,7 +750,7 @@ class DuckHunt(cogs.LoopCog):
         description="Deletes the database entry of the target",
         usage="[user]",
     )
-    async def reset(self, ctx, user: discord.Member):
+    async def reset(self, ctx: commands.Context, user: discord.Member) -> None:
         """Method for resetting duck counts"""
         if user.bot:
             await auxiliary.send_deny_embed(

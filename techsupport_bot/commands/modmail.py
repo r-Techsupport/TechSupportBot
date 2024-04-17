@@ -135,7 +135,6 @@ class Modmail_bot(discord.Client):
         Args:
             channel (discord.Channel): The channel where someone started typing
             user (discord.User): The user who started typing
-            _ (datetime.datetime): The timestamp of when typing started, unused
         """
         if isinstance(channel, discord.DMChannel) and user.id in active_threads:
             await self.get_channel(active_threads[user.id]).typing()
