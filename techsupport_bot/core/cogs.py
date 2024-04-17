@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Any, List
 
 import discord
 import gino
@@ -46,7 +46,7 @@ class BaseCog(commands.Cog):
 
         asyncio.create_task(self._preconfig())
 
-    async def _handle_preconfig(self, handler):
+    async def _handle_preconfig(self, handler) -> None:
         """Wrapper for performing preconfig on an extension.
 
         This makes the extension unload when there is an error.
@@ -143,9 +143,9 @@ class MatchCog(BaseCog):
         """Runs a boolean check on message content.
 
         parameters:
-            config (dict): the config associated with the context
-            ctx (context): the context object
-            content (str): the message content
+            _config (dict): the config associated with the context
+            _ctx (context): the context object
+            _content (str): the message content
         """
         return True
 
@@ -155,9 +155,9 @@ class MatchCog(BaseCog):
         """Performs a response if the match is valid.
 
         parameters:
-            config (dict): the config associated with the context
-            ctx (context): the context object
-            content (str): the message content
+            _config (dict): the config associated with the context
+            _ctx (context): the context object
+            _content (str): the message content
         """
 
 
@@ -176,7 +176,7 @@ class LoopCog(BaseCog):
     ON_START: bool = False
     CHANNELS_KEY: str = "channels"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: tuple, **kwargs: dict[str, Any]):
         super().__init__(*args, **kwargs)
         asyncio.create_task(self._loop_preconfig())
         self.channels = {}
@@ -288,7 +288,7 @@ class LoopCog(BaseCog):
                         )
                         continue
 
-                    if not channel.id in [ch.id for ch in registered_channels]:
+                    if channel.id not in [ch.id for ch in registered_channels]:
                         await self.bot.logger.send_log(
                             message=(
                                 f"Found new channel with ID {channel.id} in loop config"
@@ -374,9 +374,9 @@ class LoopCog(BaseCog):
         """Runs sequentially after each wait method.
 
         parameters:
-            config (munch.Munch): the config object for the guild
-            guild (discord.Guild): the guild associated with the execution
-            target_channel (discord.Channel): the channel object to use
+            _config (munch.Munch): the config object for the guild
+            _guild (discord.Guild): the guild associated with the execution
+            _target_channel (discord.Channel): the channel object to use
         """
 
     async def _default_wait(self) -> None:
@@ -387,7 +387,7 @@ class LoopCog(BaseCog):
         """The default wait method.
 
         parameters:
-            config (munch.Munch): the config object for the guild
-            guild (discord.Guild): the guild associated with the execution
+            _config (munch.Munch): the config object for the guild
+            _guild (discord.Guild): the guild associated with the execution
         """
         await self._default_wait()

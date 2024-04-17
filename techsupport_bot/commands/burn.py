@@ -4,15 +4,25 @@ This module has unit tests
 This modules requires no config, no databases, and no APIs
 """
 
+from __future__ import annotations
+
 import random
+from typing import TYPE_CHECKING, Self
 
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Method to add burn command to config."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Burn plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(Burn(bot=bot))
 
 
@@ -29,7 +39,10 @@ class Burn(cogs.BaseCog):
     ]
 
     async def handle_burn(
-        self, ctx, user: discord.Member, message: discord.Message
+        self: Self,
+        ctx: commands.Context,
+        user: discord.Member,
+        message: discord.Message,
     ) -> None:
         """The core logic to handle the burn command
 
@@ -80,7 +93,7 @@ class Burn(cogs.BaseCog):
         description="Declares the user's last message as a BURN!",
         usage="@user",
     )
-    async def burn(self, ctx: commands.Context, user_to_match: discord.Member):
+    async def burn(self, ctx: commands.Context, user_to_match: discord.Member) -> None:
         """The only purpose of this function is to accept input from discord
 
         Args:

@@ -18,7 +18,7 @@ async def setup(bot: bot.TechSupportBot):
     """Adding config and the cog to the bot
 
     Args:
-        bot (commands.Bot): The bot object
+        bot (bot.TechSupportBot): The bot object
     """
     config = extensionconfig.ExtensionConfig()
     config.add(
@@ -158,6 +158,7 @@ class RoleGiver(cogs.BaseCog):
                 "You are not allowed to execute this command"
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
 
         if len(role_options) == 0:
             embed = auxiliary.prepare_deny_embed("No self assignable roles are setup")
@@ -214,7 +215,7 @@ class RoleGiver(cogs.BaseCog):
         Args:
             user (discord.User): The user executing the command
             guild (discord.Guild): The guild the command was run in
-            roles (list): A list of the roles allowed to execute
+            roles (list[str]): A list of the roles allowed to execute
 
         Returns:
             bool: True if can execute, false if cannot
@@ -277,7 +278,7 @@ class RoleGiver(cogs.BaseCog):
                 to the user. Any roles not on this list will be removed
             guild (discord.Guild): The guild to assign the roles in
             user (discord.Member): The member to assign roles to
-            resaon (str): The reason to add to the audit log
+            reason (str): The reason to add to the audit log
             interaction (discord.Interaction): The interaction to respond to
         """
         added_roles = []

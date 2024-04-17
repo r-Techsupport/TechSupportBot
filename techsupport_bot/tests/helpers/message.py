@@ -21,7 +21,7 @@ class MockMessage:
         self.attachments = attachments
         self.reactions = reactions
 
-    async def add_reaction(self, reaction):
+    async def add_reaction(self, reaction: list):
         """Replication of the adding a reaction
         Adding reactions to a previous message
 

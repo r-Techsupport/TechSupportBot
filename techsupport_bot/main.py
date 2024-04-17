@@ -1,6 +1,5 @@
 """TechSupport Bot main thread."""
 
-import asyncio
 import logging
 import os
 
@@ -33,4 +32,8 @@ bot_ = bot.TechSupportBot(
     intents=intents,
     allowed_mentions=discord.AllowedMentions(everyone=False, roles=False),
 )
-asyncio.run(bot_.start())
+# Creates & starts a custom event loop for the bot, because Modmail runs its own one as well and
+# you can not run nested asyncio loops
+
+bot.loop.create_task(bot_.start())
+bot.loop.run_forever()

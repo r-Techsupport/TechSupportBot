@@ -1,6 +1,5 @@
 """
-Convert a value or evalute a mathematical expression to decimal, hex, binary, and ascii encoding
-
+Convert a value or evaluate a mathematical expression to decimal, hex, binary, and ascii encoding
 """
 
 import discord
@@ -24,7 +23,7 @@ class Htd(cogs.BaseCog):
 
     def split_nicely(self, str_to_split: str) -> list:
         """Takes an input string of an equation, and
-            returns a list with numbers and operators in seperate parts
+            returns a list with numbers and operators in separate parts
 
         Args:
             str_to_split (str): The equation to parse
@@ -65,7 +64,7 @@ class Htd(cogs.BaseCog):
             val (str): The given value to convert
 
         Returns:
-            int: The value represeted as an integer
+            int: The value represented as an integer
         """
 
         if val.replace("-", "").startswith("0x"):
@@ -125,14 +124,14 @@ class Htd(cogs.BaseCog):
         brief="Convert values to different bases",
         description=(
             "Takes a value and returns the value in different bases and"
-            " encodings (bianary, hex, base 10, and ascii)"
+            " encodings (binary, hex, base 10, and ascii)"
         ),
         usage=(
-            "`htd [value]`\nAccepts numbers in the following formats:\n0x"
-            " (hex)\n0b (binary) \nNo prefix (assumed ascii)"
+            "`[value]`\nAccepts numbers in the following formats:\n0x"
+            " (hex)\n0b (binary) \nNo prefix (assumed decimal)"
         ),
     )
-    async def htd(self, ctx, *, val_to_convert):
+    async def htd(self, ctx: commands.Context, *, val_to_convert: str):
         """This discord command for .htd
 
         Args:
@@ -143,7 +142,7 @@ class Htd(cogs.BaseCog):
 
     def clean_input(self, input: str) -> str:
         """A method to clean up input to be better processed by later functions
-        This replaces "#" with "0x" to recoginzed "#" as hex
+        This replaces "#" with "0x" to recognized "#" as hex
         It also removes quotes and spaces
 
         Args:
@@ -291,7 +290,7 @@ class Htd(cogs.BaseCog):
         """The main logic for the htd command
 
         Args:
-            ctx (command.Context): The context in which the command was run it
+            ctx (commands.Context): The context in which the command was run it
             val_to_convert (str): The raw user input
         """
         val_to_convert = self.clean_input(val_to_convert)

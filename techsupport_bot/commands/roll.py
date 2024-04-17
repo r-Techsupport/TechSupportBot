@@ -24,7 +24,7 @@ class Roller(cogs.BaseCog):
         description="Rolls a random number in a given range",
         usage="[minimum] [maximum] (defaults to 1-100)",
     )
-    async def roll(self, ctx, min: int = 1, max: int = 100):
+    async def roll(self, ctx: commands.Context, min: int = 1, max: int = 100):
         """The function that is called when .roll is run on discord
 
         Args:

@@ -4,15 +4,25 @@ This module has unit tests
 This modules requires no config, no databases, and no APIs
 """
 
+from __future__ import annotations
+
 import random
+from typing import TYPE_CHECKING
 
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Method to add conch to the config in discord bot."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Magic Conch plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(MagicConch(bot=bot))
 
 
@@ -58,7 +68,7 @@ class MagicConch(cogs.BaseCog):
             question += "?"
         return question
 
-    async def conch_command(self, ctx, question: str = "") -> None:
+    async def conch_command(self, ctx: commands.Context, question: str = "") -> None:
         """Method for the core logic of the conch command
 
         Args:
@@ -86,6 +96,12 @@ class MagicConch(cogs.BaseCog):
         description="Asks the Magic Conch (8ball) a question",
         usage="[question]",
     )
-    async def ask_question(self, ctx: commands.Context, *, question: str = ""):
-        """Method for how the conch command works for the bot."""
+    async def ask_question(self, ctx: commands.Context, *, question: str = "") -> None:
+        """Method for how the conch command works for the bot.
+        This is a command and should be run via discord
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+            question (str, optional): The question to ask the magic conch. Defaults to "".
+        """
         await self.conch_command(ctx, question)

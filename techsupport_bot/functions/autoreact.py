@@ -1,6 +1,8 @@
 """Module for the autoreact extension for the discord bot."""
 
+import munch
 from core import auxiliary, cogs, extensionconfig
+from discord.ext import commands
 
 
 async def setup(bot):
@@ -21,12 +23,13 @@ async def setup(bot):
 class AutoReact(cogs.MatchCog):
     """Class for the autoreact to make it to discord."""
 
-    async def match(self, config, _, content):
+    async def match(
+        self, config: munch.Munch, _: commands.Context, content: str
+    ) -> bool:
         """A match function to determine if somehting should be reacted to
 
         Args:
             config (munch.Munch): The guild config for the running bot
-            _ (commands.Context): The context in which the message was sent in
             content (str): The string content of the message
 
         Returns:
@@ -39,14 +42,15 @@ class AutoReact(cogs.MatchCog):
                 return True
         return False
 
-    async def response(self, config, ctx, content, _):
+    async def response(
+        self, config: munch.Munch, ctx: commands.Context, content: str, _: bool
+    ):
         """The function to generate and add reactions
 
         Args:
             config (munch.Munch): The guild config for the running bot
             ctx (commands.Context): The context in which the message was sent in
             content (str): The string content of the message
-            _ (bool): The result from the match function
         """
         search_content = f" {content} "
         search_content = search_content.lower()

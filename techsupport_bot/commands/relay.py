@@ -3,6 +3,7 @@
 from typing import Dict, List, Union
 
 import discord
+import irc.client
 import munch
 import ui
 from bidict import bidict
@@ -126,7 +127,7 @@ class DiscordToIRC(cogs.MatchCog):
         brief="Executes an irc command",
         description="Executes an irc command",
     )
-    async def irc(self, ctx: commands.Context) -> None:
+    async def irc_base(self, ctx: commands.Context) -> None:
         """The base set of IRC commands
 
         Args:
@@ -299,7 +300,7 @@ class DiscordToIRC(cogs.MatchCog):
 
         joined_channels = getattr(self.bot.file_config.api.irc, "channels")
 
-        if not irc_channel in joined_channels:
+        if irc_channel not in joined_channels:
             await auxiliary.send_deny_embed(
                 message="I am not in that IRC channel", channel=ctx.channel
             )
@@ -495,12 +496,15 @@ class DiscordToIRC(cogs.MatchCog):
             reaction=reaction, user=user, channel=self.mapping[str(channel.id)]
         )
 
-    async def handle_dm_from_irc(self, message: str, event) -> None:
+    async def handle_dm_from_irc(self, message: str, event: irc.client.Event) -> None:
         """Sends a DM to the owner of the bot based on a message from IRC
 
         Args:
             message (str): The message from IRC that the IRC Bot recieved
             event (irc.client.Event): The event object that triggered this function
         """
-        owner = await self.bot.get_owner()
-        await owner.send(f"PM from `{event.source}`: {message}")
+        await self.bot.log_DM(
+            event.source,
+            "IRC Bot",
+            message,
+        )

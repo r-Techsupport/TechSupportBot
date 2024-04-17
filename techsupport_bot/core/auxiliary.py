@@ -5,17 +5,20 @@ This replaces duplicate or similar code across many extensions
 
 import json
 from functools import wraps
+from typing import Any
 
 import discord
 import munch
 import ui
 from discord.ext import commands
 
+default_color = discord.Color.blurple()
+
 
 def generate_basic_embed(
     title: str = "",
     description: str = "",
-    color: discord.Color = discord.Color.blurple(),
+    color: discord.Color = default_color,
     url: str = "",
 ) -> discord.Embed:
     """Generates a basic embed
@@ -49,7 +52,7 @@ async def search_channel_for_message(
     """Searches the last 50 messages in a channel based on given conditions
 
     Args:
-        channel (discord.TextChannel): The channel to search in. This is required
+        channel (discord.abc.Messageable): The channel to search in. This is required
         prefix (str, optional): A prefix you want to exclude from the search. Defaults to None.
         member_to_match (discord.Member, optional): The member that the
             message found must be from. Defaults to None.
@@ -145,7 +148,7 @@ async def send_deny_embed(
     Args:
         message (str): The reason for deny
         channel (discord.abc.Messageable): The channel to send the deny embed to
-        author (discord.Member, optional): The author of the message.
+        author (discord.Member | None, optional): The author of the message.
             If this is provided, the author will be mentioned
 
     Returns:
@@ -183,7 +186,7 @@ async def send_confirm_embed(
     Args:
         message (str): The reason for confirm
         channel (discord.abc.Messageable): The channel to send the confirm embed to
-        author (discord.Member, optional): The author of the message.
+        author (discord.Member | None, optional): The author of the message.
             If this is provided, the author will be mentioned
 
     Returns:
@@ -202,7 +205,6 @@ async def get_json_from_attachments(
     """Returns concatted JSON from a message's attachments.
 
     parameters:
-        ctx (discord.ext.Context): the context object for the message
         message (Message): the message object
         as_string (bool): True if the serialized JSON should be returned
         allow_failure (bool): True if an exception should be ignored when parsing attachments
@@ -273,7 +275,8 @@ def with_typing(command: commands.Command) -> commands.Command:
     original_callback = command.callback
 
     @wraps(original_callback)
-    async def typing_wrapper(*args, **kwargs):
+    async def typing_wrapper(*args: tuple, **kwargs: dict[str, Any]) -> None:
+        """The wrapper to add typing to any given function and call the original function"""
         context = args[1]
 
         typing_func = getattr(context, "typing", None)

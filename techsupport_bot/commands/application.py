@@ -596,11 +596,10 @@ class ApplicationManager(cogs.LoopCog):
         """This builds the embed that will be sent to staff
 
         Args:
-            applicant (discord.Member): The member who has applied
-            background (str): The answer to the background question
-            reason (str): The answer to the reason question
-            new (bool, Optional): If the application is new and the title should include new.
-                Defaults to True
+            guild (discord.Guild): The guild the user has applied to
+            application (bot.models.Applications): The database entry of the application
+            new (bool, optional): If the application is new and the title should
+                include new. Defaults to True.
 
         Returns:
             discord.Embed: The stylized embed ready to be show to people
@@ -754,7 +753,7 @@ class ApplicationManager(cogs.LoopCog):
         interaction: discord.Interaction,
         application: bot.models.Applications,
         member: discord.Member,
-    ):
+    ) -> None:
         """Notifies:
             - The invoker
             - The user
@@ -946,17 +945,13 @@ class ApplicationManager(cogs.LoopCog):
 
         embed = discord.Embed(title="All pending applcations")
 
-        for app in apps:
-            if embed.description:
-                embed.description = (
-                    f"{embed.description}\nApplication by: {app.applicant_name},"
-                    f" applied on: {app.application_time}"
-                )
-            else:
-                embed.description = (
-                    f"Application by: {app.applicant_name}, applied on:"
-                    f" {app.application_time}"
-                )
+        embed.description = "\n".join(
+            [
+                f"Application by: `{guild.get_member(int(app.applicant_id)).display_name} "
+                f"({app.applicant_name})`, applied on: {app.application_time}"
+                for app in apps
+            ]
+        )
 
         await channel.send(embed=embed)
 

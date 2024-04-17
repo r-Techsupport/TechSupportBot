@@ -10,14 +10,25 @@ This file contains 4 commands:
     .extension register
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 import discord
 import ui
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Registers the ExtensionControl Cog"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Extension Control plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(ExtensionControl(bot=bot))
 
 
@@ -32,7 +43,7 @@ class ExtensionControl(cogs.BaseCog):
         brief="Executes an extension bot command",
         description="Executes an extension bot command",
     )
-    async def extension_group(self, ctx):
+    async def extension_group(self: Self, ctx: commands.Context) -> None:
         """The bare .extension command. This does nothing but generate the help message
 
         Args:
@@ -48,13 +59,15 @@ class ExtensionControl(cogs.BaseCog):
         description="Gets the status of an extension by name",
         usage="[extension-name]",
     )
-    async def extension_status(self, ctx, *, extension_name: str):
+    async def extension_status(
+        self, ctx: commands.Context, *, extension_name: str
+    ) -> None:
         """Gets the status of an extension.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.ext.Context): the context object for the message
+            ctx (commands.Context): the context object for the message
             extension_name (str): the name of the extension
         """
         extensions_status = (
@@ -85,13 +98,15 @@ class ExtensionControl(cogs.BaseCog):
     @extension_group.command(
         name="load", description="Loads an extension by name", usage="[extension-name]"
     )
-    async def load_extension(self, ctx, *, extension_name: str):
+    async def load_extension(
+        self, ctx: commands.Context, *, extension_name: str
+    ) -> None:
         """Loads an extension by filename.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.ext.Context): the context object for the message
+            ctx (commands.Context): the context object for the message
             extension_name (str): the name of the extension
         """
         try:
@@ -108,13 +123,15 @@ class ExtensionControl(cogs.BaseCog):
         description="Unloads an extension by name",
         usage="[extension-name]",
     )
-    async def unload_extension(self, ctx, *, extension_name: str):
+    async def unload_extension(
+        self, ctx: commands.Context, *, extension_name: str
+    ) -> None:
         """Unloads an extension by filename.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.ext.Context): the context object for the message
+            ctx (commands.Context): the context object for the message
             extension_name (str): the name of the extension
         """
         try:
@@ -131,13 +148,15 @@ class ExtensionControl(cogs.BaseCog):
         description="Uploads an extension from Discord to be saved on the bot",
         usage="[extension-name] |python-file-upload|",
     )
-    async def register_extension(self, ctx, extension_name: str):
+    async def register_extension(
+        self, ctx: commands.Context, extension_name: str
+    ) -> None:
         """Unloads an extension by filename.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.ext.Context): the context object for the message
+            ctx (commands.Context): the context object for the message
             extension_name (str): the name of the extension
         """
         if not ctx.message.attachments:

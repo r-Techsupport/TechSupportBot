@@ -9,7 +9,7 @@ import time
 import urllib
 from collections import deque
 from json import JSONDecodeError
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 import aiohttp
@@ -59,6 +59,7 @@ class HTTPCalls:
             "api.thecatapi.com": (10, 60),
             "dog.ceo": (10, 60),
             "frogs.media": (3, 60),
+            "randomfox.ca": (4, 60),
         }
         # For the variable APIs, if they don't exist, don't rate limit them
         try:
@@ -78,7 +79,9 @@ class HTTPCalls:
         except AttributeError:
             print("No linx API URL found. Not rate limiting linx")
 
-    async def http_call(self, method, url, *args, **kwargs):
+    async def http_call(
+        self, method: str, url: str, *args: tuple, **kwargs: dict[str, Any]
+    ):
         """Makes an HTTP request.
 
         By default this returns JSON/dict with the status code injected.

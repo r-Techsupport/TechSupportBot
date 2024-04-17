@@ -8,12 +8,23 @@ This file contains 2 commands:
     .echo channel
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Registers the MessageEcho Cog"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Echo plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(MessageEcho(bot=bot))
 
 
@@ -26,7 +37,7 @@ class MessageEcho(cogs.BaseCog):
     @commands.group(
         brief="Executes an echo bot command", description="Executes an echo bot command"
     )
-    async def echo(self, ctx):
+    async def echo(self: Self, ctx: commands.Context) -> None:
         """The bare .echo command. This does nothing but generate the help message
 
         Args:
@@ -42,7 +53,9 @@ class MessageEcho(cogs.BaseCog):
         description="Echos a message to a channel",
         usage="[channel-id] [message]",
     )
-    async def echo_channel(self, ctx, channel_id: int, *, message: str):
+    async def echo_channel(
+        self, ctx: commands.Context, channel_id: int, *, message: str
+    ) -> None:
         """Sends a message to a specified channel.
 
         This is a command and should be accessed via Discord.
@@ -69,13 +82,15 @@ class MessageEcho(cogs.BaseCog):
         description="Echos a message to a user",
         usage="[user-id] [message]",
     )
-    async def echo_user(self, ctx, user_id: int, *, message: str):
+    async def echo_user(
+        self, ctx: commands.Context, user_id: int, *, message: str
+    ) -> None:
         """Sends a message to a specified user.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.ext.Context): the context object for the calling message
+            ctx (commands.Context): the context object for the calling message
             user_id (int): the ID of the user to send the echoed message
             message (str): the message to echo
         """

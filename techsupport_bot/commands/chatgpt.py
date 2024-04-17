@@ -10,6 +10,10 @@ Subcommands: gpt, gptutil (history, clean)
 Defines: None
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import discord
 import expiringdict
 import ui
@@ -17,9 +21,19 @@ from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Registers the extension"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the ChatGPT plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+
+    Raises:
+        AttributeError: Raised if an API key is missing to prevent unusable commands from loading
+    """
 
     # Don't load without the API key
     try:
@@ -36,7 +50,7 @@ class ChatGPT(cogs.BaseCog):
 
     API_URL = "https://api.openai.com/v1/chat/completions"
 
-    async def preconfig(self):
+    async def preconfig(self) -> None:
         """Sets up the dict"""
         self.history = expiringdict.ExpiringDict(
             max_len=1000,
@@ -93,7 +107,7 @@ class ChatGPT(cogs.BaseCog):
         description="Issues a prompt to the ChatGPT API",
         usage="[prompt]",
     )
-    async def gpt(self, ctx: commands.Context, *, prompt: str):
+    async def gpt(self, ctx: commands.Context, *, prompt: str) -> None:
         """Pushes a prompt to the OpenAI API for ChatGPT
 
         Args:
@@ -160,7 +174,7 @@ class ChatGPT(cogs.BaseCog):
         brief="Executes a ChatGPT utility command",
         description="Executes a ChatGPT utility command",
     )
-    async def gptutil(self, ctx: commands.Context):
+    async def gptutil(self, ctx: commands.Context) -> None:
         """Defines the Gptutil command group for history management
 
         Args:
@@ -176,7 +190,7 @@ class ChatGPT(cogs.BaseCog):
         brief="Clears history",
         description="Clears your ChatGPT conversation history",
     )
-    async def clear_history(self, ctx: commands.Context):
+    async def clear_history(self, ctx: commands.Context) -> None:
         """Command to clear the invokers result history
 
         Args:
@@ -219,7 +233,7 @@ class ChatGPT(cogs.BaseCog):
         brief="Gets history",
         description="Gets your ChatGPT conversation history",
     )
-    async def get_history(self, ctx: commands.Context):
+    async def get_history(self, ctx: commands.Context) -> None:
         """Command to get the history of the invoker
 
         Args:

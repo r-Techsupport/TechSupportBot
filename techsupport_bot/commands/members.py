@@ -36,7 +36,7 @@ class Members(cogs.BaseCog):
         Args:
             ctx (command.Context): Used to return a message
             member_list (list): A list of members to parse
-            role (str): The role to check for
+            role_name (str): The role to check for
         """
         # All roles are handled using a shorthand for loop because all
         # `.roles` attributes have lists of role objects, we want the names.

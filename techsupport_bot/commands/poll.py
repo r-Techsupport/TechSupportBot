@@ -16,16 +16,6 @@ async def setup(bot):
     await bot.add_cog(StrawPoller(bot=bot))
 
 
-class PollEmbed(discord.Embed):
-    """Class for the poll embed for discord."""
-
-    def __init__(self, *args, **kwargs):
-        thumbnail_url = kwargs.pop("thumbnail_url")
-        super().__init__(*args, **kwargs)
-        self.set_thumbnail(url=thumbnail_url)
-        self.color = discord.Color.gold()
-
-
 class PollGenerator(cogs.BaseCog):
     """Class to make the poll generator for the extension."""
 
@@ -157,10 +147,11 @@ class ReactionPoller(PollGenerator):
         )
         display_timeout_units = "seconds" if request_body.timeout <= 60 else "minutes"
 
-        embed = PollEmbed(
+        embed = auxiliary.generate_basic_embed(
             title=request_body.question,
             description=f"Poll timeout: {display_timeout} {display_timeout_units}",
-            thumbnail_url=request_body.image_url,
+            color=discord.Color.gold(),
+            url=request_body.image_url,
         )
 
         for index, option in enumerate(request_body.options):
@@ -201,9 +192,10 @@ class ReactionPoller(PollGenerator):
             )
             return
 
-        embed = PollEmbed(
+        embed = auxiliary.generate_basic_embed(
             title=f"Poll results for `{request_body.question}`",
             description=f"Votes: {total}",
+            color=discord.Color.gold(),
             thumbnail_url=request_body.image_url,
         )
 
@@ -235,7 +227,7 @@ class ReactionPoller(PollGenerator):
                     del voted[user.id]
                     excluded.add(user.id)
 
-                if not user.id in excluded:
+                if user.id not in excluded:
                     try:
                         voted[user.id] = options[option_emojis.index(reaction.emoji)]
                     except ValueError:

@@ -4,20 +4,33 @@ This module has unit tests
 This modules requires no config, no databases, and no APIs
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Method to add correct to the config."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Correct plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(Corrector(bot=bot))
 
 
 class Corrector(cogs.BaseCog):
     """Class for the correct command for the discord bot."""
 
-    async def correct_command(self, ctx, to_replace: str, replacement: str) -> None:
+    async def correct_command(
+        self, ctx: commands.Context, to_replace: str, replacement: str
+    ) -> None:
         """This is the main processing for the correct command
 
         Args:
@@ -75,6 +88,14 @@ class Corrector(cogs.BaseCog):
         description="Replaces the most recent text with your text",
         usage="[to_replace] [replacement]",
     )
-    async def correct(self, ctx, to_replace: str, replacement: str):
-        """Method for the correct command for the discord bot."""
+    async def correct(
+        self, ctx: commands.Context, to_replace: str, replacement: str
+    ) -> None:
+        """Discord entry point into the correct command
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+            to_replace (str): What is being searched for to replace
+            replacement (str): What to replace to_replace with
+        """
         await self.correct_command(ctx, to_replace, replacement)

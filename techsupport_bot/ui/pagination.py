@@ -38,7 +38,8 @@ class PaginateView(discord.ui.View):
             author (discord.Member): The author of the pages command
             data (list[Union[str, discord.Embed]]): A list of pages in order
                 with [0] being the first page
-            interaction (discord.Interaction): The interaction this should followup with (Optional)
+            interaction (discord.Interaction | None): The interaction this
+                should followup with (Optional)
         """
         self.author = author
         self.data = data

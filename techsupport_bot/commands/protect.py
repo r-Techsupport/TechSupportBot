@@ -134,15 +134,6 @@ async def setup(bot):
     bot.add_extension_config("protect", config)
 
 
-class ProtectEmbed(discord.Embed):
-    """Class to make the embed for the protect command."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.title = "Chat Protection"
-        self.color = discord.Color.gold()
-
-
 class Protector(cogs.MatchCog):
     """Class for the protector command."""
 
@@ -357,7 +348,11 @@ class Protector(cogs.MatchCog):
                 return
 
             self.string_alert_cache[cache_key] = True
-            embed = ProtectEmbed(description=filter_config.message)
+            embed = auxiliary.generate_basic_embed(
+                title="Chat Protection",
+                description=filter_config.message,
+                color=discord.Color.gold(),
+            )
             await ctx.send(ctx.message.author.mention, embed=embed)
 
         await self.send_alert(
@@ -625,7 +620,11 @@ class Protector(cogs.MatchCog):
 
     async def send_default_delete_response(self, config, ctx, content, reason):
         """Method for the default delete of a message."""
-        embed = ProtectEmbed(description=f"Message deleted. Reason: *{reason}*")
+        embed = auxiliary.generate_basic_embed(
+            title="Chat Protection",
+            description=f"Message deleted. Reason: *{reason}*",
+            color=discord.Color.gold(),
+        )
         await ctx.send(ctx.message.author.mention, embed=embed)
         await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
 

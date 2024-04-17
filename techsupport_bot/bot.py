@@ -6,6 +6,7 @@ discord and irc login, and a few property and helper functions
 import asyncio
 import datetime
 import glob
+import io
 import json
 import os
 import threading
@@ -21,6 +22,9 @@ from botlogging import LogContext, LogLevel
 from core import auxiliary, custom_errors, databases, extensionconfig, http
 from discord import app_commands
 from discord.ext import commands
+
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 
 
 class TechSupportBot(commands.Bot):
@@ -213,6 +217,23 @@ class TechSupportBot(commands.Bot):
         for guild in self.guilds:
             await self.register_new_guild_config(str(guild.id))
 
+    # DM Logging
+
+    async def log_DM(self, sent_from: str, source: str, content: str) -> None:
+        """Logs a DM from any source
+
+        Args:
+            sent_from (str): The username of the person who DMed the bot
+            source (str): What bot the person DMed
+            content (str): The string contents of the message recieved
+        """
+        owner = await self.get_owner()
+        embed = auxiliary.generate_basic_embed(
+            f"{source} recieved a PM", f"PM from: {sent_from}\n{content}"
+        )
+        embed.timestamp = datetime.datetime.utcnow()
+        await owner.send(embed=embed)
+
     async def on_message(self, message: discord.Message) -> None:
         """Logs DMs and ensure that commands are processed
 
@@ -229,11 +250,10 @@ class TechSupportBot(commands.Bot):
             attachment_urls = ", ".join(a.url for a in message.attachments)
             content_string = f'"{message.content}"' if message.content else ""
             attachment_string = f"({attachment_urls})" if attachment_urls else ""
-            await self.logger.send_log(
-                message=(
-                    f"PM from `{message.author}`: {content_string} {attachment_string}"
-                ),
-                level=LogLevel.INFO,
+            await self.log_DM(
+                message.author,
+                "Main Discord Bot",
+                f"{content_string} {attachment_string}",
             )
 
         await self.process_commands(message)
@@ -364,7 +384,7 @@ class TechSupportBot(commands.Bot):
 
         Args:
             guild (discord.Guild): the guild object to reference
-            key (string): the key to use when looking up the channel
+            key (str): the key to use when looking up the channel
         """
         if not guild:
             return None
@@ -382,7 +402,7 @@ class TechSupportBot(commands.Bot):
 
     # File config loading functions
 
-    def load_file_config(self, validate: bool = True):
+    def load_file_config(self, validate: bool = True) -> None:
         """Loads the config yaml file into a bot object.
 
         Args:
@@ -403,7 +423,7 @@ class TechSupportBot(commands.Bot):
         for subsection in ["required"]:
             self.validate_bot_config_subsection("bot_config", subsection)
 
-    def validate_bot_config_subsection(self, section: str, subsection: str):
+    def validate_bot_config_subsection(self, section: str, subsection: str) -> None:
         """Loops through a config subsection to check for missing values.
 
         Args:
@@ -656,7 +676,9 @@ class TechSupportBot(commands.Bot):
         extension_name = command.module.split(".")[1]
         return extension_name
 
-    async def register_file_extension(self, extension_name: str, fp) -> None:
+    async def register_file_extension(
+        self, extension_name: str, fp: io.BufferedIOBase
+    ) -> None:
         """Offers an interface for loading an extension from an external source.
 
         This saves the external file data to the OS, without any validation.
@@ -812,7 +834,7 @@ class TechSupportBot(commands.Bot):
             bool: False if disabled, True if enabled
         """
         config = self.guild_configs[str(guild.id)]
-        if not extension_name in config.enabled_extensions:
+        if extension_name not in config.enabled_extensions:
             return False
         return True
 
@@ -887,6 +909,7 @@ class TechSupportBot(commands.Bot):
         )
         embed.add_field(name="Server", value=getattr(interaction.guild, "name", "None"))
         embed.add_field(name="Namespace", value=f"{interaction.namespace}")
+        embed.set_footer(text=f"Requested by {interaction.user.id}")
 
         log_channel = await self.get_log_channel_from_guild(
             interaction.guild, key="logging_channel"
@@ -946,20 +969,13 @@ class TechSupportBot(commands.Bot):
 
     # IRC Stuff
 
-    async def start_irc(self):
-        """Starts the IRC connection in a seperate thread
-
-        Args:
-            irc (irc.IRC): The IRC object to start the socket on
-
-        Returns:
-            bool: True if the connection was successful, False if it was not
-        """
+    async def start_irc(self) -> None:
+        """Starts the IRC connection in a seperate thread"""
         irc_config = getattr(self.file_config.api, "irc")
-        loop = asyncio.get_running_loop()
+        main_loop = asyncio.get_running_loop()
 
         irc_bot = ircrelay.IRCBot(
-            loop=loop,
+            loop=main_loop,
             server=irc_config.server,
             port=irc_config.port,
             channels=irc_config.channels,
