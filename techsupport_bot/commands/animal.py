@@ -20,7 +20,7 @@ class Animals(cogs.BaseCog):
 
     @auxiliary.with_typing
     @commands.command(name="cat", brief="Gets a cat", description="Gets a cat")
-    async def cat(self, ctx: commands.context) -> None:
+    async def cat(self, ctx: commands.Context) -> None:
         """Prints a cat to discord
 
         Args:

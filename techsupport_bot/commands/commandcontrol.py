@@ -28,7 +28,7 @@ class CommandControl(cogs.BaseCog):
         brief="Executes a commands bot command",
         description="Executes a commands bot command",
     )
-    async def command_group(self, ctx):
+    async def command_group(self, ctx: commands.Context):
         """The bare .command command. This does nothing but generate the help message
 
         Args:

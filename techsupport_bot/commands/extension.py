@@ -32,7 +32,7 @@ class ExtensionControl(cogs.BaseCog):
         brief="Executes an extension bot command",
         description="Executes an extension bot command",
     )
-    async def extension_group(self, ctx):
+    async def extension_group(self, ctx: commands.Context):
         """The bare .extension command. This does nothing but generate the help message
 
         Args:

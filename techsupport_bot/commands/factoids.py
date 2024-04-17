@@ -189,11 +189,11 @@ class FactoidManager(cogs.MatchCog):
         await self.kickoff_jobs()
 
     # -- DB calls --
-    async def delete_factoid_call(self, factoid, guild: str):
+    async def delete_factoid_call(self, factoid: bot.models.Factoid, guild: str):
         """Calls the db to delete a factoid
 
         Args:
-            factoid (Factoid): The factoid to delete
+            factoid (bot.models.Factoid): The factoid to delete
             guild (str): The guild ID for cache handling
         """
         # Removes the `factoid all` cache since it has become outdated
@@ -843,11 +843,11 @@ class FactoidManager(cogs.MatchCog):
             task = asyncio.create_task(self.cronjob(job))
             task = self.running_jobs[job_id]["task"] = task
 
-    async def cronjob(self, job, ctx: commands.Context = None):
+    async def cronjob(self, job: bot.models.FactoidJob, ctx: commands.Context = None):
         """Run a cron job for a factoid
 
         Args:
-            job (FactoidJob): The job to start
+            job (bot.models.FactoidJob): The job to start
             ctx (commands.Context): The context, used for logging
         """
         job_id = job.job_id

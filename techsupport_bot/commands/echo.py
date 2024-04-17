@@ -26,7 +26,7 @@ class MessageEcho(cogs.BaseCog):
     @commands.group(
         brief="Executes an echo bot command", description="Executes an echo bot command"
     )
-    async def echo(self, ctx):
+    async def echo(self, ctx: commands.Context):
         """The bare .echo command. This does nothing but generate the help message
 
         Args:
