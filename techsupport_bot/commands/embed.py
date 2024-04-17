@@ -12,7 +12,7 @@ Defines: has_embed_role
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING
 
 import discord
 import munch
