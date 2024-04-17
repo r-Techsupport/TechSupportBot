@@ -5,6 +5,7 @@ This replaces duplicate or similar code across many extensions
 
 import json
 from functools import wraps
+from typing import Any
 
 import discord
 import munch
@@ -274,7 +275,8 @@ def with_typing(command: commands.Command) -> commands.Command:
     original_callback = command.callback
 
     @wraps(original_callback)
-    async def typing_wrapper(*args, **kwargs):
+    async def typing_wrapper(*args: tuple, **kwargs: dict[str, Any]) -> None:
+        """The wrapper to add typing to any given function and call the original function"""
         context = args[1]
 
         typing_func = getattr(context, "typing", None)

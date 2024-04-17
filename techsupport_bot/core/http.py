@@ -9,7 +9,7 @@ import time
 import urllib
 from collections import deque
 from json import JSONDecodeError
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 import aiohttp
@@ -79,7 +79,9 @@ class HTTPCalls:
         except AttributeError:
             print("No linx API URL found. Not rate limiting linx")
 
-    async def http_call(self, method: str, url: str, *args, **kwargs):
+    async def http_call(
+        self, method: str, url: str, *args: tuple, **kwargs: dict[str, Any]
+    ):
         """Makes an HTTP request.
 
         By default this returns JSON/dict with the status code injected.

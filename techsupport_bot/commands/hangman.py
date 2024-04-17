@@ -87,8 +87,7 @@ class HangmanGame:
     ]
     FINAL_STEP = len(HANG_PICS) - 1
 
-    def __init__(self, **kwargs):
-        word = kwargs.pop("word")
+    def __init__(self, word: str) -> None:
         if not word or "_" in word or not word.isalpha():
             raise ValueError("valid word must be provided")
         self.word = word

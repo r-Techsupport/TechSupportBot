@@ -1,6 +1,5 @@
 """Module for the google extension for the discord bot."""
 
-import discord
 import ui
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
@@ -31,24 +30,14 @@ async def setup(bot):
     bot.add_extension_config("google", config)
 
 
-class GoogleEmbed(discord.Embed):
-    """Class for the google embed for discord."""
-
-    ICON_URL = (
-        "https://cdn.icon-icons.com/icons2/673/PNG/512/Google_icon-icons.com_60497.png"
-    )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.color = discord.Color.blurple()
-        self.set_thumbnail(url=self.ICON_URL)
-
-
 class Googler(cogs.BaseCog):
     """Class for the google extension for the discord bot."""
 
     GOOGLE_URL = "https://www.googleapis.com/customsearch/v1"
     YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=10"
+    ICON_URL = (
+        "https://cdn.icon-icons.com/icons2/673/PNG/512/Google_icon-icons.com_60497.png"
+    )
 
     async def get_items(self, url, data):
         """Method to get an item from google's api."""
@@ -101,11 +90,11 @@ class Googler(cogs.BaseCog):
             for index, item in enumerate(items):
                 link = item.get("link")
                 snippet = item.get("snippet", "<Details Unknown>").replace("\n", "")
-                embed = (
-                    GoogleEmbed(title=f"Results for {query}")
-                    if field_counter == 1
-                    else embed
-                )
+                if field_counter == 1:
+                    embed = auxiliary.generate_basic_embed(
+                        title=f"Results for {query}", url=self.ICON_URL
+                    )
+
                 embed.add_field(name=link, value=snippet, inline=False)
                 if (
                     field_counter == config.extensions.google.max_responses.value

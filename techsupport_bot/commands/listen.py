@@ -36,50 +36,39 @@ class ListenChannel(commands.Converter):
         return channel
 
 
-class ListenEmbed(discord.Embed):
-    """Base embed for listen events."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.color = discord.Color.blurple()
-        self.timestamp = datetime.datetime.utcnow()
-
-
-class MessageEmbed(ListenEmbed):
-    """Embed for message events."""
-
-    def __init__(self, *args, **kwargs):
-        message = kwargs.pop("message")
-        super().__init__(*args, **kwargs)
-        self.set_author(
-            name=message.author.name, icon_url=message.author.display_avatar.url
-        )
-
-        self.description = message.clean_content
-        if message.embeds:
-            self.description = f"{self.description} (includes embed)"
-
-        if message.attachments:
-            self.add_field(
-                name="Attachments", value=" ".join(a.url for a in message.attachments)
-            )
-
-        self.set_footer(text=f"#{message.channel.name} - {message.guild}")
-
-
-class InfoEmbed(discord.Embed):
-    """Embed for providing info about listener jobs."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.color = discord.Color.green()
-
-
 class Listener(cogs.BaseCog):
     """Cog object for listening to channels."""
 
     MAX_DESTINATIONS = 10
     CACHE_TIME = 60
+
+    def format_message_in_embed(self, message: discord.Message) -> discord.Embed:
+        """Formats a listened message into a pretty embed
+
+        Args:
+            message (discord.Message): The raw message to format
+
+        Returns:
+            discord.Embed: The stylized embed ready to be sent
+        """
+        embed = auxiliary.generate_basic_embed(description=message.clean_content)
+
+        embed.timestamp = datetime.datetime.utcnow()
+        embed.set_author(
+            name=message.author.name, icon_url=message.author.display_avatar.url
+        )
+
+        if message.embeds:
+            embed.description = f"{embed.description} (includes embed)"
+
+        if message.attachments:
+            embed.add_field(
+                name="Attachments", value=" ".join(a.url for a in message.attachments)
+            )
+
+        embed.set_footer(text=f"#{message.channel.name} - {message.guild}")
+
+        return embed
 
     async def preconfig(self):
         """Preconfigures the listener cog."""
@@ -356,8 +345,9 @@ class Listener(cogs.BaseCog):
             )
             return
 
-        embed = InfoEmbed(
+        embed = auxiliary.generate_basic_embed(
             title="Listener Registrations",
+            color=discord.Color.green(),
         )
         for source_obj in source_objects:
             src_ch = source_obj.get("source")
@@ -390,7 +380,7 @@ class Listener(cogs.BaseCog):
         if not destinations:
             return
         for dst in destinations:
-            embed = MessageEmbed(message=message)
+            embed = self.format_message_in_embed(message=message)
             await dst.send(embed=embed)
 
     @commands.Cog.listener()

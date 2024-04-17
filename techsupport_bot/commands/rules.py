@@ -21,14 +21,6 @@ async def setup(bot: bot.TechSupportBot):
     await bot.add_cog(Rules(bot=bot))
 
 
-class RuleEmbed(discord.Embed):
-    """Class for setting up the rules embed."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.color = discord.Color.gold()
-
-
 class Rules(cogs.BaseCog):
     """Class to define the rules for the extension."""
 
@@ -193,9 +185,10 @@ class Rules(cogs.BaseCog):
             )
             return
 
-        embed = RuleEmbed(
+        embed = auxiliary.generate_basic_embed(
             title="Server Rules",
             description="By talking on this server, you agree to the following rules",
+            color=discord.Color.gold(),
         )
 
         for index, rule in enumerate(rules_data.get("rules")):

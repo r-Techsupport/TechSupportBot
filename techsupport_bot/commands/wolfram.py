@@ -18,21 +18,11 @@ async def setup(bot):
     await bot.add_cog(Wolfram(bot=bot))
 
 
-class WolframEmbed(discord.Embed):
-    """Class to set up the wolfram embed."""
-
-    ICON_URL = "https://cdn.icon-icons.com/icons2/2107/PNG/512/file_type_wolfram_icon_130071.png"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.color = discord.Color.orange()
-        self.set_thumbnail(url=self.ICON_URL)
-
-
 class Wolfram(cogs.BaseCog):
     """Class to set up the wolfram extension."""
 
     API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
+    ICON_URL = "https://cdn.icon-icons.com/icons2/2107/PNG/512/file_type_wolfram_icon_130071.png"
 
     @auxiliary.with_typing
     @commands.command(
@@ -64,4 +54,7 @@ class Wolfram(cogs.BaseCog):
             return
 
         answer = response["text"]
-        await ctx.send(embed=WolframEmbed(description=answer))
+        embed = auxiliary.generate_basic_embed(
+            description=answer, color=discord.Color.orange(), url=self.ICON_URL
+        )
+        await ctx.send(embed=embed)
