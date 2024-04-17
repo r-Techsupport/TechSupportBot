@@ -2,3 +2,4 @@
 ignore = E203, E501, E712, F401, F403, W503
 style = google
 skip-checking-short-docstrings = False
+kwargs-ignore-function-pattern-extend = get$|pop$|patch$|given$|traceback
