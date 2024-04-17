@@ -1,21 +1,26 @@
 """Module for the wolfram extension for the discord bot."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding the wolfram configuration to the config file."""
 
-    # Don't load without the API key
-    try:
-        if not bot.file_config.api.api_keys.wolfram:
-            raise AttributeError("Wolfram was not loaded due to missing API key")
-    except AttributeError as exc:
-        raise AttributeError("Wolfram was not loaded due to missing API key") from exc
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Wolfram Alpha plugin into the bot
 
-    await bot.add_cog(Wolfram(bot=bot))
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+
+    Raises:
+        AttributeError: Raised if an API key is missing to prevent unusable commands from loading
+    """
 
 
 class Wolfram(cogs.BaseCog):

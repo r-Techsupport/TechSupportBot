@@ -1,6 +1,8 @@
 """This is the discord side of the IRC->Discord relay"""
 
-from typing import Dict, List, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Dict, List, Self, Union
 
 import discord
 import irc.client
@@ -10,18 +12,24 @@ from bidict import bidict
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot: commands.Bot) -> None:
+
+async def setup(bot: bot.TechSupportBot) -> None:
     """Setup function for the IRC relay
     This is sets up the IRC postgres table, adds the irc cog,
         and adds a refernce to it to the irc file
 
     Args:
-        bot (commands.Bot): The bot object
+        bot (bot.TechSupportBot): The bot object
+
+    Raises:
+        AttributeError: Raised if IRC is disabled
     """
 
     # Don't load relay if irc is disabled
-    irc_config = getattr(bot.file_config.api, "irc")
+    irc_config = bot.file_config.api.irc
     if not irc_config.enable_irc:
         raise AttributeError("Relay was not loaded due to IRC being disabled")
 
@@ -36,14 +44,16 @@ class DiscordToIRC(cogs.MatchCog):
 
     mapping = None  # bidict - discord:irc
 
-    async def preconfig(self):
+    async def preconfig(self: Self) -> None:
         """The preconfig setup for the discord side
         This maps the database to a bidict for quick lookups, and allows lookups in threads
         """
         allmaps = await self.bot.models.IRCChannelMapping.query.gino.all()
         self.mapping = bidict({})
-        for map in allmaps:
-            self.mapping.put(map.discord_channel_id, map.irc_channel_id)
+        for irc_discord_map in allmaps:
+            self.mapping.put(
+                irc_discord_map.discord_channel_id, irc_discord_map.irc_channel_id
+            )
 
     async def match(
         self, config: munch.Munch, ctx: commands.Context, content: str
@@ -59,7 +69,7 @@ class DiscordToIRC(cogs.MatchCog):
             str: The string representation of the IRC channel. Will be None if no IRC mapping
         """
         # Check if IRC is enabled
-        irc_config = getattr(self.bot.file_config.api, "irc")
+        irc_config = self.bot.file_config.api.irc
         if not irc_config.enable_irc:
             return None
 
@@ -71,9 +81,9 @@ class DiscordToIRC(cogs.MatchCog):
             return None
 
         # If there is a map, find it and return it
-        map = self.mapping[str(ctx.channel.id)]
-        if map:
-            return map
+        irc_discord_map = self.mapping[str(ctx.channel.id)]
+        if irc_discord_map:
+            return irc_discord_map
 
         # If no conditions are met, do nothing
         return None
@@ -106,7 +116,7 @@ class DiscordToIRC(cogs.MatchCog):
             discord_message (discord.Message): The original containing the invocation of the factoid
             factoid_message (str): The string representation of the factoid
         """
-        irc_config = getattr(self.bot.file_config.api, "irc")
+        irc_config = self.bot.file_config.api.irc
         if not irc_config.enable_irc:
             return
 
@@ -208,7 +218,7 @@ class DiscordToIRC(cogs.MatchCog):
         )
 
         irc_status = self.bot.irc.get_irc_status()
-        irc_config = getattr(self.bot.file_config.api, "irc")
+        irc_config = self.bot.file_config.api.irc
         if not irc_config.enable_irc:
             embed.description = "IRC is not enabled"
         embed.description = (
@@ -227,21 +237,21 @@ class DiscordToIRC(cogs.MatchCog):
             ctx (commands.Context): The context in which the command was run
             user (str): The hostmask of the user to ban
         """
-        map = self.mapping[str(ctx.channel.id)]
-        if not map:
+        irc_discord_map = self.mapping[str(ctx.channel.id)]
+        if not irc_discord_map:
             await auxiliary.send_deny_embed(
                 message="This channel is not linked to IRC", channel=ctx.channel
             )
             return
-        if not self.bot.irc.is_bot_op_on_channel(channel_name=map):
+        if not self.bot.irc.is_bot_op_on_channel(channel_name=irc_discord_map):
             await auxiliary.send_deny_embed(
                 message="The IRC bot does not have permissions to ban",
                 channel=ctx.channel,
             )
             return
-        self.bot.irc.ban_on_irc(user=user, channel=map, action="+b")
+        self.bot.irc.ban_on_irc(user=user, channel=irc_discord_map, action="+b")
         await auxiliary.send_confirm_embed(
-            message=f"Sucessfully sent ban command for {user} from {map}",
+            message=f"Sucessfully sent ban command for {user} from {irc_discord_map}",
             channel=ctx.channel,
         )
 
@@ -254,21 +264,21 @@ class DiscordToIRC(cogs.MatchCog):
             ctx (commands.Context): The context in which the command was run
             user (str): The hostmask of the user to ban
         """
-        map = self.mapping[str(ctx.channel.id)]
-        if not map:
+        irc_discord_map = self.mapping[str(ctx.channel.id)]
+        if not irc_discord_map:
             await auxiliary.send_deny_embed(
                 message="This channel is not linked to IRC", channel=ctx.channel
             )
             return
-        if not self.bot.irc.is_bot_op_on_channel(channel_name=map):
+        if not self.bot.irc.is_bot_op_on_channel(channel_name=irc_discord_map):
             await auxiliary.send_deny_embed(
                 message="The IRC bot does not have permissions to unban",
                 channel=ctx.channel,
             )
             return
-        self.bot.irc.ban_on_irc(user=user, channel=map, action="-b")
+        self.bot.irc.ban_on_irc(user=user, channel=irc_discord_map, action="-b")
         await auxiliary.send_confirm_embed(
-            message=f"Sucessfully sent unban command for {user} from {map}",
+            message=f"Sucessfully sent unban command for {user} from {irc_discord_map}",
             channel=ctx.channel,
         )
 
@@ -298,7 +308,7 @@ class DiscordToIRC(cogs.MatchCog):
             )
             return
 
-        joined_channels = getattr(self.bot.file_config.api.irc, "channels")
+        joined_channels = self.bot.file_config.api.irc.channels
 
         if irc_channel not in joined_channels:
             await auxiliary.send_deny_embed(
@@ -306,15 +316,17 @@ class DiscordToIRC(cogs.MatchCog):
             )
             return
 
-        map = self.bot.models.IRCChannelMapping(
+        irc_discord_map = self.bot.models.IRCChannelMapping(
             guild_id=str(ctx.guild.id),
             discord_channel_id=str(ctx.channel.id),
             irc_channel_id=irc_channel,
         )
 
-        self.mapping.put(map.discord_channel_id, map.irc_channel_id)
+        self.mapping.put(
+            irc_discord_map.discord_channel_id, irc_discord_map.irc_channel_id
+        )
 
-        await map.create()
+        await irc_discord_map.create()
         await auxiliary.send_confirm_embed(
             message=(
                 f"New link established between <#{ctx.channel.id}> and {irc_channel}"
@@ -380,9 +392,9 @@ class DiscordToIRC(cogs.MatchCog):
         if split_message["channel"] not in self.mapping.inverse:
             return
 
-        map = self.mapping.inverse[split_message["channel"]]
+        irc_discord_map = self.mapping.inverse[split_message["channel"]]
 
-        discord_channel = await self.bot.fetch_channel(map)
+        discord_channel = await self.bot.fetch_channel(irc_discord_map)
 
         mentions = self.get_mentions(
             message=split_message["content"], channel=discord_channel
@@ -437,7 +449,7 @@ class DiscordToIRC(cogs.MatchCog):
         embed.set_footer(
             text=(
                 f"{split_message['hostmask']} •"
-                f" {getattr(self.bot.file_config.api.irc, 'server')}"
+                f" {self.bot.file_config.api.ir.server}"
             )
         )
         embed.color = discord.Color.blurple()

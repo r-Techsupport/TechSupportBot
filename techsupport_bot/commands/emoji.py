@@ -34,7 +34,7 @@ class Emojis(cogs.BaseCog):
     KEY_MAP = {"?": "question", "!": "exclamation"}
 
     @classmethod
-    def emoji_from_char(cls, char: str):
+    def emoji_from_char(cls: Self, char: str) -> str:
         """Gets an unicode emoji from a character
 
         Args:
@@ -53,7 +53,7 @@ class Emojis(cogs.BaseCog):
             return emoji.emojize(f":{cls.KEY_MAP[char]}:", language="alias")
         return None
 
-    def check_if_all_unique(self, string: str) -> bool:
+    def check_if_all_unique(self: Self, string: str) -> bool:
         """Checks, using the set function, if a string has duplicates or not
 
         Args:
@@ -65,7 +65,9 @@ class Emojis(cogs.BaseCog):
         return len(set(string.lower())) == len(string.lower())
 
     @classmethod
-    def generate_emoji_string(cls, string: str, only_emoji: bool = False):
+    def generate_emoji_string(
+        cls: Self, string: str, only_emoji: bool = False
+    ) -> list[str]:
         """This takes a string and returns a string or list of emojis
 
         Args:
@@ -74,7 +76,7 @@ class Emojis(cogs.BaseCog):
               Defaults to False.
 
         Returns:
-            List: The string or list of emojis
+            list[str]: The string or list of emojis
         """
         emoji_list = []
 

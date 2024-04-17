@@ -26,7 +26,7 @@ class MockChannel:
             limit (int): The represents a limit. This is currently not used
 
         Yields:
-            AsyncGenerator[str, None, None] : This represents a single message in the history
+            str: This represents a single message in the history
         """
         if limit == 0:
             return

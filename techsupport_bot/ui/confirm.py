@@ -48,6 +48,12 @@ class Confirm(discord.ui.View):
             author (discord.Member): The original author of the command triggering this
             timeout (int, optional): The amount of seconds to wait for a response before
                 returning ConfirmResponse.TIMEOUT. Defaults to 60.
+            interaction (discord.Interaction | None, optional): If this is in an
+                application command, what is the interaction to reply or followup to.
+                Defaults to None
+            ephemeral (bool, optional): If this is an application command,
+                should replies be ephemeral?
+                Will do nothing without interaction being passed. Defaults to False
         """
         embed = auxiliary.generate_basic_embed(
             title="Please confirm!", description=message, color=discord.Color.green()

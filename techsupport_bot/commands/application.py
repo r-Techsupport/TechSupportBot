@@ -120,8 +120,8 @@ async def command_permission_check(interaction: discord.Interaction) -> bool:
         interaction (discord.Interaction): The interaction that was generated from the slash command
 
     Raises:
-        app_commands.AppCommandError: If there are no roles configured
-        app_commands.MissingAnyRole: If the executing user is missing the required roles
+        AppCommandError: If there are no roles configured
+        MissingAnyRole: If the executing user is missing the required roles
 
     Returns:
         bool: Will return true if the command is allowed to execute, false if it should not execute

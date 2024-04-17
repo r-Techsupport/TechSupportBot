@@ -3,6 +3,7 @@ Module for defining the grabs extension
 """
 
 import random
+from typing import Self
 
 import discord
 import ui
@@ -33,13 +34,21 @@ async def setup(bot):
     bot.add_extension_config("grab", config)
 
 
-async def invalid_channel(ctx):
-    """
-    A method to check channels against the whitelist
+async def invalid_channel(ctx: commands.Context) -> bool:
+    """A method to check channels against the whitelist
     If the channel is not in the whitelist, the command execution is halted
-
     This is expected to be used in a @commands.check call
+
+    Args:
+        ctx (commands.Context): The context in which the command was run in
+
+    Raises:
+        CommandError: Raised if grabs aren't allowed in the given channel
+
+    Returns:
+        bool: If the grabs are allowed in the channel the command was run in
     """
+
     config = ctx.bot.guild_configs[str(ctx.guild.id)]
     # Check if list is empty. If it is, allow all channels
     if not config.extensions.grab.allowed_channels.value:
@@ -65,14 +74,17 @@ class Grabber(cogs.BaseCog):
         description="Grabs a message by ID and saves it",
         usage="[username-or-user-ID]",
     )
-    async def grab_user(self, ctx, user_to_grab: discord.Member):
-        """
-        This is the grab by user function. Accessible by .grab
+    async def grab_user(
+        self: Self, ctx: commands.Context, user_to_grab: discord.Member
+    ) -> None:
+        """This is the grab by user function. Accessible by .grab
         This will only search for 20 messages
 
-        Parameters:
-        user_to_grab: discord.Member. The user to search for grabs from
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+            user_to_grab (discord.Member): The user to search for grabs from
         """
+
         if user_to_grab.bot:
             await auxiliary.send_deny_embed(
                 message="Ain't gonna catch me slipping!", channel=ctx.channel
@@ -271,8 +283,19 @@ class Grabber(cogs.BaseCog):
         description="Deleted a specific grab from a user by the message",
         usage="[user] [message]",
     )
-    async def delete_grab(self, ctx, target_user: discord.Member, *, message: str):
-        """Deletes a specific grab from an user"""
+    async def delete_grab(
+        self: Self, ctx: commands.Context, target_user: discord.Member, *, message: str
+    ) -> None:
+        """Deletes a given grab by exact string
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+            target_user (discord.Member): The user to delete a grab from
+            message (str): The exact string of the grab to delete
+
+        Raises:
+            CommandError: Raised if the grab cannot be found for the given user
+        """
         # Stop execution if the invoker isn't the target or an admin
         if (
             not ctx.message.author.id == target_user.id

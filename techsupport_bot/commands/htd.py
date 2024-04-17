@@ -2,6 +2,8 @@
 Convert a value or evaluate a mathematical expression to decimal, hex, binary, and ascii encoding
 """
 
+from typing import Self
+
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
@@ -57,30 +59,30 @@ class Htd(cogs.BaseCog):
 
         return parsed_list
 
-    def convert_value_to_integer(self, val: str) -> int:
+    def convert_value_to_integer(self, value_to_convert: str) -> int:
         """Converts a given value as hex, binary, or decimal into an integer type
 
         Args:
-            val (str): The given value to convert
+            value_to_convert (str): The given value to convert
 
         Returns:
             int: The value represented as an integer
         """
 
-        if val.replace("-", "").startswith("0x"):
+        if value_to_convert.replace("-", "").startswith("0x"):
             # input detected as hex
             num_base = 16
-        elif val.replace("-", "").startswith("0b"):
+        elif value_to_convert.replace("-", "").startswith("0b"):
             # input detected as binary
             num_base = 2
         else:
             # assume the input is detected as an int
             num_base = 10
         # special handling is needed for floats
-        if "." in val:
-            return int(float(val))
+        if "." in value_to_convert:
+            return int(float(value_to_convert))
 
-        return int(val, num_base)
+        return int(value_to_convert, num_base)
 
     def perform_op_on_list(self, equation_list: list) -> int:
         """This will compute an equation if passed as a list
@@ -140,22 +142,22 @@ class Htd(cogs.BaseCog):
         """
         await self.htd_command(ctx, val_to_convert)
 
-    def clean_input(self, input: str) -> str:
+    def clean_input(self: Self, user_input: str) -> str:
         """A method to clean up input to be better processed by later functions
         This replaces "#" with "0x" to recognized "#" as hex
         It also removes quotes and spaces
 
         Args:
-            input (str): The raw input from the user
+            user_input (str): The raw input from the user
 
         Returns:
             str: The cleaned up string
         """
-        input = input.replace("#", "0x")
-        input = input.replace("'", "")
-        input = input.replace('"', "")
-        input = input.replace(" ", "")
-        return input
+        user_input = user_input.replace("#", "0x")
+        user_input = user_input.replace("'", "")
+        user_input = user_input.replace('"', "")
+        user_input = user_input.replace(" ", "")
+        return user_input
 
     def convert_list_to_ints(self, raw_list: list) -> list:
         """This converts the values in an equation list into ints

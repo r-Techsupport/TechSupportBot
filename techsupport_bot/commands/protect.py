@@ -4,6 +4,7 @@ import datetime
 import io
 import re
 from datetime import timedelta
+from typing import Self
 
 import dateparser
 import discord
@@ -649,9 +650,12 @@ class Protector(cogs.MatchCog):
             "Linx-Randomize": "yes",
             "Accept": "application/json",
         }
-        file = {"file": io.StringIO(content)}
+        file_to_paste = {"file": io.StringIO(content)}
         response = await self.bot.http_functions.http_call(
-            "post", self.bot.file_config.api.api_url.linx, headers=headers, data=file
+            "post",
+            self.bot.file_config.api.api_url.linx,
+            headers=headers,
+            data=file_to_paste,
         )
 
         url = response.get("url")
@@ -787,16 +791,21 @@ class Protector(cogs.MatchCog):
         usage="@user [time] [reason]",
         aliases=["timeout"],
     )
-    async def mute(self, ctx, user: discord.Member, *, duration: str = None):
-        """
-        Method to mute a user in discord using the native timeout.
+    async def mute(
+        self: Self, ctx: commands.Context, user: discord.Member, *, duration: str = None
+    ) -> None:
+        """Method to mute a user in discord using the native timeout.
         This should be run via discord
 
-        Parameters:
-        user: The discord.Member to be timed out. Required
-        duration: A string (# [s|m|h|d]) that declares how long.
-            Max time is 28 days by discord API. Defaults to 1 hour
+        Args:
+            ctx (commands.Context): _description_
+            user (discord.Member): The discord.Member to be timed out.
+            duration (str, optional): Max time is 28 days by discord API. Defaults to 1 hour
+
+        Raises:
+            ValueError: Raised if the provided duration string cannot be converted into a time
         """
+
         can_execute = await self.can_execute(ctx, user)
         if not can_execute:
             return

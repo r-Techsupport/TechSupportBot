@@ -15,9 +15,9 @@ class MockMember:
     display_avatar -> The MockAsset object for the avatar
     """
 
-    def __init__(self, id=None, bot=False, name=None, display_avatar=None):
-        self.id = id
+    def __init__(self, input_id=None, bot=False, name=None, display_avatar=None):
+        self.id = input_id
         self.bot = bot
-        self.mention = f"<@{id}>"
+        self.mention = f"<@{input_id}>"
         self.name = name
         self.display_avatar = display_avatar

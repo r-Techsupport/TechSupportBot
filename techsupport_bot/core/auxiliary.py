@@ -204,11 +204,20 @@ async def get_json_from_attachments(
 ) -> munch.Munch | str | None:
     """Returns concatted JSON from a message's attachments.
 
-    parameters:
-        message (Message): the message object
-        as_string (bool): True if the serialized JSON should be returned
-        allow_failure (bool): True if an exception should be ignored when parsing attachments
+    Args:
+        message (discord.Message): the message object
+        as_string (bool, optional): True if the serialized JSON should be returned.
+            Defaults to False.
+        allow_failure (bool, optional): True if an exception should be ignored when
+            parsing attachments. Defaults to False.
+
+    Raises:
+        exception: If allow_failure is False, this raises ANY exception caught while parsing
+
+    Returns:
+        munch.Munch | str | None: The json formatted as requested by as_string and allow_failure
     """
+
     if not message.attachments:
         return None
 
@@ -496,7 +505,7 @@ async def bot_admin_check_context(ctx: commands.Context) -> bool:
         ctx (commands.Context): The context that the command was called in
 
     Raises:
-        commands.MissingPermissions: If the user is not a bot admin
+        MissingPermissions: If the user is not a bot admin
 
     Returns:
         bool: True if can run

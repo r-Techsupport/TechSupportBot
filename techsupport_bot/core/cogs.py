@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, Self
 
 import discord
 import gino
@@ -306,11 +306,15 @@ class LoopCog(BaseCog):
     async def loop_preconfig(self) -> None:
         """Preconfigures the environment before starting the loop."""
 
-    async def _loop_execute(self, guild: discord.Guild, target_channel=None) -> None:
+    async def _loop_execute(
+        self: Self, guild: discord.Guild, target_channel: discord.abc.Messageable = None
+    ) -> None:
         """Loops through the execution method.
 
         parameters:
             guild (discord.Guild): the guild associated with the execution
+            target_channel (discord.abc.Messageable): The channel to run the loop in,
+                if the loop is channel specific
         """
         config = self.bot.guild_configs[str(guild.id)]
 

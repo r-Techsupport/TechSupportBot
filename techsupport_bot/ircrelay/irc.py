@@ -16,7 +16,17 @@ from ircrelay import formatting
 
 
 class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
-    """The IRC bot class. This is the class that runs the entire IRC side of the bot"""
+    """The IRC bot class. This is the class that runs the entire IRC side of the bot
+    The class to start the entire IRC bot
+
+        Args:
+            loop (asyncio.AbstractEventLoop): The running event loop for the discord API.
+            server (str): The string server domain/IP
+            port (int): The port the IRC server is running on
+            channels (List[str]): The list of channels to join
+            username (str): The username of the IRC bot account
+            password (str): The password of the IRC bot account
+    """
 
     irc_cog = None
     loop = None
@@ -35,16 +45,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         username: str,
         password: str,
     ) -> None:
-        """The function to start the entire IRC bot
 
-        Args:
-            loop (asyncio.AbstractEventLoop): The running event loop for the discord API.
-            server (str): The string server domain/IP
-            port (int): The port the IRC server is running on
-            channels (List[str]): The list of channels to join
-            username (str): The username of the IRC bot account
-            password (str): The password of the IRC bot account
-        """
         self.loop = loop
         super().__init__(
             server_list=[(server, port)],
