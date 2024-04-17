@@ -235,7 +235,7 @@ class ReactionPoller(PollGenerator):
                     del voted[user.id]
                     excluded.add(user.id)
 
-                if not user.id in excluded:
+                if user.id not in excluded:
                     try:
                         voted[user.id] = options[option_emojis.index(reaction.emoji)]
                     except ValueError:

@@ -299,7 +299,7 @@ class DiscordToIRC(cogs.MatchCog):
 
         joined_channels = getattr(self.bot.file_config.api.irc, "channels")
 
-        if not irc_channel in joined_channels:
+        if irc_channel not in joined_channels:
             await auxiliary.send_deny_embed(
                 message="I am not in that IRC channel", channel=ctx.channel
             )
