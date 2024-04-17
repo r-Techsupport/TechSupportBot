@@ -624,7 +624,8 @@ class TechSupportBot(commands.Bot):
         """Loads all extensions currently in the extensions directory.
 
         Args:
-            graceful (bool, optional): True if extensions should gracefully fail to load. Defaults to True.
+            graceful (bool, optional): True if extensions should gracefully fail to load.
+                Defaults to True.
 
         Raises:
             exception: If graceful is false, this will raise ANY
