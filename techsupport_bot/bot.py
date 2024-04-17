@@ -953,9 +953,6 @@ class TechSupportBot(commands.Bot):
     async def start_irc(self):
         """Starts the IRC connection in a seperate thread
 
-        Args:
-            irc (irc.IRC): The IRC object to start the socket on
-
         Returns:
             bool: True if the connection was successful, False if it was not
         """
