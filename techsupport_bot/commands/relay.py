@@ -452,11 +452,10 @@ class DiscordToIRC(cogs.MatchCog):
         embed.set_footer(
             text=(
                 f"{split_message['hostmask']} •"
-                f" {self.bot.file_config.api.ir.server}"
+                f" {self.bot.file_config.api.irc.server}"
             )
         )
         embed.color = discord.Color.blurple()
-
         return embed
 
     @commands.Cog.listener()
