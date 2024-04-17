@@ -218,7 +218,14 @@ class TechSupportBot(commands.Bot):
 
     # DM Logging
 
-    async def log_DM(self, sent_from: str, source: str, content: str):
+    async def log_DM(self, sent_from: str, source: str, content: str) -> None:
+        """Logs a DM from any source
+
+        Args:
+            sent_from (str): The username of the person who DMed the bot
+            source (str): What bot the person DMed
+            content (str): The string contents of the message recieved
+        """
         owner = await self.get_owner()
         embed = auxiliary.generate_basic_embed(
             f"{source} recieved a PM", f"PM from: {sent_from}\n{content}"
