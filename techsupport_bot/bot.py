@@ -216,6 +216,23 @@ class TechSupportBot(commands.Bot):
         for guild in self.guilds:
             await self.register_new_guild_config(str(guild.id))
 
+    # DM Logging
+
+    async def log_DM(self, sent_from: str, source: str, content: str) -> None:
+        """Logs a DM from any source
+
+        Args:
+            sent_from (str): The username of the person who DMed the bot
+            source (str): What bot the person DMed
+            content (str): The string contents of the message recieved
+        """
+        owner = await self.get_owner()
+        embed = auxiliary.generate_basic_embed(
+            f"{source} recieved a PM", f"PM from: {sent_from}\n{content}"
+        )
+        embed.timestamp = datetime.datetime.utcnow()
+        await owner.send(embed=embed)
+
     async def on_message(self, message: discord.Message) -> None:
         """Logs DMs and ensure that commands are processed
 
@@ -232,11 +249,10 @@ class TechSupportBot(commands.Bot):
             attachment_urls = ", ".join(a.url for a in message.attachments)
             content_string = f'"{message.content}"' if message.content else ""
             attachment_string = f"({attachment_urls})" if attachment_urls else ""
-            await self.logger.send_log(
-                message=(
-                    f"PM from `{message.author}`: {content_string} {attachment_string}"
-                ),
-                level=LogLevel.INFO,
+            await self.log_DM(
+                message.author,
+                "Main Discord Bot",
+                f"{content_string} {attachment_string}",
             )
 
         await self.process_commands(message)

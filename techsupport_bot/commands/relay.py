@@ -502,5 +502,8 @@ class DiscordToIRC(cogs.MatchCog):
             message (str): The message from IRC that the IRC Bot recieved
             event (irc.client.Event): The event object that triggered this function
         """
-        owner = await self.bot.get_owner()
-        await owner.send(f"PM from `{event.source}`: {message}")
+        await self.bot.log_DM(
+            event.source,
+            "IRC Bot",
+            message,
+        )

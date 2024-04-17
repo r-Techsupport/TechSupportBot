@@ -83,7 +83,15 @@ class Modmail_bot(discord.Client):
         Args:
             message (discord.Message): Every sent message, gets filtered to only dms
         """
+
         if isinstance(message.channel, discord.DMChannel) and not message.author.bot:
+            # Log all DMs regardless of what happens to them
+            await Ts_client.log_DM(
+                message.author,
+                "Modmail",
+                message.content,
+            )
+
             # User is banned from creating modmail threads
             if await Ts_client.models.ModmailBan.query.where(
                 Ts_client.models.ModmailBan.user_id == str(message.author.id)
