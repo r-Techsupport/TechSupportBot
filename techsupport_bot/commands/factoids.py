@@ -1338,7 +1338,7 @@ class FactoidManager(cogs.MatchCog):
         description="Gets embed JSON for a factoid",
         usage="[factoid-name]",
     )
-    async def _json(self, ctx: commands.Context, factoid_name: str):
+    async def _json(self, ctx: commands.Context, factoid_name: str) -> None:
         """Gets the json of a factoid
 
         Args:
