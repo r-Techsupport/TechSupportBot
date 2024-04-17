@@ -372,9 +372,9 @@ class FactoidManager(cogs.MatchCog):
         """Changes the list of aliases to point to a new name
 
         Args:
+            ctx (commands.Context): Used for cache handling
             aliases (list): A list of aliases to change
             new_name (str): The name of the new parent
-            ctx (commands.Context): Used for cache handling
         """
 
         for alias in aliases:
