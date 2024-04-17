@@ -145,7 +145,7 @@ class DiscordToIRC(cogs.MatchCog):
         """
         await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
-    @irc.command(name="maps", description="List all the maps for IRC")
+    @irc_base.command(name="maps", description="List all the maps for IRC")
     async def irc_maps(self, ctx: commands.Context) -> None:
         """Show the current IRC maps
 
@@ -170,7 +170,7 @@ class DiscordToIRC(cogs.MatchCog):
         await ctx.send(embed=embed)
 
     @commands.has_permissions(administrator=True)
-    @irc.command(name="disconnect", description="Disconnect from IRC")
+    @irc_base.command(name="disconnect", description="Disconnect from IRC")
     async def irc_disconnect(self, ctx: commands.Context) -> None:
         """Disconnects from IRC
 
@@ -190,7 +190,7 @@ class DiscordToIRC(cogs.MatchCog):
         )
 
     @commands.has_permissions(administrator=True)
-    @irc.command(name="reconnect", description="Reconnects to IRC")
+    @irc_base.command(name="reconnect", description="Reconnects to IRC")
     async def irc_reconnect(self, ctx: commands.Context) -> None:
         """Reconnects to IRC
 
@@ -203,7 +203,7 @@ class DiscordToIRC(cogs.MatchCog):
             message="Reconnected to IRC", channel=ctx.channel
         )
 
-    @irc.command(name="status", description="Check status")
+    @irc_base.command(name="status", description="Check status")
     async def irc_status(self, ctx: commands.Context) -> None:
         """Prints some basic status of the IRC bot
         This same info is available in .bot
@@ -229,7 +229,7 @@ class DiscordToIRC(cogs.MatchCog):
         await ctx.send(embed=embed)
 
     @commands.has_permissions(ban_members=True)
-    @irc.command(name="ban", description="Ban a user on IRC")
+    @irc_base.command(name="ban", description="Ban a user on IRC")
     async def irc_ban(self, ctx: commands.Context, *, user: str) -> None:
         """A discord command to ban someone on the linked IRC channel
 
@@ -256,7 +256,7 @@ class DiscordToIRC(cogs.MatchCog):
         )
 
     @commands.has_permissions(ban_members=True)
-    @irc.command(name="unban", description="Unban a user on IRC")
+    @irc_base.command(name="unban", description="Unban a user on IRC")
     async def irc_unban(self, ctx: commands.Context, *, user: str) -> None:
         """A discord command to unban someone on the linked IRC channel
 
@@ -283,7 +283,7 @@ class DiscordToIRC(cogs.MatchCog):
         )
 
     @commands.has_permissions(administrator=True)
-    @irc.command(name="link", description="Add a link between IRC and discord")
+    @irc_base.command(name="link", description="Add a link between IRC and discord")
     async def irc_link(self, ctx: commands.Context, irc_channel: str) -> None:
         """Create a new link between discord and IRC
 
@@ -335,7 +335,9 @@ class DiscordToIRC(cogs.MatchCog):
         )
 
     @commands.has_permissions(administrator=True)
-    @irc.command(name="unlink", description="Remove a link between IRC and discord")
+    @irc_base.command(
+        name="unlink", description="Remove a link between IRC and discord"
+    )
     async def irc_unlink(self, ctx: commands.Context) -> None:
         """Deletes the link in the current discord channel
 
