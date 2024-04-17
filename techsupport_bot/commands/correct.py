@@ -9,7 +9,7 @@ from core import auxiliary, cogs
 from discord.ext import commands
 
 
-async def setup(bot):
+async def setup(bot) -> None:
     """Method to add correct to the config."""
     await bot.add_cog(Corrector(bot=bot))
 
@@ -77,6 +77,8 @@ class Corrector(cogs.BaseCog):
         description="Replaces the most recent text with your text",
         usage="[to_replace] [replacement]",
     )
-    async def correct(self, ctx, to_replace: str, replacement: str):
+    async def correct(
+        self, ctx: commands.Context, to_replace: str, replacement: str
+    ) -> None:
         """Method for the correct command for the discord bot."""
         await self.correct_command(ctx, to_replace, replacement)

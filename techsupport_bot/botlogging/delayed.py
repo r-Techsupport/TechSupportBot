@@ -23,7 +23,7 @@ class DelayedLogger(logger.BotLogger):
         self.__send_queue = None
         super().__init__(*args, **kwargs)
 
-    async def send_log(self, *args, **kwargs):
+    async def send_log(self, *args, **kwargs) -> None:
         """Adds a log to the queue
         Does nothing different than the Logger send_log function()
         Will disregard debug logs if debug is off
@@ -36,11 +36,11 @@ class DelayedLogger(logger.BotLogger):
 
         await self.__send_queue.put(super().send_log(*args, **kwargs))
 
-    def register_queue(self):
+    def register_queue(self) -> None:
         """Registers the asyncio.Queue object to make delayed logging possible"""
         self.__send_queue = asyncio.Queue(maxsize=self.queue_size)
 
-    async def run(self):
+    async def run(self) -> None:
         """A forever loop that pulls from the queue and then waits based on the config"""
         while True:
             try:

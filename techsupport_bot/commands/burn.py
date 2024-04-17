@@ -11,7 +11,7 @@ from core import auxiliary, cogs
 from discord.ext import commands
 
 
-async def setup(bot):
+async def setup(bot) -> None:
     """Method to add burn command to config."""
     await bot.add_cog(Burn(bot=bot))
 
@@ -80,7 +80,7 @@ class Burn(cogs.BaseCog):
         description="Declares the user's last message as a BURN!",
         usage="@user",
     )
-    async def burn(self, ctx: commands.Context, user_to_match: discord.Member):
+    async def burn(self, ctx: commands.Context, user_to_match: discord.Member) -> None:
         """The only purpose of this function is to accept input from discord
 
         Args:
