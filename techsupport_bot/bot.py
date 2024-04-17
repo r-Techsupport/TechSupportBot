@@ -834,7 +834,7 @@ class TechSupportBot(commands.Bot):
             bool: False if disabled, True if enabled
         """
         config = self.guild_configs[str(guild.id)]
-        if not extension_name in config.enabled_extensions:
+        if extension_name not in config.enabled_extensions:
             return False
         return True
 

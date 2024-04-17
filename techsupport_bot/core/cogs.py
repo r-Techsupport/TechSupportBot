@@ -288,7 +288,7 @@ class LoopCog(BaseCog):
                         )
                         continue
 
-                    if not channel.id in [ch.id for ch in registered_channels]:
+                    if channel.id not in [ch.id for ch in registered_channels]:
                         await self.bot.logger.send_log(
                             message=(
                                 f"Found new channel with ID {channel.id} in loop config"

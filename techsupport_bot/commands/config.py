@@ -180,7 +180,7 @@ class ConfigControl(cogs.BaseCog):
             return
 
         config = self.bot.guild_configs[str(ctx.guild.id)]
-        if not extension_name in config.enabled_extensions:
+        if extension_name not in config.enabled_extensions:
             await auxiliary.send_deny_embed(
                 message="That extension is already disabled for this guild",
                 channel=ctx.channel,
