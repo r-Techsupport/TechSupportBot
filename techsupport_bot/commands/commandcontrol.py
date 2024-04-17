@@ -12,7 +12,7 @@ from core import auxiliary, cogs
 from discord.ext import commands
 
 
-async def setup(bot):
+async def setup(bot) -> None:
     """Registers the CommandControl Cog"""
     await bot.add_cog(CommandControl(bot=bot))
 
@@ -28,7 +28,7 @@ class CommandControl(cogs.BaseCog):
         brief="Executes a commands bot command",
         description="Executes a commands bot command",
     )
-    async def command_group(self, ctx: commands.Context):
+    async def command_group(self, ctx: commands.Context) -> None:
         """The bare .command command. This does nothing but generate the help message
 
         Args:
@@ -42,7 +42,7 @@ class CommandControl(cogs.BaseCog):
     @command_group.command(
         name="enable", description="Enables a command by name", usage="[command-name]"
     )
-    async def enable_command(self, ctx, *, command_name: str):
+    async def enable_command(self, ctx, *, command_name: str) -> None:
         """Enables a command by name.
 
         This is a command and should be accessed via Discord.
@@ -75,7 +75,7 @@ class CommandControl(cogs.BaseCog):
     @command_group.command(
         name="disable", description="Disables a command by name", usage="[command-name]"
     )
-    async def disable_command(self, ctx, *, command_name: str):
+    async def disable_command(self, ctx, *, command_name: str) -> None:
         """Disables a command by name.
 
         This is a command and should be accessed via Discord.

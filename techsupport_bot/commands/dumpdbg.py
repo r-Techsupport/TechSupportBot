@@ -8,7 +8,7 @@ from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 
-async def setup(bot):
+async def setup(bot) -> None:
     """Method to add the dumpdbg command to config."""
 
     # Don't load without the API key
@@ -54,7 +54,7 @@ class Dumpdbg(cogs.BaseCog):
         ),
         usage="|attached-dump-files|",
     )
-    async def debug_dump(self, ctx):
+    async def debug_dump(self, ctx: commands.Context) -> None:
         """Method for the actual debugging"""
 
         config = self.bot.guild_configs[str(ctx.guild.id)]
@@ -162,7 +162,7 @@ class Dumpdbg(cogs.BaseCog):
                 )
             )
 
-    async def get_files(self, ctx):
+    async def get_files(self, ctx: commands.Context) -> list[str]:
         """Gets files from passed message and checks if they are valid .dmp files
 
         Params:

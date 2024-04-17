@@ -4,7 +4,7 @@ from core import auxiliary, cogs
 from discord.ext import commands
 
 
-async def setup(bot):
+async def setup(bot) -> None:
     """Loading the animal plugin"""
 
     await bot.add_cog(Animals(bot=bot))

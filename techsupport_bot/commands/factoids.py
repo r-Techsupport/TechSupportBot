@@ -20,11 +20,12 @@ import json
 import re
 from dataclasses import dataclass
 from socket import gaierror
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import aiocron
 import discord
 import expiringdict
+import munch
 import ui
 import yaml
 from aiohttp.client_exceptions import InvalidURL
@@ -37,7 +38,7 @@ if TYPE_CHECKING:
     import bot
 
 
-async def setup(bot):
+async def setup(bot: bot.TechSupportBot) -> None:
     """
     Define database tables, registers configs, registers extension
     """
@@ -171,7 +172,7 @@ class FactoidManager(cogs.MatchCog):
         + r")|\*\/[1-9])$"
     )
 
-    async def preconfig(self):
+    async def preconfig(self: Self) -> None:
         """Preconfig for factoid jobs"""
         self.factoid_cache = expiringdict.ExpiringDict(
             max_len=100, max_age_seconds=1200
@@ -189,7 +190,9 @@ class FactoidManager(cogs.MatchCog):
         await self.kickoff_jobs()
 
     # -- DB calls --
-    async def delete_factoid_call(self, factoid: bot.models.Factoid, guild: str):
+    async def delete_factoid_call(
+        self: Self, factoid: bot.models.Factoid, guild: str
+    ) -> None:
         """Calls the db to delete a factoid
 
         Args:
@@ -220,13 +223,13 @@ class FactoidManager(cogs.MatchCog):
         await factoid.delete()
 
     async def create_factoid_call(
-        self,
+        self: Self,
         factoid_name: str,
         guild: str,
         message: str,
         embed_config: str,
         alias: str = None,
-    ):
+    ) -> None:
         """Calls the DB to create a factoid
 
         Args:
@@ -258,13 +261,13 @@ class FactoidManager(cogs.MatchCog):
         await factoid.create()
 
     async def modify_factoid_call(
-        self,
-        factoid,
-    ):
+        self: Self,
+        factoid: bot.models.Factoid,
+    ) -> None:
         """Makes a DB call to modify a factoid
 
         Args:
-            factoid (Factoid): Factoid to modify.
+            factoid (bot.models.Factoid): Factoid to modify.
 
         Raises:
             custom_errors.TooLongFactoidMessageError:
@@ -362,8 +365,8 @@ class FactoidManager(cogs.MatchCog):
         return None
 
     async def handle_parent_change(
-        self, ctx: commands.Context, aliases: list, new_name: str
-    ):
+        self: Self, ctx: commands.Context, aliases: list, new_name: str
+    ) -> None:
         """Changes the list of aliases to point to a new name
 
         Args:
@@ -445,7 +448,7 @@ class FactoidManager(cogs.MatchCog):
         return discord.Embed.from_dict(embed_config)
 
     # -- Cache functions --
-    async def handle_cache(self, guild: str, factoid_name: str):
+    async def handle_cache(self: Self, guild: str, factoid_name: str) -> None:
         """Deletes factoid from the factoid cache
 
         Args:
@@ -511,7 +514,9 @@ class FactoidManager(cogs.MatchCog):
 
         return factoids
 
-    async def get_raw_factoid_entry(self, factoid_name: str, guild: str):
+    async def get_raw_factoid_entry(
+        self: Self, factoid_name: str, guild: str
+    ) -> bot.models.Factoid:
         """Searches the db for a factoid by its name, does NOT follow aliases
 
         Args:
@@ -519,7 +524,7 @@ class FactoidManager(cogs.MatchCog):
             guild (str): The id of the guild for the factoid
 
         Returns:
-            Factoid: The factoid
+            bot.models.Factoid: The factoid
         """
         cache_key = self.get_cache_key(guild, factoid_name.lower())
         factoid = self.factoid_cache.get(cache_key)
@@ -542,7 +547,9 @@ class FactoidManager(cogs.MatchCog):
 
         return factoid
 
-    async def get_factoid(self, factoid_name: str, guild: str):
+    async def get_factoid(
+        self: Self, factoid_name: str, guild: str
+    ) -> bot.models.Factoid:
         """Gets the factoid from the DB, follows aliases
 
         Args:
@@ -553,7 +560,7 @@ class FactoidManager(cogs.MatchCog):
             custom_errors.FactoidNotFoundError: If the factoid wasn't found
 
         Returns:
-            Factoid: The factoid
+            bot.models.Factoid: The factoid
         """
         factoid = await self.get_raw_factoid_entry(factoid_name, guild)
 
@@ -570,14 +577,14 @@ class FactoidManager(cogs.MatchCog):
     # -- Adding and removing factoids --
 
     async def add_factoid(
-        self,
+        self: Self,
         ctx: commands.Context,
         factoid_name: str,
         guild: str,
         message: str,
         embed_config: str,
         alias: str = None,
-    ):
+    ) -> None:
         """Adds a factoid with confirmation, modifies it if it already exists
 
         Args:
@@ -708,14 +715,19 @@ class FactoidManager(cogs.MatchCog):
         """
         return message_contents.startswith(config.extensions.factoids.prefix.value)
 
-    async def response(self, config, ctx: commands.Context, message_content: str, _):
+    async def response(
+        self: Self,
+        config: munch.Munch,
+        ctx: commands.Context,
+        message_content: str,
+        _: bool,
+    ) -> None:
         """Responds to a factoid call
 
         Args:
-            config (Config): The server config
+            config (munch.Munch): The server config
             ctx (commands.Context): Context of the call
             message_content (str): Content of the call
-            _ (bool): Result, unused
 
         Raises:
             custom_errors.FactoidNotFoundError: Raised if a broken alias is present in the DB
@@ -827,7 +839,7 @@ class FactoidManager(cogs.MatchCog):
         )
 
     # -- Factoid job related functions --
-    async def kickoff_jobs(self):
+    async def kickoff_jobs(self: Self) -> None:
         """Gets a list of cron jobs and starts them"""
         jobs = await self.bot.models.FactoidJob.query.gino.all()
         for job in jobs:
@@ -838,7 +850,9 @@ class FactoidManager(cogs.MatchCog):
             task = asyncio.create_task(self.cronjob(job))
             task = self.running_jobs[job_id]["task"] = task
 
-    async def cronjob(self, job: bot.models.FactoidJob, ctx: commands.Context = None):
+    async def cronjob(
+        self: Self, job: bot.models.FactoidJob, ctx: commands.Context = None
+    ) -> None:
         """Run a cron job for a factoid
 
         Args:
@@ -985,7 +999,7 @@ class FactoidManager(cogs.MatchCog):
         brief="Executes a factoid command",
         description="Executes a factoid command",
     )
-    async def factoid(self, ctx):
+    async def factoid(self: Self, ctx: commands.Context) -> None:
         """Method to create the factoid command group."""
 
         # Executed if there are no/invalid args supplied
@@ -1001,8 +1015,8 @@ class FactoidManager(cogs.MatchCog):
         usage="[factoid-name] [factoid-output] |optional-embed-json-upload|",
     )
     async def remember(
-        self, ctx: commands.Context, factoid_name: str, *, message: str = ""
-    ):
+        self: Self, ctx: commands.Context, factoid_name: str, *, message: str = ""
+    ) -> None:
         """Command to add a factoid
 
         Args:
@@ -1049,7 +1063,7 @@ class FactoidManager(cogs.MatchCog):
         description="Deletes a factoid permanently, including its aliases",
         usage="[factoid-name]",
     )
-    async def forget(self, ctx: commands.Context, factoid_name: str):
+    async def forget(self: Self, ctx: commands.Context, factoid_name: str) -> None:
         """Command to remove a factoid
 
         Args:
@@ -1093,13 +1107,13 @@ class FactoidManager(cogs.MatchCog):
         usage="[factoid-name] [channel] [cron-config]",
     )
     async def loop(
-        self,
+        self: Self,
         ctx: commands.Context,
         factoid_name: str,
         channel: discord.TextChannel,
         *,
         cron_config: str,
-    ):
+    ) -> None:
         """Command to loop a factoid in a channel
 
         Args:
@@ -1190,8 +1204,11 @@ class FactoidManager(cogs.MatchCog):
         usage="[factoid-name] [channel]",
     )
     async def deloop(
-        self, ctx: commands.Context, factoid_name: str, channel: discord.TextChannel
-    ):
+        self: Self,
+        ctx: commands.Context,
+        factoid_name: str,
+        channel: discord.TextChannel,
+    ) -> None:
         """Command to remove a factoid loop
 
         Args:
@@ -1242,8 +1259,11 @@ class FactoidManager(cogs.MatchCog):
         usage="[factoid-name] [channel]",
     )
     async def job(
-        self, ctx: commands.Context, factoid_name: str, channel: discord.TextChannel
-    ):
+        self: Self,
+        ctx: commands.Context,
+        factoid_name: str,
+        channel: discord.TextChannel,
+    ) -> None:
         """Command to list info about a loop
 
         Args:
@@ -1288,7 +1308,7 @@ class FactoidManager(cogs.MatchCog):
         brief="Lists loop jobs",
         description="Lists all the currently registered loop jobs",
     )
-    async def jobs(self, ctx: commands.Context):
+    async def jobs(self: Self, ctx: commands.Context) -> None:
         """Command ot list all factoid loop jobs
 
         Args:
@@ -1372,10 +1392,10 @@ class FactoidManager(cogs.MatchCog):
         usage="[factoid-name]",
     )
     async def info(
-        self,
+        self: Self,
         ctx: commands.Context,
         query: str,
-    ):
+    ) -> None:
         """Command to list info about a factoid
 
         Args:
@@ -1449,7 +1469,7 @@ class FactoidManager(cogs.MatchCog):
         description="Sends a list of all factoids, can take a file and hidden flag.",
         usage="[optional-flag]",
     )
-    async def all_(self, ctx: commands.Context, *, flag: str = ""):
+    async def all_(self: Self, ctx: commands.Context, *, flag: str = "") -> None:
         """Command to list all factoids
 
         Args:
@@ -1643,7 +1663,7 @@ class FactoidManager(cogs.MatchCog):
         aliases: dict,
         list_only_hidden: bool,
         flag: str,
-    ):
+    ) -> None:
         """Method to send the factoid list as a file instead of a paste
 
         Args:
@@ -1707,7 +1727,7 @@ class FactoidManager(cogs.MatchCog):
         description="Searches a factoid by name and contents",
         usage="[optional-flag]",
     )
-    async def search(self, ctx: commands.Context, *, query: str):
+    async def search(self: Self, ctx: commands.Context, *, query: str) -> None:
         """Commands to search a factoid
 
         Args:
@@ -1783,11 +1803,11 @@ class FactoidManager(cogs.MatchCog):
         usage="[new-alias-name] [original-factoid-name]",
     )
     async def alias(
-        self,
+        self: Self,
         ctx: commands.Context,
         alias_name: str,
         factoid_name: str,
-    ):
+    ) -> None:
         """Command to add an alternate way of calling a factoid
 
         Args:
@@ -1906,8 +1926,11 @@ class FactoidManager(cogs.MatchCog):
         usage="[factoid-name] [optional-new-parent]",
     )
     async def dealias(
-        self, ctx: commands.Context, factoid_name: str, replacement_name: str = None
-    ):
+        self: Self,
+        ctx: commands.Context,
+        factoid_name: str,
+        replacement_name: str = None,
+    ) -> None:
         """Command to remove an alias from the group, but never delete the parent
 
         Args:
@@ -2034,7 +2057,7 @@ class FactoidManager(cogs.MatchCog):
         brief="Flushes all factoid caches",
         description="Flushes all factoid caches",
     )
-    async def flush(self, ctx: commands.Context):
+    async def flush(self: Self, ctx: commands.Context) -> None:
         """Command to flush all factoid caches
 
         Args:
@@ -2061,10 +2084,10 @@ class FactoidManager(cogs.MatchCog):
         usage="[factoid-name]",
     )
     async def hide(
-        self,
+        self: Self,
         ctx: commands.Context,
         factoid_name: str,
-    ):
+    ) -> None:
         """Command to hide a factoid from the .factoid all command
 
         Args:
@@ -2103,10 +2126,10 @@ class FactoidManager(cogs.MatchCog):
         usage="[factoid-name]",
     )
     async def unhide(
-        self,
+        self: Self,
         ctx: commands.Context,
         factoid_name: str,
-    ):
+    ) -> None:
         """Command to unhide a factoid from the .factoid all list
 
         Args:

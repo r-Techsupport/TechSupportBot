@@ -753,7 +753,7 @@ class ApplicationManager(cogs.LoopCog):
         interaction: discord.Interaction,
         application: bot.models.Applications,
         member: discord.Member,
-    ):
+    ) -> None:
         """Notifies:
             - The invoker
             - The user

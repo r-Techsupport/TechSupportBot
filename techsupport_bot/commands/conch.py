@@ -11,7 +11,7 @@ from core import auxiliary, cogs
 from discord.ext import commands
 
 
-async def setup(bot):
+async def setup(bot) -> None:
     """Method to add conch to the config in discord bot."""
     await bot.add_cog(MagicConch(bot=bot))
 
@@ -86,6 +86,6 @@ class MagicConch(cogs.BaseCog):
         description="Asks the Magic Conch (8ball) a question",
         usage="[question]",
     )
-    async def ask_question(self, ctx: commands.Context, *, question: str = ""):
+    async def ask_question(self, ctx: commands.Context, *, question: str = "") -> None:
         """Method for how the conch command works for the bot."""
         await self.conch_command(ctx, question)

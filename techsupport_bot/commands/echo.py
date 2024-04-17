@@ -12,7 +12,7 @@ from core import auxiliary, cogs
 from discord.ext import commands
 
 
-async def setup(bot):
+async def setup(bot) -> None:
     """Registers the MessageEcho Cog"""
     await bot.add_cog(MessageEcho(bot=bot))
 
@@ -26,7 +26,7 @@ class MessageEcho(cogs.BaseCog):
     @commands.group(
         brief="Executes an echo bot command", description="Executes an echo bot command"
     )
-    async def echo(self, ctx: commands.Context):
+    async def echo(self, ctx: commands.Context) -> None:
         """The bare .echo command. This does nothing but generate the help message
 
         Args:
@@ -42,7 +42,9 @@ class MessageEcho(cogs.BaseCog):
         description="Echos a message to a channel",
         usage="[channel-id] [message]",
     )
-    async def echo_channel(self, ctx, channel_id: int, *, message: str):
+    async def echo_channel(
+        self, ctx: commands.Context, channel_id: int, *, message: str
+    ) -> None:
         """Sends a message to a specified channel.
 
         This is a command and should be accessed via Discord.
@@ -69,13 +71,15 @@ class MessageEcho(cogs.BaseCog):
         description="Echos a message to a user",
         usage="[user-id] [message]",
     )
-    async def echo_user(self, ctx, user_id: int, *, message: str):
+    async def echo_user(
+        self, ctx: commands.Context, user_id: int, *, message: str
+    ) -> None:
         """Sends a message to a specified user.
 
         This is a command and should be accessed via Discord.
 
         parameters:
-            ctx (discord.ext.Context): the context object for the calling message
+            ctx (commands.Context): the context object for the calling message
             user_id (int): the ID of the user to send the echoed message
             message (str): the message to echo
         """

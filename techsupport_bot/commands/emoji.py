@@ -13,7 +13,7 @@ from core import auxiliary, cogs
 from discord.ext import commands
 
 
-async def setup(bot):
+async def setup(bot) -> None:
     """Method to add emoji commands to config."""
     await bot.add_cog(Emojis(bot=bot))
 
@@ -43,7 +43,7 @@ class Emojis(cogs.BaseCog):
             return emoji.emojize(f":{cls.KEY_MAP[char]}:", language="alias")
         return None
 
-    def check_if_all_unique(self, string: str):
+    def check_if_all_unique(self, string: str) -> bool:
         """Checks, using the set function, if a string has duplicates or not
 
         Args:
@@ -86,7 +86,7 @@ class Emojis(cogs.BaseCog):
         message: str,
         add_reactions: bool,
         react_user: discord.Member = None,
-    ):
+    ) -> None:
         """A method to handle the core of both emoji message and reaction
 
         Args:
@@ -152,7 +152,7 @@ class Emojis(cogs.BaseCog):
         brief="Executes an emoji command",
         description="Executes a emoji command",
     )
-    async def emoji(self, ctx):
+    async def emoji(self, ctx: commands.Context) -> None:
         """Executed if there are no/invalid args supplied"""
         await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
@@ -163,7 +163,7 @@ class Emojis(cogs.BaseCog):
         description="Creates an emoji message",
         usage="[message]",
     )
-    async def message(self, ctx, *, message: str):
+    async def message(self, ctx: commands.Context, *, message: str) -> None:
         """This is a command and should be run via discord
         This is for generating a message of emojis"""
         await self.emoji_commands(ctx, message, False)
@@ -175,7 +175,9 @@ class Emojis(cogs.BaseCog):
         description="Creates an emoji reaction for a user's most recent message",
         usage="[message] @user",
     )
-    async def reaction(self, ctx, message: str, react_user: discord.Member):
+    async def reaction(
+        self, ctx: commands.Context, message: str, react_user: discord.Member
+    ) -> None:
         """This is a command and should be run via discord
         This is for reacting to a message with emojis
         The message must be unique in this command"""
