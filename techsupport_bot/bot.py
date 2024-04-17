@@ -955,9 +955,6 @@ class TechSupportBot(commands.Bot):
 
         Args:
             irc (irc.IRC): The IRC object to start the socket on
-
-        Returns:
-            bool: True if the connection was successful, False if it was not
         """
         irc_config = getattr(self.file_config.api, "irc")
         main_loop = asyncio.get_running_loop()
