@@ -10,12 +10,17 @@ A FakeDiscordEnv for creating a discord environment 100% out of mock ojects
 from __future__ import annotations
 
 import random
-from collections.abc import Callable
+from collections.abc import Callable  # pylint: disable=W0611
 from typing import Self
 from unittest.mock import patch
 
 from commands import Burn, Corrector, Emojis, Greeter, MagicConch
-from hypothesis.strategies import SearchStrategy, composite, integers, text
+from hypothesis.strategies import (  # pylint: disable=W0611
+    SearchStrategy,
+    composite,
+    integers,
+    text,
+)
 
 from .helpers import (
     MockAsset,
