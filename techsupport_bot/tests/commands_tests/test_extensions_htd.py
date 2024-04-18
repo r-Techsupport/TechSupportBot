@@ -5,12 +5,12 @@ This contains 46 tests
 
 import importlib
 from unittest.mock import AsyncMock, MagicMock, call, patch
-from discord.ext import commands
 
 import discord
 import pytest
 from commands import htd
 from core import auxiliary
+from discord.ext import commands
 from tests import config_for_tests, helpers
 
 
