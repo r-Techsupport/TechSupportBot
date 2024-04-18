@@ -99,7 +99,7 @@ class Rules(cogs.BaseCog):
         uploaded_data = await auxiliary.get_json_from_attachments(ctx.message)
         if uploaded_data:
             uploaded_data["guild_id"] = str(ctx.guild.id)
-            await self.write_new_rules(ctx.guild, uploaded_data)
+            await self.write_new_rules(guild=ctx.guild, rules=uploaded_data)
             await auxiliary.send_confirm_embed(
                 message="I've updated to those rules", channel=ctx.channel
             )

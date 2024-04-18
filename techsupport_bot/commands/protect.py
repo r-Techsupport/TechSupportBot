@@ -201,11 +201,11 @@ class Protector(cogs.MatchCog):
             return
 
         ctx = await self.bot.get_context(message)
-        matched = await self.match(config, ctx, message.content)
+        matched = await self.match(config=config, ctx=ctx, content=message.content)
         if not matched:
             return
 
-        await self.response(config, ctx, message.content, None)
+        await self.response(config=config, ctx=ctx, content=message.content, _=None)
 
     def search_by_text_regex(self, config, content):
         """Function to search given input by all
@@ -245,22 +245,28 @@ class Protector(cogs.MatchCog):
         """Method to define the response for the protect extension."""
         # check mass mentions first - return after handling
         if len(ctx.message.mentions) > config.extensions.protect.max_mentions.value:
-            await self.handle_mass_mention_alert(config, ctx, content)
+            await self.handle_mass_mention_alert(
+                config=config, ctx=ctx, content=content
+            )
             return
 
         # search the message against keyword strings
-        triggered_config = self.search_by_text_regex(config, content)
+        triggered_config = self.search_by_text_regex(config=config, content=content)
 
         for attachment in ctx.message.attachments:
             if (
                 attachment.filename.split(".")[-1]
                 in config.extensions.protect.banned_file_extensions.value
             ):
-                await self.handle_file_extension_alert(config, ctx, attachment.filename)
+                await self.handle_file_extension_alert(
+                    config=config, ctx=ctx, filename=attachment.filename
+                )
                 return
 
         if triggered_config:
-            await self.handle_string_alert(config, ctx, content, triggered_config)
+            await self.handle_string_alert(
+                config=config, ctx=ctx, content=content, filter_config=triggered_config
+            )
             if triggered_config.get("delete"):
                 # the message is deleted, no need to pastebin it
                 return
@@ -269,7 +275,7 @@ class Protector(cogs.MatchCog):
         if len(content) > config.extensions.protect.length_limit.value or content.count(
             "\n"
         ) > self.max_newlines(config.extensions.protect.length_limit.value):
-            await self.handle_length_alert(config, ctx, content)
+            await self.handle_length_alert(config=config, ctx=ctx, content=content)
 
     def max_newlines(self, max_length):
         """Method to set up the number of max lines."""
@@ -300,13 +306,21 @@ class Protector(cogs.MatchCog):
         reason = "message too long (too many newlines or characters)"
 
         if not self.bot.file_config.api.api_url.linx:
-            await self.send_default_delete_response(config, ctx, content, reason)
+            await self.send_default_delete_response(
+                config=config, ctx=ctx, content=content, reason=reason
+            )
             return
 
-        linx_embed = await self.create_linx_embed(config, ctx, content)
+        linx_embed = await self.create_linx_embed(
+            config=config, ctx=ctx, content=content
+        )
         if not linx_embed:
-            await self.send_default_delete_response(config, ctx, content, reason)
-            await self.send_alert(config, ctx, "Could not convert text to Linx paste")
+            await self.send_default_delete_response(
+                config=config, ctx=ctx, content=content, reason=reason
+            )
+            await self.send_alert(
+                config=config, ctx=ctx, message="Could not convert text to Linx paste"
+            )
             return
 
         await ctx.send(
@@ -316,17 +330,23 @@ class Protector(cogs.MatchCog):
     async def handle_mass_mention_alert(self, config, ctx, content):
         """Method for handling mass mentions in an alert."""
         await ctx.message.delete()
-        await self.handle_warn(ctx, ctx.author, "mass mention", bypass=True)
-        await self.send_alert(config, ctx, f"Mass mentions from {ctx.author}")
+        await self.handle_warn(
+            ctx=ctx, user=ctx.author, reason="mass mention", bypass=True
+        )
+        await self.send_alert(
+            config=config, ctx=ctx, message=f"Mass mentions from {ctx.author}"
+        )
 
     async def handle_file_extension_alert(self, config, ctx, filename):
         """Method for handling suspicious file extensions."""
         await ctx.message.delete()
         await self.handle_warn(
-            ctx, ctx.author, "Suspicious file extension", bypass=True
+            ctx=ctx, user=ctx.author, reason="Suspicious file extension", bypass=True
         )
         await self.send_alert(
-            config, ctx, f"Suspicious file uploaded by {ctx.author}: {filename}"
+            config=config,
+            ctx=ctx,
+            message=f"Suspicious file uploaded by {ctx.author}: {filename}",
         )
 
     async def handle_string_alert(self, config, ctx, content, filter_config):
@@ -337,14 +357,18 @@ class Protector(cogs.MatchCog):
 
         # Send only 1 response based on warn, deletion, or neither
         if filter_config.warn:
-            await self.handle_warn(ctx, ctx.author, filter_config.message, bypass=True)
+            await self.handle_warn(
+                ctx=ctx, user=ctx.author, reason=filter_config.message, bypass=True
+            )
         elif filter_config.delete:
             await self.send_default_delete_response(
-                config, ctx, content, filter_config.message
+                config=config, ctx=ctx, content=content, reason=filter_config.message
             )
         else:
             # Ensure we don't trigger people more than once if the only trigger is a warning
-            cache_key = self.get_cache_key(ctx.guild, ctx.author, filter_config.trigger)
+            cache_key = self.get_cache_key(
+                guild=ctx.guild, user=ctx.author, trigger=filter_config.trigger
+            )
             if self.string_alert_cache.get(cache_key):
                 return
 
@@ -357,19 +381,19 @@ class Protector(cogs.MatchCog):
             await ctx.send(ctx.message.author.mention, embed=embed)
 
         await self.send_alert(
-            config,
-            ctx,
-            f"Message contained trigger: {filter_config.trigger}",
+            config=config,
+            ctx=ctx,
+            message=f"Message contained trigger: {filter_config.trigger}",
         )
 
     async def handle_warn(self, ctx, user: discord.Member, reason: str, bypass=False):
         """Method to handle the warn of a user."""
         if not bypass:
-            can_execute = await self.can_execute(ctx, user)
+            can_execute = await self.can_execute(ctx=ctx, target=user)
             if not can_execute:
                 return
 
-        warnings = await self.get_warnings(user, ctx.guild)
+        warnings = await self.get_warnings(user=user, guild=ctx.guild)
 
         new_count = len(warnings) + 1
 
@@ -398,18 +422,18 @@ class Protector(cogs.MatchCog):
 
             if should_ban:
                 await self.handle_ban(
-                    ctx,
-                    user,
-                    f"Over max warning count {new_count} out "
+                    ctx=ctx,
+                    user=user,
+                    reason=f"Over max warning count {new_count} out "
                     + f"of {config.extensions.protect.max_warnings.value}"
                     + f" (final warning: {reason})",
                     bypass=True,
                 )
-                await self.clear_warnings(user, ctx.guild)
+                await self.clear_warnings(user=user, guild=ctx.guild)
                 return
 
         embed = await self.generate_user_modified_embed(
-            user, "warn", f"{reason} ({new_count} total warnings)"
+            user=user, action="warn", reason=f"{reason} ({new_count} total warnings)"
         )
 
         # Attempt DM for manually initiated, non-banning warns
@@ -447,26 +471,28 @@ class Protector(cogs.MatchCog):
         """Method to handle an unwarn of a user."""
         # Always allow admins to unwarn other admins
         if not bypass and not ctx.message.author.guild_permissions.administrator:
-            can_execute = await self.can_execute(ctx, user)
+            can_execute = await self.can_execute(ctx=ctx, target=user)
             if not can_execute:
                 return
 
-        warnings = await self.get_warnings(user, ctx.guild)
+        warnings = await self.get_warnings(user=user, guild=ctx.guild)
         if not warnings:
             await auxiliary.send_deny_embed(
                 message="There are no warnings for that user", channel=ctx.channel
             )
             return
 
-        await self.clear_warnings(user, ctx.guild)
+        await self.clear_warnings(user=user, guild=ctx.guild)
 
-        embed = await self.generate_user_modified_embed(user, "unwarn", reason)
+        embed = await self.generate_user_modified_embed(
+            user=user, action="unwarn", reason=reason
+        )
         await ctx.send(embed=embed)
 
     async def handle_ban(self, ctx, user, reason, bypass=False):
         """Method to handle the ban of a user."""
         if not bypass:
-            can_execute = await self.can_execute(ctx, user)
+            can_execute = await self.can_execute(ctx=ctx, target=user)
             if not can_execute:
                 return
 
@@ -484,14 +510,16 @@ class Protector(cogs.MatchCog):
             delete_message_days=config.extensions.protect.ban_delete_duration.value,
         )
 
-        embed = await self.generate_user_modified_embed(user, "ban", reason)
+        embed = await self.generate_user_modified_embed(
+            user=user, action="ban", reason=reason
+        )
 
         await ctx.send(embed=embed)
 
     async def handle_unban(self, ctx, user, reason, bypass=False):
         """Method to handle an unban of a user."""
         if not bypass:
-            can_execute = await self.can_execute(ctx, user)
+            can_execute = await self.can_execute(ctx=ctx, target=user)
             if not can_execute:
                 return
 
@@ -504,20 +532,24 @@ class Protector(cogs.MatchCog):
             )
             return
 
-        embed = await self.generate_user_modified_embed(user, "unban", reason)
+        embed = await self.generate_user_modified_embed(
+            user=user, action="unban", reason=reason
+        )
 
         await ctx.send(embed=embed)
 
     async def handle_kick(self, ctx, user, reason, bypass=False):
         """Method to handle the kicking from the discord of a user."""
         if not bypass:
-            can_execute = await self.can_execute(ctx, user)
+            can_execute = await self.can_execute(ctx=ctx, target=user)
             if not can_execute:
                 return
 
         await ctx.guild.kick(user, reason=reason)
 
-        embed = await self.generate_user_modified_embed(user, "kick", reason)
+        embed = await self.generate_user_modified_embed(
+            user=user, action="kick", reason=reason
+        )
 
         await ctx.send(embed=embed)
 
@@ -652,8 +684,8 @@ class Protector(cogs.MatchCog):
         }
         file_to_paste = {"file": io.StringIO(content)}
         response = await self.bot.http_functions.http_call(
-            "post",
-            self.bot.file_config.api.api_url.linx,
+            method="post",
+            url=self.bot.file_config.api.api_url.linx,
             headers=headers,
             data=file_to_paste,
         )
@@ -688,12 +720,14 @@ class Protector(cogs.MatchCog):
         # Uses the discord.Member class to get the top role attribute if the
         # user is a part of the target guild
         if ctx.guild.get_member(user.id) is not None:
-            await self.handle_ban(ctx, ctx.guild.get_member(user.id), reason)
+            await self.handle_ban(
+                ctx=ctx, user=ctx.guild.get_member(user.id), reason=reason
+            )
         else:
-            await self.handle_ban(ctx, user, reason)
+            await self.handle_ban(ctx=ctx, user=user, reason=reason)
 
         config = self.bot.guild_configs[str(ctx.guild.id)]
-        await self.send_alert(config, ctx, "Ban command")
+        await self.send_alert(config=config, ctx=ctx, message="Ban command")
 
     @commands.has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
@@ -709,9 +743,11 @@ class Protector(cogs.MatchCog):
         # Uses the discord.Member class to get the top role attribute if the
         # user is a part of the target guild
         if ctx.guild.get_member(user.id) is not None:
-            await self.handle_unban(ctx, ctx.guild.get_member(user.id), reason)
+            await self.handle_unban(
+                ctx=ctx, user=ctx.guild.get_member(user.id), reason=reason
+            )
         else:
-            await self.handle_unban(ctx, user, reason)
+            await self.handle_unban(ctx=ctx, user=user, reason=reason)
 
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
@@ -723,10 +759,10 @@ class Protector(cogs.MatchCog):
     )
     async def kick_user(self, ctx, user: discord.Member, *, reason: str = None):
         """Method to kick a user from discord."""
-        await self.handle_kick(ctx, user, reason)
+        await self.handle_kick(ctx=ctx, user=user, reason=reason)
 
         config = self.bot.guild_configs[str(ctx.guild.id)]
-        await self.send_alert(config, ctx, "Kick command")
+        await self.send_alert(config=config, ctx=ctx, reason="Kick command")
 
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
@@ -738,10 +774,10 @@ class Protector(cogs.MatchCog):
     )
     async def warn_user(self, ctx, user: discord.Member, *, reason: str = None):
         """Method to warn a user of wrongdoing in discord."""
-        await self.handle_warn(ctx, user, reason)
+        await self.handle_warn(ctx=ctx, user=user, reason=reason)
 
         config = self.bot.guild_configs[str(ctx.guild.id)]
-        await self.send_alert(config, ctx, "Warn command")
+        await self.send_alert(config=config, ctx=ctx, reason="Warn command")
 
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
@@ -753,7 +789,7 @@ class Protector(cogs.MatchCog):
     )
     async def unwarn_user(self, ctx, user: discord.Member, *, reason: str = None):
         """Method to unwarn a user on discord."""
-        await self.handle_unwarn(ctx, user, reason)
+        await self.handle_unwarn(ctx=ctx, user=user, reason=reason)
 
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
@@ -765,7 +801,7 @@ class Protector(cogs.MatchCog):
     )
     async def get_warnings_command(self, ctx, user: discord.User):
         """Method to get the warnings of a user in discord."""
-        warnings = await self.get_warnings(user, ctx.guild)
+        warnings = await self.get_warnings(user=user, guild=ctx.guild)
         if not warnings:
             await auxiliary.send_deny_embed(
                 message="There are no warnings for that user", channel=ctx.channel
@@ -806,7 +842,7 @@ class Protector(cogs.MatchCog):
             ValueError: Raised if the provided duration string cannot be converted into a time
         """
 
-        can_execute = await self.can_execute(ctx, user)
+        can_execute = await self.can_execute(ctx=ctx, target=user)
         if not can_execute:
             return
 
@@ -847,13 +883,13 @@ class Protector(cogs.MatchCog):
         await user.timeout(delta_duration)
 
         embed = await self.generate_user_modified_embed(
-            user, f"muted for {delta_duration}", reason=None
+            user=user, action=f"muted for {delta_duration}", reason=None
         )
 
         await ctx.send(embed=embed)
 
         config = self.bot.guild_configs[str(ctx.guild.id)]
-        await self.send_alert(config, ctx, "Mute command")
+        await self.send_alert(config=config, ctx=ctx, message="Mute command")
 
     @commands.has_permissions(moderate_members=True)
     @commands.bot_has_permissions(moderate_members=True)
@@ -866,7 +902,7 @@ class Protector(cogs.MatchCog):
     )
     async def unmute(self, ctx, user: discord.Member, reason: str = None):
         """Method to unmute a user in discord."""
-        can_execute = await self.can_execute(ctx, user)
+        can_execute = await self.can_execute(ctx=ctx, target=user)
         if not can_execute:
             return
 
@@ -878,7 +914,9 @@ class Protector(cogs.MatchCog):
 
         await user.timeout(None)
 
-        embed = await self.generate_user_modified_embed(user, "unmuted", reason)
+        embed = await self.generate_user_modified_embed(
+            user=user, action="unmuted", reason=reason
+        )
 
         await ctx.send(embed=embed)
 
@@ -908,7 +946,7 @@ class Protector(cogs.MatchCog):
 
         await ctx.channel.purge(limit=amount + 1)
 
-        await self.send_alert(config, ctx, "Purge command")
+        await self.send_alert(config=config, ctx=ctx, message="Purge command")
 
     @purge.command(
         name="duration",
@@ -935,4 +973,4 @@ class Protector(cogs.MatchCog):
             after=timestamp, limit=config.extensions.protect.max_purge_amount.value
         )
 
-        await self.send_alert(config, ctx, "Purge command")
+        await self.send_alert(config=config, ctx=ctx, message="Purge command")

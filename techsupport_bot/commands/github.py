@@ -94,8 +94,8 @@ class IssueCreator(cogs.BaseCog):
         }
 
         response = await self.bot.http_functions.http_call(
-            "post",
-            f"{self.GITHUB_API_BASE_URL}/repos/{self.bot.file_config.api.github.username}"
+            method="post",
+            url=f"{self.GITHUB_API_BASE_URL}/repos/{self.bot.file_config.api.github.username}"
             + f"/{self.bot.file_config.api.github.repo}/issues",
             headers=headers,
             data=json.dumps({"title": title, "body": description}),

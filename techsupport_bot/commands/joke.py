@@ -29,9 +29,9 @@ class Joker(cogs.BaseCog):
 
     async def call_api(self, ctx, config):
         """Method to call the api to get the joke from."""
-        url = self.build_url(ctx, config)
+        url = self.build_url(ctx=ctx, config=config)
         response = await self.bot.http_functions.http_call(
-            "get", url, get_raw_response=True
+            method="get", url=url, get_raw_response=True
         )
         return response
 
@@ -65,7 +65,7 @@ class Joker(cogs.BaseCog):
     async def joke(self, ctx):
         """Method to call to get all the joke together."""
         config = self.bot.guild_configs[str(ctx.guild.id)]
-        response = await self.call_api(ctx, config)
+        response = await self.call_api(ctx=ctx, config=config)
         text = response["text"]
         embed = self.generate_embed(text)
         await ctx.send(embed=embed)

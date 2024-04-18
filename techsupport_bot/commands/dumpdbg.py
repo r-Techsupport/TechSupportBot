@@ -126,8 +126,8 @@ class Dumpdbg(cogs.BaseCog):
                 return
 
             response = await self.bot.http_functions.http_call(
-                "post",
-                api_endpoint,
+                method="post",
+                url=api_endpoint,
                 data=json_data,
                 headers={"Content-Type": "application/json"},
             )

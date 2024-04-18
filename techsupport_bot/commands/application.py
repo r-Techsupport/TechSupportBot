@@ -294,9 +294,9 @@ class ApplicationManager(cogs.LoopCog):
                 from the user. Defaults to False.
         """
         if allow_old:
-            await self.get_command_all(interaction, member)
+            await self.get_command_all(interaction=interaction, member=member)
         else:
-            await self.get_command_pending(interaction, member)
+            await self.get_command_pending(interaction=interaction, member=member)
 
     @app_commands.check(command_permission_check)
     @application_group.command(
@@ -344,7 +344,11 @@ class ApplicationManager(cogs.LoopCog):
         )
 
         await self.notify_for_application_change(
-            message, True, interaction, application, member
+            message=message,
+            approved=True,
+            interaction=interaction,
+            application=application,
+            member=member,
         )
 
     @app_commands.check(command_permission_check)
@@ -379,7 +383,11 @@ class ApplicationManager(cogs.LoopCog):
         ).apply()
 
         await self.notify_for_application_change(
-            message, False, interaction, application, member
+            message=message,
+            approved=False,
+            interaction=interaction,
+            application=application,
+            member=member,
         )
 
     @app_commands.check(command_permission_check)
@@ -431,7 +439,9 @@ class ApplicationManager(cogs.LoopCog):
             interaction (discord.Interaction): The interaction genereted by this slash command
             status (ApplicationStatus): The specified status to get applications from
         """
-        applications = await self.get_applications_by_status(status, interaction.guild)
+        applications = await self.get_applications_by_status(
+            status=status, guild=interaction.guild
+        )
         if len(applications) == 0:
             embed = auxiliary.prepare_deny_embed(
                 "No applications with that status exist"
@@ -440,7 +450,7 @@ class ApplicationManager(cogs.LoopCog):
             return
         await interaction.response.defer(ephemeral=False)
         embeds = await self.make_array_from_applications(
-            applications, interaction.guild
+            applications=applications, guild=interaction.guild
         )
         view = ui.PaginateView()
         await view.send(interaction.channel, interaction.user, embeds, interaction)
@@ -466,7 +476,7 @@ class ApplicationManager(cogs.LoopCog):
             return
         await interaction.response.defer(ephemeral=False)
         embeds = await self.make_array_from_applications(
-            applications, interaction.guild
+            applications=applications, guild=interaction.guild
         )
         view = ui.PaginateView()
         await view.send(interaction.channel, interaction.user, embeds, interaction)
@@ -487,7 +497,7 @@ class ApplicationManager(cogs.LoopCog):
             )
         else:
             embed = await self.build_application_embed(
-                interaction.guild, application, False
+                guild=interaction.guild, application=application, new=False
             )
         await interaction.response.send_message(embed=embed)
 
@@ -542,7 +552,9 @@ class ApplicationManager(cogs.LoopCog):
             )
             return
         await self.handle_new_application(
-            interaction.user, form.background.value, form.reason.value
+            applicant=interaction.user,
+            background=form.background.value,
+            reason=form.reason.value,
         )
 
         await interaction.followup.send(
@@ -606,7 +618,9 @@ class ApplicationManager(cogs.LoopCog):
         """
         if not application:
             return None
-        applicant = await self.get_application_from_db_entry(guild, application)
+        applicant = await self.get_application_from_db_entry(
+            guild=guild, application=application
+        )
         if not applicant:
             return None
 
@@ -677,7 +691,9 @@ class ApplicationManager(cogs.LoopCog):
         content_string = ""
         if role:
             content_string = role.mention
-        embed = await self.build_application_embed(applicant.guild, application)
+        embed = await self.build_application_embed(
+            guild=applicant.guild, application=application
+        )
         await channel.send(
             content=content_string,
             embed=embed,
@@ -776,7 +792,7 @@ class ApplicationManager(cogs.LoopCog):
         )
         if message:
             member = await self.get_application_from_db_entry(
-                interaction.guild, application
+                guild=interaction.guild, application=application
             )
             user_message = (
                 f"Your application in {interaction.guild.name} has been"
@@ -893,7 +909,9 @@ class ApplicationManager(cogs.LoopCog):
         if not channel:
             return
 
-        apps = await self.get_applications_by_status(ApplicationStatus.PENDING, guild)
+        apps = await self.get_applications_by_status(
+            status=ApplicationStatus.PENDING, guild=guild
+        )
         if not apps:
             return
 
@@ -939,7 +957,9 @@ class ApplicationManager(cogs.LoopCog):
                     embed.description = f"{event}"
             await channel.send(embed=embed)
 
-        apps = await self.get_applications_by_status(ApplicationStatus.PENDING, guild)
+        apps = await self.get_applications_by_status(
+            status=ApplicationStatus.PENDING, guild=guild
+        )
         if not apps:
             return
 

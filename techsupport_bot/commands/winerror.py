@@ -111,7 +111,9 @@ class WindowsError(cogs.BaseCog):
         # hresult error - this might exist
         if hex_code != trunc_hex_code:
             hresult_errors = self.handle_hresult_errors(
-                trunc_hex_code, severity, facility_code
+                trunc_hex_code=trunc_hex_code,
+                severity=severity,
+                facility_code=facility_code,
             )
             if hresult_errors:
                 categories.append(hresult_errors)
@@ -218,7 +220,8 @@ class WindowsError(cogs.BaseCog):
         if len(valid_errors_hex) == 0:
             return None
         category = ErrorCategory(
-            f"For hex {hex(hex_code)} / decimal {self.twos_comp(hex_code, 32)}", []
+            f"For hex {hex(hex_code)} / decimal {self.twos_comp(original_value=hex_code, bits=32)}",
+            [],
         )
         for error in valid_errors_hex:
             category.errors.append(
@@ -286,7 +289,9 @@ class WindowsError(cogs.BaseCog):
                     return 0xFFFF
                 # the integer conversion here is deliberately a base 10 conversion. The command
                 # should fail if a negative hex number is queried.
-                return self.reverse_twos_comp(int(original_value), 32)
+                return self.reverse_twos_comp(
+                    original_value=int(original_value), bits=32
+                )
             # check if the number is larger than 32 bits
             if abs(int(original_value, 16)) > 0xFFFFFFFF:
                 return 0xFFFF

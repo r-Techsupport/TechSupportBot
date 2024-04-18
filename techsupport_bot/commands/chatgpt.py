@@ -97,7 +97,7 @@ class ChatGPT(cogs.BaseCog):
             ),
         }
         response = await self.bot.http_functions.http_call(
-            "post", self.API_URL, headers=headers, json=data
+            method="post", url=self.API_URL, headers=headers, json=data
         )
         return response
 
@@ -123,7 +123,7 @@ class ChatGPT(cogs.BaseCog):
             return
 
         # -> Calls the API <-
-        response = await self.call_api(ctx, api_key, prompt)
+        response = await self.call_api(ctx=ctx, api_key=api_key, prompt=prompt)
 
         # -> Response processing <-
         config = self.bot.guild_configs[str(ctx.guild.id)]

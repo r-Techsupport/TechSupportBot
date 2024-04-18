@@ -91,7 +91,10 @@ class RoleGiver(cogs.BaseCog):
 
         # Call the base function
         await self.role_command_base(
-            interaction, roles, allowed_to_execute, interaction.user
+            interaction=interaction,
+            assignable_roles=roles,
+            allowed_roles=allowed_to_execute,
+            member=interaction.user,
         )
 
     @role_group.command(
@@ -128,7 +131,12 @@ class RoleGiver(cogs.BaseCog):
         allowed_to_execute = config.extensions.role.allow_all_assign.value
 
         # Call the base function
-        await self.role_command_base(interaction, roles, allowed_to_execute, member)
+        await self.role_command_base(
+            interaction=interaction,
+            assignable_roles=roles,
+            allowed_roles=allowed_to_execute,
+            member=member,
+        )
 
     async def role_command_base(
         self,
@@ -147,11 +155,11 @@ class RoleGiver(cogs.BaseCog):
             member (discord.Member): The member to assign roles to
         """
         role_options = self.generate_options(
-            member, interaction.guild, assignable_roles
+            user=member, guild=interaction.guild, roles=assignable_roles
         )
 
         can_execute = self.check_permissions(
-            interaction.user, interaction.guild, allowed_roles
+            user=interaction.user, guild=interaction.guild, roles=allowed_roles
         )
         if not can_execute:
             embed = auxiliary.prepare_deny_embed(

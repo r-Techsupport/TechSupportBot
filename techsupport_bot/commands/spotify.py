@@ -45,8 +45,8 @@ class Spotify(cogs.BaseCog):
         """Method to get an oauth token for the Spotify API."""
         data = {"grant_type": "client_credentials"}
         response = await self.bot.http_functions.http_call(
-            "post",
-            self.AUTH_URL,
+            method="post",
+            url=self.AUTH_URL,
             data=data,
             auth=aiohttp.BasicAuth(
                 self.bot.file_config.api.api_keys.spotify_client,
@@ -74,7 +74,7 @@ class Spotify(cogs.BaseCog):
         headers = {"Authorization": f"Bearer {oauth_token}"}
         params = {"q": query, "type": "track", "market": "US", "limit": 3}
         response = await self.bot.http_functions.http_call(
-            "get", self.API_URL, headers=headers, params=params
+            method="get", url=self.API_URL, headers=headers, params=params
         )
 
         items = response.get("tracks", {}).get("items", [])

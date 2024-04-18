@@ -140,7 +140,7 @@ class Htd(cogs.BaseCog):
             ctx (commands.Context): The context in which the command was called at
             val_to_convert (str): The raw conversion request
         """
-        await self.htd_command(ctx, val_to_convert)
+        await self.htd_command(ctx=ctx, val_to_convert=val_to_convert)
 
     def clean_input(self: Self, user_input: str) -> str:
         """A method to clean up input to be better processed by later functions
@@ -324,5 +324,7 @@ class Htd(cogs.BaseCog):
             )
             return
 
-        embed = self.custom_embed_generation(val_to_convert, calced_val)
+        embed = self.custom_embed_generation(
+            raw_input=val_to_convert, val_to_convert=calced_val
+        )
         await ctx.send(embed=embed)

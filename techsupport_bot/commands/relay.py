@@ -518,7 +518,7 @@ class DiscordToIRC(cogs.MatchCog):
             event (irc.client.Event): The event object that triggered this function
         """
         await self.bot.log_DM(
-            event.source,
-            "IRC Bot",
-            message,
+            sent_from=event.source,
+            source="IRC Bot",
+            content=message,
         )

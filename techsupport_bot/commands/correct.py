@@ -53,7 +53,9 @@ class Corrector(cogs.BaseCog):
             return
 
         updated_message = self.prepare_message(
-            message_to_correct.content, to_replace, replacement
+            old_content=message_to_correct.content,
+            to_replace=to_replace,
+            replacement=replacement,
         )
         embed = auxiliary.generate_basic_embed(
             title="Correction!",
@@ -98,4 +100,6 @@ class Corrector(cogs.BaseCog):
             to_replace (str): What is being searched for to replace
             replacement (str): What to replace to_replace with
         """
-        await self.correct_command(ctx, to_replace, replacement)
+        await self.correct_command(
+            ctx=ctx, to_replace=to_replace, replacement=replacement
+        )

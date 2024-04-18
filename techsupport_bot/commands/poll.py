@@ -132,7 +132,7 @@ class ReactionPoller(PollGenerator):
             )
             return
 
-        request_body = await self.validate_data(ctx, request_body)
+        request_body = await self.validate_data(ctx=ctx, request_body=request_body)
         if not request_body:
             return
 
@@ -161,7 +161,10 @@ class ReactionPoller(PollGenerator):
         await message.edit(content=None, embed=embed)
 
         results = await self.wait_for_results(
-            ctx, message, request_body.timeout, request_body.options
+            ctx=ctx,
+            message=message,
+            timeout=request_body.timeout,
+            options=request_body.options,
         )
         if results is None:
             await auxiliary.send_deny_embed(
@@ -294,7 +297,9 @@ class StrawPoller(PollGenerator):
             )
             return
 
-        request_body = await self.validate_data(ctx, request_body, strawpoll=True)
+        request_body = await self.validate_data(
+            ctx=ctx, request_body=request_body, strawpoll=True
+        )
         if not request_body:
             return
 
@@ -303,7 +308,7 @@ class StrawPoller(PollGenerator):
         }
 
         response = await self.bot.http_functions.http_call(
-            "post", self.API_URL, json=post_body
+            method="post", url=self.API_URL, json=post_body
         )
 
         content_id = response.get("content_id")

@@ -67,7 +67,7 @@ class Logger(cogs.MatchCog):
             return
 
         # Ensure we have attachments re-uploaded
-        attachments = await self.build_attachments(ctx, config)
+        attachments = await self.build_attachments(ctx=ctx, config=config)
 
         # Add avatar to attachments to all it to be added to the embed
         attachments.insert(

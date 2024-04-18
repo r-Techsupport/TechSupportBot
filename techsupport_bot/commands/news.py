@@ -98,7 +98,7 @@ class News(cogs.LoopCog):
         if category:
             url = f"{url}&category={category}"
 
-        response = await self.bot.http_functions.http_call("get", url)
+        response = await self.bot.http_functions.http_call(method="get", url=url)
 
         articles = response.get("articles")
         if not articles:
@@ -108,7 +108,9 @@ class News(cogs.LoopCog):
 
     async def get_random_headline(self, country_code, category=None):
         """Method to get a random headline for the news command."""
-        articles = await self.get_headlines(country_code, category)
+        articles = await self.get_headlines(
+            country_code=country_code, category=category
+        )
         return random.choice(articles)
 
     async def execute(self, config, guild):
@@ -120,8 +122,8 @@ class News(cogs.LoopCog):
         url = None
         while not url:
             article = await self.get_random_headline(
-                config.extensions.news.country.value,
-                Category(config.extensions.news.category.value).value,
+                country_code=config.extensions.news.country.value,
+                category=Category(config.extensions.news.category.value).value,
             )
             url = article.get("url")
 
@@ -168,7 +170,7 @@ class News(cogs.LoopCog):
         url = None
         while not url:
             article = await self.get_random_headline(
-                config.extensions.news.country.value, category
+                country_code=config.extensions.news.country.value, category=category
             )
             url = article.get("url")
 

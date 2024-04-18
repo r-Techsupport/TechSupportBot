@@ -161,7 +161,9 @@ class Helper(cogs.BaseCog):
             return
 
         # Use pages to ensure we don't overflow the max embed size
-        embeds = self.build_embeds_from_list(filtered_commands, search_term)
+        embeds = self.build_embeds_from_list(
+            commands_list=filtered_commands, search_term=search_term
+        )
         await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
     def build_embeds_from_list(

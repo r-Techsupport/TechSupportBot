@@ -27,8 +27,8 @@ class Translator(cogs.BaseCog):
     async def translate(self, ctx, message, src: str, dest: str):
         """Method to translate a message from one language to another."""
         response = await self.bot.http_functions.http_call(
-            "get",
-            self.API_URL.format(message, src, dest),
+            method="get",
+            url=self.API_URL.format(message, src, dest),
         )
         translated = response.get("responseData", {}).get("translatedText")
 

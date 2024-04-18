@@ -115,12 +115,14 @@ class MatchCog(BaseCog):
         if not self.extension_enabled(config):
             return
 
-        result = await self.match(config, ctx, message.content)
+        result = await self.match(_config=config, _ctx=ctx, _content=message.content)
         if not result:
             return
 
         try:
-            await self.response(config, ctx, message.content, result)
+            await self.response(
+                _config=config, _ctx=ctx, _content=message.content, _result=result
+            )
         except Exception as exception:
             await self.bot.logger.send_log(
                 message="Checking config for log channel",
@@ -206,7 +208,9 @@ class LoopCog(BaseCog):
                     level=LogLevel.DEBUG,
                     context=LogContext(guild=channel.guild, channel=channel),
                 )
-                asyncio.create_task(self._loop_execute(guild, channel))
+                asyncio.create_task(
+                    self._loop_execute(guild=guild, target_channel=channel)
+                )
         else:
             await self.bot.logger.send_log(
                 message=f"Creating loop task for guild with ID {guild.id}",
@@ -297,7 +301,9 @@ class LoopCog(BaseCog):
                             level=LogLevel.DEBUG,
                             context=LogContext(guild=channel.guild, channel=channel),
                         )
-                        asyncio.create_task(self._loop_execute(guild, channel))
+                        asyncio.create_task(
+                            self._loop_execute(guild=guild, target_channel=channel)
+                        )
 
                     new_registered_channels.append(channel)
 
@@ -319,7 +325,7 @@ class LoopCog(BaseCog):
         config = self.bot.guild_configs[str(guild.id)]
 
         if not self.ON_START:
-            await self.wait(config, guild)
+            await self.wait(_config=config, _guild=guild)
 
         for folder_dir in [self.bot.EXTENSIONS_DIR_NAME, self.bot.FUNCTIONS_DIR_NAME]:
             while self.bot.extensions.get(f"{folder_dir}.{self.extension_name}"):
@@ -344,9 +350,13 @@ class LoopCog(BaseCog):
                 ):
                     try:
                         if target_channel:
-                            await self.execute(config, guild, target_channel)
+                            await self.execute(
+                                _config=config,
+                                _guild=guild,
+                                _target_channel=target_channel,
+                            )
                         else:
-                            await self.execute(config, guild)
+                            await self.execute(_config=config, _guild=guild)
                     except Exception as exception:
                         # always try to wait even when execute fails
                         await self.bot.logger.send_log(
@@ -358,7 +368,7 @@ class LoopCog(BaseCog):
                         )
 
                 try:
-                    await self.wait(config, guild)
+                    await self.wait(_config=config, _guild=guild)
                 except Exception as exception:
                     await self.bot.logger.send_log(
                         message=f"Loop wait cog error: {self.__class__.__name__}!",

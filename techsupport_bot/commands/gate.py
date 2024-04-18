@@ -115,7 +115,7 @@ class ServerGate(cogs.MatchCog):
         await ctx.message.delete()
 
         if content.lower() == config.extensions.gate.verify_text.value:
-            roles = await self.get_roles(config, ctx)
+            roles = await self.get_roles(config=config, ctx=ctx)
             if not roles:
                 config = self.bot.guild_configs[str(ctx.guild.id)]
                 log_channel = config.get("logging_channel")

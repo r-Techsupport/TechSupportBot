@@ -186,7 +186,7 @@ class Emojis(cogs.BaseCog):
             ctx (commands.Context): The context in which the command was run
             message (str): The string to turn into emojis
         """
-        await self.emoji_commands(ctx, message, False)
+        await self.emoji_commands(ctx=ctx, message=message, add_reactions=False)
 
     @commands.has_permissions(add_reactions=True)
     @commands.guild_only()
@@ -205,4 +205,6 @@ class Emojis(cogs.BaseCog):
             message (str): The string to add as reactions
             react_user (discord.Member): The member whose message is to be reacted to
         """
-        await self.emoji_commands(ctx, message, True, react_user)
+        await self.emoji_commands(
+            ctx=ctx, message=message, add_reactions=True, react_user=react_user
+        )

@@ -112,9 +112,11 @@ class Who(cogs.BaseCog):
 
         # Adds special information only visible to mods
         if interaction.permissions.kick_members:
-            embed = await self.modify_embed_for_mods(interaction, user, embed)
+            embed = await self.modify_embed_for_mods(
+                interaction=interaction, user=user, embed=embed
+            )
 
-        user_notes = await self.get_notes(user, interaction.guild)
+        user_notes = await self.get_notes(user=user, guild=interaction.guild)
         total_notes = 0
         if user_notes:
             total_notes = len(user_notes)
@@ -258,7 +260,7 @@ class Who(cogs.BaseCog):
         self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         """Method to clear notes on a user."""
-        notes = await self.get_notes(user, interaction.guild)
+        notes = await self.get_notes(user=user, guild=interaction.guild)
 
         if not notes:
             embed = auxiliary.prepare_deny_embed(
@@ -317,7 +319,7 @@ class Who(cogs.BaseCog):
         self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         """Method to get all notes for a user."""
-        notes = await self.get_notes(user, interaction.guild)
+        notes = await self.get_notes(user=user, guild=interaction.guild)
 
         if not notes:
             embed = auxiliary.prepare_deny_embed(
@@ -370,7 +372,7 @@ class Who(cogs.BaseCog):
         if not role:
             return
 
-        user_notes = await self.get_notes(member, member.guild)
+        user_notes = await self.get_notes(user=member, guild=member.guild)
         if not user_notes:
             return
 

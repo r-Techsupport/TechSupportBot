@@ -191,7 +191,11 @@ class DuckHunt(cogs.LoopCog):
                 "befriended" if response_message.content.lower() == "bef" else "killed"
             )
             await self.handle_winner(
-                response_message.author, guild, action, raw_duration, channel
+                winner=response_message.author,
+                guild=guild,
+                action=action,
+                raw_duration=raw_duration,
+                channel=channel,
             )
         else:
             await self.got_away(channel)
@@ -242,7 +246,7 @@ class DuckHunt(cogs.LoopCog):
             str(raw_duration.seconds) + "." + str(raw_duration.microseconds)
         )
 
-        duck_user = await self.get_duck_user(winner.id, guild.id)
+        duck_user = await self.get_duck_user(user_id=winner.id, guild_id=guild.id)
         if not duck_user:
             duck_user = self.bot.models.DuckUser(
                 author_id=str(winner.id),
@@ -465,7 +469,7 @@ class DuckHunt(cogs.LoopCog):
             )
             return
 
-        duck_user = await self.get_duck_user(user.id, ctx.guild.id)
+        duck_user = await self.get_duck_user(user_id=user.id, guild_id=ctx.guild.id)
         if not duck_user:
             await auxiliary.send_deny_embed(
                 message="That user has not partcipated in the duck hunt",
@@ -677,7 +681,9 @@ class DuckHunt(cogs.LoopCog):
             )
             return
 
-        duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+        duck_user = await self.get_duck_user(
+            user_id=ctx.author.id, guild_id=ctx.guild.id
+        )
 
         if not duck_user:
             await auxiliary.send_deny_embed(
@@ -698,7 +704,9 @@ class DuckHunt(cogs.LoopCog):
             channel=ctx.channel,
         )
 
-        await self.execute(config, ctx.guild, ctx.channel, banned_user=ctx.author)
+        await self.execute(
+            config=config, guild=ctx.guild, channel=ctx.channel, banned_user=ctx.author
+        )
 
     @auxiliary.with_typing
     @commands.guild_only()
@@ -723,7 +731,9 @@ class DuckHunt(cogs.LoopCog):
             )
             return
 
-        duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+        duck_user = await self.get_duck_user(
+            user_id=ctx.author.id, guild_id=ctx.guild.id
+        )
 
         if not duck_user:
             await auxiliary.send_deny_embed(
@@ -795,7 +805,9 @@ class DuckHunt(cogs.LoopCog):
             )
             return
 
-        duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+        duck_user = await self.get_duck_user(
+            user_id=ctx.author.id, guild_id=ctx.guild.id
+        )
         if not duck_user:
             await auxiliary.send_deny_embed(
                 message="You have not participated in the duck hunt yet.",
@@ -808,7 +820,7 @@ class DuckHunt(cogs.LoopCog):
                 message="You have no ducks to donate.", channel=ctx.channel
             )
             return
-        recipee = await self.get_duck_user(user.id, ctx.guild.id)
+        recipee = await self.get_duck_user(user_id=user.id, guild_id=ctx.guild.id)
         if not recipee:
             await auxiliary.send_deny_embed(
                 message=f"{user.mention} has not participated in the duck hunt yet.",
@@ -860,7 +872,7 @@ class DuckHunt(cogs.LoopCog):
             )
             return
 
-        duck_user = await self.get_duck_user(user.id, ctx.guild.id)
+        duck_user = await self.get_duck_user(user_id=user.id, guild_id=ctx.guild.id)
         if not duck_user:
             await auxiliary.send_deny_embed(
                 message="The user has not participated in the duck hunt yet.",
@@ -906,7 +918,7 @@ class DuckHunt(cogs.LoopCog):
         spawn_user = config.extensions.duck.spawn_user.value
         for person in spawn_user:
             if ctx.author.id == int(person):
-                await self.execute(config, ctx.guild, ctx.channel)
+                await self.execute(config=config, guild=ctx.guild, channel=ctx.channel)
                 return
         await auxiliary.send_deny_embed(
             message="It looks like you don't have permissions to spawn a duck",

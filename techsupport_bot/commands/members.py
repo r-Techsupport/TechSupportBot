@@ -102,4 +102,6 @@ class Members(cogs.BaseCog):
             ctx (commands.Context): The context to send the message to
             role_name (str): The role to list the users for
         """
-        await self.get_members_with_role(ctx, ctx.guild.members, role_name)
+        await self.get_members_with_role(
+            ctx=ctx, member_list=ctx.guild.members, role_name=role_name
+        )

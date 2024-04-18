@@ -69,7 +69,9 @@ class KanyeQuotes(cogs.LoopCog):
 
     async def get_quote(self):
         """Method to get the quote from the api."""
-        response = await self.bot.http_functions.http_call("get", self.API_URL)
+        response = await self.bot.http_functions.http_call(
+            method="get", url=self.API_URL
+        )
         return response.get("quote")
 
     async def execute(self, config, guild):

@@ -203,7 +203,7 @@ class BotLogger:
         log_level = self.convert_level(level)
 
         # Determine if we should even try sending the log at all
-        if not await self.check_if_should_log(log_level, context):
+        if not await self.check_if_should_log(level=log_level, context=context):
             return
 
         # Always send message to console, if it should be logged

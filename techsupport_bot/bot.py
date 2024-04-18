@@ -251,9 +251,9 @@ class TechSupportBot(commands.Bot):
             content_string = f'"{message.content}"' if message.content else ""
             attachment_string = f"({attachment_urls})" if attachment_urls else ""
             await self.log_DM(
-                message.author,
-                "Main Discord Bot",
-                f"{content_string} {attachment_string}",
+                sent_from=message.author,
+                source="Main Discord Bot",
+                content=f"{content_string} {attachment_string}",
             )
 
         await self.process_commands(message)
@@ -319,7 +319,9 @@ class TechSupportBot(commands.Bot):
                 console_only=True,
             )
             # Modify the database
-            await self.write_new_config(str(guild_id), json.dumps(config_))
+            await self.write_new_config(
+                guild_id=str(guild_id), config=json.dumps(config_)
+            )
 
             # Modify the local cache
             self.guild_configs[guild_id] = config_
@@ -421,7 +423,9 @@ class TechSupportBot(commands.Bot):
             return
 
         for subsection in ["required"]:
-            self.validate_bot_config_subsection("bot_config", subsection)
+            self.validate_bot_config_subsection(
+                section="bot_config", subsection=subsection
+            )
 
     def validate_bot_config_subsection(self, section: str, subsection: str) -> None:
         """Loops through a config subsection to check for missing values.
@@ -890,7 +894,7 @@ class TechSupportBot(commands.Bot):
         if extension_name:
             # If the extension is disabled, raise an error to show it and block execution
             if not self.command_run_extension_disabled_check(
-                interaction.guild, extension_name
+                guild=interaction.guild, extension_name=extension_name
             ):
                 raise custom_errors.AppCommandExtensionDisabled
 
@@ -975,7 +979,9 @@ class TechSupportBot(commands.Bot):
         extension_name = self.get_command_extension_name(ctx.command)
         if extension_name:
             # If the extension is disabled, raise an error to show it and block execution
-            if not self.command_run_extension_disabled_check(ctx.guild, extension_name):
+            if not self.command_run_extension_disabled_check(
+                guild=ctx.guild, extension_name=extension_name
+            ):
                 raise custom_errors.ExtensionDisabled
 
         # Check 2 - Approve if invoker is bot admin

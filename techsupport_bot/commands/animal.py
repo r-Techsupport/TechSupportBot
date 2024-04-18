@@ -47,7 +47,7 @@ class Animals(cogs.BaseCog):
         url = self.CAT_API_URL.format(
             self.bot.file_config.api.api_keys.cat,
         )
-        response = await self.bot.http_functions.http_call("get", url)
+        response = await self.bot.http_functions.http_call(method="get", url=url)
         await ctx.send(response[0].url)
 
     @auxiliary.with_typing
@@ -58,7 +58,9 @@ class Animals(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        response = await self.bot.http_functions.http_call("get", self.DOG_API_URL)
+        response = await self.bot.http_functions.http_call(
+            method="get", url=self.DOG_API_URL
+        )
         await ctx.send(response.message)
 
     @auxiliary.with_typing
@@ -69,7 +71,9 @@ class Animals(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        response = await self.bot.http_functions.http_call("get", self.FROG_API_URL)
+        response = await self.bot.http_functions.http_call(
+            method="get", url=self.FROG_API_URL
+        )
         await ctx.send(response.url)
 
     @auxiliary.with_typing
@@ -80,5 +84,7 @@ class Animals(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        response = await self.bot.http_functions.http_call("get", self.FOX_API_URL)
+        response = await self.bot.http_functions.http_call(
+            method="get", url=self.FOX_API_URL
+        )
         await ctx.send(response.image)

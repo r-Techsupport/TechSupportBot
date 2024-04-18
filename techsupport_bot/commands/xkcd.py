@@ -1,6 +1,7 @@
 """Module for the xkcd extension for the discord bot."""
 
 import random
+from typing import Self
 
 import discord
 from core import auxiliary, cogs
@@ -23,10 +24,12 @@ class XKCD(cogs.BaseCog):
         description="Group for xkcd subcommands and retrieves numbered comics.",
         invoke_without_subcommand=True,
     )
-    async def xkcd(self, ctx, number: int | None = None):
+    async def xkcd(
+        self: Self, ctx: commands.Context, number: int | None = None
+    ) -> None:
         """Method to create the command for xkcd."""
         if number:
-            await self.numbered_comic(ctx, number)
+            await self.numbered_comic(ctx=ctx, number=number)
         else:
             # Executed if there are no/invalid args supplied
             await auxiliary.extension_help(self, ctx, self.__module__[9:])
@@ -105,7 +108,7 @@ class XKCD(cogs.BaseCog):
     async def api_call(self, number=None):
         """Method for the API call for xkcd."""
         url = self.SPECIFIC_API_URL % (number) if number else self.MOST_RECENT_API_URL
-        response = await self.bot.http_functions.http_call("get", url)
+        response = await self.bot.http_functions.http_call(method="get", url=url)
 
         return response
 

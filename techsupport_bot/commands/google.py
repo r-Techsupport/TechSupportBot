@@ -55,7 +55,7 @@ class Googler(cogs.BaseCog):
     async def get_items(self, url, data):
         """Method to get an item from google's api."""
         response = await self.bot.http_functions.http_call(
-            "get", url, params=data, use_cache=True
+            method="get", url=url, params=data, use_cache=True
         )
         return response.get("items")
 
@@ -86,7 +86,7 @@ class Googler(cogs.BaseCog):
             "key": self.bot.file_config.api.api_keys.google,
         }
 
-        items = await self.get_items(self.GOOGLE_URL, data)
+        items = await self.get_items(url=self.GOOGLE_URL, data=data)
 
         if not items:
             await auxiliary.send_deny_embed(
@@ -139,7 +139,7 @@ class Googler(cogs.BaseCog):
             "key": self.bot.file_config.api.api_keys.google,
             "searchType": "image",
         }
-        items = await self.get_items(self.GOOGLE_URL, data)
+        items = await self.get_items(url=self.GOOGLE_URL, data=data)
 
         if not items:
             await auxiliary.send_deny_embed(

@@ -192,7 +192,7 @@ class ExtensionControl(cogs.BaseCog):
                 return
 
         fp = await attachment.read()
-        await self.bot.register_file_extension(extension_name, fp)
+        await self.bot.register_file_extension(extension_name=extension_name, fp=fp)
         await auxiliary.send_confirm_embed(
             message="I've registered that extension. You can now try loading it",
             channel=ctx.channel,

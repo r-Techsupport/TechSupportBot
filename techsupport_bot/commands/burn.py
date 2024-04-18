@@ -84,7 +84,7 @@ class Burn(cogs.BaseCog):
             channel=ctx.channel, prefix=prefix, member_to_match=user_to_match
         )
 
-        await self.handle_burn(ctx, user_to_match, message)
+        await self.handle_burn(ctx=ctx, user=user_to_match, message=message)
 
     @auxiliary.with_typing
     @commands.guild_only()
@@ -100,4 +100,4 @@ class Burn(cogs.BaseCog):
             ctx (commands.Context): The context in which the command was run
             user_to_match (discord.Member): The user in which to burn
         """
-        await self.burn_command(ctx, user_to_match)
+        await self.burn_command(ctx=ctx, user_to_match=user_to_match)

@@ -63,7 +63,7 @@ class Weather(cogs.BaseCog):
     ):
         """Method to define the weather for the command."""
         response = await self.bot.http_functions.http_call(
-            "get", self.get_url([city_name, state_code, country_code])
+            method="get", url=self.get_url([city_name, state_code, country_code])
         )
 
         embed = self.generate_embed(munch.munchify(response))

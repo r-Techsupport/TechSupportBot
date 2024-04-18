@@ -54,7 +54,7 @@ class Wolfram(cogs.BaseCog):
         )
 
         response = await self.bot.http_functions.http_call(
-            "get", url, get_raw_response=True
+            method="get", url=url, get_raw_response=True
         )
         if response["status"] == 501:
             await auxiliary.send_deny_embed(

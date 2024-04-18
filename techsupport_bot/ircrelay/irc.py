@@ -262,7 +262,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         """
         message_list = [message[i : i + 430] for i in range(0, len(message), 430)]
         for cut_message in message_list:
-            self.connection.privmsg(channel, cut_message)
+            self.connection.privmsg(target=channel, text=cut_message)
 
     def on_mode(self, _: irc.client.ServerConnection, event: irc.client.Event) -> None:
         """What to do when a channel mode is changed
@@ -288,7 +288,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
             channel (str): The channel to modify the user in
             action (str): The action, either +b or -b, to take on the user
         """
-        self.connection.mode(channel, f"{action} {user}")
+        self.connection.mode(target=channel, command=f"{action} {user}")
 
     def is_bot_op_on_channel(self, channel_name: str) -> bool:
         """Checking if the bot is an operator on the given channel

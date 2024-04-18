@@ -28,7 +28,7 @@ class Mocker(cogs.BaseCog):
             ctx (commands.Context): The context in which the command was run
             input_user (discord.Member): The raw member input by the invoker
         """
-        await self.mock_command(ctx, input_user)
+        await self.mock_command(ctx=ctx, input_user=input_user)
 
     async def mock_command(self, ctx: commands.Context, input_user: discord.Member):
         """The core logic for the mock command
@@ -37,7 +37,7 @@ class Mocker(cogs.BaseCog):
             ctx (commands.Context): The context in which the command was run
             input_user (discord.Member): The raw member input by the invoker
         """
-        user_to_mock = self.get_user_to_mock(ctx, input_user)
+        user_to_mock = self.get_user_to_mock(ctx=ctx, input_user=input_user)
 
         prefix = await self.bot.get_prefix(ctx.message)
         mock_message = await self.generate_mock_message(

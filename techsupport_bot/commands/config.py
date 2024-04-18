@@ -92,7 +92,7 @@ class ConfigControl(cogs.BaseCog):
 
             # Modify the database
             await self.bot.write_new_config(
-                str(ctx.guild.id), json.dumps(uploaded_data)
+                guild_id=str(ctx.guild.id), config=json.dumps(uploaded_data)
             )
 
             # Modify the local cache
@@ -155,7 +155,9 @@ class ConfigControl(cogs.BaseCog):
         config.enabled_extensions.sort()
 
         # Modify the database
-        await self.bot.write_new_config(str(ctx.guild.id), json.dumps(config))
+        await self.bot.write_new_config(
+            guild_id=str(ctx.guild.id), config=json.dumps(config)
+        )
 
         # Modify the local cache
         self.bot.guild_configs[str(ctx.guild.id)] = config
@@ -208,7 +210,9 @@ class ConfigControl(cogs.BaseCog):
         ]
 
         # Modify the database
-        await self.bot.write_new_config(str(ctx.guild.id), json.dumps(config))
+        await self.bot.write_new_config(
+            guild_id=str(ctx.guild.id), config=json.dumps(config)
+        )
 
         # Modify the local cache
         self.bot.guild_configs[str(ctx.guild.id)] = config
@@ -247,7 +251,7 @@ class ConfigControl(cogs.BaseCog):
             return
 
         # Modify the database
-        await self.bot.write_new_config(str(ctx.guild.id), "false")
+        await self.bot.write_new_config(guild_id=str(ctx.guild.id), config="false")
 
         # Modify the local cache
         self.bot.guild_configs[str(ctx.guild.id)] = False

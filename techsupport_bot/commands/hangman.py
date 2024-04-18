@@ -275,7 +275,7 @@ class HangmanCog(cogs.BaseCog):
                 return
 
         game = HangmanGame(word=word)
-        embed = await self.generate_game_embed(ctx, game)
+        embed = await self.generate_game_embed(ctx=ctx, game=game)
         message = await ctx.channel.send(embed=embed)
         self.games[ctx.channel.id] = {
             "user": ctx.author,
@@ -314,7 +314,7 @@ class HangmanCog(cogs.BaseCog):
             return
 
         correct = game.guess(letter)
-        embed = await self.generate_game_embed(ctx, game)
+        embed = await self.generate_game_embed(ctx=ctx, game=game)
         message = game_data.get("message")
         await message.edit(embed=embed)
 
@@ -369,7 +369,7 @@ class HangmanCog(cogs.BaseCog):
         except discord.errors.NotFound:
             pass
 
-        embed = await self.generate_game_embed(ctx, game_data.get("game"))
+        embed = await self.generate_game_embed(ctx=ctx, game=game_data.get("game"))
         new_message = await ctx.send(embed=embed)
         game_data["message"] = new_message
 

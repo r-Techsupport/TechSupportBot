@@ -67,8 +67,8 @@ class Giphy(cogs.BaseCog):
             query (str): The string to query the giphy API for
         """
         response = await self.bot.http_functions.http_call(
-            "get",
-            self.GIPHY_URL.format(
+            method="get",
+            url=self.GIPHY_URL.format(
                 query.replace(" ", "+"),
                 self.bot.file_config.api.api_keys.giphy,
                 self.SEARCH_LIMIT,

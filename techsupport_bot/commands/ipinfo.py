@@ -28,7 +28,7 @@ class IPInfo(cogs.BaseCog):
     async def get_info(self, ctx, ip_address: str):
         """Method to get the info for the ipinfo command for the bot."""
         response = await self.bot.http_functions.http_call(
-            "get", f"{self.API_URL}/{ip_address}/json"
+            method="get", url=f"{self.API_URL}/{ip_address}/json"
         )
 
         if not response.get("ip"):
@@ -40,7 +40,7 @@ class IPInfo(cogs.BaseCog):
         response.pop("readme", None)
         response.pop("status_code", None)
 
-        embed = self.generate_embed(ip_address, response)
+        embed = self.generate_embed(ip=ip_address, fields=response)
         await ctx.send(embed=embed)
 
     def generate_embed(self, ip: str, fields: dict[str, str]) -> discord.Embed:

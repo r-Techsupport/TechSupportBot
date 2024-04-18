@@ -259,14 +259,14 @@ class Listener(cogs.BaseCog):
             )
             return
 
-        listener_object = await self.get_specific_listener(src, dst)
+        listener_object = await self.get_specific_listener(src=src, dst=dst)
         if listener_object:
             await auxiliary.send_deny_embed(
                 message="That source and destination already exist", channel=ctx.channel
             )
             return
 
-        await self.update_destinations(src, dst)
+        await self.update_destinations(src=src, dst=dst)
 
         await auxiliary.send_confirm_embed(
             message="Listening registered!", channel=ctx.channel
@@ -292,7 +292,7 @@ class Listener(cogs.BaseCog):
             )
             return
 
-        listener_object = await self.get_specific_listener(src, dst)
+        listener_object = await self.get_specific_listener(src=src, dst=dst)
         if not listener_object:
             await auxiliary.send_deny_embed(
                 message="That destination is not registered with that source",

@@ -157,7 +157,11 @@ class HTTPCalls:
             response_object = cached_response
             log_message = f"Retrieving cached HTTP GET response ({cache_key})"
             return await self.process_http_response(
-                response_object, method, cache_key, get_raw_response, log_message
+                response_object=response_object,
+                method=method,
+                cache_key=cache_key,
+                get_raw_response=get_raw_response,
+                log_message=log_message,
             )
         async with aiohttp.ClientSession() as client:
             method_fn = getattr(client, method.lower())
@@ -166,11 +170,11 @@ class HTTPCalls:
                     f"Making HTTP {method.upper()} request to URL: {cache_key}"
                 )
                 return await self.process_http_response(
-                    response_object,
-                    method,
-                    cache_key,
-                    get_raw_response,
-                    log_message,
+                    response_object=response_object,
+                    method=method,
+                    cache_key=cache_key,
+                    get_raw_response=get_raw_response,
+                    log_message=log_message,
                 )
 
     async def process_http_response(

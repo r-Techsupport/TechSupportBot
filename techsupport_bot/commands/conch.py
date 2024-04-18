@@ -104,4 +104,4 @@ class MagicConch(cogs.BaseCog):
             ctx (commands.Context): The context in which the command was run
             question (str, optional): The question to ask the magic conch. Defaults to "".
         """
-        await self.conch_command(ctx, question)
+        await self.conch_command(ctx=ctx, question=question)

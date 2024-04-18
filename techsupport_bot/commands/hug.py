@@ -41,12 +41,14 @@ class Hugger(cogs.BaseCog):
         description="Hugs a mentioned user using an embed",
         usage="@user",
     )
-    async def hug(self, ctx: commands.Context, user_to_hug: discord.Member = None):
+    async def hug(
+        self, ctx: commands.Context, user_to_hug: discord.Member = None
+    ) -> None:
         """The .hug discord command function
 
         Args:
             ctx (commands.Context): The context in which the command was run in
-            user_to_hug (discord.Member): The user to hug
+            user_to_hug (discord.Member, optional): The user to hug. Defaults to None
         """
         if user_to_hug is None:
             # check if the message is a reply
@@ -58,7 +60,7 @@ class Hugger(cogs.BaseCog):
 
             user_to_hug = ctx.message.reference.resolved.author
 
-        await self.hug_command(ctx, user_to_hug)
+        await self.hug_command(ctx=ctx, user_to_hug=user_to_hug)
 
     def check_hug_eligibility(
         self,
@@ -106,13 +108,13 @@ class Hugger(cogs.BaseCog):
             ctx (commands.Context): The context in which the command was run in
             user_to_hug (discord.Member): The user to hug
         """
-        if not self.check_hug_eligibility(ctx.author, user_to_hug):
+        if not self.check_hug_eligibility(author=ctx.author, user_to_hug=user_to_hug):
             await auxiliary.send_deny_embed(
                 message="Let's be serious", channel=ctx.channel
             )
             return
 
-        hug_text = self.generate_hug_phrase(ctx.author, user_to_hug)
+        hug_text = self.generate_hug_phrase(author=ctx.author, user_to_hug=user_to_hug)
 
         embed = auxiliary.generate_basic_embed(
             title="You've been hugged!",
