@@ -305,16 +305,24 @@ class Htd(cogs.BaseCog):
         try:
             int_list = self.convert_list_to_ints(parsed_list.copy())
         except ValueError:
-            parsed_list_str = str(parsed_list) # Convert the list to a string to only print so many.
+            parsed_list_str = str(
+                parsed_list
+            )  # Convert the list to a string to only print so many.
             embed = auxiliary.prepare_deny_embed(
                 message="Unable to convert value, are you sure it's valid?",
             )
             if parsed_list[0].startswith("0x"):
-                embed.set_footer(text=f"Tried to convert {parsed_list_str[1:31]} to hex")
+                embed.set_footer(
+                    text=f"Tried to convert {parsed_list_str[1:31]} to hex"
+                )
             elif parsed_list[0].startswith("0b"):
-                embed.set_footer(text=f"Tried to convert {parsed_list_str[1:31]} to binary")
+                embed.set_footer(
+                    text=f"Tried to convert {parsed_list_str[1:31]} to binary"
+                )
             else:
-                embed.set_footer(text=f"Tried to convert {parsed_list_str[1:31]} to int")
+                embed.set_footer(
+                    text=f"Tried to convert {parsed_list_str[1:31]} to int"
+                )
             await ctx.send(embed=embed)
             return
 
