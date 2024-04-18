@@ -1,17 +1,26 @@
 """Module for the hangman extension for the bot."""
 
+from __future__ import annotations
+
 import datetime
 import uuid
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
 import discord
 import ui
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Add hangman extension to the config file."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the HangMan plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     config = extensionconfig.ExtensionConfig()
     config.add(
         key="hangman_roles",
@@ -92,7 +101,7 @@ class HangmanGame:
     ]
     FINAL_STEP = len(HANG_PICS) - 1
 
-    def __init__(self, word: str) -> None:
+    def __init__(self: Self, word: str) -> None:
         if not word or "_" in word or not word.isalpha():
             raise ValueError("valid word must be provided")
         self.word = word
@@ -101,7 +110,7 @@ class HangmanGame:
         self.started = datetime.datetime.utcnow()
         self.id = uuid.uuid4()
 
-    def draw_word_state(self):
+    def draw_word_state(self: Self) -> str:
         """Method to draw the word on the embed."""
         state = ""
         for letter in self.word:
@@ -110,7 +119,7 @@ class HangmanGame:
 
         return state
 
-    def draw_hang_state(self):
+    def draw_hang_state(self: Self) -> str:
         """Method to draw the current state of the game."""
         return self.HANG_PICS[self.step]
 
@@ -140,7 +149,7 @@ class HangmanGame:
         return found
 
     @property
-    def finished(self):
+    def finished(self: Self) -> bool:
         """Method to finish the game of hangman."""
         if self.step < 0 or self.step >= self.FINAL_STEP:
             return True
@@ -149,7 +158,7 @@ class HangmanGame:
         return False
 
     @property
-    def failed(self):
+    def failed(self: Self) -> bool:
         """Method in case the game wasn't successful."""
         if self.step >= self.FINAL_STEP:
             return True
@@ -218,7 +227,7 @@ async def can_stop_game(ctx: commands.Context) -> bool:
 class HangmanCog(cogs.BaseCog):
     """Class to define the hangman game."""
 
-    async def preconfig(self):
+    async def preconfig(self: Self) -> None:
         """Method to preconfig the game."""
         self.games = {}
 
@@ -226,8 +235,12 @@ class HangmanCog(cogs.BaseCog):
     @commands.group(
         name="hangman", description="Runs a hangman command", aliases=["hm"]
     )
-    async def hangman(self, ctx):
-        """Method to use the command to start the hangman game."""
+    async def hangman(self: Self, ctx: commands.Context) -> None:
+        """The bare .hangman command. This does nothing but generate the help message
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
 
         # Executed if there are no/invalid args supplied
         await auxiliary.extension_help(self, ctx, self.__module__[9:])
@@ -237,7 +250,7 @@ class HangmanCog(cogs.BaseCog):
         description="Starts a hangman game in the current channel",
         usage="[word]",
     )
-    async def start_game(self, ctx, word: str):
+    async def start_game(self: Self, ctx: commands.Context, word: str) -> None:
         """Method to start the hangman game and delete the original message."""
         # delete the message so the word is not seen
         await ctx.message.delete()
@@ -289,8 +302,13 @@ class HangmanCog(cogs.BaseCog):
         description="Guesses a letter for the current hangman game",
         usage="[letter]",
     )
-    async def guess(self, ctx, letter: str):
-        """Method to define a guess on the hangman game."""
+    async def guess(self: Self, ctx: commands.Context, letter: str) -> None:
+        """Discord command to guess a letter in a running hangman game
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+            letter (str): The letter the user is trying to guess
+        """
         if len(letter) > 1 or not letter.isalpha():
             await auxiliary.send_deny_embed(
                 message="You can only guess a letter", channel=ctx.channel
@@ -324,8 +342,20 @@ class HangmanCog(cogs.BaseCog):
             del self.games[ctx.channel.id]
         await ctx.send(content=content)
 
-    async def generate_game_embed(self, ctx, game):
-        """Method to make the game into an embed."""
+    async def generate_game_embed(
+        self: Self, ctx: commands.Context, game: HangmanGame
+    ) -> discord.Embed:
+        """Takes a game state and makes it into a pretty embed
+        Does not send the embed
+
+        Args:
+            ctx (commands.Context): The context in which the game command needing
+                a drawing was called in
+            game (HangmanGame): The hangman game to draw into an embed
+
+        Returns:
+            discord.Embed: The ready and styled embed containing the current state of the game
+        """
         hangman_drawing = game.draw_hang_state()
         hangman_word = game.draw_word_state()
 
@@ -353,8 +383,13 @@ class HangmanCog(cogs.BaseCog):
         return embed
 
     @hangman.command(name="redraw", description="Redraws the current hangman game")
-    async def redraw(self, ctx):
-        """Method to redraw the current status of the hangman game."""
+    async def redraw(self: Self, ctx: commands.Context) -> None:
+        """A discord command to make a new embed with a new drawing of the running hangman game
+        This redraws the hangman game being played in the current channel
+
+        Args:
+            ctx (commands.Context): The context in which the command was in
+        """
         game_data = self.games.get(ctx.channel.id)
         if not game_data:
             await auxiliary.send_deny_embed(
@@ -375,8 +410,13 @@ class HangmanCog(cogs.BaseCog):
 
     @commands.check(can_stop_game)
     @hangman.command(name="stop", description="Stops the current channel game")
-    async def stop(self, ctx):
-        """Method to determine if the game is finished and stop the game."""
+    async def stop(self: Self, ctx: commands.Context) -> None:
+        """Checks if a user can stop the hangman game in the current channel
+        If they can, the game is stopped
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
         game_data = self.games.get(ctx.channel.id)
         if not game_data:
             await auxiliary.send_deny_embed(

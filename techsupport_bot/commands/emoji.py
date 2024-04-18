@@ -93,7 +93,7 @@ class Emojis(cogs.BaseCog):
         return emoji_list
 
     async def emoji_commands(
-        self,
+        self: Self,
         ctx: commands.Context,
         message: str,
         add_reactions: bool,
@@ -196,7 +196,7 @@ class Emojis(cogs.BaseCog):
         usage="[message] @user",
     )
     async def reaction(
-        self, ctx: commands.Context, message: str, react_user: discord.Member
+        self: Self, ctx: commands.Context, message: str, react_user: discord.Member
     ) -> None:
         """Entry point for the reaction emoji command
 

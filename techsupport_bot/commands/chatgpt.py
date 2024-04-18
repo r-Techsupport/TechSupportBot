@@ -12,7 +12,7 @@ Defines: None
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 import expiringdict
@@ -50,7 +50,7 @@ class ChatGPT(cogs.BaseCog):
 
     API_URL = "https://api.openai.com/v1/chat/completions"
 
-    async def preconfig(self) -> None:
+    async def preconfig(self: Self) -> None:
         """Sets up the dict"""
         self.history = expiringdict.ExpiringDict(
             max_len=1000,
@@ -71,7 +71,9 @@ class ChatGPT(cogs.BaseCog):
         }
     ]
 
-    async def call_api(self, ctx: commands.Context, api_key: str, prompt: str) -> str:
+    async def call_api(
+        self: Self, ctx: commands.Context, api_key: str, prompt: str
+    ) -> str:
         """Calls the API with the history as well as the new prompt
 
         Args:
@@ -107,7 +109,7 @@ class ChatGPT(cogs.BaseCog):
         description="Issues a prompt to the ChatGPT API",
         usage="[prompt]",
     )
-    async def gpt(self, ctx: commands.Context, *, prompt: str) -> None:
+    async def gpt(self: Self, ctx: commands.Context, *, prompt: str) -> None:
         """Pushes a prompt to the OpenAI API for ChatGPT
 
         Args:
@@ -174,7 +176,7 @@ class ChatGPT(cogs.BaseCog):
         brief="Executes a ChatGPT utility command",
         description="Executes a ChatGPT utility command",
     )
-    async def gptutil(self, ctx: commands.Context) -> None:
+    async def gptutil(self: Self, ctx: commands.Context) -> None:
         """Defines the Gptutil command group for history management
 
         Args:
@@ -190,7 +192,7 @@ class ChatGPT(cogs.BaseCog):
         brief="Clears history",
         description="Clears your ChatGPT conversation history",
     )
-    async def clear_history(self, ctx: commands.Context) -> None:
+    async def clear_history(self: Self, ctx: commands.Context) -> None:
         """Command to clear the invokers result history
 
         Args:
@@ -233,7 +235,7 @@ class ChatGPT(cogs.BaseCog):
         brief="Gets history",
         description="Gets your ChatGPT conversation history",
     )
-    async def get_history(self, ctx: commands.Context) -> None:
+    async def get_history(self: Self, ctx: commands.Context) -> None:
         """Command to get the history of the invoker
 
         Args:

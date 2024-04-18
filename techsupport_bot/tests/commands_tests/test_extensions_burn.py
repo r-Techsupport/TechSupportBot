@@ -3,7 +3,10 @@ This is a file to test the extensions/burn.py file
 This contains 6 tests
 """
 
+from __future__ import annotations
+
 import importlib
+from typing import Self
 from unittest.mock import AsyncMock
 
 import pytest
@@ -14,7 +17,7 @@ from tests import config_for_tests
 class Test_Phrases:
     """A simple set of tests to ensure the PHRASES variable won't cause any problems"""
 
-    def test_all_phrases_are_short(self):
+    def test_all_phrases_are_short(self: Self) -> None:
         """
         This is a test to ensure that the generate burn embed function is working correctly
         This specifically looks at the description for every phrase in the PHRASES array
@@ -36,7 +39,7 @@ class Test_HandleBurn:
     """A set of test cases testing the handle_burn function"""
 
     @pytest.mark.asyncio
-    async def test_handle_burn_calls_reactions(self):
+    async def test_handle_burn_calls_reactions(self: Self) -> None:
         """
         This is a test to ensure that handle_burn works correctly when a valid message can be found
         It checks to ensure that the reactions are added correctly
@@ -65,7 +68,7 @@ class Test_HandleBurn:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_handle_burn_calls_send(self):
+    async def test_handle_burn_calls_send(self: Self) -> None:
         """
         This is a test to ensure that handle_burn works correctly when a valid message can be found
         It checks to ensure that the reactions are added correctly
@@ -91,7 +94,7 @@ class Test_HandleBurn:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_handle_burn_no_message(self):
+    async def test_handle_burn_no_message(self: Self) -> None:
         """
         This is a test to ensure that the send_deny_embed
             function is called if no message can be found
@@ -117,7 +120,7 @@ class Test_BurnCommand:
     """A set of test cases for testing the burn_command function"""
 
     @pytest.mark.asyncio
-    async def test_calls_search_channel(self):
+    async def test_calls_search_channel(self: Self) -> None:
         """A simple test to ensure that burn_command calls search_channel_for_message
         with the correct args"""
         # Step 1 - Setup env
@@ -139,7 +142,7 @@ class Test_BurnCommand:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_calls_handle_burn(self):
+    async def test_calls_handle_burn(self: Self) -> None:
         """A simple test to ensure that burn_command calls handle_burn
         with the correct args"""
         # Step 1 - Setup env

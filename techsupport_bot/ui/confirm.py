@@ -1,6 +1,9 @@
 """A class to handle the confirm request"""
 
+from __future__ import annotations
+
 from enum import Enum, auto
+from typing import Self
 
 import discord
 from core import auxiliary
@@ -25,14 +28,14 @@ class Confirm(discord.ui.View):
     Don't call anything else
     """
 
-    def __init__(self):
+    def __init__(self: Self) -> None:
         super().__init__()
         self.value = (
             ConfirmResponse.TIMEOUT
         )  # default to timeout unless a button is pressed
 
     async def send(
-        self,
+        self: Self,
         message: str,
         channel: discord.abc.Messageable,
         author: discord.Member,
@@ -73,8 +76,8 @@ class Confirm(discord.ui.View):
 
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green)
     async def confirm(
-        self, interaction: discord.Interaction, button: discord.ui.Button
-    ):
+        self: Self, interaction: discord.Interaction, button: discord.ui.Button
+    ) -> None:
         """Define what happens when the confirm button is pressed"""
         await interaction.response.defer()
         self.value = ConfirmResponse.CONFIRMED
@@ -82,18 +85,20 @@ class Confirm(discord.ui.View):
         self.stop()
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
-    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def cancel(
+        self: Self, interaction: discord.Interaction, button: discord.ui.Button
+    ) -> None:
         """Define what happens when the cancel button is pressed"""
         await interaction.response.defer()
         self.value = ConfirmResponse.DENIED
         await self.message.delete()
         self.stop()
 
-    async def on_timeout(self):
+    async def on_timeout(self: Self) -> None:
         """This deletes the buttons after the timeout has elapsed"""
         await self.message.delete()
 
-    async def interaction_check(self, interaction):
+    async def interaction_check(self: Self, interaction: discord.Interaction) -> bool:
         """This checks to ensure that only the original author can press the button
         If the original author didn't press, it sends an ephemeral message
         """

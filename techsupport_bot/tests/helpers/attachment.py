@@ -2,6 +2,10 @@
 This is a file to store the fake discord.Attachment object
 """
 
+from __future__ import annotations
+
+from typing import Self
+
 
 class MockAttachment:
     """
@@ -11,5 +15,5 @@ class MockAttachment:
     filename -> The string containing the name of the file
     """
 
-    def __init__(self, filename=None):
+    def __init__(self: Self, filename: str = None) -> None:
         self.filename = filename

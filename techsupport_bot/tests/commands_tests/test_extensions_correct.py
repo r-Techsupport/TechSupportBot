@@ -3,7 +3,10 @@ This is a file to test the extensions/correct.py file
 This contains 9 tests
 """
 
+from __future__ import annotations
+
 import importlib
+from typing import Self
 from unittest.mock import AsyncMock
 
 import pytest
@@ -14,7 +17,7 @@ from tests import config_for_tests
 class Test_PrepareMessage:
     """A set of tests to test the prepare_message function"""
 
-    def test_prepare_message_success(self):
+    def test_prepare_message_success(self: Self) -> None:
         """Test to ensure that replacement when the entire message needs to be replaced works"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -27,7 +30,7 @@ class Test_PrepareMessage:
         # Step 3 - Assert that everything works
         assert new_content == "**bbbb**"
 
-    def test_prepare_message_multi(self):
+    def test_prepare_message_multi(self: Self) -> None:
         """Test to ensure that replacement works if multiple parts need to be replaced"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -40,7 +43,7 @@ class Test_PrepareMessage:
         # Step 3 - Assert that everything works
         assert new_content == "m**bbbb**ssag**bbbb**"
 
-    def test_prepare_message_partial(self):
+    def test_prepare_message_partial(self: Self) -> None:
         """Test to ensure that replacement works if multiple
         parts of the message need to be replaced"""
         # Step 1 - Setup env
@@ -54,7 +57,7 @@ class Test_PrepareMessage:
         # Step 3 - Assert that everything works
         assert new_content == "**bbbb**sage"
 
-    def test_prepare_message_fail(self):
+    def test_prepare_message_fail(self: Self) -> None:
         """Test to ensure that replacement doesnt change anything if needed
         This should never happen, but test it here anyway"""
         # Step 1 - Setup env
@@ -73,7 +76,7 @@ class Test_HandleCorrect:
     """Tests to test the handle_correct function"""
 
     @pytest.mark.asyncio
-    async def test_handle_calls_search_for_message(self):
+    async def test_handle_calls_search_for_message(self: Self) -> None:
         """This ensures that the search_channel_for_message function is called,
         with the correct args"""
         # Step 1 - Setup env
@@ -99,7 +102,7 @@ class Test_HandleCorrect:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_handle_calls_prepare_message(self):
+    async def test_handle_calls_prepare_message(self: Self) -> None:
         """This ensures that the prepare_message function is called, with the correct args"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -123,7 +126,7 @@ class Test_HandleCorrect:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_handle_calls_generate_embed(self):
+    async def test_handle_calls_generate_embed(self: Self) -> None:
         """This ensures that the generate_basic_embed function is called, with the correct args"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -145,7 +148,7 @@ class Test_HandleCorrect:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_handle_calls_send(self):
+    async def test_handle_calls_send(self: Self) -> None:
         """This ensures that the ctx.send function is called, with the correct args"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -167,7 +170,7 @@ class Test_HandleCorrect:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_handle_no_message_found(self):
+    async def test_handle_no_message_found(self: Self) -> None:
         """This test ensures that a deny embed is sent if no message could be found"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()

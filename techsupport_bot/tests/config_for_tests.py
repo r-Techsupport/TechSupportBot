@@ -7,11 +7,15 @@ A rand_history strategy, for property tests that need a message history
 A FakeDiscordEnv for creating a discord environment 100% out of mock ojects
 """
 
+from __future__ import annotations
+
 import random
+from collections.abc import Callable
+from typing import Self
 from unittest.mock import patch
 
 from commands import Burn, Corrector, Emojis, Greeter, MagicConch
-from hypothesis.strategies import composite, integers, text
+from hypothesis.strategies import SearchStrategy, composite, integers, text
 
 from .helpers import (
     MockAsset,
@@ -28,7 +32,11 @@ PREFIX = "."
 
 
 @composite
-def rand_history(draw):
+def rand_history(
+    draw: (
+        Callable[[SearchStrategy[int, int]], int] | Callable[[SearchStrategy[str]], str]
+    )
+) -> list[MockMessage]:
     """This is a custom strategy to generate a random message history
     This history, returned as an array, will be 1 to 50 messages of random content
     Some will be by a bot, some will not
@@ -49,7 +57,7 @@ def rand_history(draw):
 class FakeDiscordEnv:
     """Class to setup the mock discord environment for all the tests"""
 
-    def __init__(self):
+    def __init__(self: Self) -> None:
         # bot objects
         self.bot = MockBot()
 

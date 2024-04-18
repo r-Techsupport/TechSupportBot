@@ -1,14 +1,25 @@
 """Module for the xkcd extension for the discord bot."""
 
+from __future__ import annotations
+
 import random
+from typing import TYPE_CHECKING, Self
 
 import discord
+import munch
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding the xkcd configuration to the config file."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the XKCD plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(XKCD(bot=bot))
 
 
@@ -23,7 +34,9 @@ class XKCD(cogs.BaseCog):
         description="Group for xkcd subcommands and retrieves numbered comics.",
         invoke_without_subcommand=True,
     )
-    async def xkcd(self, ctx, number: int | None = None):
+    async def xkcd(
+        self: Self, ctx: commands.Context, number: int | None = None
+    ) -> None:
         """Method to create the command for xkcd."""
         if number:
             await self.numbered_comic(ctx, number)
@@ -36,7 +49,7 @@ class XKCD(cogs.BaseCog):
         brief="Gets a random XKCD comic",
         description="Gets a random XKCD comic",
     )
-    async def random_comic(self, ctx):
+    async def random_comic(self: Self, ctx: commands.Context) -> None:
         """Method to get a random xkcd comic."""
         most_recent_comic_data = await self.api_call()
         if most_recent_comic_data.status_code != 200:
@@ -77,13 +90,13 @@ class XKCD(cogs.BaseCog):
         brief="Gets a XKCD comic",
         description="Gets a XKCD comic by number",
     )
-    async def shadow_number(self, ctx, *, _) -> None:
+    async def shadow_number(self: Self, ctx: commands.Context, *, _: int) -> None:
         """Method to generate the help entry for the group parent and
         prevent direct invocation."""
         ctx.message.content = f"{ctx.message.content[0]}xkcd invalid"
         await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
-    async def numbered_comic(self, ctx, number: int):
+    async def numbered_comic(self: Self, ctx: commands.Context, number: int) -> None:
         """Method to get a specific number comic from xkcd."""
         comic_data = await self.api_call(number=number)
         if comic_data.status_code != 200:
@@ -102,14 +115,14 @@ class XKCD(cogs.BaseCog):
 
         await ctx.send(embed=embed)
 
-    async def api_call(self, number=None):
+    async def api_call(self: Self, number: int = None) -> munch.Munch:
         """Method for the API call for xkcd."""
         url = self.SPECIFIC_API_URL % (number) if number else self.MOST_RECENT_API_URL
         response = await self.bot.http_functions.http_call("get", url)
 
         return response
 
-    def generate_embed(self, comic_data):
+    def generate_embed(self: Self, comic_data: munch.Munch) -> discord.Embed:
         """Method to generate the embed for the xkcd command."""
         num = comic_data.get("num")
         image_url = comic_data.get("img")

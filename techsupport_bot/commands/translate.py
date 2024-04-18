@@ -1,11 +1,22 @@
 """Module for the translate extension for the discord bot."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding the configuration of the translate extension to the config file."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Translate plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(Translator(bot=bot))
 
 
@@ -24,7 +35,9 @@ class Translator(cogs.BaseCog):
             '"[message (in quotes)]" [src language code (en)] [dest language code (es)]'
         ),
     )
-    async def translate(self, ctx, message, src: str, dest: str):
+    async def translate(
+        self: Self, ctx: commands.Context, message: str, src: str, dest: str
+    ) -> None:
         """Method to translate a message from one language to another."""
         response = await self.bot.http_functions.http_call(
             "get",

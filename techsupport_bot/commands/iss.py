@@ -1,12 +1,23 @@
 """Module to add the location of the ISS to the bot."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Add the ISS locator to the config file."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the ISS plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(ISSLocator(bot=bot))
 
 
@@ -22,8 +33,14 @@ class ISSLocator(cogs.BaseCog):
         brief="Finds the ISS",
         description="Returns the location of the International Space Station (ISS)",
     )
-    async def iss(self, ctx):
-        """Method to get the coordinates of the ISS currently."""
+    async def iss(self: Self, ctx: commands.Context) -> None:
+        """Entry point and main logic for the iss command
+        Will call the API, format and send an embed
+
+        Args:
+            self (Self): _description_
+            ctx (commands.Context): The context in which the command was run in
+        """
         # get ISS coordinates
         response = await self.bot.http_functions.http_call("get", self.ISS_URL)
         if not response:

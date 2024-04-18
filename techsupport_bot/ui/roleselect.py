@@ -1,5 +1,9 @@
 """This holds the UI view used by the role extension"""
 
+from __future__ import annotations
+
+from typing import Self
+
 import discord
 
 
@@ -10,8 +14,7 @@ class RoleSelect(discord.ui.Select):
         role_list (list[str]): A list of SelectOption to be in the dropdown
     """
 
-    def __init__(self, role_list: list[str]):
-
+    def __init__(self: Self, role_list: list[str]) -> None:
         super().__init__(
             placeholder="Select roles...",
             min_values=0,
@@ -20,7 +23,7 @@ class RoleSelect(discord.ui.Select):
         )
         self.timeout = False
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self: Self, interaction: discord.Interaction) -> None:
         """What happens when the select menu has been used
 
         Args:
@@ -28,7 +31,7 @@ class RoleSelect(discord.ui.Select):
         """
         self.view.stop()
 
-    async def on_timeout(self):
+    async def on_timeout(self: Self) -> None:
         """What happens when the view timesout. This is to prevent all roles from being removed."""
         self.values = None
         self.timeout = True
@@ -42,7 +45,7 @@ class SelectView(discord.ui.View):
         role_list (list[str]): The list of SelectOptions to add to the dropdown
     """
 
-    def __init__(self, role_list: list[str]):
+    def __init__(self: Self, role_list: list[str]) -> None:
         super().__init__()
         # Adds the dropdown to our view object.
         self.select = RoleSelect(role_list)

@@ -3,7 +3,10 @@ This is a file to test the extensions/hello.py file
 This contains 1 test
 """
 
+from __future__ import annotations
+
 import importlib
+from typing import Self
 from unittest.mock import AsyncMock
 
 import pytest
@@ -15,7 +18,7 @@ class Test_Hello:
     """A single test to test the hello command"""
 
     @pytest.mark.asyncio
-    async def test_hello_command(self):
+    async def test_hello_command(self: Self) -> None:
         """This is a test to ensure that the proper reactions are called,
         and in the proper order"""
         # Step 1 - Setup env

@@ -2,6 +2,13 @@
 This is a file to store the fake discord.Message object
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
+if TYPE_CHECKING:
+    import helpers
+
 
 class MockMessage:
     """
@@ -14,14 +21,20 @@ class MockMessage:
     attachments -> A list of MockAttacment objects
     """
 
-    def __init__(self, content=None, author=None, attachments=None, reactions=None):
+    def __init__(
+        self: Self,
+        content: str = None,
+        author: helpers.MockMember = None,
+        attachments: list[helpers.MockAttachment] = None,
+        reactions: list[helpers.MockReaction] = None,
+    ) -> None:
         self.content = content
         self.author = author
         self.clean_content = content
         self.attachments = attachments
         self.reactions = reactions
 
-    async def add_reaction(self, reaction: list):
+    async def add_reaction(self: Self, reaction: list[helpers.MockReaction]) -> None:
         """Replication of the adding a reaction
         Adding reactions to a previous message
 

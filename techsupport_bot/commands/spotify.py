@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import aiohttp
 import ui
@@ -41,7 +41,7 @@ class Spotify(cogs.BaseCog):
     AUTH_URL = "https://accounts.spotify.com/api/token"
     API_URL = "https://api.spotify.com/v1/search"
 
-    async def get_oauth_token(self):
+    async def get_oauth_token(self: Self) -> str:
         """Method to get an oauth token for the Spotify API."""
         data = {"grant_type": "client_credentials"}
         response = await self.bot.http_functions.http_call(
@@ -62,7 +62,7 @@ class Spotify(cogs.BaseCog):
         description="Returns Spotify track results",
         usage="[query]",
     )
-    async def spotify(self, ctx, *, query: str):
+    async def spotify(self: Self, ctx: commands.Context, *, query: str) -> None:
         """Method to return a song from the Spotify API."""
         oauth_token = await self.get_oauth_token()
         if not oauth_token:

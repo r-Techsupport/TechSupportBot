@@ -50,7 +50,7 @@ class TechSupportBot(commands.Bot):
     )
 
     def __init__(
-        self, intents: discord.Intents, allowed_mentions: discord.AllowedMentions
+        self: Self, intents: discord.Intents, allowed_mentions: discord.AllowedMentions
     ) -> None:
         # Sets a few properires to None to avoid ValueErrors later on
         self.startup_time: datetime = None
@@ -109,7 +109,7 @@ class TechSupportBot(commands.Bot):
 
     # Entry point
 
-    async def start(self) -> None:
+    async def start(self: Self) -> None:
         """Starts the bot, connects to discord, irc, and postgres
         This function should not be used to interact with discord in any way
         Any discord interactions should be done with setup_hook
@@ -143,7 +143,7 @@ class TechSupportBot(commands.Bot):
 
     # Discord.py called functions
 
-    async def setup_hook(self) -> None:
+    async def setup_hook(self: Self) -> None:
         """This function is automatically called after the bot has been logged into discord
         This creates postgres tables if needed, registers new guild configs if needed,
         Loads extensions, registers the custom help command
@@ -183,7 +183,7 @@ class TechSupportBot(commands.Bot):
         self.extension_name_list = []
         await self.load_extensions()
 
-    async def on_guild_join(self, guild: discord.Guild) -> None:
+    async def on_guild_join(self: Self, guild: discord.Guild) -> None:
         """Configures a new guild upon joining.
         This registers a new guild config, and starts any loop jobs that are configured
 
@@ -203,7 +203,7 @@ class TechSupportBot(commands.Bot):
                         exception=exception,
                     )
 
-    async def on_ready(self) -> None:
+    async def on_ready(self: Self) -> None:
         """Callback for when the bot is finished starting up.
         This function may be called more than once and should not have discord interactions in it
         """
@@ -219,7 +219,7 @@ class TechSupportBot(commands.Bot):
 
     # DM Logging
 
-    async def log_DM(self, sent_from: str, source: str, content: str) -> None:
+    async def log_DM(self: Self, sent_from: str, source: str, content: str) -> None:
         """Logs a DM from any source
 
         Args:
@@ -234,7 +234,7 @@ class TechSupportBot(commands.Bot):
         embed.timestamp = datetime.datetime.utcnow()
         await owner.send(embed=embed)
 
-    async def on_message(self, message: discord.Message) -> None:
+    async def on_message(self: Self, message: discord.Message) -> None:
         """Logs DMs and ensure that commands are processed
 
         Args:
@@ -260,7 +260,7 @@ class TechSupportBot(commands.Bot):
 
     # Guild config management functions
 
-    async def register_new_guild_config(self, guild_id: str) -> bool:
+    async def register_new_guild_config(self: Self, guild_id: str) -> bool:
         """This creates a config for a new guild if needed
 
         Args:
@@ -279,7 +279,7 @@ class TechSupportBot(commands.Bot):
                 return True
             return False
 
-    async def create_new_context_config(self, guild_id: str) -> munch.Munch:
+    async def create_new_context_config(self: Self, guild_id: str) -> munch.Munch:
         """Creates a new guild config for a given guild.
 
         Args:
@@ -335,7 +335,7 @@ class TechSupportBot(commands.Bot):
 
         return config_
 
-    async def write_new_config(self, guild_id: str, config: str) -> None:
+    async def write_new_config(self: Self, guild_id: str, config: str) -> None:
         """Takes a config and guild and updates the config in the database
         This is only needed when a new guild is joined or the config is modifed
 
@@ -358,7 +358,7 @@ class TechSupportBot(commands.Bot):
             await new_database_config.create()
 
     def add_extension_config(
-        self, extension_name: str, config: extensionconfig.ExtensionConfig
+        self: Self, extension_name: str, config: extensionconfig.ExtensionConfig
     ) -> None:
         """Adds an extensions defined config to the guild config as a whole
 
@@ -376,7 +376,7 @@ class TechSupportBot(commands.Bot):
         self.extension_configs[extension_name] = config
 
     async def get_log_channel_from_guild(
-        self, guild: discord.Guild, key: str
+        self: Self, guild: discord.Guild, key: str
     ) -> str | None:
         """Gets the log channel ID associated with the given guild.
 
@@ -402,7 +402,7 @@ class TechSupportBot(commands.Bot):
 
     # File config loading functions
 
-    def load_file_config(self, validate: bool = True) -> None:
+    def load_file_config(self: Self, validate: bool = True) -> None:
         """Loads the config yaml file into a bot object.
 
         Args:
@@ -423,7 +423,9 @@ class TechSupportBot(commands.Bot):
         for subsection in ["required"]:
             self.validate_bot_config_subsection("bot_config", subsection)
 
-    def validate_bot_config_subsection(self, section: str, subsection: str) -> None:
+    def validate_bot_config_subsection(
+        self: Self, section: str, subsection: str
+    ) -> None:
         """Loops through a config subsection to check for missing values.
 
         Args:
@@ -449,7 +451,7 @@ class TechSupportBot(commands.Bot):
     # Error handling and logging functions
 
     async def on_app_command_error(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         error: app_commands.AppCommandError,
     ) -> None:
@@ -474,7 +476,7 @@ class TechSupportBot(commands.Bot):
             await interaction.response.send_message(embed=embed)
 
     async def handle_error(
-        self,
+        self: Self,
         exception: Exception,
         channel: discord.abc.Messageable,
         guild: discord.Guild,
@@ -530,7 +532,7 @@ class TechSupportBot(commands.Bot):
         return error_message
 
     async def on_command_error(
-        self, context: commands.Context, exception: Exception
+        self: Self, context: commands.Context, exception: Exception
     ) -> None:
         """Catches command errors and sends them to the error logger for processing.
 
@@ -560,7 +562,7 @@ class TechSupportBot(commands.Bot):
 
     # Postgres setup function
 
-    async def get_postgres_ref(self) -> None:
+    async def get_postgres_ref(self: Self) -> None:
         """Connects to postgres based on the database login defined the in the file_config
         Adds self.db to be the database reference
         """
@@ -598,7 +600,7 @@ class TechSupportBot(commands.Bot):
 
     # Extension loading and management functions
 
-    async def get_potential_extensions(self) -> list[str]:
+    async def get_potential_extensions(self: Self) -> list[str]:
         """Gets the current list of extensions in the defined directory.
         This ONLY gets commands, not functions"""
         self.logger.console.info(f"Searching {self.EXTENSIONS_DIR} for extensions")
@@ -609,7 +611,7 @@ class TechSupportBot(commands.Bot):
         ]
         return extensions_list
 
-    async def get_potential_function_extensions(self) -> list[str]:
+    async def get_potential_function_extensions(self: Self) -> list[str]:
         """Gets the current list of extensions in the defined directory.
         This ONLY gets functions, not commands"""
         self.logger.console.info(f"Searching {self.FUNCTIONS_DIR} for extensions")
@@ -620,7 +622,7 @@ class TechSupportBot(commands.Bot):
         ]
         return extensions_list
 
-    async def load_extensions(self, graceful: bool = True) -> None:
+    async def load_extensions(self: Self, graceful: bool = True) -> None:
         """Loads all extensions currently in the extensions directory.
 
         Args:
@@ -670,7 +672,7 @@ class TechSupportBot(commands.Bot):
                 if not graceful:
                     raise exception
 
-    def get_command_extension_name(self, command: commands.Command) -> str:
+    def get_command_extension_name(self: Self, command: commands.Command) -> str:
         """Gets the subname of an extension from a command.
         Used only for commands, should never be run for a function
 
@@ -683,7 +685,7 @@ class TechSupportBot(commands.Bot):
         return extension_name
 
     async def register_file_extension(
-        self, extension_name: str, fp: io.BufferedIOBase
+        self: Self, extension_name: str, fp: io.BufferedIOBase
     ) -> None:
         """Offers an interface for loading an extension from an external source.
 
@@ -709,7 +711,7 @@ class TechSupportBot(commands.Bot):
 
     # Bot properties
 
-    async def is_bot_admin(self, member: discord.Member) -> bool:
+    async def is_bot_admin(self: Self, member: discord.Member) -> bool:
         """Processes command context against admin/owner data.
 
         Command checks are disabled if the context author is the owner.
@@ -743,7 +745,7 @@ class TechSupportBot(commands.Bot):
 
         return False
 
-    async def get_owner(self) -> discord.User | None:
+    async def get_owner(self: Self) -> discord.User | None:
         """Gets the owner object from the bot application."""
         if not self.owner:
             try:
@@ -760,7 +762,7 @@ class TechSupportBot(commands.Bot):
 
         return self.owner
 
-    async def get_prefix(self, message: discord.Message) -> str:
+    async def get_prefix(self: Self, message: discord.Message) -> str:
         """Gets the appropriate prefix for a command.
         This is called by discord.py and must be async
 
@@ -774,7 +776,7 @@ class TechSupportBot(commands.Bot):
 
     # Can run command checks
 
-    async def command_run_admin_check(self, member: discord.Member) -> bool:
+    async def command_run_admin_check(self: Self, member: discord.Member) -> bool:
         """Part of the can_run function set. This is responsible for checking if
         the caller is a bot admin
 
@@ -787,7 +789,7 @@ class TechSupportBot(commands.Bot):
         return await self.is_bot_admin(member)
 
     def command_run_rate_limit_check(
-        self, member: discord.Member, guild: discord.Guild, command_id: int
+        self: Self, member: discord.Member, guild: discord.Guild, command_id: int
     ) -> bool:
         """Handle the command rate limiter
 
@@ -830,7 +832,7 @@ class TechSupportBot(commands.Bot):
         return True
 
     def command_run_extension_disabled_check(
-        self, guild: discord.Guild, extension_name: str
+        self: Self, guild: discord.Guild, extension_name: str
     ) -> bool:
         """Checks if the extension is disabled
         Works for both prefix and slash commands
@@ -849,7 +851,7 @@ class TechSupportBot(commands.Bot):
 
     # Logging and checking if commands can run
 
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+    async def interaction_check(self: Self, interaction: discord.Interaction) -> bool:
         """This is a default function of the command tree that always returns true
         We can use this to log and evaluate if commands should be run
 
@@ -912,7 +914,7 @@ class TechSupportBot(commands.Bot):
         # Finally, return the default check, which is always True
         return True
 
-    async def slash_command_log(self, interaction: discord.Interaction) -> None:
+    async def slash_command_log(self: Self, interaction: discord.Interaction) -> None:
         """A command to log the call of a slash command
 
         Args:
@@ -996,7 +998,7 @@ class TechSupportBot(commands.Bot):
 
     # IRC Stuff
 
-    async def start_irc(self) -> None:
+    async def start_irc(self: Self) -> None:
         """Starts the IRC connection in a seperate thread"""
         irc_config = self.file_config.api.irc
         main_loop = asyncio.get_running_loop()

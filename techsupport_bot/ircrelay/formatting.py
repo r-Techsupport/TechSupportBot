@@ -1,12 +1,12 @@
 """A bunch of functions to format messages going to and from IRC"""
 
-from typing import Dict, List
+from __future__ import annotations
 
 import discord
 import irc.client
 
 
-def parse_irc_message(event: irc.client.Event) -> Dict[str, str]:
+def parse_irc_message(event: irc.client.Event) -> dict[str, str]:
     """This turns the irc.client.Event object into a dictionary
     This dictionary contains more direct access to import information
     This gets username, hostmask, channel, and raw content
@@ -31,7 +31,7 @@ def parse_irc_message(event: irc.client.Event) -> Dict[str, str]:
     }
 
 
-def parse_ban_message(event: irc.client.Event) -> Dict[str, str]:
+def parse_ban_message(event: irc.client.Event) -> dict[str, str]:
     """This turns the irc.client.Event object into a dictionary
     This dictionary contains more direct access to import information
     This gets username, hostmask, channel
@@ -162,7 +162,7 @@ def get_permissions_prefix_for_discord_user(member: discord.Member) -> str:
     return prefix_str
 
 
-def get_file_links(message_attachments: List[discord.Attachment]) -> str:
+def get_file_links(message_attachments: list[discord.Attachment]) -> str:
     """Turns a list of attachments into a string containing links to them
 
     Args:

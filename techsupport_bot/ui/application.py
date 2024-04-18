@@ -1,6 +1,9 @@
 """This is the ui object for the popup application form"""
 
+from __future__ import annotations
+
 import traceback
+from typing import Self
 
 import discord
 
@@ -24,7 +27,7 @@ class Application(discord.ui.Modal, title="Staff interest form"):
         max_length=300,
     )
 
-    async def on_submit(self, interaction: discord.Interaction) -> None:
+    async def on_submit(self: Self, interaction: discord.Interaction) -> None:
         """What happens when the form has been successfully submitted
 
         Args:
@@ -34,7 +37,7 @@ class Application(discord.ui.Modal, title="Staff interest form"):
         return
 
     async def on_error(
-        self, interaction: discord.Interaction, error: Exception
+        self: Self, interaction: discord.Interaction, error: Exception
     ) -> None:
         """What happens if there is an error in the application processing
 
