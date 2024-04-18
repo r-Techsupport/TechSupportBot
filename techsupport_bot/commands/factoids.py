@@ -1956,7 +1956,7 @@ class FactoidManager(cogs.MatchCog):
                     await self.modify_factoid_call(factoid=alias_entry)
 
                     await self.handle_parent_change(
-                        ctx=ctx, aliases=aliases, str=aliases[0].name
+                        ctx=ctx, aliases=aliases, new_name=aliases[0].name
                     )
 
             # Removes the old alias entry

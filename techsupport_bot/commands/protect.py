@@ -762,7 +762,7 @@ class Protector(cogs.MatchCog):
         await self.handle_kick(ctx=ctx, user=user, reason=reason)
 
         config = self.bot.guild_configs[str(ctx.guild.id)]
-        await self.send_alert(config=config, ctx=ctx, reason="Kick command")
+        await self.send_alert(config=config, ctx=ctx, message="Kick command")
 
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
@@ -777,7 +777,7 @@ class Protector(cogs.MatchCog):
         await self.handle_warn(ctx=ctx, user=user, reason=reason)
 
         config = self.bot.guild_configs[str(ctx.guild.id)]
-        await self.send_alert(config=config, ctx=ctx, reason="Warn command")
+        await self.send_alert(config=config, ctx=ctx, message="Warn command")
 
     @commands.has_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
