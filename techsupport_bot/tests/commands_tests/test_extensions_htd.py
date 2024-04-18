@@ -6,7 +6,7 @@ This contains 46 tests
 from __future__ import annotations
 
 import importlib
-from typing import TYPE_CHECKING, Self
+from typing import Self
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import discord
