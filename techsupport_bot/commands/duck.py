@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import pytz
 import functools
 import random
 from datetime import timedelta
@@ -357,9 +358,13 @@ class DuckHunt(cogs.LoopCog):
             cooldowns[message.author.id] = datetime.datetime.now()
             quote = self.pick_quote()
             embed = auxiliary.prepare_deny_embed(message=quote)
-            embed.set_footer(
-                text=f"You missed. Try again in {config.extensions.duck.cooldown.value} seconds"
-            )
+
+            # Calculate the exact time since the duck was created
+            duration_exact = datetime.datetime.now(pytz.utc) - duck_message.created_at
+
+            footer_text = f"You missed. Try again in {config.extensions.duck.cooldown.value} seconds"
+            footer_text += f"Time you could of had {duration_exact.total_seconds():.6f} seconds"
+            embed.set_footer(text=footer_text)
             # Only attempt timeout if we know we can do it
             if (
                 channel.guild.me.top_role > message.author.top_role
