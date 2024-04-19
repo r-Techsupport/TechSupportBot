@@ -5,7 +5,6 @@ from __future__ import annotations
 import enum
 import random
 from typing import TYPE_CHECKING
-from urllib.parse import urlparse
 
 import aiocron
 import discord
