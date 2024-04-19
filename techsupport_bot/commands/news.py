@@ -152,16 +152,6 @@ class News(cogs.LoopCog):
         """Method to define the wait time for the news api pull."""
         await aiocron.crontab(config.extensions.news.cron_config.value).next()
 
-    # @commands.group(
-    #     brief="Executes a news command",
-    #     description="Executes a news command",
-    # )
-    # async def news(self, ctx):
-    #     """Method to set up the news command."""
-
-    #     # Executed if there are no/invalid args supplied
-    #     await auxiliary.extension_help(self, ctx, self.__module__[9:])
-
     @app_commands.command(
         name="news",
         description="Gets a random news headline",
