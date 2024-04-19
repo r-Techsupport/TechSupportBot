@@ -116,12 +116,12 @@ class News(cogs.LoopCog):
         # Filter out articles with URLs containing "removed.com"
         filtered_articles = []
         for article in articles:
-            host = urlparse(article.get("url", "")).hostname
-            if host and not host.endswith(".removed.com"):
+            url = article.get("url", "")
+            if url != "https://removed.com":
                 filtered_articles.append(article)
 
         # Check if there are any articles left after filtering
-        if not articles:
+        if not filtered_articles:
             return None
 
         # Choose a random article from the filtered list
@@ -140,6 +140,9 @@ class News(cogs.LoopCog):
                 Category(config.extensions.news.category.value).value,
             )
             url = article.get("url")
+
+        if article is None:
+            return
 
         log_channel = config.get("logging_channel")
         await self.bot.logger.send_log(
@@ -176,6 +179,9 @@ class News(cogs.LoopCog):
                 config.extensions.news.country.value, category
             )
             url = article.get("url")
+
+        if article is None:
+            return
 
         if url.endswith("/"):
             url = url[:-1]
