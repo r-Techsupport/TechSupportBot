@@ -5,9 +5,11 @@ from __future__ import annotations
 import enum
 import random
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 import aiocron
 import discord
+import munch
 from botlogging import LogContext, LogLevel
 from core import cogs, extensionconfig
 from discord import app_commands
@@ -107,21 +109,23 @@ class News(cogs.LoopCog):
 
         return articles
 
-    async def get_random_headline(self, country_code, category=None):
+    async def get_random_headline(self, country_code, category=None) -> munch.Munch:
         """Method to get a random headline for the news command."""
         articles = await self.get_headlines(country_code, category)
-        # Filter out articles with URLs containing "https://removed.com"
-        articles = [
-            article
-            for article in articles
-            if not article.get("url", "").startswith("https://removed.com")
-        ]
+
+        # Filter out articles with URLs containing "removed.com"
+        filtered_articles = []
+        for article in articles:
+            host = urlparse(article.get("url", "")).hostname
+            if host and not host.endswith(".removed.com"):
+                filtered_articles.append(article)
+
         # Check if there are any articles left after filtering
         if not articles:
             return None
 
         # Choose a random article from the filtered list
-        return random.choice(articles)
+        return random.choice(filtered_articles)
 
     async def execute(self, config, guild):
         """Method to execute the news command."""
