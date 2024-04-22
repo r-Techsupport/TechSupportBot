@@ -181,14 +181,14 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     bot.models.Applications = Applications
     bot.models.AppBans = ApplicationBans
-    bot.models.DuckUser = DuckUser
+    bot.models.DuckUser = DuckUser  # DONE
     bot.models.Factoid = Factoid
     bot.models.FactoidJob = FactoidJob
     bot.models.Grab = Grab
     bot.models.IRCChannelMapping = IRCChannelMapping
     bot.models.ModmailBan = ModmailBan
-    bot.models.UserNote = UserNote
-    bot.models.Warning = Warning
+    bot.models.UserNote = UserNote  # DONE
+    bot.models.Warning = Warning  # DONE
     bot.models.Config = Config
     bot.models.Listener = Listener
     bot.models.Rule = Rule

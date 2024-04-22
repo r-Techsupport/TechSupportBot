@@ -12,7 +12,7 @@ import expiringdict
 import munch
 import ui
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs, databases, extensionconfig
 from discord.ext import commands
 
 
@@ -439,9 +439,11 @@ class Protector(cogs.MatchCog):
         else:
             await ctx.send(ctx.message.author.mention, embed=embed)
 
-        await self.bot.models.Warning(
-            user_id=str(user.id), guild_id=str(ctx.guild.id), reason=reason
-        ).create()
+        blank_warn = databases.get_blank_entry(self.bot.models.Warning)
+        blank_warn.user_id = str(user.id)
+        blank_warn.guild_id = str(ctx.guild.id)
+        blank_warn.reason = reason
+        await databases.write_new_entry(blank_warn)
 
     async def handle_unwarn(self, ctx, user, reason, bypass=False):
         """Method to handle an unwarn of a user."""
@@ -523,9 +525,9 @@ class Protector(cogs.MatchCog):
 
     async def clear_warnings(self, user, guild):
         """Method to clear warnings of a user in discord."""
-        await self.bot.models.Warning.delete.where(
-            self.bot.models.Warning.user_id == str(user.id)
-        ).where(self.bot.models.Warning.guild_id == str(guild.id)).gino.status()
+        warnings = await self.get_warnings(user, guild)
+        for warn in warnings:
+            await databases.delete_entry(warn)
 
     async def generate_user_modified_embed(self, user, action, reason):
         """Method to generate the user embed with the reason."""
@@ -631,13 +633,12 @@ class Protector(cogs.MatchCog):
 
     async def get_warnings(self, user, guild):
         """Method to get the warnings of a user."""
-        warnings = (
-            await self.bot.models.Warning.query.where(
-                self.bot.models.Warning.user_id == str(user.id)
-            )
-            .where(self.bot.models.Warning.guild_id == str(guild.id))
-            .gino.all()
-        )
+        raw_database = await databases.read_database(self.bot.models.Warning)
+        warnings = [
+            warn
+            for warn in raw_database
+            if warn.user_id == str(user.id) and warn.guild_id == str(guild.id)
+        ]
         return warnings
 
     async def create_linx_embed(self, config, ctx, content):
