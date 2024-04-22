@@ -7,7 +7,7 @@ import discord
 import ui
 import yaml
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs, databases, extensionconfig
 from discord import app_commands
 from discord.ext import commands
 
@@ -149,13 +149,14 @@ class Who(cogs.BaseCog):
             discord.Embed: The embed with mod only information added
         """
         # If the user has warnings, add them
-        warnings = (
-            await self.bot.models.Warning.query.where(
-                self.bot.models.Warning.user_id == str(user.id)
-            )
-            .where(self.bot.models.Warning.guild_id == str(interaction.guild.id))
-            .gino.all()
-        )
+        raw_warnings = await databases.read_database(self.bot.models.Warning)
+        warnings = [
+            warn_to_search
+            for warn_to_search in raw_warnings
+            if warn_to_search.guild_id == str(interaction.guild.id)
+            and warn_to_search.user_id == str(user.id)
+        ]
+
         warning_str = ""
         for warning in warnings:
             warning_str += f"{warning.reason} - {warning.time.date()}\n"
@@ -203,13 +204,6 @@ class Who(cogs.BaseCog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        note = self.bot.models.UserNote(
-            user_id=str(user.id),
-            guild_id=str(interaction.guild.id),
-            author_id=str(interaction.user.id),
-            body=body,
-        )
-
         config = self.bot.guild_configs[str(interaction.guild.id)]
 
         # Check to make sure notes are allowed to be assigned
@@ -225,7 +219,14 @@ class Who(cogs.BaseCog):
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
 
-        await note.create()
+        new_note = databases.get_blank_entry(self.bot.models.UserNote)
+
+        new_note.user_id = str(user.id)
+        new_note.guild_id = str(interaction.guild.id)
+        new_note.author_id = str(interaction.user.id)
+        new_note.body = body
+
+        await databases.write_new_entry(new_note)
 
         role = discord.utils.get(
             interaction.guild.roles, name=config.extensions.who.note_role.value
@@ -289,7 +290,7 @@ class Who(cogs.BaseCog):
             return
 
         for note in notes:
-            await note.delete()
+            await databases.delete_entry(note)
 
         config = self.bot.guild_configs[str(interaction.guild.id)]
         role = discord.utils.get(
@@ -345,16 +346,16 @@ class Who(cogs.BaseCog):
 
     async def get_notes(self, user, guild):
         """Method to get current notes on the user."""
-        user_notes = (
-            await self.bot.models.UserNote.query.where(
-                self.bot.models.UserNote.user_id == str(user.id)
-            )
-            .where(self.bot.models.UserNote.guild_id == str(guild.id))
-            .order_by(self.bot.models.UserNote.updated.desc())
-            .gino.all()
-        )
-
-        return user_notes
+        raw_notes = await databases.read_database(self.bot.models.UserNote)
+        filtered_notes = [
+            note_to_search
+            for note_to_search in raw_notes
+            if note_to_search.guild_id == str(guild.id)
+            and note_to_search.user_id == str(user.id)
+        ]
+        sorted_notes = sorted(filtered_notes, key=lambda x: x.updated)
+        sorted_notes.reverse()
+        return sorted_notes
 
     # re-adds note role back to joining users
     @commands.Cog.listener()
