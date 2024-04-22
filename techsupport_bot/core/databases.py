@@ -229,7 +229,6 @@ async def read_database(model: gino.declarative.ModelType) -> list[munch.Munch]:
     table_as_list: list[munch.Munch] = []
     for item in table:
         table_as_list.append(convert_db_to_munch(item))
-    # print(table_as_list)
     return table_as_list
 
 
@@ -244,8 +243,6 @@ async def update_entry(entry: munch.Munch) -> munch.Munch:
     if not entry.__original__:
         raise ValueError("Missing orignal key")
     original_entry = entry.__original__
-
-    print(original_entry)
 
     update_kwargs = {}
 
@@ -280,12 +277,11 @@ def get_blank_entry(database: gino.declarative.ModelType) -> munch.Munch:
 
 async def write_new_entry(entry: munch.Munch) -> munch.Munch:
     if not entry.__database__:
-        raise ValueError("Missing orignal key")
+        raise ValueError("Missing database key")
     database = entry.__database__
     entry.pop("__database__")
 
     table_columns = {column.name for column in database.__table__.columns}
-    print(table_columns)
     entry_names = set(entry.keys())
     if not entry_names.issubset(table_columns):
         raise ValueError("Invalid keys detected")

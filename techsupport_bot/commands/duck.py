@@ -13,7 +13,7 @@ import discord
 import munch
 import ui
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs, databases, extensionconfig
 from discord import Color as embed_colors
 from discord.ext import commands
 
@@ -244,21 +244,20 @@ class DuckHunt(cogs.LoopCog):
 
         duck_user = await self.get_duck_user(winner.id, guild.id)
         if not duck_user:
-            duck_user = self.bot.models.DuckUser(
-                author_id=str(winner.id),
-                guild_id=str(guild.id),
-                befriend_count=0,
-                kill_count=0,
-                speed_record=80.0,
-            )
-            await duck_user.create()
+            blank_duck_user = databases.get_blank_entry(self.bot.models.DuckUser)
+            blank_duck_user.author_id = str(winner.id)
+            blank_duck_user.guild_id = str(guild.id)
+            duck_user = await databases.write_new_entry(blank_duck_user)
 
         if action == "befriended":
-            await duck_user.update(befriend_count=duck_user.befriend_count + 1).apply()
+            duck_user.befriend_count = duck_user.befriend_count + 1
+            duck_user = await databases.update_entry(duck_user)
         else:
-            await duck_user.update(kill_count=duck_user.kill_count + 1).apply()
+            duck_user.kill_count = duck_user.kill_count + 1
+            duck_user = await databases.update_entry(duck_user)
 
-        await duck_user.update(updated=datetime.datetime.now()).apply()
+        duck_user.updated = datetime.datetime.now()
+        duck_user = await databases.update_entry(duck_user)
 
         embed = discord.Embed(
             title=f"Duck {action}!",
@@ -281,7 +280,8 @@ class DuckHunt(cogs.LoopCog):
             if duration_exact < global_record:
                 footer_string += "\nNew global record!"
                 footer_string += f" Previous global record: {global_record} seconds"
-            await duck_user.update(speed_record=duration_exact).apply()
+            duck_user.speed_record = duration_exact
+            duck_user = await databases.update_entry(duck_user)
         else:
             footer_string += f"Exact time: {duration_exact} seconds."
         embed.set_footer(text=footer_string)
@@ -382,7 +382,7 @@ class DuckHunt(cogs.LoopCog):
 
     async def get_duck_user(
         self: Self, user_id: int, guild_id: int
-    ) -> bot.models.DuckUser | None:
+    ) -> munch.Munch | None:
         """If it exists, will return the duck winner database entry
 
         Args:
@@ -393,15 +393,17 @@ class DuckHunt(cogs.LoopCog):
             bot.models.DuckUser | None: The DuckUser database entry of the user/guild combo.
                 Or None if it doesn't exist
         """
-        duck_user = (
-            await self.bot.models.DuckUser.query.where(
-                self.bot.models.DuckUser.author_id == str(user_id)
-            )
-            .where(self.bot.models.DuckUser.guild_id == str(guild_id))
-            .gino.first()
-        )
+        duck_database = await databases.read_database(self.bot.models.DuckUser)
+        duck_user = [
+            duck_entry
+            for duck_entry in duck_database
+            if duck_entry.guild_id == str(guild_id)
+            and duck_entry.author_id == str(user_id)
+        ]
+        if len(duck_user) == 0:
+            return None
 
-        return duck_user
+        return duck_user[0]
 
     async def get_global_record(self: Self, guild_id: int) -> float:
         """This is a function to get the current global speed record in a given guild
@@ -412,10 +414,12 @@ class DuckHunt(cogs.LoopCog):
         Returns:
             float: The exact decimal representation for the fastest speed record
         """
-
-        query = await self.bot.models.DuckUser.query.where(
-            self.bot.models.DuckUser.guild_id == str(guild_id)
-        ).gino.all()
+        raw_database = await databases.read_database(self.bot.models.DuckUser)
+        query = [
+            duck_search
+            for duck_search in raw_database
+            if duck_search.guild_id == str(guild_id)
+        ]
 
         speed_records = [record.speed_record for record in query]
 
@@ -497,14 +501,15 @@ class DuckHunt(cogs.LoopCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        duck_users = (
-            await self.bot.models.DuckUser.query.order_by(
-                -self.bot.models.DuckUser.befriend_count
-            )
-            .where(self.bot.models.DuckUser.befriend_count > 0)
-            .where(self.bot.models.DuckUser.guild_id == str(ctx.guild.id))
-            .gino.all()
-        )
+        raw_database = await databases.read_database(self.bot.models.DuckUser)
+        duck_users = [
+            duck_entry
+            for duck_entry in raw_database
+            if duck_entry.befriend_count > 0
+            and duck_entry.guild_id == str(ctx.guild.id)
+        ]
+        duck_users = sorted(duck_users, key=lambda x: x.befriend_count)
+        duck_users.reverse()
 
         if not duck_users:
             await auxiliary.send_deny_embed(
@@ -565,13 +570,14 @@ class DuckHunt(cogs.LoopCog):
                 channel=ctx.channel,
             )
             return
-        record_user = (
-            await self.bot.models.DuckUser.query.where(
-                self.bot.models.DuckUser.speed_record == record_time
-            )
-            .where(self.bot.models.DuckUser.guild_id == str(ctx.guild.id))
-            .gino.first()
-        )
+
+        raw_database = await databases.read_database(self.bot.models.DuckUser)
+        record_user = [
+            duck_entry
+            for duck_entry in raw_database
+            if duck_entry.speed_record == record_time
+            and duck_entry.guild_id == str(ctx.guild.id)
+        ][0]
 
         embed = discord.Embed(title="Duck Speed Record")
         embed.color = embed_colors.green()
@@ -593,14 +599,14 @@ class DuckHunt(cogs.LoopCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        duck_users = (
-            await self.bot.models.DuckUser.query.order_by(
-                -self.bot.models.DuckUser.kill_count
-            )
-            .where(self.bot.models.DuckUser.kill_count > 0)
-            .where(self.bot.models.DuckUser.guild_id == str(ctx.guild.id))
-            .gino.all()
-        )
+        raw_database = await databases.read_database(self.bot.models.DuckUser)
+        duck_users = [
+            duck_entry
+            for duck_entry in raw_database
+            if duck_entry.kill_count > 0 and duck_entry.guild_id == str(ctx.guild.id)
+        ]
+        duck_users = sorted(duck_users, key=lambda x: x.kill_count)
+        duck_users.reverse()
 
         if not duck_users:
             await auxiliary.send_deny_embed(
@@ -639,7 +645,7 @@ class DuckHunt(cogs.LoopCog):
 
         await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
-    def get_user_text(self: Self, duck_user: bot.models.DuckUser) -> str:
+    def get_user_text(self: Self, duck_user: munch.Munch) -> str:
         """Gets the name of a user formatted to be displayed across the extension
 
         Args:
@@ -692,7 +698,8 @@ class DuckHunt(cogs.LoopCog):
             )
             return
 
-        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+        duck_user.befriend_count = duck_user.befriend_count - 1
+        duck_user = await databases.update_entry(duck_user)
         await auxiliary.send_confirm_embed(
             message=f"Fly safe! You have {duck_user.befriend_count} ducks left.",
             channel=ctx.channel,
@@ -738,7 +745,8 @@ class DuckHunt(cogs.LoopCog):
             )
             return
 
-        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+        duck_user.befriend_count = duck_user.befriend_count - 1
+        duck_user = await databases.update_entry(duck_user)
 
         weights = (
             config.extensions.duck.success_rate.value,
@@ -753,7 +761,8 @@ class DuckHunt(cogs.LoopCog):
             )
             return
 
-        await duck_user.update(kill_count=duck_user.kill_count + 1).apply()
+        duck_user.kill_count = duck_user.kill_count + 1
+        duck_user = await databases.update_entry(duck_user)
         await auxiliary.send_confirm_embed(
             message=f"You monster! You have {duck_user.befriend_count} ducks "
             + f"left and {duck_user.kill_count} kills to your name.",
@@ -816,7 +825,8 @@ class DuckHunt(cogs.LoopCog):
             )
             return
 
-        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+        duck_user.befriend_count = duck_user.befriend_count - 1
+        duck_user = await databases.update_entry(duck_user)
 
         weights = (
             config.extensions.duck.success_rate.value,
@@ -831,7 +841,9 @@ class DuckHunt(cogs.LoopCog):
             )
             return
 
-        await recipee.update(befriend_count=recipee.befriend_count + 1).apply()
+        recipee.befriend_count = recipee.befriend_count + 1
+        recipee = await databases.update_entry(recipee)
+
         await auxiliary.send_confirm_embed(
             message=f"You gave a duck to {user.mention}. You now "
             + f"have {duck_user.befriend_count} ducks left.",
@@ -884,7 +896,7 @@ class DuckHunt(cogs.LoopCog):
             )
             return
 
-        await duck_user.delete()
+        await databases.delete_entry(duck_user)
         await auxiliary.send_confirm_embed(
             message=f"Successfully reset {user.mention}s duck stats!",
             channel=ctx.channel,
