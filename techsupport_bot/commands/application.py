@@ -950,8 +950,8 @@ class ApplicationManager(cogs.LoopCog):
             [
                 f"Application by: `{member.display_name} "
                 f"({app.applicant_name})`, applied on: {app.application_time}"
-                for app in apps
-            ]  # pylint: disable=W0631
+                for app in apps  # pylint: disable=W0631
+            ]
         )
 
         await channel.send(embed=embed)
