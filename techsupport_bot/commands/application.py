@@ -944,15 +944,18 @@ class ApplicationManager(cogs.LoopCog):
             return
 
         embed = discord.Embed(title="All pending applcations")
-        member = await guild.fetch_member(int(app.applicant_id))
+        list_of_applicants = []
 
-        embed.description = "\n".join(
-            [
-                f"Application by: `{member.display_name} "
-                f"({app.applicant_name})`, applied on: {app.application_time}"
-                for app in apps  # pylint: disable=W0631
-            ]
-        )
+        for app in apps:
+            member = await guild.fetch_member(int(app.applicant_id))
+            list_of_applicants.append(
+                (
+                    f"Application by: `{member.display_name} ({app.applicant_name})`"
+                    f", applied on: {app.application_time}"
+                )
+            )
+
+        embed.description = "\n".join(list_of_applicants)
 
         await channel.send(embed=embed)
 
