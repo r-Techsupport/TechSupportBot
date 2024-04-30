@@ -415,7 +415,7 @@ class Protector(cogs.MatchCog):
         # Attempt DM for manually initiated, non-banning warns
         if ctx.command == self.bot.get_command("warn"):
             # Cancel warns in channels invisible to user
-            if user not in ctx.channel.members:
+            if not ctx.channel.permissions_for(user).view_channel:
                 await auxiliary.send_deny_embed(
                     message=f"{user} cannot see this warning.", channel=ctx.channel
                 )
