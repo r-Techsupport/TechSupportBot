@@ -10,6 +10,7 @@ import discord
 import pytest
 from commands import htd
 from core import auxiliary
+from discord.ext import commands
 from tests import config_for_tests, helpers
 
 
@@ -648,16 +649,24 @@ class Test_HTDCommand:
         hextodec.convert_list_to_ints = MagicMock(side_effect=ValueError)
         hextodec.perform_op_on_list = MagicMock()
         hextodec.custom_embed_generation = MagicMock()
-        auxiliary.send_deny_embed = AsyncMock()
-        discord_env.context.send = AsyncMock()
+        auxiliary.prepare_deny_embed = MagicMock()
+
+        # Create a MockContext with the required attributes
+        mock_context = MagicMock(spec=commands.Context)
+        mock_context.send = AsyncMock()  # Mock the send method
+
+        # Set the mock context for the test
+        discord_env.context = mock_context
 
         # Step 2 - Call the function
         await hextodec.htd_command(discord_env.context, "test")
 
         # Step 3 - Assert that everything works
-        auxiliary.send_deny_embed.assert_called_once_with(
-            message="Unable to convert value, are you sure it's valid?",
-            channel=discord_env.context.channel,
+        auxiliary.prepare_deny_embed.assert_called_once_with(
+            message="Unable to convert value, are you sure it's valid?"
+        )
+        discord_env.context.send.assert_called_once_with(
+            embed=auxiliary.prepare_deny_embed.return_value
         )
 
         # Step 4 - Cleanup
