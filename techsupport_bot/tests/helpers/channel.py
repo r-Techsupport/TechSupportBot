@@ -2,7 +2,13 @@
 This is a file to store the fake disord.TextChannel objection
 """
 
-from typing import AsyncGenerator
+from __future__ import annotations
+
+from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING, Self
+
+if TYPE_CHECKING:
+    import helpers
 
 
 class MockChannel:
@@ -15,10 +21,10 @@ class MockChannel:
         A "limit" object may be passed, but is ignored in this implementation
     """
 
-    def __init__(self, history=None):
+    def __init__(self: Self, history: list[helpers.MockMessage] = None) -> None:
         self.message_history = history
 
-    async def history(self, limit: int) -> AsyncGenerator[str, None]:
+    async def history(self: Self, limit: int) -> AsyncGenerator[str, None]:
         """Replication of the async history method
         As history is not expected to be massive, this just yields every message
 

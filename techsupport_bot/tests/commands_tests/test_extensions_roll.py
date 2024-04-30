@@ -3,7 +3,10 @@ This is a file to test the extensions/roll.py file
 This contains 3 tests
 """
 
+from __future__ import annotations
+
 import importlib
+from typing import Self
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import discord
@@ -15,7 +18,7 @@ from hypothesis.strategies import integers
 from tests import config_for_tests, helpers
 
 
-def setup_local_extension(bot: helpers.MockBot = None):
+def setup_local_extension(bot: helpers.MockBot = None) -> roll.Roller:
     """A simple function to setup an instance of the roll extension
 
     Args:
@@ -33,7 +36,7 @@ class Test_RollCommand:
     """A set of tests to test roll_command"""
 
     @pytest.mark.asyncio
-    async def test_generate_embed(self):
+    async def test_generate_embed(self: Self) -> None:
         """A test to ensure that generate_basic_embed is called correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -57,7 +60,7 @@ class Test_RollCommand:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_roll_calls_send(self):
+    async def test_roll_calls_send(self: Self) -> None:
         """A test to ensure that ctx.send is called correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -80,7 +83,7 @@ class Test_RandomNumber:
     """A single test to test get_roll_number"""
 
     @given(integers(), integers())
-    def test_random_numbers(self, min_value, max_value):
+    def test_random_numbers(self: Self, min_value: int, max_value: int) -> None:
         """A property test to ensure that random number doesn't return anything unexpected"""
         # Step 1 - Setup env
         roller = setup_local_extension()

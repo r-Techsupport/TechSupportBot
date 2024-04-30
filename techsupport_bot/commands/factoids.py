@@ -298,7 +298,7 @@ class FactoidManager(cogs.MatchCog):
 
     # -- Utility --
     async def confirm_factoid_deletion(
-        self, factoid_name: str, ctx: commands.Context, fmt: str
+        self: Self, factoid_name: str, ctx: commands.Context, fmt: str
     ) -> bool:
         """Confirms if a factoid should be deleted/modified
 
@@ -334,7 +334,7 @@ class FactoidManager(cogs.MatchCog):
         return True
 
     async def check_valid_factoid_contents(
-        self, ctx: commands.Context, factoid_name: str, message: str
+        self: Self, ctx: commands.Context, factoid_name: str, message: str
     ) -> str:
         """Makes sure the factoid contents are valid
 
@@ -388,7 +388,7 @@ class FactoidManager(cogs.MatchCog):
             await self.handle_cache(str(ctx.guild.id), alias.name)
 
     async def check_alias_recursion(
-        self,
+        self: Self,
         channel: discord.TextChannel,
         guild: str,
         factoid_name: str,
@@ -434,7 +434,9 @@ class FactoidManager(cogs.MatchCog):
 
         return False
 
-    def get_embed_from_factoid(self, factoid: bot.models.Factoid) -> discord.Embed:
+    def get_embed_from_factoid(
+        self: Self, factoid: bot.models.Factoid
+    ) -> discord.Embed:
         """Gets the factoid embed from its message.
 
         Args:
@@ -463,7 +465,7 @@ class FactoidManager(cogs.MatchCog):
         if key in self.factoid_cache:
             del self.factoid_cache[key]
 
-    def get_cache_key(self, guild: str, factoid_name: str) -> str:
+    def get_cache_key(self: Self, guild: str, factoid_name: str) -> str:
         """Gets the cache key for a guild
 
         Args:
@@ -477,7 +479,7 @@ class FactoidManager(cogs.MatchCog):
 
     # -- Getting factoids --
     async def get_all_factoids(
-        self, guild: str = None, list_hidden: bool = False
+        self: Self, guild: str = None, list_hidden: bool = False
     ) -> list:
         """Gets all factoids from a guild
 
@@ -659,7 +661,7 @@ class FactoidManager(cogs.MatchCog):
         )
 
     async def delete_factoid(
-        self, ctx: commands.Context, called_factoid: CalledFactoid
+        self: Self, ctx: commands.Context, called_factoid: CalledFactoid
     ) -> bool:
         """Deletes a factoid with confirmation
 
@@ -822,7 +824,7 @@ class FactoidManager(cogs.MatchCog):
         await self.send_to_irc(ctx.channel, ctx.message, factoid.message)
 
     async def send_to_irc(
-        self,
+        self: Self,
         channel: discord.abc.Messageable,
         message: discord.Message,
         factoid_message: str,
@@ -1364,7 +1366,7 @@ class FactoidManager(cogs.MatchCog):
         description="Gets embed JSON for a factoid",
         usage="[factoid-name]",
     )
-    async def _json(self, ctx: commands.Context, factoid_name: str) -> None:
+    async def _json(self: Self, ctx: commands.Context, factoid_name: str) -> None:
         """Gets the json of a factoid
 
         Args:
@@ -1587,7 +1589,7 @@ class FactoidManager(cogs.MatchCog):
             )
 
     async def generate_html(
-        self,
+        self: Self,
         ctx: commands.Context,
         factoids: list,
         aliases: dict,
@@ -1668,7 +1670,7 @@ class FactoidManager(cogs.MatchCog):
         return output
 
     async def send_factoids_as_file(
-        self,
+        self: Self,
         ctx: commands.Context,
         factoids: list,
         aliases: dict,
@@ -2181,10 +2183,10 @@ class FactoidManager(cogs.MatchCog):
         usage="[factoid-name]",
     )
     async def protect(
-        self,
+        self: Self,
         ctx: commands.Context,
         factoid_name: str,
-    ):
+    ) -> None:
         """Command to protect a factoid from being deleted or modified
 
         Args:
@@ -2216,10 +2218,10 @@ class FactoidManager(cogs.MatchCog):
         usage="[factoid-name]",
     )
     async def unprotect(
-        self,
+        self: Self,
         ctx: commands.Context,
         factoid_name: str,
-    ):
+    ) -> None:
         """Command to unprotect a factoid and allow it to be deleted or modified
 
         Args:
@@ -2246,10 +2248,10 @@ class FactoidManager(cogs.MatchCog):
         usage="[factoid-name]",
     )
     async def restrict(
-        self,
+        self: Self,
         ctx: commands.Context,
         factoid_name: str,
-    ):
+    ) -> None:
         """Command to restrict a factoid to only certain channels
 
         Args:
@@ -2288,10 +2290,10 @@ class FactoidManager(cogs.MatchCog):
         usage="[factoid-name]",
     )
     async def unrestrict(
-        self,
+        self: Self,
         ctx: commands.Context,
         factoid_name: str,
-    ):
+    ) -> None:
         """Command to allow a factoid to be called anywhere
 
         Args:
@@ -2332,10 +2334,10 @@ class FactoidManager(cogs.MatchCog):
         usage="[factoid-name]",
     )
     async def disable(
-        self,
+        self: Self,
         ctx: commands.Context,
         factoid_name: str,
-    ):
+    ) -> None:
         """Command to completely prevent a factoid from being called
 
         Args:
@@ -2374,10 +2376,10 @@ class FactoidManager(cogs.MatchCog):
         usage="[factoid-name]",
     )
     async def enable(
-        self,
+        self: Self,
         ctx: commands.Context,
         factoid_name: str,
-    ):
+    ) -> None:
         """Command to allow a factoid to be called
 
         Args:

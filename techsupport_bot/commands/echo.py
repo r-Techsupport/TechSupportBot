@@ -54,7 +54,7 @@ class MessageEcho(cogs.BaseCog):
         usage="[channel-id] [message]",
     )
     async def echo_channel(
-        self, ctx: commands.Context, channel_id: int, *, message: str
+        self: Self, ctx: commands.Context, channel_id: int, *, message: str
     ) -> None:
         """Sends a message to a specified channel.
 
@@ -83,7 +83,7 @@ class MessageEcho(cogs.BaseCog):
         usage="[user-id] [message]",
     )
     async def echo_user(
-        self, ctx: commands.Context, user_id: int, *, message: str
+        self: Self, ctx: commands.Context, user_id: int, *, message: str
     ) -> None:
         """Sends a message to a specified user.
 

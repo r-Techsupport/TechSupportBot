@@ -1,7 +1,10 @@
 """Module for the who extension for the discord bot."""
 
+from __future__ import annotations
+
 import datetime
 import io
+from typing import TYPE_CHECKING, Self
 
 import discord
 import ui
@@ -11,9 +14,16 @@ from core import auxiliary, cogs, extensionconfig
 from discord import app_commands
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding the who configuration to the config file."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Who plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
 
     config = extensionconfig.ExtensionConfig()
     config.add(
@@ -122,7 +132,7 @@ class Who(cogs.BaseCog):
         extras={"brief": "Gets user data", "usage": "@user", "module": "who"},
     )
     async def get_note(
-        self, interaction: discord.Interaction, user: discord.Member
+        self: Self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         """ "Method to get notes assigned to a user."""
         embed = discord.Embed(
@@ -165,7 +175,7 @@ class Who(cogs.BaseCog):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     async def modify_embed_for_mods(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         user: discord.Member,
         embed: discord.Embed,
@@ -225,7 +235,7 @@ class Who(cogs.BaseCog):
         },
     )
     async def set_note(
-        self, interaction: discord.Interaction, user: discord.Member, body: str
+        self: Self, interaction: discord.Interaction, user: discord.Member, body: str
     ) -> None:
         """Method to set a note on a user."""
         if interaction.user.id == user.id:
@@ -287,7 +297,7 @@ class Who(cogs.BaseCog):
         },
     )
     async def clear_notes(
-        self, interaction: discord.Interaction, user: discord.Member
+        self: Self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         """Method to clear notes on a user."""
         notes = await self.get_notes(user, interaction.guild)
@@ -346,7 +356,7 @@ class Who(cogs.BaseCog):
         },
     )
     async def all_notes(
-        self, interaction: discord.Interaction, user: discord.Member
+        self: Self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         """Method to get all notes for a user."""
         notes = await self.get_notes(user, interaction.guild)
@@ -375,7 +385,9 @@ class Who(cogs.BaseCog):
 
         await interaction.response.send_message(file=yaml_file, ephemeral=True)
 
-    async def get_notes(self, user, guild):
+    async def get_notes(
+        self: Self, user: discord.Member, guild: discord.Guild
+    ) -> list[bot.models.UserNote]:
         """Method to get current notes on the user."""
         user_notes = (
             await self.bot.models.UserNote.query.where(
@@ -390,7 +402,7 @@ class Who(cogs.BaseCog):
 
     # re-adds note role back to joining users
     @commands.Cog.listener()
-    async def on_member_join(self, member: discord.Member) -> None:
+    async def on_member_join(self: Self, member: discord.Member) -> None:
         """Method to get the member on joining the guild."""
         config = self.bot.guild_configs[str(member.guild.id)]
         if not self.extension_enabled(config):

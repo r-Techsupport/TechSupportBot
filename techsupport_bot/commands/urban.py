@@ -1,13 +1,24 @@
 """Module for the urban dictionary extension for the discord bot."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 import discord
 import ui
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding the configuration of the urban extension to the config file."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Urban plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     config = extensionconfig.ExtensionConfig()
     config.add(
         key="max_responses",
@@ -36,7 +47,7 @@ class UrbanDictionary(cogs.BaseCog):
         description="Returns the top Urban Dictionary search result",
         usage="[query]",
     )
-    async def urban(self, ctx, *, query: str):
+    async def urban(self: Self, ctx: commands.Context, *, query: str) -> None:
         """Method to get a call from the urban dictionary API."""
         response = await self.bot.http_functions.http_call(
             "get", f"{self.BASE_URL}{query}"

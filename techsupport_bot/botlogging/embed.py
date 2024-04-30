@@ -1,6 +1,9 @@
 """Module for log embeds."""
 
+from __future__ import annotations
+
 import datetime
+from typing import Self
 
 import discord
 
@@ -11,13 +14,13 @@ class LogEmbed(discord.Embed):
     title = None
     color = None
 
-    def __init__(self, message):
+    def __init__(self: Self, message: str) -> None:
         super().__init__(
             title=self.title.upper(), description=message, color=self.color
         )
         self.timestamp = datetime.datetime.utcnow()
 
-    def modify_embed(self, embed: discord.Embed) -> discord.Embed:
+    def modify_embed(self: Self, embed: discord.Embed) -> discord.Embed:
         """This modifies an existing embed to match with the LogEmbed style
 
         Args:

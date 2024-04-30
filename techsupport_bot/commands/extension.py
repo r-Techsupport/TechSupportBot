@@ -60,7 +60,7 @@ class ExtensionControl(cogs.BaseCog):
         usage="[extension-name]",
     )
     async def extension_status(
-        self, ctx: commands.Context, *, extension_name: str
+        self: Self, ctx: commands.Context, *, extension_name: str
     ) -> None:
         """Gets the status of an extension.
 
@@ -99,7 +99,7 @@ class ExtensionControl(cogs.BaseCog):
         name="load", description="Loads an extension by name", usage="[extension-name]"
     )
     async def load_extension(
-        self, ctx: commands.Context, *, extension_name: str
+        self: Self, ctx: commands.Context, *, extension_name: str
     ) -> None:
         """Loads an extension by filename.
 
@@ -124,7 +124,7 @@ class ExtensionControl(cogs.BaseCog):
         usage="[extension-name]",
     )
     async def unload_extension(
-        self, ctx: commands.Context, *, extension_name: str
+        self: Self, ctx: commands.Context, *, extension_name: str
     ) -> None:
         """Unloads an extension by filename.
 
@@ -149,7 +149,7 @@ class ExtensionControl(cogs.BaseCog):
         usage="[extension-name] |python-file-upload|",
     )
     async def register_extension(
-        self, ctx: commands.Context, extension_name: str
+        self: Self, ctx: commands.Context, extension_name: str
     ) -> None:
         """Unloads an extension by filename.
 

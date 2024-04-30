@@ -7,7 +7,7 @@ This modules requires no config, no databases, and no APIs
 from __future__ import annotations
 
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 from core import auxiliary, cogs
@@ -53,7 +53,7 @@ class MagicConch(cogs.BaseCog):
     ]
     PIC_URL = "https://i.imgur.com/vdvGrsR.png"
 
-    def format_question(self, question: str) -> str:
+    def format_question(self: Self, question: str) -> str:
         """This formats a question properly. It will crop it if needed, and add a "?" to the end
 
         Args:
@@ -68,7 +68,9 @@ class MagicConch(cogs.BaseCog):
             question += "?"
         return question
 
-    async def conch_command(self, ctx: commands.Context, question: str = "") -> None:
+    async def conch_command(
+        self: Self, ctx: commands.Context, question: str = ""
+    ) -> None:
         """Method for the core logic of the conch command
 
         Args:
@@ -96,7 +98,9 @@ class MagicConch(cogs.BaseCog):
         description="Asks the Magic Conch (8ball) a question",
         usage="[question]",
     )
-    async def ask_question(self, ctx: commands.Context, *, question: str = "") -> None:
+    async def ask_question(
+        self: Self, ctx: commands.Context, *, question: str = ""
+    ) -> None:
         """Method for how the conch command works for the bot.
         This is a command and should be run via discord
 

@@ -3,7 +3,10 @@ This is a file to test the extensions/htd.py file
 This contains 46 tests
 """
 
+from __future__ import annotations
+
 import importlib
+from typing import Self
 from unittest.mock import AsyncMock, MagicMock, call, patch
 
 import discord
@@ -13,7 +16,7 @@ from core import auxiliary
 from tests import config_for_tests, helpers
 
 
-def setup_local_extension(bot: helpers.MockBot = None):
+def setup_local_extension(bot: helpers.MockBot = None) -> htd.Htd:
     """A simple function to setup an instance of the htd extension
 
     Args:
@@ -30,7 +33,7 @@ def setup_local_extension(bot: helpers.MockBot = None):
 class Test_SplitNicely:
     """A set of tests to test split_nicely"""
 
-    def test_single_number(self):
+    def test_single_number(self: Self) -> None:
         """A test to ensure that when just a single number is passed,
         only a single entry is returned"""
         # Step 1 - Setup env
@@ -42,7 +45,7 @@ class Test_SplitNicely:
         # Step 3 - Assert that everything works
         assert output == ["5"]
 
-    def test_simple_equation(self):
+    def test_simple_equation(self: Self) -> None:
         """A test to ensure that equations are split properly"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -53,7 +56,7 @@ class Test_SplitNicely:
         # Step 3 - Assert that everything works
         assert output == ["5", "+", "5"]
 
-    def test_negative(self):
+    def test_negative(self: Self) -> None:
         """A test to ensure that negatives are handled properly"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -64,7 +67,7 @@ class Test_SplitNicely:
         # Step 3 - Assert that everything works
         assert output == ["-2"]
 
-    def test_double_minus(self):
+    def test_double_minus(self: Self) -> None:
         """A test to ensure that 2 minus signs in a row are handled properly"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -75,7 +78,7 @@ class Test_SplitNicely:
         # Step 3 - Assert that everything works
         assert output == ["5", "-", "-8"]
 
-    def test_every_operator(self):
+    def test_every_operator(self: Self) -> None:
         """A test to ensure that every operator is recognized"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -86,7 +89,7 @@ class Test_SplitNicely:
         # Step 3 - Assert that everything works
         assert output == ["1", "+", "2", "-", "3", "*", "4", "/", "5"]
 
-    def test_long_number(self):
+    def test_long_number(self: Self) -> None:
         """A test to ensure that long numbers are added correctly"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -101,7 +104,7 @@ class Test_SplitNicely:
 class Test_ConvertToInt:
     """Tests for convert_value_to_integer"""
 
-    def test_simple_hexadecimal(self):
+    def test_simple_hexadecimal(self: Self) -> None:
         """Test that a simple hex value is properly converted"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -112,7 +115,7 @@ class Test_ConvertToInt:
         # Step 3 - Assert that everything works
         assert output == 5
 
-    def test_complex_hexadecimal(self):
+    def test_complex_hexadecimal(self: Self) -> None:
         """Test that a complex hex value is properly converted"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -123,7 +126,7 @@ class Test_ConvertToInt:
         # Step 3 - Assert that everything works
         assert output == 1030708
 
-    def test_simple_binary(self):
+    def test_simple_binary(self: Self) -> None:
         """Test that a simple binary value is properly converted"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -134,7 +137,7 @@ class Test_ConvertToInt:
         # Step 3 - Assert that everything works
         assert output == 1
 
-    def test_complex_binary(self):
+    def test_complex_binary(self: Self) -> None:
         """Test that a complex binary value is properly converted"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -145,7 +148,7 @@ class Test_ConvertToInt:
         # Step 3 - Assert that everything works
         assert output == 10918
 
-    def test_simple_decimal(self):
+    def test_simple_decimal(self: Self) -> None:
         """Test that a simple deciaml value is properly converted"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -156,7 +159,7 @@ class Test_ConvertToInt:
         # Step 3 - Assert that everything works
         assert output == 8
 
-    def test_complex_decimal(self):
+    def test_complex_decimal(self: Self) -> None:
         """Test that a complex deciaml value is properly converted"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -167,7 +170,7 @@ class Test_ConvertToInt:
         # Step 3 - Assert that everything works
         assert output == 58934275971834685
 
-    def test_float_handling(self):
+    def test_float_handling(self: Self) -> None:
         """Test that a float is turned into an integer"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -182,7 +185,7 @@ class Test_ConvertToInt:
 class Test_PerformOperator:
     """Tests to test perform_op_on_list"""
 
-    def test_single_integer(self):
+    def test_single_integer(self: Self) -> None:
         """A test to ensure that a single integer input is not modified"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -193,7 +196,7 @@ class Test_PerformOperator:
         # Step 3 - Assert that everything works
         assert output == 1
 
-    def test_single_operator(self):
+    def test_single_operator(self: Self) -> None:
         """A test to ensure that operations work as expected"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -204,7 +207,7 @@ class Test_PerformOperator:
         # Step 3 - Assert that everything works
         assert output == 7
 
-    def test_multiple_operator(self):
+    def test_multiple_operator(self: Self) -> None:
         """A test to ensure that multiple operators work"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -215,7 +218,7 @@ class Test_PerformOperator:
         # Step 3 - Assert that everything works
         assert output == 2
 
-    def test_all_operator(self):
+    def test_all_operator(self: Self) -> None:
         """A test to ensure that all operators work"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -226,7 +229,7 @@ class Test_PerformOperator:
         # Step 3 - Assert that everything works
         assert output == 6
 
-    def test_negative_number(self):
+    def test_negative_number(self: Self) -> None:
         """A test to ensure that negative numbers work"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -241,7 +244,7 @@ class Test_PerformOperator:
 class Test_CleanInput:
     """A set of tests to test clean_input"""
 
-    def test_replacing_hex(self):
+    def test_replacing_hex(self: Self) -> None:
         """A test to ensure that # is replaced with 0x"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -252,7 +255,7 @@ class Test_CleanInput:
         # Step 3 - Assert that everything works
         assert output == "0x124"
 
-    def test_stripping_spaces(self):
+    def test_stripping_spaces(self: Self) -> None:
         """A test to ensure that spaces are removed from the string"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -263,7 +266,7 @@ class Test_CleanInput:
         # Step 3 - Assert that everything works
         assert output == "5+5"
 
-    def test_stripping_quotes(self):
+    def test_stripping_quotes(self: Self) -> None:
         """A test to ensure that quotes are removed from the string"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -278,7 +281,7 @@ class Test_CleanInput:
 class Test_ConvertList:
     """Tests to test convert_list_to_ints"""
 
-    def test_single_int(self):
+    def test_single_int(self: Self) -> None:
         """A test to ensure that just a single int is correctly converted"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -290,7 +293,7 @@ class Test_ConvertList:
         # Step 3 - Assert that everything works
         assert output == [5]
 
-    def test_equations(self):
+    def test_equations(self: Self) -> None:
         """A test to ensure that just a single int is correctly converted"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -306,7 +309,7 @@ class Test_ConvertList:
 class Test_IntToHex:
     """Tests to test integer_to_hexadecimal"""
 
-    def test_simple_hex(self):
+    def test_simple_hex(self: Self) -> None:
         """This tests to ensure that a basic hex conversion works"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -317,7 +320,7 @@ class Test_IntToHex:
         # Step 3 - Assert that everything works
         assert output == "0x10"
 
-    def test_complex_hex(self):
+    def test_complex_hex(self: Self) -> None:
         """This tests to ensure that a complex hex conversion works"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -328,7 +331,7 @@ class Test_IntToHex:
         # Step 3 - Assert that everything works
         assert output == "0xc55c12bdea"
 
-    def test_hex_styling(self):
+    def test_hex_styling(self: Self) -> None:
         """This tests to ensure that the styling works"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -339,7 +342,7 @@ class Test_IntToHex:
         # Step 3 - Assert that everything works
         assert output == "0x05"
 
-    def test_negative_hex(self):
+    def test_negative_hex(self: Self) -> None:
         """This tests to ensure that the hex maintains it's negative"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -354,7 +357,7 @@ class Test_IntToHex:
 class Test_IntToBin:
     """Tests to test integer_to_binary"""
 
-    def test_simple_bin(self):
+    def test_simple_bin(self: Self) -> None:
         """This tests to ensure that a basic binary conversion works"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -365,7 +368,7 @@ class Test_IntToBin:
         # Step 3 - Assert that everything works
         assert output == "0b1"
 
-    def test_complex_bin(self):
+    def test_complex_bin(self: Self) -> None:
         """This tests to ensure that a complex binary conversion works"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -376,7 +379,7 @@ class Test_IntToBin:
         # Step 3 - Assert that everything works
         assert output == "0b1011011011111010011010110001011000011"
 
-    def test_negative_hex(self):
+    def test_negative_hex(self: Self) -> None:
         """This tests to ensure that the binary maintains it's negative"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -391,7 +394,7 @@ class Test_IntToBin:
 class Test_IntToAscii:
     """Tests to test integer_to_ascii"""
 
-    def test_simple_ascii(self):
+    def test_simple_ascii(self: Self) -> None:
         """This tests to ensure that a basic ascii conversion works"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -402,7 +405,7 @@ class Test_IntToAscii:
         # Step 3 - Assert that everything works
         assert output == "A"
 
-    def test_complex_ascii(self):
+    def test_complex_ascii(self: Self) -> None:
         """This tests to ensure that a complex ascii conversion works"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -417,7 +420,7 @@ class Test_IntToAscii:
 class Test_FormatEmbedField:
     """Tests to test format_embed_field"""
 
-    def test_short_string(self):
+    def test_short_string(self: Self) -> None:
         """A test to ensure that a short string is not touched"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -428,7 +431,7 @@ class Test_FormatEmbedField:
         # Step 3 - Assert that everything works
         assert output == "ABCD"
 
-    def test_1024_string(self):
+    def test_1024_string(self: Self) -> None:
         """A test to ensure that a short string is not touched"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -439,7 +442,7 @@ class Test_FormatEmbedField:
         # Step 3 - Assert that everything works
         assert output == "A" * 1024
 
-    def test_long_string(self):
+    def test_long_string(self: Self) -> None:
         """A test to ensure that a short string is not touched"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -454,7 +457,7 @@ class Test_FormatEmbedField:
 class Test_CustomEmbed:
     """A set of tests for custom_embed_generation"""
 
-    def test_basic_embed_called(self):
+    def test_basic_embed_called(self: Self) -> None:
         """A test to ensure that the basic embed is generated correctly"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -477,7 +480,7 @@ class Test_CustomEmbed:
         # Step 4 - Cleanup
         importlib.reload(auxiliary)
 
-    def test_fields_correct(self):
+    def test_fields_correct(self: Self) -> None:
         """A test to ensure that the basic embed is generated correctly"""
         # Step 1 - Setup env
         hextodec = setup_local_extension()
@@ -520,7 +523,7 @@ class Test_CustomEmbed:
         # Step 4 - Cleanup
         importlib.reload(auxiliary)
 
-    def test_ascii_error(self):
+    def test_ascii_error(self: Self) -> None:
         """A test to ensure that the basic embed is generated correctly,
         even if int to ascii has a ValueError"""
         # Step 1 - Setup env
@@ -569,7 +572,7 @@ class Test_HTDCommand:
     """A set of tests to test htd_command"""
 
     @pytest.mark.asyncio
-    async def test_cleaninput_call(self):
+    async def test_cleaninput_call(self: Self) -> None:
         """A test to ensure that clean_input is called correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -592,7 +595,7 @@ class Test_HTDCommand:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_splitnicely_call(self):
+    async def test_splitnicely_call(self: Self) -> None:
         """A test to ensure that split_nicely is called correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -615,7 +618,7 @@ class Test_HTDCommand:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_convertints_call(self):
+    async def test_convertints_call(self: Self) -> None:
         """A test to ensure that convert_list_to_ints is called correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -638,7 +641,7 @@ class Test_HTDCommand:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_convertints_error(self):
+    async def test_convertints_error(self: Self) -> None:
         """A test to ensure that convert_list_to_ints error is handled correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -664,7 +667,7 @@ class Test_HTDCommand:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_performop_call(self):
+    async def test_performop_call(self: Self) -> None:
         """A test to ensure that perform_op_on_list is called correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -687,7 +690,7 @@ class Test_HTDCommand:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_perform_op_error(self):
+    async def test_perform_op_error(self: Self) -> None:
         """A test to ensure that perform_op_on_list error is handled correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -715,7 +718,7 @@ class Test_HTDCommand:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_customembed_call(self):
+    async def test_customembed_call(self: Self) -> None:
         """A test to ensure that custom_embed_generation is called correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -738,7 +741,7 @@ class Test_HTDCommand:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_send_call(self):
+    async def test_send_call(self: Self) -> None:
         """A test to ensure that perform_op_on_list is called correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()

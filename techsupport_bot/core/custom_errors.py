@@ -1,5 +1,9 @@
 """Module for command error responses."""
 
+from __future__ import annotations
+
+from typing import Any, Self
+
 import munch
 from discord import app_commands
 from discord.ext import commands
@@ -8,35 +12,35 @@ from discord.ext import commands
 class ExtensionDisabled(commands.errors.CheckFailure):
     """The exception thrown when an extension is disabled."""
 
-    def __init__(self):
+    def __init__(self: Self) -> None:
         self.dont_print_trace = True
 
 
 class AppCommandExtensionDisabled(app_commands.CheckFailure):
     """The exception thrown when an extension is disabled."""
 
-    def __init__(self):
+    def __init__(self: Self) -> None:
         self.dont_print_trace = True
 
 
 class CommandRateLimit(commands.errors.CheckFailure):
     """The exception thrown when a user is on rate limit"""
 
-    def __init__(self):
+    def __init__(self: Self) -> None:
         self.dont_print_trace = True
 
 
 class AppCommandRateLimit(app_commands.CheckFailure):
     """The exception thrown when a user is on rate limit"""
 
-    def __init__(self):
+    def __init__(self: Self) -> None:
         self.dont_print_trace = True
 
 
 class FactoidNotFoundError(commands.errors.CommandError):
     """Thrown when a factoid is not found."""
 
-    def __init__(self, factoid):
+    def __init__(self: Self, factoid: str) -> None:
         self.dont_print_trace = True
         self.argument = factoid
 
@@ -44,14 +48,14 @@ class FactoidNotFoundError(commands.errors.CommandError):
 class TooLongFactoidMessageError(commands.errors.CommandError):
     """Thrown when a message is too long"""
 
-    def __init__(self):
+    def __init__(self: Self) -> None:
         self.dont_print_trace = False
 
 
 class HTTPRateLimit(commands.errors.CommandError):
     """An API call is on rate limit"""
 
-    def __init__(self, wait):
+    def __init__(self: Self, wait: int) -> None:
         self.wait = wait
 
 
@@ -65,7 +69,12 @@ class ErrorResponse:
 
     DEFAULT_MESSAGE = "I ran into an error processing your command"
 
-    def __init__(self, message_format=None, lookups=None, dont_print_trace=False):
+    def __init__(
+        self: Self,
+        message_format: str = None,
+        lookups: str | list[Any] = None,
+        dont_print_trace: bool = False,
+    ) -> None:
         self.message_format = message_format
         self.dont_print_trace = dont_print_trace
 
@@ -82,7 +91,7 @@ class ErrorResponse:
                 # abort message formatting
                 self.message_format = None
 
-    def default_message(self, exception=None):
+    def default_message(self: Self, exception: Exception = None) -> str:
         """Handles default message generation.
 
         Args:
@@ -94,7 +103,7 @@ class ErrorResponse:
             else self.DEFAULT_MESSAGE
         )
 
-    def get_message(self, exception=None):
+    def get_message(self: Self, exception: Exception = None) -> str:
         """Gets a response message from a given exception.
 
         Args:

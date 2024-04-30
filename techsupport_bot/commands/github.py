@@ -61,13 +61,15 @@ class IssueCreator(cogs.BaseCog):
         description="Creates a Github issue on the configured bot repo",
         usage="[title] [description]",
     )
-    async def issue(self: Self, ctx, title: str, description: str):
+    async def issue(
+        self: Self, ctx: commands.Context, title: str, description: str
+    ) -> None:
         """Creates an issue in the bot's Github Repo
 
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (discord.ext.Context): the context object for the calling message
+            ctx (commands.Context): the context object for the calling message
             title: the title of the issue
             description: the description of the issue
         """

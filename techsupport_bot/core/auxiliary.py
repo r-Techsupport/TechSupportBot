@@ -3,14 +3,19 @@ This is a collection of functions designed to be used by many extensions
 This replaces duplicate or similar code across many extensions
 """
 
+from __future__ import annotations
+
 import json
 from functools import wraps
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import discord
 import munch
 import ui
 from discord.ext import commands
+
+if TYPE_CHECKING:
+    import cogs
 
 default_color = discord.Color.blurple()
 
@@ -394,7 +399,9 @@ def add_diff_fields(embed: discord.Embed, diff: dict) -> discord.Embed:
     return embed
 
 
-def get_help_embed_for_extension(self, extension_name, command_prefix):
+def get_help_embed_for_extension(
+    self: cogs.BaseCog, extension_name: str, command_prefix: str
+) -> discord.Embed:
     """Gets the help embed for an extension.
 
     Defined so it doesn't have to be written out twice
@@ -445,7 +452,9 @@ def get_help_embed_for_extension(self, extension_name, command_prefix):
     return embed
 
 
-async def extension_help(self, ctx: commands.Context, extension_name: str) -> None:
+async def extension_help(
+    self: cogs.BaseCog, ctx: commands.Context, extension_name: str
+) -> None:
     """Automatically prompts for help if improper syntax for an extension is called.
 
     The format for extension_name that's used is `self.__module__[11:]`, because

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any, List, Self
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING, Any, Self
 
 import discord
 import gino
@@ -28,9 +29,9 @@ class BaseCog(commands.Cog):
     KEEP_COG_ON_FAILURE = False
 
     def __init__(
-        self,
+        self: Self,
         bot: bot.TechSupportBot,
-        models: List[gino.Model] = None,
+        models: list[gino.Model] = None,
         no_guild: bool = False,
         extension_name: str = None,
     ) -> None:
@@ -46,7 +47,9 @@ class BaseCog(commands.Cog):
 
         asyncio.create_task(self._preconfig())
 
-    async def _handle_preconfig(self, handler) -> None:
+    async def _handle_preconfig(
+        self: Self, handler: Callable[..., Awaitable[None]]
+    ) -> None:
         """Wrapper for performing preconfig on an extension.
 
         This makes the extension unload when there is an error.
@@ -67,14 +70,14 @@ class BaseCog(commands.Cog):
             if not self.KEEP_COG_ON_FAILURE:
                 await self.bot.remove_cog(self)
 
-    async def _preconfig(self) -> None:
+    async def _preconfig(self: Self) -> None:
         """Blocks the preconfig until the bot is ready."""
         await self._handle_preconfig(self.preconfig)
 
-    async def preconfig(self) -> None:
+    async def preconfig(self: Self) -> None:
         """Preconfigures the environment before starting the cog."""
 
-    def extension_enabled(self, config: munch.Munch) -> bool:
+    def extension_enabled(self: Self, config: munch.Munch) -> bool:
         """Checks if an extension is currently enabled for a given config.
 
         Args:
@@ -97,11 +100,11 @@ class MatchCog(BaseCog):
     COG_TYPE = "Match"
 
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message) -> None:
+    async def on_message(self: Self, message: discord.Message) -> None:
         """Listens for a message and passes it to the response handler if valid.
 
         Args:
-            message (message): the message object
+            message (discord.Message): the message object
         """
         if message.author == self.bot.user:
             return
@@ -138,19 +141,23 @@ class MatchCog(BaseCog):
             )
 
     async def match(
-        self, _config: munch.Munch, _ctx: commands.Context, _content: str
+        self: Self, _config: munch.Munch, _ctx: commands.Context, _content: str
     ) -> bool:
         """Runs a boolean check on message content.
 
         Args:
-            _config (dict): the config associated with the context
+            _config (munch.Munch): the config associated with the context
             _ctx (context): the context object
             _content (str): the message content
         """
         return True
 
     async def response(
-        self, _config: munch.Munch, _ctx: commands.Context, _content: str, _result: bool
+        self: Self,
+        _config: munch.Munch,
+        _ctx: commands.Context,
+        _content: str,
+        _result: bool,
     ) -> None:
         """Performs a response if the match is valid.
 
@@ -176,12 +183,12 @@ class LoopCog(BaseCog):
     ON_START: bool = False
     CHANNELS_KEY: str = "channels"
 
-    def __init__(self, *args: tuple, **kwargs: dict[str, Any]):
+    def __init__(self: Self, *args: tuple, **kwargs: dict[str, Any]) -> None:
         super().__init__(*args, **kwargs)
         asyncio.create_task(self._loop_preconfig())
         self.channels = {}
 
-    async def register_new_tasks(self, guild: discord.Guild) -> None:
+    async def register_new_tasks(self: Self, guild: discord.Guild) -> None:
         """Creates the configured loop tasks for a given guild.
 
         Args:
@@ -215,7 +222,7 @@ class LoopCog(BaseCog):
             )
             asyncio.create_task(self._loop_execute(guild))
 
-    async def _loop_preconfig(self) -> None:
+    async def _loop_preconfig(self: Self) -> None:
         """Blocks the loop_preconfig until the bot is ready."""
         await self._handle_preconfig(self.loop_preconfig)
 
@@ -232,7 +239,7 @@ class LoopCog(BaseCog):
 
         asyncio.create_task(self._track_new_channels())
 
-    async def _track_new_channels(self) -> None:
+    async def _track_new_channels(self: Self) -> None:
         """Periodifically kicks off new per-channel tasks based on updated channels config."""
         while True:
             await self.bot.logger.send_log(
@@ -303,7 +310,7 @@ class LoopCog(BaseCog):
 
                 registered_channels = new_registered_channels
 
-    async def loop_preconfig(self) -> None:
+    async def loop_preconfig(self: Self) -> None:
         """Preconfigures the environment before starting the loop."""
 
     async def _loop_execute(
@@ -370,7 +377,7 @@ class LoopCog(BaseCog):
                     await self._default_wait()
 
     async def execute(
-        self,
+        self: Self,
         _config: munch.Munch,
         _guild: discord.Guild,
         _target_channel: discord.abc.Messageable = None,
@@ -383,11 +390,11 @@ class LoopCog(BaseCog):
             _target_channel (discord.Channel): the channel object to use
         """
 
-    async def _default_wait(self) -> None:
+    async def _default_wait(self: Self) -> None:
         """The default method used for waiting."""
         await asyncio.sleep(self.DEFAULT_WAIT)
 
-    async def wait(self, _config: munch.Munch, _guild: discord.Guild) -> None:
+    async def wait(self: Self, _config: munch.Munch, _guild: discord.Guild) -> None:
         """The default wait method.
 
         Args:

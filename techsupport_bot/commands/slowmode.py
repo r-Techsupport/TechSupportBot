@@ -3,7 +3,7 @@ Holds only a single slash command"""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 from core import auxiliary, cogs
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     import bot
 
 
-async def setup(bot: bot.TechSupportBot):
+async def setup(bot: bot.TechSupportBot) -> None:
     """Registers the slowmode cog
 
     Args:
@@ -36,11 +36,11 @@ class SlowmodeManager(cogs.BaseCog):
         },
     )
     async def slowmode(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         seconds: int,
         channel: discord.abc.GuildChannel = None,
-    ):
+    ) -> None:
         """Modifies slowmode on a given channel
 
         Args:

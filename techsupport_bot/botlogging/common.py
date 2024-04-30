@@ -1,8 +1,9 @@
 """A few common functions to help the logging system work smoothly"""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 import discord
 
@@ -23,10 +24,10 @@ class LogContext:
     This is used to determine if some guild settings means the log shouldn't be logged
 
     Args:
-        guild (discord.Guild): The guild the log occured with. Optional
-        channel (discord.abc.Messageble): The channel, DM, thread,
+        guild (discord.Guild | None): The guild the log occured with. Optional
+        channel (discord.abc.Messageble | None): The channel, DM, thread,
             or other messagable the log occured in
     """
 
-    guild: Optional[discord.Guild] = None
-    channel: Optional[discord.abc.Messageable] = None
+    guild: discord.Guild | None = None
+    channel: discord.abc.Messageable | None = None

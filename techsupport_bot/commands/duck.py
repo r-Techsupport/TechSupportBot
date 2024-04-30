@@ -288,7 +288,7 @@ class DuckHunt(cogs.LoopCog):
 
         await channel.send(embed=embed)
 
-    def pick_quote(self) -> str:
+    def pick_quote(self: Self) -> str:
         """Method for picking a random quote for the miss message"""
         QUOTES_FILE = "resources/duckQuotes.txt"
         with open(QUOTES_FILE, "r", encoding="utf-8") as file:
@@ -896,7 +896,7 @@ class DuckHunt(cogs.LoopCog):
         brief="Spawns a duck on command",
         description="Will spawn a duck with the command",
     )
-    async def spawn(self, ctx: commands.Context) -> None:
+    async def spawn(self: Self, ctx: commands.Context) -> None:
         """A debug focused command to force spawn a duck in any channel
 
         Args:

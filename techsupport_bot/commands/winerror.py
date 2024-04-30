@@ -50,7 +50,7 @@ class ErrorCategory:
 class WindowsError(cogs.BaseCog):
     """The core of the /winerror extension"""
 
-    async def preconfig(self):
+    async def preconfig(self: Self) -> None:
         """Loads the winerrors.json file as self.errors"""
         errors_file = "resources/winerrors.json"
         with open(errors_file, "r", encoding="utf-8") as file:
@@ -62,7 +62,7 @@ class WindowsError(cogs.BaseCog):
         extras={"module": "winerror"},
     )
     async def winerror(
-        self, interaction: discord.Interaction, search_term: str
+        self: Self, interaction: discord.Interaction, search_term: str
     ) -> None:
         """The heart of the winerror command
         This process in input and calls functions to search for errors
@@ -152,7 +152,7 @@ class WindowsError(cogs.BaseCog):
         await interaction.response.send_message(embed=embed)
 
     def handle_hresult_errors(
-        self, trunc_hex_code: int, severity: str, facility_code: int
+        self: Self, trunc_hex_code: int, severity: str, facility_code: int
     ) -> ErrorCategory:
         """Searches for and returns the hresult errors
 
@@ -184,7 +184,7 @@ class WindowsError(cogs.BaseCog):
             )
         return category
 
-    def handle_decimal_errors(self, decimal_code: int) -> ErrorCategory:
+    def handle_decimal_errors(self: Self, decimal_code: int) -> ErrorCategory:
         """Searches for errors based on a decimal input
 
         Args:
@@ -205,7 +205,7 @@ class WindowsError(cogs.BaseCog):
             )
         return category
 
-    def handle_hex_errors(self, hex_code: int) -> ErrorCategory:
+    def handle_hex_errors(self: Self, hex_code: int) -> ErrorCategory:
         """Searches for errors based on a hex input
 
         Args:

@@ -2,6 +2,13 @@
 This is a file to store the fake discord.Member object
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
+if TYPE_CHECKING:
+    import helpers
+
 
 class MockMember:
     """
@@ -15,7 +22,13 @@ class MockMember:
     display_avatar -> The MockAsset object for the avatar
     """
 
-    def __init__(self, input_id=None, bot=False, name=None, display_avatar=None):
+    def __init__(
+        self: Self,
+        input_id: int = None,
+        bot: bool = False,
+        name: str = None,
+        display_avatar: helpers.MockAsset = None,
+    ) -> None:
         self.id = input_id
         self.bot = bot
         self.mention = f"<@{input_id}>"

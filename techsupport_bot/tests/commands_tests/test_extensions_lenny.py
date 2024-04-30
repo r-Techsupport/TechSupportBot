@@ -3,6 +3,9 @@ This is a file to test the extensions/lenny.py file
 This contains 2 tests
 """
 
+from __future__ import annotations
+
+from typing import Self
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -10,7 +13,7 @@ from commands import lenny
 from tests import config_for_tests, helpers
 
 
-def setup_local_extension(bot: helpers.MockBot = None):
+def setup_local_extension(bot: helpers.MockBot = None) -> lenny.Lenny:
     """A simple function to setup an instance of the htd extension
 
     Args:
@@ -27,7 +30,7 @@ def setup_local_extension(bot: helpers.MockBot = None):
 class Test_Lenny:
     """A class to house all tests for lenny"""
 
-    def test_line_length(self):
+    def test_line_length(self: Self) -> None:
         """A test to ensure we never exceed the 2000 allowed characters"""
         # Step 1 - Setup env
         lenny_test = setup_local_extension()
@@ -40,7 +43,7 @@ class Test_Lenny:
             assert len(face) <= 2000
 
     @pytest.mark.asyncio
-    async def test_lenny_command(self):
+    async def test_lenny_command(self: Self) -> None:
         """A test to ensure that the lenny command calls send"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()

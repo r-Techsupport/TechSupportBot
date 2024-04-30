@@ -28,7 +28,7 @@ class HTTPCalls:
     This allows access to the config file and logging
     """
 
-    def __init__(self, bot: bot.TechSupportBot) -> None:
+    def __init__(self: Self, bot: bot.TechSupportBot) -> None:
         self.bot = bot
         self.http_cache = expiringdict.ExpiringDict(
             max_len=self.bot.file_config.cache.http_cache_length,
@@ -81,7 +81,7 @@ class HTTPCalls:
 
     async def http_call(
         self: Self, method: str, url: str, *args: tuple, **kwargs: dict[str, Any]
-    ):
+    ) -> munch.Munch:
         """Makes an HTTP request.
 
         By default this returns JSON/dict with the status code injected.
@@ -174,7 +174,7 @@ class HTTPCalls:
                 )
 
     async def process_http_response(
-        self,
+        self: Self,
         response_object: aiohttp.ClientResponse,
         method: str,
         cache_key: str,

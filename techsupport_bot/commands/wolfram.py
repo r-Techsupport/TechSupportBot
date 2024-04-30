@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 from core import auxiliary, cogs
@@ -46,7 +46,7 @@ class Wolfram(cogs.BaseCog):
         description="Searches the simple answer Wolfram Alpha API",
         usage="[query]",
     )
-    async def simple_search(self, ctx, *, query: str):
+    async def simple_search(self: Self, ctx: commands.Context, *, query: str) -> None:
         """Method to search through the wolfram API."""
         url = self.API_URL.format(
             self.bot.file_config.api.api_keys.wolfram,

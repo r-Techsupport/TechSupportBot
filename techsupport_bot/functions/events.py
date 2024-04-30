@@ -1,17 +1,27 @@
 """All of the discord event listeners where they used for logging"""
 
+from __future__ import annotations
+
 import datetime
 import sys
-from typing import Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Self
 
 import discord
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Registers the EventLogger Cog"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Event Logging plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(EventLogger(bot=bot))
 
 
@@ -21,7 +31,9 @@ class EventLogger(cogs.BaseCog):
     """
 
     @commands.Cog.listener()
-    async def on_message_edit(self, before: discord.Message, after: discord.Message):
+    async def on_message_edit(
+        self: Self, before: discord.Message, after: discord.Message
+    ) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_edit"""
         # this seems to spam, not sure why
         if before.content == after.content:
@@ -58,7 +70,7 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_message_delete(self, message: discord.Message):
+    async def on_message_delete(self: Self, message: discord.Message) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_delete"""
         guild = getattr(message.channel, "guild", None)
 
@@ -94,7 +106,9 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_bulk_message_delete(self, messages: list[discord.Message]):
+    async def on_bulk_message_delete(
+        self: Self, messages: list[discord.Message]
+    ) -> None:
         """
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_bulk_message_delete
         """
@@ -127,8 +141,8 @@ class EventLogger(cogs.BaseCog):
 
     @commands.Cog.listener()
     async def on_reaction_add(
-        self, reaction: discord.Reaction, user: Union[discord.Member, discord.User]
-    ):
+        self: Self, reaction: discord.Reaction, user: discord.Member | discord.User
+    ) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_add"""
         guild = getattr(reaction.message.channel, "guild", None)
 
@@ -171,8 +185,8 @@ class EventLogger(cogs.BaseCog):
 
     @commands.Cog.listener()
     async def on_reaction_remove(
-        self, reaction: discord.Reaction, user: Union[discord.Member, discord.User]
-    ):
+        self: Self, reaction: discord.Reaction, user: discord.Member | discord.User
+    ) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_remove"""
         guild = getattr(reaction.message.channel, "guild", None)
 
@@ -215,8 +229,8 @@ class EventLogger(cogs.BaseCog):
 
     @commands.Cog.listener()
     async def on_reaction_clear(
-        self, message: discord.Message, reactions: list[discord.Reaction]
-    ):
+        self: Self, message: discord.Message, reactions: list[discord.Reaction]
+    ) -> None:
         """
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_clear
         """
@@ -246,7 +260,9 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
+    async def on_guild_channel_delete(
+        self: Self, channel: discord.abc.GuildChannel
+    ) -> None:
         """
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_delete
         """
@@ -270,7 +286,9 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_guild_channel_create(self, channel: discord.abc.GuildChannel):
+    async def on_guild_channel_create(
+        self: Self, channel: discord.abc.GuildChannel
+    ) -> None:
         """
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_create
         """
@@ -293,8 +311,8 @@ class EventLogger(cogs.BaseCog):
 
     @commands.Cog.listener()
     async def on_guild_channel_update(
-        self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel
-    ):
+        self: Self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel
+    ) -> None:
         """
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_update
         """
@@ -329,10 +347,10 @@ class EventLogger(cogs.BaseCog):
 
     @commands.Cog.listener()
     async def on_guild_channel_pins_update(
-        self,
-        channel: Union[discord.abc.GuildChannel, discord.Thread],
-        _last_pin: Optional[datetime.datetime],
-    ):
+        self: Self,
+        channel: discord.abc.GuildChannel | discord.Thread,
+        _last_pin: datetime.datetime | None,
+    ) -> None:
         """
         See:
         https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_pins_update
@@ -357,7 +375,7 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_guild_integrations_update(self, guild: discord.Guild):
+    async def on_guild_integrations_update(self: Self, guild: discord.Guild) -> None:
         """
         See:
         https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_integrations_update
@@ -376,7 +394,7 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_webhooks_update(self, channel: discord.abc.GuildChannel):
+    async def on_webhooks_update(self: Self, channel: discord.abc.GuildChannel) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_webhooks_update"""
         embed = discord.Embed()
         embed.add_field(name="Channel", value=channel.name)
@@ -398,7 +416,9 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_member_update(self, before: discord.Member, after: discord.Member):
+    async def on_member_update(
+        self: Self, before: discord.Member, after: discord.Member
+    ) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update"""
         changed_role = set(before.roles) ^ set(after.roles)
         if changed_role:
@@ -427,7 +447,7 @@ class EventLogger(cogs.BaseCog):
             )
 
     @commands.Cog.listener()
-    async def on_member_remove(self, member: discord.Member):
+    async def on_member_remove(self: Self, member: discord.Member) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_remove"""
         embed = discord.Embed()
         embed.add_field(name="Member", value=member)
@@ -447,7 +467,7 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_guild_remove(self, guild: discord.Guild):
+    async def on_guild_remove(self: Self, guild: discord.Guild) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_remove"""
         embed = discord.Embed()
         embed.add_field(name="Server", value=guild.name)
@@ -459,7 +479,7 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_guild_join(self, guild: discord.Guild):
+    async def on_guild_join(self: Self, guild: discord.Guild) -> None:
         """Configures a new guild upon joining.
 
         Args:
@@ -481,7 +501,9 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_guild_update(self, before: discord.Guild, after: discord.Guild):
+    async def on_guild_update(
+        self: Self, before: discord.Guild, after: discord.Guild
+    ) -> None:
         """
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_update
         """
@@ -528,7 +550,7 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_guild_role_create(self, role: discord.Role):
+    async def on_guild_role_create(self: Self, role: discord.Role) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_create"""
         embed = discord.Embed()
         embed.add_field(name="Server", value=role.guild.name)
@@ -547,7 +569,7 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_guild_role_delete(self, role: discord.Role):
+    async def on_guild_role_delete(self: Self, role: discord.Role) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_delete"""
         embed = discord.Embed()
         embed.add_field(name="Server", value=role.guild.name)
@@ -565,7 +587,9 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_guild_role_update(self, before: discord.Role, after: discord.Role):
+    async def on_guild_role_update(
+        self: Self, before: discord.Role, after: discord.Role
+    ) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_update"""
         attrs = ["color", "mentionable", "name", "permissions", "position", "tags"]
         diff = auxiliary.get_object_diff(before, after, attrs)
@@ -591,11 +615,11 @@ class EventLogger(cogs.BaseCog):
 
     @commands.Cog.listener()
     async def on_guild_emojis_update(
-        self,
+        self: Self,
         guild: discord.Guild,
         before: Sequence[discord.Emoji],
         _: Sequence[discord.Emoji],
-    ):
+    ) -> None:
         """
         See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_emojis_update
         """
@@ -615,8 +639,8 @@ class EventLogger(cogs.BaseCog):
 
     @commands.Cog.listener()
     async def on_member_ban(
-        self, guild: discord.Guild, user: Union[discord.User, discord.Member]
-    ):
+        self: Self, guild: discord.Guild, user: discord.User | discord.Member
+    ) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_ban"""
         embed = discord.Embed()
         embed.add_field(name="User", value=user)
@@ -635,7 +659,9 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_member_unban(self, guild: discord.Guild, user: discord.User):
+    async def on_member_unban(
+        self: Self, guild: discord.Guild, user: discord.User
+    ) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_unban"""
         embed = discord.Embed()
         embed.add_field(name="User", value=user)
@@ -654,7 +680,7 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_member_join(self, member: discord.Member):
+    async def on_member_join(self: Self, member: discord.Member) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
         embed = discord.Embed()
         embed.add_field(name="Member", value=member)
@@ -674,7 +700,7 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_command(self, ctx: commands.Context):
+    async def on_command(self: Self, ctx: commands.Context) -> None:
         """
         See: https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#discord.on_command
         """
@@ -699,7 +725,7 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_error(self, event_method):
+    async def on_error(self: Self, event_method: str) -> None:
         """Catches non-command errors and sends them to the error logger for processing.
 
         Args:
@@ -713,7 +739,7 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_connect(self):
+    async def on_connect(self: Self) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_connect"""
         await self.bot.logger.send_log(
             message="Connected to Discord",
@@ -722,7 +748,7 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_resumed(self):
+    async def on_resumed(self: Self) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_resumed"""
         await self.bot.logger.send_log(
             message="Resume event",
@@ -731,7 +757,7 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_disconnect(self):
+    async def on_disconnect(self: Self) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_disconnect"""
         await self.bot.logger.send_log(
             message="Disconnected from Discord",
