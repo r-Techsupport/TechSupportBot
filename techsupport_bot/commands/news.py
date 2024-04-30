@@ -7,9 +7,11 @@ import random
 from typing import TYPE_CHECKING
 
 import aiocron
+import discord
+import munch
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, extensionconfig
-from discord.ext import commands
+from core import cogs, extensionconfig
+from discord import app_commands
 
 if TYPE_CHECKING:
     import bot
@@ -106,10 +108,23 @@ class News(cogs.LoopCog):
 
         return articles
 
-    async def get_random_headline(self, country_code, category=None):
+    async def get_random_headline(self, country_code, category=None) -> munch.Munch:
         """Method to get a random headline for the news command."""
         articles = await self.get_headlines(country_code, category)
-        return random.choice(articles)
+
+        # Filter out articles with URLs containing "removed.com"
+        filtered_articles = []
+        for article in articles:
+            url = article.get("url", "")
+            if url != "https://removed.com":
+                filtered_articles.append(article)
+
+        # Check if there are any articles left after filtering
+        if not filtered_articles:
+            return None
+
+        # Choose a random article from the filtered list
+        return random.choice(filtered_articles)
 
     async def execute(self, config, guild):
         """Method to execute the news command."""
@@ -124,6 +139,9 @@ class News(cogs.LoopCog):
                 Category(config.extensions.news.category.value).value,
             )
             url = article.get("url")
+
+        if article is None:
+            return
 
         log_channel = config.get("logging_channel")
         await self.bot.logger.send_log(
@@ -140,30 +158,19 @@ class News(cogs.LoopCog):
         """Method to define the wait time for the news api pull."""
         await aiocron.crontab(config.extensions.news.cron_config.value).next()
 
-    @commands.group(
-        brief="Executes a news command",
-        description="Executes a news command",
-    )
-    async def news(self, ctx):
-        """Method to set up the news command."""
-
-        # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
-
-    @news.command(
-        name="random",
-        brief="Gets a random news article",
+    @app_commands.command(
+        name="news",
         description="Gets a random news headline",
-        usage="[category] (optional)",
+        extras={"module": "news"},
     )
-    async def random(self, ctx, category=None):
+    async def news_command(self, interaction: discord.Interaction, category: str = ""):
         """Method to define the random to get a news."""
         if category is None or category.lower() not in self.valid_category:
             category = random.choice(list(Category)).value
         else:
             category.lower()
 
-        config = self.bot.guild_configs[str(ctx.guild.id)]
+        config = self.bot.guild_configs[str(interaction.guild.id)]
 
         url = None
         while not url:
@@ -172,7 +179,31 @@ class News(cogs.LoopCog):
             )
             url = article.get("url")
 
+        if article is None:
+            return
+
         if url.endswith("/"):
             url = url[:-1]
 
-        await ctx.send(content=url)
+        await interaction.response.send_message(content=url)
+
+    @news_command.autocomplete("category")
+    async def news_autocompletion(
+        self, interaction: discord.Interaction, current: str
+    ) -> list:
+        """This command creates a list of categories for autocomplete the news command.
+
+        Args:
+            interaction (discord.Interaction): The interaction that started the command
+            current (str): The current input from the user.
+
+        Returns:
+            The list of autocomplete for the news command.
+        """
+        news_category = []
+        for category in Category:
+            if current.lower() in category.value.lower():
+                news_category.append(
+                    app_commands.Choice(name=category.value, value=category.value)
+                )
+        return news_category
