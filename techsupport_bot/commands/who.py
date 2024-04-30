@@ -49,6 +49,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         description="Users with roles in this list will be able to use whois",
         default=[],
     )
+    config.add(
+        key="note_writers",
+        datatype="list",
+        title="Note Writer Roles",
+        description="Users with roles in this list will be able to create or delete notes",
+        default=[],
+    )
 
     await bot.add_cog(Who(bot=bot, extension_name="who"))
     bot.add_extension_config("who", config)
@@ -60,6 +67,29 @@ class Who(cogs.BaseCog):
     notes = app_commands.Group(
         name="note", description="Command Group for the Notes Extension"
     )
+
+    @staticmethod
+    async def is_writer(interaction: discord.Interaction) -> bool:
+        """writes notes"""
+
+        config = interaction.client.guild_configs[str(interaction.guild.id)]
+        if reader_roles := config.extensions.who.note_writers.value:
+            roles = (
+                discord.utils.get(interaction.guild.roles, name=role)
+                for role in reader_roles
+            )
+            status = any((role in interaction.user.roles for role in roles))
+            if not status:
+                raise app_commands.MissingAnyRole(reader_roles)
+            return True
+
+        # Reader_roles are empty (not set)
+        message = "There aren't any `note_writers` roles set in the config!"
+        embed = auxiliary.prepare_deny_embed(message=message)
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        raise app_commands.AppCommandError(message)
 
     @staticmethod
     async def is_reader(interaction: discord.Interaction) -> bool:
@@ -82,8 +112,10 @@ class Who(cogs.BaseCog):
                 discord.utils.get(interaction.guild.roles, name=role)
                 for role in reader_roles
             )
-
-            return any((role in interaction.user.roles for role in roles))
+            status = any((role in interaction.user.roles for role in roles))
+            if not status:
+                raise app_commands.MissingAnyRole(reader_roles)
+            return True
 
         # Reader_roles are empty (not set)
         message = "There aren't any `note_readers` roles set in the config!"
@@ -91,7 +123,7 @@ class Who(cogs.BaseCog):
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-        raise commands.CommandError(message)
+        raise app_commands.AppCommandError(message)
 
     @app_commands.check(is_reader)
     @app_commands.command(
@@ -192,7 +224,7 @@ class Who(cogs.BaseCog):
             )
         return embed
 
-    @app_commands.checks.has_permissions(kick_members=True)
+    @app_commands.check(is_writer)
     @notes.command(
         name="set",
         description="Sets a note for a user, which can be read later from their whois",
@@ -254,7 +286,7 @@ class Who(cogs.BaseCog):
         embed = auxiliary.prepare_confirm_embed(message=f"Note created for `{user}`")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.checks.has_permissions(kick_members=True)
+    @app_commands.check(is_writer)
     @notes.command(
         name="clear",
         description="Clears all existing notes for a user",

@@ -815,6 +815,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
+
+    # Only runs if modmail is enabled
+    if not bot.file_config.modmail_config.enable_modmail:
+        # Raising an exception makes the extension loading mark as failed, this is surprisingly
+        # the most reliable way to ensure the modmail bot or code doesn't run
+        raise AttributeError("Modmail was not loaded because it's disabled")
+
     config = extensionconfig.ExtensionConfig()
 
     config.add(
@@ -870,12 +877,6 @@ class Modmail(cogs.BaseCog):
     def __init__(self: Self, bot: bot.TechSupportBot) -> None:
         # Init is used to make variables global so they can be used on the modmail side
         super().__init__(bot=bot)
-
-        # Only runs if modmail is enabled
-        if not bot.file_config.modmail_config.enable_modmail:
-            # Raising an exception makes the extension loading mark as failed, this is surprisingly
-            # the most reliable way to ensure the modmail bot or code doesn't run
-            raise AttributeError("Modmail was not loaded because it's disabled")
 
         # Makes the TS client available globally for creating threads and populating them with info
         # pylint: disable=W0603
