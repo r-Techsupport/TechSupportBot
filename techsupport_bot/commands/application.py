@@ -584,7 +584,7 @@ class ApplicationManager(cogs.LoopCog):
         Returns:
             discord.Member: The member object that is associated with the application
         """
-        applicant = guild.get_member(int(application.applicant_id))
+        applicant = await guild.fetch_member(int(application.applicant_id))
         return applicant
 
     async def build_application_embed(
@@ -900,7 +900,7 @@ class ApplicationManager(cogs.LoopCog):
         # Update the database
         audit_log = []
         for app in apps:
-            user = guild.get_member(int(app.applicant_id))
+            user = await guild.fetch_member(int(app.applicant_id))
             if not user:
                 audit_log.append(
                     f"Application by user: `{app.applicant_name}` was rejected because"
@@ -944,14 +944,18 @@ class ApplicationManager(cogs.LoopCog):
             return
 
         embed = discord.Embed(title="All pending applcations")
+        list_of_applicants = []
 
-        embed.description = "\n".join(
-            [
-                f"Application by: `{guild.get_member(int(app.applicant_id)).display_name} "
-                f"({app.applicant_name})`, applied on: {app.application_time}"
-                for app in apps
-            ]
-        )
+        for app in apps:
+            member = await guild.fetch_member(int(app.applicant_id))
+            list_of_applicants.append(
+                (
+                    f"Application by: `{member.display_name} ({app.applicant_name})`"
+                    f", applied on: {app.application_time}"
+                )
+            )
+
+        embed.description = "\n".join(list_of_applicants)
 
         await channel.send(embed=embed)
 
