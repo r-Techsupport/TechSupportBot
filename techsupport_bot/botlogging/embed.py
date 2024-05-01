@@ -9,7 +9,11 @@ import discord
 
 
 class LogEmbed(discord.Embed):
-    """Base log event embed."""
+    """Base log event embed.
+    Do not create this directly
+
+    Args:
+        message (str): The message to log. Will become the description of an embed"""
 
     title = None
     color = None

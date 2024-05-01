@@ -175,7 +175,6 @@ class Grabber(cogs.BaseCog):
         """Discord command to get a paginated list of all grabs from a given user
 
         Args:
-            self (Self): _description_
             ctx (commands.Context): The context in which the command was run in
             user_to_grab (discord.Member): The user to get all the grabs from
         """

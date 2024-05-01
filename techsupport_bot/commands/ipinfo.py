@@ -40,7 +40,6 @@ class IPInfo(cogs.BaseCog):
         """Entry point and main logic for the IP info command
 
         Args:
-            self (Self): _description_
             ctx (commands.Context): The context in which the commmand was run in
             ip_address (str): The user inputted IP address to lookup
         """
@@ -65,8 +64,11 @@ class IPInfo(cogs.BaseCog):
 
         Args:
             ip (str): the ip address
-            fields (dict): dictionary containing embed field titles and
-            their contents
+            fields (dict[str, str]): dictionary containing embed field titles and
+                their contents
+
+        Returns:
+            discord.Embed: The formatted embed ready to be sent to the user
         """
         embed = discord.Embed(title=f"IP info for {ip}")
         embed.set_thumbnail(url=self.IP_ICON_URL)

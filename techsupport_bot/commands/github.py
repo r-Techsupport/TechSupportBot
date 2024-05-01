@@ -70,8 +70,8 @@ class IssueCreator(cogs.BaseCog):
 
         Args:
             ctx (commands.Context): the context object for the calling message
-            title: the title of the issue
-            description: the description of the issue
+            title (str): the title of the issue
+            description (str): the description of the issue
         """
 
         if not self.bot.file_config.api.github.api_key:

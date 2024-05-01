@@ -57,7 +57,7 @@ class Helper(cogs.BaseCog):
 
         Args:
             ctx (commands.Context): the context object for the message
-            search_term (str, Optional): The term to search command name and descriptions for.
+            search_term (str, optional): The term to search command name and descriptions for.
                 Will default to empty string
         """
         # Build raw lists of commands

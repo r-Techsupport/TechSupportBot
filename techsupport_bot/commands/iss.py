@@ -38,7 +38,6 @@ class ISSLocator(cogs.BaseCog):
         Will call the API, format and send an embed
 
         Args:
-            self (Self): _description_
             ctx (commands.Context): The context in which the command was run in
         """
         # get ISS coordinates

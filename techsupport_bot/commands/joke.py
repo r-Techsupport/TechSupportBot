@@ -45,7 +45,6 @@ class Joker(cogs.BaseCog):
         """Calls the joke API and returns the raw response
 
         Args:
-            self (Self): _description_
             ctx (commands.Context): The context in which the joke command was run in
             config (munch.Munch): The guild config for the guild where the joke command was run
 

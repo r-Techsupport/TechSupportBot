@@ -61,7 +61,7 @@ class MessageEcho(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (discord.ext.Context): the context object for the calling message
+            ctx (commands.Context): the context object for the calling message
             channel_id (int): the ID of the channel to send the echoed message
             message (str): the message to echo
         """

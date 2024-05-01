@@ -289,7 +289,10 @@ class DuckHunt(cogs.LoopCog):
         await channel.send(embed=embed)
 
     def pick_quote(self: Self) -> str:
-        """Method for picking a random quote for the miss message"""
+        """Picks a random quote from the duckQuotes.txt file
+
+        Returns:
+            str: The quote picked randomly from the file, ready to use"""
         QUOTES_FILE = "resources/duckQuotes.txt"
         with open(QUOTES_FILE, "r", encoding="utf-8") as file:
             lines = file.readlines()

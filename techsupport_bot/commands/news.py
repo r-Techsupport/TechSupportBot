@@ -97,7 +97,6 @@ class News(cogs.LoopCog):
         """Calls the API to get the list of headlines based on the category and country
 
         Args:
-            self (Self): _description_
             country_code (str): The country code to get headlines from
             category (str, optional): The category of headlines to get. Defaults to None.
 
@@ -124,7 +123,6 @@ class News(cogs.LoopCog):
         """Gets a single article object from the news API
 
         Args:
-            self (Self): _description_
             country_code (str): The country code of the headliens to get
             category (str, optional): The category of headlines to get. Defaults to None.
 
@@ -197,7 +195,6 @@ class News(cogs.LoopCog):
         """Discord command entry point for getting a news article
 
         Args:
-            self (Self): _description_
             ctx (commands.Context): The context in which the command was run
             category (str, optional): The category to get news headlines from. Defaults to None.
         """

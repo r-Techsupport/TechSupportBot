@@ -308,7 +308,7 @@ class FactoidManager(cogs.MatchCog):
             fmt (str): Formatting for the returned message
 
         Returns:
-            (bool): Whether the factoid was deleted/modified
+            bool: Whether the factoid was deleted/modified
         """
 
         view = ui.Confirm()
@@ -670,7 +670,7 @@ class FactoidManager(cogs.MatchCog):
             called_factoid (CalledFactoid): The factoid to remove
 
         Returns:
-            (bool): Whether the factoid was deleted
+            bool: Whether the factoid was deleted
         """
         factoid = await self.get_raw_factoid_entry(
             called_factoid.factoid_db_entry.name, str(ctx.guild.id)
@@ -739,7 +739,6 @@ class FactoidManager(cogs.MatchCog):
             message_content (str): Content of the call
 
         Raises:
-            FactoidNotFoundError: Raised if a broken alias is present in the DB
             TooLongFactoidMessageError:
                 Raised when the raw message content is over discords 2000 char limit
         """
@@ -839,7 +838,7 @@ class FactoidManager(cogs.MatchCog):
         # Don't attempt to send a message if irc if irc is disabled
         irc_config = self.bot.file_config.api.irc
         if not irc_config.enable_irc:
-            return None
+            return
 
         await self.bot.irc.irc_cog.handle_factoid(
             channel=channel,
@@ -1604,7 +1603,7 @@ class FactoidManager(cogs.MatchCog):
             list_only_hidden (bool): Whether to list only hidden factoids
 
         Returns:
-            str - The result html file
+            str: The result html file
         """
 
         body_contents = ""
