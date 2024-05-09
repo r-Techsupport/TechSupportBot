@@ -54,7 +54,11 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class RoleGiver(cogs.BaseCog):
-    """The main class for the role commands"""
+    """The main class for the role commands
+
+    Args:
+        bot (bot.TechSupportBot): The bot object, is used for registering context menu commands
+    """
 
     def __init__(self: Self, bot: bot.TechSupportBot) -> None:
         super().__init__(bot=bot)
@@ -241,7 +245,7 @@ class RoleGiver(cogs.BaseCog):
             roles (list[str]): A list of roles by name to add to the options
 
         Returns:
-            list: A list of SelectOption with defaults set
+            list[discord.SelectOption]: A list of SelectOption with defaults set
         """
         options = []
 

@@ -37,7 +37,14 @@ class Weather(cogs.BaseCog):
     """Class to set up the weather extension for the discord bot."""
 
     def get_url(self: Self, args: list[str]) -> str:
-        """Method to get the API for the weather command."""
+        """Generates the url to fill in API keys and data
+
+        Args:
+            args (list[str]): The list of arguments passed by the user
+
+        Returns:
+            str: The API url formatted and ready to be called
+        """
         filtered_args = filter(bool, args)
         searches = ",".join(map(str, filtered_args))
         url = "http://api.openweathermap.org/data/2.5/weather"

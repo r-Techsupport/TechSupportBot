@@ -422,7 +422,7 @@ class DiscordToIRC(cogs.MatchCog):
             channel (discord.abc.Messageable): The channel that the IRC message will be sent to
 
         Returns:
-            List[discord.Member]: The potentially duplicated list members found from the message
+            list[discord.Member]: The potentially duplicated list members found from the message
         """
         mentions = []
         for word in message.split(" "):
@@ -440,7 +440,7 @@ class DiscordToIRC(cogs.MatchCog):
         """Generates an embed to send to discord stating that a message was sent
 
         Args:
-            split_message (Dict[str, str]): The formatted dictionary of the IRC message
+            split_message (dict[str, str]): The formatted dictionary of the IRC message
 
         Returns:
             discord.Embed: The embed prepared and ready to send
@@ -500,7 +500,7 @@ class DiscordToIRC(cogs.MatchCog):
 
         Args:
             reaction (discord.Reaction): The reaction added to the message
-            user (Union[discord.User, discord.Member]): The member who added the reaction
+            user (discord.User | discord.Member): The member who added the reaction
         """
         channel = reaction.message.channel
 
