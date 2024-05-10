@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import traceback
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import botlogging.embed as embed_lib
 import discord
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class BotLogger:
     """Logging interface for Discord bots.
 
-    parameters:
+    Args:
         bot (bot.TechSupportBot): the bot object
         name (str): the name of the logging channel
         send (bool): Whether or not to allow sending of logs to discord
@@ -32,7 +32,7 @@ class BotLogger:
         You should never use this manually
         """
 
-        def __init__(self):
+        def __init__(self: Self) -> None:
             self.type = None
             self.console = None
             self.embed = None
@@ -42,7 +42,7 @@ class BotLogger:
         This should never be used manually. Use the LogLevel Enum instead
         """
 
-        def __init__(self, main_console):
+        def __init__(self: Self, main_console: logging.Logger) -> None:
             self.type = LogLevel.DEBUG
             self.console = main_console.debug
             self.embed = embed_lib.DebugEmbed
@@ -52,7 +52,7 @@ class BotLogger:
         This should never be used manually. Use the LogLevel Enum instead
         """
 
-        def __init__(self, main_console):
+        def __init__(self: Self, main_console: logging.Logger) -> None:
             self.type = LogLevel.INFO
             self.console = main_console.info
             self.embed = embed_lib.InfoEmbed
@@ -62,7 +62,7 @@ class BotLogger:
         This should never be used manually. Use the LogLevel Enum instead
         """
 
-        def __init__(self, main_console):
+        def __init__(self: Self, main_console: logging.Logger) -> None:
             self.type = LogLevel.WARNING
             self.console = main_console.warning
             self.embed = embed_lib.WarningEmbed
@@ -72,12 +72,14 @@ class BotLogger:
         This should never be used manually. Use the LogLevel Enum instead
         """
 
-        def __init__(self, main_console):
+        def __init__(self: Self, main_console: logging.Logger) -> None:
             self.type = LogLevel.ERROR
             self.console = main_console.error
             self.embed = embed_lib.ErrorEmbed
 
-    def __init__(self, discord_bot: bot.TechSupportBot, name: str, send: bool):
+    def __init__(
+        self: Self, discord_bot: bot.TechSupportBot, name: str, send: bool
+    ) -> None:
         self.bot = discord_bot
         self.console = logging.getLogger(name if name else "root")
         self.send = send
@@ -89,7 +91,7 @@ class BotLogger:
         }
 
     async def check_if_should_log(
-        self, level: GenericLogLevel, context: LogContext
+        self: Self, level: GenericLogLevel, context: LogContext
     ) -> bool:
         """A way to check if the log should be logged
         This takes into account:
@@ -139,7 +141,9 @@ class BotLogger:
 
         return True
 
-    async def get_discord_target(self, channel_id: str) -> discord.abc.Messageable:
+    async def get_discord_target(
+        self: Self, channel_id: str
+    ) -> discord.abc.Messageable:
         """This gets the appropriate place to send discord logs to
         This will either be:
             The passed log channel
@@ -174,7 +178,7 @@ class BotLogger:
         return await self.bot.get_owner()
 
     async def send_log(
-        self,
+        self: Self,
         message: str,
         level: LogLevel,
         context: LogContext = None,
@@ -255,7 +259,7 @@ class BotLogger:
             except discord.Forbidden:
                 self.console.warning("Failed to send log")
 
-    def convert_level(self, level: LogLevel) -> GenericLogLevel:
+    def convert_level(self: Self, level: LogLevel) -> GenericLogLevel:
         """A simple function that looks up the LogLevel class from the enum
 
         Args:

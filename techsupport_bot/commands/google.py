@@ -1,14 +1,27 @@
 """Module for the google extension for the discord bot."""
 
-import discord
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
+import munch
 import ui
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding google extension config to the config file."""
 
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Google plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+
+    Raises:
+        AttributeError: Raised if an API key is missing to prevent unusable commands from loading
+    """
     # Don't load without the API key
     try:
         if not bot.file_config.api.api_keys.google:
@@ -31,27 +44,27 @@ async def setup(bot):
     bot.add_extension_config("google", config)
 
 
-class GoogleEmbed(discord.Embed):
-    """Class for the google embed for discord."""
-
-    ICON_URL = (
-        "https://cdn.icon-icons.com/icons2/673/PNG/512/Google_icon-icons.com_60497.png"
-    )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.color = discord.Color.blurple()
-        self.set_thumbnail(url=self.ICON_URL)
-
-
 class Googler(cogs.BaseCog):
     """Class for the google extension for the discord bot."""
 
     GOOGLE_URL = "https://www.googleapis.com/customsearch/v1"
     YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=10"
+    ICON_URL = (
+        "https://cdn.icon-icons.com/icons2/673/PNG/512/Google_icon-icons.com_60497.png"
+    )
 
-    async def get_items(self, url, data):
-        """Method to get an item from google's api."""
+    async def get_items(
+        self: Self, url: str, data: dict[str, str]
+    ) -> list[munch.Munch]:
+        """Calls the google API and retuns only the relevant section from the response
+
+        Args:
+            url (str): The URL to query, either GOOGLE to YOUTUBE
+            data (dict[str, str]): The parameters required by the google API
+
+        Returns:
+            list[munch.Munch]: The formatted list of items, ready to be processed and printed
+        """
         response = await self.bot.http_functions.http_call(
             "get", url, params=data, use_cache=True
         )
@@ -62,8 +75,12 @@ class Googler(cogs.BaseCog):
         brief="Executes a Google command",
         description="Executes a Google command",
     )
-    async def google(self, ctx):
-        """Method to add command to search google."""
+    async def google(self: Self, ctx: commands.Context) -> None:
+        """The bare .g/G command. This does nothing but generate the help message
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
 
         # Executed if there are no/invalid args supplied
         await auxiliary.extension_help(self, ctx, self.__module__[9:])
@@ -76,8 +93,13 @@ class Googler(cogs.BaseCog):
         description="Returns the top Google search result",
         usage="[query]",
     )
-    async def search(self, ctx, *, query: str):
-        """Method for searching results on google."""
+    async def search(self: Self, ctx: commands.Context, *, query: str) -> None:
+        """The entry point for the URL search command
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+            query (str): The user inputted string to query google for
+        """
         data = {
             "cx": self.bot.file_config.api.api_keys.google_cse,
             "q": query,
@@ -102,10 +124,13 @@ class Googler(cogs.BaseCog):
                 link = item.get("link")
                 snippet = item.get("snippet", "<Details Unknown>").replace("\n", "")
                 embed = (
-                    GoogleEmbed(title=f"Results for {query}")
+                    auxiliary.generate_basic_embed(
+                        title=f"Results for {query}", url=self.ICON_URL
+                    )
                     if field_counter == 1
                     else embed
                 )
+
                 embed.add_field(name=link, value=snippet, inline=False)
                 if (
                     field_counter == config.extensions.google.max_responses.value
@@ -126,8 +151,13 @@ class Googler(cogs.BaseCog):
         description="Returns the top Google Images search result",
         usage="[query]",
     )
-    async def images(self, ctx, *, query: str):
-        """Method to get an image from a google search."""
+    async def images(self: Self, ctx: commands.Context, *, query: str) -> None:
+        """The entry point for the image search command
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+            query (str): The user inputted string to query google for
+        """
         data = {
             "cx": self.bot.file_config.api.api_keys.google_cse,
             "q": query,
@@ -167,8 +197,13 @@ class Googler(cogs.BaseCog):
         description="Returns the top YouTube search result",
         usage="[query]",
     )
-    async def youtube(self, ctx, *, query: str):
-        """Method to get the youtube link form searching google."""
+    async def youtube(self: Self, ctx: commands.Context, *, query: str) -> None:
+        """The entry point for the youtube search command
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+            query (str): The user inputted string to query google for
+        """
         items = await self.get_items(
             self.YOUTUBE_URL,
             data={

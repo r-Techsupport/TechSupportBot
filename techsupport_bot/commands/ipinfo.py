@@ -1,12 +1,23 @@
 """Module for the ipinfo extension into the bot."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Method to add ipinfo to the config file."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the IP Info plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(IPInfo(bot=bot))
 
 
@@ -25,8 +36,14 @@ class IPInfo(cogs.BaseCog):
         brief="Gets IP info",
         description="Gets IP info (geodata) from a given IP",
     )
-    async def get_info(self, ctx, ip_address: str):
-        """Method to get the info for the ipinfo command for the bot."""
+    async def get_info(self: Self, ctx: commands.Context, ip_address: str) -> None:
+        """Entry point and main logic for the IP info command
+
+        Args:
+            self (Self): _description_
+            ctx (commands.Context): The context in which the commmand was run in
+            ip_address (str): The user inputted IP address to lookup
+        """
         response = await self.bot.http_functions.http_call(
             "get", f"{self.API_URL}/{ip_address}/json"
         )
@@ -43,10 +60,10 @@ class IPInfo(cogs.BaseCog):
         embed = self.generate_embed(ip_address, response)
         await ctx.send(embed=embed)
 
-    def generate_embed(self, ip: str, fields: dict[str, str]) -> discord.Embed:
+    def generate_embed(self: Self, ip: str, fields: dict[str, str]) -> discord.Embed:
         """Generates an embed from a set of key, values.
 
-        parameters:
+        Args:
             ip (str): the ip address
             fields (dict): dictionary containing embed field titles and
             their contents

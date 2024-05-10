@@ -1,7 +1,10 @@
 """Module for delayed logging."""
 
+from __future__ import annotations
+
 import asyncio
 import os
+from typing import Any, Self
 
 from botlogging import logger
 
@@ -9,7 +12,7 @@ from botlogging import logger
 class DelayedLogger(logger.BotLogger):
     """Logging interface that queues log events to be sent over time.
 
-    parameters:
+    Args:
         bot (bot.TechSupportBot): the bot object
         name (str): the name of the logging channel
         send (bool): Whether or not to allow sending of logs to discord
@@ -17,13 +20,13 @@ class DelayedLogger(logger.BotLogger):
         queue_size (int): the max number of queue events
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self: Self, *args: tuple, **kwargs: dict[str, Any]) -> None:
         self.wait_time = kwargs.pop("wait_time", 1)
         self.queue_size = kwargs.pop("queue_size", 1000)
         self.__send_queue = None
         super().__init__(*args, **kwargs)
 
-    async def send_log(self, *args, **kwargs):
+    async def send_log(self: Self, *args: tuple, **kwargs: dict[str, Any]) -> None:
         """Adds a log to the queue
         Does nothing different than the Logger send_log function()
         Will disregard debug logs if debug is off
@@ -36,11 +39,11 @@ class DelayedLogger(logger.BotLogger):
 
         await self.__send_queue.put(super().send_log(*args, **kwargs))
 
-    def register_queue(self):
+    def register_queue(self: Self) -> None:
         """Registers the asyncio.Queue object to make delayed logging possible"""
         self.__send_queue = asyncio.Queue(maxsize=self.queue_size)
 
-    async def run(self):
+    async def run(self: Self) -> None:
         """A forever loop that pulls from the queue and then waits based on the config"""
         while True:
             try:

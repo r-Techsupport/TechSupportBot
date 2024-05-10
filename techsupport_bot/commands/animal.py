@@ -1,11 +1,22 @@
 """Module for the animal extension for the discord bot."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Loading the animal plugin"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the animals plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
 
     await bot.add_cog(Animals(bot=bot))
 
@@ -20,7 +31,7 @@ class Animals(cogs.BaseCog):
 
     @auxiliary.with_typing
     @commands.command(name="cat", brief="Gets a cat", description="Gets a cat")
-    async def cat(self, ctx: commands.context) -> None:
+    async def cat(self: Self, ctx: commands.Context) -> None:
         """Prints a cat to discord
 
         Args:
@@ -41,7 +52,7 @@ class Animals(cogs.BaseCog):
 
     @auxiliary.with_typing
     @commands.command(name="dog", brief="Gets a dog", description="Gets a dog")
-    async def dog(self, ctx: commands.Context) -> None:
+    async def dog(self: Self, ctx: commands.Context) -> None:
         """Prints a dog to discord
 
         Args:
@@ -52,7 +63,7 @@ class Animals(cogs.BaseCog):
 
     @auxiliary.with_typing
     @commands.command(name="frog", brief="Gets a frog", description="Gets a frog")
-    async def frog(self, ctx: commands.Context) -> None:
+    async def frog(self: Self, ctx: commands.Context) -> None:
         """Prints a frog to discord
 
         Args:
@@ -63,7 +74,7 @@ class Animals(cogs.BaseCog):
 
     @auxiliary.with_typing
     @commands.command(name="fox", brief="Gets a fox", description="Gets a fox")
-    async def fox(self, ctx: commands.Context) -> None:
+    async def fox(self: Self, ctx: commands.Context) -> None:
         """Prints a fox to discord
 
         Args:

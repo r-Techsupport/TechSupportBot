@@ -1,35 +1,41 @@
 """Module for the poll extension for the discord bot."""
 
+from __future__ import annotations
+
 import asyncio
 import io
 import json
+from typing import TYPE_CHECKING, Self
 
 import discord
 import emoji
+import munch
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding the poll and recation to the config file."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Poller plugins into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(ReactionPoller(bot=bot))
     await bot.add_cog(StrawPoller(bot=bot))
-
-
-class PollEmbed(discord.Embed):
-    """Class for the poll embed for discord."""
-
-    def __init__(self, *args, **kwargs):
-        thumbnail_url = kwargs.pop("thumbnail_url")
-        super().__init__(*args, **kwargs)
-        self.set_thumbnail(url=thumbnail_url)
-        self.color = discord.Color.gold()
 
 
 class PollGenerator(cogs.BaseCog):
     """Class to make the poll generator for the extension."""
 
-    async def validate_data(self, ctx, request_body, strawpoll=False):
+    async def validate_data(
+        self: Self,
+        ctx: commands.Context,
+        request_body: munch.Munch,
+        strawpoll: bool = False,
+    ) -> munch.Munch:
         """Method to validate data from the poll."""
         # probably shouldn't touch this
         max_options = len(self.OPTION_EMOJIS) if not strawpoll else 10
@@ -93,7 +99,7 @@ class ReactionPoller(PollGenerator):
         "timeout": 60,
     }
 
-    async def preconfig(self):
+    async def preconfig(self: Self) -> None:
         """Method to preconfig the poll."""
         self.option_emojis = [
             emoji.emojize(f":{emoji_text}:", language="alias")
@@ -104,8 +110,12 @@ class ReactionPoller(PollGenerator):
         brief="Executes a poll command",
         description="Executes a poll command",
     )
-    async def poll(self, ctx):
-        """Method to create the poll command."""
+    async def poll(self: Self, ctx: commands.Context) -> None:
+        """The bare .poll command. This does nothing but generate the help message
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
 
         # Executed if there are no/invalid args supplied
         await auxiliary.extension_help(self, ctx, self.__module__[9:])
@@ -115,7 +125,7 @@ class ReactionPoller(PollGenerator):
         brief="Shows example poll JSON",
         description="Shows what JSON to upload to generate a poll",
     )
-    async def example(self, ctx):
+    async def example(self: Self, ctx: commands.Context) -> None:
         """Method to show an example of a poll."""
         json_file = discord.File(
             io.StringIO(json.dumps(self.EXAMPLE_DATA, indent=4)),
@@ -133,7 +143,7 @@ class ReactionPoller(PollGenerator):
         ),
         usage="|json-upload|",
     )
-    async def generate(self, ctx):
+    async def generate(self: Self, ctx: commands.Context) -> None:
         """Method to generate the poll for discord."""
         request_body = await auxiliary.get_json_from_attachments(ctx.message)
         if not request_body:
@@ -157,10 +167,11 @@ class ReactionPoller(PollGenerator):
         )
         display_timeout_units = "seconds" if request_body.timeout <= 60 else "minutes"
 
-        embed = PollEmbed(
+        embed = auxiliary.generate_basic_embed(
             title=request_body.question,
             description=f"Poll timeout: {display_timeout} {display_timeout_units}",
-            thumbnail_url=request_body.image_url,
+            color=discord.Color.gold(),
+            url=request_body.image_url,
         )
 
         for index, option in enumerate(request_body.options):
@@ -201,9 +212,10 @@ class ReactionPoller(PollGenerator):
             )
             return
 
-        embed = PollEmbed(
+        embed = auxiliary.generate_basic_embed(
             title=f"Poll results for `{request_body.question}`",
             description=f"Votes: {total}",
+            color=discord.Color.gold(),
             thumbnail_url=request_body.image_url,
         )
 
@@ -213,7 +225,13 @@ class ReactionPoller(PollGenerator):
 
         await ctx.send(embed=embed)
 
-    async def wait_for_results(self, ctx, message, timeout, options):
+    async def wait_for_results(
+        self: Self,
+        ctx: commands.Context,
+        message: discord.Message,
+        timeout: int,
+        options: list[str],
+    ) -> dict[str, int]:
         """Method to wait on results from the poll from other users."""
         option_emojis = self.option_emojis[: len(options)]
         await asyncio.sleep(timeout)
@@ -235,7 +253,7 @@ class ReactionPoller(PollGenerator):
                     del voted[user.id]
                     excluded.add(user.id)
 
-                if not user.id in excluded:
+                if user.id not in excluded:
                     try:
                         voted[user.id] = options[option_emojis.index(reaction.emoji)]
                     except ValueError:
@@ -268,7 +286,7 @@ class StrawPoller(PollGenerator):
         brief="Executes a strawpoll command",
         description="Executes a strawpoll command",
     )
-    async def strawpoll(self, ctx):
+    async def strawpoll(self: Self, ctx: commands.Context) -> None:
         """Method to give an exmaple poll with json."""
 
         # Executed if there are no/invalid args supplied
@@ -279,7 +297,7 @@ class StrawPoller(PollGenerator):
         brief="Shows example poll JSON",
         description="Shows what JSON to upload to generate a poll",
     )
-    async def example(self, ctx):
+    async def example(self: Self, ctx: commands.Context) -> None:
         """Method that contains the example file for a poll."""
         json_file = discord.File(
             io.StringIO(json.dumps(self.EXAMPLE_DATA, indent=4)),
@@ -293,7 +311,7 @@ class StrawPoller(PollGenerator):
         description="Returns a link to a Strawpoll generated by args",
         usage="|json-upload|",
     )
-    async def generate(self, ctx):
+    async def generate(self: Self, ctx: commands.Context) -> None:
         """Method to generate the poll form the discord command."""
         request_body = await auxiliary.get_json_from_attachments(ctx.message)
         if not request_body:

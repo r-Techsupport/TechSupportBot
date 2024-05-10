@@ -3,13 +3,19 @@ This is a collection of functions designed to be used by many extensions
 This replaces duplicate or similar code across many extensions
 """
 
+from __future__ import annotations
+
 import json
 from functools import wraps
+from typing import TYPE_CHECKING, Any
 
 import discord
 import munch
 import ui
 from discord.ext import commands
+
+if TYPE_CHECKING:
+    import cogs
 
 default_color = discord.Color.blurple()
 
@@ -51,7 +57,7 @@ async def search_channel_for_message(
     """Searches the last 50 messages in a channel based on given conditions
 
     Args:
-        channel (discord.TextChannel): The channel to search in. This is required
+        channel (discord.abc.Messageable): The channel to search in. This is required
         prefix (str, optional): A prefix you want to exclude from the search. Defaults to None.
         member_to_match (discord.Member, optional): The member that the
             message found must be from. Defaults to None.
@@ -92,7 +98,7 @@ async def add_list_of_reactions(message: discord.Message, reactions: list) -> No
 def construct_mention_string(targets: list[discord.User]) -> str:
     """Builds a string of mentions from a list of users.
 
-    parameters:
+    Args:
         targets ([]discord.User): the list of users to mention
     """
     constructed = set()
@@ -147,7 +153,7 @@ async def send_deny_embed(
     Args:
         message (str): The reason for deny
         channel (discord.abc.Messageable): The channel to send the deny embed to
-        author (discord.Member, optional): The author of the message.
+        author (discord.Member | None, optional): The author of the message.
             If this is provided, the author will be mentioned
 
     Returns:
@@ -185,7 +191,7 @@ async def send_confirm_embed(
     Args:
         message (str): The reason for confirm
         channel (discord.abc.Messageable): The channel to send the confirm embed to
-        author (discord.Member, optional): The author of the message.
+        author (discord.Member | None, optional): The author of the message.
             If this is provided, the author will be mentioned
 
     Returns:
@@ -203,12 +209,20 @@ async def get_json_from_attachments(
 ) -> munch.Munch | str | None:
     """Returns concatted JSON from a message's attachments.
 
-    parameters:
-        ctx (discord.ext.Context): the context object for the message
-        message (Message): the message object
-        as_string (bool): True if the serialized JSON should be returned
-        allow_failure (bool): True if an exception should be ignored when parsing attachments
+    Args:
+        message (discord.Message): the message object
+        as_string (bool, optional): True if the serialized JSON should be returned.
+            Defaults to False.
+        allow_failure (bool, optional): True if an exception should be ignored when
+            parsing attachments. Defaults to False.
+
+    Raises:
+        exception: If allow_failure is False, this raises ANY exception caught while parsing
+
+    Returns:
+        munch.Munch | str | None: The json formatted as requested by as_string and allow_failure
     """
+
     if not message.attachments:
         return None
 
@@ -233,7 +247,7 @@ async def get_json_from_attachments(
 def config_schema_matches(input_config: dict, current_config: dict) -> list[str] | None:
     """Performs a schema check on an input guild config.
 
-    parameters:
+    Args:
         input_config (dict): the config to be added
         current_config (dict): the current config
     """
@@ -269,13 +283,14 @@ def with_typing(command: commands.Command) -> commands.Command:
 
     This will show the bot as typing... until the command completes
 
-    parameters:
+    Args:
         command (commands.Command): the command object to modify
     """
     original_callback = command.callback
 
     @wraps(original_callback)
-    async def typing_wrapper(*args, **kwargs):
+    async def typing_wrapper(*args: tuple, **kwargs: dict[str, Any]) -> None:
+        """The wrapper to add typing to any given function and call the original function"""
         context = args[1]
 
         typing_func = getattr(context, "typing", None)
@@ -330,7 +345,7 @@ def get_object_diff(
 def add_diff_fields(embed: discord.Embed, diff: dict) -> discord.Embed:
     """Adds fields to an embed based on diff data.
 
-    parameters:
+    Args:
         embed (discord.Embed): the embed object
         diff (dict): the diff data for an object
     """
@@ -384,12 +399,14 @@ def add_diff_fields(embed: discord.Embed, diff: dict) -> discord.Embed:
     return embed
 
 
-def get_help_embed_for_extension(self, extension_name, command_prefix):
+def get_help_embed_for_extension(
+    self: cogs.BaseCog, extension_name: str, command_prefix: str
+) -> discord.Embed:
     """Gets the help embed for an extension.
 
     Defined so it doesn't have to be written out twice
 
-    parameters:
+    Args:
         extension_name (str): the name of the extension to show the help for
         command_prefix (str): passed to the func as it has to be awaited
 
@@ -435,14 +452,16 @@ def get_help_embed_for_extension(self, extension_name, command_prefix):
     return embed
 
 
-async def extension_help(self, ctx: commands.Context, extension_name: str) -> None:
+async def extension_help(
+    self: cogs.BaseCog, ctx: commands.Context, extension_name: str
+) -> None:
     """Automatically prompts for help if improper syntax for an extension is called.
 
     The format for extension_name that's used is `self.__module__[11:]`, because
     all extensions have the value set to extension.<name>, it's the most reliable
     way to get the extension name regardless of aliases
 
-    parameters:
+    Args:
         ctx (commands.Context): context of the message
         extension_name (str): the name of the extension to show the help for
     """
@@ -495,7 +514,7 @@ async def bot_admin_check_context(ctx: commands.Context) -> bool:
         ctx (commands.Context): The context that the command was called in
 
     Raises:
-        commands.MissingPermissions: If the user is not a bot admin
+        MissingPermissions: If the user is not a bot admin
 
     Returns:
         bool: True if can run

@@ -8,12 +8,23 @@ This file contains 2 commands:
     .reboot
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Registers the Restarter Cog"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Restart plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(Restarter(bot=bot))
 
 
@@ -28,19 +39,19 @@ class Restarter(cogs.BaseCog):
         description="Restarts the bot at the container level",
         aliases=["reboot"],
     )
-    async def restart(self, ctx: commands.Context) -> None:
+    async def restart(self: Self, ctx: commands.Context) -> None:
         """Restarts the bot.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the calling message
         """
         await auxiliary.send_confirm_embed(
             message="Rebooting! Beep boop!", channel=ctx.channel
         )
         # Exit IRC if it's enabled
-        irc_config = getattr(self.bot.file_config.api, "irc")
+        irc_config = self.bot.file_config.api.irc
         if irc_config.enable_irc:
             self.bot.irc.exit_irc()
 

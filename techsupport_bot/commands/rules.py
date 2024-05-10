@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 import io
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 import munch
@@ -16,17 +16,9 @@ if TYPE_CHECKING:
     import bot
 
 
-async def setup(bot: bot.TechSupportBot):
+async def setup(bot: bot.TechSupportBot) -> None:
     """Adding the rules configuration to the config file."""
     await bot.add_cog(Rules(bot=bot))
-
-
-class RuleEmbed(discord.Embed):
-    """Class for setting up the rules embed."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.color = discord.Color.gold()
 
 
 class Rules(cogs.BaseCog):
@@ -38,13 +30,13 @@ class Rules(cogs.BaseCog):
     )
 
     @commands.group(name="rule")
-    async def rule_group(self, ctx):
+    async def rule_group(self: Self, ctx: commands.Context) -> None:
         """Method for the rule group."""
 
         # Executed if there are no/invalid args supplied
         await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
-    async def get_guild_rules(self, guild: discord.Guild) -> munch.Munch:
+    async def get_guild_rules(self: Self, guild: discord.Guild) -> munch.Munch:
         """Gets the munchified rules for a given guild.
         Will create and write to the database if no rules exist
 
@@ -72,7 +64,9 @@ class Rules(cogs.BaseCog):
             return munch.munchify(json.loads(rules_data))
         return munch.munchify(json.loads(query.rules))
 
-    async def write_new_rules(self, guild: discord.Guild, rules: munch.Munch) -> None:
+    async def write_new_rules(
+        self: Self, guild: discord.Guild, rules: munch.Munch
+    ) -> None:
         """This converts the munchified rules into a string and writes it to the database
 
         Args:
@@ -101,7 +95,7 @@ class Rules(cogs.BaseCog):
         description="Edits rules by uploading JSON",
         usage="|uploaded-json|",
     )
-    async def edit_rules(self, ctx: commands.Context):
+    async def edit_rules(self: Self, ctx: commands.Context) -> None:
         """Method to edit the rules that were set up."""
 
         uploaded_data = await auxiliary.get_json_from_attachments(ctx.message)
@@ -129,7 +123,7 @@ class Rules(cogs.BaseCog):
         description="Gets a rule by number for the current server",
         usage="[number]",
     )
-    async def get_rule(self, ctx: commands.Context, content: str):
+    async def get_rule(self: Self, ctx: commands.Context, content: str) -> None:
         """Method to get specified rules from rule number/s specified in content."""
         # A list of all the rule numbers to get. It starts empty
         numbers = []
@@ -184,7 +178,7 @@ class Rules(cogs.BaseCog):
         brief="Gets all rules",
         description="Gets all the rules for the current server",
     )
-    async def get_all_rules(self, ctx: commands.Context):
+    async def get_all_rules(self: Self, ctx: commands.Context) -> None:
         """Method to get all the rules that are set up."""
         rules_data = await self.get_guild_rules(ctx.guild)
         if not rules_data or not rules_data.get("rules"):
@@ -193,9 +187,10 @@ class Rules(cogs.BaseCog):
             )
             return
 
-        embed = RuleEmbed(
+        embed = auxiliary.generate_basic_embed(
             title="Server Rules",
             description="By talking on this server, you agree to the following rules",
+            color=discord.Color.gold(),
         )
 
         for index, rule in enumerate(rules_data.get("rules")):
@@ -210,7 +205,7 @@ class Rules(cogs.BaseCog):
 
         await ctx.send(embed=embed, mention_author=False)
 
-    async def get_rule_count(self, guild: discord.Guild) -> int:
+    async def get_rule_count(self: Self, guild: discord.Guild) -> int:
         """Gets the rule count as an integer for the given guild
         This will create rules should it be called without any rules
 

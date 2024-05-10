@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 from core import auxiliary, cogs
@@ -50,7 +50,7 @@ class ErrorCategory:
 class WindowsError(cogs.BaseCog):
     """The core of the /winerror extension"""
 
-    async def preconfig(self):
+    async def preconfig(self: Self) -> None:
         """Loads the winerrors.json file as self.errors"""
         errors_file = "resources/winerrors.json"
         with open(errors_file, "r", encoding="utf-8") as file:
@@ -62,7 +62,7 @@ class WindowsError(cogs.BaseCog):
         extras={"module": "winerror"},
     )
     async def winerror(
-        self, interaction: discord.Interaction, search_term: str
+        self: Self, interaction: discord.Interaction, search_term: str
     ) -> None:
         """The heart of the winerror command
         This process in input and calls functions to search for errors
@@ -152,7 +152,7 @@ class WindowsError(cogs.BaseCog):
         await interaction.response.send_message(embed=embed)
 
     def handle_hresult_errors(
-        self, trunc_hex_code: int, severity: str, facility_code: int
+        self: Self, trunc_hex_code: int, severity: str, facility_code: int
     ) -> ErrorCategory:
         """Searches for and returns the hresult errors
 
@@ -184,7 +184,7 @@ class WindowsError(cogs.BaseCog):
             )
         return category
 
-    def handle_decimal_errors(self, decimal_code: int) -> ErrorCategory:
+    def handle_decimal_errors(self: Self, decimal_code: int) -> ErrorCategory:
         """Searches for errors based on a decimal input
 
         Args:
@@ -205,7 +205,7 @@ class WindowsError(cogs.BaseCog):
             )
         return category
 
-    def handle_hex_errors(self, hex_code: int) -> ErrorCategory:
+    def handle_hex_errors(self: Self, hex_code: int) -> ErrorCategory:
         """Searches for errors based on a hex input
 
         Args:
@@ -226,36 +226,38 @@ class WindowsError(cogs.BaseCog):
             )
         return category
 
-    def twos_comp(self, val: int, bits: int) -> int:
+    def twos_comp(self: Self, original_value: int, bits: int) -> int:
         """compute the 2's complement of int value val"""
-        if val & (1 << (bits - 1)) != 0:  # if sign bit is set e.g., 8bit: 128-255
-            val = val - (1 << bits)  # compute negative value
-        return val
+        if (
+            original_value & (1 << (bits - 1)) != 0
+        ):  # if sign bit is set e.g., 8bit: 128-255
+            original_value = original_value - (1 << bits)  # compute negative value
+        return original_value
 
-    def reverse_twos_comp(self, val: int, bits: int) -> int:
+    def reverse_twos_comp(self: Self, original_value: int, bits: int) -> int:
         """Gets the reverse twos complement for the given input
 
         Args:
-            val (int): The value to find the unsigned value for
+            original_value (int): The value to find the unsigned value for
             bits (int): How many bits need to be shifted
 
         Returns:
             int: The value with a reverse twos complement
         """
-        return (1 << bits) - 1 - ~val
+        return (1 << bits) - 1 - ~original_value
 
-    def try_parse_decimal(self, val: str) -> int:
+    def try_parse_decimal(self: Self, original_value: str) -> int:
         """Parse a string input into a decimal value. If this fails, 0 is returned
 
         Args:
-            val (str): The string input to turn into a decimal
+            original_value (str): The string input to turn into a decimal
 
         Returns:
             int: 0, or the properly converted string
         """
         # check if the target error code is a base 10 integer
         try:
-            return_val = int(val, 10)
+            return_val = int(original_value, 10)
             # Error codes are unsigned. If a negative number is input, the only code we're
             # interested in is the hex equivalent.
             if return_val <= 0:
@@ -266,11 +268,11 @@ class WindowsError(cogs.BaseCog):
 
     # Check if the error code is a valid hex number.
     # Returns 0xFFFF, or CDERR_DIALOGFAILURE upon invalid code.
-    def try_parse_hex(self, val: str) -> int:
+    def try_parse_hex(self: Self, original_value: str) -> int:
         """Parse a string input into a hex value. If this fails, 0xFFFF is returned
 
         Args:
-            val (str): The string input to turn into a hex
+            original_value (str): The string input to turn into a hex
 
         Returns:
             int: 0xFFFF, or the properly converted string
@@ -279,33 +281,33 @@ class WindowsError(cogs.BaseCog):
         try:
             # if the number is a negative decimal number, we need its unsigned hexadecimal
             # equivalent.
-            if int(val, 16) < 0:
-                if abs(int(val)) > 0xFFFFFFFF:
+            if int(original_value, 16) < 0:
+                if abs(int(original_value)) > 0xFFFFFFFF:
                     return 0xFFFF
                 # the integer conversion here is deliberately a base 10 conversion. The command
                 # should fail if a negative hex number is queried.
-                return self.reverse_twos_comp(int(val), 32)
+                return self.reverse_twos_comp(int(original_value), 32)
             # check if the number is larger than 32 bits
-            if abs(int(val, 16)) > 0xFFFFFFFF:
+            if abs(int(original_value, 16)) > 0xFFFFFFFF:
                 return 0xFFFF
 
-            return int(val, 16)
+            return int(original_value, 16)
 
         except ValueError:
             return 0xFFFF
 
-    def pad_hex(self, input: str) -> str:
+    def pad_hex(self: Self, hex_code_input: str) -> str:
         """Pads a hex value
 
         Args:
-            input (str): The input value to add 0s to
+            hex_code_input (str): The input value to add 0s to
 
         Returns:
             str: The padded value
         """
         # this string should never be over 10 characters, however this check is here
         # just in case there's a bug in the code.
-        if len(input) > 10:
+        if len(hex_code_input) > 10:
             return "0xFFFF"
 
-        return "0x" + input[2:].zfill(8)
+        return "0x" + hex_code_input[2:].zfill(8)

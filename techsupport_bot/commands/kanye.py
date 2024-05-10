@@ -1,15 +1,26 @@
 """Module for the kanye extension for the discord bot."""
 
+from __future__ import annotations
+
 import asyncio
 import random
+from typing import TYPE_CHECKING, Self
 
 import discord
+import munch
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding the config for kanye to the config file."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Kanye plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     config = extensionconfig.ExtensionConfig()
     config.add(
         key="channel",
@@ -37,9 +48,10 @@ async def setup(bot):
     bot.add_extension_config("kanye", config)
 
 
-class KanyeEmbed(discord.Embed):
-    """Class for the Kanye embed for discord."""
+class KanyeQuotes(cogs.LoopCog):
+    """Class to get the Kanye quotes from the api."""
 
+    API_URL = "https://api.kanye.rest"
     KANYE_PICS = [
         "https://i.imgur.com/ITmTXGz.jpg",
         "https://i.imgur.com/o8BkPrL.jpg",
@@ -48,29 +60,43 @@ class KanyeEmbed(discord.Embed):
         "https://i.imgur.com/g1o2Gro.jpg",
     ]
 
-    def __init__(self, *args, **kwargs):
-        quote = kwargs.pop("quote")
-        super().__init__(*args, **kwargs)
-        self.set_thumbnail(url=random.choice(self.KANYE_PICS))
-        self.color = discord.Color.dark_gold()
-        self.title = f'"{quote}"'
-        self.description = "Kanye West"
+    def generate_themed_embed(self: Self, quote: str) -> discord.Embed:
+        """Generates a themed embed for the kayne plugin
+        Includes adding the quote, changing the color, and adding an icon
 
+        Args:
+            quote (str): The quote to put in the embed
 
-class KanyeQuotes(cogs.LoopCog):
-    """Class to get the Kanye quotes from the api."""
+        Returns:
+            discord.Embed: The formatted embed, ready to be sent
+        """
+        embed = auxiliary.generate_basic_embed(
+            title=f'"{quote}"',
+            description="Kanye West",
+            color=discord.Color.dark_gold(),
+            url=random.choice(self.KANYE_PICS),
+        )
+        return embed
 
-    API_URL = "https://api.kanye.rest"
+    async def get_quote(self: Self) -> str:
+        """Calls the kanye API to get a quote, returns just the quote from the response
 
-    async def get_quote(self):
-        """Method to get the quote from the api."""
+        Returns:
+            str: The raw quote from the API, without any special formatting
+        """
         response = await self.bot.http_functions.http_call("get", self.API_URL)
         return response.get("quote")
 
-    async def execute(self, config, guild):
-        """Method to execute and give the quote to discord."""
+    async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
+        """The main entry point for the loop for kanye
+        This is executed automatically and shouldn't be called manually
+
+        Args:
+            config (munch.Munch): The guild config where the loop is taking place
+            guild (discord.Guild): The guild where the loop is taking place
+        """
         quote = await self.get_quote()
-        embed = KanyeEmbed(quote=quote)
+        embed = self.generate_themed_embed(quote=quote)
 
         channel = guild.get_channel(int(config.extensions.kanye.channel.value))
         if not channel:
@@ -78,8 +104,12 @@ class KanyeQuotes(cogs.LoopCog):
 
         await channel.send(embed=embed)
 
-    async def wait(self, config, _):
-        """Method to only wait a max amount of time from the api."""
+    async def wait(self: Self, config: munch.Munch, _: discord.Guild) -> None:
+        """This sleeps a random amount of time between Kanye quotes
+
+        Args:
+            config (munch.Munch): The guild config where the loop is taking place
+        """
         await asyncio.sleep(
             random.randint(
                 config.extensions.kanye.min_wait.value * 3600,
@@ -92,9 +122,14 @@ class KanyeQuotes(cogs.LoopCog):
         brief="Gets a Kanye West quote",
         description="Gets a random Kanye West quote from the Kanye West API",
     )
-    async def kanye(self, ctx):
-        """Method to call the command on discord."""
+    async def kanye(self: Self, ctx: commands.Context) -> None:
+        """Entry point and logic for the .kanye discord command
+        This allows for printing of a Kanye quote outside of the loop
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
         quote = await self.get_quote()
-        embed = KanyeEmbed(quote=quote)
+        embed = self.generate_themed_embed(quote=quote)
 
         await ctx.send(embed=embed)

@@ -1,13 +1,27 @@
 """Module for the weather extension for the discord bot."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 import discord
 import munch
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding the weather configuration to the config file."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Weather plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+
+    Raises:
+        AttributeError: Raised if an API key is missing to prevent unusable commands from loading
+    """
 
     # Don't load without the API key
     try:
@@ -22,7 +36,7 @@ async def setup(bot):
 class Weather(cogs.BaseCog):
     """Class to set up the weather extension for the discord bot."""
 
-    def get_url(self, args):
+    def get_url(self: Self, args: list[str]) -> str:
         """Method to get the API for the weather command."""
         filtered_args = filter(bool, args)
         searches = ",".join(map(str, filtered_args))
@@ -45,8 +59,12 @@ class Weather(cogs.BaseCog):
         usage="[city/town] [state-code] [country-code]",
     )
     async def weather(
-        self, ctx, city_name: str, state_code: str = None, country_code: str = None
-    ):
+        self: Self,
+        ctx: commands.Context,
+        city_name: str,
+        state_code: str = None,
+        country_code: str = None,
+    ) -> None:
         """Method to define the weather for the command."""
         response = await self.bot.http_functions.http_call(
             "get", self.get_url([city_name, state_code, country_code])
@@ -62,7 +80,7 @@ class Weather(cogs.BaseCog):
 
         await ctx.send(embed=embed)
 
-    def generate_embed(self, response):
+    def generate_embed(self: Self, response: munch.Munch) -> discord.Embed | None:
         """Method to generate the embed for the weather command."""
         try:
             embed = discord.Embed(

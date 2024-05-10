@@ -1,15 +1,28 @@
 """Module for the dumpdbg command on discord bot."""
 
+from __future__ import annotations
+
 import json
+from typing import TYPE_CHECKING, Self
 
 import discord
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Method to add the dumpdbg command to config."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the DumpDBG plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+
+    Raises:
+        AttributeError: Raised if an API key is missing to prevent unusable commands from loading
+    """
 
     # Don't load without the API key
     try:
@@ -31,14 +44,6 @@ async def setup(bot):
     bot.add_extension_config("dumpdbg", config)
 
 
-class DumpdbgEmbed(discord.Embed):
-    """Class to set up the dumpdbg embed."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.color = discord.Color.green()
-
-
 class Dumpdbg(cogs.BaseCog):
     """Class for the dump debugger on the discord bot."""
 
@@ -54,8 +59,12 @@ class Dumpdbg(cogs.BaseCog):
         ),
         usage="|attached-dump-files|",
     )
-    async def debug_dump(self, ctx):
-        """Method for the actual debugging"""
+    async def debug_dump(self: Self, ctx: commands.Context) -> None:
+        """The entry point and main logic for the dump debug command
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
 
         config = self.bot.guild_configs[str(ctx.guild.id)]
         api_endpoint = self.bot.file_config.api.api_url.dumpdbg
@@ -148,28 +157,30 @@ class Dumpdbg(cogs.BaseCog):
         # Formatting for several files because it looks prettier
         if len(result_urls) == 1:
             await ctx.send(
-                embed=DumpdbgEmbed(
+                embed=auxiliary.generate_basic_embed(
                     title="Dump succesfully debugged! \nResult links:",
                     description="\n".join(result_urls),
+                    color=discord.Color.green(),
                 ),
                 content=auxiliary.construct_mention_string([ctx.author]),
             )
         else:
             await ctx.send(
-                embed=DumpdbgEmbed(
+                embed=auxiliary.generate_basic_embed(
                     title="Dumps succesfully debugged! \nResult links:",
                     description="\n".join(result_urls),
+                    color=discord.Color.green(),
                 )
             )
 
-    async def get_files(self, ctx):
+    async def get_files(self: Self, ctx: commands.Context) -> list[str]:
         """Gets files from passed message and checks if they are valid .dmp files
 
-        Params:
-            -> ctx (discord.Context) = The message to check
+        Args:
+            ctx (commands.Context): The message to check
 
         Returns:
-            -> Valid_URLs (list) = The list of valid .dmp CDN links
+            list[str]: The list of valid .dmp CDN links
         """
 
         # Checks if attachments were supplied
@@ -188,9 +199,10 @@ class Dumpdbg(cogs.BaseCog):
                 #  Disregards any empty dumps
                 if attachment.size == 0:
                     await ctx.send(
-                        embed=DumpdbgEmbed(
+                        embed=auxiliary.generate_basic_embed(
                             title="Invalid dump detected (Size 0)",
                             description=f"Skipping dump number {dump_no}...",
+                            color=discord.Color.green(),
                         )
                     )
                     continue

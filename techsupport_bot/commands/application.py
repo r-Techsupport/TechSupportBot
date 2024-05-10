@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Self
 
 import aiocron
 import discord
@@ -120,8 +120,8 @@ async def command_permission_check(interaction: discord.Interaction) -> bool:
         interaction (discord.Interaction): The interaction that was generated from the slash command
 
     Raises:
-        app_commands.AppCommandError: If there are no roles configured
-        app_commands.MissingAnyRole: If the executing user is missing the required roles
+        AppCommandError: If there are no roles configured
+        MissingAnyRole: If the executing user is missing the required roles
 
     Returns:
         bool: Will return true if the command is allowed to execute, false if it should not execute
@@ -158,7 +158,7 @@ class ApplicationNotifier(cogs.LoopCog):
     """This cog is soley tasked with looping the application reminder for users
     Everything else is handled in ApplicationManager"""
 
-    async def execute(self, config: munch.Munch, guild: discord.Guild) -> None:
+    async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
         """The function that executes the from the LoopCog structure
 
         Args:
@@ -176,7 +176,7 @@ class ApplicationNotifier(cogs.LoopCog):
                 message=config.extensions.application.application_message.value,
             )
 
-    async def wait(self, config: munch.Munch, guild: discord.Guild) -> None:
+    async def wait(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
         """The function that causes the sleep/delay the from the LoopCog structure
 
         Args:
@@ -202,7 +202,7 @@ class ApplicationManager(cogs.LoopCog):
         description="Use this to show you are interested in being staff on this server",
         extras={"module": "application"},
     )
-    async def apply(self, interaction: discord.Interaction) -> None:
+    async def apply(self: Self, interaction: discord.Interaction) -> None:
         """The slash command entrance for /apply
         This handles sending the form and checking if application is valid
 
@@ -218,7 +218,7 @@ class ApplicationManager(cogs.LoopCog):
         extras={"module": "application"},
     )
     async def ban_user(
-        self, interaction: discord.Interaction, member: discord.Member
+        self: Self, interaction: discord.Interaction, member: discord.Member
     ) -> None:
         """Bans a user from making any further applications
 
@@ -250,7 +250,7 @@ class ApplicationManager(cogs.LoopCog):
         extras={"module": "application"},
     )
     async def unban_user(
-        self, interaction: discord.Interaction, member: discord.Member
+        self: Self, interaction: discord.Interaction, member: discord.Member
     ) -> None:
         """Unbans a user from making applications
 
@@ -280,7 +280,7 @@ class ApplicationManager(cogs.LoopCog):
         extras={"module": "application"},
     )
     async def get_application(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         member: discord.Member,
         allow_old: bool = False,
@@ -305,7 +305,7 @@ class ApplicationManager(cogs.LoopCog):
         extras={"module": "application"},
     )
     async def approve_application(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         member: discord.Member,
         message: str = None,
@@ -354,7 +354,7 @@ class ApplicationManager(cogs.LoopCog):
         extras={"module": "application"},
     )
     async def deny_application(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         member: discord.Member,
         message: str = None,
@@ -390,7 +390,7 @@ class ApplicationManager(cogs.LoopCog):
         extras={"module": "application"},
     )
     async def delete_applications(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         member: discord.Member,
     ) -> None:
@@ -421,7 +421,7 @@ class ApplicationManager(cogs.LoopCog):
         extras={"module": "application"},
     )
     async def list_applications(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         status: ApplicationStatus,
     ) -> None:
@@ -448,7 +448,7 @@ class ApplicationManager(cogs.LoopCog):
     # Get application functions
 
     async def get_command_all(
-        self, interaction: discord.Interaction, member: discord.Member
+        self: Self, interaction: discord.Interaction, member: discord.Member
     ) -> None:
         """Gets all applications for a user, regardless of state, and sends them
         As a followup using PaginateView
@@ -472,7 +472,7 @@ class ApplicationManager(cogs.LoopCog):
         await view.send(interaction.channel, interaction.user, embeds, interaction)
 
     async def get_command_pending(
-        self, interaction: discord.Interaction, member: discord.Member
+        self: Self, interaction: discord.Interaction, member: discord.Member
     ) -> None:
         """Gets the most recent pending application of the given user
 
@@ -494,7 +494,7 @@ class ApplicationManager(cogs.LoopCog):
     # Helper functions
 
     async def make_array_from_applications(
-        self, applications: bot.models.Applications, guild: discord.Guild
+        self: Self, applications: bot.models.Applications, guild: discord.Guild
     ) -> list[discord.Embed]:
         """Makes an array designed for pagination from a list of applications
 
@@ -515,7 +515,7 @@ class ApplicationManager(cogs.LoopCog):
         embeds.reverse()
         return embeds
 
-    async def start_application(self, interaction: discord.Interaction) -> None:
+    async def start_application(self: Self, interaction: discord.Interaction) -> None:
         """Starts the application process and sends the user the modal
 
         Args:
@@ -559,7 +559,7 @@ class ApplicationManager(cogs.LoopCog):
         except discord.Forbidden:
             pass
 
-    async def check_if_banned(self, member: discord.Member) -> bool:
+    async def check_if_banned(self: Self, member: discord.Member) -> bool:
         """Checks if a given user is banned from making applications
 
         Args:
@@ -572,7 +572,7 @@ class ApplicationManager(cogs.LoopCog):
         return bool(entry)
 
     async def get_application_from_db_entry(
-        self, guild: discord.Guild, application: bot.models.Applications
+        self: Self, guild: discord.Guild, application: bot.models.Applications
     ) -> discord.Member:
         """Gets the applicant member object from a db entry
 
@@ -584,11 +584,11 @@ class ApplicationManager(cogs.LoopCog):
         Returns:
             discord.Member: The member object that is associated with the application
         """
-        applicant = guild.get_member(int(application.applicant_id))
+        applicant = await guild.fetch_member(int(application.applicant_id))
         return applicant
 
     async def build_application_embed(
-        self,
+        self: Self,
         guild: discord.Guild,
         application: bot.models.Applications,
         new: bool = True,
@@ -596,11 +596,10 @@ class ApplicationManager(cogs.LoopCog):
         """This builds the embed that will be sent to staff
 
         Args:
-            applicant (discord.Member): The member who has applied
-            background (str): The answer to the background question
-            reason (str): The answer to the reason question
-            new (bool, Optional): If the application is new and the title should include new.
-                Defaults to True
+            guild (discord.Guild): The guild the user has applied to
+            application (bot.models.Applications): The database entry of the application
+            new (bool, optional): If the application is new and the title should
+                include new. Defaults to True.
 
         Returns:
             discord.Embed: The stylized embed ready to be show to people
@@ -645,7 +644,7 @@ class ApplicationManager(cogs.LoopCog):
         return embed
 
     async def handle_new_application(
-        self, applicant: discord.Member, background: str, reason: str
+        self: Self, applicant: discord.Member, background: str, reason: str
     ) -> None:
         """The function that handles what happens when a new application is sent in
 
@@ -685,7 +684,7 @@ class ApplicationManager(cogs.LoopCog):
             allowed_mentions=discord.AllowedMentions(roles=True),
         )
 
-    async def check_if_can_apply(self, applicant: discord.Member) -> bool:
+    async def check_if_can_apply(self: Self, applicant: discord.Member) -> bool:
         """Checks if a user can apply to
         Currently does the following checks:
             - Does the user have the application role
@@ -732,15 +731,15 @@ class ApplicationManager(cogs.LoopCog):
         return True
 
     async def get_application_role(
-        self, guild: discord.Guild
-    ) -> Union[discord.Role, None]:
+        self: Self, guild: discord.Guild
+    ) -> discord.Role | None:
         """Gets the guild application role object from the config
 
         Args:
             guild (discord.Guild): The guild to search in
 
         Returns:
-            Union[discord.Role, None]: Will return the role object from the guild,
+            discord.Role | None: Will return the role object from the guild,
                 or none if the role could not be found
         """
         config = self.bot.guild_configs[str(guild.id)]
@@ -748,13 +747,13 @@ class ApplicationManager(cogs.LoopCog):
         return role
 
     async def notify_for_application_change(
-        self,
+        self: Self,
         message: str,
         approved: bool,
         interaction: discord.Interaction,
         application: bot.models.Applications,
         member: discord.Member,
-    ):
+    ) -> None:
         """Notifies:
             - The invoker
             - The user
@@ -805,7 +804,7 @@ class ApplicationManager(cogs.LoopCog):
     # DB Stuff
 
     async def search_for_all_applications(
-        self, member: discord.Member
+        self: Self, member: discord.Member
     ) -> list[bot.models.Applications]:
         """Gets ALL applications for a given user, regardless of status
 
@@ -822,7 +821,7 @@ class ApplicationManager(cogs.LoopCog):
         return entry
 
     async def get_applications_by_status(
-        self, status: ApplicationStatus, guild: discord.Guild
+        self: Self, status: ApplicationStatus, guild: discord.Guild
     ) -> list[bot.models.Applications]:
         """Gets all applications of a given status
 
@@ -841,7 +840,7 @@ class ApplicationManager(cogs.LoopCog):
         return entry
 
     async def search_for_pending_application(
-        self, member: discord.Member
+        self: Self, member: discord.Member
     ) -> bot.models.Applications:
         """Finds a pending application from the given user
 
@@ -864,7 +863,7 @@ class ApplicationManager(cogs.LoopCog):
         entry = await query.gino.first()
         return entry
 
-    async def get_ban_entry(self, member: discord.Member) -> bot.models.AppBans:
+    async def get_ban_entry(self: Self, member: discord.Member) -> bot.models.AppBans:
         """Gets the DB entry of a banned user
 
         Args:
@@ -881,7 +880,7 @@ class ApplicationManager(cogs.LoopCog):
 
     # Loop stuff
 
-    async def execute(self, config: munch.Munch, guild: discord.Guild) -> None:
+    async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
         """The executes the reminder of pending applications
 
         Args:
@@ -901,7 +900,7 @@ class ApplicationManager(cogs.LoopCog):
         # Update the database
         audit_log = []
         for app in apps:
-            user = guild.get_member(int(app.applicant_id))
+            user = await guild.fetch_member(int(app.applicant_id))
             if not user:
                 audit_log.append(
                     f"Application by user: `{app.applicant_name}` was rejected because"
@@ -945,18 +944,22 @@ class ApplicationManager(cogs.LoopCog):
             return
 
         embed = discord.Embed(title="All pending applcations")
+        list_of_applicants = []
 
-        embed.description = "\n".join(
-            [
-                f"Application by: `{guild.get_member(int(app.applicant_id)).display_name} "
-                f"({app.applicant_name})`, applied on: {app.application_time}"
-                for app in apps
-            ]
-        )
+        for app in apps:
+            member = await guild.fetch_member(int(app.applicant_id))
+            list_of_applicants.append(
+                (
+                    f"Application by: `{member.display_name} ({app.applicant_name})`"
+                    f", applied on: {app.application_time}"
+                )
+            )
+
+        embed.description = "\n".join(list_of_applicants)
 
         await channel.send(embed=embed)
 
-    async def wait(self, config: munch.Munch, guild: discord.Guild) -> None:
+    async def wait(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
         """The queues the pending application reminder based on the cron config
 
         Args:
