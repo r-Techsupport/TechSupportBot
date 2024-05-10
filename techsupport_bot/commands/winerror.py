@@ -227,7 +227,15 @@ class WindowsError(cogs.BaseCog):
         return category
 
     def twos_comp(self: Self, original_value: int, bits: int) -> int:
-        """compute the 2's complement of int value val"""
+        """Compute the two's complement of an integer value.
+
+        Args:
+            original_value (int): The original integer value.
+            bits (int): How many bits need to be shifted.
+
+        Returns:
+            int: The two's complement of the original integer value.
+        """
         if (
             original_value & (1 << (bits - 1)) != 0
         ):  # if sign bit is set e.g., 8bit: 128-255

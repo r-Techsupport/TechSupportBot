@@ -21,13 +21,13 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
     """The IRC bot class. This is the class that runs the entire IRC side of the bot
     The class to start the entire IRC bot
 
-        Args:
-            loop (asyncio.AbstractEventLoop): The running event loop for the discord API.
-            server (str): The string server domain/IP
-            port (int): The port the IRC server is running on
-            channels (List[str]): The list of channels to join
-            username (str): The username of the IRC bot account
-            password (str): The password of the IRC bot account
+    Args:
+        loop (asyncio.AbstractEventLoop): The running event loop for the discord API.
+        server (str): The string server domain/IP
+        port (int): The port the IRC server is running on
+        channels (list[str]): The list of channels to join
+        username (str): The username of the IRC bot account
+        password (str): The password of the IRC bot account
     """
 
     irc_cog = None
@@ -169,7 +169,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         """Sends the given message to discord, using the discord API event loop
 
         Args:
-            split_message (Dict[str, str]): The formatted message to send to discord
+            split_message (dict[str, str]): The formatted message to send to discord
         """
         asyncio.run_coroutine_threadsafe(
             self.irc_cog.send_message_from_irc(split_message=split_message), self.loop
@@ -180,7 +180,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         Returns nicely formatted status, username, and channels
 
         Returns:
-            Dict[str, str]: The dictionary containing the 3 status items as strings
+            dict[str, str]: The dictionary containing the 3 status items as strings
         """
         status_text = self.generate_status_string()
         channels = ", ".join(self.channels.keys())

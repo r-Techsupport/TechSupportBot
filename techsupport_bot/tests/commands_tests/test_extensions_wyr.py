@@ -25,7 +25,7 @@ def setup_local_extension(bot: helpers.MockBot = None) -> wyr.WouldYouRather:
             fake_discord_env in the test. Defaults to None.
 
     Returns:
-        WouldYouRather: The instance of the WouldYouRather class
+        wyr.WouldYouRather: The instance of the WouldYouRather class
     """
     with patch("asyncio.create_task", return_value=None):
         return wyr.WouldYouRather(bot)
