@@ -49,9 +49,6 @@ class ListenChannel(commands.Converter):
 class Listener(cogs.BaseCog):
     """Cog object for listening to channels."""
 
-    MAX_DESTINATIONS = 10
-    CACHE_TIME = 60
-
     def format_message_in_embed(self: Self, message: discord.Message) -> discord.Embed:
         """Formats a listened message into a pretty embed
 

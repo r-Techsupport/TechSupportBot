@@ -56,6 +56,9 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class RoleGiver(cogs.BaseCog):
     """The main class for the role commands
 
+    Attrs:
+        role_group (app_commands.Group): The group for the /role commands
+
     Args:
         bot (bot.TechSupportBot): The bot object, is used for registering context menu commands
     """

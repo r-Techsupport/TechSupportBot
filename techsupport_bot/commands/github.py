@@ -49,6 +49,10 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class IssueCreator(cogs.BaseCog):
     """
     The class that holds the issue commands
+
+    Attrs:
+        GITHUB_API_BASE_URL (str): The URL for the github API
+
     """
 
     GITHUB_API_BASE_URL = "https://api.github.com"

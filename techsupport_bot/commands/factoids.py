@@ -158,6 +158,10 @@ async def has_given_factoids_role(
 class CalledFactoid:
     """A class to allow keeping the original factoid name in tact
     Without having to call the database lookup function every time
+
+    Attrs:
+        original_call_str (str): The original name the user provided for a factoid
+        factoid_db_entry (bot.models.Factoid): The database entry for the original factoid
     """
 
     original_call_str: str
@@ -167,6 +171,9 @@ class CalledFactoid:
 class FactoidManager(cogs.MatchCog):
     """
     Manages all factoid features
+
+    Attrs:
+        CRON_REGEX: The regex to check if a cronjob is correct
     """
 
     CRON_REGEX = (

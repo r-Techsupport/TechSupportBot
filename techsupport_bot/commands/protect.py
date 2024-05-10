@@ -145,7 +145,14 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Protector(cogs.MatchCog):
-    """Class for the protector command."""
+    """Class for the protector command.
+
+    Attrs:
+        ALERT_ICON_URL (str): The icon for the alert messages
+        CLIPBOARD_ICON_URL (str): The icon for the paste messages
+        CHARS_PER_NEWLINE (int): The arbitrary length of a line
+
+    """
 
     ALERT_ICON_URL = (
         "https://cdn.icon-icons.com/icons2/2063/PNG/512/"

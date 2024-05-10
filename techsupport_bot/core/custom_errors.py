@@ -70,6 +70,9 @@ class HTTPRateLimit(commands.errors.CommandError):
 class ErrorResponse:
     """Object for generating a custom error message from an exception.
 
+    Attrs:
+        DEFAULT_MESSAGE (str): The default error message for unclassified errors
+
     Args:
         message_format (str): the substition formatted (%s) message
         lookups (str | list[Any]): the lookup objects to reference

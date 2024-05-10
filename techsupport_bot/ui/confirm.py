@@ -11,9 +11,11 @@ from core import auxiliary
 
 class ConfirmResponse(Enum):
     """A class to define the 3 responses
-    CONFIRMED - The original author clicked the "confirm" button
-    DENIED - The original author clicked the "cancel" button
-    TIMEOUT - No buttons were pressed in the timeout range
+
+    Attrs:
+        CONFIRMED (int): The original author clicked the "confirm" button
+        DENIED (int): The original author clicked the "cancel" button
+        TIMEOUT (int): No buttons were pressed in the timeout range
     """
 
     CONFIRMED = auto()

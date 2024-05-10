@@ -21,9 +21,12 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Translator(cogs.BaseCog):
-    """Class to set up the translate extension."""
+    """Class to set up the translate extension.
 
-    HAS_CONFIG = False
+    Attrs:
+        API_URL (str): The translated API URL
+
+    """
 
     API_URL = "https://api.mymemory.translated.net/get?q={}&langpair={}|{}"
 

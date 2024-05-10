@@ -36,7 +36,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Spotify(cogs.BaseCog):
-    """Class for setting up the Spotify extension."""
+    """Class for setting up the Spotify extension.
+
+    Attrs:
+        AUTH_URL: The URL for the authentication API for spotify
+        API_URL: The URL for the search spotify API
+
+    """
 
     AUTH_URL = "https://accounts.spotify.com/api/token"
     API_URL = "https://api.spotify.com/v1/search"

@@ -13,6 +13,12 @@ class PaginateView(discord.ui.View):
     This holds all the buttons and how the pages should work.
 
     To use this, call the send function. Everything else is automatic
+
+    Attrs:
+        current_page (int): The current page number the user is on
+        data (list[str | discord.Embed]): The list of data for the pages
+        timeout (int): The timeout till the buttons dissapear without interaction
+        message (discord.Message): The message that has the pagination
     """
 
     current_page: int = 1

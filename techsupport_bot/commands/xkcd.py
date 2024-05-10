@@ -24,7 +24,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class XKCD(cogs.BaseCog):
-    """Class to create the xkcd for the extension."""
+    """Class to create the xkcd for the extension.
+
+    Attrs:
+        MOST_RECENT_API_URL (str): The URL for the most recent comic
+        SPECIFIC_API_URL (str): The URL for a given number comic
+
+    """
 
     MOST_RECENT_API_URL = "https://xkcd.com/info.0.json"
     SPECIFIC_API_URL = "https://xkcd.com/%s/info.0.json"

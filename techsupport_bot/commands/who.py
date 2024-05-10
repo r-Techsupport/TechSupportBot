@@ -62,7 +62,12 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Who(cogs.BaseCog):
-    """Class to set up who for the extension."""
+    """Class to set up who for the extension.
+
+    Attrs:
+        notes (app_commands.Group): The group for the /note commands
+
+    """
 
     notes = app_commands.Group(
         name="note", description="Command Group for the Notes Extension"

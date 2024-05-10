@@ -91,7 +91,15 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class DuckHunt(cogs.LoopCog):
-    """Class for the actual duck commands"""
+    """Class for the actual duck commands
+
+    Attrs:
+        DUCK_PIC_URL (str): The picture for the duck
+        BEFRIEND_URL (str): The picture for the befriend target
+        KILL_URL (str): The picture for the kill target
+        ON_START (bool): ???
+        CHANNELS_KEY (str): The config item for the channels that the duck hunt should run
+    """
 
     DUCK_PIC_URL = "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
     BEFRIEND_URL = (

@@ -22,7 +22,12 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class IPInfo(cogs.BaseCog):
-    """Class to add ipinfo geodata to the bot."""
+    """Class to add ipinfo geodata to the bot.
+
+    Attrs:
+        API_URL (str): The API url for IP info
+        IP_ICON_URL (str): The URL for the IP info icon
+    """
 
     API_URL = "https://ipinfo.io"
     IP_ICON_URL = (

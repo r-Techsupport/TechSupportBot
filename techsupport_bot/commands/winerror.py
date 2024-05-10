@@ -28,9 +28,11 @@ async def setup(bot: bot.TechSupportBot) -> None:
 @dataclass
 class Error:
     """The data to pull for the error.
-    name - the name of the error
-    source - the header file where the error is from
-    description - (optional) the description of the error
+
+    Attrs:
+        name (str): the name of the error
+        source (str): the header file where the error is from
+        description (str): the description of the error
     """
 
     name: str
@@ -41,7 +43,13 @@ class Error:
 @dataclass
 class ErrorCategory:
     """A category of errors, based on how the error was found
-    This contains the name of the category and a list of errors"""
+    This contains the name of the category and a list of errors
+
+    Attrs:
+        name (str): The name of the category of errors
+        errors (list[Error]): The list of errors in the category
+
+    """
 
     name: str
     errors: list[Error]

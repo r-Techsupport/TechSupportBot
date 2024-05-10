@@ -20,6 +20,13 @@ if TYPE_CHECKING:
 class PrintableCommand:
     """A custom class to store formatted information about a command
     With a priority on being sortable and searchable
+
+    Attrs:
+        prefix (str): The prefix to call the command with
+        name (str): The command name
+        usage (str): The usage hints for the command
+        description (str): The description of the command
+
     """
 
     prefix: str
@@ -39,8 +46,6 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 class Helper(cogs.BaseCog):
     """Cog object for help commands."""
-
-    EXTENSIONS_PER_GENERAL_PAGE = 15
 
     @commands.command(
         name="help",

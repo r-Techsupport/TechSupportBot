@@ -7,7 +7,6 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any, Self
 
 import discord
-import gino
 import munch
 from botlogging import LogContext, LogLevel
 from discord.ext import commands
@@ -18,6 +17,10 @@ if TYPE_CHECKING:
 
 class BaseCog(commands.Cog):
     """The base cog to use when making extensions.
+
+    Attrs:
+        COG_TYPE (str): The string representation for the type of cog
+        KEEP_COG_ON_FAILURE (bool): Whether or not to keep the cog loaded if there was an error
 
     Args:
         bot (bot.TechSupportBot): the bot object
@@ -93,6 +96,9 @@ class MatchCog(BaseCog):
     Cog for matching a specific context criteria and responding.
 
     This makes the process of handling events simpler for development.
+
+    Attrs:
+        COG_TYPE (str): The string representation for the type of cog
     """
 
     COG_TYPE = "Match"
@@ -175,6 +181,13 @@ class LoopCog(BaseCog):
     """Cog for various types of looping including cron-config.
 
     This currently doesn't utilize the tasks library.
+
+    Attrs:
+        COG_TYPE (str): The string representation for the type of cog
+        DEFAULT_WAIT (int): The default time to sleep for
+        TRACKER_WAIT (int): The time to wait before looking for new channels
+        ON_START (bool): Should this loop be only a manual start call
+        CHANNELS_KEY (str): The config key to use for looping
 
     Args:
         *args (tuple): Args to pass to the BaseCog init

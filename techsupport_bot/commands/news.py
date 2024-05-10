@@ -69,7 +69,18 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Category(enum.Enum):
-    """Class to set up categories for the news."""
+    """Class to set up categories for the news.
+
+    Attrs:
+        BUSINESS (str): The string representation for business
+        ENTERTAINMENT (str): The string representation for entertainment
+        GENERAL (str): The string representation for general
+        HEALTH (str): The string representation for health
+        SCIENCE (str): The string representation for science
+        SPORTS (str): The string representation for sports
+        TECH (str): The string representation for technology
+
+    """
 
     BUSINESS = "business"
     ENTERTAINMENT = "entertainment"
@@ -81,7 +92,12 @@ class Category(enum.Enum):
 
 
 class News(cogs.LoopCog):
-    """Class to set up the news extension for the discord bot."""
+    """Class to set up the news extension for the discord bot.
+
+    Attrs:
+        API_URL (str): The news API URL
+
+    """
 
     API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
 

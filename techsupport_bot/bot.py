@@ -37,6 +37,13 @@ class TechSupportBot(commands.Bot):
             the bot needs to request from discord
         allowed_mentions (discord.AllowedMentions): What the bot is, or is not,
             allowed to mention
+
+    Attrs:
+        CONFIG_PATH (str): The hard coded path to the yaml config file
+        EXTENSIONS_DIR_NAME (str): The hardcoded folder for commands
+        EXTENSIONS_DIR (str): The list of all files in the EXTENSIONS_DIR_NAME folder
+        FUNCTIONS_DIR_NAME (str):The hardcoded folder for functions
+        FUNCTIONS_DIR (str):The list of all files in the FUNCTIONS_DIR_NAME folder
     """
 
     CONFIG_PATH: str = "./config.yml"

@@ -21,6 +21,16 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
     """The IRC bot class. This is the class that runs the entire IRC side of the bot
     The class to start the entire IRC bot
 
+    Attrs:
+        irc_cog (commands.relay.DiscordToIRC): The discord cog for the relay,
+            to allow communication between
+        loop (asyncio.AbstractEventLoop): The discord bots event loop
+        console (logging.Logger): The console to print errors to
+        IRC_BOLD (str): The bold character for IRC
+        connection (irc.client.ServerConnection): The IRC connection event
+        join_thread (threading.Timer): The repeating join channel request thread
+        ready (bool): Whether the IRC bot is ready to send messages
+
     Args:
         loop (asyncio.AbstractEventLoop): The running event loop for the discord API.
         server (str): The string server domain/IP
