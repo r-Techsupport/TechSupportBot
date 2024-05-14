@@ -7,7 +7,7 @@ from typing import Self
 
 import discord
 import ui
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs, databases, extensionconfig
 from discord.ext import commands
 
 
@@ -111,13 +111,12 @@ class Grabber(cogs.BaseCog):
             )
             return
 
-        grab = (
-            await self.bot.models.Grab.query.where(
-                self.bot.models.Grab.author_id == str(user_to_grab.id),
-            )
-            .where(self.bot.models.Grab.message == grab_message)
-            .gino.first()
-        )
+        grabs_database = await databases.read_database(self.bot.models.Grab)
+        grab = [
+            grab
+            for grab in grabs_database
+            if grab.author_id == str(user_to_grab.id) and grab.message == grab_message
+        ][0]
 
         if grab:
             await auxiliary.send_deny_embed(
@@ -125,14 +124,13 @@ class Grabber(cogs.BaseCog):
             )
             return
 
-        grab = self.bot.models.Grab(
-            author_id=str(user_to_grab.id),
-            channel=str(ctx.channel.id),
-            guild=str(ctx.guild.id),
-            message=grab_message,
-            nsfw=ctx.channel.is_nsfw(),
-        )
-        await grab.create()
+        blank_grab = databases.get_blank_entry(self.bot.models.Grab)
+        blank_grab.author_id = str(user_to_grab.id)
+        blank_grab.channel = str(ctx.channel.id)
+        blank_grab.guild = str(ctx.guild.id)
+        blank_grab.message = grab_message
+        blank_grab.nsfw = ctx.channel.is_nsfw()
+        await databases.write_new_entry(blank_grab)
 
         await auxiliary.send_confirm_embed(
             message=f"Successfully saved: '*{grab_message}*'", channel=ctx.channel
@@ -168,15 +166,15 @@ class Grabber(cogs.BaseCog):
             )
             return
 
-        query = self.bot.models.Grab.query.where(
-            self.bot.models.Grab.author_id == str(user_to_grab.id)
-        ).where(self.bot.models.Grab.guild == str(ctx.guild.id))
+        grab_database = await databases.read_database(self.bot.models.Grab)
 
-        if not is_nsfw:
-            # pylint: disable=C0121
-            query = query.where(self.bot.models.Grab.nsfw == False)
-
-        grabs = await query.gino.all()
+        grabs = [
+            grab
+            for grab in grab_database
+            if grab.author_id == str(user_to_grab.id)
+            and grab.guild == str(ctx.guild.id)
+            and (is_nsfw or grab.nsfw == False)
+        ]
 
         if not grabs:
             await auxiliary.send_deny_embed(
@@ -237,22 +235,15 @@ class Grabber(cogs.BaseCog):
             )
             return
 
-        grabs = (
-            await self.bot.models.Grab.query.where(
-                self.bot.models.Grab.author_id == str(user_to_grab.id)
-            )
-            .where(self.bot.models.Grab.guild == str(ctx.guild.id))
-            .gino.all()
-        )
+        grab_database = await databases.read_database(self.bot.models.Grab)
 
-        query = self.bot.models.Grab.query.where(
-            self.bot.models.Grab.author_id == str(user_to_grab.id)
-        ).where(self.bot.models.Grab.guild == str(ctx.guild.id))
-
-        if not ctx.channel.is_nsfw():
-            query = query.where(self.bot.models.Grab.nsfw is False)
-
-        grabs = await query.gino.all()
+        grabs = [
+            grab
+            for grab in grab_database
+            if grab.author_id == str(user_to_grab.id)
+            and grab.guild == str(ctx.guild.id)
+            and (ctx.channel.is_nsfw() or grab.nsfw == False)
+        ]
 
         if not grabs:
             await auxiliary.send_deny_embed(
@@ -307,23 +298,24 @@ class Grabber(cogs.BaseCog):
             )
             return
         # Gets the target grab by the message
-        grab = (
-            await self.bot.models.Grab.query.where(
-                self.bot.models.Grab.author_id == str(target_user.id)
-            )
-            .where(self.bot.models.Grab.guild == str(ctx.guild.id))
-            .where(self.bot.models.Grab.message == message)
-            .gino.all()
-        )
 
-        if not grab:
+        grab_database = await databases.read_database(self.bot.models.Grab)
+        grabs = [
+            grab
+            for grab in grab_database
+            if grab.author_id == str(target_user.id)
+            and grab.guild == str(ctx.guild.id)
+            and grab.message == message
+        ]
+
+        if not grabs:
             await auxiliary.send_deny_embed(
                 message=f"Grab `{message}` not found for {target_user}",
                 channel=ctx.channel,
             )
             return
         try:
-            await grab[0].delete()
+            await grabs[0].delete()
 
         except IndexError:
             raise commands.CommandError("Couldn't delete the grab!") from IndexError

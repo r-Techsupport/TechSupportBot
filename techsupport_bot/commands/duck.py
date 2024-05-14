@@ -390,7 +390,7 @@ class DuckHunt(cogs.LoopCog):
             guild_id (int): The guild ID of where the user belongs to
 
         Returns:
-            bot.models.DuckUser | None: The DuckUser database entry of the user/guild combo.
+            munch.Munch | None: The DuckUser database entry of the user/guild combo.
                 Or None if it doesn't exist
         """
         duck_database = await databases.read_database(self.bot.models.DuckUser)
@@ -649,7 +649,7 @@ class DuckHunt(cogs.LoopCog):
         """Gets the name of a user formatted to be displayed across the extension
 
         Args:
-            duck_user (bot.models.DuckUser): The database entry of the user to format
+            duck_user (munch.Munch): The database entry of the user to format
 
         Returns:
             str: The username in a pretty string format, ready to print

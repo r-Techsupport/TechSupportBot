@@ -179,17 +179,17 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild_id = bot.db.Column(bot.db.String)
         rules = bot.db.Column(bot.db.String)
 
-    bot.models.Applications = Applications
-    bot.models.AppBans = ApplicationBans
+    bot.models.Applications = Applications  # DONE
+    bot.models.AppBans = ApplicationBans  # DONE
     bot.models.DuckUser = DuckUser  # DONE
     bot.models.Factoid = Factoid
     bot.models.FactoidJob = FactoidJob
-    bot.models.Grab = Grab
-    bot.models.IRCChannelMapping = IRCChannelMapping
-    bot.models.ModmailBan = ModmailBan
+    bot.models.Grab = Grab  # DONE
+    bot.models.IRCChannelMapping = IRCChannelMapping  # DONE
+    bot.models.ModmailBan = ModmailBan  # DONE
     bot.models.UserNote = UserNote  # DONE
     bot.models.Warning = Warning  # DONE
-    bot.models.Config = Config
+    bot.models.Config = Config  # DONE
     bot.models.Listener = Listener
     bot.models.Rule = Rule
 

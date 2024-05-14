@@ -9,7 +9,7 @@ import irc.client
 import munch
 import ui
 from bidict import bidict
-from core import auxiliary, cogs
+from core import auxiliary, cogs, databases
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -48,7 +48,7 @@ class DiscordToIRC(cogs.MatchCog):
         """The preconfig setup for the discord side
         This maps the database to a bidict for quick lookups, and allows lookups in threads
         """
-        allmaps = await self.bot.models.IRCChannelMapping.query.gino.all()
+        allmaps = await databases.read_database(self.bot.models.IRCChannelMapping)
         self.mapping = bidict({})
         for irc_discord_map in allmaps:
             self.mapping.put(
@@ -153,9 +153,9 @@ class DiscordToIRC(cogs.MatchCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        db_links = await self.bot.models.IRCChannelMapping.query.where(
-            self.bot.models.IRCChannelMapping.guild_id == str(ctx.guild.id)
-        ).gino.all()
+        irc_database = await databases.read_database(self.bot.models.IRCChannelMapping)
+
+        db_links = [link for link in irc_database if link.guild_id == str(ctx.guild.id)]
 
         embed = discord.Embed()
         embed.title = "All IRC links:"
@@ -317,17 +317,16 @@ class DiscordToIRC(cogs.MatchCog):
             )
             return
 
-        irc_discord_map = self.bot.models.IRCChannelMapping(
-            guild_id=str(ctx.guild.id),
-            discord_channel_id=str(ctx.channel.id),
-            irc_channel_id=irc_channel,
-        )
+        blank_irc_map = databases.get_blank_entry(self.bot.models.IRCChannelMapping)
+        blank_irc_map.guild_id = str(ctx.guild.id)
+        blank_irc_map.discord_channel_id = str(ctx.channel.id)
+        blank_irc_map.irc_channel_id = irc_channel
+        irc_discord_map = await databases.write_new_entry(blank_irc_map)
 
         self.mapping.put(
             irc_discord_map.discord_channel_id, irc_discord_map.irc_channel_id
         )
 
-        await irc_discord_map.create()
         await auxiliary.send_confirm_embed(
             message=(
                 f"New link established between <#{ctx.channel.id}> and {irc_channel}"
@@ -372,11 +371,15 @@ class DiscordToIRC(cogs.MatchCog):
 
         irc_channel = self.mapping.pop(str(ctx.channel.id))
 
-        db_link = await self.bot.models.IRCChannelMapping.query.where(
-            self.bot.models.IRCChannelMapping.discord_channel_id == str(ctx.channel.id)
-        ).gino.first()
+        irc_database = await databases.read_database(self.bot.models.IRCChannelMapping)
 
-        await db_link.delete()
+        db_link = [
+            link
+            for link in irc_database
+            if link.discord_channel_id == str(ctx.channel.id)
+        ][0]
+
+        await databases.delete_entry(db_link)
 
         await auxiliary.send_confirm_embed(
             message=(

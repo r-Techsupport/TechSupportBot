@@ -169,7 +169,7 @@ class TechSupportBot(commands.Bot):
         await self.db.gino.create_all()
 
         # Load all guild config objects into self.guild_configs object
-        all_config = await self.models.Config.query.gino.all()
+        all_config = await databases.read_database(self.models.Config)
         for config in all_config:
             self.guild_configs[config.guild_id] = munch.munchify(
                 json.loads(config.config)
@@ -343,19 +343,20 @@ class TechSupportBot(commands.Bot):
             guild_id (str): The str ID of the guild the config belongs to
             config (str): The str representation of the json config
         """
-        database_config = await self.models.Config.query.where(
-            self.models.Config.guild_id == guild_id
-        ).gino.first()
+        database_config = [
+            config
+            for config in await databases.read_database(self.models.Config)
+            if config.guild_id == guild_id
+        ]
         if database_config:
-            await database_config.update(
-                config=str(config), update_time=datetime.datetime.utcnow()
-            ).apply()
+            database_config[0].config = str(config)
+            database_config[0].update_time = datetime.datetime.utcnow()
+            await databases.update_entry(database_config[0])
         else:
-            new_database_config = self.models.Config(
-                guild_id=str(guild_id),
-                config=str(config),
-            )
-            await new_database_config.create()
+            blank_config = databases.get_blank_entry(self.bot.models.Config)
+            blank_config.guild_id = str(guild_id)
+            blank_config.config = str(config)
+            await databases.write_new_entry(blank_config)
 
     def add_extension_config(
         self, extension_name: str, config: extensionconfig.ExtensionConfig

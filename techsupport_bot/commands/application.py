@@ -9,7 +9,7 @@ import aiocron
 import discord
 import munch
 import ui
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs, databases, extensionconfig
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -233,11 +233,12 @@ class ApplicationManager(cogs.LoopCog):
             )
             await interaction.response.send_message(embed=embed)
             return
-        ban = self.bot.models.AppBans(
-            guild_id=str(interaction.guild.id),
-            applicant_id=str(member.id),
-        )
-        await ban.create()
+
+        blank_ban_entry = databases.get_blank_entry(self.bot.models.AppBans)
+        blank_ban_entry.guild_id = str(interaction.guild.id)
+        blank_ban_entry.applicant_id = str(member.id)
+        await databases.write_new_entry(blank_ban_entry)
+
         embed = auxiliary.prepare_confirm_embed(
             f"{member.name} successfully banned from making applications"
         )
@@ -494,12 +495,12 @@ class ApplicationManager(cogs.LoopCog):
     # Helper functions
 
     async def make_array_from_applications(
-        self, applications: bot.models.Applications, guild: discord.Guild
+        self, applications: munch.Munch, guild: discord.Guild
     ) -> list[discord.Embed]:
         """Makes an array designed for pagination from a list of applications
 
         Args:
-            applications (bot.models.Applications): The list of applications to convert into embeds
+            applications (munch.Munch): The list of applications to convert into embeds
             guild (discord.Guild): The guild the command is run from
 
         Returns:
@@ -572,13 +573,13 @@ class ApplicationManager(cogs.LoopCog):
         return bool(entry)
 
     async def get_application_from_db_entry(
-        self, guild: discord.Guild, application: bot.models.Applications
+        self, guild: discord.Guild, application: munch.Munch
     ) -> discord.Member:
         """Gets the applicant member object from a db entry
 
         Args:
             guild (discord.Guild): The guild to search in
-            application (bot.models.Applications): The application database entry
+            application (munch.Munch): The application database entry
                 to get the member from
 
         Returns:
@@ -590,14 +591,14 @@ class ApplicationManager(cogs.LoopCog):
     async def build_application_embed(
         self,
         guild: discord.Guild,
-        application: bot.models.Applications,
+        application: munch.Munch,
         new: bool = True,
     ) -> discord.Embed:
         """This builds the embed that will be sent to staff
 
         Args:
             guild (discord.Guild): The guild the user has applied to
-            application (bot.models.Applications): The database entry of the application
+            application (munch.Munch): The database entry of the application
             new (bool, optional): If the application is new and the title should
                 include new. Defaults to True.
 
@@ -654,15 +655,14 @@ class ApplicationManager(cogs.LoopCog):
             reason (str): The answer to the reason question
         """
         # Add application to database
-        application = self.bot.models.Applications(
-            guild_id=str(applicant.guild.id),
-            applicant_name=applicant.name,
-            applicant_id=str(applicant.id),
-            application_status=ApplicationStatus.PENDING.value,
-            background=background,
-            reason=reason,
-        )
-        await application.create()
+        blank_application = databases.get_blank_entry(self.bot.models.Applications)
+        blank_application.guild_id = str(applicant.guild.id)
+        blank_application.applicant_name = applicant.name
+        blank_application.applicant_id = str(applicant.id)
+        blank_application.application_status = ApplicationStatus.PENDING.value
+        blank_application.background = background
+        blank_application.reason = reason
+        application = await databases.write_new_entry(blank_application)
 
         # Find the channel to send to
         config = self.bot.guild_configs[str(applicant.guild.id)]
@@ -751,7 +751,7 @@ class ApplicationManager(cogs.LoopCog):
         message: str,
         approved: bool,
         interaction: discord.Interaction,
-        application: bot.models.Applications,
+        application: munch.Munch,
         member: discord.Member,
     ) -> None:
         """Notifies:
@@ -766,7 +766,7 @@ class ApplicationManager(cogs.LoopCog):
             approved (bool): Whether this application has been approved. If False, it is denied
             interaction (discord.Interaction): The interaction from the slash command
                 that changed the status
-            application (bot.models.Applications): The db entry of the application to update
+            application (munch.Munch): The db entry of the application to update
             member (discord.Member): The member to approve/deny,
                 only for the purposes of sending a DM
         """
@@ -805,24 +805,29 @@ class ApplicationManager(cogs.LoopCog):
 
     async def search_for_all_applications(
         self, member: discord.Member
-    ) -> list[bot.models.Applications]:
+    ) -> list[munch.Munch]:
         """Gets ALL applications for a given user, regardless of status
 
         Args:
             member (discord.Member): The member to lookup applications for
 
         Returns:
-            list[bot.models.Applications]: A list of all of the applications beloning to the user
+            list[munch.Munch]: A list of all of the applications beloning to the user
         """
-        query = self.bot.models.Applications.query.where(
-            self.bot.models.Applications.applicant_id == str(member.id)
-        ).where(self.bot.models.Applications.guild_id == str(member.guild.id))
-        entry = await query.gino.all()
-        return entry
+        application_database = await databases.read_database(
+            self.bot.models.Applications
+        )
+
+        return [
+            application
+            for application in application_database
+            if application.applicant_id == str(member.id)
+            and application.guild_id == str(member.guild.id)
+        ]
 
     async def get_applications_by_status(
         self, status: ApplicationStatus, guild: discord.Guild
-    ) -> list[bot.models.Applications]:
+    ) -> list[munch.Munch]:
         """Gets all applications of a given status
 
         Args:
@@ -830,53 +835,63 @@ class ApplicationManager(cogs.LoopCog):
             guild (discord.Guild): The guild to get applications from
 
         Returns:
-            list[bot.models.Applications]: The list of applications in a oldest first order
+            list[munch.Munch]: The list of applications in a oldest first order
         """
-        query = self.bot.models.Applications.query.where(
-            self.bot.models.Applications.application_status == status.value
-        ).where(self.bot.models.Applications.guild_id == str(guild.id))
-        entry = await query.gino.all()
-        entry.sort(key=lambda entry: entry.application_time)
-        return entry
+        application_database = await databases.read_database(
+            self.bot.models.Applications
+        )
+
+        return [
+            application
+            for application in application_database
+            if application.application_status == status.value
+            and application.guild_id == str(guild.id)
+        ]
 
     async def search_for_pending_application(
         self, member: discord.Member
-    ) -> bot.models.Applications:
+    ) -> munch.Munch:
         """Finds a pending application from the given user
 
         Args:
             member (discord.Member): The member to lookup the application for
 
         Returns:
-            bot.models.Applications: The pending application object of the given user
+            munch.Munch: The pending application object of the given user
         """
-        query = (
-            self.bot.models.Applications.query.where(
-                self.bot.models.Applications.applicant_id == str(member.id)
-            )
-            .where(self.bot.models.Applications.guild_id == str(member.guild.id))
-            .where(
-                self.bot.models.Applications.application_status
-                == ApplicationStatus.PENDING.value
-            )
-        )
-        entry = await query.gino.first()
-        return entry
 
-    async def get_ban_entry(self, member: discord.Member) -> bot.models.AppBans:
+        application_database = await databases.read_database(
+            self.bot.models.Applications
+        )
+
+        return [
+            application
+            for application in application_database
+            if application.applicant_id == str(member.id)
+            and application.guild_id == str(member.guild.id)
+            and application.application_status == ApplicationStatus.PENDING.value
+        ][0]
+
+    async def get_ban_entry(self, member: discord.Member) -> list[munch.Munch]:
         """Gets the DB entry of a banned user
 
         Args:
             member (discord.Member): The member to tlookup the ban for
 
         Returns:
-            bot.models.AppBans: The DB entry of the ban, if one was found
+            list[munch.Munch]: The DB entry of the ban, if one was found
         """
-        query = self.bot.models.AppBans.query.where(
-            self.bot.models.AppBans.applicant_id == str(member.id)
-        ).where(self.bot.models.AppBans.guild_id == str(member.guild.id))
-        entry = await query.gino.all()
-        return entry
+
+        application_bans_database = await databases.read_database(
+            self.bot.models.AppBans
+        )
+
+        return [
+            appban
+            for appban in application_bans_database
+            if appban.applicant_id == str(member.id)
+            and appban.guild_id == str(member.guild.id)
+        ]
 
     # Loop stuff
 

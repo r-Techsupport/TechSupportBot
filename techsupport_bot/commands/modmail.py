@@ -22,7 +22,7 @@ import discord
 import expiringdict
 import munch
 import ui
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs, databases, extensionconfig
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -96,9 +96,15 @@ class Modmail_bot(discord.Client):
             )
 
             # User is banned from creating modmail threads
-            if await Ts_client.models.ModmailBan.query.where(
-                Ts_client.models.ModmailBan.user_id == str(message.author.id)
-            ).gino.first():
+            modmail_database = await databases.read_database(
+                Ts_client.models.ModmailBan
+            )
+            ban_entry = [
+                modmail_ban
+                for modmail_ban in modmail_database
+                if modmail_ban.user_id == str(message.author.id)
+            ]
+            if ban_entry:
                 await message.add_reaction("❌")
                 return
 
@@ -154,9 +160,15 @@ class Modmail_bot(discord.Client):
             and before.author.id in active_threads
         ):
 
-            if await Ts_client.models.ModmailBan.query.where(
-                Ts_client.models.ModmailBan.user_id == str(before.author.id)
-            ).gino.first():
+            modmail_database = await databases.read_database(
+                Ts_client.models.ModmailBan
+            )
+            ban_entry = [
+                modmail_ban
+                for modmail_ban in modmail_database
+                if modmail_ban.user_id == str(after.author.id)
+            ]
+            if ban_entry:
                 return
 
             thread = self.get_channel(active_threads[before.author.id])
@@ -1371,9 +1383,13 @@ class Modmail(cogs.BaseCog):
             ctx (commands.Context): Context of the command execution
             user (discord.User): The user to ban
         """
-        if await self.bot.models.ModmailBan.query.where(
-            self.bot.models.ModmailBan.user_id == str(user.id)
-        ).gino.first():
+        modmail_database = await databases.read_database(Ts_client.models.ModmailBan)
+        ban_entry = [
+            modmail_ban
+            for modmail_ban in modmail_database
+            if modmail_ban.user_id == str(user.id)
+        ]
+        if ban_entry:
             await auxiliary.send_deny_embed(
                 message=f"{user.mention} is already banned!", channel=ctx.channel
             )
@@ -1423,7 +1439,9 @@ class Modmail(cogs.BaseCog):
                 )
 
             case ui.ConfirmResponse.CONFIRMED:
-                await self.bot.models.ModmailBan(user_id=str(user.id)).create()
+                blank_ban = databases.get_blank_entry(self.bot.models.ModmailBan)
+                blank_ban.user_id = str(user.id)
+                await databases.write_new_entry(blank_ban)
 
                 return await auxiliary.send_confirm_embed(
                     message=f"{user.mention} was successfully banned from creating future modmail"
@@ -1445,10 +1463,12 @@ class Modmail(cogs.BaseCog):
             ctx (commands.Context): Context of the command execution
             user (discord.User): The user to ban
         """
-        ban_entry = await self.bot.models.ModmailBan.query.where(
-            self.bot.models.ModmailBan.user_id == str(user.id)
-        ).gino.first()
-
+        modmail_database = await databases.read_database(Ts_client.models.ModmailBan)
+        ban_entry = [
+            modmail_ban
+            for modmail_ban in modmail_database
+            if modmail_ban.user_id == str(user.id)
+        ]
         if not ban_entry:
             return await auxiliary.send_deny_embed(
                 message=f"{user.mention} is not currently banned from making modmail threads!",
