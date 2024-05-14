@@ -190,8 +190,8 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.UserNote = UserNote  # DONE
     bot.models.Warning = Warning  # DONE
     bot.models.Config = Config  # DONE
-    bot.models.Listener = Listener
-    bot.models.Rule = Rule
+    bot.models.Listener = Listener  # DONE
+    bot.models.Rule = Rule  # DONE
 
 
 # Internal functions

@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING
 
 import discord
 import expiringdict
-from core import auxiliary, cogs
+import munch
+from core import auxiliary, cogs, databases
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -133,9 +134,10 @@ class Listener(cogs.BaseCog):
         Args:
             src (discord.TextChannel): the source channel to build for
         """
-        destination_data = await self.bot.models.Listener.query.where(
-            self.bot.models.Listener.src_id == str(src.id)
-        ).gino.all()
+        listen_database = await databases.read_database(self.bot.models.Listener)
+        destination_data = [
+            listener for listener in listen_database if listener.src_id == str(src.id)
+        ]
         if not destination_data:
             return None
 
@@ -158,7 +160,7 @@ class Listener(cogs.BaseCog):
 
     async def get_specific_listener(
         self, src: discord.TextChannel, dst: discord.TextChannel
-    ) -> bot.db.models.Listener:
+    ) -> munch.Munch:
         """Gets a database object of the given listener pair
 
         Args:
@@ -166,16 +168,15 @@ class Listener(cogs.BaseCog):
             dst (discord.TextChannel): The destination channel
 
         Returns:
-            bot.db.models.Listener: The db object, if the listener exists
+            munch.Munch: The db object, if the listener exists
         """
-        listener = (
-            await self.bot.models.Listener.query.where(
-                self.bot.models.Listener.src_id == str(src.id)
-            )
-            .where(self.bot.models.Listener.dst_id == str(dst.id))
-            .gino.first()
-        )
-        return listener
+        listen_database = await databases.read_database(self.bot.models.Listener)
+        first_listener = [
+            listener
+            for listener in listen_database
+            if listener.src_id == str(src.id) and listener.dst_id == str(dst.id)
+        ][0]
+        return first_listener
 
     async def get_all_sources(self):
         """Gets all source data.
@@ -183,16 +184,16 @@ class Listener(cogs.BaseCog):
         This is kind of expensive, so use lightly.
         """
         source_objects = []
-        all_listens = await self.bot.models.Listener.query.gino.all()
+        all_listens = await databases.read_database(self.bot.models.Listener)
         source_list = self.build_list_of_sources(all_listens)
         for src in source_list:
             src_ch = self.bot.get_channel(int(src))
             if not src_ch:
                 continue
 
-            destination_ids = await self.bot.models.Listener.query.where(
-                self.bot.models.Listener.src_id == src
-            ).gino.all()
+            destination_ids = [
+                listener for listener in all_listens if listener.src_id == src
+            ]
             dst_id_list = [listener.dst_id for listener in destination_ids]
             if not dst_id_list:
                 continue
@@ -216,11 +217,11 @@ class Listener(cogs.BaseCog):
             src (discord.TextChannel): the source channel to build for
             dst (discord.TextChannel): the destination channel to build for
         """
-        new_listener = self.bot.models.Listener(
-            src_id=str(src.id),
-            dst_id=str(dst.id),
-        )
-        await new_listener.create()
+        blank_listener = databases.get_blank_entry(self.bot.models.Listener)
+        blank_listener.src_id = str(src.id)
+        blank_listener.dst_id = str(dst.id)
+        await databases.write_new_entry(blank_listener)
+
         try:
             del self.destination_cache[src.id]
         except KeyError:
@@ -316,9 +317,9 @@ class Listener(cogs.BaseCog):
         Args:
             ctx (discord.ext.Context): the context object for the message
         """
-        all_listens = await self.bot.models.Listener.query.gino.all()
+        all_listens = await databases.read_database(self.bot.models.Listener)
         for listener in all_listens:
-            await listener.delete()
+            await databases.delete_entry(listener)
         self.destination_cache.clear()
 
         await auxiliary.send_confirm_embed(

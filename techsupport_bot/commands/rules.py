@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import discord
 import munch
-from core import auxiliary, cogs
+from core import auxiliary, cogs, databases
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -46,9 +46,8 @@ class Rules(cogs.BaseCog):
         Returns:
             munch.Munch: The munchified rules ready to be parsed and shown to the user
         """
-        query = await self.bot.models.Rule.query.where(
-            self.bot.models.Rule.guild_id == str(guild.id)
-        ).gino.first()
+        rules_database = databases.read_database(self.bot.models.Rule)
+        query = [rule for rule in rules_database if rule.guild_id == str(guild.id)]
         if not query:
             # Handle case where guild doesn't have rules
             rules_data = json.dumps(
@@ -62,7 +61,7 @@ class Rules(cogs.BaseCog):
             new_rules = munch.munchify(json.loads(rules_data))
             await self.write_new_rules(guild=guild, rules=new_rules)
             return munch.munchify(json.loads(rules_data))
-        return munch.munchify(json.loads(query.rules))
+        return munch.munchify(json.loads(query[0].rules))
 
     async def write_new_rules(self, guild: discord.Guild, rules: munch.Munch) -> None:
         """This converts the munchified rules into a string and writes it to the database
@@ -71,19 +70,17 @@ class Rules(cogs.BaseCog):
             guild (discord.Guild): The guild to write the rules for
             rules (munch.Munch): The rules to convert and write
         """
-        query = await self.bot.models.Rule.query.where(
-            self.bot.models.Rule.guild_id == str(guild.id)
-        ).gino.first()
+        rules_database = databases.read_database(self.bot.models.Rule)
+        query = [rule for rule in rules_database if rule.guild_id == str(guild.id)]
         if not query:
             # Handle case where guild doesn't have rules
-            rules_data = json.dumps(rules)
-            new_guild_rules = self.bot.models.Rule(
-                guild_id=str(guild.id),
-                rules=str(json.dumps(rules_data)),
-            )
-            await new_guild_rules.create()
+            blank_rules = databases.get_blank_entry(self.bot.models.Rule)
+            blank_rules.rules = str(json.dumps(rules))
+            blank_rules.guild_id = str(guild.id)
+            await databases.write_new_entry(blank_rules)
         else:
-            await query.update(rules=str(json.dumps(rules))).apply()
+            query[0].rules = str(json.dumps(rules))
+            await databases.update_entry(query[0])
 
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
