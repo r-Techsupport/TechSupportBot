@@ -14,6 +14,8 @@ import munch
 if TYPE_CHECKING:
     import bot
 
+models: munch.Munch = munch.DefaultMunch(None)
+
 
 def setup_models(bot: bot.TechSupportBot) -> None:
     """A function to setup all of the postgres tables
@@ -179,6 +181,8 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild_id = bot.db.Column(bot.db.String)
         rules = bot.db.Column(bot.db.String)
 
+    models.DuckUser = DuckUser
+
     bot.models.Applications = Applications  # DONE
     bot.models.AppBans = ApplicationBans  # DONE
     bot.models.DuckUser = DuckUser  # DONE
@@ -201,12 +205,17 @@ class NoDefault:
     pass
 
 
+from pprint import pprint
+
+
 def convert_db_to_munch(entry: gino.crud.Model) -> munch.Munch:
     # We need to get the values from the database entry
     values_dict = entry.__values__
     # In order to remove the primary key, we need the table
     table = entry.__table__
 
+    # pprint(vars(table))
+    # print(table.fullname)
     modified_dict = munch.Munch()
 
     # We must preserve the original since it's needed to make any modifications
@@ -224,16 +233,30 @@ def convert_db_to_munch(entry: gino.crud.Model) -> munch.Munch:
 # Interaction functions
 
 
+database_cache: dict[str, list[munch.Munch]] = {}
+
+
 async def read_database(model: gino.declarative.ModelType) -> list[munch.Munch]:
+    # Check for cache before reading anything
+    table_name = model.__tablename__
+    if table_name in database_cache:
+        print(f"CACHED {table_name}")
+        return database_cache.get(table_name)
+
     table = await model.query.gino.all()
     table_as_list: list[munch.Munch] = []
     for item in table:
         table_as_list.append(convert_db_to_munch(item))
+    database_cache[table_name] = table_as_list
     return table_as_list
 
 
 async def delete_entry(entry: munch.Munch) -> None:
     if entry.__original__:
+        # Removes cache since it's now wrong
+        table_name = entry.__original__.__table__.fullname
+        if table_name in database_cache:
+            database_cache.pop(table_name)
         await entry.__original__.delete()
     else:
         raise ValueError("Missing orignal key")
@@ -243,6 +266,11 @@ async def update_entry(entry: munch.Munch) -> munch.Munch:
     if not entry.__original__:
         raise ValueError("Missing orignal key")
     original_entry = entry.__original__
+
+    # Removes cache since it's now wrong
+    table_name = entry.__original__.__table__.fullname
+    if table_name in database_cache:
+        database_cache.pop(table_name)
 
     update_kwargs = {}
 
@@ -279,7 +307,11 @@ async def write_new_entry(entry: munch.Munch) -> munch.Munch:
     if not entry.__database__:
         raise ValueError("Missing database key")
     database = entry.__database__
-    entry.pop("__database__")
+    # Removes cache since it's now wrong
+    table_name = entry.__database__.__table__.fullname
+    database_cache.pop(table_name)
+    if table_name in database_cache:
+        database_cache.pop(table_name)
 
     table_columns = {column.name for column in database.__table__.columns}
     entry_names = set(entry.keys())

@@ -832,7 +832,7 @@ class FactoidManager(cogs.MatchCog):
     # -- Factoid job related functions --
     async def kickoff_jobs(self: Self) -> None:
         """Gets a list of cron jobs and starts them"""
-        jobs = await databases.read_database(self.bot.models.Factoidjob)
+        jobs = await databases.read_database(self.bot.models.FactoidJob)
         for job in jobs:
             job_id = job.job_id
             self.running_jobs[job_id] = {}

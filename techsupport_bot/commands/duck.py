@@ -244,7 +244,7 @@ class DuckHunt(cogs.LoopCog):
 
         duck_user = await self.get_duck_user(winner.id, guild.id)
         if not duck_user:
-            blank_duck_user = databases.get_blank_entry(self.bot.models.DuckUser)
+            blank_duck_user = databases.get_blank_entry(databases.models.DuckUser)
             blank_duck_user.author_id = str(winner.id)
             blank_duck_user.guild_id = str(guild.id)
             duck_user = await databases.write_new_entry(blank_duck_user)
@@ -393,7 +393,7 @@ class DuckHunt(cogs.LoopCog):
             munch.Munch | None: The DuckUser database entry of the user/guild combo.
                 Or None if it doesn't exist
         """
-        duck_database = await databases.read_database(self.bot.models.DuckUser)
+        duck_database = await databases.read_database(databases.models.DuckUser)
         duck_user = [
             duck_entry
             for duck_entry in duck_database
@@ -414,7 +414,7 @@ class DuckHunt(cogs.LoopCog):
         Returns:
             float: The exact decimal representation for the fastest speed record
         """
-        raw_database = await databases.read_database(self.bot.models.DuckUser)
+        raw_database = await databases.read_database(databases.models.DuckUser)
         query = [
             duck_search
             for duck_search in raw_database
@@ -501,7 +501,7 @@ class DuckHunt(cogs.LoopCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        raw_database = await databases.read_database(self.bot.models.DuckUser)
+        raw_database = await databases.read_database(databases.models.DuckUser)
         duck_users = [
             duck_entry
             for duck_entry in raw_database
@@ -571,7 +571,7 @@ class DuckHunt(cogs.LoopCog):
             )
             return
 
-        raw_database = await databases.read_database(self.bot.models.DuckUser)
+        raw_database = await databases.read_database(databases.models.DuckUser)
         record_user = [
             duck_entry
             for duck_entry in raw_database
@@ -599,7 +599,7 @@ class DuckHunt(cogs.LoopCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        raw_database = await databases.read_database(self.bot.models.DuckUser)
+        raw_database = await databases.read_database(databases.models.DuckUser)
         duck_users = [
             duck_entry
             for duck_entry in raw_database
