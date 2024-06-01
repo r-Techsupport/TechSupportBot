@@ -182,6 +182,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         rules = bot.db.Column(bot.db.String)
 
     models.DuckUser = DuckUser
+    models.FactoidJob = FactoidJob
 
     bot.models.Applications = Applications  # DONE
     bot.models.AppBans = ApplicationBans  # DONE
@@ -308,8 +309,9 @@ async def write_new_entry(entry: munch.Munch) -> munch.Munch:
         raise ValueError("Missing database key")
     database = entry.__database__
     # Removes cache since it's now wrong
-    table_name = entry.__database__.__table__.fullname
-    database_cache.pop(table_name)
+    table_name = database.__table__.fullname
+    entry.pop("__database__")
+
     if table_name in database_cache:
         database_cache.pop(table_name)
 

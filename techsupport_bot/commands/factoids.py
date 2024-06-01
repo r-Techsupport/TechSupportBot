@@ -1184,10 +1184,11 @@ class FactoidManager(cogs.MatchCog):
             )
             return
 
-        job = self.bot.models.FactoidJob(
-            factoid=factoid.factoid_id, channel=str(channel.id), cron=cron_config
-        )
-        await job.create()
+        blank_factoid_job = databases.get_blank_entry(databases.models.FactoidJob)
+        blank_factoid_job.factoid = factoid.factoid_id
+        blank_factoid_job.channel = str(channel.id)
+        blank_factoid_job.cron = cron_config
+        job = await databases.write_new_entry(blank_factoid_job)
 
         job_id = job.job_id
         self.running_jobs[job_id] = {}
@@ -1231,24 +1232,24 @@ class FactoidManager(cogs.MatchCog):
             )
             return
 
-        job = (
-            await self.bot.models.FactoidJob.query.where(
-                self.bot.models.FactoidJob.channel == str(channel.id)
-            )
-            .where(self.bot.models.Factoid.name == factoid.name)
-            .gino.first()
-        )
-        if not job:
+        jobs_database = await databases.read_database(self.bot.models.FactoidJob)
+        jobs = [
+            job
+            for job in jobs_database
+            if job.channel == str(channel.id) and job.factoid == factoid.factoid_id
+        ]
+        if not jobs:
             await auxiliary.send_deny_embed(
                 message="That job does not exist", channel=ctx.channel
             )
             return
 
+        job = jobs[0]
         job_id = job.job_id
         # Stops the job
         self.running_jobs[job_id]["task"].cancel()
         # Deletes it
-        await job.delete()
+        await databases.delete_entry(job)
 
         await auxiliary.send_confirm_embed(
             message="Loop job deleted",
@@ -1279,18 +1280,19 @@ class FactoidManager(cogs.MatchCog):
         factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
 
         # List jobs > Select jobs that have a matching text and channel
-        job = (
-            await self.bot.models.FactoidJob.join(self.bot.models.Factoid)
-            .select()
-            .where(self.bot.models.FactoidJob.channel == str(channel.id))
-            .where(self.bot.models.Factoid.name == factoid.name)
-            .gino.first()
-        )
-        if not job:
+        jobs_database = await databases.read_database(self.bot.models.FactoidJob)
+        jobs = [
+            job
+            for job in jobs_database
+            if job.channel == str(channel.id) and job.factoid == factoid.factoid_id
+        ]
+        if not jobs:
             await auxiliary.send_deny_embed(
                 message="That job does not exist", channel=ctx.channel
             )
             return
+
+        job = jobs[0]
 
         embed_label = ""
         if job.embed_config:
@@ -1307,6 +1309,37 @@ class FactoidManager(cogs.MatchCog):
 
         await ctx.send(embed=embed)
 
+    async def get_all_jobs_for_guild(self, guild_id: str) -> list[munch.Munch]:
+        """This searches the factoids and jobs databases to build a list of all jobs running
+        in a given guild
+
+        Args:
+            guild_id (str): The ID of the guild to get jobs from
+
+        Returns:
+            list[munch.Munch]: The list of database objects for the relevant jobs
+        """
+        # Fuck this in the new database system, I *really* need a way to get Foriegn keys working
+        factoids_database = await databases.read_database(self.bot.models.Factoid)
+        jobs_database = await databases.read_database(self.bot.models.FactoidJob)
+
+        # Filter factoids by guild
+        guild_factoids = [
+            factoid
+            for factoid in factoids_database
+            if factoid.guild == guild_id
+        ]
+
+        # Replace job.factoid with the entire factoid entry
+        for job in jobs_database:
+            for factoid in guild_factoids:
+                if job.factoid == factoid.factoid_id:
+                    job.factoid = factoid
+                    break  # Once found, break to avoid unnecessary iterations
+
+        # Filter jobs by guild
+        jobs = [job for job in jobs_database if job.factoid.guild == guild_id]
+
     @auxiliary.with_typing
     @commands.guild_only()
     @factoid.command(
@@ -1319,13 +1352,9 @@ class FactoidManager(cogs.MatchCog):
         Args:
             ctx (commands.Context): Context of the invocation
         """
-        # Gets jobs for invokers guild
-        jobs = (
-            await self.bot.models.FactoidJob.join(self.bot.models.Factoid)
-            .select()
-            .where(self.bot.models.Factoid.guild == str(ctx.guild.id))
-            .gino.all()
-        )
+        # Gets jobs for invokers guild        
+        jobs = await self.get_all_jobs_for_guild(str(ctx.guild.id))
+
         if not jobs:
             await auxiliary.send_deny_embed(
                 message="There are no registered factoid loop jobs for this guild",
@@ -1342,7 +1371,7 @@ class FactoidManager(cogs.MatchCog):
             if not channel:
                 continue
             embed.add_field(
-                name=f"{job.name.lower()} - #{channel.name}",
+                name=f"{job.factoid.name.lower()} - #{channel.name}",
                 value=f"`{job.cron}`",
                 inline=False,
             )
@@ -1414,13 +1443,12 @@ class FactoidManager(cogs.MatchCog):
         embed = discord.Embed(title=f"Info about `{query}`")
 
         # Parses list of aliases into a neat string
-        aliases = (
-            await self.bot.models.Factoid.query.where(
-                self.bot.models.Factoid.alias == factoid.name
-            )
-            .where(self.bot.models.Factoid.guild == str(ctx.guild.id))
-            .gino.all()
-        )
+        factoid_database = await databases.read_database(self.bot.models.Factoid)
+        aliases = [
+            factoid
+            for factoid in factoid_database
+            if factoid.alias == factoid.name and factoid.guild == str(ctx.guild.id)
+        ]
 
         # Add and sort all aliases to a comma separated string
         aliases.append(factoid)
@@ -1431,9 +1459,11 @@ class FactoidManager(cogs.MatchCog):
         )
 
         # Gets the factoids loop jobs
-        jobs = await self.bot.models.FactoidJob.query.where(
-            self.bot.models.FactoidJob.factoid == factoid.factoid_id
-        ).gino.all()
+        jobs = [
+            job
+            for job in await databases.read_database(self.bot.models.FactoidJob)
+            if job.factoid == factoid.factoid_id
+        ]
 
         # Adds all fields to the embed
         embed.add_field(name="Aliases", value=alias_list)
@@ -1880,13 +1910,12 @@ class FactoidManager(cogs.MatchCog):
                 # be more dangerous.
 
                 # Gets list of all aliases
-                aliases = (
-                    await self.bot.models.Factoid.query.where(
-                        self.bot.models.Factoid.alias == target_entry.name
-                    )
-                    .where(self.bot.models.Factoid.guild == str(ctx.guild.id))
-                    .gino.all()
-                )
+                factoid_database = await databases.read_database(self.bot.models.Factoid)
+                aliases = [
+                    factoid
+                    for factoid in factoid_database
+                    if factoid.alias == target_entry.name and factoid.guild == str(ctx.guild.id)
+                ]
 
                 # Don't make new parent if there isn't an alias for it
                 if len(aliases) != 0:
@@ -1970,13 +1999,12 @@ class FactoidManager(cogs.MatchCog):
         # -- Handling for parents --
 
         # Gets list of aliases
-        aliases = (
-            await self.bot.models.Factoid.query.where(
-                self.bot.models.Factoid.alias == factoid_name
-            )
-            .where(self.bot.models.Factoid.guild == str(ctx.guild.id))
-            .gino.all()
-        )
+        factoid_database = await databases.read_database(self.bot.models.Factoid)
+        aliases = [
+            factoid
+            for factoid in factoid_database
+            if factoid.alias == factoid_name and factoid.guild == str(ctx.guild.id)
+        ]
         # Stop execution if there is no other parent to be assigned
         if len(aliases) == 0:
             await auxiliary.send_deny_embed(
@@ -2028,23 +2056,20 @@ class FactoidManager(cogs.MatchCog):
             channel=log_channel,
         )
 
-        jobs = (
-            await self.bot.models.FactoidJob.query.where(
-                self.bot.models.Factoid.guild == factoid.guild
-            )
-            .where(self.bot.models.Factoid.factoid_id == factoid.factoid_id)
-            .gino.all()
-        )
+        jobs = await self.get_all_jobs_for_guild(str(ctx.guild.id))
         # Deletes the factoid and deletes all jobs tied to it
         await self.delete_factoid_call(factoid, str(ctx.guild.id))
 
         # If there were jobs tied to it, recreate them with the new factoid
         if jobs:
             for job in jobs:
-                new_job = self.bot.models.FactoidJob(
-                    factoid=new_entry.factoid_id, channel=job.channel, cron=job.cron
-                )
-                await new_job.create()
+
+                # Creating the new job
+                blank_factoid_job = databases.get_blank_entry(databases.models.FactoidJob)
+                blank_factoid_job.factoid = new_entry.factoid_id
+                blank_factoid_job.channel = job.channel
+                blank_factoid_job.cron = job.cron
+                new_job = await databases.write_new_entry(blank_factoid_job)
 
                 job_id = new_job.job_id
                 self.running_jobs[job_id] = {}
