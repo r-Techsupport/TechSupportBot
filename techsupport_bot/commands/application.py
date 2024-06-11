@@ -900,7 +900,10 @@ class ApplicationManager(cogs.LoopCog):
         # Update the database
         audit_log = []
         for app in apps:
-            user = await guild.fetch_member(int(app.applicant_id))
+            try:
+                user = await guild.fetch_member(int(app.applicant_id))
+            except discord.NotFound:
+                user = None
             if not user:
                 audit_log.append(
                     f"Application by user: `{app.applicant_name}` was rejected because"
