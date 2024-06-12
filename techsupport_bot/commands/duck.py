@@ -354,11 +354,16 @@ class DuckHunt(cogs.LoopCog):
         # Check to see if random failure
         choice_ = random.choice(random.choices([True, False], weights=weights, k=1000))
         if not choice_:
+            time = message.created_at - duck_message.created_at
+            duration_exact = float(str(time.seconds) + "." + str(time.microseconds))
             cooldowns[message.author.id] = datetime.datetime.now()
             quote = self.pick_quote()
             embed = auxiliary.prepare_deny_embed(message=quote)
             embed.set_footer(
-                text=f"You missed. Try again in {config.extensions.duck.cooldown.value} seconds"
+                text=(
+                    f"You missed. Try again in {config.extensions.duck.cooldown.value} "
+                    f"seconds. Time would have been {duration_exact} seconds"
+                )
             )
             # Only attempt timeout if we know we can do it
             if (
