@@ -75,6 +75,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         description="List of channel IDs that restricted factoids are allowed to be used in",
         default=[],
     )
+    config.add(
+        key="disable_embeds",
+        datatype="bool",
+        title="Force disable embeds, for debug purposes",
+        description="This will force all factoids to not use embeds.",
+        default=False,
+    )
 
     await bot.add_cog(
         FactoidManager(
@@ -769,8 +776,10 @@ class FactoidManager(cogs.MatchCog):
             not in config.extensions.factoids.restricted_list.value
         ):
             return
-
-        embed = self.get_embed_from_factoid(factoid)
+        if not config.extensions.factoids.disable_embeds.value:
+            embed = self.get_embed_from_factoid(factoid)
+        else:
+            embed = None
         # if the json doesn't include non embed argument, then don't send anything
         # otherwise send message text with embed
         try:
@@ -946,25 +955,6 @@ class FactoidManager(cogs.MatchCog):
                 )
                 continue
 
-            # Checking for disabled or restricted
-            if factoid.disabled:
-                return
-
-            if (
-                factoid.restricted
-                and str(ctx.channel.id)
-                not in config.extensions.factoids.restricted_list.value
-            ):
-                return
-
-            # Get_embed accepts job as a factoid object
-            embed = self.get_embed_from_factoid(factoid)
-            try:
-                content = factoid.message if not embed else None
-            except ValueError:
-                # The not embed causes a ValueError in certian places. This ensures fallback works
-                content = factoid.message
-
             channel = self.bot.get_channel(int(job.channel))
             if not channel:
                 log_channel = None
@@ -985,6 +975,31 @@ class FactoidManager(cogs.MatchCog):
                     context=log_context,
                 )
                 continue
+
+            config = self.bot.guild_configs[str(channel.guild.id)]
+
+            # Checking for disabled or restricted
+            if factoid.disabled:
+                return
+
+            if (
+                factoid.restricted
+                and str(channel.id)
+                not in config.extensions.factoids.restricted_list.value
+            ):
+                return
+
+            # Get_embed accepts job as a factoid object
+            if not config.extensions.factoids.disable_embeds.value:
+                embed = self.get_embed_from_factoid(factoid)
+            else:
+                embed = None
+
+            try:
+                content = factoid.message if not embed else None
+            except ValueError:
+                # The not embed causes a ValueError in certian places. This ensures fallback works
+                content = factoid.message
 
             try:
                 message = await channel.send(content=content, embed=embed)
