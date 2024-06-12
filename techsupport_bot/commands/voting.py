@@ -1,16 +1,16 @@
-"""This holds a command to manually adjust someones nickname
-Uses the same filter as the automatic nickname filter"""
-
 from __future__ import annotations
 
+import asyncio
+import datetime
 from datetime import timedelta
 from typing import TYPE_CHECKING, Self
 
+import aiocron
 import discord
 import munch
 import ui
 import ui.persistent_voting
-from core import cogs
+from core import cogs, extensionconfig
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -23,10 +23,28 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot to register the cog to
     """
-    await bot.add_cog(Voting(bot=bot))
+    config = extensionconfig.ExtensionConfig()
+    config.add(
+        key="votes_channel_id",
+        datatype="str",
+        title="Votes channel",
+        description="The forum channel id as a string to start votes in",
+        default="",
+    )
+    config.add(
+        key="ping_role_id",
+        datatype="str",
+        title="The role to ping when starting a vote",
+        description=(
+            "The role to ping when starting a vote, which will always be pinged"
+        ),
+        default="",
+    )
+    await bot.add_cog(Voting(bot=bot, extension_name="voting"))
+    bot.add_extension_config("voting", config)
 
 
-class Voting(cogs.BaseCog):
+class Voting(cogs.LoopCog):
     """The class that holds the core voting system"""
 
     @app_commands.checks.has_permissions(manage_nicknames=True)
@@ -53,25 +71,42 @@ class Voting(cogs.BaseCog):
         await interaction.response.send_modal(form)
         await form.wait()
 
-        message = await interaction.followup.send(f"{form.vote_reason.value}")
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+        channel = await interaction.guild.fetch_channel(
+            int(config.extensions.voting.votes_channel_id.value)
+        )
+        roles = await interaction.guild.fetch_roles()
+        role = next(
+            role
+            for role in roles
+            if role.id == int(config.extensions.voting.ping_role_id.value)
+        )
 
         vote = await self.bot.models.Votes(
             guild_id=str(interaction.guild.id),
-            message_id=str(message.id),
+            message_id="0",
             vote_owner_id=str(interaction.user.id),
             vote_description=form.vote_reason.value,
             anonymous=anonymous,
             blind=blind,
         ).create()
 
-        embed = await self.build_vote_embed(vote.vote_id, interaction)
+        embed = await self.build_vote_embed(vote.vote_id, interaction.guild)
         view = ui.PersistentView()
 
-        await message.edit(
-            content=f"{form.vote_reason.value}",
+        vote_thread, vote_message = await channel.create_thread(
+            name=f"VOTE: {form.vote_short}",
+            allowed_mentions=discord.AllowedMentions(roles=True),
             embed=embed,
+            content=role.mention,
             view=view,
         )
+
+        await interaction.followup.send(
+            f"Your vote has been started, {vote_thread.mention}", ephemeral=True
+        )
+
+        await vote.update(message_id=str(vote_message.id)).apply()
 
     async def search_db_for_vote_by_id(self, vote_id: int):
         """Gets a vote entry from the database by a given vote ID
@@ -100,7 +135,7 @@ class Voting(cogs.BaseCog):
         ).gino.first()
 
     async def build_vote_embed(
-        self, vote_id: int, interaction: discord.Interaction
+        self, vote_id: int, guild: discord.Guild
     ) -> discord.Embed:
         """Builds the embed that shows information about the vote
 
@@ -113,7 +148,9 @@ class Voting(cogs.BaseCog):
         """
         db_entry = await self.search_db_for_vote_by_id(vote_id)
         hide = db_entry.blind or db_entry.anonymous
-        owner = await interaction.guild.fetch_member(int(db_entry.vote_owner_id))
+        owner = await guild.fetch_member(int(db_entry.vote_owner_id))
+        exact_time = int((db_entry.start_time + timedelta(hours=72)).timestamp())
+        rounted_time = (exact_time - (exact_time % 3600)) + 3600
         embed = discord.Embed(
             title="Vote",
             description=f"{db_entry.vote_description}",
@@ -123,21 +160,21 @@ class Voting(cogs.BaseCog):
             value=(
                 f"Vote owner: {owner.mention}\n"
                 "This vote will run until: "
-                f"<t:{int((db_entry.start_time + timedelta(hours=72)).timestamp())}:f>\n"
+                f"<t:{rounted_time}:f>\n"
             ),
             inline=False,
         )
         embed.add_field(
             name="Votes",
             value=await self.make_fancy_voting_list(
-                interaction.guild,
+                guild,
                 db_entry.vote_ids_yes.split(","),
                 db_entry.vote_ids_no.split(","),
-                hide,
+                (db_entry.vote_active and hide) or db_entry.anonymous,
             ),
         )
-        print_yes_votes = "?" if hide else db_entry.votes_yes
-        print_no_votes = "?" if hide else db_entry.votes_no
+        print_yes_votes = "?" if (hide and db_entry.vote_active) else db_entry.votes_yes
+        print_no_votes = "?" if (hide and db_entry.vote_active) else db_entry.votes_no
         embed.add_field(
             name="Vote counts",
             value=f"Votes for yes: {print_yes_votes}\nVotes for no: {print_no_votes}",
@@ -226,10 +263,8 @@ class Voting(cogs.BaseCog):
             vote_ids_all=db_entry.vote_ids_all,
         ).apply()
 
-        embed = await self.build_vote_embed(db_entry.vote_id, interaction)
-        await interaction.message.edit(
-            content=db_entry.vote_description, embed=embed, view=view
-        )
+        embed = await self.build_vote_embed(db_entry.vote_id, interaction.guild)
+        await interaction.message.edit(embed=embed, view=view)
         await interaction.response.send_message(
             "Your vote for yes has been counted", ephemeral=True
         )
@@ -276,10 +311,8 @@ class Voting(cogs.BaseCog):
             vote_ids_all=db_entry.vote_ids_all,
         ).apply()
 
-        embed = await self.build_vote_embed(db_entry.vote_id, interaction)
-        await interaction.message.edit(
-            content=db_entry.vote_description, embed=embed, view=view
-        )
+        embed = await self.build_vote_embed(db_entry.vote_id, interaction.guild)
+        await interaction.message.edit(embed=embed, view=view)
         await interaction.response.send_message(
             "Your vote for no has been counted", ephemeral=True
         )
@@ -307,10 +340,8 @@ class Voting(cogs.BaseCog):
             vote_ids_all=db_entry.vote_ids_all,
         ).apply()
 
-        embed = await self.build_vote_embed(db_entry.vote_id, interaction)
-        await interaction.message.edit(
-            content=db_entry.vote_description, embed=embed, view=view
-        )
+        embed = await self.build_vote_embed(db_entry.vote_id, interaction.guild)
+        await interaction.message.edit(embed=embed, view=view)
         await interaction.response.send_message(
             "Your vote has been removed", ephemeral=True
         )
@@ -347,3 +378,56 @@ class Voting(cogs.BaseCog):
         db_entry.vote_ids_all = ",".join(vote_ids_all)
 
         return db_entry
+
+    async def wait(self: Self, config: munch.Munch, _: discord.Guild) -> None:
+        """Makes a check every hour for if any votes have concluded
+
+        Args:
+            config (munch.Munch): The guild config where the vote was started
+        """
+        # We check every hour on the hour for completed votes
+        await aiocron.crontab("0 * * * *").next()
+
+    async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
+        """This looks for completed votes and ends then
+
+        Args:
+            config (munch.Munch): The guild config for the guild with the vote
+            guild (discord.Guild): The guild the vote is being run in
+        """
+        active_votes = (
+            await self.bot.models.Votes.query.where(
+                self.bot.models.Votes.vote_active == True
+            )
+            .where(self.bot.models.Votes.guild_id == str(guild.id))
+            .gino.all()
+        )
+        for vote in active_votes:
+            end_time = int((vote.start_time + timedelta(hours=72)).timestamp())
+            if end_time <= int(datetime.datetime.utcnow().timestamp()):
+                await self.end_vote(vote, guild)
+
+    async def end_vote(self, vote: munch.Munch, guild: discord.Guild) -> None:
+        """This ends a vote, and if it was anonymous purges who voted for what from the database
+        This will edit the vote message and remove the buttons, and mention the vote owner
+
+        Args:
+            vote (munch.Munch): The vote database object that needs to be ended
+            guild (discord.Guild): The guild that vote belongs to
+        """
+        await vote.update(vote_active=False).apply()
+        embed = await self.build_vote_embed(vote.vote_id, guild)
+        # If the vote is anonymous, at this point we need to clear the vote record forever
+        if vote.anonymous:
+            await vote.update(vote_ids_yes="", vote_ids_no="").apply()
+        # Placeholder till config sets a voting channel
+        config = self.bot.guild_configs[str(guild.id)]
+        channel = await guild.fetch_channel(
+            config.extensions.voting.votes_channel_id.value
+        )
+        message = await channel.fetch_message(int(vote.message_id))
+        vote_owner = await guild.fetch_member(int(vote.vote_owner_id))
+        await message.edit(content="Vote over", embed=embed, view=None)
+        await channel.send(
+            f"{vote_owner.mention} your vote is over. Results:", embed=embed
+        )

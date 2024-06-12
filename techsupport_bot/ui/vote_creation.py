@@ -13,9 +13,15 @@ class VoteCreation(discord.ui.Modal, title="Staff voting"):
     This must be sent as a response to an interaction, cannot be from a prefix command
     """
 
-    vote_reason = discord.ui.TextInput(
+    vote_short = discord.ui.TextInput(
         label="What are you starting a vote for?",
-        style=discord.TextStyle.long,
+        style=discord.TextStyle.short,
+        required=True,
+        max_length=95,
+    )
+    vote_reason = discord.ui.TextInput(
+        label="Describe your vote",
+        style=discord.TextStyle.paragraph,
         required=True,
         max_length=1500,
     )
