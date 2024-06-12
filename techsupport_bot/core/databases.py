@@ -174,6 +174,24 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild_id = bot.db.Column(bot.db.String)
         rules = bot.db.Column(bot.db.String)
 
+    class Votes(bot.db.Model):
+        """The postgres table for votes
+        Currently used in voting.py"""
+
+        __tablename__ = "voting"
+        vote_id = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild_id = bot.db.Column(bot.db.String)
+        message_id = bot.db.Column(bot.db.String)
+        vote_owner_id = bot.db.Column(bot.db.String)
+        vote_description = bot.db.Column(bot.db.String)
+        vote_ids_yes = bot.db.Column(bot.db.String, default="")
+        vote_ids_no = bot.db.Column(bot.db.String, default="")
+        votes_yes = bot.db.Column(bot.db.Integer, default=0)
+        votes_no = bot.db.Column(bot.db.Integer, default=0)
+        votes_total = bot.db.Column(bot.db.Integer, default=0)
+        start_time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+        vote_active = bot.db.Column(bot.db.Boolean, default=True)
+
     bot.models.Applications = Applications
     bot.models.AppBans = ApplicationBans
     bot.models.DuckUser = DuckUser
@@ -187,3 +205,4 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.Config = Config
     bot.models.Listener = Listener
     bot.models.Rule = Rule
+    bot.models.Votes = Votes
