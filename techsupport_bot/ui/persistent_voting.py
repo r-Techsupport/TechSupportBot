@@ -2,8 +2,7 @@ import discord
 
 
 class PersistentView(discord.ui.View):
-    def __init__(self, test=None):
-        self.test = test
+    def __init__(self):
         super().__init__(timeout=None)
 
     @discord.ui.button(
@@ -13,8 +12,7 @@ class PersistentView(discord.ui.View):
     )
     async def green(self, interaction: discord.Interaction, button: discord.ui.Button):
         cog = interaction.client.get_cog("Voting")
-        await cog.register_vote(interaction.user, self, interaction.message)
-        await interaction.response.send_message("This is green.", ephemeral=True)
+        await cog.register_yes_vote(interaction, self)
 
     @discord.ui.button(
         label="No, don't make changes",
@@ -22,7 +20,8 @@ class PersistentView(discord.ui.View):
         custom_id="persistent_voting_view:no",
     )
     async def red(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("This is red.", ephemeral=True)
+        cog = interaction.client.get_cog("Voting")
+        await cog.register_no_vote(interaction, self)
 
     @discord.ui.button(
         label="Clear vote",
@@ -30,5 +29,5 @@ class PersistentView(discord.ui.View):
         custom_id="persistent_voting_view:clear",
     )
     async def grey(self, interaction: discord.Interaction, button: discord.ui.Button):
-        print(interaction.message)
-        await interaction.response.send_message("This is grey.", ephemeral=True)
+        cog = interaction.client.get_cog("Voting")
+        await cog.clear_vote(interaction, self)

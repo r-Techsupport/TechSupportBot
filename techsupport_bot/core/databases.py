@@ -186,11 +186,14 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         vote_description = bot.db.Column(bot.db.String)
         vote_ids_yes = bot.db.Column(bot.db.String, default="")
         vote_ids_no = bot.db.Column(bot.db.String, default="")
+        vote_ids_all = bot.db.Column(bot.db.String, default="")
         votes_yes = bot.db.Column(bot.db.Integer, default=0)
         votes_no = bot.db.Column(bot.db.Integer, default=0)
         votes_total = bot.db.Column(bot.db.Integer, default=0)
         start_time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
         vote_active = bot.db.Column(bot.db.Boolean, default=True)
+        blind = bot.db.Column(bot.db.Boolean, default=False)
+        anonymous = bot.db.Column(bot.db.Boolean, default=False)
 
     bot.models.Applications = Applications
     bot.models.AppBans = ApplicationBans
