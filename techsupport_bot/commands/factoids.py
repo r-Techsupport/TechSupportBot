@@ -124,7 +124,8 @@ async def has_given_factoids_role(
     Checks if the invoker has a factoid management role
 
     Args:
-        ctx (commands.Context): Context used for getting the config file
+        guild (discord.Guild): The guild the factoids command was called in
+        invoker (discord.Member): This is the member who called the factoids command
         check_roles (list[str]): The list of string names of roles
 
     Raises:
@@ -170,6 +171,10 @@ class CalledFactoid:
 
 
 class Properties(Enum):
+    """
+    This enum is for the new factoid all to be able to handle dynamic properties
+    """
+
     HIDDEN = "hidden"
     DISABLED = "disabled"
     RESTRICTED = "restricted"
