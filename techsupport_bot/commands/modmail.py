@@ -173,7 +173,7 @@ class Modmail_bot(discord.Client):
                 return
 
             # Length handling has to be here, 1024 is the limit for inividual fields
-            elif len(before.content) > 1016 or len(after.content) > 1016:
+            if len(before.content) > 1016 or len(after.content) > 1016:
                 embed.set_footer(
                     text="Edit was too long to send! Sending just the result instead..."
                 )
