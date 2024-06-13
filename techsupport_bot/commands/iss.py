@@ -22,7 +22,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class ISSLocator(cogs.BaseCog):
-    """Class to locate the ISS at its current position."""
+    """Class to locate the ISS at its current position.
+
+    Attrs:
+        ISS_URL (str): The API URL to get the location of the ISS
+        GEO_URL (str): The API URL to turn lat/lon to location
+
+    """
 
     ISS_URL = "http://api.open-notify.org/iss-now.json"
     GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
@@ -38,7 +44,6 @@ class ISSLocator(cogs.BaseCog):
         Will call the API, format and send an embed
 
         Args:
-            self (Self): _description_
             ctx (commands.Context): The context in which the command was run in
         """
         # get ISS coordinates

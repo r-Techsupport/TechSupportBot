@@ -30,7 +30,8 @@ class ExtensionConfig:
             datatype (str): the datatype metadata for the entry
             title (str): the title of the entry
             description (str): the description of the entry
-            default (Any): the default value to use for the entry
+            default (str | bool | int | list[str] | list[int] | dict[str, str]):
+                the default value to use for the config entry
         """
         self.data[key] = {
             "datatype": datatype,

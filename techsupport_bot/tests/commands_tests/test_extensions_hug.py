@@ -23,7 +23,7 @@ def setup_local_extension(bot: helpers.MockBot = None) -> hug.Hugger:
             fake_discord_env in the test. Defaults to None.
 
     Returns:
-        Hugger: The instance of the Hugger class
+        hug.Hugger: The instance of the Hugger class
     """
     with patch("asyncio.create_task", return_value=None):
         return hug.Hugger(bot)

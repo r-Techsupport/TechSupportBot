@@ -14,12 +14,11 @@ class MockMember:
     """
     This is the MockMember class
 
-    Currently implemented variables and methods:
-    id -> An integer containing the ID of the fake user
-    bot -> Boolean stating if this member is a bot or not
-    mention -> String that is just <@ID>
-    name -> The string containing the users username
-    display_avatar -> The MockAsset object for the avatar
+    Args:
+        input_id (int): An integer containing the ID of the fake user
+        bot (bool): Boolean stating if this member is a bot or not
+        name (str): The string containing the users username
+        display_avatar (helpers.MockAsset): The MockAsset object for the avatar
     """
 
     def __init__(

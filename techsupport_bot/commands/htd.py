@@ -26,6 +26,10 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Htd(cogs.BaseCog):
     """
     perform calculations on cross-base numbers and convert between them
+
+    Attrs:
+        OPERATORS (list[str]): The list of operations to process
+
     """
 
     OPERATORS = ["+", "-", "*", "/"]
