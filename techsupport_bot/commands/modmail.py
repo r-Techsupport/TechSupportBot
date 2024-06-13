@@ -588,7 +588,8 @@ async def reply_to_thread(
 
     if not target_member:
         await auxiliary.send_deny_embed(
-            message="This user isn't in the guild, so the message cannot be sent", channel=thread
+            message="This user isn't in the guild, so the message cannot be sent",
+            channel=thread,
         )
         return
 
