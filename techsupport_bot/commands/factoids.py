@@ -173,6 +173,12 @@ class CalledFactoid:
 class Properties(Enum):
     """
     This enum is for the new factoid all to be able to handle dynamic properties
+
+    Attrs:
+        HIDDEN (str): Representation of hidden
+        DISABLED (str): Representation of disabled
+        RESTRICTED (str): Representation of restricted
+        PROTECTED (str): Representation of protected
     """
 
     HIDDEN = "hidden"
@@ -186,7 +192,8 @@ class FactoidManager(cogs.MatchCog):
     Manages all factoid features
 
     Attrs:
-        CRON_REGEX: The regex to check if a cronjob is correct
+        CRON_REGEX (str): The regex to check if a cronjob is correct
+        factoid_app_group (app_commands.Group): Group for /factoid commands
     """
 
     CRON_REGEX = (
@@ -1517,7 +1524,6 @@ class FactoidManager(cogs.MatchCog):
         This is an application command
 
         Args:
-            self (Self): _description_
             interaction (discord.Interaction): The interaction that started this command
             file (bool, optional): Whether this should be forced as a yml file. Defaults to False.
             property (Properties, optional): What property to look for. Defaults to "".
@@ -1651,7 +1657,6 @@ class FactoidManager(cogs.MatchCog):
         """This builds the factoid all url or the yaml file
 
         Args:
-            self (Self): _description_
             guild (discord.Guild): The guild to build factoid all for
             factoids (list[munch.Munch]): The factoids to include in the all
             aliases (dict[str, list[str]]): Aliases for the given factoids
@@ -1707,8 +1712,20 @@ class FactoidManager(cogs.MatchCog):
 
             return await self.send_factoids_as_file(guild, factoids, aliases)
 
-    def build_formatted_factoid_data(self, factoids, aliases):
-        """a"""
+    def build_formatted_factoid_data(
+        self, factoids: list[munch.Munch], aliases: dict[str, list[str]]
+    ) -> dict[str, dict[str, str]]:
+        """This builds a nicely formatted, sorted, and processed dict of factoids
+        Ready to be put into factoid all
+
+        Args:
+            factoids (list[munch.Munch]): The list of all parent factoids to be included
+            aliases (dict[str, list[str]]): The list of all aliases, if any,
+                for the factoids in the main factoids list
+
+        Returns:
+            dict[str, dict[str,str]]: The formatted list of factoids with all the information
+        """
         output_data = []
         for factoid in factoids:
             # Skips aliases
@@ -1756,7 +1773,7 @@ class FactoidManager(cogs.MatchCog):
 
         Raises:
             MissingPermissions: Raised when someone tries to call .factoid all with
-                                        the hidden flag without administrator permissions
+                the hidden flag without administrator permissions
         """
         guild = str(ctx.guild.id)
 
@@ -1835,8 +1852,8 @@ class FactoidManager(cogs.MatchCog):
     async def generate_html(
         self: Self,
         guild: discord.Guild,
-        factoids: list,
-        aliases: dict,
+        factoids: list[munch.Munch],
+        aliases: dict[str, list[str]],
     ) -> str:
         """Method to generate the html file contents
 
