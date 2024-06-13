@@ -410,6 +410,7 @@ class Voting(cogs.LoopCog):
             config (munch.Munch): The guild config for the guild with the vote
             guild (discord.Guild): The guild the vote is being run in
         """
+        # pylint: disable=C0121
         active_votes = (
             await self.bot.models.Votes.query.where(
                 self.bot.models.Votes.vote_active == True

@@ -23,19 +23,15 @@ jobs:
     - name: Analysing the code with black
       run: |
         black $(git rev-parse --show-toplevel) --check
-      continue-on-error: true
     - name: Analysing the code with flake8
       run: |
         flake8 $(git rev-parse --show-toplevel)
-      continue-on-error: true
     - name: Analysing the code with isort
       run: |
         isort --check-only $(git rev-parse --show-toplevel)/ --profile black
-      continue-on-error: true
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py')
-      continue-on-error: true
     - name: Check for CRLF line endings
       run: |
         for file in $(git ls-files); do
@@ -47,4 +43,3 @@ jobs:
           echo "CRLF line endings detected"
           exit 1
         fi
-      continue-on-error: true

@@ -6,6 +6,10 @@ import discord
 
 
 class VotingButtonPersistent(discord.ui.View):
+    """This is designed to be used when running a vote
+    These buttons will work even after a reboot of the bot
+    """
+
     def __init__(self: Self):
         super().__init__(timeout=None)
 
