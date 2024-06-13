@@ -18,7 +18,11 @@ class Test_FormatQuestion:
     @given(text())
     def test_format_question(self: Self, question: str) -> None:
         """Property test to ensure the question is cropped correcty, never altered,
-        and always ends in a question mark"""
+        and always ends in a question mark
+
+        Args:
+            question (str): The randomly generated question to format
+        """
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
 

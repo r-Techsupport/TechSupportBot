@@ -11,8 +11,8 @@ class MockAsset:
     """
     This is the MockAsset class
 
-    Currently implemented variables and methods:
-    url -> The URL associated with the asset
+    Args:
+        url (str): The URL associated with the asset
     """
 
     def __init__(self: Self, url: str = None) -> None:

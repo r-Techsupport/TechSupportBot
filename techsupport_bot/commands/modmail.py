@@ -814,6 +814,9 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
+
+    Raises:
+        AttributeError: Raised if modmail is disabled
     """
 
     # Only runs if modmail is enabled
@@ -870,8 +873,8 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Modmail(cogs.BaseCog):
     """The modmail cog class
 
-    Raises:
-        AttributeError: Modmail aborting loading due to being disabled
+    Args:
+        bot (bot.TechSupportBot): The main TS bot object to be stored in modmail
     """
 
     def __init__(self: Self, bot: bot.TechSupportBot) -> None:
@@ -1269,6 +1272,10 @@ class Modmail(cogs.BaseCog):
         [1] - command name
         [2] - command usage
         [3] - command description
+
+        Returns:
+            list[tuple[str, str, str, str]]: The list of commands,
+                formatted to be added to the help menu
         """
         prefix = self.bot.file_config.modmail_config.modmail_prefix
         commands_list = [
@@ -1428,19 +1435,21 @@ class Modmail(cogs.BaseCog):
                 pass
 
             case ui.ConfirmResponse.DENIED:
-                return await auxiliary.send_deny_embed(
+                await auxiliary.send_deny_embed(
                     message=f"{user.mention} was NOT banned from creating modmail threads.",
                     channel=ctx.channel,
                 )
+                return
 
             case ui.ConfirmResponse.CONFIRMED:
                 await self.bot.models.ModmailBan(user_id=str(user.id)).create()
 
-                return await auxiliary.send_confirm_embed(
+                await auxiliary.send_confirm_embed(
                     message=f"{user.mention} was successfully banned from creating future modmail"
                     + " threads.",
                     channel=ctx.channel,
                 )
+                return
 
     @auxiliary.with_typing
     @commands.check(has_modmail_management_role)
@@ -1463,14 +1472,15 @@ class Modmail(cogs.BaseCog):
         ).gino.first()
 
         if not ban_entry:
-            return await auxiliary.send_deny_embed(
+            await auxiliary.send_deny_embed(
                 message=f"{user.mention} is not currently banned from making modmail threads!",
                 channel=ctx.channel,
             )
+            return
 
         await ban_entry.delete()
 
-        return await auxiliary.send_confirm_embed(
+        await auxiliary.send_confirm_embed(
             message=f"{user.mention} was successfully unbanned from creating modmail threads!",
             channel=ctx.channel,
         )

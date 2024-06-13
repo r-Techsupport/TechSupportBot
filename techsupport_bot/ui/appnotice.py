@@ -8,7 +8,11 @@ import discord
 
 
 class AppNotice(discord.ui.View):
-    """The view containing a button and message encouraging users to apply"""
+    """The view containing a button and message encouraging users to apply
+
+    Attrs:
+        ICON (str): The Icon for the application reminder
+    """
 
     ICON = "https://icon-icons.com/downloadimage.php?id=14692&root=80/PNG/256/&file=help_15418.png"
 

@@ -159,6 +159,10 @@ async def has_given_factoids_role(
 class CalledFactoid:
     """A class to allow keeping the original factoid name in tact
     Without having to call the database lookup function every time
+
+    Attrs:
+        original_call_str (str): The original name the user provided for a factoid
+        factoid_db_entry (bot.models.Factoid): The database entry for the original factoid
     """
 
     original_call_str: str
@@ -175,6 +179,9 @@ class Properties(Enum):
 class FactoidManager(cogs.MatchCog):
     """
     Manages all factoid features
+
+    Attrs:
+        CRON_REGEX: The regex to check if a cronjob is correct
     """
 
     CRON_REGEX = (
@@ -320,7 +327,7 @@ class FactoidManager(cogs.MatchCog):
             fmt (str): Formatting for the returned message
 
         Returns:
-            (bool): Whether the factoid was deleted/modified
+            bool: Whether the factoid was deleted/modified
         """
 
         view = ui.Confirm()
@@ -682,7 +689,7 @@ class FactoidManager(cogs.MatchCog):
             called_factoid (CalledFactoid): The factoid to remove
 
         Returns:
-            (bool): Whether the factoid was deleted
+            bool: Whether the factoid was deleted
         """
         factoid = await self.get_raw_factoid_entry(
             called_factoid.factoid_db_entry.name, str(ctx.guild.id)
@@ -751,7 +758,6 @@ class FactoidManager(cogs.MatchCog):
             message_content (str): Content of the call
 
         Raises:
-            FactoidNotFoundError: Raised if a broken alias is present in the DB
             TooLongFactoidMessageError:
                 Raised when the raw message content is over discords 2000 char limit
         """
@@ -851,7 +857,7 @@ class FactoidManager(cogs.MatchCog):
         # Don't attempt to send a message if irc if irc is disabled
         irc_config = self.bot.file_config.api.irc
         if not irc_config.enable_irc:
-            return None
+            return
 
         await self.bot.irc.irc_cog.handle_factoid(
             channel=channel,

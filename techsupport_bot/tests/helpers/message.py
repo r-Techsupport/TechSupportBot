@@ -14,11 +14,11 @@ class MockMessage:
     """
     This is the MockMessage class
 
-    Currently implemented variables and methods:
-    content -> The string containing the content of the message
-    author -> The MockMember object who create the message
-    clean_content -> The same as content
-    attachments -> A list of MockAttacment objects
+    Args:
+        content (str): The string containing the content of the message
+        author (helpers.MockMember): The MockMember object who create the message
+        attachments (list[helpers.MockAttachment]): A list of MockAttachment objects
+        reactions (list[helpers.MockReaction]): A list of MockReaction objects
     """
 
     def __init__(
@@ -39,7 +39,7 @@ class MockMessage:
         Adding reactions to a previous message
 
         Args:
-           reaction (list): An array of reactions on the message
+           reaction (list[helpers.MockReaction]): An array of reactions on the message
 
         """
         self.reactions.append(reaction)
