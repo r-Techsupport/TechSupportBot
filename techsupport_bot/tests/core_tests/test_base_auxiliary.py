@@ -204,7 +204,11 @@ class Test_SearchForMessage:
         self: Self, given_history: list[helpers.MockMessage]
     ) -> None:
         """Test to ensure that given a random history,
-        the find message functions always works as expected"""
+        the find message functions always works as expected
+
+        Args:
+            given_history (list[helpers.MockMessage]): The random message history
+        """
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
         discord_env.channel.message_history = given_history
@@ -229,7 +233,12 @@ class Test_GenerateBasicEmbed:
 
     @given(text(), text())
     def test_generate_embed(self: Self, title: str, description: str) -> None:
-        """Property test to ensure that embeds are generated correctly"""
+        """Property test to ensure that embeds are generated correctly
+
+        Args:
+            title (str): The random string to use as a title
+            description (str): The random string to use as a description
+        """
         # Step 2 - Call the function
         embed = auxiliary.generate_basic_embed(
             title=title, description=description, color=discord.Color.random()

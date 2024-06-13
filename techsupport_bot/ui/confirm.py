@@ -11,9 +11,11 @@ from core import auxiliary
 
 class ConfirmResponse(Enum):
     """A class to define the 3 responses
-    CONFIRMED - The original author clicked the "confirm" button
-    DENIED - The original author clicked the "cancel" button
-    TIMEOUT - No buttons were pressed in the timeout range
+
+    Attrs:
+        CONFIRMED (int): The original author clicked the "confirm" button
+        DENIED (int): The original author clicked the "cancel" button
+        TIMEOUT (int): No buttons were pressed in the timeout range
     """
 
     CONFIRMED = auto()
@@ -78,7 +80,12 @@ class Confirm(discord.ui.View):
     async def confirm(
         self: Self, interaction: discord.Interaction, button: discord.ui.Button
     ) -> None:
-        """Define what happens when the confirm button is pressed"""
+        """Define what happens when the confirm button is pressed
+
+        Args:
+            interaction (discord.Interaction): The interaction generated when the button pressed
+            button (discord.ui.Button): The button object that got pressed
+        """
         await interaction.response.defer()
         self.value = ConfirmResponse.CONFIRMED
         await self.message.delete()
@@ -88,7 +95,12 @@ class Confirm(discord.ui.View):
     async def cancel(
         self: Self, interaction: discord.Interaction, button: discord.ui.Button
     ) -> None:
-        """Define what happens when the cancel button is pressed"""
+        """Define what happens when the cancel button is pressed
+
+        Args:
+            interaction (discord.Interaction): The interaction generated when the button pressed
+            button (discord.ui.Button): The button object that got pressed
+        """
         await interaction.response.defer()
         self.value = ConfirmResponse.DENIED
         await self.message.delete()
@@ -101,6 +113,13 @@ class Confirm(discord.ui.View):
     async def interaction_check(self: Self, interaction: discord.Interaction) -> bool:
         """This checks to ensure that only the original author can press the button
         If the original author didn't press, it sends an ephemeral message
+
+        Args:
+            interaction (discord.Interaction): The interaction generated when this
+                UI is interacted with in any way
+
+        Returns:
+            bool: If this is False the interaction should NOT be followed through with
         """
         if interaction.user != self.author:
             await interaction.response.send_message(

@@ -46,7 +46,12 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class ChatGPT(cogs.BaseCog):
-    """Main extension class"""
+    """Main extension class
+
+    Attrs:
+        API_URL (str): The URL for the openai API
+        SYSTEM_PROMPT (dict[str, str]): The default starting prompt for chatGPT
+    """
 
     API_URL = "https://api.openai.com/v1/chat/completions"
 

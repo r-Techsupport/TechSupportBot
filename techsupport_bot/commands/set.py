@@ -60,7 +60,7 @@ class Setter(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (discord.ext.Context): the context object for the message
+            ctx (commands.Context): the context object for the message
             game_name (str): the name of the game
         """
         await ctx.bot.change_presence(activity=discord.Game(name=game_name))
@@ -78,7 +78,7 @@ class Setter(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (discord.ext.Context): the context object for the message
+            ctx (commands.Context): the context object for the message
             nick (str): the bot nickname
         """
         await ctx.message.guild.me.edit(nick=nick)
