@@ -184,7 +184,7 @@ class TechSupportBot(commands.Bot):
             )
 
         # Adds persistent views to the bot
-        self.add_view(ui.PersistentView())
+        self.add_view(ui.VotingButtonPersistent())
 
         # The very last step should be loading extensions
         # Some extensions will require the database or config when loading

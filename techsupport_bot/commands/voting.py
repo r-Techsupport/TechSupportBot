@@ -1,6 +1,14 @@
+"""
+Commands that manage, start, and interact with the voting system
+The cog in the file is named:
+    Voting
+
+This file contains 1 commands:
+    /voting
+"""
+
 from __future__ import annotations
 
-import asyncio
 import datetime
 from datetime import timedelta
 from typing import TYPE_CHECKING, Self
@@ -92,7 +100,7 @@ class Voting(cogs.LoopCog):
         ).create()
 
         embed = await self.build_vote_embed(vote.vote_id, interaction.guild)
-        view = ui.PersistentView()
+        view = ui.VotingButtonPersistent()
 
         vote_thread, vote_message = await channel.create_thread(
             name=f"VOTE: {form.vote_short}",
