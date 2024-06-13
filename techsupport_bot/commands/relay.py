@@ -82,7 +82,7 @@ class DiscordToIRC(cogs.MatchCog):
             return None
 
         # Check if channel has an active map
-        if not str(ctx.channel.id) in self.mapping:
+        if str(ctx.channel.id) not in self.mapping:
             return None
 
         # If there is a map, find it and return it
@@ -133,7 +133,7 @@ class DiscordToIRC(cogs.MatchCog):
             return
 
         # Check if channel has an active map
-        if not str(channel.id) in self.mapping:
+        if str(channel.id) not in self.mapping:
             return
 
         self.bot.irc.send_message_from_discord(
