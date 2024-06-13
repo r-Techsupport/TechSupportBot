@@ -1515,7 +1515,7 @@ class FactoidManager(cogs.MatchCog):
     async def app_command_all(
         self: Self,
         interaction: discord.Interaction,
-        file: bool = False,
+        force_file: bool = False,
         property: Properties = "",
         true_all: bool = False,
         ignore_hidden: bool = False,
@@ -1552,12 +1552,10 @@ class FactoidManager(cogs.MatchCog):
 
         # If the linx server isn't configured, we must make it a file
         if not self.bot.file_config.api.api_url.linx:
-            file = True
+            force_file = True
 
-        cachable = (
-            True
-            if not file and not property and not true_all and not ignore_hidden
-            else False
+        cachable = bool(
+            not force_file and not property and not true_all and not ignore_hidden
         )
 
         if cachable and guild in self.factoid_all_cache:
@@ -1567,7 +1565,7 @@ class FactoidManager(cogs.MatchCog):
             return
 
         factoid_all = await self.build_factoid_all(
-            interaction.guild, factoids, aliases, file, cachable
+            interaction.guild, factoids, aliases, force_file, cachable
         )
 
         if not factoid_all:
@@ -1578,7 +1576,7 @@ class FactoidManager(cogs.MatchCog):
             return
 
         # If we know it's a file, or it's fallen back to a file, send it as a file
-        if file or isinstance(factoid_all, discord.File):
+        if force_file or isinstance(factoid_all, discord.File):
             await interaction.response.send_message(file=factoid_all)
             return
 
@@ -1713,7 +1711,7 @@ class FactoidManager(cogs.MatchCog):
             return await self.send_factoids_as_file(guild, factoids, aliases)
 
     def build_formatted_factoid_data(
-        self, factoids: list[munch.Munch], aliases: dict[str, list[str]]
+        self: Self, factoids: list[munch.Munch], aliases: dict[str, list[str]]
     ) -> dict[str, dict[str, str]]:
         """This builds a nicely formatted, sorted, and processed dict of factoids
         Ready to be put into factoid all
@@ -1724,7 +1722,7 @@ class FactoidManager(cogs.MatchCog):
                 for the factoids in the main factoids list
 
         Returns:
-            dict[str, dict[str,str]]: The formatted list of factoids with all the information
+            dict[str, dict[str, str]]: The formatted list of factoids with all the information
         """
         output_data = []
         for factoid in factoids:
@@ -1770,10 +1768,6 @@ class FactoidManager(cogs.MatchCog):
 
         Args:
             ctx (commands.Context): Context of the invocation
-
-        Raises:
-            MissingPermissions: Raised when someone tries to call .factoid all with
-                the hidden flag without administrator permissions
         """
         guild = str(ctx.guild.id)
 
@@ -1781,7 +1775,10 @@ class FactoidManager(cogs.MatchCog):
         if guild in self.factoid_all_cache:
             url = self.factoid_all_cache[guild]["url"]
             embed = auxiliary.prepare_confirm_embed(message=url)
-            embed.title = "WARNING: This command is deprecated, please use /factoid all going forward"
+            embed.title = (
+                "WARNING: This command is deprecated, "
+                "please use /factoid all going forward"
+            )
             await ctx.send(embed=embed)
             return
 
@@ -1830,7 +1827,10 @@ class FactoidManager(cogs.MatchCog):
 
             # Returns the url
             embed = auxiliary.prepare_confirm_embed(message=url)
-            embed.title = "WARNING: This command is deprecated, please use /factoid all going forward"
+            embed.title = (
+                "WARNING: This command is deprecated, "
+                "please use /factoid all going forward"
+            )
             await ctx.send(embed=embed)
             self.factoid_all_cache[str(ctx.guild.id)] = {}
             self.factoid_all_cache[str(ctx.guild.id)]["url"] = url
@@ -1858,10 +1858,9 @@ class FactoidManager(cogs.MatchCog):
         """Method to generate the html file contents
 
         Args:
-            ctx (commands.Context): The context, used for the guild name
-            factoids (list): List of all factoids
-            aliases (dict): A dictionary containing factoids and their aliases
-            list_only_hidden (bool): Whether to list only hidden factoids
+            guild (discord.Guild): The guild the factoids are being pulled from
+            factoids (list[munch.Munch]): List of all factoids
+            aliases (dict[str, list[str]]): A dictionary containing factoids and their aliases
 
         Returns:
             str: The result html file
@@ -1925,15 +1924,18 @@ class FactoidManager(cogs.MatchCog):
     async def send_factoids_as_file(
         self: Self,
         guild: discord.Guild,
-        factoids: list,
-        aliases: dict,
+        factoids: list[munch.Munch],
+        aliases: dict[str, list[str]],
     ) -> discord.File:
         """Method to send the factoid list as a file instead of a paste
 
         Args:
-            ctx (commands.Context): The context, used for the guild id
+            guild (discord.Guild): The guild the factoids are from
             factoids (list): List of all factoids
-            aliases (dict): A dictionary containing factoids and their aliases
+            aliases (dict[str, list[str]]): A dictionary containing factoids and their aliases
+
+        Returns:
+            discord.File: The file, ready to upload to discord
         """
 
         output_data = self.build_formatted_factoid_data(factoids, aliases)
