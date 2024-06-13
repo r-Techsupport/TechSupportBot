@@ -40,7 +40,15 @@ class Logger(cogs.MatchCog):
     async def match(
         self: Self, config: munch.Munch, ctx: commands.Context, _: str
     ) -> bool:
-        """Method to match the logging channel to the map."""
+        """Matches any message and checks if it is in a channel with a logger rule
+
+        Args:
+            config (munch.Munch): The config for the guild where the message was sent
+            ctx (commands.Context): The context of the original message
+
+        Returns:
+            bool: Whether the message should be logged or not
+        """
         if isinstance(ctx.channel, discord.Thread):
             if (
                 not str(ctx.channel.parent_id)
@@ -55,7 +63,12 @@ class Logger(cogs.MatchCog):
     async def response(
         self: Self, config: munch.Munch, ctx: commands.Context, _: str, __: bool
     ) -> None:
-        """Method to generate the response from the logger."""
+        """If a message should be logged, this logs the message
+
+        Args:
+            config (munch.Munch): The guild config where the message was sent
+            ctx (commands.Context): The context that was generated when the message was sent
+        """
         # Get the ID of the channel, or parent channel in the case of threads
         mapped_id = config.extensions.logger.channel_map.value.get(
             str(getattr(ctx.channel, "parent_id", ctx.channel.id))

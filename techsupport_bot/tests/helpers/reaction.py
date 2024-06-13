@@ -14,9 +14,9 @@ class MockReaction:
     """
     This is the MockReaction class
 
-    Currently implemented variables and methods:
-    message -> Last message a user had to add reactions to
-    count -> Number of reactions already on the message
+    Args:
+        message (helpers.MockMessage): Last message a user had to add reactions to
+        count (int): Number of reactions already on the message
     """
 
     def __init__(

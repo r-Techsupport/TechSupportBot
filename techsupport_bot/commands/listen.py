@@ -29,12 +29,18 @@ class ListenChannel(commands.Converter):
     This avoids the limitation set by the builtin channel converters.
     """
 
-    async def convert(self: Self, ctx: commands.Context, argument: int) -> None:
+    async def convert(
+        self: Self, ctx: commands.Context, argument: int
+    ) -> discord.abc.GuildChannel | discord.abc.PrivateChannel | discord.Thread:
         """Convert method for the converter.
 
         Args:
             ctx (commands.Context): the context object
             argument (int): the channel ID to convert
+
+        Returns:
+            discord.abc.GuildChannel | discord.abc.PrivateChannel | discord.Thread:
+                The channel object that is associated with the ID
         """
         channel = await ctx.bot.fetch_channel(argument)
         return channel
@@ -42,9 +48,6 @@ class ListenChannel(commands.Converter):
 
 class Listener(cogs.BaseCog):
     """Cog object for listening to channels."""
-
-    MAX_DESTINATIONS = 10
-    CACHE_TIME = 60
 
     def format_message_in_embed(self: Self, message: discord.Message) -> discord.Embed:
         """Formats a listened message into a pretty embed
@@ -81,11 +84,16 @@ class Listener(cogs.BaseCog):
             max_age_seconds=1200,
         )
 
-    async def get_destinations(self: Self, src: discord.TextChannel) -> None:
+    async def get_destinations(
+        self: Self, src: discord.TextChannel
+    ) -> list[discord.abc.Messageable]:
         """Gets channel object destinations for a given source channel.
 
         Args:
             src (discord.TextChannel): the source channel to build for
+
+        Returns:
+            list[discord.abc.Messageable]: The list of destinations to send the listened message to
         """
         destinations = self.destination_cache.get(src.id)
 
@@ -95,11 +103,16 @@ class Listener(cogs.BaseCog):
 
         return destinations
 
-    async def build_destinations_from_src(self: Self, src: discord.TextChannel) -> None:
+    async def build_destinations_from_src(
+        self: Self, src: discord.TextChannel
+    ) -> list[discord.abc.Messageable]:
         """Builds channel objects for a given src.
 
         Args:
             src (discord.TextChannel): the source channel to build for
+
+        Returns:
+            list[discord.abc.Messageable]: The list of destinations to send the listened message to
         """
         destination_data = await self.get_destination_data(src)
         if not destination_data:
@@ -114,6 +127,9 @@ class Listener(cogs.BaseCog):
 
         Args:
             destination_ids (list[int]): the destination ID's to reference
+
+        Returns:
+            list[discord.abc.Messageable]: The list of destinations to send the listened message to
         """
         destinations = set()
         for did in destination_ids:
@@ -136,6 +152,9 @@ class Listener(cogs.BaseCog):
 
         Args:
             src (discord.TextChannel): the source channel to build for
+
+        Returns:
+            list[str]: The list of channel IDs that should have the listened message sent to
         """
         destination_data = await self.bot.models.Listener.query.where(
             self.bot.models.Listener.src_id == str(src.id)
@@ -181,10 +200,16 @@ class Listener(cogs.BaseCog):
         )
         return listener
 
-    async def get_all_sources(self: Self) -> None:
+    async def get_all_sources(
+        self: Self,
+    ) -> dict[discord.abc.Messageable, list[discord.abc.Messageable]]:
         """Gets all source data.
 
         This is kind of expensive, so use lightly.
+
+        Returns:
+            dict[discord.abc.Messageable, list[discord.abc.Messageable]]: A dict of all current
+                listen jobs from and to every channel
         """
         source_objects = []
         all_listens = await self.bot.models.Listener.query.gino.all()
@@ -236,6 +261,9 @@ class Listener(cogs.BaseCog):
         """Command group for listen commands.
 
         This is a command and should be accessed via Discord.
+
+        Args:
+            ctx (commands.Context): the context object for the message
         """
 
         # Executed if there are no/invalid args supplied
