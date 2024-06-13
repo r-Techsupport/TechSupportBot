@@ -211,7 +211,7 @@ class Logger(cogs.MatchCog):
                         f"Logger did not reupload {lf} file(s) due to file size limit"
                         f" on message {ctx.message.id} in channel {ctx.channel.name}."
                     ),
-                    level=LogLevel.INFO,
+                    level=LogLevel.WARN,
                     channel=log_channel,
                     context=LogContext(guild=ctx.guild, channel=ctx.channel),
                 )
