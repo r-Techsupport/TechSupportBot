@@ -21,7 +21,19 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     class Applications(bot.db.Model):
         """The postgres table for applications
-        Currenty used in application.py"""
+        Currenty used in application.py
+
+        Attrs:
+            __tablename__ (str): The name of the table in postgres
+            pk (int): The automatic primary key
+            guild_id (str): The string of the guild ID the application is in
+            applicant_name (str): The name of the user who submitted the app
+            applicant_id (str): The string representation of the ID of the user
+            application_status (str): The string representation of the status
+            background (str): The answer to the background question of the application
+            reason (str): The answer to the reason question of the application
+            application_time (datetime): The time the application was submitted
+        """
 
         __tablename__ = "applications"
 
@@ -38,7 +50,14 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     class ApplicationBans(bot.db.Model):
         """The postgres table for users banned from applications
-        Currently used in application.py and who.py"""
+        Currently used in application.py and who.py
+
+        Attrs:
+            __tablename__ (str): The name of the table in postgres
+            pk (int): The automatic primary key
+            guild_id (str): The string of the guild ID the applicant is banned in
+            applicant_id (str): The string representation of the ID of the user
+        """
 
         __tablename__ = "appbans"
 
@@ -48,7 +67,18 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     class DuckUser(bot.db.Model):
         """The postgres table for ducks
-        Currently used in duck.py"""
+        Currently used in duck.py
+
+        Attrs:
+            __tablename__ (str): The name of the table in postgres
+            pk (int): The automatic primary key
+            author_id (str): The string representation of the ID of the user
+            guild_id (str): The string of the guild ID the duckuser has participated in
+            befriend_count (int): The amount of ducks the user has befriended
+            kill_count (int): The amount of ducks the user has killed
+            updated (datetime): The last time the duck user interacted with a duck
+            speed_record (float): The fastest this user has killed or friended a duck
+        """
 
         __tablename__ = "duckusers"
 
@@ -62,7 +92,22 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     class Factoid(bot.db.Model):
         """The postgres table for factoids
-        Currently used in factoid.py"""
+        Currently used in factoid.py
+
+        Attrs:
+            __tablename__ (str): The name of the table in postgres
+            factoid_id (int): The primary key of the factoid
+            name (str): The name of the factoid
+            guild (str): The string guild ID for the guild that the factoid is in
+            message (str): The string message of the factoid
+            time (datetime): When the factoid was created NOT edited
+            embed_config (str): The json of the factoid
+            hidden (bool): If the factoid should be hidden or not
+            protected (bool): If the factoid should be protected
+            disabled (bool): If the factoid should be disabled
+            restricted (bool): If the factoid should be restricted
+            alias (str): The string representation of the parent
+        """
 
         __tablename__ = "factoids"
 
@@ -80,7 +125,15 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     class FactoidJob(bot.db.Model):
         """The postgres table for factoid loops
-        Currently used in factoid.py"""
+        Currently used in factoid.py
+
+        Attrs:
+            __tablename__ (str): The name of the table in postgres
+            job_id (int): The primary key, ID of the job
+            factoid (int): The primary key of the linked factoid
+            channel (str): The channel this loop needs to run in
+            cron (str): The frequency this job should run
+        """
 
         __tablename__ = "factoid_jobs"
 
@@ -93,7 +146,18 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     class Grab(bot.db.Model):
         """The postgres table for grabs
-        Currently used in grab.py"""
+        Currently used in grab.py
+
+        Attrs:
+            __tablename__ (str): The name of the table in postgres
+            pk (int): The primary key for this database
+            author_id (str): The ID of the author of the original grab message
+            channel (str): The channel the message was grabbed from
+            guild (str): The guild the message was grabbed from
+            message (str): The string contents of the message
+            time (datetime): The time the message was grabbed
+            nsfw (bool): Whether the message was grabbed in an NSFW channel
+        """
 
         __tablename__ = "grabs"
 
@@ -107,7 +171,15 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     class IRCChannelMapping(bot.db.Model):
         """The postgres table for IRC->discord maps
-        Currently used in relay.py"""
+        Currently used in relay.py
+
+        Attrs:
+            __tablename__ (str): The name of the table in postgres
+            map_id (int): The primary key for the database
+            guild_id (str): The guild where the discord channel exists at
+            discord_channel_id (str): The ID of the discord channel
+            irc_channel_id (str): The name of the IRC channel
+        """
 
         __tablename__ = "ircchannelmap"
         map_id = bot.db.Column(bot.db.Integer, primary_key=True)
@@ -117,14 +189,29 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     class ModmailBan(bot.db.Model):
         """The postgres table for modmail bans
-        Currently used in modmail.py"""
+        Currently used in modmail.py
+
+        Attrs:
+            __tablename__ (str): The name of the table in postgres
+            user_id (str): The ID of the user banned from modmail
+        """
 
         __tablename__ = "modmail_bans"
         user_id = bot.db.Column(bot.db.String, default=None, primary_key=True)
 
     class UserNote(bot.db.Model):
         """The postgres table for notes
-        Currently used in who.py"""
+        Currently used in who.py
+
+        Attrs:
+            __tablename__ (str): The name of the table in postgres
+            pk (int): The primary key for this database
+            user_id (str): The user ID that has a note
+            guild_id (str): The guild ID that the note belongs to
+            updated (datetime): The time the note was created on
+            author_id (str): The author of the note
+            body (str): The contents of the note
+        """
 
         __tablename__ = "usernote"
 
@@ -137,7 +224,16 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     class Warning(bot.db.Model):
         """The postgres table for warnings
-        Currently used in protect.py and who.py"""
+        Currently used in protect.py and who.py
+
+        Attrs:
+            __tablename__ (str): The name of the table in postgres
+            pk (int): The primary key for the database
+            user_id (str): The user who got warned
+            guild_id (str): The guild this warn occured in
+            reason (str): The reason for the warn
+            time (datetime): The time the warning was given
+        """
 
         __tablename__ = "warnings"
         pk = bot.db.Column(bot.db.Integer, primary_key=True)
@@ -148,7 +244,15 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     class Config(bot.db.Model):
         """The postgres table for guild config
-        Currently used nearly everywhere"""
+        Currently used nearly everywhere
+
+        Attrs:
+            __tablename__ (str): The name of the table in postgres
+            pk (int): The primary key for the database
+            guild_id (str): The ID of the guild this config is for
+            config (str): The config text
+            update_time (datetime): The time the config was last updated
+        """
 
         __tablename__ = "guild_config"
         pk = bot.db.Column(bot.db.Integer, primary_key=True)
@@ -158,7 +262,14 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     class Listener(bot.db.Model):
         """The postgres table for listeners
-        Currently used in listen.py"""
+        Currently used in listen.py
+
+        Attrs:
+            __tablename__ (str): The name of the table in postgres
+            pk (int): The primary key for the database
+            src_id (str): The source channel for the listener
+            dst_id (str): The destination channel for the listener
+        """
 
         __tablename__ = "listeners"
         pk = bot.db.Column(bot.db.Integer, primary_key=True)
@@ -167,7 +278,14 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     class Rule(bot.db.Model):
         """The postgres table for rules
-        Currently used in rules.py"""
+        Currently used in rules.py
+
+        Attrs:
+            __tablename__ (str): The name of the table in postgres
+            pk (int): The primary key for the database
+            guild_id (str): The ID of the guild that these rules are for
+            rules (str): The json representation of the rules
+        """
 
         __tablename__ = "guild_rules"
         pk = bot.db.Column(bot.db.Integer, primary_key=True)

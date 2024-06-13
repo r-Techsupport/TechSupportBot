@@ -83,7 +83,13 @@ class AutoNickName(cogs.BaseCog):
 
     @commands.Cog.listener()
     async def on_member_join(self: Self, member: discord.Member) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
+        """
+        This starts the running of the auto nickname formatter
+        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join
+
+        Args:
+            member (discord.Member): The member who joined
+        """
         config = self.bot.guild_configs[str(member.guild.id)]
 
         # Don't do anything if the filter is off for the guild

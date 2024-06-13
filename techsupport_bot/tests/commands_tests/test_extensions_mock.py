@@ -25,7 +25,7 @@ def setup_local_extension(bot: helpers.MockBot = None) -> mock.Mocker:
             fake_discord_env in the test. Defaults to None.
 
     Returns:
-        Mocker: The instance of the Mocker class
+        mock.Mocker: The instance of the Mocker class
     """
     with patch("asyncio.create_task", return_value=None):
         return mock.Mocker(bot)
@@ -181,7 +181,11 @@ class Test_PrepareMockMessage:
 
     @given(text())
     def test_with_random_string(self: Self, input_message: str) -> None:
-        """A property test to ensure that mocked message isn't getting smaller"""
+        """A property test to ensure that mocked message isn't getting smaller
+
+        Args:
+            input_message (str): A random message to to prepare_mock_message with
+        """
         # Step 1 - Setup env
         mocker = setup_local_extension()
 

@@ -7,7 +7,6 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any, Self
 
 import discord
-import gino
 import munch
 from botlogging import LogContext, LogLevel
 from discord.ext import commands
@@ -19,10 +18,15 @@ if TYPE_CHECKING:
 class BaseCog(commands.Cog):
     """The base cog to use when making extensions.
 
+    Attrs:
+        COG_TYPE (str): The string representation for the type of cog
+        KEEP_COG_ON_FAILURE (bool): Whether or not to keep the cog loaded if there was an error
+
     Args:
-        bot (Bot): the bot object
-        models (List[gino.Model]): the Postgres models for the extension
+        bot (bot.TechSupportBot): the bot object
         no_guild (bool): True if the extension should run globally
+        extension_name(str): The name of the extension
+            if it needs to be different than the file name
     """
 
     COG_TYPE = "Base"
@@ -31,19 +35,12 @@ class BaseCog(commands.Cog):
     def __init__(
         self: Self,
         bot: bot.TechSupportBot,
-        models: list[gino.Model] = None,
         no_guild: bool = False,
         extension_name: str = None,
     ) -> None:
         self.bot = bot
         self.no_guild = no_guild
         self.extension_name = extension_name
-
-        if models is None:
-            models = []
-        self.models = munch.Munch()
-        for model in models:
-            self.models[model.__name__] = model
 
         asyncio.create_task(self._preconfig())
 
@@ -55,7 +52,7 @@ class BaseCog(commands.Cog):
         This makes the extension unload when there is an error.
 
         Args:
-            handler (asyncio.coroutine): the preconfig handler
+            handler (Callable[..., Awaitable[None]]): the preconfig handler
         """
         await self.bot.wait_until_ready()
 
@@ -81,7 +78,11 @@ class BaseCog(commands.Cog):
         """Checks if an extension is currently enabled for a given config.
 
         Args:
-            config (dict): the context/guild config
+            config (munch.Munch): the context/guild config
+
+        Returns:
+            bool: True if the extension is enabled for the context
+                False if it isn't
         """
         if config is None:
             config = {}
@@ -95,6 +96,9 @@ class MatchCog(BaseCog):
     Cog for matching a specific context criteria and responding.
 
     This makes the process of handling events simpler for development.
+
+    Attrs:
+        COG_TYPE (str): The string representation for the type of cog
     """
 
     COG_TYPE = "Match"
@@ -147,8 +151,12 @@ class MatchCog(BaseCog):
 
         Args:
             _config (munch.Munch): the config associated with the context
-            _ctx (context): the context object
+            _ctx (commands.Context): the context object
             _content (str): the message content
+
+        Returns:
+            bool: Base function to determine if the message should be matched in the extension.
+                If this is true, response() will be called
         """
         return True
 
@@ -162,9 +170,10 @@ class MatchCog(BaseCog):
         """Performs a response if the match is valid.
 
         Args:
-            _config (dict): the config associated with the context
-            _ctx (context): the context object
+            _config (munch.Munch): the config associated with the context
+            _ctx (commands.Context): the context object
             _content (str): the message content
+            _result (bool): the boolean result from match()
         """
 
 
@@ -173,8 +182,16 @@ class LoopCog(BaseCog):
 
     This currently doesn't utilize the tasks library.
 
+    Attrs:
+        COG_TYPE (str): The string representation for the type of cog
+        DEFAULT_WAIT (int): The default time to sleep for
+        TRACKER_WAIT (int): The time to wait before looking for new channels
+        ON_START (bool): Should this loop be only a manual start call
+        CHANNELS_KEY (str): The config key to use for looping
+
     Args:
-        bot (Bot): the bot object
+        *args (tuple): Args to pass to the BaseCog init
+        **kwargs (dict[str, Any]): Args to pass to the BaseCog init)
     """
 
     COG_TYPE: str = "Loop"
@@ -387,7 +404,7 @@ class LoopCog(BaseCog):
         Args:
             _config (munch.Munch): the config object for the guild
             _guild (discord.Guild): the guild associated with the execution
-            _target_channel (discord.Channel): the channel object to use
+            _target_channel (discord.abc.Messageable): the channel object to use
         """
 
     async def _default_wait(self: Self) -> None:

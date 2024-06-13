@@ -26,7 +26,7 @@ def setup_local_extension(bot: helpers.MockBot = None) -> roll.Roller:
             fake_discord_env in the test. Defaults to None.
 
     Returns:
-        Roller: The instance of the Roller class
+        roll.Roller: The instance of the Roller class
     """
     with patch("asyncio.create_task", return_value=None):
         return roll.Roller(bot)
@@ -84,7 +84,12 @@ class Test_RandomNumber:
 
     @given(integers(), integers())
     def test_random_numbers(self: Self, min_value: int, max_value: int) -> None:
-        """A property test to ensure that random number doesn't return anything unexpected"""
+        """A property test to ensure that random number doesn't return anything unexpected
+
+        Args:
+            min_value (int): A random int to text roll bounds with
+            max_value (int): Another random int to test roll bounds with
+        """
         # Step 1 - Setup env
         roller = setup_local_extension()
         if min_value > max_value:

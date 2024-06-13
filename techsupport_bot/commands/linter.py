@@ -92,7 +92,7 @@ class Lint(cogs.BaseCog):
         """A command to check if the attachments on a message are valid for linter
 
         Args:
-            attachments (list): A list of discord.Attachment
+            attachments (list[discord.Attachment]): A list of discord.Attachment
 
         Returns:
             bool: True if valid, False if invalid
