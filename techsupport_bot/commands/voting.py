@@ -138,7 +138,7 @@ class Voting(cogs.LoopCog):
         """Gets a vote entry from the database by a given message ID
 
         Args:
-            message_id (int): The message ID to search for
+            message_id (str): The message ID to search for
 
         Returns:
             munch.Munch: The database entry that matches the ID
