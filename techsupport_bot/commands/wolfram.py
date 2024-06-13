@@ -33,7 +33,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Wolfram(cogs.BaseCog):
-    """Class to set up the wolfram extension."""
+    """Class to set up the wolfram extension.
+
+    Attrs:
+        API_URL (str): The API URL for wolfram
+        ICON_URL (str): The URL for the wolfram icon
+
+    """
 
     API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
     ICON_URL = "https://cdn.icon-icons.com/icons2/2107/PNG/512/file_type_wolfram_icon_130071.png"
@@ -47,7 +53,12 @@ class Wolfram(cogs.BaseCog):
         usage="[query]",
     )
     async def simple_search(self: Self, ctx: commands.Context, *, query: str) -> None:
-        """Method to search through the wolfram API."""
+        """Makes a search on wolframalpha for the user input query
+
+        Args:
+            ctx (commands.Context): The context which generated the command
+            query (str): The user inputed query to search wolfram for and output the results
+        """
         url = self.API_URL.format(
             self.bot.file_config.api.api_keys.wolfram,
             query,

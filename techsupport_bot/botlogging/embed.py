@@ -9,7 +9,16 @@ import discord
 
 
 class LogEmbed(discord.Embed):
-    """Base log event embed."""
+    """Base log event embed.
+    Do not create this directly
+
+    Args:
+        message (str): The message to log. Will become the description of an embed
+
+    Attrs:
+        title (str): The title of the embed
+        color (discord.Color): The color of the embed
+    """
 
     title = None
     color = None
@@ -38,28 +47,48 @@ class LogEmbed(discord.Embed):
 
 
 class InfoEmbed(LogEmbed):
-    """Embed for info level log events."""
+    """Embed for info level log events.
+
+    Attrs:
+        title (str): The title of the embed
+        color (discord.Color): The color of the embed
+    """
 
     title = "info"
     color = discord.Color.green()
 
 
 class DebugEmbed(LogEmbed):
-    """Embed for debug level log events."""
+    """Embed for debug level log events.
+
+    Attrs:
+        title (str): The title of the embed
+        color (discord.Color): The color of the embed
+    """
 
     title = "debug"
     color = discord.Color.dark_green()
 
 
 class WarningEmbed(LogEmbed):
-    """Embed for warning level log events."""
+    """Embed for warning level log events.
+
+    Attrs:
+        title (str): The title of the embed
+        color (discord.Color): The color of the embed
+    """
 
     title = "warning"
     color = discord.Color.gold()
 
 
 class ErrorEmbed(LogEmbed):
-    """Embed for error level log events."""
+    """Embed for error level log events.
+
+    Attrs:
+        title (str): The title of the embed
+        color (discord.Color): The color of the embed
+    """
 
     title = "error"
     color = discord.Color.red()
