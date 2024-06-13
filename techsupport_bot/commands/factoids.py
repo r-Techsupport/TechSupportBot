@@ -1525,7 +1525,7 @@ class FactoidManager(cogs.MatchCog):
 
         Args:
             interaction (discord.Interaction): The interaction that started this command
-            file (bool, optional): Whether this should be forced as a yml file. Defaults to False.
+            force_file (bool, optional): Whether this should be forced as a yml file. Defaults to False.
             property (Properties, optional): What property to look for. Defaults to "".
             true_all (bool, optional): Whether this should force every factoid. Defaults to False.
             ignore_hidden (bool, optional): Whether or not to ignore the hidden property.
@@ -1931,7 +1931,7 @@ class FactoidManager(cogs.MatchCog):
 
         Args:
             guild (discord.Guild): The guild the factoids are from
-            factoids (list): List of all factoids
+            factoids (list[munch.Munch]): List of all factoids
             aliases (dict[str, list[str]]): A dictionary containing factoids and their aliases
 
         Returns:
