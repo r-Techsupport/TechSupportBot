@@ -20,7 +20,7 @@ class BotLogger:
     """Logging interface for Discord bots.
 
     Args:
-        bot (bot.TechSupportBot): the bot object
+        discord_bot (bot.TechSupportBot): the bot object
         name (str): the name of the logging channel
         send (bool): Whether or not to allow sending of logs to discord
     """
@@ -40,6 +40,9 @@ class BotLogger:
     class DebugLogLevel(GenericLogLevel):
         """This is class defining special parameters for debug logs
         This should never be used manually. Use the LogLevel Enum instead
+
+        Args:
+            main_console (logging.Logger): The console object to print logs to
         """
 
         def __init__(self: Self, main_console: logging.Logger) -> None:
@@ -50,6 +53,9 @@ class BotLogger:
     class InfoLogLevel(GenericLogLevel):
         """This is class defining special parameters for info logs
         This should never be used manually. Use the LogLevel Enum instead
+
+        Args:
+            main_console (logging.Logger): The console object to print logs to
         """
 
         def __init__(self: Self, main_console: logging.Logger) -> None:
@@ -60,6 +66,9 @@ class BotLogger:
     class WarningLogLevel(GenericLogLevel):
         """This is class defining special parameters for warning logs
         This should never be used manually. Use the LogLevel Enum instead
+
+        Args:
+            main_console (logging.Logger): The console object to print logs to
         """
 
         def __init__(self: Self, main_console: logging.Logger) -> None:
@@ -70,6 +79,9 @@ class BotLogger:
     class ErrorLogLevel(GenericLogLevel):
         """This is class defining special parameters for error logs
         This should never be used manually. Use the LogLevel Enum instead
+
+        Args:
+            main_console (logging.Logger): The console object to print logs to
         """
 
         def __init__(self: Self, main_console: logging.Logger) -> None:

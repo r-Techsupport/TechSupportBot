@@ -24,7 +24,7 @@ def setup_local_extension(bot: helpers.MockBot = None) -> htd.Htd:
             fake_discord_env in the test. Defaults to None.
 
     Returns:
-        HTD: The instance of the htd class
+        htd.Htd: The instance of the htd class
     """
     with patch("asyncio.create_task", return_value=None):
         return htd.Htd(bot)

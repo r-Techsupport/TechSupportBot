@@ -25,7 +25,7 @@ def setup_local_extension(bot: helpers.MockBot = None) -> wyr.WouldYouRather:
             fake_discord_env in the test. Defaults to None.
 
     Returns:
-        WouldYouRather: The instance of the WouldYouRather class
+        wyr.WouldYouRather: The instance of the WouldYouRather class
     """
     with patch("asyncio.create_task", return_value=None):
         return wyr.WouldYouRather(bot)
@@ -94,7 +94,11 @@ class Test_WYR_Command:
 
 
 class Test_Get_Question:
-    """A set of tests to test the get_question function"""
+    """A set of tests to test the get_question function
+
+    Attrs:
+        sample_resource (str): A set of same questions for doing unit tests
+    """
 
     sample_resource = '"q1o1" || "q1o2"\n"q2o1" || "q2o2"'
 

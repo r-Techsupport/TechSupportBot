@@ -69,9 +69,12 @@ async def invalid_channel(ctx: commands.Context) -> bool:
 
 
 class Grabber(cogs.BaseCog):
-    """Class for the actual commands"""
+    """Class for the actual commands
 
-    HAS_CONFIG = False
+    Attrs:
+        SEARCH_LIMIT (int): The max amount of messages to search when grabbing
+    """
+
     SEARCH_LIMIT = 20
 
     @auxiliary.with_typing
@@ -175,7 +178,6 @@ class Grabber(cogs.BaseCog):
         """Discord command to get a paginated list of all grabs from a given user
 
         Args:
-            self (Self): _description_
             ctx (commands.Context): The context in which the command was run in
             user_to_grab (discord.Member): The user to get all the grabs from
         """

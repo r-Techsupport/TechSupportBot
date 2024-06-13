@@ -27,7 +27,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class MagicConch(cogs.BaseCog):
-    """Class to create the conch command for discord bot."""
+    """Class to create the conch command for discord bot.
+
+    Attrs:
+        RESPONSES (list[str]): The list of random responses for the 8 ball
+        PIC_URL (str): The direct URL for the picture to put in embeds
+
+    """
 
     RESPONSES = [
         "As I see it, yes.",
@@ -35,7 +41,7 @@ class MagicConch(cogs.BaseCog):
         "Better not tell you now.",
         "Cannot predict now.",
         "Concentrate and ask again.",
-        "Don’t count on it.",
+        "Don't count on it.",
         "It is certain.",
         "It is decidedly so.",
         "Most likely.",
@@ -48,7 +54,7 @@ class MagicConch(cogs.BaseCog):
         "Very doubtful.",
         "Without a doubt.",
         "Yes.",
-        "Yes – definitely.",
+        "Yes - definitely.",
         "You may rely on it.",
     ]
     PIC_URL = "https://i.imgur.com/vdvGrsR.png"

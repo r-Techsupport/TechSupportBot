@@ -37,6 +37,13 @@ class TechSupportBot(commands.Bot):
             the bot needs to request from discord
         allowed_mentions (discord.AllowedMentions): What the bot is, or is not,
             allowed to mention
+
+    Attrs:
+        CONFIG_PATH (str): The hard coded path to the yaml config file
+        EXTENSIONS_DIR_NAME (str): The hardcoded folder for commands
+        EXTENSIONS_DIR (str): The list of all files in the EXTENSIONS_DIR_NAME folder
+        FUNCTIONS_DIR_NAME (str):The hardcoded folder for functions
+        FUNCTIONS_DIR (str):The list of all files in the FUNCTIONS_DIR_NAME folder
     """
 
     CONFIG_PATH: str = "./config.yml"
@@ -284,6 +291,9 @@ class TechSupportBot(commands.Bot):
 
         Args:
             guild_id (str): The guild ID the config will be for. Only used for storing the config
+
+        Returns:
+            munch.Munch: The new config object ready to use
         """
         extensions_config = munch.DefaultMunch(None)
 
@@ -385,6 +395,10 @@ class TechSupportBot(commands.Bot):
         Args:
             guild (discord.Guild): the guild object to reference
             key (str): the key to use when looking up the channel
+
+        Returns:
+            str | None: If the log channel exists, this will be the string of the ID
+                Otherwise it will be None
         """
         if not guild:
             return None
@@ -562,9 +576,12 @@ class TechSupportBot(commands.Bot):
 
     # Postgres setup function
 
-    async def get_postgres_ref(self: Self) -> None:
+    async def get_postgres_ref(self: Self) -> gino.GinoEngine:
         """Connects to postgres based on the database login defined the in the file_config
         Adds self.db to be the database reference
+
+        Returns:
+            gino.GinoEngine: The database connection as a gino object
         """
         await self.logger.send_log(
             message="Obtaining and binding to Gino instance",
@@ -602,7 +619,13 @@ class TechSupportBot(commands.Bot):
 
     async def get_potential_extensions(self: Self) -> list[str]:
         """Gets the current list of extensions in the defined directory.
-        This ONLY gets commands, not functions"""
+        This ONLY gets commands, not functions
+
+        Returns:
+            list[str]: Gets a list of the string names of every python file
+                in the commands folder
+        """
+
         self.logger.console.info(f"Searching {self.EXTENSIONS_DIR} for extensions")
         extensions_list = [
             os.path.basename(f)[:-3]
@@ -613,7 +636,12 @@ class TechSupportBot(commands.Bot):
 
     async def get_potential_function_extensions(self: Self) -> list[str]:
         """Gets the current list of extensions in the defined directory.
-        This ONLY gets functions, not commands"""
+        This ONLY gets functions, not commands
+
+        Returns:
+            list[str]: Gets a list of the string names of every python file
+                in the functions folder
+        """
         self.logger.console.info(f"Searching {self.FUNCTIONS_DIR} for extensions")
         extensions_list = [
             os.path.basename(f)[:-3]
@@ -678,6 +706,9 @@ class TechSupportBot(commands.Bot):
 
         Args:
             command (commands.Command): the command to reference
+
+        Returns:
+            str: The name of the extension name that houses a prefix command.
         """
         if not command.module.startswith(f"{self.EXTENSIONS_DIR_NAME}."):
             return None
@@ -713,13 +744,14 @@ class TechSupportBot(commands.Bot):
 
     async def is_bot_admin(self: Self, member: discord.Member) -> bool:
         """Processes command context against admin/owner data.
-
         Command checks are disabled if the context author is the owner.
-
         They are also ignored if the author is bot admin in the config.
 
         Args:
             member (discord.Member): the context associated with the command
+
+        Returns:
+            bool: True if the member is a bot admin. False if it isn't
         """
         await self.logger.send_log(
             message="Checking context against bot admins",
@@ -746,7 +778,11 @@ class TechSupportBot(commands.Bot):
         return False
 
     async def get_owner(self: Self) -> discord.User | None:
-        """Gets the owner object from the bot application."""
+        """Gets the owner object from the bot application.
+
+        Returns:
+            discord.User | None: The User object of the owner of the application on discords side
+        """
         if not self.owner:
             try:
                 # If this isn't console only, it is a forever recursion
@@ -764,10 +800,13 @@ class TechSupportBot(commands.Bot):
 
     async def get_prefix(self: Self, message: discord.Message) -> str:
         """Gets the appropriate prefix for a command.
-        This is called by discord.py and must be async
+        This is called by discord.py and MUST be async
 
         Args:
             message (discord.Message): the message to check against
+
+        Returns:
+            str: The string of the command prefix by the bot, for the given guild
         """
         guild_config = self.guild_configs[str(message.guild.id)]
         return getattr(
