@@ -307,7 +307,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             vote_ids_no (str): The comma separated list of who has voted no
             vote_ids_all (str): The comma separated list of who has voted
             votes_yes (int): The number of votes for yes
-            votes_no (int) The number of votes for no
+            votes_no (int): The number of votes for no
             votes_total (int): The number of votes
             start_time (datetime): The start time of the vote
             vote_active (bool): If the vote is current active or not
