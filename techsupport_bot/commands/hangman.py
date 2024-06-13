@@ -37,6 +37,15 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class HangmanGame:
     """Class for the game hangman.
 
+    Attrs:
+        HANG_PICS (list[str]): The list of hangman pictures
+        FINAL_STEP (int): The last step of the hangman game
+        finished (bool): Determines if the game has been finished or not
+        failed (bool): Determines if the players failed to guess the word
+
+    Args:
+        word (str): The word to start the game with
+
     Raises:
         ValueError: A valid alphabetic word wasn't provided
     """
@@ -111,7 +120,11 @@ class HangmanGame:
         self.id = uuid.uuid4()
 
     def draw_word_state(self: Self) -> str:
-        """Method to draw the word on the embed."""
+        """Makes a string with blank spaces and guessed letters
+
+        Returns:
+            str: The formatted string ready to be printed in the embed
+        """
         state = ""
         for letter in self.word:
             value = letter if letter.lower() in self.guesses else "_"
@@ -120,7 +133,12 @@ class HangmanGame:
         return state
 
     def draw_hang_state(self: Self) -> str:
-        """Method to draw the current state of the game."""
+        """Gets the pre-programmed string for the hangman state
+        Based on how many guesses and how close the man is to hanging
+
+        Returns:
+            str: The str representation of the correct picture
+        """
         return self.HANG_PICS[self.step]
 
     def guess(self: Self, letter: str) -> bool:
@@ -251,7 +269,13 @@ class HangmanCog(cogs.BaseCog):
         usage="[word]",
     )
     async def start_game(self: Self, ctx: commands.Context, word: str) -> None:
-        """Method to start the hangman game and delete the original message."""
+        """Method to start the hangman game and delete the original message.
+        This is a command and should be access via discord
+
+        Args:
+            ctx (commands.Context): The context in which the command occured
+            word (str): The word to state the hangman game with
+        """
         # delete the message so the word is not seen
         await ctx.message.delete()
 

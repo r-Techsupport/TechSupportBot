@@ -24,7 +24,7 @@ def setup_local_extension(bot: helpers.MockBot = None) -> linter.Lint:
             fake_discord_env in the test. Defaults to None.
 
     Returns:
-        Lint: The instance of the Lint class
+        linter.Lint: The instance of the Lint class
     """
     with patch("asyncio.create_task", return_value=None):
         return linter.Lint(bot)

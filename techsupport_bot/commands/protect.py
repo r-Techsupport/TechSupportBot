@@ -145,7 +145,14 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Protector(cogs.MatchCog):
-    """Class for the protector command."""
+    """Class for the protector command.
+
+    Attrs:
+        ALERT_ICON_URL (str): The icon for the alert messages
+        CLIPBOARD_ICON_URL (str): The icon for the paste messages
+        CHARS_PER_NEWLINE (int): The arbitrary length of a line
+
+    """
 
     ALERT_ICON_URL = (
         "https://cdn.icon-icons.com/icons2/2063/PNG/512/"
@@ -165,7 +172,17 @@ class Protector(cogs.MatchCog):
     async def match(
         self: Self, config: munch.Munch, ctx: commands.Context, content: str
     ) -> bool:
-        """Method to match roles for the protect command."""
+        """Checks if the message could be triggered by any protect rules
+        Checks for channel and that the user isn't exempt
+
+        Args:
+            config (munch.Munch): The guild config where the message was sent
+            ctx (commands.Context): The context in which the command was run in
+            content (str): The string content of the message sent
+
+        Returns:
+            bool: False if the message shouldn't be checked, True if it should
+        """
         # exit the match based on exclusion parameters
         if not str(ctx.channel.id) in config.extensions.protect.channels.value:
             await self.bot.logger.send_log(
@@ -192,7 +209,12 @@ class Protector(cogs.MatchCog):
     async def on_raw_message_edit(
         self: Self, payload: discord.RawMessageUpdateEvent
     ) -> None:
-        """Method to edit the raw message."""
+        """This is called when any message is edited in any guild the bot is in.
+        There is no guarantee that the message exists or is used
+
+        Args:
+            payload (discord.RawMessageUpdateEvent): The raw event that the edit generated
+        """
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
             return
@@ -223,8 +245,15 @@ class Protector(cogs.MatchCog):
     def search_by_text_regex(
         self: Self, config: munch.Munch, content: str
     ) -> munch.Munch:
-        """Function to search given input by all
-        text and regex rules from the config"""
+        """Searches a given message for static text and regex rule violations
+
+        Args:
+            config (munch.Munch): The guild config where the message was sent
+            content (str): The string contents of the message that might be filtered
+
+        Returns:
+            munch.Munch: The most aggressive filter that is triggered
+        """
         triggered_config = None
         for (
             keyword,
@@ -259,7 +288,13 @@ class Protector(cogs.MatchCog):
     async def response(
         self: Self, config: munch.Munch, ctx: commands.Context, content: str, _: bool
     ) -> None:
-        """Method to define the response for the protect extension."""
+        """Checks if a message does violate any set automod rules
+
+        Args:
+            config (munch.Munch): The guild config where the message was sent
+            ctx (commands.Context): The context of the original message
+            content (str): The string content of the message sent
+        """
         # check mass mentions first - return after handling
         if len(ctx.message.mentions) > config.extensions.protect.max_mentions.value:
             await self.handle_mass_mention_alert(config, ctx, content)
@@ -289,13 +324,26 @@ class Protector(cogs.MatchCog):
             await self.handle_length_alert(config, ctx, content)
 
     def max_newlines(self: Self, max_length: int) -> int:
-        """Method to set up the number of max lines."""
+        """Gets a theoretical maximum number of new lines in a given message
+
+        Args:
+            max_length (int): The max length of characters per theoretical line
+
+        Returns:
+            int: The maximum number of new lines based on config
+        """
         return int(max_length / self.CHARS_PER_NEWLINE) + 1
 
     async def handle_length_alert(
         self: Self, config: munch.Munch, ctx: commands.Context, content: str
     ) -> None:
-        """Method to handle alert for the protect extension."""
+        """Moves message into a linx paste if it's too long
+
+        Args:
+            config (munch.Munch): The guild config where the too long message was sent
+            ctx (commands.Context): The context where the original message was sent
+            content (str): The string content of the flagged message
+        """
         attachments: list[discord.File] = []
         if ctx.message.attachments:
             total_attachment_size = 0
@@ -335,7 +383,13 @@ class Protector(cogs.MatchCog):
     async def handle_mass_mention_alert(
         self: Self, config: munch.Munch, ctx: commands.Context, content: str
     ) -> None:
-        """Method for handling mass mentions in an alert."""
+        """Handles a mass mention alert from automod
+
+        Args:
+            config (munch.Munch): The guild config where the message was sent
+            ctx (commands.Context): The context where the message was sent
+            content (str): The string content of the message
+        """
         await ctx.message.delete()
         await self.handle_warn(ctx, ctx.author, "mass mention", bypass=True)
         await self.send_alert(config, ctx, f"Mass mentions from {ctx.author}")
@@ -343,7 +397,13 @@ class Protector(cogs.MatchCog):
     async def handle_file_extension_alert(
         self: Self, config: munch.Munch, ctx: commands.Context, filename: str
     ) -> None:
-        """Method for handling suspicious file extensions."""
+        """Handles a suspicous file extension flag from automod
+
+        Args:
+            config (munch.Munch): The guild config from where the message was sent
+            ctx (commands.Context): The context where the message was sent
+            filename (str): The filename of the suspicious file that was uploaded
+        """
         await ctx.message.delete()
         await self.handle_warn(
             ctx, ctx.author, "Suspicious file extension", bypass=True
@@ -359,7 +419,14 @@ class Protector(cogs.MatchCog):
         content: str,
         filter_config: munch.Munch,
     ) -> None:
-        """Method to handle a string alert for the protect extension."""
+        """Handles a static string alert. Is given a rule that was violated
+
+        Args:
+            config (munch.Munch): The guild config where the message was sent
+            ctx (commands.Context): The context where the original message was sent
+            content (str): The string content of the message
+            filter_config (munch.Munch): The rule that was triggered by the message
+        """
         # If needed, delete the message
         if filter_config.delete:
             await ctx.message.delete()
@@ -398,7 +465,15 @@ class Protector(cogs.MatchCog):
         reason: str,
         bypass: bool = False,
     ) -> None:
-        """Method to handle the warn of a user."""
+        """Handles the logic of a warning
+
+        Args:
+            ctx (commands.Context): The context that generated the warning
+            user (discord.Member): The member to warn
+            reason (str): The reason for warning
+            bypass (bool, optional): If this should bypass the confirmation check.
+                Defaults to False.
+        """
         if not bypass:
             can_execute = await self.can_execute(ctx, user)
             if not can_execute:
@@ -485,7 +560,15 @@ class Protector(cogs.MatchCog):
         reason: str,
         bypass: bool = False,
     ) -> None:
-        """Method to handle an unwarn of a user."""
+        """Handles the logic of clearing all warnings
+
+        Args:
+            ctx (commands.Context): The context that generated theis unwarn
+            user (discord.Member): The member to remove warnings from
+            reason (str): The reason for clearing warnings
+            bypass (bool, optional): If this should bypass the confirmation check.
+                Defaults to False.
+        """
         # Always allow admins to unwarn other admins
         if not bypass and not ctx.message.author.guild_permissions.administrator:
             can_execute = await self.can_execute(ctx, user)
@@ -511,7 +594,14 @@ class Protector(cogs.MatchCog):
         reason: str,
         bypass: bool = False,
     ) -> None:
-        """Method to handle the ban of a user."""
+        """Handles the logic of banning a user. Is not a discord command
+
+        Args:
+            ctx (commands.Context): The context that generated the need for a bad
+            user (discord.User | discord.Member): The user or member to be banned
+            reason (str): The ban reason to be stored in discord
+            bypass (bool, optional): True will ignore permission chekcks. Defaults to False.
+        """
         if not bypass:
             can_execute = await self.can_execute(ctx, user)
             if not can_execute:
@@ -542,7 +632,14 @@ class Protector(cogs.MatchCog):
         reason: str,
         bypass: bool = False,
     ) -> None:
-        """Method to handle an unban of a user."""
+        """Handles the logic of unbanning a user. Is not a discord command
+
+        Args:
+            ctx (commands.Context): The context that generated the need for the unban
+            user (discord.User): The user to be unbanned
+            reason (str): The unban reason to be saved in the audit log
+            bypass (bool, optional): True will ignore permission chekcks. Defaults to False.
+        """
         if not bypass:
             can_execute = await self.can_execute(ctx, user)
             if not can_execute:
@@ -568,7 +665,14 @@ class Protector(cogs.MatchCog):
         reason: str,
         bypass: bool = False,
     ) -> None:
-        """Method to handle the kicking from the discord of a user."""
+        """Handles the logic of kicking a user. Is not a discord command
+
+        Args:
+            ctx (commands.Context): The context that generated the need for the kick
+            user (discord.Member): The user to be kicked
+            reason (str): The kick reason to be saved in the audit log
+            bypass (bool, optional): True will ignore permission chekcks. Defaults to False.
+        """
         if not bypass:
             can_execute = await self.can_execute(ctx, user)
             if not can_execute:
@@ -583,7 +687,12 @@ class Protector(cogs.MatchCog):
     async def clear_warnings(
         self: Self, user: discord.User | discord.Member, guild: discord.Guild
     ) -> None:
-        """Method to clear warnings of a user in discord."""
+        """This clears all warnings for a given user
+
+        Args:
+            user (discord.User | discord.Member): The user or member to wipe all warnings for
+            guild (discord.Guild): The guild to clear warning from
+        """
         await self.bot.models.Warning.delete.where(
             self.bot.models.Warning.user_id == str(user.id)
         ).where(self.bot.models.Warning.guild_id == str(guild.id)).gino.status()
@@ -591,7 +700,16 @@ class Protector(cogs.MatchCog):
     async def generate_user_modified_embed(
         self: Self, user: discord.User | discord.Member, action: str, reason: str
     ) -> discord.Embed:
-        """Method to generate the user embed with the reason."""
+        """This generates an embed to be shown to the user on why their message was actioned
+
+        Args:
+            user (discord.User | discord.Member): The user or member who was punished
+            action (str): The action that was taken against the person
+            reason (str): The reason for the action taken
+
+        Returns:
+            discord.Embed: The prepared embed ready to be sent
+        """
         embed = discord.Embed(
             title="Chat Protection", description=f"{action.upper()} `{user}`"
         )
@@ -604,13 +722,36 @@ class Protector(cogs.MatchCog):
     def get_cache_key(
         self: Self, guild: discord.Guild, user: discord.Member, trigger: str
     ) -> str:
-        """Method to get the cache key of the user."""
+        """Gets the cache key for repeated automod triggers
+
+        Args:
+            guild (discord.Guild): The guild where the trigger has occured
+            user (discord.Member): The member that triggered the automod
+            trigger (str): The string representation of the automod rule that triggered
+
+        Returns:
+            str: The key to lookup the cache entry, if it exists
+        """
         return f"{guild.id}_{user.id}_{trigger}"
 
     async def can_execute(
-        self: Self, ctx: commands.Context, target: discord.User
+        self: Self, ctx: commands.Context, target: discord.User | discord.Member
     ) -> bool:
-        """Method to not execute on admin users."""
+        """Checks permissions to determine if the protect command should execute.
+        This checks:
+        - If the executer is the same as the target
+        - If the target is a bot
+        - If the member is immune to protect
+        - If the bot doesn't have permissions
+        - If the user wouldn't have permissions based on their roles
+
+        Args:
+            ctx (commands.Context): The context that required the need for moderative action
+            target (discord.User | discord.Member): The target of the moderative action
+
+        Returns:
+            bool: True if the executer can execute this command, False if they can't
+        """
         action = ctx.command.name or "do that to"
         config = self.bot.guild_configs[str(ctx.guild.id)]
 
@@ -660,7 +801,13 @@ class Protector(cogs.MatchCog):
     async def send_alert(
         self: Self, config: munch.Munch, ctx: commands.Context, message: str
     ) -> None:
-        """Method to send an alert to the channel about a protect command."""
+        """Sends a protect alert to the protect events channel to alert the mods
+
+        Args:
+            config (munch.Munch): The guild config in the guild where the event occured
+            ctx (commands.Context): The context that generated this alert
+            message (str): The message to send to the mods about the alert
+        """
         try:
             alert_channel = ctx.guild.get_channel(
                 int(config.extensions.protect.alert_channel.value)
@@ -695,7 +842,14 @@ class Protector(cogs.MatchCog):
         content: str,
         reason: str,
     ) -> None:
-        """Method for the default delete of a message."""
+        """Sends a DM to a user containing a message that was deleted
+
+        Args:
+            config (munch.Munch): The config of the guild where the message was sent
+            ctx (commands.Context): The context of the deleted message
+            content (str): The context of the deleted message
+            reason (str): The reason the message was deleted
+        """
         embed = auxiliary.generate_basic_embed(
             title="Chat Protection",
             description=f"Message deleted. Reason: *{reason}*",
@@ -707,7 +861,16 @@ class Protector(cogs.MatchCog):
     async def get_warnings(
         self: Self, user: discord.Member | discord.User, guild: discord.Guild
     ) -> list[bot.models.Warning]:
-        """Method to get the warnings of a user."""
+        """Gets a list of every warning for a given user
+
+        Args:
+            user (discord.Member | discord.User): The user or member object to lookup warnings for
+            guild (discord.Guild): The guild to get the warnings for
+
+        Returns:
+            list[bot.models.Warning]: The list of all warnings that
+                user or member has in the given guild
+        """
         warnings = (
             await self.bot.models.Warning.query.where(
                 self.bot.models.Warning.user_id == str(user.id)
@@ -720,7 +883,17 @@ class Protector(cogs.MatchCog):
     async def create_linx_embed(
         self: Self, config: munch.Munch, ctx: commands.Context, content: str
     ) -> discord.Embed | None:
-        """Method to create a link for long messages."""
+        """This function sends a message to the linx url and puts the result in
+        an embed to be sent to the user
+
+        Args:
+            config (munch.Munch): The guild config where the message was sent
+            ctx (commands.Context): The context that generated the need for a paste
+            content (str): The context of the message to be pasted
+
+        Returns:
+            discord.Embed | None: The formatted embed, or None if there was an API error
+        """
         if not content:
             return None
 
@@ -764,7 +937,13 @@ class Protector(cogs.MatchCog):
     async def ban_user(
         self: Self, ctx: commands.Context, user: discord.User, *, reason: str = None
     ) -> None:
-        """Method to ban a user from discord."""
+        """The ban discord command, starts the process of banning a user
+
+        Args:
+            ctx (commands.Context): The context that called this command
+            user (discord.User): The user that is going to be banned
+            reason (str, optional): The reason for the ban. Defaults to None.
+        """
 
         # Uses the discord.Member class to get the top role attribute if the
         # user is a part of the target guild
@@ -787,7 +966,13 @@ class Protector(cogs.MatchCog):
     async def unban_user(
         self: Self, ctx: commands.Context, user: discord.User, *, reason: str = None
     ) -> None:
-        """Method to unban a user from discord."""
+        """The unban discord command, starts the process of unbanning a user
+
+        Args:
+            ctx (commands.Context): The context that called this command
+            user (discord.User): The user that is going to be unbanned
+            reason (str, optional): The reason for the unban. Defaults to None.
+        """
 
         # Uses the discord.Member class to get the top role attribute if the
         # user is a part of the target guild
@@ -807,7 +992,13 @@ class Protector(cogs.MatchCog):
     async def kick_user(
         self: Self, ctx: commands.Context, user: discord.Member, *, reason: str = None
     ) -> None:
-        """Method to kick a user from discord."""
+        """The kick discord command, starts the process of kicking a user
+
+        Args:
+            ctx (commands.Context): The context that called this command
+            user (discord.Member): The user that is going to be kicked
+            reason (str, optional): The reason for the kick. Defaults to None.
+        """
         await self.handle_kick(ctx, user, reason)
 
         config = self.bot.guild_configs[str(ctx.guild.id)]
@@ -824,7 +1015,13 @@ class Protector(cogs.MatchCog):
     async def warn_user(
         self: Self, ctx: commands.Context, user: discord.Member, *, reason: str = None
     ) -> None:
-        """Method to warn a user of wrongdoing in discord."""
+        """The warn discord command, starts the process of warning a user
+
+        Args:
+            ctx (commands.Context): The context that called this command
+            user (discord.Member): The user that is going to be warned
+            reason (str, optional): The reason for the warn. Defaults to None.
+        """
         await self.handle_warn(ctx, user, reason)
 
         config = self.bot.guild_configs[str(ctx.guild.id)]
@@ -841,7 +1038,14 @@ class Protector(cogs.MatchCog):
     async def unwarn_user(
         self: Self, ctx: commands.Context, user: discord.Member, *, reason: str = None
     ) -> None:
-        """Method to unwarn a user on discord."""
+        """The unwarn discord command, starts the process of unwarning a user
+        This clears ALL warnings from a member
+
+        Args:
+            ctx (commands.Context): The context that called this command
+            user (discord.Member): The user that is going to be unwarned
+            reason (str, optional): The reason for the unwarn. Defaults to None.
+        """
         await self.handle_unwarn(ctx, user, reason)
 
     @commands.has_permissions(kick_members=True)
@@ -855,7 +1059,12 @@ class Protector(cogs.MatchCog):
     async def get_warnings_command(
         self: Self, ctx: commands.Context, user: discord.User
     ) -> None:
-        """Method to get the warnings of a user in discord."""
+        """Displays all warnings that a given user has
+
+        Args:
+            ctx (commands.Context): The context that called this command
+            user (discord.User): The user to get warnings for
+        """
         warnings = await self.get_warnings(user, ctx.guild)
         if not warnings:
             await auxiliary.send_deny_embed(
@@ -889,7 +1098,7 @@ class Protector(cogs.MatchCog):
         This should be run via discord
 
         Args:
-            ctx (commands.Context): _description_
+            ctx (commands.Context): The context that was generated by running this command
             user (discord.Member): The discord.Member to be timed out.
             duration (str, optional): Max time is 28 days by discord API. Defaults to 1 hour
 
@@ -958,7 +1167,14 @@ class Protector(cogs.MatchCog):
     async def unmute(
         self: Self, ctx: commands.Context, user: discord.Member, reason: str = None
     ) -> None:
-        """Method to unmute a user in discord."""
+        """Method to mute a user in discord using the native timeout.
+        This should be run via discord
+
+        Args:
+            ctx (commands.Context): The context that was generated by running this command
+            user (discord.Member): The discord.Member to have mute be cleared.
+            reason (str, optional): The reason for the unmute. Defaults to None.
+        """
         can_execute = await self.can_execute(ctx, user)
         if not can_execute:
             return
@@ -982,7 +1198,11 @@ class Protector(cogs.MatchCog):
         description="Executes a purge command",
     )
     async def purge(self: Self, ctx: commands.Context) -> None:
-        """Method to purge messages in discord."""
+        """The bare .purge command. This does nothing but generate the help message
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
         await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @purge.command(
@@ -993,7 +1213,12 @@ class Protector(cogs.MatchCog):
         usage="[amount]",
     )
     async def purge_amount(self: Self, ctx: commands.Context, amount: int = 1) -> None:
-        """Method to get the amount to purge messages in discord."""
+        """Purges the most recent amount+1 messages in the channel the command was run in
+
+        Args:
+            ctx (commands.Context): The context that called the command
+            amount (int, optional): The amount of messages to purge. Defaults to 1.
+        """
         config = self.bot.guild_configs[str(ctx.guild.id)]
 
         if amount <= 0 or amount > config.extensions.protect.max_purge_amount.value:
@@ -1013,7 +1238,13 @@ class Protector(cogs.MatchCog):
     async def purge_duration(
         self: Self, ctx: commands.Context, duration_minutes: int
     ) -> None:
-        """Method to purge a channel's message up to a time."""
+        """Purges the most recent duration_minutes worth of messages in the
+            channel the command was run in
+
+        Args:
+            ctx (commands.Context): The context that called the command
+            duration_minutes (int): The amount of minutes to purge away
+        """
         if duration_minutes < 0:
             await auxiliary.send_deny_embed(
                 message="I can't use that input", channel=ctx.channel
