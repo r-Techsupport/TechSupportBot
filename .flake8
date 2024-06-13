@@ -1,0 +1,4 @@
+[flake8]
+ignore = DCO010, DCO023, E203, E501, E712, F401, F403, F821, W503
+style = google
+skip-checking-short-docstrings = False

@@ -21,7 +21,7 @@ def setup_local_extension(bot: helpers.MockBot = None) -> lenny.Lenny:
             fake_discord_env in the test. Defaults to None.
 
     Returns:
-        HTD: The instance of the htd class
+        lenny.Lenny: The instance of the htd class
     """
     with patch("asyncio.create_task", return_value=None):
         return lenny.Lenny(bot)

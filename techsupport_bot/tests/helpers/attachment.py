@@ -11,8 +11,8 @@ class MockAttachment:
     """
     This is the MockAttachment class
 
-    Currently implemented variables and methods:
-    filename -> The string containing the name of the file
+    Args:
+        filename (str): The string containing the name of the file
     """
 
     def __init__(self: Self, filename: str = None) -> None:

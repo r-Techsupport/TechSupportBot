@@ -26,6 +26,10 @@ class HTTPCalls:
     """
     This requires a class so it can store the bot variable upon setup
     This allows access to the config file and logging
+
+    Args:
+        bot (bot.TechSupportBot): The bot object that will be making http calls.
+            This is only used for access to file_config and nothing more
     """
 
     def __init__(self: Self, bot: bot.TechSupportBot) -> None:
@@ -85,18 +89,20 @@ class HTTPCalls:
         """Makes an HTTP request.
 
         By default this returns JSON/dict with the status code injected.
+        use_cache (bool):  True if the GET result should be grabbed from cache
+        get_raw_response (bool): True if the actual response object should be returned
 
         Args:
             method (str): the HTTP method to use
             url (str): the URL to call
-            use_cache (bool):  True if the GET result should be grabbed from cache
-            get_raw_response (bool): True if the actual response object should be returned
+            *args (tuple): Used to allow any combination of parameters to the API
+            **kwargs (dict[str, Any]): Used to allow any combination of parameters to the API
 
         Raises:
             HTTPRateLimit: Raised if the API is currently on cooldown
 
         Returns:
-            _type_: _description_
+            munch.Munch: The munch object containing the response from the API
         """
 
         # Get the URL not the endpoint being called
