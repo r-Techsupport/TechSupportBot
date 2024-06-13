@@ -1,10 +1,12 @@
 """This holds the few buttons needed for voting, configured to be persistent"""
 
+from typing import Self
+
 import discord
 
 
 class VotingButtonPersistent(discord.ui.View):
-    def __init__(self):
+    def __init__(self: Self):
         super().__init__(timeout=None)
 
     @discord.ui.button(
@@ -13,7 +15,7 @@ class VotingButtonPersistent(discord.ui.View):
         custom_id="persistent_voting_view:yes",
     )
     async def yes_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self: Self, interaction: discord.Interaction, button: discord.ui.Button
     ) -> None:
         """The button that is for voting yes.
         Calls the yes function in the main commands/voting.py file
@@ -31,7 +33,7 @@ class VotingButtonPersistent(discord.ui.View):
         custom_id="persistent_voting_view:no",
     )
     async def no_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self: Self, interaction: discord.Interaction, button: discord.ui.Button
     ) -> None:
         """The button that is for voting no.
         Calls the no function in the main commands/voting.py file
@@ -49,7 +51,7 @@ class VotingButtonPersistent(discord.ui.View):
         custom_id="persistent_voting_view:clear",
     )
     async def clear_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self: Self, interaction: discord.Interaction, button: discord.ui.Button
     ) -> None:
         """The button that is for voting clear.
         Calls the clear function in the main commands/voting.py file

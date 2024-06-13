@@ -73,6 +73,11 @@ class Voting(cogs.LoopCog):
 
         Args:
             interaction (discord.Interaction): The interaction the command was called at
+            blind (bool): A blind vote hides the tally and who voted for what
+                for the duration of the vote
+            anonymous (bool): A blind vote hides the tally for the duration of the vote
+                This also hides who voted for what forever, and triggers it to be deleted
+                from the database upon completion of the vote
         """
 
         form = ui.VoteCreation()
@@ -116,7 +121,7 @@ class Voting(cogs.LoopCog):
 
         await vote.update(message_id=str(vote_message.id)).apply()
 
-    async def search_db_for_vote_by_id(self, vote_id: int):
+    async def search_db_for_vote_by_id(self: Self, vote_id: int) -> munch.Munch:
         """Gets a vote entry from the database by a given vote ID
 
         Args:
@@ -129,11 +134,11 @@ class Voting(cogs.LoopCog):
             self.bot.models.Votes.vote_id == vote_id
         ).gino.first()
 
-    async def search_db_for_vote_by_message(self, message_id: str) -> munch.Munch:
+    async def search_db_for_vote_by_message(self: Self, message_id: str) -> munch.Munch:
         """Gets a vote entry from the database by a given message ID
 
         Args:
-            vote_id (int): The message ID to search for
+            message_id (int): The message ID to search for
 
         Returns:
             munch.Munch: The database entry that matches the ID
@@ -143,13 +148,13 @@ class Voting(cogs.LoopCog):
         ).gino.first()
 
     async def build_vote_embed(
-        self, vote_id: int, guild: discord.Guild
+        self: Self, vote_id: int, guild: discord.Guild
     ) -> discord.Embed:
         """Builds the embed that shows information about the vote
 
         Args:
             vote_id (int): The ID of the vote to build the embed for
-            interaction (discord.Interaction): The interaction that called for an update to the embed
+            guild (discord.Guild): The guild the vote belongs to. Needed to look up membership
 
         Returns:
             discord.Embed: The fully built embed ready to be sent
@@ -196,7 +201,7 @@ class Voting(cogs.LoopCog):
         return embed
 
     async def make_fancy_voting_list(
-        self,
+        self: Self,
         guild: discord.Guild,
         voters_yes: list[str],
         voters_no: list[str],
@@ -230,7 +235,7 @@ class Voting(cogs.LoopCog):
         return "\n".join(final_str)
 
     async def register_yes_vote(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         view: discord.ui.View,
     ) -> None:
@@ -278,7 +283,7 @@ class Voting(cogs.LoopCog):
         )
 
     async def register_no_vote(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         view: discord.ui.View,
     ) -> None:
@@ -326,7 +331,7 @@ class Voting(cogs.LoopCog):
         )
 
     async def clear_vote(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         view: discord.ui.View,
     ) -> None:
@@ -354,7 +359,9 @@ class Voting(cogs.LoopCog):
             "Your vote has been removed", ephemeral=True
         )
 
-    def clear_vote_record(self, db_entry: munch.Munch, user_id: str) -> munch.Munch:
+    def clear_vote_record(
+        self: Self, db_entry: munch.Munch, user_id: str
+    ) -> munch.Munch:
         """Clears the vote from a person from the database
         Should always be called before changing or adding a vote
 
@@ -415,7 +422,7 @@ class Voting(cogs.LoopCog):
             if end_time <= int(datetime.datetime.utcnow().timestamp()):
                 await self.end_vote(vote, guild)
 
-    async def end_vote(self, vote: munch.Munch, guild: discord.Guild) -> None:
+    async def end_vote(self: Self, vote: munch.Munch, guild: discord.Guild) -> None:
         """This ends a vote, and if it was anonymous purges who voted for what from the database
         This will edit the vote message and remove the buttons, and mention the vote owner
 
