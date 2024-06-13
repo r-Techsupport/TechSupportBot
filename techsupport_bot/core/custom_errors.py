@@ -38,7 +38,11 @@ class AppCommandRateLimit(app_commands.CheckFailure):
 
 
 class FactoidNotFoundError(commands.errors.CommandError):
-    """Thrown when a factoid is not found."""
+    """Thrown when a factoid is not found.
+
+    Args:
+        factoid (str): The name of the factoid that couldn't be found
+    """
 
     def __init__(self: Self, factoid: str) -> None:
         self.dont_print_trace = True
@@ -53,7 +57,11 @@ class TooLongFactoidMessageError(commands.errors.CommandError):
 
 
 class HTTPRateLimit(commands.errors.CommandError):
-    """An API call is on rate limit"""
+    """An API call is on rate limit
+
+    Args:
+        wait (int): The amount of seconds left until the rate limit expires
+    """
 
     def __init__(self: Self, wait: int) -> None:
         self.wait = wait
@@ -62,9 +70,13 @@ class HTTPRateLimit(commands.errors.CommandError):
 class ErrorResponse:
     """Object for generating a custom error message from an exception.
 
+    Attrs:
+        DEFAULT_MESSAGE (str): The default error message for unclassified errors
+
     Args:
         message_format (str): the substition formatted (%s) message
-        lookups (Union[str, list]): the lookup objects to reference
+        lookups (str | list[Any]): the lookup objects to reference
+        dont_print_trace (bool): If true, the stack trace generated will not be logged
     """
 
     DEFAULT_MESSAGE = "I ran into an error processing your command"
@@ -96,6 +108,9 @@ class ErrorResponse:
 
         Args:
             exception (Exception): the exception to reference
+
+        Returns:
+            str: The string message to print to the user representing the exception
         """
         return (
             f"{self.DEFAULT_MESSAGE}: *{exception}*"
@@ -108,6 +123,9 @@ class ErrorResponse:
 
         Args:
             exception (Exception): the exception to reference
+
+        Returns:
+            str: The formatted message filling in any variables from the exception
         """
         if not self.message_format:
             return self.default_message(exception=exception)

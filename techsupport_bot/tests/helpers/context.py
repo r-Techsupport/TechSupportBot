@@ -14,10 +14,10 @@ class MockContext:
     """
     This is the MockContext class
 
-    Currently implemented variables and methods:
-    channel -> The MockChannel object for the current context
-    message -> The MockMessage in which the context was called with
-    author -> The author of the command message
+    Args:
+        channel (helpers.MockChannel): The MockChannel object for the current context
+        message (helpers.MockMessage): The MockMessage in which the context was called with
+        author (helpers.MockMember): The author of the command message
     """
 
     def __init__(

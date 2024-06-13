@@ -36,7 +36,11 @@ class WouldYouRather(cogs.BaseCog):
         description="Creates a random Would You Rather question",
     )
     async def wyr(self: Self, ctx: commands.Context) -> None:
-        """Exists to preserve undecorated wyr_command for testing"""
+        """Exists to preserve undecorated wyr_command for testing
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
         await self.wyr_command(ctx)
 
     async def wyr_command(self: Self, ctx: commands.Context) -> None:

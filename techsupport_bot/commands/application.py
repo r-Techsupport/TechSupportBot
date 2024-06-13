@@ -18,7 +18,14 @@ if TYPE_CHECKING:
 
 class ApplicationStatus(Enum):
     """Static string mapping of all status
-    This is so the database can always be consistent"""
+    This is so the database can always be consistent
+
+    Attrs:
+        PENDING (str): The string representation for pending
+        APPROVED (str): The string representation for approved
+        DENIED (str): The string representation for denied
+        REJECTED (str): The string representation for rejected
+    """
 
     PENDING = "pending"
     APPROVED = "approved"
@@ -189,7 +196,11 @@ class ApplicationNotifier(cogs.LoopCog):
 
 
 class ApplicationManager(cogs.LoopCog):
-    """This cog is responsible for the majority of functions in the application system"""
+    """This cog is responsible for the majority of functions in the application system
+
+    Attrs:
+        application_group (app_commands.Group): The group for the /application commands
+    """
 
     application_group = app_commands.Group(
         name="application", description="...", extras={"module": "application"}

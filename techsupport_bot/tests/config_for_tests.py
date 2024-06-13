@@ -45,6 +45,14 @@ def rand_history(
     """This is a custom strategy to generate a random message history
     This history, returned as an array, will be 1 to 50 messages of random content
     Some will be by a bot, some will not
+
+    Args:
+        draw (Callable[[SearchStrategy[int, int]], int] | Callable[[SearchStrategy[str]], str]):
+            The strategy used to generate a random history of message.
+            This generates both strings and ints
+
+    Returns:
+        list[MockMessage]: The randomly generated list of messages
     """
     hist_length = draw(integers(1, 10))
     final_history = []

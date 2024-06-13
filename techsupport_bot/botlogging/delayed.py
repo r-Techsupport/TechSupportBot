@@ -11,13 +11,13 @@ from botlogging import logger
 
 class DelayedLogger(logger.BotLogger):
     """Logging interface that queues log events to be sent over time.
+    wait_time (float): the time to wait between log sends
+    queue_size (int): the max number of queue events
 
     Args:
-        bot (bot.TechSupportBot): the bot object
-        name (str): the name of the logging channel
-        send (bool): Whether or not to allow sending of logs to discord
-        wait_time (float): the time to wait between log sends
-        queue_size (int): the max number of queue events
+        *args (tuple): The args dict passed to this, for use passing to the main logger
+        **kwargs (dict[str, Any]): The kwargs dict passed to this,
+            for use passing to the main logger
     """
 
     def __init__(self: Self, *args: tuple, **kwargs: dict[str, Any]) -> None:
@@ -30,6 +30,11 @@ class DelayedLogger(logger.BotLogger):
         """Adds a log to the queue
         Does nothing different than the Logger send_log function()
         Will disregard debug logs if debug is off
+
+        Args:
+            *args (tuple): The args dict passed to this, for use passing to the main logger
+            **kwargs (dict[str, Any]): The kwargs dict passed to this,
+                for use passing to the main logger
         """
 
         if kwargs.get("level", None) == logger.LogLevel.DEBUG and not bool(

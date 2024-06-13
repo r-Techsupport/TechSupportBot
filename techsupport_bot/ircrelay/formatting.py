@@ -15,7 +15,7 @@ def parse_irc_message(event: irc.client.Event) -> dict[str, str]:
         event (irc.client.Event): The event object that triggered this function
 
     Returns:
-        Dict[str, str]: The formatted message
+        dict[str, str]: The formatted message
     """
     # Looking for username, hostmask, action, channel, content
     username = event.source.split("!")[0]
@@ -41,7 +41,7 @@ def parse_ban_message(event: irc.client.Event) -> dict[str, str]:
         event (irc.client.Event): The event object that triggered this function
 
     Returns:
-        Dict[str, str]: The formatted message
+        dict[str, str]: The formatted message
     """
     username = event.source.split("!")[0]
     hostmask = event.source.split("!")[1]
@@ -166,7 +166,7 @@ def get_file_links(message_attachments: list[discord.Attachment]) -> str:
     """Turns a list of attachments into a string containing links to them
 
     Args:
-        message_attachments (List[discord.Attachment]): The list of attachments from a
+        message_attachments (list[discord.Attachment]): The list of attachments from a
             discord.Message object
 
     Returns:

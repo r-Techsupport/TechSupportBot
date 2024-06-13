@@ -15,10 +15,14 @@ class MockChannel:
     """
     This is the MockChannel class
 
-    Currently implemented variables and methods:
-    message_history -> A list of MockMessage objects
-    history() -> An async function to return history.
-        A "limit" object may be passed, but is ignored in this implementation
+    Functions implemented:
+        history() -> An async function to return history.
+            A "limit" object may be passed, but is ignored in this implementation
+
+    Args:
+        history (list[helpers.MockMessage], optional): A list of MockMessage objects.
+            Defaults to None
+
     """
 
     def __init__(self: Self, history: list[helpers.MockMessage] = None) -> None:

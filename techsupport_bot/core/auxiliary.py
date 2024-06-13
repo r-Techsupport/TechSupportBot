@@ -99,7 +99,10 @@ def construct_mention_string(targets: list[discord.User]) -> str:
     """Builds a string of mentions from a list of users.
 
     Args:
-        targets ([]discord.User): the list of users to mention
+        targets (list[discord.User]): the list of users to mention
+
+    Returns:
+        str: A string containing space separated user mention code
     """
     constructed = set()
 
@@ -250,6 +253,10 @@ def config_schema_matches(input_config: dict, current_config: dict) -> list[str]
     Args:
         input_config (dict): the config to be added
         current_config (dict): the current config
+
+    Returns:
+        list[str] | None: Returns a list of changes to the config, if it was changed.
+            Otherwise returns nothing, signifying no changes
     """
     if (
         any(key not in current_config for key in input_config.keys())
@@ -285,12 +292,21 @@ def with_typing(command: commands.Command) -> commands.Command:
 
     Args:
         command (commands.Command): the command object to modify
+
+    Returns:
+        commands.Command: The modified command wrapped with the typing call
     """
     original_callback = command.callback
 
     @wraps(original_callback)
     async def typing_wrapper(*args: tuple, **kwargs: dict[str, Any]) -> None:
-        """The wrapper to add typing to any given function and call the original function"""
+        """The wrapper to add typing to any given function and call the original function
+
+        Args:
+            *args (tuple): Used to preserve any and all original arguments to the original command
+            **kwargs (dict[str, Any]): Used to preserve any and all original arguments
+                to the original command
+        """
         context = args[1]
 
         typing_func = getattr(context, "typing", None)
@@ -314,14 +330,17 @@ def with_typing(command: commands.Command) -> commands.Command:
     return command
 
 
-def get_object_diff(
-    before: object, after: object, attrs_to_check: list
-) -> munch.Munch | dict:
+def get_object_diff(before: object, after: object, attrs_to_check: list) -> munch.Munch:
     """Finds differences in before, after object pairs.
 
-    before (obj): the before object
-    after (obj): the after object
-    attrs_to_check (list): the attributes to compare
+    Args:
+        before (object): the before object
+        after (object): the after object
+        attrs_to_check (list): the attributes to compare
+
+    Returns:
+        munch.Munch: The set of differences, will contain a .before
+            and a .after index, with everything changed
     """
     result = {}
 
@@ -348,6 +367,9 @@ def add_diff_fields(embed: discord.Embed, diff: dict) -> discord.Embed:
     Args:
         embed (discord.Embed): the embed object
         diff (dict): the diff data for an object
+
+    Returns:
+        discord.Embed: Shows the difference between two objects in an embed
     """
     for attr, diff_data in diff.items():
         attru = attr.upper()
@@ -400,30 +422,31 @@ def add_diff_fields(embed: discord.Embed, diff: dict) -> discord.Embed:
 
 
 def get_help_embed_for_extension(
-    self: cogs.BaseCog, extension_name: str, command_prefix: str
+    cog: cogs.BaseCog, extension_name: str, command_prefix: str
 ) -> discord.Embed:
     """Gets the help embed for an extension.
 
     Defined so it doesn't have to be written out twice
 
     Args:
+        cog (cogs.BaseCog): The cog that needs the commands put into a help menu
         extension_name (str): the name of the extension to show the help for
         command_prefix (str): passed to the func as it has to be awaited
 
-    returns:
-        embed (discord.Embed): Embed containing all commands with their description
+    Returns:
+        discord.Embed: Embed containing all commands with their description
     """
     embed = discord.Embed()
     embed.title = f"Extension Commands: `{extension_name}`"
 
     # Sorts commands alphabetically
-    command_list = list(self.bot.walk_commands())
+    command_list = list(cog.bot.walk_commands())
     command_list.sort(key=lambda command: command.name)
 
     # Loops through every command in the bots library
     for command in command_list:
         # Gets the command name
-        command_extension_name = self.bot.get_command_extension_name(command)
+        command_extension_name = cog.bot.get_command_extension_name(command)
 
         # Continues the loop if the command isn't a part of the target extension
         if extension_name != command_extension_name or issubclass(
@@ -453,7 +476,7 @@ def get_help_embed_for_extension(
 
 
 async def extension_help(
-    self: cogs.BaseCog, ctx: commands.Context, extension_name: str
+    cog: cogs.BaseCog, ctx: commands.Context, extension_name: str
 ) -> None:
     """Automatically prompts for help if improper syntax for an extension is called.
 
@@ -462,6 +485,7 @@ async def extension_help(
     way to get the extension name regardless of aliases
 
     Args:
+        cog (cogs.BaseCog): The cog that needs the commands put into a help menu
         ctx (commands.Context): context of the message
         extension_name (str): the name of the extension to show the help for
     """
@@ -472,7 +496,7 @@ async def extension_help(
         valid_commands = []
         valid_args = []
         # Loops through each command for said extension
-        for command in self.bot.get_cog(self.qualified_name).walk_commands():
+        for command in cog.bot.get_cog(cog.qualified_name).walk_commands():
             valid_commands.append(command.name)
             valid_args.append(command.aliases)
 
@@ -494,7 +518,7 @@ async def extension_help(
 
             await ctx.send(
                 embed=get_help_embed_for_extension(
-                    self, extension_name, await self.bot.get_prefix(ctx.message)
+                    cog, extension_name, await cog.bot.get_prefix(ctx.message)
                 )
             )
 
@@ -502,7 +526,7 @@ async def extension_help(
     elif len(ctx.message.content.split()) == 1:
         await ctx.send(
             embed=get_help_embed_for_extension(
-                self, extension_name, await self.bot.get_prefix(ctx.message)
+                cog, extension_name, await cog.bot.get_prefix(ctx.message)
             )
         )
 
