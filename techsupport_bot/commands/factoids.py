@@ -1533,7 +1533,7 @@ class FactoidManager(cogs.MatchCog):
         force_file: bool = False,
         property: Properties = "",
         true_all: bool = False,
-        ignore_hidden: bool = False,
+        show_hidden: bool = False,
     ) -> None:
         """This is the more feature full version of factoid all
         This is an application command
@@ -1543,12 +1543,12 @@ class FactoidManager(cogs.MatchCog):
             force_file (bool, optional): Whether this should be forced as a yml file. Defaults to False.
             property (Properties, optional): What property to look for. Defaults to "".
             true_all (bool, optional): Whether this should force every factoid. Defaults to False.
-            ignore_hidden (bool, optional): Whether or not to ignore the hidden property.
+            show_hidden (bool, optional): If set to true will show hidden factoids.
                 Defaults to False.
         """
         guild = str(interaction.guild.id)
         # Check for admin roles if ignoring hidden
-        if true_all or ignore_hidden:
+        if true_all or show_hidden:
             config = self.bot.guild_configs[str(interaction.guild.id)]
             await has_given_factoids_role(
                 interaction.guild,
@@ -1560,7 +1560,7 @@ class FactoidManager(cogs.MatchCog):
             factoids = await self.build_list_of_factoids(guild, include_hidden=True)
         else:
             factoids = await self.build_list_of_factoids(
-                guild, exclusive_property=property, include_hidden=ignore_hidden
+                guild, exclusive_property=property, include_hidden=show_hidden
             )
 
         aliases = self.build_alias_dict_for_given_factoids(factoids)
@@ -1570,7 +1570,7 @@ class FactoidManager(cogs.MatchCog):
             force_file = True
 
         cachable = bool(
-            not force_file and not property and not true_all and not ignore_hidden
+            not force_file and not property and not true_all and not show_hidden
         )
 
         if cachable and guild in self.factoid_all_cache:
@@ -1703,13 +1703,13 @@ class FactoidManager(cogs.MatchCog):
             )
             url = response["text"]
             filename = url.split("/")[-1]
+            url = url.replace(filename, f"selif/{filename}")
 
             if cachable:
                 self.factoid_all_cache[str(guild.id)] = {}
                 self.factoid_all_cache[str(guild.id)]["url"] = url
-            # TODO: Handling caching here
 
-            return url.replace(filename, f"selif/{filename}")
+            return url
 
         # If an error happened while calling the api
         except (gaierror, InvalidURL) as exception:
