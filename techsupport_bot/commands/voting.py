@@ -57,7 +57,7 @@ class Voting(cogs.LoopCog):
 
     @app_commands.checks.has_permissions(manage_nicknames=True)
     @app_commands.command(
-        name="voting",
+        name="vote",
         description="Starts a yes/no vote that runs for 72 hours",
         extras={
             "module": "voting",
