@@ -170,12 +170,10 @@ class Modmail_bot(discord.Client):
             # This is here to save space if this listener is triggered by something other than
             # a content modification, i.e. a message being pinned
             if before.content == after.content:
-                embed.add_field(name="Before", value=before.content).add_field(
-                    name="After", value="<The contents are unchanged>"
-                )
+                return
 
             # Length handling has to be here, 1024 is the limit for inividual fields
-            elif len(before.content) > 1016 or len(after.content) > 1016:
+            if len(before.content) > 1016 or len(after.content) > 1016:
                 embed.set_footer(
                     text="Edit was too long to send! Sending just the result instead..."
                 )
@@ -588,7 +586,8 @@ async def reply_to_thread(
 
     if not target_member:
         await auxiliary.send_deny_embed(
-            message="Couldn't fetch the user! Are they in the guild?", channel=thread
+            message="This user isn't in the guild, so the message cannot be sent",
+            channel=thread,
         )
         return
 
