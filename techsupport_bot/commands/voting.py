@@ -119,7 +119,9 @@ class Voting(cogs.LoopCog):
             f"Your vote has been started, {vote_thread.mention}", ephemeral=True
         )
 
-        await vote.update(message_id=str(vote_message.id)).apply()
+        await vote.update(
+            thread_id=str(vote_thread.id), message_id=str(vote_message.id)
+        ).apply()
 
     async def search_db_for_vote_by_id(self: Self, vote_id: int) -> munch.Munch:
         """Gets a vote entry from the database by a given vote ID
@@ -436,11 +438,8 @@ class Voting(cogs.LoopCog):
         # If the vote is anonymous, at this point we need to clear the vote record forever
         if vote.anonymous:
             await vote.update(vote_ids_yes="", vote_ids_no="").apply()
-        # Placeholder till config sets a voting channel
-        config = self.bot.guild_configs[str(guild.id)]
-        channel = await guild.fetch_channel(
-            config.extensions.voting.votes_channel_id.value
-        )
+
+        channel = await guild.fetch_channel(int(vote.thread_id))
         message = await channel.fetch_message(int(vote.message_id))
         vote_owner = await guild.fetch_member(int(vote.vote_owner_id))
         await message.edit(content="Vote over", embed=embed, view=None)

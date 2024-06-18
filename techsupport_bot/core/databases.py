@@ -301,6 +301,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             vote_id (int): The primary key of the vote
             guild_id (str): The guild the vote belongs to
             message_id (str): The ID of the message the vote is in
+            thread_id (str): The ID of the thread the vote is in
             vote_owner_id (str): The ID of the user who started the vote
             vote_description (str): The long form description of the vote
             vote_ids_yes (str): The comma separated list of who has voted yes
@@ -319,6 +320,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         vote_id = bot.db.Column(bot.db.Integer, primary_key=True)
         guild_id = bot.db.Column(bot.db.String)
         message_id = bot.db.Column(bot.db.String)
+        thread_id = bot.db.Column(bot.db.String)
         vote_owner_id = bot.db.Column(bot.db.String)
         vote_description = bot.db.Column(bot.db.String)
         vote_ids_yes = bot.db.Column(bot.db.String, default="")
