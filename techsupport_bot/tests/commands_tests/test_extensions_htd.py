@@ -332,6 +332,7 @@ class Test_IntToAscii:
         assert output == "COMPLEX"
 
     def test_invalid_ascii(self: Self) -> None:
+        """This tests to ensure that an invalid conversion will throw an error"""
         with pytest.raises(ValueError):
             htd.integer_to_ascii(1)
 

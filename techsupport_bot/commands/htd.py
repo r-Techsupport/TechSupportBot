@@ -281,10 +281,6 @@ def split_nicely(str_to_split: str) -> list:
 class Htd(cogs.BaseCog):
     """
     perform calculations on cross-base numbers and convert between them
-
-    Attrs:
-        OPERATORS (list[str]): The list of operations to process
-
     """
 
     @commands.command(
