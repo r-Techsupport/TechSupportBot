@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import random
 from typing import TYPE_CHECKING, Self
 
+import flickrapi
 from core import auxiliary, cogs
 from discord.ext import commands
 
@@ -89,3 +91,83 @@ class Animals(cogs.BaseCog):
         """
         response = await self.bot.http_functions.http_call("get", self.FOX_API_URL)
         await ctx.send(response.image)
+
+    @auxiliary.with_typing
+    @commands.command(
+        name="animal", brief="Gets an animal", description="Gets an animal"
+    )
+    async def animal(self, ctx: commands.Context, *, animal: str = "animal") -> None:
+        """Prints an animal to discord
+
+        Args:
+            self (Self): Self
+            ctx (commands.Context): The context in which the command was run
+            animal (str): The animal to search for
+        """
+        flickr = flickrapi.FlickrAPI(
+            self.bot.file_config.api.api_keys.flickr_api_key.encode("utf-8"),
+            self.bot.file_config.api.api_keys.flicker_api_secret.encode("utf-8"),
+            cache=True,
+        )
+
+        try:
+            # Perform the initial search to get the total number of pages
+            initial_search = flickr.photos.search(
+                text=animal,
+                tags=animal,
+                tag_mode="all",
+                extras="url_c",
+                per_page=1,
+                format="parsed-json",
+            )
+            total_pages = initial_search["photos"]["pages"]
+
+            # Limit the number of pages to a reasonable subset (e.g., 1000)
+            max_pages_to_check = min(total_pages, 1000)
+
+            for _ in range(10):
+                if max_pages_to_check > 1:
+                    random_page = random.randint(1, max_pages_to_check)
+                else:
+                    random_page = 1
+
+                # Perform the search on the random page
+                photos = flickr.photos.search(
+                    text=animal,
+                    tags=animal,
+                    tag_mode="all",
+                    extras="url_c",
+                    per_page=1,
+                    page=random_page,
+                    format="parsed-json",
+                    content_type=1,  # 1 for photos only
+                    safe_search=1,  # 1 for safe search
+                    sort="relevance",  # sort by relevance
+                )
+
+                # Extract the URL of the first photo on the random page
+                photo_list = photos.get("photos", {}).get("photo", [])
+                if not photo_list:
+                    continue
+
+                # Filter photos that have the 'url_c' attribute
+                photo_with_url = next(
+                    (photo for photo in photo_list if "url_c" in photo), None
+                )
+                if not photo_with_url:
+                    continue
+
+                photo_url = photo_with_url["url_c"]
+                if not photo_url:
+                    continue
+
+                await ctx.send(photo_url)
+                return
+
+            await auxiliary.send_deny_embed(
+                message=f"No suitable {animal} photos found.",
+                channel=ctx.channel,
+            )
+
+        except Exception as e:
+            await ctx.send_deny_embed(f"An error occurred: {e}")
