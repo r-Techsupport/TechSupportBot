@@ -1540,7 +1540,8 @@ class FactoidManager(cogs.MatchCog):
 
         Args:
             interaction (discord.Interaction): The interaction that started this command
-            force_file (bool, optional): Whether this should be forced as a yml file. Defaults to False.
+            force_file (bool, optional): Whether this should be forced as a yml file.
+                Defaults to False.
             property (Properties, optional): What property to look for. Defaults to "".
             true_all (bool, optional): Whether this should force every factoid. Defaults to False.
             show_hidden (bool, optional): If set to true will show hidden factoids.
