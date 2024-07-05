@@ -2,17 +2,26 @@
 Module for defining the grabs extension
 """
 
+from __future__ import annotations
+
 import random
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
 import discord
 import ui
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Setup to add Grab to the config file"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Grab plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
 
     config = extensionconfig.ExtensionConfig()
     config.add(
@@ -60,9 +69,12 @@ async def invalid_channel(ctx: commands.Context) -> bool:
 
 
 class Grabber(cogs.BaseCog):
-    """Class for the actual commands"""
+    """Class for the actual commands
 
-    HAS_CONFIG = False
+    Attrs:
+        SEARCH_LIMIT (int): The max amount of messages to search when grabbing
+    """
+
     SEARCH_LIMIT = 20
 
     @auxiliary.with_typing
@@ -142,8 +154,12 @@ class Grabber(cogs.BaseCog):
         brief="Executes a grabs command",
         description="Executes a grabs command",
     )
-    async def grabs(self, ctx):
-        """Makes the .grab command group"""
+    async def grabs(self: Self, ctx: commands.Context) -> None:
+        """The bare .grabs command. This does nothing but generate the help message
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
         # Executed if there are no/invalid args supplied
         await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
@@ -156,8 +172,15 @@ class Grabber(cogs.BaseCog):
         description="Returns all grabbed messages for a user",
         usage="[user]",
     )
-    async def all_grabs(self, ctx, user_to_grab: discord.Member):
-        """Lists all grabs for an user"""
+    async def all_grabs(
+        self: Self, ctx: commands.Context, user_to_grab: discord.Member
+    ) -> None:
+        """Discord command to get a paginated list of all grabs from a given user
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+            user_to_grab (discord.Member): The user to get all the grabs from
+        """
         is_nsfw = ctx.channel.is_nsfw()
 
         config = self.bot.guild_configs[str(ctx.guild.id)]
@@ -228,8 +251,15 @@ class Grabber(cogs.BaseCog):
         + "(note: NSFW messages are filtered by channel settings)",
         usage="[user]",
     )
-    async def random_grab(self, ctx, user_to_grab: discord.Member):
-        """Gets a random grab from an user"""
+    async def random_grab(
+        self: Self, ctx: commands.Context, user_to_grab: discord.Member
+    ) -> None:
+        """Discord command to get a random grab from the given user
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+            user_to_grab (discord.Member): The user to get a random grab from
+        """
 
         if user_to_grab.bot:
             await auxiliary.send_deny_embed(

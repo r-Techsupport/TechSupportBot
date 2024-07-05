@@ -2,16 +2,23 @@
 Convert a value or evaluate a mathematical expression to decimal, hex, binary, and ascii encoding
 """
 
-from typing import Self
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
 
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """
-    boilerplate to load htd class
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the HTD plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
     """
     await bot.add_cog(Htd(bot=bot))
 
@@ -19,11 +26,15 @@ async def setup(bot):
 class Htd(cogs.BaseCog):
     """
     perform calculations on cross-base numbers and convert between them
+
+    Attrs:
+        OPERATORS (list[str]): The list of operations to process
+
     """
 
     OPERATORS = ["+", "-", "*", "/"]
 
-    def split_nicely(self, str_to_split: str) -> list:
+    def split_nicely(self: Self, str_to_split: str) -> list:
         """Takes an input string of an equation, and
             returns a list with numbers and operators in separate parts
 
@@ -59,7 +70,7 @@ class Htd(cogs.BaseCog):
 
         return parsed_list
 
-    def convert_value_to_integer(self, value_to_convert: str) -> int:
+    def convert_value_to_integer(self: Self, value_to_convert: str) -> int:
         """Converts a given value as hex, binary, or decimal into an integer type
 
         Args:
@@ -84,7 +95,7 @@ class Htd(cogs.BaseCog):
 
         return int(value_to_convert, num_base)
 
-    def perform_op_on_list(self, equation_list: list) -> int:
+    def perform_op_on_list(self: Self, equation_list: list) -> int:
         """This will compute an equation if passed as a list
         This does not use eval()
         This expected a list of integers and OPERATORS only
@@ -133,7 +144,7 @@ class Htd(cogs.BaseCog):
             " (hex)\n0b (binary) \nNo prefix (assumed decimal)"
         ),
     )
-    async def htd(self, ctx: commands.Context, *, val_to_convert: str):
+    async def htd(self: Self, ctx: commands.Context, *, val_to_convert: str) -> None:
         """This discord command for .htd
 
         Args:
@@ -159,7 +170,7 @@ class Htd(cogs.BaseCog):
         user_input = user_input.replace(" ", "")
         return user_input
 
-    def convert_list_to_ints(self, raw_list: list) -> list:
+    def convert_list_to_ints(self: Self, raw_list: list) -> list:
         """This converts the values in an equation list into ints
 
         Args:
@@ -174,7 +185,7 @@ class Htd(cogs.BaseCog):
             raw_list[index] = self.convert_value_to_integer(value)
         return raw_list
 
-    def integer_to_hexadecimal(self, integer: int) -> str:
+    def integer_to_hexadecimal(self: Self, integer: int) -> str:
         """Takes an integer in and returns a string representation in hex
         This will return in the format of "0x05"
 
@@ -194,7 +205,7 @@ class Htd(cogs.BaseCog):
 
         return raw_hex
 
-    def integer_to_binary(self, integer: int) -> str:
+    def integer_to_binary(self: Self, integer: int) -> str:
         """Takes an integer in and returns a string representation in binary
 
         Args:
@@ -205,7 +216,7 @@ class Htd(cogs.BaseCog):
         """
         return bin(integer)
 
-    def integer_to_ascii(self, integer: int) -> str:
+    def integer_to_ascii(self: Self, integer: int) -> str:
         """Takes an integer in and returns a string representation in ascii
 
         Args:
@@ -220,7 +231,7 @@ class Htd(cogs.BaseCog):
         hex_bytes = str(bytes.fromhex(raw_hex).decode("unicode_escape"))
         return hex_bytes
 
-    def format_embed_field(self, data: str) -> str:
+    def format_embed_field(self: Self, data: str) -> str:
         """Turns an input string into a formatted string ready to be added to the embed
         The length of the field cannot be more than 1024, so if the length is greater than
         1024, we replace the last 3 characters with full stops
@@ -236,7 +247,7 @@ class Htd(cogs.BaseCog):
         return data[:1021] + "..."
 
     def custom_embed_generation(
-        self, raw_input: str, val_to_convert: int
+        self: Self, raw_input: str, val_to_convert: int
     ) -> discord.Embed:
         """Generates, but does not send, a formatted embed
 
@@ -288,7 +299,9 @@ class Htd(cogs.BaseCog):
 
         return embed
 
-    async def htd_command(self, ctx: commands.Context, val_to_convert: str) -> None:
+    async def htd_command(
+        self: Self, ctx: commands.Context, val_to_convert: str
+    ) -> None:
         """The main logic for the htd command
 
         Args:

@@ -3,7 +3,10 @@ This is a file to test the extensions/emoji.py file
 This contains 14 tests
 """
 
+from __future__ import annotations
+
 import importlib
+from typing import Self
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -14,7 +17,7 @@ from tests import config_for_tests
 class Test_EmojiFromChar:
     """A class to test the emoji_from_char method"""
 
-    def test_lowercase_letter(self):
+    def test_lowercase_letter(self: Self) -> None:
         """A test to ensure that a lowercase letter returns correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -25,7 +28,7 @@ class Test_EmojiFromChar:
         # Step 3 - Assert that everything works
         assert char == "🇦"
 
-    def test_uppercase_letter(self):
+    def test_uppercase_letter(self: Self) -> None:
         """A test to ensure that a uppsercase letter returns correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -36,7 +39,7 @@ class Test_EmojiFromChar:
         # Step 3 - Assert that everything works
         assert char == "🇦"
 
-    def test_number(self):
+    def test_number(self: Self) -> None:
         """A test to ensure that a number returns correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -47,7 +50,7 @@ class Test_EmojiFromChar:
         # Step 3 - Assert that everything works
         assert char == "1️⃣"
 
-    def test_question_mark(self):
+    def test_question_mark(self: Self) -> None:
         """A test to ensure that a uppsercase letter returns correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -58,7 +61,7 @@ class Test_EmojiFromChar:
         # Step 3 - Assert that everything works
         assert char == "❓"
 
-    def test_invalid(self):
+    def test_invalid(self: Self) -> None:
         """A test to ensure that a uppsercase letter returns correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -73,7 +76,7 @@ class Test_EmojiFromChar:
 class Test_CheckIfAllUnique:
     """A class to test the check_if_all_unique method"""
 
-    def test_unique(self):
+    def test_unique(self: Self) -> None:
         """Test to ensure that a unique string is detected"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -84,7 +87,7 @@ class Test_CheckIfAllUnique:
         # Step 3 - Assert that everything works
         assert response
 
-    def test_non_unique(self):
+    def test_non_unique(self: Self) -> None:
         """Test to ensure that a non-unique string is detected"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -99,7 +102,7 @@ class Test_CheckIfAllUnique:
 class Test_GenerateEmojiString:
     """A class to test the generate_emoji_string method"""
 
-    def test_only_emoji(self):
+    def test_only_emoji(self: Self) -> None:
         """Test to ensure that only_emoji works when true"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -111,7 +114,7 @@ class Test_GenerateEmojiString:
         assert len(response) == 9
         assert response == ["🇦", "🇧", "🇨", "🇩", "❗", "1️⃣", "2️⃣", "3️⃣", "4️⃣"]
 
-    def test_non_emoji(self):
+    def test_non_emoji(self: Self) -> None:
         """Test to ensure that only_emoji works when false"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -141,7 +144,7 @@ class Test_EmojiCommands:
     """A class to test the emoji_commands method"""
 
     @pytest.mark.asyncio
-    async def test_empty_string(self):
+    async def test_empty_string(self: Self) -> None:
         """Test to ensure that an error is thrown on a empty response"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -161,7 +164,7 @@ class Test_EmojiCommands:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_find_no_message(self):
+    async def test_find_no_message(self: Self) -> None:
         """Test to ensure that if no message could be found, an error will occur"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -183,7 +186,7 @@ class Test_EmojiCommands:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_unique_error(self):
+    async def test_unique_error(self: Self) -> None:
         """Test to ensure that if the string is not unique, an error will occur"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -204,7 +207,7 @@ class Test_EmojiCommands:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_confirm_with_proper_call(self):
+    async def test_confirm_with_proper_call(self: Self) -> None:
         """Test that send_confirm_embed is being called with the proper string"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -223,7 +226,7 @@ class Test_EmojiCommands:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_proper_reactions(self):
+    async def test_proper_reactions(self: Self) -> None:
         """Test that send_confirm_embed is being called with the proper string"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -247,7 +250,7 @@ class Test_EmojiCommands:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_reaction_count_to_twenty(self):
+    async def test_reaction_count_to_twenty(self: Self) -> None:
         """Test that will test from 0 to 20 reactions"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -271,7 +274,7 @@ class Test_EmojiCommands:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_reaction_count_to_twentyone(self):
+    async def test_reaction_count_to_twentyone(self: Self) -> None:
         """Test that will test from 0 to 21 reactions"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -298,7 +301,7 @@ class Test_EmojiCommands:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_reaction_count_one_to_twenty(self):
+    async def test_reaction_count_one_to_twenty(self: Self) -> None:
         """Test that will test from 1 to 20 reactions"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -322,7 +325,7 @@ class Test_EmojiCommands:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_reaction_count_one_to_twentyone(self):
+    async def test_reaction_count_one_to_twentyone(self: Self) -> None:
         """Test that will test from 1 to 21 reactions"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()

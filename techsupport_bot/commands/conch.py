@@ -7,7 +7,7 @@ This modules requires no config, no databases, and no APIs
 from __future__ import annotations
 
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 from core import auxiliary, cogs
@@ -27,7 +27,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class MagicConch(cogs.BaseCog):
-    """Class to create the conch command for discord bot."""
+    """Class to create the conch command for discord bot.
+
+    Attrs:
+        RESPONSES (list[str]): The list of random responses for the 8 ball
+        PIC_URL (str): The direct URL for the picture to put in embeds
+
+    """
 
     RESPONSES = [
         "As I see it, yes.",
@@ -35,7 +41,7 @@ class MagicConch(cogs.BaseCog):
         "Better not tell you now.",
         "Cannot predict now.",
         "Concentrate and ask again.",
-        "Don’t count on it.",
+        "Don't count on it.",
         "It is certain.",
         "It is decidedly so.",
         "Most likely.",
@@ -48,12 +54,12 @@ class MagicConch(cogs.BaseCog):
         "Very doubtful.",
         "Without a doubt.",
         "Yes.",
-        "Yes – definitely.",
+        "Yes - definitely.",
         "You may rely on it.",
     ]
     PIC_URL = "https://i.imgur.com/vdvGrsR.png"
 
-    def format_question(self, question: str) -> str:
+    def format_question(self: Self, question: str) -> str:
         """This formats a question properly. It will crop it if needed, and add a "?" to the end
 
         Args:
@@ -68,7 +74,9 @@ class MagicConch(cogs.BaseCog):
             question += "?"
         return question
 
-    async def conch_command(self, ctx: commands.Context, question: str = "") -> None:
+    async def conch_command(
+        self: Self, ctx: commands.Context, question: str = ""
+    ) -> None:
         """Method for the core logic of the conch command
 
         Args:
@@ -96,7 +104,9 @@ class MagicConch(cogs.BaseCog):
         description="Asks the Magic Conch (8ball) a question",
         usage="[question]",
     )
-    async def ask_question(self, ctx: commands.Context, *, question: str = "") -> None:
+    async def ask_question(
+        self: Self, ctx: commands.Context, *, question: str = ""
+    ) -> None:
         """Method for how the conch command works for the bot.
         This is a command and should be run via discord
 

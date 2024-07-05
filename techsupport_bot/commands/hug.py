@@ -1,19 +1,35 @@
 """Module for the hug extension for the bot."""
 
+from __future__ import annotations
+
 import random
+from typing import TYPE_CHECKING, Self
 
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Method to add hug to the config file."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Hug plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(Hugger(bot=bot))
 
 
 class Hugger(cogs.BaseCog):
-    """Class to make the hug command."""
+    """Class to make the hug command.
+
+    Attrs:
+        HUGS_SELECTION (list[str]): The list of hug phrases to display
+        ICON_URL (str): The icon to use when hugging
+
+    """
 
     HUGS_SELECTION = [
         "{user_giving_hug} hugs {user_to_hug} forever and ever and ever",
@@ -41,7 +57,9 @@ class Hugger(cogs.BaseCog):
         description="Hugs a mentioned user using an embed",
         usage="@user",
     )
-    async def hug(self, ctx: commands.Context, user_to_hug: discord.Member = None):
+    async def hug(
+        self: Self, ctx: commands.Context, user_to_hug: discord.Member = None
+    ) -> None:
         """The .hug discord command function
 
         Args:
@@ -61,7 +79,7 @@ class Hugger(cogs.BaseCog):
         await self.hug_command(ctx, user_to_hug)
 
     def check_hug_eligibility(
-        self,
+        self: Self,
         author: discord.Member,
         user_to_hug: discord.Member,
     ) -> bool:
@@ -80,7 +98,7 @@ class Hugger(cogs.BaseCog):
         return True
 
     def generate_hug_phrase(
-        self, author: discord.Member, user_to_hug: discord.Member
+        self: Self, author: discord.Member, user_to_hug: discord.Member
     ) -> str:
         """Generates a hug phrase from the HUGS_SELECTION variable
 
@@ -98,7 +116,7 @@ class Hugger(cogs.BaseCog):
         return hug_text
 
     async def hug_command(
-        self, ctx: commands.Context, user_to_hug: discord.Member
+        self: Self, ctx: commands.Context, user_to_hug: discord.Member
     ) -> None:
         """The main logic for the hug command
 

@@ -7,13 +7,24 @@ This file contains 1 commands:
     .leave
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Registers the Leaver Cog"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Leave plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(Leaver(bot=bot))
 
 
@@ -26,7 +37,7 @@ class Leaver(cogs.BaseCog):
     @commands.command(
         name="leave", description="Leaves a guild by ID", usage="[guild-id]"
     )
-    async def leave(self, ctx: commands.Context, *, guild_id: int) -> None:
+    async def leave(self: Self, ctx: commands.Context, *, guild_id: int) -> None:
         """Leaves a guild by ID.
 
         This is a command and should be accessed via Discord.

@@ -1,7 +1,10 @@
 """Module for the who extension for the discord bot."""
 
+from __future__ import annotations
+
 import datetime
 import io
+from typing import TYPE_CHECKING, Self
 
 import discord
 import ui
@@ -11,9 +14,16 @@ from core import auxiliary, cogs, extensionconfig
 from discord import app_commands
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding the who configuration to the config file."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Who plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
 
     config = extensionconfig.ExtensionConfig()
     config.add(
@@ -39,28 +49,77 @@ async def setup(bot):
         description="Users with roles in this list will be able to use whois",
         default=[],
     )
+    config.add(
+        key="note_writers",
+        datatype="list",
+        title="Note Writer Roles",
+        description="Users with roles in this list will be able to create or delete notes",
+        default=[],
+    )
 
     await bot.add_cog(Who(bot=bot, extension_name="who"))
     bot.add_extension_config("who", config)
 
 
 class Who(cogs.BaseCog):
-    """Class to set up who for the extension."""
+    """Class to set up who for the extension.
+
+    Attrs:
+        notes (app_commands.Group): The group for the /note commands
+
+    """
 
     notes = app_commands.Group(
         name="note", description="Command Group for the Notes Extension"
     )
 
     @staticmethod
-    async def is_reader(interaction: discord.Interaction) -> bool:
-        """Checks whether invoker can read notes. If at least one reader
-        role is not set, all members can read notes
+    async def is_writer(interaction: discord.Interaction) -> bool:
+        """Checks whether invoker can write notes. If at least one writer
+        role is not set, NO members can write notes
 
         Args:
             interaction (discord.Interaction): The interaction in which the whois command occured
 
         Raises:
-            CommandError: Raised if there are no note_readers set in the config
+            MissingAnyRole: Raised if the user is lacking any writer role,
+                but there are roles defined
+            AppCommandError: Raised if there are no note_writers set in the config
+
+        Returns:
+            bool: True if the user can run, False if they cannot
+        """
+        config = interaction.client.guild_configs[str(interaction.guild.id)]
+        if reader_roles := config.extensions.who.note_writers.value:
+            roles = (
+                discord.utils.get(interaction.guild.roles, name=role)
+                for role in reader_roles
+            )
+            status = any((role in interaction.user.roles for role in roles))
+            if not status:
+                raise app_commands.MissingAnyRole(reader_roles)
+            return True
+
+        # Reader_roles are empty (not set)
+        message = "There aren't any `note_writers` roles set in the config!"
+        embed = auxiliary.prepare_deny_embed(message=message)
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        raise app_commands.AppCommandError(message)
+
+    @staticmethod
+    async def is_reader(interaction: discord.Interaction) -> bool:
+        """Checks whether invoker can read notes. If at least one reader
+        role is not set, NO members can read notes
+
+        Args:
+            interaction (discord.Interaction): The interaction in which the whois command occured
+
+        Raises:
+            MissingAnyRole: Raised if the user is lacking any reader role,
+                but there are roles defined
+            AppCommandError: Raised if there are no note_readers set in the config
 
         Returns:
             bool: True if the user can run, False if they cannot
@@ -72,8 +131,10 @@ class Who(cogs.BaseCog):
                 discord.utils.get(interaction.guild.roles, name=role)
                 for role in reader_roles
             )
-
-            return any((role in interaction.user.roles for role in roles))
+            status = any((role in interaction.user.roles for role in roles))
+            if not status:
+                raise app_commands.MissingAnyRole(reader_roles)
+            return True
 
         # Reader_roles are empty (not set)
         message = "There aren't any `note_readers` roles set in the config!"
@@ -81,7 +142,7 @@ class Who(cogs.BaseCog):
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-        raise commands.CommandError(message)
+        raise app_commands.AppCommandError(message)
 
     @app_commands.check(is_reader)
     @app_commands.command(
@@ -90,9 +151,14 @@ class Who(cogs.BaseCog):
         extras={"brief": "Gets user data", "usage": "@user", "module": "who"},
     )
     async def get_note(
-        self, interaction: discord.Interaction, user: discord.Member
+        self: Self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
-        """ "Method to get notes assigned to a user."""
+        """This is the base of the /whois command
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            user (discord.Member): The member to lookup. Will not work on discord.User
+        """
         embed = discord.Embed(
             title=f"User info for `{user}`",
             description="**Note: this is a bot account!**" if user.bot else "",
@@ -133,7 +199,7 @@ class Who(cogs.BaseCog):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     async def modify_embed_for_mods(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         user: discord.Member,
         embed: discord.Embed,
@@ -182,7 +248,7 @@ class Who(cogs.BaseCog):
             )
         return embed
 
-    @app_commands.checks.has_permissions(kick_members=True)
+    @app_commands.check(is_writer)
     @notes.command(
         name="set",
         description="Sets a note for a user, which can be read later from their whois",
@@ -193,9 +259,16 @@ class Who(cogs.BaseCog):
         },
     )
     async def set_note(
-        self, interaction: discord.Interaction, user: discord.Member, body: str
+        self: Self, interaction: discord.Interaction, user: discord.Member, body: str
     ) -> None:
-        """Method to set a note on a user."""
+        """Adds a new note to a user
+        This is the entrance for the /note set command
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            user (discord.Member): The member to add the note to
+            body (str): The contents of the note being created
+        """
         if interaction.user.id == user.id:
             embed = auxiliary.prepare_deny_embed(
                 message="You cannot add a note for yourself"
@@ -244,7 +317,7 @@ class Who(cogs.BaseCog):
         embed = auxiliary.prepare_confirm_embed(message=f"Note created for `{user}`")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @app_commands.checks.has_permissions(kick_members=True)
+    @app_commands.check(is_writer)
     @notes.command(
         name="clear",
         description="Clears all existing notes for a user",
@@ -255,9 +328,15 @@ class Who(cogs.BaseCog):
         },
     )
     async def clear_notes(
-        self, interaction: discord.Interaction, user: discord.Member
+        self: Self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
-        """Method to clear notes on a user."""
+        """Clears all notes on a given user
+        This is the entrace for the /note clear command
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            user (discord.Member): The member to remove all notes from
+        """
         notes = await self.get_notes(user, interaction.guild)
 
         if not notes:
@@ -314,9 +393,15 @@ class Who(cogs.BaseCog):
         },
     )
     async def all_notes(
-        self, interaction: discord.Interaction, user: discord.Member
+        self: Self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
-        """Method to get all notes for a user."""
+        """Gets a file containing every note on a user
+        This is the entrance for the /note all command
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            user (discord.Member): The member to get all notes for
+        """
         notes = await self.get_notes(user, interaction.guild)
 
         if not notes:
@@ -343,8 +428,19 @@ class Who(cogs.BaseCog):
 
         await interaction.response.send_message(file=yaml_file, ephemeral=True)
 
-    async def get_notes(self, user, guild):
-        """Method to get current notes on the user."""
+    async def get_notes(
+        self: Self, user: discord.Member, guild: discord.Guild
+    ) -> list[bot.models.UserNote]:
+        """Calls to the database to get a list of note database entries for a given user and guild
+
+        Args:
+            user (discord.Member): The member to look for notes for
+            guild (discord.Guild): The guild to fetch the notes from
+
+        Returns:
+            list[bot.models.UserNote]: The list of notes on the member/guild combo.
+                Will be an empty list if there are no notes
+        """
         user_notes = (
             await self.bot.models.UserNote.query.where(
                 self.bot.models.UserNote.user_id == str(user.id)
@@ -358,8 +454,13 @@ class Who(cogs.BaseCog):
 
     # re-adds note role back to joining users
     @commands.Cog.listener()
-    async def on_member_join(self, member: discord.Member) -> None:
-        """Method to get the member on joining the guild."""
+    async def on_member_join(self: Self, member: discord.Member) -> None:
+        """Automatic listener to look at users when they join the guild.
+        This is to apply the note role back to joining users
+
+        Args:
+            member (discord.Member): The member who has just joined
+        """
         config = self.bot.guild_configs[str(member.guild.id)]
         if not self.extension_enabled(config):
             return

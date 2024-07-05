@@ -10,7 +10,7 @@ This file contains 1 command:
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 import git
@@ -37,13 +37,13 @@ class BotInfo(cogs.BaseCog):
 
     @commands.check(auxiliary.bot_admin_check_context)
     @commands.command(name="bot", description="Provides bot info")
-    async def get_bot_data(self, ctx) -> None:
+    async def get_bot_data(self: Self, ctx: commands.Context) -> None:
         """Gets various data about the bot.
 
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (discord.ext.Context): the context object for the calling message
+            ctx (commands.Context): the context object for the calling message
         """
         embed = discord.Embed(title=self.bot.user.name, color=discord.Color.blurple())
 

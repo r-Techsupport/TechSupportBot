@@ -3,7 +3,7 @@ This extension is slash commands"""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 import ui
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     import bot
 
 
-async def setup(bot: bot.TechSupportBot):
+async def setup(bot: bot.TechSupportBot) -> None:
     """Adding config and the cog to the bot
 
     Args:
@@ -54,9 +54,16 @@ async def setup(bot: bot.TechSupportBot):
 
 
 class RoleGiver(cogs.BaseCog):
-    """The main class for the role commands"""
+    """The main class for the role commands
 
-    def __init__(self, bot: bot.TechSupportBot):
+    Attrs:
+        role_group (app_commands.Group): The group for the /role commands
+
+    Args:
+        bot (bot.TechSupportBot): The bot object, is used for registering context menu commands
+    """
+
+    def __init__(self: Self, bot: bot.TechSupportBot) -> None:
         super().__init__(bot=bot)
         self.ctx_menu = app_commands.ContextMenu(
             name="Manage roles",
@@ -67,7 +74,7 @@ class RoleGiver(cogs.BaseCog):
 
     role_group = app_commands.Group(name="role", description="...")
 
-    async def preconfig(self):
+    async def preconfig(self: Self) -> None:
         """This setups the global lock on the role command, to avoid conflicts"""
         self.locked = set()
 
@@ -76,7 +83,7 @@ class RoleGiver(cogs.BaseCog):
         description="Assign or remove roles from yourself",
         extras={"module": "role"},
     )
-    async def self_role(self, interaction: discord.Interaction):
+    async def self_role(self: Self, interaction: discord.Interaction) -> None:
         """The base of the self role command
 
         Args:
@@ -100,8 +107,8 @@ class RoleGiver(cogs.BaseCog):
         extras={"module": "role"},
     )
     async def assign_role(
-        self, interaction: discord.Interaction, member: discord.Member
-    ):
+        self: Self, interaction: discord.Interaction, member: discord.Member
+    ) -> None:
         """The base of the wide assign command
 
         Args:
@@ -111,8 +118,8 @@ class RoleGiver(cogs.BaseCog):
         await self.assign_role_command(interaction=interaction, member=member)
 
     async def assign_role_command(
-        self, interaction: discord.Interaction, member: discord.Member
-    ):
+        self: Self, interaction: discord.Interaction, member: discord.Member
+    ) -> None:
         """Serves as the core logic for the /role manage command
         This is the direct entry point for the context menu
 
@@ -131,12 +138,12 @@ class RoleGiver(cogs.BaseCog):
         await self.role_command_base(interaction, roles, allowed_to_execute, member)
 
     async def role_command_base(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         assignable_roles: list[str],
         allowed_roles: list[str],
         member: discord.Member,
-    ):
+    ) -> None:
         """The base processor for the role commands
         Checks permissions and config, and sends the view
 
@@ -208,7 +215,7 @@ class RoleGiver(cogs.BaseCog):
         self.locked.remove(identifier)
 
     def check_permissions(
-        self, user: discord.User, guild: discord.Guild, roles: list[str]
+        self: Self, user: discord.User, guild: discord.Guild, roles: list[str]
     ) -> bool:
         """A function to return a boolean value if the user can run role commands or not
 
@@ -231,8 +238,8 @@ class RoleGiver(cogs.BaseCog):
         return False
 
     def generate_options(
-        self, user: discord.Member, guild: discord.Guild, roles: list[str]
-    ):
+        self: Self, user: discord.Member, guild: discord.Guild, roles: list[str]
+    ) -> list[discord.SelectOption]:
         """A function to turn a list of roles into a set of SelectOptions
 
         Args:
@@ -241,7 +248,7 @@ class RoleGiver(cogs.BaseCog):
             roles (list[str]): A list of roles by name to add to the options
 
         Returns:
-            list: A list of SelectOption with defaults set
+            list[discord.SelectOption]: A list of SelectOption with defaults set
         """
         options = []
 
@@ -262,14 +269,14 @@ class RoleGiver(cogs.BaseCog):
         return options
 
     async def modify_roles(
-        self,
+        self: Self,
         config_roles: list[str],
         new_roles: list[str],
         guild: discord.Guild,
         user: discord.Member,
         reason: str,
         interaction: discord.Interaction,
-    ):
+    ) -> None:
         """Modifies a set of roles based on an input and reference list
 
         Args:
