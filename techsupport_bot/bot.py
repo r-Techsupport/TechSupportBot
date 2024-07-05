@@ -18,6 +18,7 @@ import expiringdict
 import gino
 import ircrelay
 import munch
+import ui
 import yaml
 from botlogging import LogContext, LogLevel
 from core import auxiliary, custom_errors, databases, extensionconfig, http
@@ -181,6 +182,9 @@ class TechSupportBot(commands.Bot):
             self.guild_configs[config.guild_id] = munch.munchify(
                 json.loads(config.config)
             )
+
+        # Adds persistent views to the bot
+        self.add_view(ui.VotingButtonPersistent())
 
         # The very last step should be loading extensions
         # Some extensions will require the database or config when loading

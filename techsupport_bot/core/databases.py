@@ -292,6 +292,48 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild_id = bot.db.Column(bot.db.String)
         rules = bot.db.Column(bot.db.String)
 
+    class Votes(bot.db.Model):
+        """The postgres table for votes
+        Currently used in voting.py
+
+        Attrs:
+            __tablename__ (str): The name of the table in postgres
+            vote_id (int): The primary key of the vote
+            guild_id (str): The guild the vote belongs to
+            message_id (str): The ID of the message the vote is in
+            thread_id (str): The ID of the thread the vote is in
+            vote_owner_id (str): The ID of the user who started the vote
+            vote_description (str): The long form description of the vote
+            vote_ids_yes (str): The comma separated list of who has voted yes
+            vote_ids_no (str): The comma separated list of who has voted no
+            vote_ids_all (str): The comma separated list of who has voted
+            votes_yes (int): The number of votes for yes
+            votes_no (int): The number of votes for no
+            votes_total (int): The number of votes
+            start_time (datetime): The start time of the vote
+            vote_active (bool): If the vote is current active or not
+            blind (bool): If the vote needs to be blind
+            anonymous (bool): If the vote needs to be anonymous
+        """
+
+        __tablename__ = "voting"
+        vote_id = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild_id = bot.db.Column(bot.db.String)
+        message_id = bot.db.Column(bot.db.String)
+        thread_id = bot.db.Column(bot.db.String)
+        vote_owner_id = bot.db.Column(bot.db.String)
+        vote_description = bot.db.Column(bot.db.String)
+        vote_ids_yes = bot.db.Column(bot.db.String, default="")
+        vote_ids_no = bot.db.Column(bot.db.String, default="")
+        vote_ids_all = bot.db.Column(bot.db.String, default="")
+        votes_yes = bot.db.Column(bot.db.Integer, default=0)
+        votes_no = bot.db.Column(bot.db.Integer, default=0)
+        votes_total = bot.db.Column(bot.db.Integer, default=0)
+        start_time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+        vote_active = bot.db.Column(bot.db.Boolean, default=True)
+        blind = bot.db.Column(bot.db.Boolean, default=False)
+        anonymous = bot.db.Column(bot.db.Boolean, default=False)
+
     bot.models.Applications = Applications
     bot.models.AppBans = ApplicationBans
     bot.models.DuckUser = DuckUser
@@ -305,3 +347,4 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.Config = Config
     bot.models.Listener = Listener
     bot.models.Rule = Rule
+    bot.models.Votes = Votes
