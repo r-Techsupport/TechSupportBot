@@ -28,73 +28,68 @@ async def setup(bot: bot.TechSupportBot) -> None:
     await bot.add_cog(Emojis(bot=bot))
 
 
-class Emojis(cogs.BaseCog):
-    """Class for all the emoji commands
+def check_if_all_unique(string: str) -> bool:
+    """Checks, using the set function, if a string has duplicates or not
 
-    Attrs:
-        KEY_MAP (dict[str,str]): Some manual mappings from character to emoji
+    Args:
+        string (str): The raw input message
+
+    Returns:
+        bool: True if there are no duplicates
     """
+    return len(set(string.lower())) == len(string.lower())
 
+
+def emoji_from_char(char: str) -> str:
+    """Gets an unicode emoji from a character
+
+    Args:
+        char (str): The character to look up the emoji from
+
+    Returns:
+        str: A string containing the unicode emoji assigned to the character.
+            Will not return anything if there is not unicode emoji
+    """
     KEY_MAP = {"?": "question", "!": "exclamation"}
 
-    @classmethod
-    def emoji_from_char(cls: Self, char: str) -> str:
-        """Gets an unicode emoji from a character
+    if char.isalpha():
+        return lookup(f"REGIONAL INDICATOR SYMBOL LETTER {char.upper()}")
+    if char.isnumeric():
+        char = inflect.engine().number_to_words(char)
+        return emoji.emojize(f":{char}:", language="alias")
+    if KEY_MAP.get(char):
+        return emoji.emojize(f":{KEY_MAP[char]}:", language="alias")
+    return None
 
-        Args:
-            char (str): The character to look up the emoji from
 
-        Returns:
-            str: A string containing the unicode emoji assigned to the character.
-                Will not return anything if there is not unicode emoji
-        """
-        if char.isalpha():
-            return lookup(f"REGIONAL INDICATOR SYMBOL LETTER {char.upper()}")
-        if char.isnumeric():
-            char = inflect.engine().number_to_words(char)
-            return emoji.emojize(f":{char}:", language="alias")
-        if cls.KEY_MAP.get(char):
-            return emoji.emojize(f":{cls.KEY_MAP[char]}:", language="alias")
-        return None
+def generate_emoji_string(string: str, only_emoji: bool = False) -> list[str]:
+    """This takes a string and returns a string or list of emojis
 
-    def check_if_all_unique(self: Self, string: str) -> bool:
-        """Checks, using the set function, if a string has duplicates or not
+    Args:
+        string (str): The raw string to convert to emoji
+        only_emoji (bool, optional): Whether to allow non emoji characters in the list
+            Defaults to False.
 
-        Args:
-            string (str): The raw input message
+    Returns:
+        list[str]: The string or list of emojis
+    """
+    emoji_list = []
 
-        Returns:
-            bool: True if there are no duplicates
-        """
-        return len(set(string.lower())) == len(string.lower())
+    for char in string:
+        if char == " ":
+            continue
 
-    @classmethod
-    def generate_emoji_string(
-        cls: Self, string: str, only_emoji: bool = False
-    ) -> list[str]:
-        """This takes a string and returns a string or list of emojis
+        emoji_ = emoji_from_char(char)
+        if emoji_:
+            emoji_list.append(emoji_)
+        elif not only_emoji:
+            emoji_list.append(char)
 
-        Args:
-            string (str): The raw string to convert to emoji
-            only_emoji (bool, optional): Whether to allow non emoji characters in the list
-              Defaults to False.
+    return emoji_list
 
-        Returns:
-            list[str]: The string or list of emojis
-        """
-        emoji_list = []
 
-        for char in string:
-            if char == " ":
-                continue
-
-            emoji_ = cls.emoji_from_char(char)
-            if emoji_:
-                emoji_list.append(emoji_)
-            elif not only_emoji:
-                emoji_list.append(char)
-
-        return emoji_list
+class Emojis(cogs.BaseCog):
+    """Class for all the emoji commands"""
 
     async def emoji_commands(
         self: Self,
@@ -117,9 +112,7 @@ class Emojis(cogs.BaseCog):
         # Basic check to ensure the message isn't nothing
         # Add reactions means everything must be an emoji.
         # So if add reactions is true, only_emoji must be true
-        emoji_message = self.generate_emoji_string(
-            string=message, only_emoji=add_reactions
-        )
+        emoji_message = generate_emoji_string(string=message, only_emoji=add_reactions)
 
         # Ensure there is something to send
         if len(emoji_message) == 0:
@@ -147,7 +140,7 @@ class Emojis(cogs.BaseCog):
                 return
         # Finally, send the emojis as an embed or a reaction
         if add_reactions:
-            if not self.check_if_all_unique(message):
+            if not check_if_all_unique(message):
                 await auxiliary.send_deny_embed(
                     message=(
                         "Invalid message! Make sure there are no repeat characters!"

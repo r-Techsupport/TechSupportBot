@@ -22,6 +22,58 @@ async def setup(bot: bot.TechSupportBot) -> None:
     await bot.add_cog(Hugger(bot=bot))
 
 
+HUGS_SELECTION = [
+    "{user_giving_hug} hugs {user_to_hug} forever and ever and ever",
+    "{user_giving_hug} wraps arms around {user_to_hug} and clings forever",
+    "{user_giving_hug} hugs {user_to_hug} and gives their hair a sniff",
+    "{user_giving_hug} glomps {user_to_hug}",
+    (
+        "cant stop, wont stop. {user_giving_hug} hugs {user_to_hug} until the sun"
+        " goes cold"
+    ),
+    "{user_giving_hug} reluctantly hugs {user_to_hug}...",
+    "{user_giving_hug} hugs {user_to_hug} into a coma",
+    "{user_giving_hug} smothers {user_to_hug} with a loving hug",
+    "{user_giving_hug} squeezes {user_to_hug} to death",
+]
+
+
+def check_hug_eligibility(
+    author: discord.Member,
+    user_to_hug: discord.Member,
+) -> bool:
+    """Checks to see if the hug is allowed
+    Checks to see if the author and target match
+
+    Args:
+        author (discord.Member): The author of the hug command
+        user_to_hug (discord.Member): The user to hug
+
+    Returns:
+        bool: True if the command should proceed, false if it shouldn't
+    """
+    if user_to_hug == author:
+        return False
+    return True
+
+
+def generate_hug_phrase(author: discord.Member, user_to_hug: discord.Member) -> str:
+    """Generates a hug phrase from the HUGS_SELECTION variable
+
+    Args:
+        author (discord.Member): The author of the hug command
+        user_to_hug (discord.Member): The user to hug
+
+    Returns:
+        str: The filled in hug str
+    """
+    hug_text = random.choice(HUGS_SELECTION).format(
+        user_giving_hug=author.mention,
+        user_to_hug=user_to_hug.mention,
+    )
+    return hug_text
+
+
 class Hugger(cogs.BaseCog):
     """Class to make the hug command.
 
@@ -31,20 +83,6 @@ class Hugger(cogs.BaseCog):
 
     """
 
-    HUGS_SELECTION = [
-        "{user_giving_hug} hugs {user_to_hug} forever and ever and ever",
-        "{user_giving_hug} wraps arms around {user_to_hug} and clings forever",
-        "{user_giving_hug} hugs {user_to_hug} and gives their hair a sniff",
-        "{user_giving_hug} glomps {user_to_hug}",
-        (
-            "cant stop, wont stop. {user_giving_hug} hugs {user_to_hug} until the sun"
-            " goes cold"
-        ),
-        "{user_giving_hug} reluctantly hugs {user_to_hug}...",
-        "{user_giving_hug} hugs {user_to_hug} into a coma",
-        "{user_giving_hug} smothers {user_to_hug} with a loving hug",
-        "{user_giving_hug} squeezes {user_to_hug} to death",
-    ]
     ICON_URL = (
         "https://cdn.icon-icons.com/icons2/1648/PNG/512/10022huggingface_110042.png"
     )
@@ -78,43 +116,6 @@ class Hugger(cogs.BaseCog):
 
         await self.hug_command(ctx, user_to_hug)
 
-    def check_hug_eligibility(
-        self: Self,
-        author: discord.Member,
-        user_to_hug: discord.Member,
-    ) -> bool:
-        """Checks to see if the hug is allowed
-        Checks to see if the author and target match
-
-        Args:
-            author (discord.Member): The author of the hug command
-            user_to_hug (discord.Member): The user to hug
-
-        Returns:
-            bool: True if the command should proceed, false if it shouldn't
-        """
-        if user_to_hug == author:
-            return False
-        return True
-
-    def generate_hug_phrase(
-        self: Self, author: discord.Member, user_to_hug: discord.Member
-    ) -> str:
-        """Generates a hug phrase from the HUGS_SELECTION variable
-
-        Args:
-            author (discord.Member): The author of the hug command
-            user_to_hug (discord.Member): The user to hug
-
-        Returns:
-            str: The filled in hug str
-        """
-        hug_text = random.choice(self.HUGS_SELECTION).format(
-            user_giving_hug=author.mention,
-            user_to_hug=user_to_hug.mention,
-        )
-        return hug_text
-
     async def hug_command(
         self: Self, ctx: commands.Context, user_to_hug: discord.Member
     ) -> None:
@@ -124,13 +125,13 @@ class Hugger(cogs.BaseCog):
             ctx (commands.Context): The context in which the command was run in
             user_to_hug (discord.Member): The user to hug
         """
-        if not self.check_hug_eligibility(ctx.author, user_to_hug):
+        if not check_hug_eligibility(ctx.author, user_to_hug):
             await auxiliary.send_deny_embed(
                 message="Let's be serious", channel=ctx.channel
             )
             return
 
-        hug_text = self.generate_hug_phrase(ctx.author, user_to_hug)
+        hug_text = generate_hug_phrase(ctx.author, user_to_hug)
 
         embed = auxiliary.generate_basic_embed(
             title="You've been hugged!",

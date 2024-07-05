@@ -26,6 +26,22 @@ async def setup(bot: bot.TechSupportBot) -> None:
     await bot.add_cog(MagicConch(bot=bot))
 
 
+def format_question(question: str) -> str:
+    """This formats a question properly. It will crop it if needed, and add a "?" to the end
+
+    Args:
+        question (str): The original question passed from the user
+
+    Returns:
+        str: The final formatted questions. Will always be 256 or less in length,
+            and end with a "?"
+    """
+    question = question[:255]
+    if not question.endswith("?"):
+        question += "?"
+    return question
+
+
 class MagicConch(cogs.BaseCog):
     """Class to create the conch command for discord bot.
 
@@ -59,23 +75,15 @@ class MagicConch(cogs.BaseCog):
     ]
     PIC_URL = "https://i.imgur.com/vdvGrsR.png"
 
-    def format_question(self: Self, question: str) -> str:
-        """This formats a question properly. It will crop it if needed, and add a "?" to the end
-
-        Args:
-            question (str): The original question passed from the user
-
-        Returns:
-            str: The final formatted questions. Will always be 256 or less in length,
-                and end with a "?"
-        """
-        question = question[:255]
-        if not question.endswith("?"):
-            question += "?"
-        return question
-
-    async def conch_command(
-        self: Self, ctx: commands.Context, question: str = ""
+    @commands.command(
+        name="conch",
+        aliases=["8ball", "8b"],
+        brief="Asks the Magic Conch",
+        description="Asks the Magic Conch (8ball) a question",
+        usage="[question]",
+    )
+    async def ask_question(
+        self: Self, ctx: commands.Context, *, question: str = ""
     ) -> None:
         """Method for the core logic of the conch command
 
@@ -88,7 +96,7 @@ class MagicConch(cogs.BaseCog):
                 message="You need to add a question", channel=ctx.channel
             )
             return
-        formatted_question = self.format_question(question)
+        formatted_question = format_question(question)
         embed = auxiliary.generate_basic_embed(
             title=formatted_question,
             description=random.choice(self.RESPONSES),
@@ -96,22 +104,3 @@ class MagicConch(cogs.BaseCog):
             url=self.PIC_URL,
         )
         await ctx.send(embed=embed)
-
-    @commands.command(
-        name="conch",
-        aliases=["8ball", "8b"],
-        brief="Asks the Magic Conch",
-        description="Asks the Magic Conch (8ball) a question",
-        usage="[question]",
-    )
-    async def ask_question(
-        self: Self, ctx: commands.Context, *, question: str = ""
-    ) -> None:
-        """Method for how the conch command works for the bot.
-        This is a command and should be run via discord
-
-        Args:
-            ctx (commands.Context): The context in which the command was run
-            question (str, optional): The question to ask the magic conch. Defaults to "".
-        """
-        await self.conch_command(ctx, question)

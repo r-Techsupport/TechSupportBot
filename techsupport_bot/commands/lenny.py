@@ -66,12 +66,4 @@ class Lenny(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        await self.lenny_command(ctx.channel)
-
-    async def lenny_command(self: Self, channel: discord.abc.Messageable) -> None:
-        """The main logic for the lenny command
-
-        Args:
-            channel (discord.abc.Messageable): The channel where the lenny command was called in
-        """
-        await channel.send(content=random.choice(self.LENNYS_SELECTION))
+        await ctx.channel.send(content=random.choice(self.LENNYS_SELECTION))

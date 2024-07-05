@@ -27,7 +27,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Greeter(cogs.BaseCog):
     """Class for the greeter command."""
 
-    async def hello_command(self: Self, ctx: commands.Context) -> None:
+    @commands.command(
+        name="hello",
+        brief="Says hello to the bot",
+        description="Says hello to the bot (because they are doing such a great job!)",
+        usage="",
+    )
+    async def hello(self: Self, ctx: commands.Context) -> None:
         """A simple function to add HEY reactions to the command invocation
 
         Args:
@@ -36,17 +42,3 @@ class Greeter(cogs.BaseCog):
         await auxiliary.add_list_of_reactions(
             message=ctx.message, reactions=["🇭", "🇪", "🇾"]
         )
-
-    @commands.command(
-        name="hello",
-        brief="Says hello to the bot",
-        description="Says hello to the bot (because they are doing such a great job!)",
-        usage="",
-    )
-    async def hello(self: Self, ctx: commands.Context) -> None:
-        """Entry point for the .hello command on discord
-
-        Args:
-            ctx (commands.Context): The context in which the command was run in
-        """
-        await self.hello_command(ctx)

@@ -10,7 +10,7 @@ from typing import Self
 from hypothesis import given
 from hypothesis.strategies import text
 from tests import config_for_tests
-
+from commands import conch
 
 class Test_FormatQuestion:
     """Tests to test the format_question function"""
@@ -23,11 +23,9 @@ class Test_FormatQuestion:
         Args:
             question (str): The randomly generated question to format
         """
-        # Step 1 - Setup env
-        discord_env = config_for_tests.FakeDiscordEnv()
 
         # Step 2 - Call the function
-        new_question = discord_env.conch.format_question(question)
+        new_question = conch.format_question(question)
 
         # Step 3 - Assert that everything works
         assert new_question.endswith("?")
@@ -37,11 +35,9 @@ class Test_FormatQuestion:
 
     def test_format_question_no_mark(self: Self) -> None:
         """Test to ensure that format question adds a question mark if needed"""
-        # Step 1 - Setup env
-        discord_env = config_for_tests.FakeDiscordEnv()
 
         # Step 2 - Call the function
-        new_question = discord_env.conch.format_question("This is a question")
+        new_question = conch.format_question("This is a question")
 
         # Step 3 - Assert that everything works
         assert new_question == "This is a question?"
@@ -49,11 +45,9 @@ class Test_FormatQuestion:
     def test_format_question_yes_mark(self: Self) -> None:
         """Test to ensure that the format question doesn't add a
         question mark when the question ends with a question mark"""
-        # Step 1 - Setup env
-        discord_env = config_for_tests.FakeDiscordEnv()
 
         # Step 2 - Call the function
-        new_question = discord_env.conch.format_question("This is a question?")
+        new_question = conch.format_question("This is a question?")
 
         # Step 3 - Assert that everything works
         assert new_question == "This is a question?"
