@@ -138,9 +138,15 @@ def prepare_deny_embed(message: str) -> discord.Embed:
     Args:
         message (str): The reason for deny
 
+    Raises:
+        ValueError: Raised if an empty message is passed
+
     Returns:
         discord.Embed: The formatted embed
     """
+    if message == "":
+        raise ValueError("An empty message cannot be passed to prepare_embed")
+
     return generate_basic_embed(
         title="😕 👎",
         description=message,
@@ -176,9 +182,15 @@ def prepare_confirm_embed(message: str) -> discord.Embed:
     Args:
         message (str): The reason for confirm
 
+    Raises:
+        ValueError: Raised if an empty message is passed
+
     Returns:
         discord.Embed: The formatted embed
     """
+    if message == "":
+        raise ValueError("An empty message cannot be passed to prepare_embed")
+
     return generate_basic_embed(
         title="😄 👍",
         description=message,
