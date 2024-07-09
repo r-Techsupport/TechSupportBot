@@ -1,11 +1,13 @@
 """This is the core of the IRC bot. It connects to IRC and handles
 message tranmissions to discord"""
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import os
 import threading
-from typing import Dict, List
+from typing import Self
 
 import discord
 import ib3.auth
@@ -16,7 +18,27 @@ from ircrelay import formatting
 
 
 class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
-    """The IRC bot class. This is the class that runs the entire IRC side of the bot"""
+    """The IRC bot class. This is the class that runs the entire IRC side of the bot
+    The class to start the entire IRC bot
+
+    Attrs:
+        irc_cog (commands.relay.DiscordToIRC): The discord cog for the relay,
+            to allow communication between
+        loop (asyncio.AbstractEventLoop): The discord bots event loop
+        console (logging.Logger): The console to print errors to
+        IRC_BOLD (str): The bold character for IRC
+        connection (irc.client.ServerConnection): The IRC connection event
+        join_thread (threading.Timer): The repeating join channel request thread
+        ready (bool): Whether the IRC bot is ready to send messages
+
+    Args:
+        loop (asyncio.AbstractEventLoop): The running event loop for the discord API.
+        server (str): The string server domain/IP
+        port (int): The port the IRC server is running on
+        channels (list[str]): The list of channels to join
+        username (str): The username of the IRC bot account
+        password (str): The password of the IRC bot account
+    """
 
     irc_cog = None
     loop = None
@@ -27,24 +49,15 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
     ready = False
 
     def __init__(
-        self,
+        self: Self,
         loop: asyncio.AbstractEventLoop,
         server: str,
         port: int,
-        channels: List[str],
+        channels: list[str],
         username: str,
         password: str,
     ) -> None:
-        """The function to start the entire IRC bot
 
-        Args:
-            loop (asyncio.AbstractEventLoop): The running event loop for the discord API.
-            server (str): The string server domain/IP
-            port (int): The port the IRC server is running on
-            channels (List[str]): The list of channels to join
-            username (str): The username of the IRC bot account
-            password (str): The password of the IRC bot account
-        """
         self.loop = loop
         super().__init__(
             server_list=[(server, port)],
@@ -58,13 +71,13 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         self.password = password
         self._on_disconnect = self.reconnect_from_disconnect
 
-    def exit_irc(self):
+    def exit_irc(self: Self) -> None:
         """Instatly kills the IRC thread"""
         # pylint: disable=protected-access
         os._exit(1)
 
     def reconnect_from_disconnect(
-        self, connection: irc.client.ServerConnection, event: irc.client.Event
+        self: Self, connection: irc.client.ServerConnection, event: irc.client.Event
     ) -> None:
         """Reconnecting to IRC in the event there is a disconnect
 
@@ -76,7 +89,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         connection.reconnect()
 
     def on_nicknameinuse(
-        self, connection: irc.client.ServerConnection, _: irc.client.Event
+        self: Self, connection: irc.client.ServerConnection, _: irc.client.Event
     ) -> None:
         """A simple way to ensure that the bot will never be reject for an in use nickname
 
@@ -86,7 +99,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         connection.nick(connection.get_nickname() + "_")
 
     def on_welcome(
-        self, connection: irc.client.ServerConnection, _: irc.client.Event
+        self: Self, connection: irc.client.ServerConnection, _: irc.client.Event
     ) -> None:
         """What to do after the connection has been established, but before authentication
         This authenticates using SASL, joins channels, and starts a thread to auto join channels
@@ -102,7 +115,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         self.join_thread = threading.Timer(600, self.join_channels_thread)
         self.join_thread.start()
 
-    def custom_join_channels(self) -> None:
+    def custom_join_channels(self: Self) -> None:
         """Joins all channels from the list of channels in self.join_channel_list"""
         if not self.ready:
             return
@@ -110,7 +123,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
             self.console.info("Joining %s", channel)
             self.connection.join(channel)
 
-    def join_channels_thread(self):
+    def join_channels_thread(self: Self) -> None:
         """A function called by the auto join channel thread
         This restarts the thread, and calls the join channels function
         In the event the bot ever leaves a channel for some reason, like a net split
@@ -123,7 +136,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         self.join_thread.start()
 
     def on_part(
-        self, connection: irc.client.ServerConnection, event: irc.client.Event
+        self: Self, connection: irc.client.ServerConnection, event: irc.client.Event
     ) -> None:
         """How to handle what happens when the bot leaves a channel
 
@@ -135,7 +148,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
             self.custom_join_channels()
 
     def on_privmsg(
-        self, _: irc.client.ServerConnection, event: irc.client.Event
+        self: Self, _: irc.client.ServerConnection, event: irc.client.Event
     ) -> None:
         """What to do when the bot gets DMs on IRC
         Currently just sends a message to the discord bot owners DMs
@@ -149,7 +162,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         )
 
     def on_pubmsg(
-        self, _: irc.client.ServerConnection, event: irc.client.Event
+        self: Self, _: irc.client.ServerConnection, event: irc.client.Event
     ) -> None:
         """What to do when a message is sent in a public channel the bot is in
         If the channel is linked to a discord channel, the message will get sent to discord
@@ -162,22 +175,22 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
             return
         self.send_message_to_discord(split_message=split_message)
 
-    def send_message_to_discord(self, split_message: Dict[str, str]) -> None:
+    def send_message_to_discord(self: Self, split_message: dict[str, str]) -> None:
         """Sends the given message to discord, using the discord API event loop
 
         Args:
-            split_message (Dict[str, str]): The formatted message to send to discord
+            split_message (dict[str, str]): The formatted message to send to discord
         """
         asyncio.run_coroutine_threadsafe(
             self.irc_cog.send_message_from_irc(split_message=split_message), self.loop
         )
 
-    def get_irc_status(self) -> Dict[str, str]:
+    def get_irc_status(self: Self) -> dict[str, str]:
         """Gets the status of the IRC bot
         Returns nicely formatted status, username, and channels
 
         Returns:
-            Dict[str, str]: The dictionary containing the 3 status items as strings
+            dict[str, str]: The dictionary containing the 3 status items as strings
         """
         status_text = self.generate_status_string()
         channels = ", ".join(self.channels.keys())
@@ -189,7 +202,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
             "channels": channels,
         }
 
-    def generate_status_string(self) -> str:
+    def generate_status_string(self: Self) -> str:
         """Generates a human readable status string
         This takes into account the login process, if the connection is active,
         and if the discord side loaded fie
@@ -205,7 +218,9 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
             return "Not connected"
         return "Connected"
 
-    def send_edit_from_discord(self, message: discord.Message, channel: str) -> None:
+    def send_edit_from_discord(
+        self: Self, message: discord.Message, channel: str
+    ) -> None:
         """This handles a discord message being edited
 
         Args:
@@ -218,8 +233,8 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         self.send_message_to_channel(channel=channel, message=formatted_message)
 
     def send_reaction_from_discord(
-        self, reaction: discord.Reaction, user: discord.User, channel: str
-    ):
+        self: Self, reaction: discord.Reaction, user: discord.User, channel: str
+    ) -> None:
         """This handles a discord message getting a reaction added to it
         This does currently not handle the IRC message getting a reaction added to it
 
@@ -236,7 +251,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         self.send_message_to_channel(channel=channel, message=formatted_message)
 
     def send_message_from_discord(
-        self, message: discord.Message, channel: str, content_override: str = None
+        self: Self, message: discord.Message, channel: str, content_override: str = None
     ) -> None:
         """Sends a message from discord to IRC
 
@@ -252,7 +267,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         )
         self.send_message_to_channel(channel=channel, message=formatted_message)
 
-    def send_message_to_channel(self, channel: str, message: str) -> None:
+    def send_message_to_channel(self: Self, channel: str, message: str) -> None:
         """Sends a message to a channel. Splits the message if needed
 
         Args:
@@ -263,7 +278,9 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         for cut_message in message_list:
             self.connection.privmsg(channel, cut_message)
 
-    def on_mode(self, _: irc.client.ServerConnection, event: irc.client.Event) -> None:
+    def on_mode(
+        self: Self, _: irc.client.ServerConnection, event: irc.client.Event
+    ) -> None:
         """What to do when a channel mode is changed
         Currently just handles ban notifications
 
@@ -279,7 +296,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
             message = formatting.parse_ban_message(event=event)
             self.send_message_to_discord(split_message=message)
 
-    def ban_on_irc(self, user: str, channel: str, action: str) -> None:
+    def ban_on_irc(self: Self, user: str, channel: str, action: str) -> None:
         """Ban or unban a given user on the specified IRC channe;
 
         Args:
@@ -289,7 +306,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         """
         self.connection.mode(channel, f"{action} {user}")
 
-    def is_bot_op_on_channel(self, channel_name: str) -> bool:
+    def is_bot_op_on_channel(self: Self, channel_name: str) -> bool:
         """Checking if the bot is an operator on the given channel
 
         Args:

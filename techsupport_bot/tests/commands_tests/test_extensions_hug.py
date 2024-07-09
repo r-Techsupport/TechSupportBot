@@ -3,24 +3,27 @@ This is a file to test the extensions/hug.py file
 This contains 5 tests
 """
 
+from __future__ import annotations
+
 import importlib
+from typing import Self
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from commands import hug
 from core import auxiliary
-from tests import config_for_tests
+from tests import config_for_tests, helpers
 
 
-def setup_local_extension(bot=None):
+def setup_local_extension(bot: helpers.MockBot = None) -> hug.Hugger:
     """A simple function to setup an instance of the hug extension
 
     Args:
-        bot (MockBot, optional): A fake bot object. Should be used if using a
-        fake_discord_env in the test. Defaults to None.
+        bot (helpers.MockBot, optional): A fake bot object. Should be used if using a
+            fake_discord_env in the test. Defaults to None.
 
     Returns:
-        Hugger: The instance of the Hugger class
+        hug.Hugger: The instance of the Hugger class
     """
     with patch("asyncio.create_task", return_value=None):
         return hug.Hugger(bot)
@@ -29,7 +32,7 @@ def setup_local_extension(bot=None):
 class Test_CheckEligibility:
     """A set of tests to test split_nicely"""
 
-    def test_eligible(self):
+    def test_eligible(self: Self) -> None:
         """A test to ensure that when 2 different members are passed, True is returned"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -43,7 +46,7 @@ class Test_CheckEligibility:
         # Step 3 - Assert that everything works
         assert result is True
 
-    def test_ineligible(self):
+    def test_ineligible(self: Self) -> None:
         """A test to ensure that when the same person is passed twice, False is returned"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -61,7 +64,7 @@ class Test_CheckEligibility:
 class Test_GeneratePhrase:
     """A set of tests to test generate_hug_phrase"""
 
-    def test_string_generation(self):
+    def test_string_generation(self: Self) -> None:
         """A test to ensure that string generation is working correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -81,7 +84,7 @@ class Test_HugCommand:
     """A set of tests to test hug_command"""
 
     @pytest.mark.asyncio
-    async def test_failure(self):
+    async def test_failure(self: Self) -> None:
         """A test to ensure that nothing is called when the eligiblity is False"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -104,7 +107,7 @@ class Test_HugCommand:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self: Self) -> None:
         """A test to ensure that send is properly called"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()

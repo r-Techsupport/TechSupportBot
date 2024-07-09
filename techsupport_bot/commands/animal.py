@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from core import auxiliary, cogs
 from discord.ext import commands
@@ -22,7 +22,14 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Animals(cogs.BaseCog):
-    """The class for the animals commands"""
+    """The class for the animals commands
+
+    Attrs:
+        CAT_API_URL (str): The URL for the cat API
+        DOG_API_URL (str): The URL for the dog API
+        FOX_API_URL (str): The URL for the fox API
+        FROG_API_URL (str): The URL for the frog API
+    """
 
     CAT_API_URL = "https://api.thecatapi.com/v1/images/search?limit=1&api_key={}"
     DOG_API_URL = "https://dog.ceo/api/breeds/image/random"
@@ -31,7 +38,7 @@ class Animals(cogs.BaseCog):
 
     @auxiliary.with_typing
     @commands.command(name="cat", brief="Gets a cat", description="Gets a cat")
-    async def cat(self, ctx: commands.Context) -> None:
+    async def cat(self: Self, ctx: commands.Context) -> None:
         """Prints a cat to discord
 
         Args:
@@ -52,7 +59,7 @@ class Animals(cogs.BaseCog):
 
     @auxiliary.with_typing
     @commands.command(name="dog", brief="Gets a dog", description="Gets a dog")
-    async def dog(self, ctx: commands.Context) -> None:
+    async def dog(self: Self, ctx: commands.Context) -> None:
         """Prints a dog to discord
 
         Args:
@@ -63,7 +70,7 @@ class Animals(cogs.BaseCog):
 
     @auxiliary.with_typing
     @commands.command(name="frog", brief="Gets a frog", description="Gets a frog")
-    async def frog(self, ctx: commands.Context) -> None:
+    async def frog(self: Self, ctx: commands.Context) -> None:
         """Prints a frog to discord
 
         Args:
@@ -74,7 +81,7 @@ class Animals(cogs.BaseCog):
 
     @auxiliary.with_typing
     @commands.command(name="fox", brief="Gets a fox", description="Gets a fox")
-    async def fox(self, ctx: commands.Context) -> None:
+    async def fox(self: Self, ctx: commands.Context) -> None:
         """Prints a fox to discord
 
         Args:

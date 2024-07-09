@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 import io
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 import ui
@@ -33,13 +33,13 @@ class ConfigControl(cogs.BaseCog):
         brief="Issues a config command",
         description="Issues a config command",
     )
-    async def config_command(self, ctx) -> None:
+    async def config_command(self: Self, ctx: commands.Context) -> None:
         """The parent config command.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
+        Args:
+            ctx (commands.Context): the context object for the message
         """
 
         # Executed if there are no/invalid args supplied
@@ -53,12 +53,12 @@ class ConfigControl(cogs.BaseCog):
         description="Edits guild config by uploading JSON",
         usage="|uploaded-json|",
     )
-    async def patch_config(self, ctx: commands.Context) -> None:
+    async def patch_config(self: Self, ctx: commands.Context) -> None:
         """Displays the current config to the user.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the message
         """
         config = self.bot.guild_configs[str(ctx.guild.id)]
@@ -123,13 +123,13 @@ class ConfigControl(cogs.BaseCog):
         usage="[extension-name]",
     )
     async def enable_extension(
-        self, ctx: commands.Context, extension_name: str
+        self: Self, ctx: commands.Context, extension_name: str
     ) -> None:
         """Enables an extension for the guild.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the message
             extension_name (str): the extension subname to enable
         """
@@ -173,13 +173,13 @@ class ConfigControl(cogs.BaseCog):
         usage="[extension-name]",
     )
     async def disable_extension(
-        self, ctx: commands.Context, extension_name: str
+        self: Self, ctx: commands.Context, extension_name: str
     ) -> None:
         """Disables an extension for the guild.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the message
             extension_name (str): the extension subname to disable
         """
@@ -224,7 +224,7 @@ class ConfigControl(cogs.BaseCog):
         brief="Resets current guild config",
         description="Resets config to default for the current guild",
     )
-    async def reset_config(self, ctx: commands.Context) -> None:
+    async def reset_config(self: Self, ctx: commands.Context) -> None:
         """A function to reset the current guild config to stock
 
         Args:

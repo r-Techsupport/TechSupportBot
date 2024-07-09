@@ -27,7 +27,11 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Burn(cogs.BaseCog):
-    """Class for Burn command on the discord bot."""
+    """Class for Burn command on the discord bot.
+
+    Attrs:
+        PHRASES (list[str]): The list of phrases to pick from
+    """
 
     PHRASES = [
         "Sick BURN!",
@@ -70,7 +74,7 @@ class Burn(cogs.BaseCog):
         await ctx.send(embed=embed, content=auxiliary.construct_mention_string([user]))
 
     async def burn_command(
-        self, ctx: commands.Context, user_to_match: discord.Member
+        self: Self, ctx: commands.Context, user_to_match: discord.Member
     ) -> None:
         """This the core logic of the burn command
         This is a command and should be accessed via discord
@@ -93,7 +97,9 @@ class Burn(cogs.BaseCog):
         description="Declares the user's last message as a BURN!",
         usage="@user",
     )
-    async def burn(self, ctx: commands.Context, user_to_match: discord.Member) -> None:
+    async def burn(
+        self: Self, ctx: commands.Context, user_to_match: discord.Member
+    ) -> None:
         """The only purpose of this function is to accept input from discord
 
         Args:

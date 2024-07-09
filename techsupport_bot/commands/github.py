@@ -49,6 +49,10 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class IssueCreator(cogs.BaseCog):
     """
     The class that holds the issue commands
+
+    Attrs:
+        GITHUB_API_BASE_URL (str): The URL for the github API
+
     """
 
     GITHUB_API_BASE_URL = "https://api.github.com"
@@ -61,15 +65,17 @@ class IssueCreator(cogs.BaseCog):
         description="Creates a Github issue on the configured bot repo",
         usage="[title] [description]",
     )
-    async def issue(self: Self, ctx, title: str, description: str):
+    async def issue(
+        self: Self, ctx: commands.Context, title: str, description: str
+    ) -> None:
         """Creates an issue in the bot's Github Repo
 
         This is a command and should be accessed via Discord.
 
-        parameters:
-            ctx (discord.ext.Context): the context object for the calling message
-            title: the title of the issue
-            description: the description of the issue
+        Args:
+            ctx (commands.Context): the context object for the calling message
+            title (str): the title of the issue
+            description (str): the description of the issue
         """
 
         if not self.bot.file_config.api.github.api_key:

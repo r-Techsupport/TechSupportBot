@@ -12,7 +12,7 @@ Defines: has_embed_role
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 import munch
@@ -49,8 +49,8 @@ async def has_embed_role(ctx: commands.Context) -> bool:
         ctx (commands.Context): Context of the invokation
 
     Raises:
-        commands.CommandError: Raised if embed_roles isn't set up
-        commands.MissingAnyRole: Raised if the invoker is missing a role
+        CommandError: Raised if embed_roles isn't set up
+        MissingAnyRole: Raised if the invoker is missing a role
 
     Returns:
         bool: Whether the invoker has the role
@@ -90,7 +90,9 @@ class Embedder(cogs.BaseCog):
         + "(see: https://discord.com/developers/docs/resources/channel#embed-object)",
         usage="[keep-succesful-if-one-fails] |embed-list-json-upload|",
     )
-    async def embed(self, ctx: commands.Context, *, keep_option: str = None) -> None:
+    async def embed(
+        self: Self, ctx: commands.Context, *, keep_option: str = None
+    ) -> None:
         """Command to convert an attached .json to an embed
 
         Args:
@@ -164,7 +166,9 @@ class Embedder(cogs.BaseCog):
                 "I couldn't generate all of your embeds, so I gave you a blank slate",
             )
 
-    async def process_request(self, request_body: munch.Munch) -> list[discord.Embed]:
+    async def process_request(
+        self: Self, request_body: munch.Munch
+    ) -> list[discord.Embed]:
         """Returns a list of discord.Embed objects from a request_body
 
         Args:

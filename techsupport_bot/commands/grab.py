@@ -2,16 +2,26 @@
 Module for defining the grabs extension
 """
 
+from __future__ import annotations
+
 import random
+from typing import TYPE_CHECKING, Self
 
 import discord
 import ui
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Setup to add Grab to the config file"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Grab plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
 
     config = extensionconfig.ExtensionConfig()
     config.add(
@@ -33,13 +43,21 @@ async def setup(bot):
     bot.add_extension_config("grab", config)
 
 
-async def invalid_channel(ctx):
-    """
-    A method to check channels against the whitelist
+async def invalid_channel(ctx: commands.Context) -> bool:
+    """A method to check channels against the whitelist
     If the channel is not in the whitelist, the command execution is halted
-
     This is expected to be used in a @commands.check call
+
+    Args:
+        ctx (commands.Context): The context in which the command was run in
+
+    Raises:
+        CommandError: Raised if grabs aren't allowed in the given channel
+
+    Returns:
+        bool: If the grabs are allowed in the channel the command was run in
     """
+
     config = ctx.bot.guild_configs[str(ctx.guild.id)]
     # Check if list is empty. If it is, allow all channels
     if not config.extensions.grab.allowed_channels.value:
@@ -51,9 +69,12 @@ async def invalid_channel(ctx):
 
 
 class Grabber(cogs.BaseCog):
-    """Class for the actual commands"""
+    """Class for the actual commands
 
-    HAS_CONFIG = False
+    Attrs:
+        SEARCH_LIMIT (int): The max amount of messages to search when grabbing
+    """
+
     SEARCH_LIMIT = 20
 
     @auxiliary.with_typing
@@ -65,14 +86,17 @@ class Grabber(cogs.BaseCog):
         description="Grabs a message by ID and saves it",
         usage="[username-or-user-ID]",
     )
-    async def grab_user(self, ctx, user_to_grab: discord.Member):
-        """
-        This is the grab by user function. Accessible by .grab
+    async def grab_user(
+        self: Self, ctx: commands.Context, user_to_grab: discord.Member
+    ) -> None:
+        """This is the grab by user function. Accessible by .grab
         This will only search for 20 messages
 
-        Parameters:
-        user_to_grab: discord.Member. The user to search for grabs from
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+            user_to_grab (discord.Member): The user to search for grabs from
         """
+
         if user_to_grab.bot:
             await auxiliary.send_deny_embed(
                 message="Ain't gonna catch me slipping!", channel=ctx.channel
@@ -130,8 +154,12 @@ class Grabber(cogs.BaseCog):
         brief="Executes a grabs command",
         description="Executes a grabs command",
     )
-    async def grabs(self, ctx):
-        """Makes the .grab command group"""
+    async def grabs(self: Self, ctx: commands.Context) -> None:
+        """The bare .grabs command. This does nothing but generate the help message
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
         # Executed if there are no/invalid args supplied
         await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
@@ -144,8 +172,15 @@ class Grabber(cogs.BaseCog):
         description="Returns all grabbed messages for a user",
         usage="[user]",
     )
-    async def all_grabs(self, ctx, user_to_grab: discord.Member):
-        """Lists all grabs for an user"""
+    async def all_grabs(
+        self: Self, ctx: commands.Context, user_to_grab: discord.Member
+    ) -> None:
+        """Discord command to get a paginated list of all grabs from a given user
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+            user_to_grab (discord.Member): The user to get all the grabs from
+        """
         is_nsfw = ctx.channel.is_nsfw()
 
         config = self.bot.guild_configs[str(ctx.guild.id)]
@@ -216,8 +251,15 @@ class Grabber(cogs.BaseCog):
         + "(note: NSFW messages are filtered by channel settings)",
         usage="[user]",
     )
-    async def random_grab(self, ctx, user_to_grab: discord.Member):
-        """Gets a random grab from an user"""
+    async def random_grab(
+        self: Self, ctx: commands.Context, user_to_grab: discord.Member
+    ) -> None:
+        """Discord command to get a random grab from the given user
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+            user_to_grab (discord.Member): The user to get a random grab from
+        """
 
         if user_to_grab.bot:
             await auxiliary.send_deny_embed(
@@ -238,7 +280,8 @@ class Grabber(cogs.BaseCog):
         ).where(self.bot.models.Grab.guild == str(ctx.guild.id))
 
         if not ctx.channel.is_nsfw():
-            query = query.where(self.bot.models.Grab.nsfw is False)
+            # pylint: disable=C0121
+            query = query.where(self.bot.models.Grab.nsfw == False)
 
         grabs = await query.gino.all()
 
@@ -271,8 +314,19 @@ class Grabber(cogs.BaseCog):
         description="Deleted a specific grab from a user by the message",
         usage="[user] [message]",
     )
-    async def delete_grab(self, ctx, target_user: discord.Member, *, message: str):
-        """Deletes a specific grab from an user"""
+    async def delete_grab(
+        self: Self, ctx: commands.Context, target_user: discord.Member, *, message: str
+    ) -> None:
+        """Deletes a given grab by exact string
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+            target_user (discord.Member): The user to delete a grab from
+            message (str): The exact string of the grab to delete
+
+        Raises:
+            CommandError: Raised if the grab cannot be found for the given user
+        """
         # Stop execution if the invoker isn't the target or an admin
         if (
             not ctx.message.author.id == target_user.id

@@ -1,14 +1,22 @@
 """This contians the view for the periodic application notice to users"""
 
+from __future__ import annotations
+
+from typing import Self
+
 import discord
 
 
 class AppNotice(discord.ui.View):
-    """The view containing a button and message encouraging users to apply"""
+    """The view containing a button and message encouraging users to apply
+
+    Attrs:
+        ICON (str): The Icon for the application reminder
+    """
 
     ICON = "https://icon-icons.com/downloadimage.php?id=14692&root=80/PNG/256/&file=help_15418.png"
 
-    async def send(self, channel: discord.abc.Messageable, message: str) -> None:
+    async def send(self: Self, channel: discord.abc.Messageable, message: str) -> None:
         """The entry point to this function, will send a message to the given channel
 
         Args:
@@ -18,7 +26,7 @@ class AppNotice(discord.ui.View):
         embed = self.build_embed(message)
         await channel.send(embed=embed, view=self)
 
-    def build_embed(self, message: str) -> discord.Embed:
+    def build_embed(self: Self, message: str) -> discord.Embed:
         """This builds the embed portion of the notification
 
         Args:
@@ -43,7 +51,7 @@ class AppNotice(discord.ui.View):
         custom_id="application_button:only",
     )
     async def apply_button(
-        self, interaction: discord.Interaction, button: discord.ui.Button
+        self: Self, interaction: discord.Interaction, button: discord.ui.Button
     ) -> None:
         """This is what happens when the apply now button is pressed
 

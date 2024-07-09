@@ -10,17 +10,28 @@ Subcommands: None
 Defines: get_members_with_role
 """
 
+from __future__ import annotations
+
 import datetime
 import io
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Self
 
 import discord
 import yaml
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Method to add the member command to config."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Members plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(Members(bot=bot))
 
 
@@ -28,14 +39,17 @@ class Members(cogs.BaseCog):
     """Class for the Member command on the discord bot."""
 
     async def get_members_with_role(
-        self, ctx: commands.Context, member_list: list, role_name: str
-    ):
+        self: Self,
+        ctx: commands.Context,
+        member_list: Sequence[discord.Member],
+        role_name: str,
+    ) -> None:
         """
         Gets a list of members with role_name for the invokers guild.
 
         Args:
-            ctx (command.Context): Used to return a message
-            member_list (list): A list of members to parse
+            ctx (commands.Context): Used to return a message
+            member_list (Sequence[discord.Member]): A list of members to parse
             role_name (str): The role to check for
         """
         # All roles are handled using a shorthand for loop because all
@@ -90,7 +104,7 @@ class Members(cogs.BaseCog):
         description="Returns all members with a role",
         usage="[role-name]",
     )
-    async def members(self, ctx: commands.Context, *, role_name: str):
+    async def members(self: Self, ctx: commands.Context, *, role_name: str) -> None:
         """
         Gets members that have a role.
 

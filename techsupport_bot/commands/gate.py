@@ -155,7 +155,6 @@ class ServerGate(cogs.MatchCog):
             but are listed in the gate config roles to be applied
 
         Args:
-            self (Self): _description_
             config (munch.Munch): The config of the guild
             ctx (commands.Context): The context of the message that triggered the gate
 

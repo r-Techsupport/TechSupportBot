@@ -3,7 +3,10 @@ This is a file to test the extensions/mock.py file
 This contains 8 tests
 """
 
+from __future__ import annotations
+
 import importlib
+from typing import Self
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -11,18 +14,18 @@ from commands import mock
 from core import auxiliary
 from hypothesis import given
 from hypothesis.strategies import text
-from tests import config_for_tests
+from tests import config_for_tests, helpers
 
 
-def setup_local_extension(bot=None):
+def setup_local_extension(bot: helpers.MockBot = None) -> mock.Mocker:
     """A simple function to setup an instance of the mock extension
 
     Args:
-        bot (MockBot, optional): A fake bot object. Should be used if using a
-        fake_discord_env in the test. Defaults to None.
+        bot (helpers.MockBot, optional): A fake bot object. Should be used if using a
+            fake_discord_env in the test. Defaults to None.
 
     Returns:
-        Mocker: The instance of the Mocker class
+        mock.Mocker: The instance of the Mocker class
     """
     with patch("asyncio.create_task", return_value=None):
         return mock.Mocker(bot)
@@ -32,7 +35,7 @@ class Test_MockCommand:
     """A set of tests to test mock_command"""
 
     @pytest.mark.asyncio
-    async def test_no_message(self):
+    async def test_no_message(self: Self) -> None:
         """A test to ensure that when no message is found, deny_embed is called"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -56,7 +59,7 @@ class Test_MockCommand:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_send_call(self):
+    async def test_send_call(self: Self) -> None:
         """A test to ensure that ctx.send is called correctly"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -83,7 +86,7 @@ class Test_GenerateMockMessage:
     """A set of tests to test generate_mock_message"""
 
     @pytest.mark.asyncio
-    async def test_no_message_found(self):
+    async def test_no_message_found(self: Self) -> None:
         """A test to ensure that when no message is found, None is returned"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -104,7 +107,7 @@ class Test_GenerateMockMessage:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_message_found(self):
+    async def test_message_found(self: Self) -> None:
         """A test to ensure that when a message is found, prepare_mock_message is called"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -133,7 +136,7 @@ class Test_GenerateMockMessage:
 class Test_GetUser:
     """A set of tests to test get_user_to_mock"""
 
-    def test_with_bot(self):
+    def test_with_bot(self: Self) -> None:
         """A test to ensure that when a bot is mocked, the calling user is mocked instead"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -147,7 +150,7 @@ class Test_GetUser:
         # Step 3 - Assert that everything works
         assert result == discord_env.person1
 
-    def test_without_bot(self):
+    def test_without_bot(self: Self) -> None:
         """A test to ensure that when not a bot is mocked, the same user is returned"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -165,7 +168,7 @@ class Test_GetUser:
 class Test_PrepareMockMessage:
     """A set of tests to test prepare_mock_message"""
 
-    def test_with_set_string(self):
+    def test_with_set_string(self: Self) -> None:
         """A test to ensure that upper/lower works"""
         # Step 1 - Setup env
         mocker = setup_local_extension()
@@ -177,8 +180,12 @@ class Test_PrepareMockMessage:
         assert result == "AbCd"
 
     @given(text())
-    def test_with_random_string(self, input_message):
-        """A property test to ensure that mocked message isn't getting smaller"""
+    def test_with_random_string(self: Self, input_message: str) -> None:
+        """A property test to ensure that mocked message isn't getting smaller
+
+        Args:
+            input_message (str): A random message to to prepare_mock_message with
+        """
         # Step 1 - Setup env
         mocker = setup_local_extension()
 

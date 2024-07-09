@@ -1,12 +1,26 @@
 """Module for the wolfram extension for the discord bot."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding the wolfram configuration to the config file."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Wolfram Alpha plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+
+    Raises:
+        AttributeError: Raised if an API key is missing to prevent unusable commands from loading
+    """
 
     # Don't load without the API key
     try:
@@ -19,7 +33,13 @@ async def setup(bot):
 
 
 class Wolfram(cogs.BaseCog):
-    """Class to set up the wolfram extension."""
+    """Class to set up the wolfram extension.
+
+    Attrs:
+        API_URL (str): The API URL for wolfram
+        ICON_URL (str): The URL for the wolfram icon
+
+    """
 
     API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
     ICON_URL = "https://cdn.icon-icons.com/icons2/2107/PNG/512/file_type_wolfram_icon_130071.png"
@@ -32,8 +52,13 @@ class Wolfram(cogs.BaseCog):
         description="Searches the simple answer Wolfram Alpha API",
         usage="[query]",
     )
-    async def simple_search(self, ctx, *, query: str):
-        """Method to search through the wolfram API."""
+    async def simple_search(self: Self, ctx: commands.Context, *, query: str) -> None:
+        """Makes a search on wolframalpha for the user input query
+
+        Args:
+            ctx (commands.Context): The context which generated the command
+            query (str): The user inputed query to search wolfram for and output the results
+        """
         url = self.API_URL.format(
             self.bot.file_config.api.api_keys.wolfram,
             query,

@@ -10,28 +10,39 @@ Subcommands: .lint
 Defines: check_syntax
 """
 
+from __future__ import annotations
+
 import json
+from typing import TYPE_CHECKING, Self
 
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Method to add the lint command to the bot config"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Linter plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(Lint(bot=bot))
 
 
 class Lint(cogs.BaseCog):
     """Class to add the lint command on the discord bot."""
 
-    async def check_syntax(self, message: discord.Message) -> str:
+    async def check_syntax(self: Self, message: discord.Message) -> str:
         """Checks if the json syntax is valid by trying to load it.
+
         Args:
-            message (discord.Message) - The message to check the json file of
+            message (discord.Message): The message to check the json file of
 
         Returns:
-            (str) - The thrown error
+            str: The thrown error
         """
         # The called method returns JSONDecodeError if the syntax is not valid.
         try:
@@ -46,14 +57,15 @@ class Lint(cogs.BaseCog):
         description="Checks the syntax of an attached json file",
         usage="|json-file|",
     )
-    async def lint(self, ctx: commands.Context):
+    async def lint(self: Self, ctx: commands.Context) -> None:
         """Method to add the lint command to the discord bot.
+
         Args:
-            ctx (commands.Context) - The context in which the command was run
+            ctx (commands.Context): The context in which the command was run
         """
         await self.lint_command(ctx)
 
-    async def lint_command(self, ctx: commands.Context):
+    async def lint_command(self: Self, ctx: commands.Context) -> None:
         """The core logic for the lint command
 
         Args:
@@ -74,11 +86,13 @@ class Lint(cogs.BaseCog):
 
         await auxiliary.send_confirm_embed(message="Syntax is OK", channel=ctx.channel)
 
-    def check_valid_attachments(self, attachments: list) -> bool:
+    def check_valid_attachments(
+        self: Self, attachments: list[discord.Attachment]
+    ) -> bool:
         """A command to check if the attachments on a message are valid for linter
 
         Args:
-            attachments (list): A list of discord.Attachment
+            attachments (list[discord.Attachment]): A list of discord.Attachment
 
         Returns:
             bool: True if valid, False if invalid

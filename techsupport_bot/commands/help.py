@@ -1,7 +1,10 @@
 """Module for custom help commands."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from itertools import product
+from typing import TYPE_CHECKING, Self
 
 import discord
 import ui
@@ -9,11 +12,21 @@ from core import auxiliary, cogs
 from discord import app_commands
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
+
 
 @dataclass
 class PrintableCommand:
     """A custom class to store formatted information about a command
     With a priority on being sortable and searchable
+
+    Attrs:
+        prefix (str): The prefix to call the command with
+        name (str): The command name
+        usage (str): The usage hints for the command
+        description (str): The description of the command
+
     """
 
     prefix: str
@@ -22,15 +35,17 @@ class PrintableCommand:
     description: str
 
 
-async def setup(bot):
-    """Registers the Helper Cog"""
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Helper plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(Helper(bot=bot))
 
 
 class Helper(cogs.BaseCog):
     """Cog object for help commands."""
-
-    EXTENSIONS_PER_GENERAL_PAGE = 15
 
     @commands.command(
         name="help",
@@ -38,14 +53,16 @@ class Helper(cogs.BaseCog):
         description="Searches commands for your query and dispays usage info",
         usage="[search]",
     )
-    async def help_command(self, ctx: commands.Context, search_term: str = "") -> None:
+    async def help_command(
+        self: Self, ctx: commands.Context, search_term: str = ""
+    ) -> None:
         """Main comand interface for getting help with bot commands.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the message
-            search_term (str) [Optional]; The term to search command name and descriptions for.
+            search_term (str, optional): The term to search command name and descriptions for.
                 Will default to empty string
         """
         # Build raw lists of commands
@@ -165,7 +182,7 @@ class Helper(cogs.BaseCog):
         await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
     def build_embeds_from_list(
-        self, commands_list: list[PrintableCommand], search_term: str
+        self: Self, commands_list: list[PrintableCommand], search_term: str
     ) -> list[discord.Embed]:
         """Takes a list of commands and returns a list of embeds ready to be paginated
 

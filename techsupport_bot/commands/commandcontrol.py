@@ -10,7 +10,7 @@ This file contains 2 commands:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from core import auxiliary, cogs
 from discord.ext import commands
@@ -39,7 +39,7 @@ class CommandControl(cogs.BaseCog):
         brief="Executes a commands bot command",
         description="Executes a commands bot command",
     )
-    async def command_group(self, ctx: commands.Context) -> None:
+    async def command_group(self: Self, ctx: commands.Context) -> None:
         """The bare .command command. This does nothing but generate the help message
 
         Args:
@@ -53,13 +53,15 @@ class CommandControl(cogs.BaseCog):
     @command_group.command(
         name="enable", description="Enables a command by name", usage="[command-name]"
     )
-    async def enable_command(self, ctx, *, command_name: str) -> None:
+    async def enable_command(
+        self: Self, ctx: commands.Context, *, command_name: str
+    ) -> None:
         """Enables a command by name.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
+        Args:
+            ctx (commands.Context): the context object for the message
             command_name (str): the name of the command
         """
         command_ = ctx.bot.get_command(command_name)
@@ -86,13 +88,15 @@ class CommandControl(cogs.BaseCog):
     @command_group.command(
         name="disable", description="Disables a command by name", usage="[command-name]"
     )
-    async def disable_command(self, ctx, *, command_name: str) -> None:
+    async def disable_command(
+        self: Self, ctx: commands.Context, *, command_name: str
+    ) -> None:
         """Disables a command by name.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
+        Args:
+            ctx (commands.Context): the context object for the message
             command_name (str): the name of the command
         """
         command_ = ctx.bot.get_command(command_name)

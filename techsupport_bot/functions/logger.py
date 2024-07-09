@@ -1,6 +1,9 @@
 """Module for the logger extension for the discord bot."""
 
+from __future__ import annotations
+
 import datetime
+from typing import TYPE_CHECKING, Self
 
 import discord
 import munch
@@ -8,9 +11,16 @@ from botlogging import LogContext, LogLevel
 from core import cogs, extensionconfig
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding the logger extension to the config file to get info."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Logger plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     config = extensionconfig.ExtensionConfig()
     config.add(
         key="channel_map",
@@ -27,8 +37,18 @@ async def setup(bot):
 class Logger(cogs.MatchCog):
     """Class for the logger to make it to discord."""
 
-    async def match(self, config, ctx, _):
-        """Method to match the logging channel to the map."""
+    async def match(
+        self: Self, config: munch.Munch, ctx: commands.Context, _: str
+    ) -> bool:
+        """Matches any message and checks if it is in a channel with a logger rule
+
+        Args:
+            config (munch.Munch): The config for the guild where the message was sent
+            ctx (commands.Context): The context of the original message
+
+        Returns:
+            bool: Whether the message should be logged or not
+        """
         if isinstance(ctx.channel, discord.Thread):
             if (
                 not str(ctx.channel.parent_id)
@@ -40,8 +60,15 @@ class Logger(cogs.MatchCog):
                 return False
         return True
 
-    async def response(self, config: munch.Munch, ctx: commands.Context, _, __) -> None:
-        """Method to generate the response from the logger."""
+    async def response(
+        self: Self, config: munch.Munch, ctx: commands.Context, _: str, __: bool
+    ) -> None:
+        """If a message should be logged, this logs the message
+
+        Args:
+            config (munch.Munch): The guild config where the message was sent
+            ctx (commands.Context): The context that was generated when the message was sent
+        """
         # Get the ID of the channel, or parent channel in the case of threads
         mapped_id = config.extensions.logger.channel_map.value.get(
             str(getattr(ctx.channel, "parent_id", ctx.channel.id))
@@ -78,7 +105,7 @@ class Logger(cogs.MatchCog):
         embed = self.build_embed(ctx)
         await channel.send(embed=embed, files=attachments[:11])
 
-    def build_embed(self, ctx: commands.Context) -> discord.Embed:
+    def build_embed(self: Self, ctx: commands.Context) -> discord.Embed:
         """Builds the logged messag embed
 
         Args:
@@ -137,7 +164,7 @@ class Logger(cogs.MatchCog):
 
         return embed
 
-    def generate_role_list(self, author: discord.Member) -> list[str]:
+    def generate_role_list(self: Self, author: discord.Member) -> list[str]:
         """Makes a list of role names from the passed member
 
         Args:
@@ -158,7 +185,7 @@ class Logger(cogs.MatchCog):
         return roles
 
     async def build_attachments(
-        self, ctx: commands.Context, config: munch.Munch
+        self: Self, ctx: commands.Context, config: munch.Munch
     ) -> list[discord.File]:
         """Reuploads and builds a list of attachments to send along side the embed
 
@@ -184,7 +211,7 @@ class Logger(cogs.MatchCog):
                         f"Logger did not reupload {lf} file(s) due to file size limit"
                         f" on message {ctx.message.id} in channel {ctx.channel.name}."
                     ),
-                    level=LogLevel.INFO,
+                    level=LogLevel.WARN,
                     channel=log_channel,
                     context=LogContext(guild=ctx.guild, channel=ctx.channel),
                 )
