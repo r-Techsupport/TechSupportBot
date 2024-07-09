@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import io
+
 from typing import TYPE_CHECKING, Self
 
 import discord
@@ -68,6 +69,15 @@ class Who(cogs.BaseCog):
         notes (app_commands.Group): The group for the /note commands
 
     """
+
+    def __init__(self, bot: bot.TechSupportBot, extension_name):
+        super().__init__(bot, extension_name=extension_name)
+        self.ctx_menu = app_commands.ContextMenu(
+            name="Whois",
+            callback=self.get_note_command,
+            extras={"brief": "Gets user data", "usage": "@user", "module": "who"},
+        )
+        self.bot.tree.add_command(self.ctx_menu)
 
     notes = app_commands.Group(
         name="note", description="Command Group for the Notes Extension"
@@ -136,7 +146,7 @@ class Who(cogs.BaseCog):
                 raise app_commands.MissingAnyRole(reader_roles)
             return True
 
-        # Reader_roles are empty (not set)
+        # Reader_roles is empty (not set)
         message = "There aren't any `note_readers` roles set in the config!"
         embed = auxiliary.prepare_deny_embed(message=message)
 
@@ -144,7 +154,6 @@ class Who(cogs.BaseCog):
 
         raise app_commands.AppCommandError(message)
 
-    @app_commands.check(is_reader)
     @app_commands.command(
         name="whois",
         description="Gets Discord user information",
@@ -159,6 +168,18 @@ class Who(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called this command
             user (discord.Member): The member to lookup. Will not work on discord.User
         """
+        await self.get_note_command(interaction, user)
+
+    async def get_note_command(
+        self, interaction: discord.Interaction, user: discord.Member
+    ) -> None:
+        """Method to get notes assigned to a user."""
+        # Check if user is a note reader
+        if not await self.is_reader(interaction):
+            embed = auxiliary.prepare_deny_embed(message="You cannot run whois")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
         embed = discord.Embed(
             title=f"User info for `{user}`",
             description="**Note: this is a bot account!**" if user.bot else "",
