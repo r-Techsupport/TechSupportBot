@@ -100,7 +100,7 @@ jobs:
   containerBuild:
     runs-on: ubuntu-latest
     needs: 
-      - pyTests
+      - pyTest
       - pyLint
       - flake8
       - isort
