@@ -348,7 +348,8 @@ async def handle_dm(message: discord.Message) -> None:
     for regex in AUTOMATIC_REJECTIONS:
         if re.match(regex, message.content):
             await auxiliary.send_deny_embed(
-                message=f"This message cannot be used to start a thread: {AUTOMATIC_REJECTIONS[regex]}",
+                message=f"This message cannot be used to start a "
+                + "thread: {AUTOMATIC_REJECTIONS[regex]}",
                 channel=message.channel,
             )
             return
