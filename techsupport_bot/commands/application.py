@@ -812,6 +812,16 @@ class ApplicationManager(cogs.LoopCog):
 
         await interaction.response.send_message(embed=embed)
 
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+        management_channel = interaction.guild.get_channel(
+            int(config.extensions.application.management_channel.value)
+        )
+
+        embed.set_footer(
+            text=f"Change was requested by: {interaction.user.display_name} ({interaction.user.name})"
+        )
+        await management_channel.send(embed=embed)
+
     # DB Stuff
 
     async def search_for_all_applications(
