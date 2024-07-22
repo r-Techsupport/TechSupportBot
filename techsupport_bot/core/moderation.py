@@ -4,6 +4,7 @@ Do the proper moderative action and return true if successful, false if not."""
 from datetime import timedelta
 
 import discord
+import munch
 
 
 async def ban_user(
@@ -138,6 +139,26 @@ async def unwarn_user(bot, user: discord.Member, warning: str) -> bool:
         return False
     await entry.delete()
     return True
+
+
+async def get_all_warnings(
+    bot, user: discord.User, guild: discord.Guild
+) -> list[munch.Munch]:
+    """Gets a list of all warnings for a specific user in a specific guild
+
+    Args:
+        user (discord.User): The user that we want warns from
+        guild (discord.Guild): The guild that we want warns from
+
+    Returns:
+        list[bot.models.Warning]: The list of all warnings for the user/guild, if any exist
+    """
+    warnings = (
+        await bot.models.Warning.query.where(bot.models.Warning.user_id == str(user.id))
+        .where(bot.models.Warning.guild_id == str(guild.id))
+        .gino.all()
+    )
+    return warnings
 
 
 async def send_command_usage_alert(

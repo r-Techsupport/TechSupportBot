@@ -97,7 +97,7 @@ class ProtectCommands(cogs.BaseCog):
             guild=interaction.guild,
             target=target,
         )
-        embed = self.generate_response_embed(user=target, action="ban", reason=reason)
+        embed = generate_response_embed(user=target, action="ban", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
     @app_commands.checks.has_permissions(ban_members=True)
@@ -148,7 +148,7 @@ class ProtectCommands(cogs.BaseCog):
             guild=interaction.guild,
             target=target,
         )
-        embed = self.generate_response_embed(user=target, action="unban", reason=reason)
+        embed = generate_response_embed(user=target, action="unban", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
     @app_commands.checks.has_permissions(kick_members=True)
@@ -188,7 +188,7 @@ class ProtectCommands(cogs.BaseCog):
             guild=interaction.guild,
             target=target,
         )
-        embed = self.generate_response_embed(user=target, action="kick", reason=reason)
+        embed = generate_response_embed(user=target, action="kick", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
     @app_commands.checks.has_permissions(moderate_members=True)
@@ -266,7 +266,7 @@ class ProtectCommands(cogs.BaseCog):
             guild=interaction.guild,
             target=target,
         )
-        embed = self.generate_response_embed(user=target, action="mute", reason=reason)
+        embed = generate_response_embed(user=target, action="mute", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
     @app_commands.checks.has_permissions(moderate_members=True)
@@ -312,9 +312,7 @@ class ProtectCommands(cogs.BaseCog):
             guild=interaction.guild,
             target=target,
         )
-        embed = self.generate_response_embed(
-            user=target, action="unmute", reason=reason
-        )
+        embed = generate_response_embed(user=target, action="unmute", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
     @app_commands.checks.has_permissions(kick_members=True)
@@ -343,7 +341,8 @@ class ProtectCommands(cogs.BaseCog):
         config = self.bot.guild_configs[str(interaction.guild.id)]
 
         new_count_of_warnings = (
-            len(await self.get_all_warnings(target, interaction.guild)) + 1
+            len(await moderation.get_all_warnings(self.bot, target, interaction.guild))
+            + 1
         )
 
         should_ban = False
@@ -405,7 +404,7 @@ class ProtectCommands(cogs.BaseCog):
             target=target,
         )
 
-        embed = self.generate_response_embed(
+        embed = generate_response_embed(
             user=target,
             action="warn",
             reason=f"{reason} ({new_count_of_warnings} total warnings)",
@@ -474,9 +473,7 @@ class ProtectCommands(cogs.BaseCog):
             guild=interaction.guild,
             target=target,
         )
-        embed = self.generate_response_embed(
-            user=target, action="unwarn", reason=reason
-        )
+        embed = generate_response_embed(user=target, action="unwarn", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
     # Helper functions
@@ -537,50 +534,7 @@ class ProtectCommands(cogs.BaseCog):
 
         return None
 
-    def generate_response_embed(
-        self, user: discord.Member, action: str, reason: str
-    ) -> discord.Embed:
-        """This generates a simple embed to be displayed in the chat where the command was called.
-
-        Args:
-            user (discord.Member): The user who was actioned against
-            action (str): The string representation of the action type
-            reason (str): The reason the action was taken
-
-        Returns:
-            discord.Embed: The formatted embed ready to be sent
-        """
-        embed = discord.Embed(
-            title="Chat Protection", description=f"{action.upper()} `{user}`"
-        )
-        embed.add_field(name="Reason", value=reason)
-        embed.set_thumbnail(url=user.display_avatar.url)
-        embed.color = discord.Color.gold()
-
-        return embed
-
     # Database functions
-
-    async def get_all_warnings(
-        self, user: discord.User, guild: discord.Guild
-    ) -> list[bot.models.Warning]:
-        """Gets a list of all warnings for a specific user in a specific guild
-
-        Args:
-            user (discord.User): The user that we want warns from
-            guild (discord.Guild): The guild that we want warns from
-
-        Returns:
-            list[bot.models.Warning]: The list of all warnings for the user/guild, if any exist
-        """
-        warnings = (
-            await self.bot.models.Warning.query.where(
-                self.bot.models.Warning.user_id == str(user.id)
-            )
-            .where(self.bot.models.Warning.guild_id == str(guild.id))
-            .gino.all()
-        )
-        return warnings
 
     async def get_warning(
         self, user: discord.Member, warning: str
@@ -603,3 +557,26 @@ class ProtectCommands(cogs.BaseCog):
         )
         entry = await query.gino.first()
         return entry
+
+
+def generate_response_embed(
+    user: discord.Member, action: str, reason: str
+) -> discord.Embed:
+    """This generates a simple embed to be displayed in the chat where the command was called.
+
+    Args:
+        user (discord.Member): The user who was actioned against
+        action (str): The string representation of the action type
+        reason (str): The reason the action was taken
+
+    Returns:
+        discord.Embed: The formatted embed ready to be sent
+    """
+    embed = discord.Embed(
+        title="Chat Protection", description=f"{action.upper()} `{user}`"
+    )
+    embed.add_field(name="Reason", value=reason)
+    embed.set_thumbnail(url=user.display_avatar.url)
+    embed.color = discord.Color.gold()
+
+    return embed
