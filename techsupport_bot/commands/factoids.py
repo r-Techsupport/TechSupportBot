@@ -2086,7 +2086,12 @@ class FactoidManager(cogs.MatchCog):
                         )
                     else:
                         matches[factoid_key] = [f"Embed: {match.replace('_', '`_`')}"]
-
+        if len(matches) == 0:
+            embed = auxiliary.prepare_deny_embed(
+                f"No factoids could be found matching `{query}`"
+            )
+            await ctx.send(embed=embed)
+            return
         embeds = []
         embed = discord.Embed(color=discord.Color.green())
         for index, match in enumerate(matches):
