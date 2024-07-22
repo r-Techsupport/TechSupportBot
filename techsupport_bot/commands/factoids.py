@@ -623,6 +623,16 @@ class FactoidManager(cogs.MatchCog):
     async def get_list_of_aliases(
         self: Self, factoid_to_search: str, guild: str
     ) -> list[str]:
+        """Gets an alphabetical list of all ways to call a factoid
+        This will include the internal parent AND all aliases
+
+        Args:
+            factoid_to_search (str): The name of the factoid to search for aliases of
+            guild (str): The guild to search for factoids in
+
+        Returns:
+            list[str]: The list of all ways to call the factoid, including what was passed
+        """
         factoid = await self.get_factoid(factoid_to_search, guild)
         alias_list = [factoid.name]
         factoids = await self.get_all_factoids(guild)
@@ -1981,15 +1991,17 @@ class FactoidManager(cogs.MatchCog):
         # Returns the file
         return yaml_file
 
-    def search_content_and_bold(self, original: str, search_string: str) -> list[str]:
+    def search_content_and_bold(
+        self: Self, original: str, search_string: str
+    ) -> list[str]:
         """Searches a string for a substring and bolds it
 
         Args:
-            original (str): _description_
-            search_string (str): _description_
+            original (str): The original content to search through
+            search_string (str): The string we are searching for
 
         Returns:
-            list[str]: _description_
+            list[str]: Snippets that have been modified with the search string
         """
         # Compile the regular expression for the substring
         pattern = re.compile(re.escape(search_string))
