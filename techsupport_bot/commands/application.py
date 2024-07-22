@@ -818,7 +818,8 @@ class ApplicationManager(cogs.LoopCog):
         )
 
         embed.set_footer(
-            text=f"Change was requested by: {interaction.user.display_name} ({interaction.user.name})"
+            text="Change was requested by: "
+            + f"{interaction.user.display_name} ({interaction.user.name})"
         )
         await management_channel.send(embed=embed)
 
