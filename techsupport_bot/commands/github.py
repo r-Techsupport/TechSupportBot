@@ -66,7 +66,7 @@ class IssueCreator(cogs.BaseCog):
         usage="[title] [description]",
     )
     async def issue(
-        self: Self, ctx: commands.Context, title: str, description: str
+        self: Self, ctx: commands.Context, title: str, description: str = ""
     ) -> None:
         """Creates an issue in the bot's Github Repo
 
@@ -75,7 +75,7 @@ class IssueCreator(cogs.BaseCog):
         Args:
             ctx (commands.Context): the context object for the calling message
             title (str): the title of the issue
-            description (str): the description of the issue
+            description (str, optional): the description of the issue. Defaults to ""
         """
 
         if not self.bot.file_config.api.github.api_key:
