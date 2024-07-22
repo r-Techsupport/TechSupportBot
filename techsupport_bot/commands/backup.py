@@ -3,14 +3,11 @@ Holds only a single slash command"""
 
 from __future__ import annotations
 
-import asyncio
 import csv
-import os
 import zipfile
 from typing import TYPE_CHECKING, Self
 
 import discord
-import munch
 import yaml
 from core import auxiliary, cogs
 from discord import app_commands
@@ -56,7 +53,7 @@ class BackupCommand(cogs.BaseCog):
 
             # Save data to a CSV file
             csv_file = f"{table_name}.csv"
-            with open(csv_file, "w", newline="") as csvfile:
+            with open(csv_file, "w", newline="", encoding="utf-8") as csvfile:
                 if data:
                     fieldnames = (
                         data[0].to_dict().keys()
