@@ -805,7 +805,8 @@ class FactoidManager(cogs.MatchCog):
             return
         # Checks if the first word of the content after the prefix is a valid factoid
         # Replaces \n with spaces so factoid can be called even with newlines
-        query = message_content[1:].replace("\n", " ").split(" ")[0].lower()
+        prefix = config.extensions.factoids.prefix.value
+        query = message_content[len(prefix) :].replace("\n", " ").split(" ")[0].lower()
         try:
             factoid = await self.get_factoid(query, str(ctx.guild.id))
 
