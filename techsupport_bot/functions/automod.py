@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -7,7 +8,6 @@ import discord
 import munch
 from core import cogs
 from discord.ext import commands
-import re
 
 if TYPE_CHECKING:
     import bot
@@ -41,36 +41,27 @@ class AutoModPunishment:
 class AutoMod(cogs.MatchCog):
     async def match(
         self, config: munch.Munch, ctx: commands.Context, content: str
-    ) -> bool:
-        ...
+    ) -> bool: ...
 
     async def response(
         self, config: munch.Munch, ctx: commands.Context, content: str, result: bool
-    ) -> None:
-        ...
+    ) -> None: ...
 
-    async def should_ban_instead_of_warn(self, member: discord.Member) -> bool:
-        ...
+    async def should_ban_instead_of_warn(self, member: discord.Member) -> bool: ...
 
     async def send_automod_alert(
         self, message: discord.Message, violation: AutoModPunishment
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
-def run_all_checks(
-    config, message: discord.Message
-) -> list[AutoModPunishment]:
+def run_all_checks(config, message: discord.Message) -> list[AutoModPunishment]:
     # Automod will only ever be a framework to say something needs to be done
     # Outside of running from the response function, NO ACTION will be taken
     # All checks will return a list of AutoModPunishment, which may be nothing
     ...
 
 
-def run_only_string_checks(
-    config, content: str
-) -> list[AutoModPunishment]:
-    ...
+def run_only_string_checks(config, content: str) -> list[AutoModPunishment]: ...
 
 
 def handle_file_extensions(
@@ -104,9 +95,7 @@ def handle_exact_string(config, content: str) -> list[AutoModPunishment]:
     return violations
 
 
-def handle_regex_string(
-    config, content: str
-) -> list[AutoModPunishment]:
+def handle_regex_string(config, content: str) -> list[AutoModPunishment]:
     violations = []
     for rule in config.extensions.protect.block_strings.value:
         regex = rule.get("regex")
@@ -116,5 +105,7 @@ def handle_regex_string(
             except re.error:
                 match = None
             if match:
-                violations.append(AutoModPunishment(rule.message, rule.delete, rule.warn))
+                violations.append(
+                    AutoModPunishment(rule.message, rule.delete, rule.warn)
+                )
     return violations

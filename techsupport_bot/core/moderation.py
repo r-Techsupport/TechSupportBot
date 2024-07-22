@@ -1,7 +1,6 @@
 """This file will hold the core moderation functions. These functions will:
 Do the proper moderative action and return true if successful, false if not."""
 
-
 from datetime import timedelta
 
 import discord

@@ -103,7 +103,7 @@ class Paster(cogs.MatchCog):
                     message=(
                         f"Protect did not reupload {lf} file(s) due to file size limit."
                     ),
-                    level=LogLevel.INFO,
+                    level=LogLevel.WARNING,
                     channel=log_channel,
                     context=LogContext(guild=ctx.guild, channel=ctx.channel),
                 )

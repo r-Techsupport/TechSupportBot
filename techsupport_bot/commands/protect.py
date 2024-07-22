@@ -17,7 +17,6 @@ Ban logs need to be more centralized:
 Move all config over to specific new files
 """
 
-
 import re
 
 import discord

@@ -50,7 +50,7 @@ class Purger(cogs.BaseCog):
         if amount <= 0 or amount > config.extensions.protect.max_purge_amount.value:
             amount = config.extensions.protect.max_purge_amount.value
 
-        await ctx.channel.purge(limit=amount)
+        await ctx.channel.purge(limit=amount + 1)
 
         await self.send_alert(config, ctx, "Purge command")
 
