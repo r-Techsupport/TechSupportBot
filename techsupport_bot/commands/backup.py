@@ -31,7 +31,7 @@ class BackupCommand(cogs.BaseCog):
     @app_commands.check(auxiliary.bot_admin_check_interaction)
     @app_commands.command(
         name="backup",
-        description="Backs up data into an encrypted zip file",
+        description="Backs up data into a zip file",
         extras={
             "module": "backup",
         },
