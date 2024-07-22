@@ -229,6 +229,7 @@ DISABLE_THREAD_CREATION = None
 MODMAIL_FORUM_ID = None
 MODMAIL_LOG_CHANNEL_ID = None
 AUTOMATIC_RESPONSES = None
+AUTOMATIC_REJECTIONS = None
 ROLES_TO_PING = None
 THREAD_CREATION_MESSAGE = None
 
@@ -343,6 +344,15 @@ async def handle_dm(message: discord.Message) -> None:
         return
 
     # - No thread was found, create one -
+
+    for regex in AUTOMATIC_REJECTIONS:
+        if re.match(regex, message.content):
+            await auxiliary.send_deny_embed(
+                message="This message cannot be used to start a "
+                + f"thread: {AUTOMATIC_REJECTIONS[regex]}",
+                channel=message.channel,
+            )
+            return
 
     if message.author.id in awaiting_confirmation:
         await auxiliary.send_deny_embed(
@@ -843,6 +853,14 @@ async def setup(bot: bot.TechSupportBot) -> None:
     )
 
     config.add(
+        key="automatic_rejections",
+        datatype="dict",
+        title="Modmail auto-rejections",
+        description="If someone sends a message matching regex, blocks thread creation",
+        default={},
+    )
+
+    config.add(
         key="modmail_roles",
         datatype="list",
         title="Roles that can access modmail and its commands",
@@ -909,6 +927,10 @@ class Modmail(cogs.BaseCog):
         # pylint: disable=W0603
         global AUTOMATIC_RESPONSES
         AUTOMATIC_RESPONSES = config.extensions.modmail.automatic_responses.value
+
+        # pylint: disable=W0603
+        global AUTOMATIC_REJECTIONS
+        AUTOMATIC_REJECTIONS = config.extensions.modmail.automatic_rejections.value
 
         # pylint: disable=W0603
         global ROLES_TO_PING
