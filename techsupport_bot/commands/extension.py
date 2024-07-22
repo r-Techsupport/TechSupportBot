@@ -63,9 +63,14 @@ class ExtensionControl(cogs.BaseCog):
             for item in self.bot.extension_name_list
             if item not in config.enabled_extensions
         ]
-        embed = auxiliary.prepare_confirm_embed(
-            message=f"Disabled extensions: {missing_extensions}"
-        )
+        if len(missing_extensions) == 0:
+            embed = auxiliary.prepare_confirm_embed(
+                message="No currently loaded extensions are disabled"
+            )
+        else:
+            embed = auxiliary.prepare_confirm_embed(
+                message=f"Disabled extensions: {missing_extensions}"
+            )
         await interaction.response.send_message(embed=embed)
 
     @commands.check(auxiliary.bot_admin_check_context)
