@@ -194,7 +194,6 @@ def handle_exact_string(config, content: str) -> list[AutoModPunishment]:
         keyword,
         filter_config,
     ) in config.extensions.protect.string_map.value.items():
-        print(filter_config)
         if keyword.lower() in content.lower():
             violations.append(
                 AutoModPunishment(

@@ -4,7 +4,8 @@ import datetime
 from typing import TYPE_CHECKING
 
 import discord
-from core import auxiliary, cogs
+from core import auxiliary, cogs, moderation
+from discord import app_commands
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -26,86 +27,51 @@ class Purger(cogs.BaseCog):
         + "alert_danger_warning_notification_icon_124692.png"
     )
 
-    @commands.has_permissions(manage_messages=True)
-    @commands.bot_has_permissions(manage_messages=True)
-    @commands.group(
-        brief="Executes a purge command",
-        description="Executes a purge command",
+    @app_commands.checks.has_permissions(manage_messages=True)
+    @app_commands.checks.bot_has_permissions(manage_messages=True)
+    @app_commands.command(
+        name="purge",
+        description="Purge by pure duration of messages",
+        extras={"module": "purge"},
     )
-    async def purge(self, ctx):
-        """Method to purge messages in discord."""
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
-
-    @purge.command(
-        name="amount",
-        aliases=["x"],
-        brief="Purges messages by amount",
-        description="Purges the current channel's messages based on amount",
-        usage="[amount]",
-    )
-    async def purge_amount(self, ctx: commands.context, amount: int = 1):
-        """Method to get the amount to purge messages in discord."""
-        config = self.bot.guild_configs[str(ctx.guild.id)]
+    async def purge_command(
+        self,
+        interaction: discord.Interaction,
+        amount: int,
+        duration_minutes: int = None,
+    ):
+        """Method to purge a channel's message up to a time."""
+        config = self.bot.guild_configs[str(interaction.guild.id)]
 
         if amount <= 0 or amount > config.extensions.protect.max_purge_amount.value:
-            amount = config.extensions.protect.max_purge_amount.value
-
-        await ctx.channel.purge(limit=amount + 1)
-
-        await self.send_alert(config, ctx, "Purge command")
-
-    @purge.command(
-        name="duration",
-        aliases=["d"],
-        brief="Purges messages by duration",
-        description="Purges the current channel's messages up to a time",
-        usage="[duration (minutes)]",
-    )
-    async def purge_duration(self, ctx, duration_minutes: int):
-        """Method to purge a channel's message up to a time."""
-        if duration_minutes < 0:
-            await auxiliary.send_deny_embed(
-                message="I can't use that input", channel=ctx.channel
+            embed = auxiliary.prepare_deny_embed(
+                message="This is an invalid amount of messages to purge",
             )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        timestamp = datetime.datetime.utcnow() - datetime.timedelta(
-            minutes=duration_minutes
-        )
-
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-
-        await ctx.channel.purge(
-            after=timestamp, limit=config.extensions.protect.max_purge_amount.value
-        )
-
-        await self.send_alert(config, ctx, "Purge command")
-
-    async def send_alert(self, config, ctx: commands.Context, message: str):
-        """Method to send an alert to the channel about a protect command."""
-        try:
-            alert_channel = ctx.guild.get_channel(
-                int(config.extensions.protect.alert_channel.value)
+        if duration_minutes and duration_minutes < 0:
+            embed = auxiliary.prepare_deny_embed(
+                message="This is an invalid duration",
             )
-        except TypeError:
-            alert_channel = None
-
-        if not alert_channel:
+            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        embed = discord.Embed(title="Protect Alert", description=message)
-
-        if len(ctx.message.content) >= 256:
-            message_content = ctx.message.content[0:256]
+        if duration_minutes:
+            timestamp = datetime.datetime.utcnow() - datetime.timedelta(
+                minutes=duration_minutes
+            )
         else:
-            message_content = ctx.message.content
+            timestamp = None
 
-        embed.add_field(name="Channel", value=f"#{ctx.channel.name}")
-        embed.add_field(name="User", value=ctx.author.mention)
-        embed.add_field(name="Message", value=message_content, inline=False)
-        embed.add_field(name="URL", value=ctx.message.jump_url, inline=False)
+        await interaction.response.send_message("Purge Successful", ephemeral=True)
 
-        embed.set_thumbnail(url=self.ALERT_ICON_URL)
-        embed.color = discord.Color.red()
+        await interaction.channel.purge(after=timestamp, limit=amount)
 
-        await alert_channel.send(embed=embed)
+        await moderation.send_command_usage_alert(
+            bot=self.bot,
+            interaction=interaction,
+            command=f"/purge amount: {amount} duration: {duration_minutes}",
+            guild=interaction.guild,
+            target=interaction.user,
+        )
