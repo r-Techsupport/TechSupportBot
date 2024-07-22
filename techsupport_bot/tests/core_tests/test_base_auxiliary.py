@@ -3,7 +3,10 @@ This is a file to test the base/auxiliary.py file
 This contains 23 tests
 """
 
+from __future__ import annotations
+
 import importlib
+from typing import TYPE_CHECKING, Self
 from unittest.mock import AsyncMock, MagicMock, call
 
 import discord
@@ -11,15 +14,17 @@ import pytest
 from core import auxiliary
 from hypothesis import given
 from hypothesis.strategies import text
+from tests import config_for_tests
 
-from . import config_for_tests
+if TYPE_CHECKING:
+    import helpers
 
 
 class Test_SearchForMessage:
     """A comprehensive set of tests to ensure that search_channel_for_message works"""
 
     @pytest.mark.asyncio
-    async def test_searching_only_content(self):
+    async def test_searching_only_content(self: Self) -> None:
         """Test to ensure that content searching works"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -34,7 +39,7 @@ class Test_SearchForMessage:
         assert message == discord_env.message_person2_noprefix_1
 
     @pytest.mark.asyncio
-    async def test_searching_only_member(self):
+    async def test_searching_only_member(self: Self) -> None:
         """Test to ensure that member searching works"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -49,7 +54,7 @@ class Test_SearchForMessage:
         assert message == discord_env.message_person2_noprefix_1
 
     @pytest.mark.asyncio
-    async def test_searching_content_and_member(self):
+    async def test_searching_content_and_member(self: Self) -> None:
         """Test to ensure that member and content searching works together"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -66,7 +71,7 @@ class Test_SearchForMessage:
         assert message == discord_env.message_person2_noprefix_1
 
     @pytest.mark.asyncio
-    async def test_searching_ignore_prefix(self):
+    async def test_searching_ignore_prefix(self: Self) -> None:
         """Test to ensure that a given prefix is ignored"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -83,7 +88,7 @@ class Test_SearchForMessage:
         assert message is None
 
     @pytest.mark.asyncio
-    async def test_searching_keep_prefix(self):
+    async def test_searching_keep_prefix(self: Self) -> None:
         """Test to ensure that a given prefix is found"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -98,7 +103,7 @@ class Test_SearchForMessage:
         assert message == discord_env.message_person1_prefix
 
     @pytest.mark.asyncio
-    async def test_searching_ignores_bot(self):
+    async def test_searching_ignores_bot(self: Self) -> None:
         """Test to ensure that bot messages are ignored"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -113,7 +118,7 @@ class Test_SearchForMessage:
         assert message is None
 
     @pytest.mark.asyncio
-    async def test_searching_finds_bot(self):
+    async def test_searching_finds_bot(self: Self) -> None:
         """Test to ensure that bot messages are found"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -128,7 +133,7 @@ class Test_SearchForMessage:
         assert message == discord_env.message_person3_noprefix
 
     @pytest.mark.asyncio
-    async def test_searching_member_multiple_messages(self):
+    async def test_searching_member_multiple_messages(self: Self) -> None:
         """Test to ensure that the most recent message is picked, if multiple match the critera"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -151,7 +156,7 @@ class Test_SearchForMessage:
         assert message == discord_env.message_person2_noprefix_2
 
     @pytest.mark.asyncio
-    async def test_searching_by_member_not_first_message(self):
+    async def test_searching_by_member_not_first_message(self: Self) -> None:
         """Test to ensure that the first message is not always picked"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -172,7 +177,7 @@ class Test_SearchForMessage:
         assert message == discord_env.message_person2_noprefix_2
 
     @pytest.mark.asyncio
-    async def test_searching_by_nothing_returns_first_message(self):
+    async def test_searching_by_nothing_returns_first_message(self: Self) -> None:
         """Test to ensure that searching with no critera will always return the first message"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -195,9 +200,15 @@ class Test_SearchForMessage:
 
     @pytest.mark.asyncio
     @given(config_for_tests.rand_history())
-    async def test_find_message_random_history(self, given_history):
+    async def test_find_message_random_history(
+        self: Self, given_history: list[helpers.MockMessage]
+    ) -> None:
         """Test to ensure that given a random history,
-        the find message functions always works as expected"""
+        the find message functions always works as expected
+
+        Args:
+            given_history (list[helpers.MockMessage]): The random message history
+        """
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
         discord_env.channel.message_history = given_history
@@ -221,8 +232,13 @@ class Test_GenerateBasicEmbed:
     """Basic tests to test the generate_basic_embed function"""
 
     @given(text(), text())
-    def test_generate_embed(self, title, description):
-        """Property test to ensure that embeds are generated correctly"""
+    def test_generate_embed(self: Self, title: str, description: str) -> None:
+        """Property test to ensure that embeds are generated correctly
+
+        Args:
+            title (str): The random string to use as a title
+            description (str): The random string to use as a description
+        """
         # Step 2 - Call the function
         embed = auxiliary.generate_basic_embed(
             title=title, description=description, color=discord.Color.random()
@@ -233,7 +249,7 @@ class Test_GenerateBasicEmbed:
         assert embed.description == description
         assert isinstance(embed.color, discord.Color)
 
-    def test_generate_embed_with_url(self):
+    def test_generate_embed_with_url(self: Self) -> None:
         """Test to ensure that the URL property is added correctly"""
         # Step 2 - Call the function
         embed = auxiliary.generate_basic_embed(
@@ -251,7 +267,7 @@ class Test_AddReactions:
     """Basic tests to test add_list_of_reactions"""
 
     @pytest.mark.asyncio
-    async def test_with_one_reaction(self):
+    async def test_with_one_reaction(self: Self) -> None:
         """Test add_list_of_reactions with just 1 emoji"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -268,7 +284,7 @@ class Test_AddReactions:
         )
 
     @pytest.mark.asyncio
-    async def test_with_many_reaction(self):
+    async def test_with_many_reaction(self: Self) -> None:
         """Test add_list_of_reactions with just amny emoji"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -294,7 +310,7 @@ class Test_AddReactions:
 class Test_ConstructMention:
     """A set of test cases to test construct_mention_string"""
 
-    def test_no_users(self):
+    def test_no_users(self: Self) -> None:
         """Test that if no users are passed, the mention string is blank"""
         # Step 2 - Call the function
         output = auxiliary.construct_mention_string([None])
@@ -302,7 +318,7 @@ class Test_ConstructMention:
         # Step 3 - Assert that everything works
         assert output is None
 
-    def test_one_user(self):
+    def test_one_user(self: Self) -> None:
         """Test that if only 1 user is passed, the mention string contains the proper mention"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -313,7 +329,7 @@ class Test_ConstructMention:
         # Step 3 - Assert that everything works
         assert output == discord_env.person1.mention
 
-    def test_two_users(self):
+    def test_two_users(self: Self) -> None:
         """Test that if 2 users are passed, the mention string contains both,
         and is seperated by a space"""
         # Step 1 - Setup env
@@ -327,7 +343,7 @@ class Test_ConstructMention:
         # Step 3 - Assert that everything works
         assert output == f"{discord_env.person1.mention} {discord_env.person2.mention}"
 
-    def test_mulltiple_same_user(self):
+    def test_mulltiple_same_user(self: Self) -> None:
         """Test that is mutliple of the same user is passed, the mention
         string only contains the mention once"""
         # Step 1 - Setup env
@@ -345,7 +361,7 @@ class Test_ConstructMention:
 class Test_DenyEmbed:
     """Tests for prepare_deny_embed and send_deny_embed"""
 
-    def test_prepare_deny(self):
+    def test_prepare_deny(self: Self) -> None:
         """Test that the deny embed is working correctly, and that the parameters are correct"""
         # Step 1 - Setup env
         auxiliary.generate_basic_embed = MagicMock()
@@ -364,7 +380,7 @@ class Test_DenyEmbed:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_send_deny(self):
+    async def test_send_deny(self: Self) -> None:
         """Test that send deny embed sends the right content to the right place"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -385,7 +401,7 @@ class Test_DenyEmbed:
 class Test_ConfirmEmbed:
     """Tests for prepare_confirm_embed and send_confirm_embed"""
 
-    def test_prepare_confirm(self):
+    def test_prepare_confirm(self: Self) -> None:
         """Test that the confirm embed is working correctly, and that the parameters are correct"""
         # Step 1 - Setup env
         auxiliary.generate_basic_embed = MagicMock()
@@ -404,7 +420,7 @@ class Test_ConfirmEmbed:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_send_confirm(self):
+    async def test_send_confirm(self: Self) -> None:
         """Test that send confirm embed sends the right content to the right place"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()

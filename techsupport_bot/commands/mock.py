@@ -1,12 +1,23 @@
 """Module for the mock extension for the discord bot."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding mock config to the config file"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Mock plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(Mocker(bot=bot))
 
 
@@ -21,7 +32,9 @@ class Mocker(cogs.BaseCog):
         description="Mocks the most recent message by a user",
         usage="@user",
     )
-    async def mock(self, ctx: commands.Context, input_user: discord.Member):
+    async def mock(
+        self: Self, ctx: commands.Context, input_user: discord.Member
+    ) -> None:
         """Defines the .mock command on discord
 
         Args:
@@ -30,7 +43,9 @@ class Mocker(cogs.BaseCog):
         """
         await self.mock_command(ctx, input_user)
 
-    async def mock_command(self, ctx: commands.Context, input_user: discord.Member):
+    async def mock_command(
+        self: Self, ctx: commands.Context, input_user: discord.Member
+    ) -> None:
         """The core logic for the mock command
 
         Args:
@@ -60,7 +75,7 @@ class Mocker(cogs.BaseCog):
         await ctx.send(embed=embed)
 
     async def generate_mock_message(
-        self, channel: discord.abc.Messageable, user: discord.Member, prefix: str
+        self: Self, channel: discord.abc.Messageable, user: discord.Member, prefix: str
     ) -> str:
         """Finds a message and converts it into a mock format
 
@@ -83,7 +98,7 @@ class Mocker(cogs.BaseCog):
         return self.prepare_mock_message(message.clean_content)
 
     def get_user_to_mock(
-        self, ctx: commands.Context, input_user: discord.Member
+        self: Self, ctx: commands.Context, input_user: discord.Member
     ) -> discord.Member:
         """Makes sure that the user is to mock is correct..
         This disallows mocking bots and instead makes it mock the invoker
@@ -99,7 +114,7 @@ class Mocker(cogs.BaseCog):
             return ctx.author
         return input_user
 
-    def prepare_mock_message(self, message: str) -> str:
+    def prepare_mock_message(self: Self, message: str) -> str:
         """This turns a string into a uppercase lowercase alternating string
 
         Args:

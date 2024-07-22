@@ -10,21 +10,68 @@ This file contains 4 commands:
     .extension register
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 import discord
 import ui
 from core import auxiliary, cogs
+from discord import app_commands
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Registers the ExtensionControl Cog"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Extension Control plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(ExtensionControl(bot=bot))
 
 
 class ExtensionControl(cogs.BaseCog):
     """
     The class that holds the extension commands
+
+    Attrs:
+        extension_app_command_group (app_commands.Group): The group for the /extension commands
     """
+
+    extension_app_command_group = app_commands.Group(
+        name="extension", description="...", extras={"module": "extension"}
+    )
+
+    @extension_app_command_group.command(
+        name="list_disabled",
+        description="Lists all disabled extensions in the current server",
+        extras={"module": "extension"},
+    )
+    async def list_disabled(self: Self, interaction: discord.Interaction) -> None:
+        """This will read the current guild config and list all the
+        extensions that are currently disabled
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered the slash command
+        """
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+        missing_extensions = [
+            item
+            for item in self.bot.extension_name_list
+            if item not in config.enabled_extensions
+        ]
+        if len(missing_extensions) == 0:
+            embed = auxiliary.prepare_confirm_embed(
+                message="No currently loaded extensions are disabled"
+            )
+        else:
+            embed = auxiliary.prepare_confirm_embed(
+                message=f"Disabled extensions: {missing_extensions}"
+            )
+        await interaction.response.send_message(embed=embed)
 
     @commands.check(auxiliary.bot_admin_check_context)
     @commands.group(
@@ -32,7 +79,7 @@ class ExtensionControl(cogs.BaseCog):
         brief="Executes an extension bot command",
         description="Executes an extension bot command",
     )
-    async def extension_group(self, ctx):
+    async def extension_group(self: Self, ctx: commands.Context) -> None:
         """The bare .extension command. This does nothing but generate the help message
 
         Args:
@@ -48,13 +95,15 @@ class ExtensionControl(cogs.BaseCog):
         description="Gets the status of an extension by name",
         usage="[extension-name]",
     )
-    async def extension_status(self, ctx, *, extension_name: str):
+    async def extension_status(
+        self: Self, ctx: commands.Context, *, extension_name: str
+    ) -> None:
         """Gets the status of an extension.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
+        Args:
+            ctx (commands.Context): the context object for the message
             extension_name (str): the name of the extension
         """
         extensions_status = (
@@ -85,16 +134,21 @@ class ExtensionControl(cogs.BaseCog):
     @extension_group.command(
         name="load", description="Loads an extension by name", usage="[extension-name]"
     )
-    async def load_extension(self, ctx, *, extension_name: str):
+    async def load_extension(
+        self: Self, ctx: commands.Context, *, extension_name: str
+    ) -> None:
         """Loads an extension by filename.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
+        Args:
+            ctx (commands.Context): the context object for the message
             extension_name (str): the name of the extension
         """
-        await ctx.bot.load_extension(f"extensions.{extension_name}")
+        try:
+            await ctx.bot.load_extension(f"functions.{extension_name}")
+        except (ModuleNotFoundError, commands.errors.ExtensionNotFound):
+            await ctx.bot.load_extension(f"commands.{extension_name}")
         await auxiliary.send_confirm_embed(
             message="I've loaded that extension", channel=ctx.channel
         )
@@ -105,16 +159,21 @@ class ExtensionControl(cogs.BaseCog):
         description="Unloads an extension by name",
         usage="[extension-name]",
     )
-    async def unload_extension(self, ctx, *, extension_name: str):
+    async def unload_extension(
+        self: Self, ctx: commands.Context, *, extension_name: str
+    ) -> None:
         """Unloads an extension by filename.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
+        Args:
+            ctx (commands.Context): the context object for the message
             extension_name (str): the name of the extension
         """
-        await ctx.bot.unload_extension(f"extensions.{extension_name}")
+        try:
+            await ctx.bot.unload_extension(f"functions.{extension_name}")
+        except commands.errors.ExtensionNotLoaded:
+            await ctx.bot.unload_extension(f"commands.{extension_name}")
         await auxiliary.send_confirm_embed(
             message="I've unloaded that extension", channel=ctx.channel
         )
@@ -125,13 +184,15 @@ class ExtensionControl(cogs.BaseCog):
         description="Uploads an extension from Discord to be saved on the bot",
         usage="[extension-name] |python-file-upload|",
     )
-    async def register_extension(self, ctx, extension_name: str):
+    async def register_extension(
+        self: Self, ctx: commands.Context, extension_name: str
+    ) -> None:
         """Unloads an extension by filename.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
+        Args:
+            ctx (commands.Context): the context object for the message
             extension_name (str): the name of the extension
         """
         if not ctx.message.attachments:

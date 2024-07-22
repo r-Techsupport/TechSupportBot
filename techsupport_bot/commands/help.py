@@ -1,7 +1,10 @@
-"""Module for custom help commands.
-"""
+"""Module for custom help commands."""
+
+from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import product
+from typing import TYPE_CHECKING, Self
 
 import discord
 import ui
@@ -9,11 +12,21 @@ from core import auxiliary, cogs
 from discord import app_commands
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
+
 
 @dataclass
 class PrintableCommand:
     """A custom class to store formatted information about a command
     With a priority on being sortable and searchable
+
+    Attrs:
+        prefix (str): The prefix to call the command with
+        name (str): The command name
+        usage (str): The usage hints for the command
+        description (str): The description of the command
+
     """
 
     prefix: str
@@ -22,15 +35,17 @@ class PrintableCommand:
     description: str
 
 
-async def setup(bot):
-    """Registers the Helper Cog"""
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Helper plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(Helper(bot=bot))
 
 
 class Helper(cogs.BaseCog):
     """Cog object for help commands."""
-
-    EXTENSIONS_PER_GENERAL_PAGE = 15
 
     @commands.command(
         name="help",
@@ -38,14 +53,16 @@ class Helper(cogs.BaseCog):
         description="Searches commands for your query and dispays usage info",
         usage="[search]",
     )
-    async def help_command(self, ctx: commands.Context, search_term: str = "") -> None:
+    async def help_command(
+        self: Self, ctx: commands.Context, search_term: str = ""
+    ) -> None:
         """Main comand interface for getting help with bot commands.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the message
-            search_term (str) [Optional]; The term to search command name and descriptions for.
+            search_term (str, optional): The term to search command name and descriptions for.
                 Will default to empty string
         """
         # Build raw lists of commands
@@ -64,23 +81,34 @@ class Helper(cogs.BaseCog):
             if issubclass(command.__class__, commands.Group):
                 continue
 
-            # Append the base command to the list
-            all_command_list.append(
-                PrintableCommand(
-                    prefix=command_prefix,
-                    name=command.qualified_name,
-                    usage=command.usage if command.usage else "",
-                    description=command.description,
-                )
-            )
+            # Check if extension is enabled
+            extension_name = self.bot.get_command_extension_name(command)
+            config = self.bot.guild_configs[str(ctx.guild.id)]
+            if extension_name not in config.enabled_extensions:
+                continue
 
-            # Prefix commands can have aliases, so make sure we append those as well
-            parent_name = f"{command.full_parent_name} "
-            for alias in command.aliases:
+            # Deal with aliases by looping through all parent groups and alises
+            # Then, make all permutations and get a string
+            # of all full command names (parents alias)
+            all_lists = []
+            # Loop through all parents
+            for parent in command.parents:
+                all_lists.append(parent.aliases + [parent.name])
+
+            # Since discord.py makes the parents array opposite of how you would call, reverse
+            all_lists.reverse()
+            all_lists.append(command.aliases + [command.name])
+
+            # Use itertools to get all permutations
+            all_permutations = list(product(*all_lists))
+            all_commands = [" ".join(map(str, perm)) for perm in all_permutations]
+
+            # Add all possible permutations to the help menu
+            for command_name in all_commands:
                 all_command_list.append(
                     PrintableCommand(
                         prefix=command_prefix,
-                        name=f"{parent_name.lstrip()}{alias.lstrip()}",
+                        name=command_name,
                         usage=command.usage if command.usage else "",
                         description=command.description,
                     )
@@ -92,6 +120,12 @@ class Helper(cogs.BaseCog):
             if issubclass(command.__class__, app_commands.Group):
                 continue
 
+            # Check if extension is enabled
+            extension_name = command.extras["module"]
+            config = self.bot.guild_configs[str(ctx.guild.id)]
+            if extension_name not in config.enabled_extensions:
+                continue
+
             # We have to manually build a string representation of the usage
             # We are given it in a list
             command_usage = ""
@@ -99,7 +133,7 @@ class Helper(cogs.BaseCog):
                 command_usage += f"[{param.name}] "
 
             # Append the app commands.
-            # App commands cannot have aliases, so no need to thin about that
+            # App commands cannot have aliases, so no need to think about that
             all_command_list.append(
                 PrintableCommand(
                     prefix="/",
@@ -109,8 +143,25 @@ class Helper(cogs.BaseCog):
                 )
             )
 
+        # Deal with special modmail commands, if this is the modmail guild
+        if self.bot.file_config.modmail_config.enable_modmail and ctx.guild.id == int(
+            self.bot.file_config.modmail_config.modmail_guild
+        ):
+            modmail_cog = ctx.bot.get_cog("Modmail")
+            if modmail_cog:
+                modmail_commands = modmail_cog.modmail_commands_list()
+                for command in modmail_commands:
+                    all_command_list.append(
+                        PrintableCommand(
+                            prefix=command[0],
+                            name=command[1],
+                            usage=command[2].strip(),
+                            description=f"Modmail only: {command[3]}",
+                        )
+                    )
+
         # Sort and search the commands
-        sorted_commands = sorted(all_command_list, key=lambda x: x.name)
+        sorted_commands = sorted(all_command_list, key=lambda x: x.name.lower())
         filtered_commands = [
             command
             for command in sorted_commands
@@ -131,7 +182,7 @@ class Helper(cogs.BaseCog):
         await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
     def build_embeds_from_list(
-        self, commands_list: list[PrintableCommand], search_term: str
+        self: Self, commands_list: list[PrintableCommand], search_term: str
     ) -> list[discord.Embed]:
         """Takes a list of commands and returns a list of embeds ready to be paginated
 
@@ -143,14 +194,13 @@ class Helper(cogs.BaseCog):
             list[discord.Embed]: The list of embeds always of at least size 1 ready
                 to be shown to the user
         """
+        title = f"Commands matching `{search_term}`" if search_term else "All commands"
         sublists: list[list[PrintableCommand]] = [
             commands_list[i : i + 10] for i in range(0, len(commands_list), 10)
         ]
         final_embeds: list[discord.Embed] = []
         for command_list in sublists:
-            embed = discord.Embed(
-                title=f"Commands matching `{search_term}`", color=discord.Color.green()
-            )
+            embed = discord.Embed(title=title, color=discord.Color.green())
             for command in command_list:
                 embed.add_field(
                     name=f"{command.prefix}{command.name} {command.usage}",

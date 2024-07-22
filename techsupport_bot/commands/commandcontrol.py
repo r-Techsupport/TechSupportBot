@@ -8,12 +8,23 @@ This file contains 2 commands:
     .command enable
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Registers the CommandControl Cog"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Command Control plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(CommandControl(bot=bot))
 
 
@@ -28,7 +39,7 @@ class CommandControl(cogs.BaseCog):
         brief="Executes a commands bot command",
         description="Executes a commands bot command",
     )
-    async def command_group(self, ctx):
+    async def command_group(self: Self, ctx: commands.Context) -> None:
         """The bare .command command. This does nothing but generate the help message
 
         Args:
@@ -42,13 +53,15 @@ class CommandControl(cogs.BaseCog):
     @command_group.command(
         name="enable", description="Enables a command by name", usage="[command-name]"
     )
-    async def enable_command(self, ctx, *, command_name: str):
+    async def enable_command(
+        self: Self, ctx: commands.Context, *, command_name: str
+    ) -> None:
         """Enables a command by name.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
+        Args:
+            ctx (commands.Context): the context object for the message
             command_name (str): the name of the command
         """
         command_ = ctx.bot.get_command(command_name)
@@ -75,13 +88,15 @@ class CommandControl(cogs.BaseCog):
     @command_group.command(
         name="disable", description="Disables a command by name", usage="[command-name]"
     )
-    async def disable_command(self, ctx, *, command_name: str):
+    async def disable_command(
+        self: Self, ctx: commands.Context, *, command_name: str
+    ) -> None:
         """Disables a command by name.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
+        Args:
+            ctx (commands.Context): the context object for the message
             command_name (str): the name of the command
         """
         command_ = ctx.bot.get_command(command_name)

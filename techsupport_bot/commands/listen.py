@@ -1,9 +1,9 @@
-"""Module for channel listening.
-"""
+"""Module for channel listening."""
+
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 import expiringdict
@@ -14,8 +14,12 @@ if TYPE_CHECKING:
     import bot
 
 
-async def setup(bot):
-    """Method to add burn command to config."""
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Listener plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(Listener(bot=bot))
 
 
@@ -25,74 +29,71 @@ class ListenChannel(commands.Converter):
     This avoids the limitation set by the builtin channel converters.
     """
 
-    async def convert(self, ctx, argument: int):
+    async def convert(
+        self: Self, ctx: commands.Context, argument: int
+    ) -> discord.abc.GuildChannel | discord.abc.PrivateChannel | discord.Thread:
         """Convert method for the converter.
 
-        parameters:
-            ctx (discord.ext.commands.Context): the context object
+        Args:
+            ctx (commands.Context): the context object
             argument (int): the channel ID to convert
+
+        Returns:
+            discord.abc.GuildChannel | discord.abc.PrivateChannel | discord.Thread:
+                The channel object that is associated with the ID
         """
         channel = await ctx.bot.fetch_channel(argument)
         return channel
 
 
-class ListenEmbed(discord.Embed):
-    """Base embed for listen events."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.color = discord.Color.blurple()
-        self.timestamp = datetime.datetime.utcnow()
-
-
-class MessageEmbed(ListenEmbed):
-    """Embed for message events."""
-
-    def __init__(self, *args, **kwargs):
-        message = kwargs.pop("message")
-        super().__init__(*args, **kwargs)
-        self.set_author(
-            name=message.author.name, icon_url=message.author.display_avatar.url
-        )
-
-        self.description = message.clean_content
-        if message.embeds:
-            self.description = f"{self.description} (includes embed)"
-
-        if message.attachments:
-            self.add_field(
-                name="Attachments", value=" ".join(a.url for a in message.attachments)
-            )
-
-        self.set_footer(text=f"#{message.channel.name} - {message.guild}")
-
-
-class InfoEmbed(discord.Embed):
-    """Embed for providing info about listener jobs."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.color = discord.Color.green()
-
-
 class Listener(cogs.BaseCog):
     """Cog object for listening to channels."""
 
-    MAX_DESTINATIONS = 10
-    CACHE_TIME = 60
+    def format_message_in_embed(self: Self, message: discord.Message) -> discord.Embed:
+        """Formats a listened message into a pretty embed
 
-    async def preconfig(self):
+        Args:
+            message (discord.Message): The raw message to format
+
+        Returns:
+            discord.Embed: The stylized embed ready to be sent
+        """
+        embed = auxiliary.generate_basic_embed(description=message.clean_content)
+
+        embed.timestamp = datetime.datetime.utcnow()
+        embed.set_author(
+            name=message.author.name, icon_url=message.author.display_avatar.url
+        )
+
+        if message.embeds:
+            embed.description = f"{embed.description} (includes embed)"
+
+        if message.attachments:
+            embed.add_field(
+                name="Attachments", value=" ".join(a.url for a in message.attachments)
+            )
+
+        embed.set_footer(text=f"#{message.channel.name} - {message.guild}")
+
+        return embed
+
+    async def preconfig(self: Self) -> None:
         """Preconfigures the listener cog."""
         self.destination_cache = expiringdict.ExpiringDict(
             max_len=1000,
             max_age_seconds=1200,
         )
 
-    async def get_destinations(self, src):
+    async def get_destinations(
+        self: Self, src: discord.TextChannel
+    ) -> list[discord.abc.Messageable]:
         """Gets channel object destinations for a given source channel.
 
-        parameters:
+        Args:
             src (discord.TextChannel): the source channel to build for
+
+        Returns:
+            list[discord.abc.Messageable]: The list of destinations to send the listened message to
         """
         destinations = self.destination_cache.get(src.id)
 
@@ -102,11 +103,16 @@ class Listener(cogs.BaseCog):
 
         return destinations
 
-    async def build_destinations_from_src(self, src):
+    async def build_destinations_from_src(
+        self: Self, src: discord.TextChannel
+    ) -> list[discord.abc.Messageable]:
         """Builds channel objects for a given src.
 
-        parameters:
+        Args:
             src (discord.TextChannel): the source channel to build for
+
+        Returns:
+            list[discord.abc.Messageable]: The list of destinations to send the listened message to
         """
         destination_data = await self.get_destination_data(src)
         if not destination_data:
@@ -115,12 +121,15 @@ class Listener(cogs.BaseCog):
         return destinations
 
     async def build_destinations(
-        self, destination_ids: list[int]
+        self: Self, destination_ids: list[int]
     ) -> list[discord.abc.Messageable]:
         """Converts destination ID's to their actual channels objects.
 
-        parameters:
+        Args:
             destination_ids (list[int]): the destination ID's to reference
+
+        Returns:
+            list[discord.abc.Messageable]: The list of destinations to send the listened message to
         """
         destinations = set()
         for did in destination_ids:
@@ -138,11 +147,14 @@ class Listener(cogs.BaseCog):
 
         return destinations
 
-    async def get_destination_data(self, src: discord.TextChannel) -> list[str]:
+    async def get_destination_data(self: Self, src: discord.TextChannel) -> list[str]:
         """Retrieves raw destination data given a source channel.
 
-        parameters:
+        Args:
             src (discord.TextChannel): the source channel to build for
+
+        Returns:
+            list[str]: The list of channel IDs that should have the listened message sent to
         """
         destination_data = await self.bot.models.Listener.query.where(
             self.bot.models.Listener.src_id == str(src.id)
@@ -153,7 +165,7 @@ class Listener(cogs.BaseCog):
         return [listener.dst_id for listener in destination_data]
 
     def build_list_of_sources(
-        self, listeners: list[bot.db.model.Listener]
+        self: Self, listeners: list[bot.db.model.Listener]
     ) -> list[str]:
         """Builds a list of unique sources from the raw database output
 
@@ -168,7 +180,7 @@ class Listener(cogs.BaseCog):
         return final_list
 
     async def get_specific_listener(
-        self, src: discord.TextChannel, dst: discord.TextChannel
+        self: Self, src: discord.TextChannel, dst: discord.TextChannel
     ) -> bot.db.models.Listener:
         """Gets a database object of the given listener pair
 
@@ -188,10 +200,16 @@ class Listener(cogs.BaseCog):
         )
         return listener
 
-    async def get_all_sources(self):
+    async def get_all_sources(
+        self: Self,
+    ) -> dict[discord.abc.Messageable, list[discord.abc.Messageable]]:
         """Gets all source data.
 
         This is kind of expensive, so use lightly.
+
+        Returns:
+            dict[discord.abc.Messageable, list[discord.abc.Messageable]]: A dict of all current
+                listen jobs from and to every channel
         """
         source_objects = []
         all_listens = await self.bot.models.Listener.query.gino.all()
@@ -219,11 +237,11 @@ class Listener(cogs.BaseCog):
         return source_objects
 
     async def update_destinations(
-        self, src: discord.TextChannel, dst: discord.TextChannel
+        self: Self, src: discord.TextChannel, dst: discord.TextChannel
     ) -> None:
         """Updates destinations in Postgres given a src.
 
-        parameters:
+        Args:
             src (discord.TextChannel): the source channel to build for
             dst (discord.TextChannel): the destination channel to build for
         """
@@ -239,10 +257,13 @@ class Listener(cogs.BaseCog):
 
     @commands.check(auxiliary.bot_admin_check_context)
     @commands.group(description="Executes a listen command")
-    async def listen(self, ctx):
+    async def listen(self: Self, ctx: commands.Context) -> None:
         """Command group for listen commands.
 
         This is a command and should be accessed via Discord.
+
+        Args:
+            ctx (commands.Context): the context object for the message
         """
 
         # Executed if there are no/invalid args supplied
@@ -252,13 +273,13 @@ class Listener(cogs.BaseCog):
         description="Starts a listening job", usage="[src-channel] [dst-channel]"
     )
     async def start(
-        self, ctx: commands.Context, src: ListenChannel, dst: ListenChannel
-    ):
+        self: Self, ctx: commands.Context, src: ListenChannel, dst: ListenChannel
+    ) -> None:
         """Executes a start-listening command.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
+        Args:
             ctx (commands.Context): the context object for the message
             src (ListenChannel): the source channel ID
             dst (ListenChannel): the destination channel ID
@@ -286,13 +307,15 @@ class Listener(cogs.BaseCog):
     @listen.command(
         description="Stops a listening job", usage="[src-channel] [dst-channel]"
     )
-    async def stop(self, ctx, src: ListenChannel, dst: ListenChannel):
+    async def stop(
+        self: Self, ctx: commands.Context, src: ListenChannel, dst: ListenChannel
+    ) -> None:
         """Executes a stop-listening command.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
+        Args:
+            ctx (commands.Context): the context object for the message
             src (ListenChannel): the source channel ID
             dst (ListenChannel): the destination channel ID
         """
@@ -319,13 +342,13 @@ class Listener(cogs.BaseCog):
     @listen.command(
         description="Clears all listener jobs",
     )
-    async def clear(self, ctx):
+    async def clear(self: Self, ctx: commands.Context) -> None:
         """Clears all listener registrations.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
+        Args:
+            ctx (commands.Context): the context object for the message
         """
         all_listens = await self.bot.models.Listener.query.gino.all()
         for listener in all_listens:
@@ -339,13 +362,13 @@ class Listener(cogs.BaseCog):
     @listen.command(
         description="Gets listener job registrations",
     )
-    async def jobs(self, ctx):
+    async def jobs(self: Self, ctx: commands.Context) -> None:
         """Gets listener job info.
 
         This is a command and should be accessed via Discord.
 
-        parameters:
-            ctx (discord.ext.Context): the context object for the message
+        Args:
+            ctx (commands.Context): the context object for the message
         """
         source_objects = await self.get_all_sources()
 
@@ -356,8 +379,9 @@ class Listener(cogs.BaseCog):
             )
             return
 
-        embed = InfoEmbed(
+        embed = auxiliary.generate_basic_embed(
             title="Listener Registrations",
+            color=discord.Color.green(),
         )
         for source_obj in source_objects:
             src_ch = source_obj.get("source")
@@ -376,10 +400,10 @@ class Listener(cogs.BaseCog):
         await ctx.send(embed=embed)
 
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
+    async def on_message(self: Self, message: discord.Message) -> None:
         """Listens to message events.
 
-        parameters:
+        Args:
             message (discord.Message): the message that triggered the event
         """
         if message.author.bot:
@@ -390,21 +414,5 @@ class Listener(cogs.BaseCog):
         if not destinations:
             return
         for dst in destinations:
-            embed = MessageEmbed(message=message)
+            embed = self.format_message_in_embed(message=message)
             await dst.send(embed=embed)
-
-    @commands.Cog.listener()
-    async def on_extension_listener_event(self, payload):
-        """Listens for custom extension-based events.
-
-        parameters:
-            payload (dict): the data associated with the event
-        """
-        if not isinstance(getattr(payload, "embed", None), discord.Embed):
-            return
-        if not isinstance(getattr(payload, "channel", None), discord.TextChannel):
-            return
-
-        destinations = await self.get_destinations(payload.channel)
-        for dst in destinations:
-            await dst.send(embed=payload.embed)

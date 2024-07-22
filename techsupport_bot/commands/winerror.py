@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
+import ui
 from core import auxiliary, cogs
 from discord import app_commands
 
@@ -28,9 +29,11 @@ async def setup(bot: bot.TechSupportBot) -> None:
 @dataclass
 class Error:
     """The data to pull for the error.
-    name - the name of the error
-    source - the header file where the error is from
-    description - (optional) the description of the error
+
+    Attrs:
+        name (str): the name of the error
+        source (str): the header file where the error is from
+        description (str): the description of the error
     """
 
     name: str
@@ -41,7 +44,13 @@ class Error:
 @dataclass
 class ErrorCategory:
     """A category of errors, based on how the error was found
-    This contains the name of the category and a list of errors"""
+    This contains the name of the category and a list of errors
+
+    Attrs:
+        name (str): The name of the category of errors
+        errors (list[Error]): The list of errors in the category
+
+    """
 
     name: str
     errors: list[Error]
@@ -50,7 +59,7 @@ class ErrorCategory:
 class WindowsError(cogs.BaseCog):
     """The core of the /winerror extension"""
 
-    async def preconfig(self):
+    async def preconfig(self: Self) -> None:
         """Loads the winerrors.json file as self.errors"""
         errors_file = "resources/winerrors.json"
         with open(errors_file, "r", encoding="utf-8") as file:
@@ -62,7 +71,7 @@ class WindowsError(cogs.BaseCog):
         extras={"module": "winerror"},
     )
     async def winerror(
-        self, interaction: discord.Interaction, search_term: str
+        self: Self, interaction: discord.Interaction, search_term: str
     ) -> None:
         """The heart of the winerror command
         This process in input and calls functions to search for errors
@@ -88,7 +97,7 @@ class WindowsError(cogs.BaseCog):
         upper_sixteen = padded_hex_code[2:6]
         try:
             if int(upper_sixteen[0], 16) > 7:
-                facility_code = int(upper_sixteen, 16) - 0x8000
+                facility_code = int(upper_sixteen, 16) & 0x1FFF
             else:
                 severity = "SUCCESS (0)"
                 facility_code = upper_sixteen
@@ -129,30 +138,40 @@ class WindowsError(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        embed = discord.Embed()
-        embed.title = "Windows error search results"
-        embed.description = f"Search results for `{search_term}`"
-        embed.color = discord.Color.blue()
-
-        cat_count = 1
-        # For every category, add a category header and then
+        embeds = []
+        await interaction.response.defer(ephemeral=False)
         # loop through all errors in the category
-        for category in categories:
-            embed.add_field(
-                name=f"Category {cat_count}", value=category.name, inline=False
+        for category_index, category in enumerate(categories):
+            embed = self.generate_blank_embed(
+                search_term=search_term,
+                category_index=(category_index + 1),
+                category_name=category.name,
             )
-            cat_count += 1
-            for error in category.errors:
+            for error_index, error in enumerate(category.errors):
+                if error_index % 10 == 0 and error_index > 0:
+                    if error_index + 1 == len(category.errors):
+                        continue
+                    embeds.append(embed)
+                    # Create a new embed for the next set of fields
+                    embed = self.generate_blank_embed(
+                        search_term=search_term,
+                        category_index=(category_index + 1),
+                        category_name=category.name,
+                    )
                 embed.add_field(
                     name=f"{error.name} - {error.source}",
                     value=error.description,
                     inline=False,
                 )
+            embeds.append(embed)
 
-        await interaction.response.send_message(embed=embed)
+        # Initialize PaginateView with necessary arguments
+        await ui.PaginateView().send(
+            interaction.channel, interaction.user, embeds, interaction
+        )
 
     def handle_hresult_errors(
-        self, trunc_hex_code: int, severity: str, facility_code: int
+        self: Self, trunc_hex_code: int, severity: str, facility_code: int
     ) -> ErrorCategory:
         """Searches for and returns the hresult errors
 
@@ -184,7 +203,7 @@ class WindowsError(cogs.BaseCog):
             )
         return category
 
-    def handle_decimal_errors(self, decimal_code: int) -> ErrorCategory:
+    def handle_decimal_errors(self: Self, decimal_code: int) -> ErrorCategory:
         """Searches for errors based on a decimal input
 
         Args:
@@ -205,7 +224,7 @@ class WindowsError(cogs.BaseCog):
             )
         return category
 
-    def handle_hex_errors(self, hex_code: int) -> ErrorCategory:
+    def handle_hex_errors(self: Self, hex_code: int) -> ErrorCategory:
         """Searches for errors based on a hex input
 
         Args:
@@ -226,36 +245,46 @@ class WindowsError(cogs.BaseCog):
             )
         return category
 
-    def twos_comp(self, val: int, bits: int) -> int:
-        """compute the 2's complement of int value val"""
-        if val & (1 << (bits - 1)) != 0:  # if sign bit is set e.g., 8bit: 128-255
-            val = val - (1 << bits)  # compute negative value
-        return val
+    def twos_comp(self: Self, original_value: int, bits: int) -> int:
+        """Compute the two's complement of an integer value.
 
-    def reverse_twos_comp(self, val: int, bits: int) -> int:
+        Args:
+            original_value (int): The original integer value.
+            bits (int): How many bits need to be shifted.
+
+        Returns:
+            int: The two's complement of the original integer value.
+        """
+        if (
+            original_value & (1 << (bits - 1)) != 0
+        ):  # if sign bit is set e.g., 8bit: 128-255
+            original_value = original_value - (1 << bits)  # compute negative value
+        return original_value
+
+    def reverse_twos_comp(self: Self, original_value: int, bits: int) -> int:
         """Gets the reverse twos complement for the given input
 
         Args:
-            val (int): The value to find the unsigned value for
+            original_value (int): The value to find the unsigned value for
             bits (int): How many bits need to be shifted
 
         Returns:
             int: The value with a reverse twos complement
         """
-        return (1 << bits) - 1 - ~val
+        return (1 << bits) - 1 - ~original_value
 
-    def try_parse_decimal(self, val: str) -> int:
+    def try_parse_decimal(self: Self, original_value: str) -> int:
         """Parse a string input into a decimal value. If this fails, 0 is returned
 
         Args:
-            val (str): The string input to turn into a decimal
+            original_value (str): The string input to turn into a decimal
 
         Returns:
             int: 0, or the properly converted string
         """
         # check if the target error code is a base 10 integer
         try:
-            return_val = int(val, 10)
+            return_val = int(original_value, 10)
             # Error codes are unsigned. If a negative number is input, the only code we're
             # interested in is the hex equivalent.
             if return_val <= 0:
@@ -266,11 +295,11 @@ class WindowsError(cogs.BaseCog):
 
     # Check if the error code is a valid hex number.
     # Returns 0xFFFF, or CDERR_DIALOGFAILURE upon invalid code.
-    def try_parse_hex(self, val: str) -> int:
+    def try_parse_hex(self: Self, original_value: str) -> int:
         """Parse a string input into a hex value. If this fails, 0xFFFF is returned
 
         Args:
-            val (str): The string input to turn into a hex
+            original_value (str): The string input to turn into a hex
 
         Returns:
             int: 0xFFFF, or the properly converted string
@@ -279,33 +308,57 @@ class WindowsError(cogs.BaseCog):
         try:
             # if the number is a negative decimal number, we need its unsigned hexadecimal
             # equivalent.
-            if int(val, 16) < 0:
-                if abs(int(val)) > 0xFFFFFFFF:
+            if int(original_value, 16) < 0:
+                if abs(int(original_value)) > 0xFFFFFFFF:
                     return 0xFFFF
                 # the integer conversion here is deliberately a base 10 conversion. The command
                 # should fail if a negative hex number is queried.
-                return self.reverse_twos_comp(int(val), 32)
+                return self.reverse_twos_comp(int(original_value), 32)
             # check if the number is larger than 32 bits
-            if abs(int(val, 16)) > 0xFFFFFFFF:
+            if abs(int(original_value, 16)) > 0xFFFFFFFF:
                 return 0xFFFF
 
-            return int(val, 16)
+            return int(original_value, 16)
 
         except ValueError:
             return 0xFFFF
 
-    def pad_hex(self, input: str) -> str:
+    def pad_hex(self: Self, hex_code_input: str) -> str:
         """Pads a hex value
 
         Args:
-            input (str): The input value to add 0s to
+            hex_code_input (str): The input value to add 0s to
 
         Returns:
             str: The padded value
         """
         # this string should never be over 10 characters, however this check is here
         # just in case there's a bug in the code.
-        if len(input) > 10:
+        if len(hex_code_input) > 10:
             return "0xFFFF"
 
-        return "0x" + input[2:].zfill(8)
+        return "0x" + hex_code_input[2:].zfill(8)
+
+    def generate_blank_embed(
+        self: Self, search_term: str, category_index: int, category_name: str
+    ) -> discord.Embed:
+        """Generating an embed for winerror
+
+        Args:
+            search_term (str): The search term user defined
+            category_index (int): The categories index for winerror
+            category_name (str): The name of the categories winerror is searching
+
+        Returns:
+            discord.Embed: Embed with a title description and category
+        """
+        embed = discord.Embed()
+        embed.title = "Windows error search results"
+        embed.description = f"Search results for `{search_term}`"
+        embed.color = discord.Color.blue()
+
+        embed.add_field(
+            name=f"Category {category_index}", value=category_name, inline=False
+        )
+
+        return embed

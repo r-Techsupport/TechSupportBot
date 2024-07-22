@@ -2,13 +2,14 @@
 Defines the wrapper around HTTP calling allow true async, caching, and rate limiting
 This has no commands
 """
+
 from __future__ import annotations
 
 import time
 import urllib
 from collections import deque
 from json import JSONDecodeError
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Self
 from urllib.parse import urlparse
 
 import aiohttp
@@ -25,9 +26,13 @@ class HTTPCalls:
     """
     This requires a class so it can store the bot variable upon setup
     This allows access to the config file and logging
+
+    Args:
+        bot (bot.TechSupportBot): The bot object that will be making http calls.
+            This is only used for access to file_config and nothing more
     """
 
-    def __init__(self, bot: bot.TechSupportBot) -> None:
+    def __init__(self: Self, bot: bot.TechSupportBot) -> None:
         self.bot = bot
         self.http_cache = expiringdict.ExpiringDict(
             max_len=self.bot.file_config.cache.http_cache_length,
@@ -57,6 +62,8 @@ class HTTPCalls:
             "strawpoll.com": (3, 60),
             "api.thecatapi.com": (10, 60),
             "dog.ceo": (10, 60),
+            "frogs.media": (3, 60),
+            "randomfox.ca": (4, 60),
         }
         # For the variable APIs, if they don't exist, don't rate limit them
         try:
@@ -76,17 +83,28 @@ class HTTPCalls:
         except AttributeError:
             print("No linx API URL found. Not rate limiting linx")
 
-    async def http_call(self, method, url, *args, **kwargs):
+    async def http_call(
+        self: Self, method: str, url: str, *args: tuple, **kwargs: dict[str, Any]
+    ) -> munch.Munch:
         """Makes an HTTP request.
 
         By default this returns JSON/dict with the status code injected.
+        use_cache (bool):  True if the GET result should be grabbed from cache
+        get_raw_response (bool): True if the actual response object should be returned
 
-        parameters:
+        Args:
             method (str): the HTTP method to use
             url (str): the URL to call
-            use_cache (bool): True if the GET result should be grabbed from cache
-            get_raw_response (bool): True if the actual response object should be returned
+            *args (tuple): Used to allow any combination of parameters to the API
+            **kwargs (dict[str, Any]): Used to allow any combination of parameters to the API
+
+        Raises:
+            HTTPRateLimit: Raised if the API is currently on cooldown
+
+        Returns:
+            munch.Munch: The munch object containing the response from the API
         """
+
         # Get the URL not the endpoint being called
         ignore_rate_limit = False
         root_url = urlparse(url).netloc
@@ -162,7 +180,7 @@ class HTTPCalls:
                 )
 
     async def process_http_response(
-        self,
+        self: Self,
         response_object: aiohttp.ClientResponse,
         method: str,
         cache_key: str,

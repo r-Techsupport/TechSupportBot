@@ -7,11 +7,20 @@ A rand_history strategy, for property tests that need a message history
 A FakeDiscordEnv for creating a discord environment 100% out of mock ojects
 """
 
+from __future__ import annotations
+
 import random
+from collections.abc import Callable  # pylint: disable=W0611
+from typing import Self
 from unittest.mock import patch
 
 from commands import Burn, Corrector, Emojis, Greeter, MagicConch
-from hypothesis.strategies import composite, integers, text
+from hypothesis.strategies import (  # pylint: disable=W0611
+    SearchStrategy,
+    composite,
+    integers,
+    text,
+)
 
 from .helpers import (
     MockAsset,
@@ -28,10 +37,22 @@ PREFIX = "."
 
 
 @composite
-def rand_history(draw):
+def rand_history(
+    draw: (
+        Callable[[SearchStrategy[int, int]], int] | Callable[[SearchStrategy[str]], str]
+    )
+) -> list[MockMessage]:
     """This is a custom strategy to generate a random message history
     This history, returned as an array, will be 1 to 50 messages of random content
     Some will be by a bot, some will not
+
+    Args:
+        draw (Callable[[SearchStrategy[int, int]], int] | Callable[[SearchStrategy[str]], str]):
+            The strategy used to generate a random history of message.
+            This generates both strings and ints
+
+    Returns:
+        list[MockMessage]: The randomly generated list of messages
     """
     hist_length = draw(integers(1, 10))
     final_history = []
@@ -49,7 +70,7 @@ def rand_history(draw):
 class FakeDiscordEnv:
     """Class to setup the mock discord environment for all the tests"""
 
-    def __init__(self):
+    def __init__(self: Self) -> None:
         # bot objects
         self.bot = MockBot()
 
@@ -59,13 +80,13 @@ class FakeDiscordEnv:
 
         # member objects
         self.person1 = MockMember(
-            bot=False, id=1, name="person1", display_avatar=self.asset1
+            bot=False, input_id=1, name="person1", display_avatar=self.asset1
         )
         self.person2 = MockMember(
-            bot=False, id=2, name="person2", display_avatar=self.asset2
+            bot=False, input_id=2, name="person2", display_avatar=self.asset2
         )
         self.person3_bot = MockMember(
-            bot=True, id=3, name="bot", display_avatar=self.asset1
+            bot=True, input_id=3, name="bot", display_avatar=self.asset1
         )
 
         # attachment objects

@@ -3,26 +3,28 @@ This is a file to test the extensions/linter.py file
 This contains 9 tests
 """
 
+from __future__ import annotations
+
 import importlib
 import json
+from typing import Self
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from commands import linter
 from core import auxiliary
+from tests import config_for_tests, helpers
 
-from . import config_for_tests
 
-
-def setup_local_extension(bot=None):
+def setup_local_extension(bot: helpers.MockBot = None) -> linter.Lint:
     """A simple function to setup an instance of the linter extension
 
     Args:
-        bot (MockBot, optional): A fake bot object. Should be used if using a
-        fake_discord_env in the test. Defaults to None.
+        bot (helpers.MockBot, optional): A fake bot object. Should be used if using a
+            fake_discord_env in the test. Defaults to None.
 
     Returns:
-        Lint: The instance of the Lint class
+        linter.Lint: The instance of the Lint class
     """
     with patch("asyncio.create_task", return_value=None):
         return linter.Lint(bot)
@@ -32,7 +34,7 @@ class Test_CheckSyntax:
     """A set of tests to test check_syntax"""
 
     @pytest.mark.asyncio
-    async def test_no_error(self):
+    async def test_no_error(self: Self) -> None:
         """A test to ensure that nothing is retuend when there is no error"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -46,7 +48,7 @@ class Test_CheckSyntax:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_yes_error(self):
+    async def test_yes_error(self: Self) -> None:
         """A test to ensure that something is returned when there is an error"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -66,7 +68,7 @@ class Test_LintCommand:
     """A set of tests to set lint_command"""
 
     @pytest.mark.asyncio
-    async def test_failed_valid_attachments(self):
+    async def test_failed_valid_attachments(self: Self) -> None:
         """A test to ensure deny embed is called when invalid attachments"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -88,7 +90,7 @@ class Test_LintCommand:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_failed_check_syntax(self):
+    async def test_failed_check_syntax(self: Self) -> None:
         """A test to ensure deny embed is called when invalid attachments"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -111,7 +113,7 @@ class Test_LintCommand:
         importlib.reload(auxiliary)
 
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self: Self) -> None:
         """A test to ensure confirm embed is called if everything is good"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -137,7 +139,7 @@ class Test_LintCommand:
 class Test_CheckAttachments:
     """A set of tests to test check_valid_attachments"""
 
-    def test_no_attachments(self):
+    def test_no_attachments(self: Self) -> None:
         """A test to ensure that False is returned if run without attachments"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -149,7 +151,7 @@ class Test_CheckAttachments:
         # Step 3 - Assert that everything works
         assert not result
 
-    def test_two_attachments(self):
+    def test_two_attachments(self: Self) -> None:
         """A test to ensure that False is returned if run with more than 1 attachment"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -163,7 +165,7 @@ class Test_CheckAttachments:
         # Step 3 - Assert that everything works
         assert not result
 
-    def test_non_json(self):
+    def test_non_json(self: Self) -> None:
         """A test to ensure that False is returned if run without json attachments"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()
@@ -175,7 +177,7 @@ class Test_CheckAttachments:
         # Step 3 - Assert that everything works
         assert not result
 
-    def test_one_json(self):
+    def test_one_json(self: Self) -> None:
         """A test to ensure that True is returned if run with 1 json attachment"""
         # Step 1 - Setup env
         discord_env = config_for_tests.FakeDiscordEnv()

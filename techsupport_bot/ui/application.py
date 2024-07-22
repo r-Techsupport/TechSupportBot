@@ -1,6 +1,9 @@
 """This is the ui object for the popup application form"""
 
+from __future__ import annotations
+
 import traceback
+from typing import Self
 
 import discord
 
@@ -8,6 +11,10 @@ import discord
 class Application(discord.ui.Modal, title="Staff interest form"):
     """The class contianing the modal and all variables for it
     This must be sent as a response to an interaction, cannot be from a prefix command
+
+    Attrs:
+        background (discord.ui.TextInput): The background question for the application
+        reason (discord.ui.TextInput): The reason question for the application
     """
 
     background = discord.ui.TextInput(
@@ -24,7 +31,7 @@ class Application(discord.ui.Modal, title="Staff interest form"):
         max_length=300,
     )
 
-    async def on_submit(self, interaction: discord.Interaction) -> None:
+    async def on_submit(self: Self, interaction: discord.Interaction) -> None:
         """What happens when the form has been successfully submitted
 
         Args:
@@ -34,7 +41,7 @@ class Application(discord.ui.Modal, title="Staff interest form"):
         return
 
     async def on_error(
-        self, interaction: discord.Interaction, error: Exception
+        self: Self, interaction: discord.Interaction, error: Exception
     ) -> None:
         """What happens if there is an error in the application processing
 
