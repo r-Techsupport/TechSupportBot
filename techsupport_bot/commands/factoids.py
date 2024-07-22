@@ -620,6 +620,27 @@ class FactoidManager(cogs.MatchCog):
 
         return factoid
 
+    async def get_list_of_aliases(
+        self: Self, factoid_to_search: str, guild: str
+    ) -> list[str]:
+        """Gets an alphabetical list of all ways to call a factoid
+        This will include the internal parent AND all aliases
+
+        Args:
+            factoid_to_search (str): The name of the factoid to search for aliases of
+            guild (str): The guild to search for factoids in
+
+        Returns:
+            list[str]: The list of all ways to call the factoid, including what was passed
+        """
+        factoid = await self.get_factoid(factoid_to_search, guild)
+        alias_list = [factoid.name]
+        factoids = await self.get_all_factoids(guild)
+        for test_factoid in factoids:
+            if test_factoid.alias and test_factoid.alias == factoid.name:
+                alias_list.append(test_factoid.name)
+        return sorted(alias_list)
+
     # -- Adding and removing factoids --
 
     async def add_factoid(
@@ -1970,13 +1991,44 @@ class FactoidManager(cogs.MatchCog):
         # Returns the file
         return yaml_file
 
+    def search_content_and_bold(
+        self: Self, original: str, search_string: str
+    ) -> list[str]:
+        """Searches a string for a substring and bolds it
+
+        Args:
+            original (str): The original content to search through
+            search_string (str): The string we are searching for
+
+        Returns:
+            list[str]: Snippets that have been modified with the search string
+        """
+        # Compile the regular expression for the substring
+        pattern = re.compile(re.escape(search_string))
+        matches = list(pattern.finditer(original))
+
+        matches_list = []
+
+        # Print all instances with 20 characters before and after each occurrence
+        for match in matches:
+            start = max(match.start() - 20, 0)
+            end = min(match.end() + 20, len(original))
+            context = original[start:end]
+            # Replace the substring in the context with the formatted version
+            context_with_formatting = context.replace(
+                search_string, f"**{search_string}**"
+            )
+            matches_list.append(context_with_formatting.replace("****", ""))
+
+        return matches_list
+
     @auxiliary.with_typing
     @commands.guild_only()
     @factoid.command(
         aliases=["find"],
         brief="Searches a factoid",
         description="Searches a factoid by name and contents",
-        usage="[optional-flag]",
+        usage="[search-query]",
     )
     async def search(self: Self, ctx: commands.Context, *, query: str) -> None:
         """Commands to search a factoid
@@ -1996,54 +2048,60 @@ class FactoidManager(cogs.MatchCog):
             return
 
         factoids = await self.get_all_factoids(guild, list_hidden=False)
-        # Makes query lowercase, makes sure you can't search for JSON elements
-        embed = discord.Embed(color=discord.Color.green())
-        num_of_matches = 0
+        matches = {}
 
-        # - Name matches -
-        name_matches = "`"
         for factoid in factoids:
-            # Hard limit of 10
-            if num_of_matches > 10:
-                name_matches = name_matches[:-2] + " more...---"
-                break
+            factoid_key = ", ".join(await self.get_list_of_aliases(factoid.name, guild))
+            if query in factoid.name.lower():
+                if factoid_key in matches:
+                    matches[factoid_key].append(
+                        f"Name: {factoid.name.lower().replace(query, f'**{query}**')}"
+                    )
+                else:
+                    matches[factoid_key] = [
+                        f"Name: {factoid.name.lower().replace(query, f'**{query}**')}"
+                    ]
 
-            if not factoid.alias and query in factoid.name.lower():
-                name_matches += f"{factoid.name}`, `"
-                num_of_matches += 1
+            if query in factoid.message.lower():
+                matches_list = self.search_content_and_bold(
+                    factoid.message.lower(), query
+                )
+                for match in matches_list:
+                    if factoid_key in matches:
+                        matches[factoid_key].append(f"Content: {match}")
+                    else:
+                        matches[factoid_key] = [f"Content: {match}"]
 
-        if name_matches == "`":
-            name_matches = "No matches found!, `"
-
-        # Adds name matches to the embed
-        embed.add_field(name="Name matches", value=name_matches[:-3], inline=False)
-
-        # - Content matches -
-        num_of_matches = 0
-        content_matches = "`"
-        for factoid in factoids:
-            # Hard limit of 10
-            if num_of_matches > 10:
-                content_matches = content_matches[:-2] + " more...---"
-                break
-
-            if factoid.embed_config is not None and (
-                any(word in factoid.embed_config.lower() for word in query.split())
-                or any(word in factoid.message.lower() for word in query.split())
+            if (
+                factoid.embed_config is not None
+                and query in factoid.embed_config.lower()
             ):
-                content_matches += f"{factoid.name}`, `"
-                num_of_matches += 1
+                matches_list = self.search_content_and_bold(
+                    factoid.embed_config.lower(), query
+                )
+                for match in matches_list:
+                    if factoid_key in matches:
+                        matches[factoid_key].append(
+                            f"Embed: {match.replace('_', '`_`')}"
+                        )
+                    else:
+                        matches[factoid_key] = [f"Embed: {match.replace('_', '`_`')}"]
+        if len(matches) == 0:
+            embed = auxiliary.prepare_deny_embed(
+                f"No factoids could be found matching `{query}`"
+            )
+            await ctx.send(embed=embed)
+            return
+        embeds = []
+        embed = discord.Embed(color=discord.Color.green())
+        for index, match in enumerate(matches):
+            if index > 0 and index % 10 == 0:
+                embeds.append(embed)
+                embed = discord.Embed(color=discord.Color.green())
+            embed.add_field(name=match, value="\n".join(matches.get(match)))
 
-        if content_matches == "`":
-            content_matches = "No matches found!   "
-
-        # Adds content matches to the embed
-        embed.add_field(
-            name="Content matches", value=content_matches[:-3], inline=False
-        )
-
-        # Finally, send the embed
-        await ctx.send(embed=embed)
+        embeds.append(embed)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
     @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)
