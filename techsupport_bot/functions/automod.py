@@ -7,6 +7,7 @@ import discord
 import munch
 from core import cogs
 from discord.ext import commands
+import re
 
 if TYPE_CHECKING:
     import bot
@@ -58,7 +59,7 @@ class AutoMod(cogs.MatchCog):
 
 
 def run_all_checks(
-    guild: discord.Guild, config, message: discord.Message
+    config, message: discord.Message
 ) -> list[AutoModPunishment]:
     # Automod will only ever be a framework to say something needs to be done
     # Outside of running from the response function, NO ACTION will be taken
@@ -67,7 +68,7 @@ def run_all_checks(
 
 
 def run_only_string_checks(
-    guild: discord.Guild, config, content: str
+    config, content: str
 ) -> list[AutoModPunishment]:
     ...
 
@@ -104,6 +105,16 @@ def handle_exact_string(config, content: str) -> list[AutoModPunishment]:
 
 
 def handle_regex_string(
-    guild: discord.Guild, config, content: str
+    config, content: str
 ) -> list[AutoModPunishment]:
-    ...
+    violations = []
+    for rule in config.extensions.protect.block_strings.value:
+        regex = rule.get("regex")
+        if regex:
+            try:
+                match = re.search(regex, content)
+            except re.error:
+                match = None
+            if match:
+                violations.append(AutoModPunishment(rule.message, rule.delete, rule.warn))
+    return violations
