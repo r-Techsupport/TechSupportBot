@@ -817,6 +817,7 @@ class ApplicationManager(cogs.LoopCog):
             int(config.extensions.application.management_channel.value)
         )
 
+        embed.description = confirm_message + f"\n{message}"
         embed.set_footer(
             text="Change was requested by: "
             + f"{interaction.user.display_name} ({interaction.user.name})"
