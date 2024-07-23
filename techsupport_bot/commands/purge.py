@@ -6,7 +6,7 @@ import datetime
 from typing import TYPE_CHECKING, Self
 
 import discord
-from core import auxiliary, cogs, moderation
+from core import auxiliary, cogs, extensionconfig, moderation
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -19,7 +19,16 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    await bot.add_cog(Purger(bot=bot))
+    config = extensionconfig.ExtensionConfig()
+    config.add(
+        key="max_purge_amount",
+        datatype="int",
+        title="Max Purge Amount",
+        description="The max amount of messages allowed to be purged in one command",
+        default=50,
+    )
+    await bot.add_cog(Purger(bot=bot, extension_name="purge"))
+    bot.add_extension_config("purge", config)
 
 
 class Purger(cogs.BaseCog):
@@ -47,7 +56,7 @@ class Purger(cogs.BaseCog):
         """
         config = self.bot.guild_configs[str(interaction.guild.id)]
 
-        if amount <= 0 or amount > config.extensions.protect.max_purge_amount.value:
+        if amount <= 0 or amount > config.extensions.purge.max_purge_amount.value:
             embed = auxiliary.prepare_deny_embed(
                 message="This is an invalid amount of messages to purge",
             )

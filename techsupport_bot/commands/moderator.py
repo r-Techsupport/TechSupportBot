@@ -10,7 +10,7 @@ import discord
 import ui
 from botlogging import LogContext, LogLevel
 from commands import modlog
-from core import auxiliary, cogs, moderation
+from core import auxiliary, cogs, extensionconfig, moderation
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -23,7 +23,25 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    await bot.add_cog(ProtectCommands(bot=bot))
+    config = extensionconfig.ExtensionConfig()
+    config.add(
+        key="immune_roles",
+        datatype="list",
+        title="Immune role names",
+        description="The list of role names that are immune to protect commands",
+        default=[],
+    )
+    config.add(
+        key="ban_delete_duration",
+        datatype="int",
+        title="Ban delete duration (days)",
+        description=(
+            "The amount of days to delete messages for a user after they are banned"
+        ),
+        default=7,
+    )
+    await bot.add_cog(ProtectCommands(bot=bot, extension_name="moderator"))
+    bot.add_extension_config("moderator", config)
 
 
 class ProtectCommands(cogs.BaseCog):
@@ -76,7 +94,7 @@ class ProtectCommands(cogs.BaseCog):
 
         if not delete_days:
             config = self.bot.guild_configs[str(interaction.guild.id)]
-            delete_days = config.extensions.protect.ban_delete_duration.value
+            delete_days = config.extensions.moderator.ban_delete_duration.value
 
         # Ban the user using the core moderation cog
         result = await moderation.ban_user(
@@ -407,12 +425,12 @@ class ProtectCommands(cogs.BaseCog):
         )
 
         should_ban = False
-        if new_count_of_warnings >= config.extensions.protect.max_warnings.value:
+        if new_count_of_warnings >= config.moderation.max_warnings:
             await interaction.response.defer(ephemeral=False)
             view = ui.Confirm()
             await view.send(
                 message="This user has exceeded the max warnings of "
-                + f"{config.extensions.protect.max_warnings.value}. Would "
+                + f"{config.moderation.max_warnings}. Would "
                 + "you like to ban them instead?",
                 channel=interaction.channel,
                 author=interaction.user,
@@ -430,10 +448,10 @@ class ProtectCommands(cogs.BaseCog):
             ban_result = await moderation.ban_user(
                 guild=interaction.guild,
                 user=target,
-                delete_days=config.extensions.protect.ban_delete_duration.value,
+                delete_days=config.extensions.moderator.ban_delete_duration.value,
                 reason=(
                     f"Over max warning count {new_count_of_warnings} out of"
-                    f" {config.extensions.protect.max_warnings.value} (final warning:"
+                    f" {config.moderation.max_warnings} (final warning:"
                     f" {reason}) - banned by {interaction.user}"
                 ),
             )
@@ -686,7 +704,7 @@ class ProtectCommands(cogs.BaseCog):
             return None
 
         # Check to see if target has any immune roles
-        for name in config.extensions.protect.immune_roles.value:
+        for name in config.extensions.moderator.immune_roles.value:
             role_check = discord.utils.get(target.guild.roles, name=name)
             if role_check and role_check in getattr(target, "roles", []):
                 return (

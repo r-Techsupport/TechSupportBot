@@ -197,9 +197,7 @@ async def send_command_usage_alert(
     config = bot_object.guild_configs[str(guild.id)]
 
     try:
-        alert_channel = guild.get_channel(
-            int(config.extensions.protect.alert_channel.value)
-        )
+        alert_channel = guild.get_channel(int(config.moderation.alert_channel))
     except TypeError:
         alert_channel = None
 

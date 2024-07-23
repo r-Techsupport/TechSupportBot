@@ -7,7 +7,7 @@ import re
 from typing import TYPE_CHECKING, Self
 
 import discord
-from core import auxiliary, cogs, moderation
+from core import auxiliary, cogs, extensionconfig
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -20,7 +20,16 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    await bot.add_cog(Report(bot=bot))
+    config = extensionconfig.ExtensionConfig()
+    config.add(
+        key="alert_channel",
+        datatype="int",
+        title="Alert channel ID",
+        description="The ID of the channel to send auto-protect alerts to",
+        default=None,
+    )
+    await bot.add_cog(Report(bot=bot, extension_name="report"))
+    bot.add_extension_config("report", config)
 
 
 class Report(cogs.BaseCog):
@@ -85,7 +94,7 @@ class Report(cogs.BaseCog):
 
         try:
             alert_channel = interaction.guild.get_channel(
-                int(config.extensions.protect.alert_channel.value)
+                int(config.extensions.report.alert_channel.value)
             )
         except TypeError:
             alert_channel = None

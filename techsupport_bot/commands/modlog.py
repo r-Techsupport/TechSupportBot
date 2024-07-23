@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Self
 import discord
 import munch
 import ui
-from core import auxiliary, cogs
+from core import auxiliary, cogs, extensionconfig
 from discord import app_commands
 from discord.ext import commands
 
@@ -23,7 +23,16 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
+    config = extensionconfig.ExtensionConfig()
+    config.add(
+        key="alert_channel",
+        datatype="int",
+        title="Alert channel ID",
+        description="The ID of the channel to send auto-protect alerts to",
+        default=None,
+    )
     await bot.add_cog(BanLogger(bot=bot, extension_name="modlog"))
+    bot.add_extension_config("modlog", config)
 
 
 class BanLogger(cogs.BaseCog):
@@ -278,7 +287,7 @@ async def log_ban(
 
     try:
         alert_channel = guild.get_channel(
-            int(config.extensions.protect.alert_channel.value)
+            int(config.extensions.modlog.alert_channel.value)
         )
     except TypeError:
         alert_channel = None
@@ -322,7 +331,7 @@ async def log_unban(
 
     try:
         alert_channel = guild.get_channel(
-            int(config.extensions.protect.alert_channel.value)
+            int(config.extensions.modlog.alert_channel.value)
         )
     except TypeError:
         alert_channel = None

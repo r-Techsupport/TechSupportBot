@@ -11,7 +11,7 @@ import discord
 import munch
 from botlogging import LogContext, LogLevel
 from commands import moderator, modlog
-from core import cogs, moderation
+from core import cogs, extensionconfig, moderation
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -24,7 +24,62 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
+    config = extensionconfig.ExtensionConfig()
+    config.add(
+        key="channels",
+        datatype="list",
+        title="Protected channels",
+        description=(
+            "The list of channel ID's associated with the channels to auto-protect"
+        ),
+        default=[],
+    )
+    config.add(
+        key="bypass_roles",
+        datatype="list",
+        title="Bypassed role names",
+        description=(
+            "The list of role names associated with bypassed roles by the auto-protect"
+        ),
+        default=[],
+    )
+    config.add(
+        key="string_map",
+        datatype="dict",
+        title="Keyword string map",
+        description=(
+            "Mapping of keyword strings to data defining the action taken by"
+            " auto-protect"
+        ),
+        default={},
+    )
+    config.add(
+        key="banned_file_extensions",
+        datatype="dict",
+        title="List of banned file types",
+        description=(
+            "A list of all file extensions to be blocked and have a auto warning issued"
+        ),
+        default=[],
+    )
+    config.add(
+        key="alert_channel",
+        datatype="int",
+        title="Alert channel ID",
+        description="The ID of the channel to send auto-protect alerts to",
+        default=None,
+    )
+    config.add(
+        key="max_mentions",
+        datatype="int",
+        title="Max message mentions",
+        description=(
+            "Max number of mentions allowed in a message before triggering auto-protect"
+        ),
+        default=3,
+    )
     await bot.add_cog(AutoMod(bot=bot, extension_name="automod"))
+    bot.add_extension_config("automod", config)
 
 
 @dataclass
@@ -81,9 +136,9 @@ class AutoMod(cogs.MatchCog):
         Returns:
             bool: Whether the message should be inspected for automod violations
         """
-        if not str(ctx.channel.id) in config.extensions.protect.channels.value:
+        if not str(ctx.channel.id) in config.extensions.automod.channels.value:
             await self.bot.logger.send_log(
-                message="Channel not in protected channels - ignoring protect check",
+                message="Channel not in automod channels - ignoring automod check",
                 level=LogLevel.DEBUG,
                 context=LogContext(guild=ctx.guild, channel=ctx.channel),
             )
@@ -93,11 +148,8 @@ class AutoMod(cogs.MatchCog):
 
         if any(
             role_name.lower() in role_names
-            for role_name in config.extensions.protect.bypass_roles.value
+            for role_name in config.extensions.automod.bypass_roles.value
         ):
-            return False
-
-        if ctx.author.id in config.extensions.protect.bypass_ids.value:
             return False
 
         return True
@@ -165,13 +217,13 @@ class AutoMod(cogs.MatchCog):
             await moderation.warn_user(
                 self.bot, ctx.author, ctx.author, sorted_punishments[0].violation_str
             )
-            if count_of_warnings >= config.extensions.protect.max_warnings.value:
+            if count_of_warnings >= config.moderation.max_warnings:
                 ban_embed = moderator.generate_response_embed(
                     ctx.author,
                     "ban",
                     reason=(
                         f"Over max warning count {count_of_warnings} out of"
-                        f" {config.extensions.protect.max_warnings.value} (final warning:"
+                        f" {config.moderation.max_warnings} (final warning:"
                         f" {sorted_punishments[0].violation_str}) - banned by automod"
                     ),
                 )
@@ -225,7 +277,7 @@ class AutoMod(cogs.MatchCog):
 
         try:
             alert_channel = ctx.guild.get_channel(
-                int(config.extensions.protect.alert_channel.value)
+                int(config.extensions.automod.alert_channel.value)
             )
         except TypeError:
             alert_channel = None
@@ -373,7 +425,7 @@ def handle_file_extensions(
     for attachment in attachments:
         if (
             attachment.filename.split(".")[-1]
-            in config.extensions.protect.banned_file_extensions.value
+            in config.extensions.automod.banned_file_extensions.value
         ):
             violations.append(
                 AutoModPunishment(
@@ -398,7 +450,7 @@ def handle_mentions(
     Returns:
         list[AutoModPunishment]: The automod violations that the given message violated
     """
-    if len(message.mentions) > config.extensions.protect.max_mentions.value:
+    if len(message.mentions) > config.extensions.automod.max_mentions.value:
         return [
             AutoModPunishment(
                 "Mass Mentions",
@@ -425,7 +477,7 @@ def handle_exact_string(config: munch.Munch, content: str) -> list[AutoModPunish
     for (
         keyword,
         filter_config,
-    ) in config.extensions.protect.string_map.value.items():
+    ) in config.extensions.automod.string_map.value.items():
         if keyword.lower() in content.lower():
             violations.append(
                 AutoModPunishment(
@@ -454,7 +506,7 @@ def handle_regex_string(config: munch.Munch, content: str) -> list[AutoModPunish
     for (
         _,
         filter_config,
-    ) in config.extensions.protect.string_map.value.items():
+    ) in config.extensions.automod.string_map.value.items():
         regex = filter_config.get("regex")
         if regex:
             try:

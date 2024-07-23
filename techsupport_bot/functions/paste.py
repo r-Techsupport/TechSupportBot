@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Self
 import discord
 import munch
 from botlogging import LogContext, LogLevel
-from core import cogs
+from core import cogs, extensionconfig
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -21,7 +21,44 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    await bot.add_cog(Paster(bot=bot))
+    config = extensionconfig.ExtensionConfig()
+    config.add(
+        key="channels",
+        datatype="list",
+        title="Protected channels",
+        description=(
+            "The list of channel ID's associated with the channels to auto-protect"
+        ),
+        default=[],
+    )
+    config.add(
+        key="bypass_roles",
+        datatype="list",
+        title="Bypassed role names",
+        description=(
+            "The list of role names associated with bypassed roles by the auto-protect"
+        ),
+        default=[],
+    )
+    config.add(
+        key="length_limit",
+        datatype="int",
+        title="Max length limit",
+        description=(
+            "The max char limit on messages before they trigger an action by"
+            " auto-protect"
+        ),
+        default=500,
+    )
+    config.add(
+        key="paste_footer_message",
+        datatype="str",
+        title="The linx embed footer",
+        description="The message used on the footer of the large message paste URL",
+        default="Note: Long messages are automatically pasted",
+    )
+    await bot.add_cog(Paster(bot=bot, extension_name="paste"))
+    bot.add_extension_config("paste", config)
 
 
 class Paster(cogs.MatchCog):
@@ -41,7 +78,7 @@ class Paster(cogs.MatchCog):
             bool: Whether the message should be inspected for a paste
         """
         # exit the match based on exclusion parameters
-        if not str(ctx.channel.id) in config.extensions.protect.channels.value:
+        if not str(ctx.channel.id) in config.extensions.paste.channels.value:
             await self.bot.logger.send_log(
                 message="Channel not in protected channels - ignoring protect check",
                 level=LogLevel.DEBUG,
@@ -53,11 +90,8 @@ class Paster(cogs.MatchCog):
 
         if any(
             role_name.lower() in role_names
-            for role_name in config.extensions.protect.bypass_roles.value
+            for role_name in config.extensions.paste.bypass_roles.value
         ):
-            return False
-
-        if ctx.author.id in config.extensions.protect.bypass_ids.value:
             return False
 
         return True
@@ -77,9 +111,9 @@ class Paster(cogs.MatchCog):
             content (str): The string content of the message
             result (bool): What the match() function returned
         """
-        if len(content) > config.extensions.protect.length_limit.value or content.count(
+        if len(content) > config.extensions.paste.length_limit.value or content.count(
             "\n"
-        ) > self.max_newlines(config.extensions.protect.length_limit.value):
+        ) > self.max_newlines(config.extensions.paste.length_limit.value):
             await self.handle_length_alert(config, ctx, content)
 
     def max_newlines(self: Self, max_length: int) -> int:
@@ -239,7 +273,7 @@ class Paster(cogs.MatchCog):
         embed.set_author(
             name=f"Paste by {ctx.author}", icon_url=ctx.author.display_avatar.url
         )
-        embed.set_footer(text=config.extensions.protect.paste_footer_message.value)
+        embed.set_footer(text=config.extensions.paste.paste_footer_message.value)
         embed.color = discord.Color.blue()
 
         return embed
