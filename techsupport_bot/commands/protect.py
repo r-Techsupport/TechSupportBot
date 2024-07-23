@@ -1,18 +1,18 @@
 """
 Todo:
-	Purge to slash commands
-	Unwarn has autofill
-	Get all warnings command
-	
-	Make all of automod
-	Simplify paste
+    Purge to slash commands
+    Unwarn has autofill
+    Get all warnings command
+    
+    Make all of automod
+    Simplify paste
     Make paste not work if message would be DELETED by automod
-	Create a ban logging system like carl - Needs a database for ban history
+    Create a ban logging system like carl - Needs a database for ban history
         Central unban logging but NO database needed
 
 Ban logs need to be more centralized:
-	Auto bans, command bans, and manual bans all need to be logged with a single message
-	A modlog highscores command, in a modlog.py command
+    Auto bans, command bans, and manual bans all need to be logged with a single message
+    A modlog highscores command, in a modlog.py command
 
 Move all config over to specific new files
 """

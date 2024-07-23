@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Self
+from typing import Self
 
 import dateparser
 import discord
@@ -13,15 +13,16 @@ from commands import modlog
 from core import auxiliary, cogs, moderation
 from discord import app_commands
 
-if TYPE_CHECKING:
-    import bot
+
+class FakeTechSupportBot:
+    """This exists because of circular imports that I fucking hate"""
 
 
-async def setup(bot: bot.TechSupportBot) -> None:
+async def setup(bot: FakeTechSupportBot) -> None:
     """Adds the cog to the bot. Setups config
 
     Args:
-        bot (bot.TechSupportBot): The bot object to register the cog with
+        bot (TechSupportBot): The bot object to register the cog with
     """
     await bot.add_cog(ProtectCommands(bot=bot))
 
@@ -93,7 +94,7 @@ class ProtectCommands(cogs.BaseCog):
         )
 
         await moderation.send_command_usage_alert(
-            bot_object=self.bot,
+            bot=self.bot,
             interaction=interaction,
             command=(
                 f"/ban target: {target.display_name}, reason: {reason}, delete_days:"
@@ -159,7 +160,7 @@ class ProtectCommands(cogs.BaseCog):
         )
 
         await moderation.send_command_usage_alert(
-            bot_object=self.bot,
+            bot=self.bot,
             interaction=interaction,
             command=f"/unban target: {target.display_name}, reason: {reason}",
             guild=interaction.guild,
@@ -210,7 +211,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         await moderation.send_command_usage_alert(
-            bot_object=self.bot,
+            bot=self.bot,
             interaction=interaction,
             command=f"/kick target: {target.display_name}, reason: {reason}",
             guild=interaction.guild,
@@ -296,7 +297,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         await moderation.send_command_usage_alert(
-            bot_object=self.bot,
+            bot=self.bot,
             interaction=interaction,
             command=(
                 f"/mute target: {target.display_name}, reason: {reason}, duration:"
@@ -356,7 +357,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         await moderation.send_command_usage_alert(
-            bot_object=self.bot,
+            bot=self.bot,
             interaction=interaction,
             command=f"/unmute target: {target.display_name}, reason: {reason}",
             guild=interaction.guild,
@@ -461,7 +462,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         await moderation.send_command_usage_alert(
-            bot_object=self.bot,
+            bot=self.bot,
             interaction=interaction,
             command=f"/warn target: {target.display_name}, reason: {reason}",
             guild=interaction.guild,
@@ -540,7 +541,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         await moderation.send_command_usage_alert(
-            bot_object=self.bot,
+            bot=self.bot,
             interaction=interaction,
             command=f"/unwarn target: {target.display_name}, reason: {reason}, warning: {warning}",
             guild=interaction.guild,
@@ -611,7 +612,7 @@ class ProtectCommands(cogs.BaseCog):
 
     async def get_warning(
         self: Self, user: discord.Member, warning: str
-    ) -> bot.models.Warning:
+    ) -> FakeTechSupportBot.models.Warning:
         """Gets a specific warning by string for a user
 
         Args:
