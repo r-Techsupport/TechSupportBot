@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import datetime
+from collections import Counter
 from typing import TYPE_CHECKING, Self
 
 import discord
-from core import cogs
+import munch
+import ui
+from core import auxiliary, cogs
+from discord import app_commands
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -21,15 +25,123 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class BanLogger(cogs.BaseCog):
-    async def high_score_command(self: Self, interaction: discord.Interaction): ...
 
+    modlog_group = app_commands.Group(
+        name="modlog", description="...", extras={"module": "modlog"}
+    )
+
+    @modlog_group.command(
+        name="highscores",
+        description="Unban someone and allow them to apply",
+        extras={"module": "modlog"},
+    )
+    async def high_score_command(self: Self, interaction: discord.Interaction):
+        all_bans = await self.bot.models.BanLog.query.where(
+            self.bot.models.BanLog.guild_id == str(interaction.guild.id)
+        ).gino.all()
+        ban_frequency_counter = Counter(ban.banning_moderator for ban in all_bans)
+
+        sorted_ban_frequency = sorted(
+            ban_frequency_counter.items(), key=lambda x: x[1], reverse=True
+        )
+        embed = discord.Embed(title="Most active moderators")
+
+        final_string = ""
+        for index, (moderator_id, count) in enumerate(sorted_ban_frequency):
+            moderator = await interaction.guild.fetch_member(int(moderator_id))
+            final_string += (
+                f"{index+1}. {moderator.display_name} "
+                f"{moderator.mention} ({moderator.id}) - ({count})\n"
+            )
+        embed.description = final_string
+        embed.color = discord.Color.blue()
+        await interaction.response.send_message(embed=embed)
+
+    @modlog_group.command(
+        name="lookup-user",
+        description="Unban someone and allow them to apply",
+        extras={"module": "modlog"},
+    )
     async def lookup_user_command(
         self: Self, interaction: discord.Interaction, user: discord.User
-    ): ...
+    ):
+        recent_bans_by_user = (
+            await self.bot.models.BanLog.query.where(
+                self.bot.models.BanLog.guild_id == str(interaction.guild.id)
+            )
+            .where(self.bot.models.BanLog.banned_member == str(user.id))
+            .order_by(self.bot.models.BanLog.ban_time.desc())
+            .limit(10)
+            .gino.all()
+        )
 
+        embeds = []
+        for ban in recent_bans_by_user:
+            embeds.append(
+                await self.convert_ban_to_pretty_string(ban, f"{user.name} bans")
+            )
+
+        if len(embeds) == 0:
+            embed = auxiliary.prepare_deny_embed(
+                f"No bans for the user {user.name} could be found"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+
+        await interaction.response.defer(ephemeral=False)
+        view = ui.PaginateView()
+        await view.send(interaction.channel, interaction.user, embeds, interaction)
+
+    @modlog_group.command(
+        name="lookup-moderator",
+        description="Unban someone and allow them to apply",
+        extras={"module": "modlog"},
+    )
     async def lookup_moderator_command(
         self: Self, interaction: discord.Interaction, moderator: discord.Member
-    ): ...
+    ):
+        recent_bans_by_user = (
+            await self.bot.models.BanLog.query.where(
+                self.bot.models.BanLog.guild_id == str(interaction.guild.id)
+            )
+            .where(self.bot.models.BanLog.banning_moderator == str(moderator.id))
+            .order_by(self.bot.models.BanLog.ban_time.desc())
+            .limit(10)
+            .gino.all()
+        )
+
+        embeds = []
+        for ban in recent_bans_by_user:
+            embeds.append(
+                await self.convert_ban_to_pretty_string(
+                    ban, f"Bans by {moderator.name}"
+                )
+            )
+
+        if len(embeds) == 0:
+            embed = auxiliary.prepare_deny_embed(
+                f"No bans by the user {moderator.name} could be found"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+
+        await interaction.response.defer(ephemeral=False)
+        view = ui.PaginateView()
+        await view.send(interaction.channel, interaction.user, embeds, interaction)
+
+    async def convert_ban_to_pretty_string(self, ban: munch.Munch, title: str):
+        member = await self.bot.fetch_user(int(ban.banned_member))
+        moderator = await self.bot.fetch_user(int(ban.banning_moderator))
+        embed = discord.Embed(title=title)
+        embed.description = (
+            f"**Case:** {ban.pk}\n"
+            f"**Offender:** {member.name} {member.mention}\n"
+            f"**Reason:** {ban.reason}\n"
+            f"**Responsible moderator:** {moderator.name} {moderator.mention}"
+        )
+        embed.timestamp = ban.ban_time
+        embed.color = discord.Color.red()
+        return embed
 
     @commands.Cog.listener()
     async def on_member_ban(
@@ -116,6 +228,7 @@ async def log_ban(
 
 
 async def log_unban(
+    bot: bot.TechSupportBot,
     unbanned_member: discord.User | discord.Member,
     unbanning_moderator: discord.Member,
     guild: discord.Guild,

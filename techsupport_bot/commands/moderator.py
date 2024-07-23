@@ -146,7 +146,9 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        await modlog.log_unban(target, interaction.user, interaction.guild, reason)
+        await modlog.log_unban(
+            self.bot, target, interaction.user, interaction.guild, reason
+        )
 
         await moderation.send_command_usage_alert(
             bot=self.bot,
