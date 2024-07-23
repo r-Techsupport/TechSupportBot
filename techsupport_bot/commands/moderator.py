@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Self
 
 import dateparser
 import discord
@@ -40,7 +40,7 @@ class ProtectCommands(cogs.BaseCog):
         extras={"module": "moderator"},
     )
     async def handle_ban_user(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         target: discord.User,
         reason: str,
@@ -113,8 +113,16 @@ class ProtectCommands(cogs.BaseCog):
         extras={"module": "moderator"},
     )
     async def handle_unban_user(
-        self, interaction: discord.Interaction, target: discord.User, reason: str
-    ):
+        self: Self, interaction: discord.Interaction, target: discord.User, reason: str
+    ) -> None:
+        """The logic for the /unban command
+
+        Args:
+            self (Self): _description_
+            interaction (discord.Interaction): The interaction that triggered this command
+            target (discord.User): The target to be unbanned
+            reason (str): The reason for the user being unbanned
+        """
         permission_check = await self.permission_check(
             invoker=interaction.user, target=target, action_name="unban"
         )
@@ -168,8 +176,19 @@ class ProtectCommands(cogs.BaseCog):
         extras={"module": "moderator"},
     )
     async def handle_kick_user(
-        self, interaction: discord.Interaction, target: discord.Member, reason: str
-    ):
+        self: Self,
+        interaction: discord.Interaction,
+        target: discord.Member,
+        reason: str,
+    ) -> None:
+        """The core logic for the /kick command
+
+        Args:
+            self (Self): _description_
+            interaction (discord.Interaction): The interaction that triggered the command
+            target (discord.Member): The target for being kicked
+            reason (str): The reason for the user being kicked
+        """
         permission_check = await self.permission_check(
             invoker=interaction.user, target=target, action_name="kick"
         )
@@ -206,12 +225,23 @@ class ProtectCommands(cogs.BaseCog):
         name="mute", description="Times out a user", extras={"module": "moderator"}
     )
     async def handle_mute_user(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         target: discord.Member,
         reason: str,
         duration: str = None,
-    ):
+    ) -> None:
+        """The core logic for the /mute command
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            target (discord.Member): The target for being muted
+            reason (str): The reason for being muted
+            duration (str, optional): The human readable duration to be muted for. Defaults to None.
+
+        Raises:
+            ValueError: Raised if the duration is invalid or cannot be parsed
+        """
         permission_check = await self.permission_check(
             invoker=interaction.user, target=target, action_name="mute"
         )
@@ -286,8 +316,19 @@ class ProtectCommands(cogs.BaseCog):
         extras={"module": "moderator"},
     )
     async def handle_unmute_user(
-        self, interaction: discord.Interaction, target: discord.Member, reason: str
-    ):
+        self: Self,
+        interaction: discord.Interaction,
+        target: discord.Member,
+        reason: str,
+    ) -> None:
+        """The core logic for the /unmute command
+
+        Args:
+            self (Self): _description_
+            interaction (discord.Interaction): The interaction that triggered this command
+            target (discord.Member): The target for being unmuted
+            reason (str): The reason for the unmute
+        """
         permission_check = await self.permission_check(
             invoker=interaction.user, target=target, action_name="unmute"
         )
@@ -330,8 +371,19 @@ class ProtectCommands(cogs.BaseCog):
         name="warn", description="Warns a user", extras={"module": "moderator"}
     )
     async def handle_warn_user(
-        self, interaction: discord.Interaction, target: discord.Member, reason: str
-    ):
+        self: Self,
+        interaction: discord.Interaction,
+        target: discord.Member,
+        reason: str,
+    ) -> None:
+        """The core logic for the /warn command
+
+        Args:
+            self (Self): _description_
+            interaction (discord.Interaction): The interaction that triggered this command
+            target (discord.Member): The target for being warned
+            reason (str): The reason the user is being warned
+        """
         permission_check = await self.permission_check(
             invoker=interaction.user, target=target, action_name="warn"
         )
@@ -445,12 +497,21 @@ class ProtectCommands(cogs.BaseCog):
         name="unwarn", description="Unwarns a user", extras={"module": "moderator"}
     )
     async def handle_unwarn_user(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         target: discord.Member,
         reason: str,
         warning: str,
-    ):
+    ) -> None:
+        """The core logic of the /unwarn command
+
+        Args:
+            self (Self): _description_
+            interaction (discord.Interaction): The interaction that triggered the command
+            target (discord.Member): The user being unwarned
+            reason (str): The reason for the unwarn
+            warning (str): The exact string of the warning
+        """
         permission_check = await self.permission_check(
             invoker=interaction.user, target=target, action_name="unwarn"
         )
@@ -491,9 +552,9 @@ class ProtectCommands(cogs.BaseCog):
     # Helper functions
 
     async def permission_check(
-        self,
+        self: Self,
         invoker: discord.Member,
-        target: Union[discord.User, discord.Member],
+        target: discord.User | discord.Member,
         action_name: str,
     ) -> str:
         """Checks permissions to ensure the command should be executed. This checks:
@@ -507,7 +568,7 @@ class ProtectCommands(cogs.BaseCog):
         Args:
             invoker (discord.Member): The invoker of the action.
                 Either will be the user who ran the command, or the bot itself
-            target (Union[discord.User, discord.Member]): The target of the command.
+            target (discord.User | discord.Member): The target of the command.
                 Can be a user or member.
             action_name (str): The action name to be displayed in messages
 
@@ -549,7 +610,7 @@ class ProtectCommands(cogs.BaseCog):
     # Database functions
 
     async def get_warning(
-        self, user: discord.Member, warning: str
+        self: Self, user: discord.Member, warning: str
     ) -> bot.models.Warning:
         """Gets a specific warning by string for a user
 

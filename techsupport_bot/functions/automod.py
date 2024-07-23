@@ -1,9 +1,11 @@
+"""Handles the automod checks"""
+
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 import munch
@@ -56,8 +58,18 @@ class AutoModPunishment:
 
 class AutoMod(cogs.MatchCog):
     async def match(
-        self, config: munch.Munch, ctx: commands.Context, content: str
+        self: Self, config: munch.Munch, ctx: commands.Context, content: str
     ) -> bool:
+        """Checks to see if a message should be considered for automod violations
+
+        Args:
+            config (munch.Munch): The config of the guild to check
+            ctx (commands.Context): The context of the original message
+            content (str): The string representation of the message
+
+        Returns:
+            bool: Whether the message should be inspected for automod violations
+        """
         if not str(ctx.channel.id) in config.extensions.protect.channels.value:
             await self.bot.logger.send_log(
                 message="Channel not in protected channels - ignoring protect check",
@@ -82,6 +94,14 @@ class AutoMod(cogs.MatchCog):
     async def response(
         self, config: munch.Munch, ctx: commands.Context, content: str, result: bool
     ) -> None:
+        """Handles a discord automod violation
+
+        Args:
+            config (munch.Munch): The config of the guild where the message was sent
+            ctx (commands.Context): The context the message was sent in
+            content (str): The string content of the message
+            result (bool): What the match() function returned
+        """
         should_delete = False
         should_warn = False
         should_mute = False
@@ -193,8 +213,13 @@ class AutoMod(cogs.MatchCog):
         await alert_channel.send(embed=alert_channel_embed)
 
     @commands.Cog.listener()
-    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
-        """Method to edit the raw message."""
+    async def on_raw_message_edit(self: Self, payload: discord.RawMessageUpdateEvent):
+        """This is called when any message is edited in any guild the bot is in.
+        There is no guarantee that the message exists or is used
+
+        Args:
+            payload (discord.RawMessageUpdateEvent): The raw event that the edit generated
+        """
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
             return
@@ -226,6 +251,16 @@ class AutoMod(cogs.MatchCog):
 def generate_automod_alert_embed(
     ctx: commands.Context, violations: list[AutoModPunishment], action_taken: str
 ):
+    """Generates an alert embed for the automod rules that are broken
+
+    Args:
+        ctx (commands.Context): The context of the message that violated the automod
+        violations (list[AutoModPunishment]): The list of all violations of the automod
+        action_taken (str): The text based action taken against the user
+
+    Returns:
+        discord.Embed: The formatted embed ready to be sent to discord
+    """
 
     ALERT_ICON_URL = (
         "https://cdn.icon-icons.com/icons2/2063/PNG/512/"
@@ -248,10 +283,27 @@ def generate_automod_alert_embed(
     return embed
 
 
-def run_all_checks(config, message: discord.Message) -> list[AutoModPunishment]:
-    # Automod will only ever be a framework to say something needs to be done
-    # Outside of running from the response function, NO ACTION will be taken
-    # All checks will return a list of AutoModPunishment, which may be nothing
+# Automod will only ever be a framework to say something needs to be done
+# Outside of running from the response function, NO ACTION will be taken
+# All checks will return a list of AutoModPunishment, which may be nothing
+
+
+def run_all_checks(
+    config: munch.Munch, message: discord.Message
+) -> list[AutoModPunishment]:
+    """This runs all 4 checks on a given discord.Message
+    handle_file_extensions
+    handle_mentions
+    handle_exact_string
+    handle_regex_string
+
+    Args:
+        config (munch.Munch): The guild config to check with
+        message (discord.Message): The message object to use to search
+
+    Returns:
+        list[AutoModPunishment]: The automod violations that the given message violated
+    """
     all_violations = (
         run_only_string_checks(config, message.clean_content)
         + handle_file_extensions(config, message.attachments)
@@ -260,7 +312,20 @@ def run_all_checks(config, message: discord.Message) -> list[AutoModPunishment]:
     return all_violations
 
 
-def run_only_string_checks(config, content: str) -> list[AutoModPunishment]:
+def run_only_string_checks(
+    config: munch.Munch, content: str
+) -> list[AutoModPunishment]:
+    """This runs the plaintext string texts and returns the combined list of violations
+    handle_exact_string
+    handle_regex_string
+
+    Args:
+        config (munch.Munch): The guild config to check with
+        content (str): The content of the message to search
+
+    Returns:
+        list[AutoModPunishment]: The automod violations that the given message violated
+    """
     all_violations = handle_exact_string(config, content) + handle_regex_string(
         config, content
     )
@@ -268,8 +333,17 @@ def run_only_string_checks(config, content: str) -> list[AutoModPunishment]:
 
 
 def handle_file_extensions(
-    config, attachments: list[discord.Attachment]
+    config: munch.Munch, attachments: list[discord.Attachment]
 ) -> list[AutoModPunishment]:
+    """This checks a list of attachments for attachments that violate the automod rules
+
+    Args:
+        config (munch.Munch): The guild config to check with
+        attachments (list[discord.Attachment]): The list of attachments to search
+
+    Returns:
+        list[AutoModPunishment]: The automod violations that the given message violated
+    """
     violations = []
     for attachment in attachments:
         if (
@@ -287,7 +361,18 @@ def handle_file_extensions(
     return violations
 
 
-def handle_mentions(config, message: discord.Message) -> list[AutoModPunishment]:
+def handle_mentions(
+    config: munch.Munch, message: discord.Message
+) -> list[AutoModPunishment]:
+    """This checks a given discord message to make sure it doesn't violate the mentions maximum
+
+    Args:
+        config (munch.Munch): The guild config to check with
+        message (discord.Message): The message to check for mentions with
+
+    Returns:
+        list[AutoModPunishment]: The automod violations that the given message violated
+    """
     if len(message.mentions) > config.extensions.protect.max_mentions.value:
         return [
             AutoModPunishment(
@@ -300,7 +385,17 @@ def handle_mentions(config, message: discord.Message) -> list[AutoModPunishment]
     return []
 
 
-def handle_exact_string(config, content: str) -> list[AutoModPunishment]:
+def handle_exact_string(config: munch.Munch, content: str) -> list[AutoModPunishment]:
+    """This checks the configued automod exact string blocks
+    If the content matches the string, it's added to a list
+
+    Args:
+        config (munch.Munch): The guild config to check with
+        content (str): The content of the message to search
+
+    Returns:
+        list[AutoModPunishment]: The automod violations that the given message violated
+    """
     violations = []
     for (
         keyword,
@@ -318,7 +413,17 @@ def handle_exact_string(config, content: str) -> list[AutoModPunishment]:
     return violations
 
 
-def handle_regex_string(config, content: str) -> list[AutoModPunishment]:
+def handle_regex_string(config: munch.Munch, content: str) -> list[AutoModPunishment]:
+    """This checks the configued automod regex blocks
+    If the content matches the regex, it's added to a list
+
+    Args:
+        config (munch.Munch): The guild config to check with
+        content (str): The content of the message to search
+
+    Returns:
+        list[AutoModPunishment]: The automod violations that the given message violated
+    """
     violations = []
     for (
         keyword,

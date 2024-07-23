@@ -1,7 +1,9 @@
+"""The file that holds the purge command"""
+
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 from core import auxiliary, cogs, moderation
@@ -22,11 +24,6 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Purger(cogs.BaseCog):
-    ALERT_ICON_URL = (
-        "https://cdn.icon-icons.com/icons2/2063/PNG/512/"
-        + "alert_danger_warning_notification_icon_124692.png"
-    )
-
     @app_commands.checks.has_permissions(manage_messages=True)
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command(
@@ -35,12 +32,18 @@ class Purger(cogs.BaseCog):
         extras={"module": "purge"},
     )
     async def purge_command(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         amount: int,
         duration_minutes: int = None,
-    ):
-        """Method to purge a channel's message up to a time."""
+    ) -> None:
+        """The core purge command that can purge by either amount or duration
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            amount (int): The max amount of messages to purge
+            duration_minutes (int, optional): The max age of a message to purge. Defaults to None.
+        """
         config = self.bot.guild_configs[str(interaction.guild.id)]
 
         if amount <= 0 or amount > config.extensions.protect.max_purge_amount.value:

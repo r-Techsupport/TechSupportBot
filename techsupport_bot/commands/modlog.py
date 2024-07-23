@@ -1,3 +1,5 @@
+"""Commands and functions to log and interact with logs of bans and unbans"""
+
 from __future__ import annotations
 
 import datetime
@@ -35,7 +37,12 @@ class BanLogger(cogs.BaseCog):
         description="Unban someone and allow them to apply",
         extras={"module": "modlog"},
     )
-    async def high_score_command(self: Self, interaction: discord.Interaction):
+    async def high_score_command(self: Self, interaction: discord.Interaction) -> None:
+        """Gets the top 10 moderators based on banned user count
+
+        Args:
+            interaction (discord.Interaction): The interaction that started this command
+        """
         all_bans = await self.bot.models.BanLog.query.where(
             self.bot.models.BanLog.guild_id == str(interaction.guild.id)
         ).gino.all()
@@ -64,7 +71,13 @@ class BanLogger(cogs.BaseCog):
     )
     async def lookup_user_command(
         self: Self, interaction: discord.Interaction, user: discord.User
-    ):
+    ) -> None:
+        """This is the core of the /modlog lookup-user command
+
+        Args:
+            interaction (discord.Interaction): The interaction that called the command
+            user (discord.User): The user to search for bans for
+        """
         recent_bans_by_user = (
             await self.bot.models.BanLog.query.where(
                 self.bot.models.BanLog.guild_id == str(interaction.guild.id)
@@ -100,6 +113,12 @@ class BanLogger(cogs.BaseCog):
     async def lookup_moderator_command(
         self: Self, interaction: discord.Interaction, moderator: discord.Member
     ):
+        """This is the core of the /modlog lookup-moderator command
+
+        Args:
+            interaction (discord.Interaction): The interaction that called the command
+            moderator (discord.Member): The moderator to search for bans for
+        """
         recent_bans_by_user = (
             await self.bot.models.BanLog.query.where(
                 self.bot.models.BanLog.guild_id == str(interaction.guild.id)
@@ -129,7 +148,19 @@ class BanLogger(cogs.BaseCog):
         view = ui.PaginateView()
         await view.send(interaction.channel, interaction.user, embeds, interaction)
 
-    async def convert_ban_to_pretty_string(self, ban: munch.Munch, title: str):
+    async def convert_ban_to_pretty_string(
+        self: Self, ban: munch.Munch, title: str
+    ) -> discord.Embed:
+        """This converts a database ban entry into a shiny embed
+
+        Args:
+            self (Self): _description_
+            ban (munch.Munch): The ban database entry
+            title (str): The title to set the embeds to
+
+        Returns:
+            discord.Embed: The fancy embed
+        """
         member = await self.bot.fetch_user(int(ban.banned_member))
         moderator = await self.bot.fetch_user(int(ban.banning_moderator))
         embed = discord.Embed(title=title)
@@ -147,6 +178,13 @@ class BanLogger(cogs.BaseCog):
     async def on_member_ban(
         self: Self, guild: discord.Guild, user: discord.User | discord.Member
     ) -> None:
+        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_ban
+
+        Args:
+            guild (discord.Guild): The guild the user got banned from
+            user (discord.User | discord.Member): The user that got banned. Can be either User
+                or Member depending if the user was in the guild or not at the time of removal.
+        """
         await discord.utils.sleep_until(
             discord.utils.utcnow() + datetime.timedelta(seconds=2)
         )
@@ -155,6 +193,9 @@ class BanLogger(cogs.BaseCog):
         async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.ban):
             if entry.target.id == user.id:
                 moderator = entry.user
+
+        if not entry:
+            return
 
         if moderator.bot:
             return
@@ -165,6 +206,12 @@ class BanLogger(cogs.BaseCog):
     async def on_member_unban(
         self: Self, guild: discord.Guild, user: discord.User
     ) -> None:
+        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_unban
+
+        Args:
+            guild (discord.Guild): The guild the user got unbanned from
+            user (discord.User): The user that got unbanned
+        """
         # Wait a short time to ensure the audit log has been updated
         await discord.utils.sleep_until(
             discord.utils.utcnow() + datetime.timedelta(seconds=2)
@@ -176,6 +223,8 @@ class BanLogger(cogs.BaseCog):
         ):
             if entry.target.id == user.id:
                 moderator = entry.user
+        if not entry:
+            return
 
         if moderator.bot:
             return
@@ -190,7 +239,16 @@ async def log_ban(
     banning_moderator: discord.Member,
     guild: discord.Guild,
     reason: str,
-):
+) -> None:
+    """Logs a ban into the alert channel
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to use for the logging
+        banned_member (discord.User | discord.Member): The member who was banned
+        banning_moderator (discord.Member): The moderator who banned the member
+        guild (discord.Guild): The guild the member was banned from
+        reason (str): The reason for the ban
+    """
     if not reason:
         reason = "No reason specified"
 
@@ -233,11 +291,20 @@ async def log_unban(
     unbanning_moderator: discord.Member,
     guild: discord.Guild,
     reason: str,
-):
+) -> None:
+    """Logs an unban into the alert channel
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to use for the logging
+        unbanned_member (discord.User | discord.Member): The member who was unbanned
+        unbanning_moderator (discord.Member): The moderator who unbanned the member
+        guild (discord.Guild): The guild the member was unbanned from
+        reason (str): The reason for the unban
+    """
     if not reason:
         reason = "No reason specified"
 
-    embed = discord.Embed(title=f"unban")
+    embed = discord.Embed(title="unban")
     embed.description = (
         f"**Offender:** {unbanned_member.name} {unbanned_member.mention}\n"
         f"**Reason:** {reason}\n"

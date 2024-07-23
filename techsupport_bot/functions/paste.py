@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import io
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
+import munch
 from botlogging import LogContext, LogLevel
 from core import cogs
 from discord.ext import commands
@@ -22,8 +23,19 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Paster(cogs.MatchCog):
-    async def match(self, config, ctx, content):
-        """Method to match roles for the protect command."""
+    async def match(
+        self: Self, config: munch.Munch, ctx: commands.Context, content: str
+    ) -> bool:
+        """Checks to see if a message should be considered for a paste
+
+        Args:
+            config (munch.Munch): The config of the guild to check
+            ctx (commands.Context): The context of the original message
+            content (str): The string representation of the message
+
+        Returns:
+            bool: Whether the message should be inspected for a paste
+        """
         # exit the match based on exclusion parameters
         if not str(ctx.channel.id) in config.extensions.protect.channels.value:
             await self.bot.logger.send_log(
@@ -46,20 +58,41 @@ class Paster(cogs.MatchCog):
 
         return True
 
-    async def response(self, config, ctx, content, _):
-        # check length of content
+    async def response(
+        self, config: munch.Munch, ctx: commands.Context, content: str, result: bool
+    ) -> None:
+        """Handles a paste check
+
+        Args:
+            config (munch.Munch): The config of the guild where the message was sent
+            ctx (commands.Context): The context the message was sent in
+            content (str): The string content of the message
+            result (bool): What the match() function returned
+        """
         if len(content) > config.extensions.protect.length_limit.value or content.count(
             "\n"
         ) > self.max_newlines(config.extensions.protect.length_limit.value):
             await self.handle_length_alert(config, ctx, content)
 
-    def max_newlines(self, max_length):
-        """Method to set up the number of max lines."""
+    def max_newlines(self: Self, max_length: int) -> int:
+        """Gets a theoretical maximum number of new lines in a given message
+
+        Args:
+            max_length (int): The max length of characters per theoretical line
+
+        Returns:
+            int: The maximum number of new lines based on config
+        """
         return int(max_length / 80) + 1
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
-        """Method to edit the raw message."""
+        """This is called when any message is edited in any guild the bot is in.
+        There is no guarantee that the message exists or is used
+
+        Args:
+            payload (discord.RawMessageUpdateEvent): The raw event that the edit generated
+        """
         guild = self.bot.get_guild(payload.guild_id)
         if not guild:
             return
@@ -87,8 +120,16 @@ class Paster(cogs.MatchCog):
 
         await self.response(config, ctx, message.content, None)
 
-    async def handle_length_alert(self, config, ctx, content) -> None:
-        """Method to handle alert for the protect extension."""
+    async def handle_length_alert(
+        self: Self, config: munch.Munch, ctx: commands.Context, content: str
+    ) -> None:
+        """Moves message into a linx paste if it's too long
+
+        Args:
+            config (munch.Munch): The guild config where the too long message was sent
+            ctx (commands.Context): The context where the original message was sent
+            content (str): The string content of the flagged message
+        """
         attachments: list[discord.File] = []
         if ctx.message.attachments:
             total_attachment_size = 0
@@ -125,8 +166,21 @@ class Paster(cogs.MatchCog):
             ctx.message.author.mention, embed=linx_embed, files=attachments[:10]
         )
 
-    async def send_default_delete_response(self, config, ctx, content, reason):
-        """Method for the default delete of a message."""
+    async def send_default_delete_response(
+        self: Self,
+        config: munch.Munch,
+        ctx: commands.Context,
+        content: str,
+        reason: str,
+    ) -> None:
+        """Sends a DM to a user containing a message that was deleted
+
+        Args:
+            config (munch.Munch): The config of the guild where the message was sent
+            ctx (commands.Context): The context of the deleted message
+            content (str): The context of the deleted message
+            reason (str): The reason the message was deleted
+        """
         embed = discord.Embed(
             title="Chat Protection", description=f"Message deleted. Reason: *{reason}*"
         )
@@ -134,8 +188,20 @@ class Paster(cogs.MatchCog):
         await ctx.send(ctx.message.author.mention, embed=embed)
         await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
 
-    async def create_linx_embed(self, config, ctx, content):
-        """Method to create a link for long messages."""
+    async def create_linx_embed(
+        self: Self, config: munch.Munch, ctx: commands.Context, content: str
+    ) -> discord.Embed | None:
+        """This function sends a message to the linx url and puts the result in
+        an embed to be sent to the user
+
+        Args:
+            config (munch.Munch): The guild config where the message was sent
+            ctx (commands.Context): The context that generated the need for a paste
+            content (str): The context of the message to be pasted
+
+        Returns:
+            discord.Embed | None: The formatted embed, or None if there was an API error
+        """
         if not content:
             return None
 

@@ -66,6 +66,18 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         applicant_id = bot.db.Column(bot.db.String)
 
     class BanLog(bot.db.Model):
+        """The postgres table for banlogs
+        Currently used in modlog.py
+
+        Attrs:
+            __tablename__ (str): The name of the table in postgres
+            pk (int): The automatic primary key
+            guild_id (str): The string of the guild ID the user was banned in
+            reason (str): The reason of the ban
+            banning_moderator (str): The ID of the moderator who banned
+            banned_member (str): The ID of the user who was banned
+            ban_time (datetime): The date and time of the ban
+        """
 
         __tablename__ = "banlog"
 
@@ -244,6 +256,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             guild_id (str): The guild this warn occured in
             reason (str): The reason for the warn
             time (datetime): The time the warning was given
+            invoker_id (str): The moderator who made the warning
         """
 
         __tablename__ = "warnings"
