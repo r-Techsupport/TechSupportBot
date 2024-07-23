@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
 import dateparser
 import discord
@@ -13,16 +13,15 @@ from commands import modlog
 from core import auxiliary, cogs, moderation
 from discord import app_commands
 
+if TYPE_CHECKING:
+    import bot
 
-class FakeTechSupportBot:
-    """This exists because of circular imports that I fucking hate"""
 
-
-async def setup(bot: FakeTechSupportBot) -> None:
+async def setup(bot: bot.TechSupportBot) -> None:
     """Adds the cog to the bot. Setups config
 
     Args:
-        bot (TechSupportBot): The bot object to register the cog with
+        bot (bot.TechSupportBot): The bot object to register the cog with
     """
     await bot.add_cog(ProtectCommands(bot=bot))
 
@@ -424,7 +423,7 @@ class ProtectCommands(cogs.BaseCog):
                 should_ban = True
 
         warn_result = await moderation.warn_user(
-            bot_object=self.bot, user=target, invoker=interaction.user, reason=reason
+            bot=self.bot, user=target, invoker=interaction.user, reason=reason
         )
 
         if should_ban:
@@ -612,7 +611,7 @@ class ProtectCommands(cogs.BaseCog):
 
     async def get_warning(
         self: Self, user: discord.Member, warning: str
-    ) -> FakeTechSupportBot.models.Warning:
+    ) -> bot.models.Warning:
         """Gets a specific warning by string for a user
 
         Args:

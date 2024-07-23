@@ -2,13 +2,9 @@
 Do the proper moderative action and return true if successful, false if not."""
 
 from datetime import timedelta
-from typing import TYPE_CHECKING
 
 import discord
 import munch
-
-if TYPE_CHECKING:
-    import bot
 
 
 async def ban_user(
@@ -100,7 +96,7 @@ async def unmute_user(user: discord.Member, reason: str) -> bool:
 
 
 async def warn_user(
-    bot_object: bot.TechSupportBot,
+    bot_object: object,
     user: discord.Member,
     invoker: discord.Member,
     reason: str,
@@ -108,7 +104,7 @@ async def warn_user(
     """Warns a user. Does NOT check config or how many warnings a user has
 
     Args:
-        bot_object (bot.TechSupportBot): The bot object to use
+        bot_object (object): The bot object to use
         user (discord.Member): The user to warn
         invoker (discord.Member): The person who warned the user
         reason (str): The reason for the warning
@@ -125,13 +121,11 @@ async def warn_user(
     return True
 
 
-async def unwarn_user(
-    bot_object: bot.TechSupportBot, user: discord.Member, warning: str
-) -> bool:
+async def unwarn_user(bot_object: object, user: discord.Member, warning: str) -> bool:
     """Removes a specific warning from a user by string
 
     Args:
-        bot_object (bot.TechSupportBot): The bot object to use
+        bot_object (object): The bot object to use
         user (discord.Member): The member to remove a warning from
         warning (str): The warning to remove
 
@@ -153,12 +147,12 @@ async def unwarn_user(
 
 
 async def get_all_warnings(
-    bot_object: bot.TechSupportBot, user: discord.User, guild: discord.Guild
+    bot_object: object, user: discord.User, guild: discord.Guild
 ) -> list[munch.Munch]:
     """Gets a list of all warnings for a specific user in a specific guild
 
     Args:
-        bot_object (bot.TechSupportBot): The bot object to use
+        bot_object (object): The bot object to use
         user (discord.User): The user that we want warns from
         guild (discord.Guild): The guild that we want warns from
 
@@ -176,7 +170,7 @@ async def get_all_warnings(
 
 
 async def send_command_usage_alert(
-    bot_object: bot.TechSupportBot,
+    bot_object: object,
     interaction: discord.Interaction,
     command: str,
     guild: discord.Guild,
@@ -185,7 +179,7 @@ async def send_command_usage_alert(
     """Sends a usage alert to the protect events channel, if configured
 
     Args:
-        bot_object (bot.TechSupportBot): The bot object to use
+        bot_object (object): The bot object to use
         interaction (discord.Interaction): The interaction that trigger the command
         command (str): The string representation of the command that was run
         guild (discord.Guild): The guild the command was run in
