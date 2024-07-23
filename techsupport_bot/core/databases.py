@@ -65,6 +65,17 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild_id = bot.db.Column(bot.db.String)
         applicant_id = bot.db.Column(bot.db.String)
 
+    class BanLog(bot.db.Model):
+
+        __tablename__ = "banlog"
+
+        pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
+        guild_id = bot.db.Column(bot.db.String)
+        reason = bot.db.Column(bot.db.String)
+        banning_moderator = bot.db.Column(bot.db.String)
+        banned_member = bot.db.Column(bot.db.String)
+        ban_time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+
     class DuckUser(bot.db.Model):
         """The postgres table for ducks
         Currently used in duck.py
@@ -337,6 +348,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     bot.models.Applications = Applications
     bot.models.AppBans = ApplicationBans
+    bot.models.BanLog = BanLog
     bot.models.DuckUser = DuckUser
     bot.models.Factoid = Factoid
     bot.models.FactoidJob = FactoidJob

@@ -71,7 +71,7 @@ class Purger(cogs.BaseCog):
         await moderation.send_command_usage_alert(
             bot=self.bot,
             interaction=interaction,
-            command=f"/purge amount: {amount} duration: {duration_minutes}",
+            command=f"/purge amount: {amount}, duration: {duration_minutes}",
             guild=interaction.guild,
             target=interaction.user,
         )

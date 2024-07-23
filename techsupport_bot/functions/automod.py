@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import discord
 import munch
 from botlogging import LogContext, LogLevel
-from commands import moderator
+from commands import moderator, modlog
 from core import cogs, moderation
 from discord.ext import commands
 
@@ -149,6 +149,13 @@ class AutoMod(cogs.MatchCog):
                 await moderation.ban_user(
                     ctx.guild, ctx.author, 7, sorted_punishments[0].violation_str
                 )
+                await modlog.log_ban(
+                    self.bot,
+                    ctx.author,
+                    ctx.guild.me,
+                    ctx.guild,
+                    sorted_punishments[0].violation_str,
+                )
 
         if len(actions) == 0:
             actions.append("notice")
@@ -167,7 +174,9 @@ class AutoMod(cogs.MatchCog):
                 context=LogContext(guild=ctx.guild, channel=ctx.channel),
             )
 
-        alert_channel_embed = generate_automod_alert_embed(ctx, sorted_punishments)
+        alert_channel_embed = generate_automod_alert_embed(
+            ctx, sorted_punishments, actions_str
+        )
 
         config = self.bot.guild_configs[str(ctx.guild.id)]
 
@@ -215,7 +224,7 @@ class AutoMod(cogs.MatchCog):
 
 
 def generate_automod_alert_embed(
-    ctx: commands.Context, violations: list[AutoModPunishment]
+    ctx: commands.Context, violations: list[AutoModPunishment], action_taken: str
 ):
 
     ALERT_ICON_URL = (
@@ -227,6 +236,7 @@ def generate_automod_alert_embed(
         title="Automod Violations",
         description="\n".join(violation.violation_str for violation in violations),
     )
+    embed.add_field(name="Actions Taken", value=action_taken)
     embed.add_field(name="Channel", value=f"{ctx.channel.mention} ({ctx.channel.name})")
     embed.add_field(name="User", value=f"{ctx.author.mention} ({ctx.author.name})")
     embed.add_field(name="Message", value=ctx.message.content, inline=False)
@@ -269,9 +279,9 @@ def handle_file_extensions(
             violations.append(
                 AutoModPunishment(
                     f"{attachment.filename} has a suspicious file extension",
-                    True,
-                    True,
-                    False,
+                    recommend_delete=True,
+                    recommend_warn=True,
+                    recommend_mute=False,
                 )
             )
     return violations
@@ -279,7 +289,14 @@ def handle_file_extensions(
 
 def handle_mentions(config, message: discord.Message) -> list[AutoModPunishment]:
     if len(message.mentions) > config.extensions.protect.max_mentions.value:
-        return [AutoModPunishment("Mass Mentions", True, True, False)]
+        return [
+            AutoModPunishment(
+                "Mass Mentions",
+                recommend_delete=True,
+                recommend_warn=True,
+                recommend_mute=False,
+            )
+        ]
     return []
 
 

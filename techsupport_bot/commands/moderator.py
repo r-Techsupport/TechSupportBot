@@ -9,6 +9,7 @@ import dateparser
 import discord
 import ui
 from botlogging import LogContext, LogLevel
+from commands import modlog
 from core import auxiliary, cogs, moderation
 from discord import app_commands
 
@@ -87,6 +88,10 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
+        await modlog.log_ban(
+            self.bot, target, interaction.user, interaction.guild, reason
+        )
+
         await moderation.send_command_usage_alert(
             bot=self.bot,
             interaction=interaction,
@@ -140,6 +145,8 @@ class ProtectCommands(cogs.BaseCog):
             )
             await interaction.response.send_message(embed=embed)
             return
+
+        await modlog.log_unban(target, interaction.user, interaction.guild, reason)
 
         await moderation.send_command_usage_alert(
             bot=self.bot,
@@ -385,6 +392,9 @@ class ProtectCommands(cogs.BaseCog):
                 else:
                     await interaction.response.send_message(embed=embed)
                 return
+            await modlog.log_ban(
+                self.bot, target, interaction.user, interaction.guild, reason
+            )
 
         if not warn_result:
             embed = auxiliary.prepare_deny_embed(
