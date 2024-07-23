@@ -35,14 +35,16 @@ class AutoModPunishment:
     violation_str - The string of the policy broken. Should be displayed to user
     recommend_delete - If the policy recommends deletion of the message
     recommend_warn - If the policy recommends warning the user
-    recommend_mute - If the policy recommends muting the user
+    recommend_mute - If the policy recommends muting the user. If so, the amount of seconds to mute for
+    is_silent - If the punishment should be silent
 
     """
 
     violation_str: str
     recommend_delete: bool
     recommend_warn: bool
-    recommend_mute: bool
+    recommend_mute: int
+    is_silent: bool = False
 
     @property
     def score(self: Self) -> int:
@@ -117,7 +119,9 @@ class AutoMod(cogs.MatchCog):
         """
         should_delete = False
         should_warn = False
-        should_mute = False
+        mute_duration = 0
+
+        silent = True
 
         all_punishments = run_all_checks(config, ctx.message)
 
@@ -130,18 +134,22 @@ class AutoMod(cogs.MatchCog):
         for punishment in sorted_punishments:
             should_delete = should_delete or punishment.recommend_delete
             should_warn = should_warn or punishment.recommend_warn
-            should_mute = should_mute or punishment.recommend_mute
+            mute_duration = max(mute_duration, punishment.recommend_mute)
+
+            if not punishment.is_silent:
+                silent = False
 
         actions = []
 
         reason_str = sorted_punishments[0].violation_str
 
-        if should_mute:
+        if mute_duration > 0:
             actions.append("mute")
-            if not ctx.author.timed_out_until:
-                await moderation.mute_user(
-                    ctx.author, sorted_punishments[0].violation_str, timedelta(hours=1)
-                )
+            await moderation.mute_user(
+                ctx.author,
+                sorted_punishments[0].violation_str,
+                timedelta(seconds=mute_duration),
+            )
 
         if should_delete:
             actions.append("delete")
@@ -167,16 +175,16 @@ class AutoMod(cogs.MatchCog):
                         f" {sorted_punishments[0].violation_str}) - banned by automod"
                     ),
                 )
-
-                await ctx.send(content=ctx.author.mention, embed=ban_embed)
-                try:
-                    await ctx.author.send(embed=ban_embed)
-                except discord.Forbidden:
-                    await self.bot.logger.send_log(
-                        message=f"Could not DM {ctx.author} about being banned",
-                        level=LogLevel.WARNING,
-                        context=LogContext(guild=ctx.guild, channel=ctx.channel),
-                    )
+                if not silent:
+                    await ctx.send(content=ctx.author.mention, embed=ban_embed)
+                    try:
+                        await ctx.author.send(embed=ban_embed)
+                    except discord.Forbidden:
+                        await self.bot.logger.send_log(
+                            message=f"Could not DM {ctx.author} about being banned",
+                            level=LogLevel.WARNING,
+                            context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                        )
 
                 await moderation.ban_user(
                     ctx.guild, ctx.author, 7, sorted_punishments[0].violation_str
@@ -191,6 +199,9 @@ class AutoMod(cogs.MatchCog):
 
         if len(actions) == 0:
             actions.append("notice")
+
+        if silent:
+            return
 
         actions_str = " & ".join(actions)
 
@@ -369,7 +380,7 @@ def handle_file_extensions(
                     f"{attachment.filename} has a suspicious file extension",
                     recommend_delete=True,
                     recommend_warn=True,
-                    recommend_mute=False,
+                    recommend_mute=0,
                 )
             )
     return violations
@@ -393,7 +404,7 @@ def handle_mentions(
                 "Mass Mentions",
                 recommend_delete=True,
                 recommend_warn=True,
-                recommend_mute=False,
+                recommend_mute=0,
             )
         ]
     return []
@@ -422,6 +433,7 @@ def handle_exact_string(config: munch.Munch, content: str) -> list[AutoModPunish
                     filter_config.delete,
                     filter_config.warn,
                     filter_config.mute,
+                    filter_config.silent_punishment,
                 )
             )
     return violations
@@ -456,6 +468,7 @@ def handle_regex_string(config: munch.Munch, content: str) -> list[AutoModPunish
                         filter_config.delete,
                         filter_config.warn,
                         filter_config.mute,
+                        filter_config.silent_punishment,
                     )
                 )
     return violations
