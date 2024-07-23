@@ -118,7 +118,6 @@ class ProtectCommands(cogs.BaseCog):
         """The logic for the /unban command
 
         Args:
-            self (Self): _description_
             interaction (discord.Interaction): The interaction that triggered this command
             target (discord.User): The target to be unbanned
             reason (str): The reason for the user being unbanned
@@ -184,7 +183,6 @@ class ProtectCommands(cogs.BaseCog):
         """The core logic for the /kick command
 
         Args:
-            self (Self): _description_
             interaction (discord.Interaction): The interaction that triggered the command
             target (discord.Member): The target for being kicked
             reason (str): The reason for the user being kicked
@@ -324,7 +322,6 @@ class ProtectCommands(cogs.BaseCog):
         """The core logic for the /unmute command
 
         Args:
-            self (Self): _description_
             interaction (discord.Interaction): The interaction that triggered this command
             target (discord.Member): The target for being unmuted
             reason (str): The reason for the unmute
@@ -379,7 +376,6 @@ class ProtectCommands(cogs.BaseCog):
         """The core logic for the /warn command
 
         Args:
-            self (Self): _description_
             interaction (discord.Interaction): The interaction that triggered this command
             target (discord.Member): The target for being warned
             reason (str): The reason the user is being warned
@@ -506,7 +502,6 @@ class ProtectCommands(cogs.BaseCog):
         """The core logic of the /unwarn command
 
         Args:
-            self (Self): _description_
             interaction (discord.Interaction): The interaction that triggered the command
             target (discord.Member): The user being unwarned
             reason (str): The reason for the unwarn

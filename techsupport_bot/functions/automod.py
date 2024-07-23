@@ -63,6 +63,9 @@ class AutoModPunishment:
 
 
 class AutoMod(cogs.MatchCog):
+    """Holds all of the discord message specific automod functions
+    Most of the automod is a class function"""
+
     async def match(
         self: Self, config: munch.Munch, ctx: commands.Context, content: str
     ) -> bool:
@@ -98,7 +101,11 @@ class AutoMod(cogs.MatchCog):
         return True
 
     async def response(
-        self, config: munch.Munch, ctx: commands.Context, content: str, result: bool
+        self: Self,
+        config: munch.Munch,
+        ctx: commands.Context,
+        content: str,
+        result: bool,
     ) -> None:
         """Handles a discord automod violation
 
@@ -219,7 +226,9 @@ class AutoMod(cogs.MatchCog):
         await alert_channel.send(embed=alert_channel_embed)
 
     @commands.Cog.listener()
-    async def on_raw_message_edit(self: Self, payload: discord.RawMessageUpdateEvent):
+    async def on_raw_message_edit(
+        self: Self, payload: discord.RawMessageUpdateEvent
+    ) -> None:
         """This is called when any message is edited in any guild the bot is in.
         There is no guarantee that the message exists or is used
 
@@ -256,7 +265,7 @@ class AutoMod(cogs.MatchCog):
 
 def generate_automod_alert_embed(
     ctx: commands.Context, violations: list[AutoModPunishment], action_taken: str
-):
+) -> discord.Embed:
     """Generates an alert embed for the automod rules that are broken
 
     Args:

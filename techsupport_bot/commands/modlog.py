@@ -27,7 +27,11 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class BanLogger(cogs.BaseCog):
-    """The class that holds the /modlog commands"""
+    """The class that holds the /modlog commands
+
+    Attrs:
+        modlog_group (app_commands.Group): The group for the /modlog commands
+    """
 
     modlog_group = app_commands.Group(
         name="modlog", description="...", extras={"module": "modlog"}
@@ -113,7 +117,7 @@ class BanLogger(cogs.BaseCog):
     )
     async def lookup_moderator_command(
         self: Self, interaction: discord.Interaction, moderator: discord.Member
-    ):
+    ) -> None:
         """This is the core of the /modlog lookup-moderator command
 
         Args:
@@ -155,7 +159,6 @@ class BanLogger(cogs.BaseCog):
         """This converts a database ban entry into a shiny embed
 
         Args:
-            self (Self): _description_
             ban (munch.Munch): The ban database entry
             title (str): The title to set the embeds to
 

@@ -63,7 +63,11 @@ class Paster(cogs.MatchCog):
         return True
 
     async def response(
-        self, config: munch.Munch, ctx: commands.Context, content: str, result: bool
+        self: Self,
+        config: munch.Munch,
+        ctx: commands.Context,
+        content: str,
+        result: bool,
     ) -> None:
         """Handles a paste check
 
@@ -90,7 +94,9 @@ class Paster(cogs.MatchCog):
         return int(max_length / 80) + 1
 
     @commands.Cog.listener()
-    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
+    async def on_raw_message_edit(
+        self: Self, payload: discord.RawMessageUpdateEvent
+    ) -> None:
         """This is called when any message is edited in any guild the bot is in.
         There is no guarantee that the message exists or is used
 
@@ -214,9 +220,12 @@ class Paster(cogs.MatchCog):
             "Linx-Randomize": "yes",
             "Accept": "application/json",
         }
-        file = {"file": io.StringIO(content)}
+        html_file = {"file": io.StringIO(content)}
         response = await self.bot.http_functions.http_call(
-            "post", self.bot.file_config.api.api_url.linx, headers=headers, data=file
+            "post",
+            self.bot.file_config.api.api_url.linx,
+            headers=headers,
+            data=html_file,
         )
 
         url = response.get("url")

@@ -15,7 +15,6 @@ class Report:
         Allows users to report potential moderation issues to staff
 
         Args:
-            self (Self): _description_
             interaction (discord.Interaction): The interaction that called this command
             report_str (str): The report string that the user submitted
         """
