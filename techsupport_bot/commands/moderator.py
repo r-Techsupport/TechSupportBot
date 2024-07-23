@@ -610,7 +610,7 @@ class ProtectCommands(cogs.BaseCog):
         description="Shows all warnings to the invoker",
         extras={"module": "moderator"},
     )
-    async def handle_warning_clear(
+    async def handle_warning_all(
         self: Self,
         interaction: discord.Interaction,
         target: discord.User,
