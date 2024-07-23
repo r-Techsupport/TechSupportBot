@@ -27,6 +27,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class BanLogger(cogs.BaseCog):
+    """The class that holds the /modlog commands"""
 
     modlog_group = app_commands.Group(
         name="modlog", description="...", extras={"module": "modlog"}
@@ -189,7 +190,7 @@ class BanLogger(cogs.BaseCog):
             discord.utils.utcnow() + datetime.timedelta(seconds=2)
         )
 
-        # Fetch the audit logs for the ban action
+        entry = None
         async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.ban):
             if entry.target.id == user.id:
                 moderator = entry.user
@@ -217,7 +218,7 @@ class BanLogger(cogs.BaseCog):
             discord.utils.utcnow() + datetime.timedelta(seconds=2)
         )
 
-        # Fetch the audit logs for the unban action
+        entry = None
         async for entry in guild.audit_logs(
             limit=1, action=discord.AuditLogAction.unban
         ):

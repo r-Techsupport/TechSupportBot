@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Self
 import discord
 from core import auxiliary, cogs, moderation
 from discord import app_commands
-from discord.ext import commands
 
 if TYPE_CHECKING:
     import bot
@@ -24,6 +23,8 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Purger(cogs.BaseCog):
+    """The class that holds the /purge command"""
+
     @app_commands.checks.has_permissions(manage_messages=True)
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.command(
@@ -72,7 +73,7 @@ class Purger(cogs.BaseCog):
         await interaction.channel.purge(after=timestamp, limit=amount)
 
         await moderation.send_command_usage_alert(
-            bot=self.bot,
+            bot_object=self.bot,
             interaction=interaction,
             command=f"/purge amount: {amount}, duration: {duration_minutes}",
             guild=interaction.guild,

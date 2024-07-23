@@ -100,12 +100,15 @@ async def unmute_user(user: discord.Member, reason: str) -> bool:
 
 
 async def warn_user(
-    bot: bot.TechSupportBot, user: discord.Member, invoker: discord.Member, reason: str
+    bot_object: bot.TechSupportBot,
+    user: discord.Member,
+    invoker: discord.Member,
+    reason: str,
 ) -> bool:
     """Warns a user. Does NOT check config or how many warnings a user has
 
     Args:
-        bot (bot.TechSupportBot): The bot object to use
+        bot_object (bot.TechSupportBot): The bot object to use
         user (discord.Member): The user to warn
         invoker (discord.Member): The person who warned the user
         reason (str): The reason for the warning
@@ -113,7 +116,7 @@ async def warn_user(
     Returns:
         bool: True if warning was successful
     """
-    await bot.models.Warning(
+    await bot_object.models.Warning(
         user_id=str(user.id),
         guild_id=str(invoker.guild.id),
         reason=reason,
@@ -123,12 +126,12 @@ async def warn_user(
 
 
 async def unwarn_user(
-    bot: bot.TechSupportBot, user: discord.Member, warning: str
+    bot_object: bot.TechSupportBot, user: discord.Member, warning: str
 ) -> bool:
     """Removes a specific warning from a user by string
 
     Args:
-        bot (bot.TechSupportBot): The bot object to use
+        bot_object (bot.TechSupportBot): The bot object to use
         user (discord.Member): The member to remove a warning from
         warning (str): The warning to remove
 
@@ -136,11 +139,11 @@ async def unwarn_user(
         bool: True if unwarning was successful
     """
     query = (
-        bot.models.Warning.query.where(
-            bot.models.Warning.guild_id == str(user.guild.id)
+        bot_object.models.Warning.query.where(
+            bot_object.models.Warning.guild_id == str(user.guild.id)
         )
-        .where(bot.models.Warning.reason == warning)
-        .where(bot.models.Warning.user_id == str(user.id))
+        .where(bot_object.models.Warning.reason == warning)
+        .where(bot_object.models.Warning.user_id == str(user.id))
     )
     entry = await query.gino.first()
     if not entry:
@@ -150,12 +153,12 @@ async def unwarn_user(
 
 
 async def get_all_warnings(
-    bot: bot.TechSupportBot, user: discord.User, guild: discord.Guild
+    bot_object: bot.TechSupportBot, user: discord.User, guild: discord.Guild
 ) -> list[munch.Munch]:
     """Gets a list of all warnings for a specific user in a specific guild
 
     Args:
-        bot (bot.TechSupportBot): The bot object to use
+        bot_object (bot.TechSupportBot): The bot object to use
         user (discord.User): The user that we want warns from
         guild (discord.Guild): The guild that we want warns from
 
@@ -163,15 +166,17 @@ async def get_all_warnings(
         list[munch.Munch]: The list of all warnings for the user/guild, if any exist
     """
     warnings = (
-        await bot.models.Warning.query.where(bot.models.Warning.user_id == str(user.id))
-        .where(bot.models.Warning.guild_id == str(guild.id))
+        await bot_object.models.Warning.query.where(
+            bot_object.models.Warning.user_id == str(user.id)
+        )
+        .where(bot_object.models.Warning.guild_id == str(guild.id))
         .gino.all()
     )
     return warnings
 
 
 async def send_command_usage_alert(
-    bot: bot.TechSupportBot,
+    bot_object: bot.TechSupportBot,
     interaction: discord.Interaction,
     command: str,
     guild: discord.Guild,
@@ -180,7 +185,7 @@ async def send_command_usage_alert(
     """Sends a usage alert to the protect events channel, if configured
 
     Args:
-        bot (bot.TechSupportBot): The bot object to use
+        bot_object (bot.TechSupportBot): The bot object to use
         interaction (discord.Interaction): The interaction that trigger the command
         command (str): The string representation of the command that was run
         guild (discord.Guild): The guild the command was run in
@@ -192,7 +197,7 @@ async def send_command_usage_alert(
         + "alert_danger_warning_notification_icon_124692.png"
     )
 
-    config = bot.guild_configs[str(guild.id)]
+    config = bot_object.guild_configs[str(guild.id)]
 
     try:
         alert_channel = guild.get_channel(

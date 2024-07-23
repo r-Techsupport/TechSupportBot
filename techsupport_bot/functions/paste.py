@@ -1,3 +1,5 @@
+"""The file that holds the paste function"""
+
 from __future__ import annotations
 
 import io
@@ -23,6 +25,8 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Paster(cogs.MatchCog):
+    """The pasting module"""
+
     async def match(
         self: Self, config: munch.Munch, ctx: commands.Context, content: str
     ) -> bool:

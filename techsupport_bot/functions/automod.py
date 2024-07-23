@@ -45,7 +45,13 @@ class AutoModPunishment:
     recommend_mute: bool
 
     @property
-    def score(self) -> int:
+    def score(self: Self) -> int:
+        """A score so that the AutoModPunishment object is sortable
+        This sorts based on actions recommended to be taken
+
+        Returns:
+            int: The score
+        """
         score = 0
         if self.recommend_mute:
             score += 4
@@ -426,7 +432,7 @@ def handle_regex_string(config: munch.Munch, content: str) -> list[AutoModPunish
     """
     violations = []
     for (
-        keyword,
+        _,
         filter_config,
     ) in config.extensions.protect.string_map.value.items():
         regex = filter_config.get("regex")

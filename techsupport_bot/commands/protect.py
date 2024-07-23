@@ -17,11 +17,8 @@ Ban logs need to be more centralized:
 Move all config over to specific new files
 """
 
-import re
-
 import discord
 import expiringdict
-import munch
 import ui
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, extensionconfig

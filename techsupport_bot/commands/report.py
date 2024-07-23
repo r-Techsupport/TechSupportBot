@@ -19,4 +19,3 @@ class Report:
             interaction (discord.Interaction): The interaction that called this command
             report_str (str): The report string that the user submitted
         """
-        ...

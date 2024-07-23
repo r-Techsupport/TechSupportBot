@@ -93,7 +93,7 @@ class ProtectCommands(cogs.BaseCog):
         )
 
         await moderation.send_command_usage_alert(
-            bot=self.bot,
+            bot_object=self.bot,
             interaction=interaction,
             command=(
                 f"/ban target: {target.display_name}, reason: {reason}, delete_days:"
@@ -159,7 +159,7 @@ class ProtectCommands(cogs.BaseCog):
         )
 
         await moderation.send_command_usage_alert(
-            bot=self.bot,
+            bot_object=self.bot,
             interaction=interaction,
             command=f"/unban target: {target.display_name}, reason: {reason}",
             guild=interaction.guild,
@@ -210,7 +210,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         await moderation.send_command_usage_alert(
-            bot=self.bot,
+            bot_object=self.bot,
             interaction=interaction,
             command=f"/kick target: {target.display_name}, reason: {reason}",
             guild=interaction.guild,
@@ -296,7 +296,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         await moderation.send_command_usage_alert(
-            bot=self.bot,
+            bot_object=self.bot,
             interaction=interaction,
             command=(
                 f"/mute target: {target.display_name}, reason: {reason}, duration:"
@@ -356,7 +356,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         await moderation.send_command_usage_alert(
-            bot=self.bot,
+            bot_object=self.bot,
             interaction=interaction,
             command=f"/unmute target: {target.display_name}, reason: {reason}",
             guild=interaction.guild,
@@ -423,7 +423,7 @@ class ProtectCommands(cogs.BaseCog):
                 should_ban = True
 
         warn_result = await moderation.warn_user(
-            bot=self.bot, user=target, invoker=interaction.user, reason=reason
+            bot_object=self.bot, user=target, invoker=interaction.user, reason=reason
         )
 
         if should_ban:
@@ -461,7 +461,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         await moderation.send_command_usage_alert(
-            bot=self.bot,
+            bot_object=self.bot,
             interaction=interaction,
             command=f"/warn target: {target.display_name}, reason: {reason}",
             guild=interaction.guild,
@@ -540,7 +540,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         await moderation.send_command_usage_alert(
-            bot=self.bot,
+            bot_object=self.bot,
             interaction=interaction,
             command=f"/unwarn target: {target.display_name}, reason: {reason}, warning: {warning}",
             guild=interaction.guild,
