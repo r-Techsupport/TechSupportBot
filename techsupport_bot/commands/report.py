@@ -1,0 +1,3 @@
+class Report:
+    async def report_command(self, interaction, report_str):
+        ...
