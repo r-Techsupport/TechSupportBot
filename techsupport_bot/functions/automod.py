@@ -139,9 +139,8 @@ class AutoMod(cogs.MatchCog):
         if should_mute:
             actions.append("mute")
             if not ctx.author.timed_out_until:
-                await ctx.author.timeout(
-                    timedelta(hours=1),
-                    reason=sorted_punishments[0].violation_str,
+                await moderation.mute_user(
+                    ctx.author, sorted_punishments[0].violation_str, timedelta(hours=1)
                 )
 
         if should_delete:

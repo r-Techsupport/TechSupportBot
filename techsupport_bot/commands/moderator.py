@@ -30,6 +30,10 @@ class ProtectCommands(cogs.BaseCog):
     """The cog for all manual moderation activities
     These are all slash commands"""
 
+    warnings_group = app_commands.Group(
+        name="warning", description="...", extras={"module": "moderator"}
+    )
+
     # Commands
 
     @app_commands.checks.has_permissions(ban_members=True)
@@ -93,7 +97,7 @@ class ProtectCommands(cogs.BaseCog):
         )
 
         await moderation.send_command_usage_alert(
-            bot=self.bot,
+            bot_object=self.bot,
             interaction=interaction,
             command=(
                 f"/ban target: {target.display_name}, reason: {reason}, delete_days:"
@@ -158,7 +162,7 @@ class ProtectCommands(cogs.BaseCog):
         )
 
         await moderation.send_command_usage_alert(
-            bot=self.bot,
+            bot_object=self.bot,
             interaction=interaction,
             command=f"/unban target: {target.display_name}, reason: {reason}",
             guild=interaction.guild,
@@ -208,7 +212,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         await moderation.send_command_usage_alert(
-            bot=self.bot,
+            bot_object=self.bot,
             interaction=interaction,
             command=f"/kick target: {target.display_name}, reason: {reason}",
             guild=interaction.guild,
@@ -294,7 +298,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         await moderation.send_command_usage_alert(
-            bot=self.bot,
+            bot_object=self.bot,
             interaction=interaction,
             command=(
                 f"/mute target: {target.display_name}, reason: {reason}, duration:"
@@ -353,7 +357,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         await moderation.send_command_usage_alert(
-            bot=self.bot,
+            bot_object=self.bot,
             interaction=interaction,
             command=f"/unmute target: {target.display_name}, reason: {reason}",
             guild=interaction.guild,
@@ -419,7 +423,7 @@ class ProtectCommands(cogs.BaseCog):
                 should_ban = True
 
         warn_result = await moderation.warn_user(
-            bot=self.bot, user=target, invoker=interaction.user, reason=reason
+            bot_object=self.bot, user=target, invoker=interaction.user, reason=reason
         )
 
         if should_ban:
@@ -457,7 +461,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         await moderation.send_command_usage_alert(
-            bot=self.bot,
+            bot_object=self.bot,
             interaction=interaction,
             command=f"/warn target: {target.display_name}, reason: {reason}",
             guild=interaction.guild,
@@ -525,7 +529,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         result = await moderation.unwarn_user(
-            bot=self.bot, user=target, warning=warning
+            bot_object=self.bot, user=target, warning=warning
         )
         if not result:
             embed = auxiliary.prepare_deny_embed(
@@ -535,7 +539,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         await moderation.send_command_usage_alert(
-            bot=self.bot,
+            bot_object=self.bot,
             interaction=interaction,
             command=f"/unwarn target: {target.display_name}, reason: {reason}, warning: {warning}",
             guild=interaction.guild,
@@ -543,6 +547,104 @@ class ProtectCommands(cogs.BaseCog):
         )
         embed = generate_response_embed(user=target, action="unwarn", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
+
+    @app_commands.checks.has_permissions(kick_members=True)
+    @app_commands.checks.bot_has_permissions(kick_members=True)
+    @warnings_group.command(
+        name="clear",
+        description="clears all warnings from a user",
+        extras={"module": "moderator"},
+    )
+    async def handle_warning_clear(
+        self: Self,
+        interaction: discord.Interaction,
+        target: discord.Member,
+        reason: str,
+    ) -> None:
+        """The core logic of the /warnings clear command
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered the command
+            target (discord.Member): The user having warnings cleared
+            reason (str): The reason for the warnings being cleared
+        """
+        permission_check = await self.permission_check(
+            invoker=interaction.user, target=target, action_name="unwarn"
+        )
+        if permission_check:
+            embed = auxiliary.prepare_deny_embed(message=permission_check)
+            await interaction.response.send_message(embed=embed)
+            return
+
+        warnings = await moderation.get_all_warnings(
+            self.bot, target, interaction.guild
+        )
+
+        if not warnings:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"No warnings could be found on {target}"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+
+        for warning in warnings:
+            await moderation.unwarn_user(self.bot, target, warning.reason)
+
+        await moderation.send_command_usage_alert(
+            bot_object=self.bot,
+            interaction=interaction,
+            command=f"/warnings clear target: {target.display_name}, reaason: {reason}",
+            guild=interaction.guild,
+            target=target,
+        )
+
+        embed = generate_response_embed(
+            user=target, action="warnings clear", reason=reason
+        )
+        await interaction.response.send_message(content=target.mention, embed=embed)
+
+    @app_commands.checks.has_permissions(kick_members=True)
+    @app_commands.checks.bot_has_permissions(kick_members=True)
+    @warnings_group.command(
+        name="all",
+        description="Shows all warnings to the invoker",
+        extras={"module": "moderator"},
+    )
+    async def handle_warning_clear(
+        self: Self,
+        interaction: discord.Interaction,
+        target: discord.User,
+    ) -> None:
+        """The core logic of the /warnings all command
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered the command
+            target (discord.User): The user to lookup warnings for
+        """
+        warnings = await moderation.get_all_warnings(
+            self.bot, target, interaction.guild
+        )
+
+        if not warnings:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"No warnings could be found on {target}"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        embed = discord.Embed(
+            title=f"Warnings for {target.display_name} ({target.name})"
+        )
+        for warning in warnings:
+            warning_moderator = await self.bot.fetch_user(int(warning.invoker_id))
+            print(type(warning.time))
+            embed.add_field(
+                name=f"Warning by {warning_moderator.display_name} ({warning_moderator.name})",
+                value=f"{warning.reason}\nWarned at {warning.time}",
+            )
+        embed.color = discord.Color.blue()
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     # Helper functions
 

@@ -39,7 +39,7 @@ class BanLogger(cogs.BaseCog):
 
     @modlog_group.command(
         name="highscores",
-        description="Unban someone and allow them to apply",
+        description="Shows the top 10 moderators based on ban count",
         extras={"module": "modlog"},
     )
     async def high_score_command(self: Self, interaction: discord.Interaction) -> None:
@@ -71,7 +71,7 @@ class BanLogger(cogs.BaseCog):
 
     @modlog_group.command(
         name="lookup-user",
-        description="Unban someone and allow them to apply",
+        description="Looks up the 10 most recent bans for a given user",
         extras={"module": "modlog"},
     )
     async def lookup_user_command(
@@ -112,7 +112,7 @@ class BanLogger(cogs.BaseCog):
 
     @modlog_group.command(
         name="lookup-moderator",
-        description="Unban someone and allow them to apply",
+        description="Looks up the 10 most recent bans by a given moderator",
         extras={"module": "modlog"},
     )
     async def lookup_moderator_command(

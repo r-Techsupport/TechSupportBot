@@ -75,7 +75,10 @@ async def mute_user(user: discord.Member, reason: str, duration: timedelta) -> b
     Returns:
         bool: True if the timeout was successful
     """
-    await user.timeout(duration, reason=reason)
+    try:
+        await user.timeout(duration, reason=reason)
+    except discord.Forbidden:
+        return False
     return True
 
 
