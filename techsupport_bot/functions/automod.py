@@ -100,47 +100,142 @@ class AutoMod(cogs.MatchCog):
             should_mute = should_mute or punishment.recommend_mute
 
         actions = []
+
+        reason_str = sorted_punishments[0].violation_str
+
         if should_mute:
             actions.append("mute")
-        if should_warn:
-            actions.append("warn")
+            if not ctx.author.timed_out_until:
+                await ctx.author.timeout(
+                    timedelta(hours=1),
+                    reason=sorted_punishments[0].violation_str,
+                )
+
         if should_delete:
             actions.append("delete")
+            await ctx.message.delete()
+
+        if should_warn:
+            actions.append("warn")
+            count_of_warnings = (
+                len(await moderation.get_all_warnings(self.bot, ctx.author, ctx.guild))
+                + 1
+            )
+            reason_str += f" ({count_of_warnings} total warnings)"
+            await moderation.warn_user(
+                self.bot, ctx.author, ctx.author, sorted_punishments[0].violation_str
+            )
+            if count_of_warnings >= config.extensions.protect.max_warnings.value:
+                ban_embed = moderator.generate_response_embed(
+                    ctx.author,
+                    "ban",
+                    reason=(
+                        f"Over max warning count {count_of_warnings} out of"
+                        f" {config.extensions.protect.max_warnings.value} (final warning:"
+                        f" {sorted_punishments[0].violation_str}) - banned by automod"
+                    ),
+                )
+
+                await ctx.send(content=ctx.author.mention, embed=ban_embed)
+                try:
+                    await ctx.author.send(embed=ban_embed)
+                except discord.Forbidden:
+                    await self.bot.logger.send_log(
+                        message=f"Could not DM {ctx.author} about being banned",
+                        level=LogLevel.WARNING,
+                        context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                    )
+
+                await moderation.ban_user(
+                    ctx.guild, ctx.author, 7, sorted_punishments[0].violation_str
+                )
 
         if len(actions) == 0:
             actions.append("notice")
 
         actions_str = " & ".join(actions)
 
-        embed = moderator.generate_response_embed(
-            ctx.author, actions_str, sorted_punishments[0].violation_str
-        )
+        embed = moderator.generate_response_embed(ctx.author, actions_str, reason_str)
 
-        if should_mute and not ctx.author.timed_out_until:
-            await ctx.author.timeout(
-                timedelta(hours=1),
-                reason=sorted_punishments[0].violation_str,
+        await ctx.send(content=ctx.author.mention, embed=embed)
+        try:
+            await ctx.author.send(embed=embed)
+        except discord.Forbidden:
+            await self.bot.logger.send_log(
+                message=f"Could not DM {ctx.author} about being automodded",
+                level=LogLevel.WARNING,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
             )
 
-        if should_delete:
-            await ctx.message.delete()
+        alert_channel_embed = generate_automod_alert_embed(ctx, sorted_punishments)
 
-        if should_warn:
-            await moderation.warn_user(
-                self.bot, ctx.author, ctx.author, sorted_punishments[0].violation_str
+        config = self.bot.guild_configs[str(ctx.guild.id)]
+
+        try:
+            alert_channel = ctx.guild.get_channel(
+                int(config.extensions.protect.alert_channel.value)
             )
+        except TypeError:
+            alert_channel = None
 
-            count_of_warnings = (
-                len(await moderation.get_all_warnings(self.bot, ctx.author, ctx.guild))
-                + 1
-            )
+        if not alert_channel:
+            return
 
-            if count_of_warnings >= config.extensions.protect.max_warnings.value:
-                await moderation.ban_user(
-                    ctx.guild, ctx.author, 7, sorted_punishments[0].violation_str
-                )
+        await alert_channel.send(embed=alert_channel_embed)
 
-        await ctx.send(embed=embed)
+    @commands.Cog.listener()
+    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
+        """Method to edit the raw message."""
+        guild = self.bot.get_guild(payload.guild_id)
+        if not guild:
+            return
+
+        config = self.bot.guild_configs[str(guild.id)]
+        if not self.extension_enabled(config):
+            return
+
+        channel = self.bot.get_channel(payload.channel_id)
+        if not channel:
+            return
+
+        message = await channel.fetch_message(payload.message_id)
+        if not message:
+            return
+
+        # Don't trigger if content hasn't changed
+        if payload.cached_message and payload.cached_message.content == message.content:
+            return
+
+        ctx = await self.bot.get_context(message)
+        matched = await self.match(config, ctx, message.content)
+        if not matched:
+            return
+
+        await self.response(config, ctx, message.content, matched)
+
+
+def generate_automod_alert_embed(
+    ctx: commands.Context, violations: list[AutoModPunishment]
+):
+
+    ALERT_ICON_URL = (
+        "https://cdn.icon-icons.com/icons2/2063/PNG/512/"
+        + "alert_danger_warning_notification_icon_124692.png"
+    )
+
+    embed = discord.Embed(
+        title="Automod Violations",
+        description="\n".join(violation.violation_str for violation in violations),
+    )
+    embed.add_field(name="Channel", value=f"{ctx.channel.mention} ({ctx.channel.name})")
+    embed.add_field(name="User", value=f"{ctx.author.mention} ({ctx.author.name})")
+    embed.add_field(name="Message", value=ctx.message.content, inline=False)
+    embed.add_field(name="URL", value=ctx.message.jump_url, inline=False)
+
+    embed.set_thumbnail(url=ALERT_ICON_URL)
+    embed.color = discord.Color.red()
+
+    return embed
 
 
 def run_all_checks(config, message: discord.Message) -> list[AutoModPunishment]:
