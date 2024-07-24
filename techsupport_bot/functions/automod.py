@@ -119,6 +119,19 @@ class AutoModPunishment:
         return score
 
 
+@dataclass
+class AutoModAction:
+    warn: bool
+    delete_message: bool
+    mute: bool
+    mute_duration: int
+    be_silent: bool
+    action_string: str
+    violation_string: str
+    total_punishments: str
+    violations_list: list[AutoModPunishment]
+
+
 class AutoMod(cogs.MatchCog):
     """Holds all of the discord message specific automod functions
     Most of the automod is a class function"""
@@ -169,53 +182,33 @@ class AutoMod(cogs.MatchCog):
             content (str): The string content of the message
             result (bool): What the match() function returned
         """
-        should_delete = False
-        should_warn = False
-        mute_duration = 0
-
-        silent = True
-
         all_punishments = run_all_checks(config, ctx.message)
 
         if len(all_punishments) == 0:
             return
 
-        sorted_punishments = sorted(
-            all_punishments, key=lambda p: p.score, reverse=True
-        )
-        for punishment in sorted_punishments:
-            should_delete = should_delete or punishment.recommend_delete
-            should_warn = should_warn or punishment.recommend_warn
-            mute_duration = max(mute_duration, punishment.recommend_mute)
+        total_punishment = process_automod_violations(all_punishments=all_punishments)
 
-            if not punishment.is_silent:
-                silent = False
-
-        actions = []
-
-        reason_str = sorted_punishments[0].violation_str
-
-        if mute_duration > 0:
-            actions.append("mute")
+        if total_punishment.mute > 0:
             await moderation.mute_user(
-                ctx.author,
-                sorted_punishments[0].violation_str,
-                timedelta(seconds=mute_duration),
+                user=ctx.author,
+                reason=total_punishment.violation_string,
+                duration=timedelta(seconds=total_punishment.mute_duration),
             )
 
-        if should_delete:
-            actions.append("delete")
+        if total_punishment.delete_message:
             await ctx.message.delete()
 
-        if should_warn:
-            actions.append("warn")
+        if total_punishment.warn:
             count_of_warnings = (
                 len(await moderation.get_all_warnings(self.bot, ctx.author, ctx.guild))
                 + 1
             )
-            reason_str += f" ({count_of_warnings} total warnings)"
+            total_punishment.violation_string += (
+                f" ({count_of_warnings} total warnings)"
+            )
             await moderation.warn_user(
-                self.bot, ctx.author, ctx.author, sorted_punishments[0].violation_str
+                self.bot, ctx.author, ctx.author, total_punishment.violation_string
             )
             if count_of_warnings >= config.moderation.max_warnings:
                 ban_embed = moderator.generate_response_embed(
@@ -224,10 +217,10 @@ class AutoMod(cogs.MatchCog):
                     reason=(
                         f"Over max warning count {count_of_warnings} out of"
                         f" {config.moderation.max_warnings} (final warning:"
-                        f" {sorted_punishments[0].violation_str}) - banned by automod"
+                        f" {total_punishment.violation_string}) - banned by automod"
                     ),
                 )
-                if not silent:
+                if not total_punishment.be_silent:
                     await ctx.send(content=ctx.author.mention, embed=ban_embed)
                     try:
                         await ctx.author.send(embed=ban_embed)
@@ -239,25 +232,24 @@ class AutoMod(cogs.MatchCog):
                         )
 
                 await moderation.ban_user(
-                    ctx.guild, ctx.author, 7, sorted_punishments[0].violation_str
+                    ctx.guild, ctx.author, 7, total_punishment.violation_string
                 )
                 await modlog.log_ban(
                     self.bot,
                     ctx.author,
                     ctx.guild.me,
                     ctx.guild,
-                    sorted_punishments[0].violation_str,
+                    total_punishment.violation_string,
                 )
 
-        if len(actions) == 0:
-            actions.append("notice")
-
-        if silent:
+        if total_punishment.be_silent:
             return
 
-        actions_str = " & ".join(actions)
-
-        embed = moderator.generate_response_embed(ctx.author, actions_str, reason_str)
+        embed = moderator.generate_response_embed(
+            ctx.author,
+            total_punishment.action_string,
+            total_punishment.violation_string,
+        )
 
         await ctx.send(content=ctx.author.mention, embed=embed)
         try:
@@ -270,7 +262,7 @@ class AutoMod(cogs.MatchCog):
             )
 
         alert_channel_embed = generate_automod_alert_embed(
-            ctx, sorted_punishments, actions_str
+            ctx, total_punishment.total_punishments, total_punishment.action_string
         )
 
         config = self.bot.guild_configs[str(ctx.guild.id)]
@@ -325,8 +317,59 @@ class AutoMod(cogs.MatchCog):
         await self.response(config, ctx, message.content, matched)
 
 
+def process_automod_violations(
+    all_punishments: list[AutoModPunishment],
+) -> AutoModAction:
+    should_delete = False
+    should_warn = False
+    mute_duration = 0
+
+    silent = True
+
+    sorted_punishments = sorted(all_punishments, key=lambda p: p.score, reverse=True)
+    for punishment in sorted_punishments:
+        should_delete = should_delete or punishment.recommend_delete
+        should_warn = should_warn or punishment.recommend_warn
+        mute_duration = max(mute_duration, punishment.recommend_mute)
+
+        if not punishment.is_silent:
+            silent = False
+
+    actions = []
+
+    reason_str = sorted_punishments[0].violation_str
+
+    if mute_duration > 0:
+        actions.append("mute")
+
+    if should_delete:
+        actions.append("delete")
+
+    if should_warn:
+        actions.append("warn")
+
+    if len(actions) == 0:
+        actions.append("notice")
+
+    actions_str = " & ".join(actions)
+
+    all_alerts_str = "\n".join(violation.violation_str for violation in all_punishments)
+
+    final_action = AutoModAction(
+        warn=should_warn,
+        delete_message=should_delete,
+        mute=mute_duration > 0,
+        mute_duration=mute_duration,
+        be_silent=silent,
+        action_string=actions_str,
+        violation_string=reason_str,
+        total_punishments=all_alerts_str,
+        violations_list=all_punishments,
+    )
+
+
 def generate_automod_alert_embed(
-    ctx: commands.Context, violations: list[AutoModPunishment], action_taken: str
+    ctx: commands.Context, violations: str, action_taken: str
 ) -> discord.Embed:
     """Generates an alert embed for the automod rules that are broken
 
@@ -346,7 +389,7 @@ def generate_automod_alert_embed(
 
     embed = discord.Embed(
         title="Automod Violations",
-        description="\n".join(violation.violation_str for violation in violations),
+        description=violations,
     )
     embed.add_field(name="Actions Taken", value=action_taken)
     embed.add_field(name="Channel", value=f"{ctx.channel.mention} ({ctx.channel.name})")

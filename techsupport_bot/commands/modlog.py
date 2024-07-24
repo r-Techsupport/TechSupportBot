@@ -262,6 +262,10 @@ async def log_ban(
         guild (discord.Guild): The guild the member was banned from
         reason (str): The reason for the ban
     """
+    config = bot.guild_configs[str(guild.id)]
+    if not "modlog" in config.get("enabled_extensions", []):
+        return
+
     if not reason:
         reason = "No reason specified"
 
@@ -314,6 +318,10 @@ async def log_unban(
         guild (discord.Guild): The guild the member was unbanned from
         reason (str): The reason for the unban
     """
+    config = bot.guild_configs[str(guild.id)]
+    if not "modlog" in config.get("enabled_extensions", []):
+        return
+
     if not reason:
         reason = "No reason specified"
 
