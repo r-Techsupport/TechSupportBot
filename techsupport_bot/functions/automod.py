@@ -367,6 +367,8 @@ def process_automod_violations(
         violations_list=all_punishments,
     )
 
+    return final_action
+
 
 def generate_automod_alert_embed(
     ctx: commands.Context, violations: str, action_taken: str

@@ -653,12 +653,13 @@ class ProtectCommands(cogs.BaseCog):
         embed = discord.Embed(
             title=f"Warnings for {target.display_name} ({target.name})"
         )
+
         for warning in warnings:
             warning_moderator = await self.bot.fetch_user(int(warning.invoker_id))
             print(type(warning.time))
             embed.add_field(
                 name=f"Warning by {warning_moderator.display_name} ({warning_moderator.name})",
-                value=f"{warning.reason}\nWarned at {warning.time}",
+                value=f"{warning.reason}\nWarned <t:{int(warning.time.timestamp())}:R>",
             )
         embed.color = discord.Color.blue()
 

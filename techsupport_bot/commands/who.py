@@ -224,7 +224,8 @@ class Who(cogs.BaseCog):
         )
         warning_str = ""
         for warning in warnings:
-            warning_str += f"{warning.reason} - {warning.time.date()}\n"
+            warning_moderator = await self.bot.fetch_user(int(warning.invoker_id))
+            warning_str += f"{warning.reason} - <t:{int(warning.time.timestamp())}:R>\nWarned by: {warning_moderator.name}\n"
         if warning_str:
             embed.add_field(
                 name="**Warnings**",

@@ -102,11 +102,22 @@ class BanLogger(cogs.BaseCog):
             .gino.all()
         )
 
+        all_bans_by_user = (
+            await self.bot.models.BanLog.query.where(
+                self.bot.models.BanLog.guild_id == str(interaction.guild.id)
+            )
+            .where(self.bot.models.BanLog.banned_member == str(user.id))
+            .order_by(self.bot.models.BanLog.ban_time.desc())
+            .gino.all()
+        )
+
         embeds = []
         for ban in recent_bans_by_user:
-            embeds.append(
-                await self.convert_ban_to_pretty_string(ban, f"{user.name} bans")
+            temp_embed = await self.convert_ban_to_pretty_string(
+                ban, f"{user.name} bans"
             )
+            temp_embed.description += f"\n**Total bans:** {len(all_bans_by_user)}"
+            embeds.append(temp_embed)
 
         if len(embeds) == 0:
             embed = auxiliary.prepare_deny_embed(
@@ -143,13 +154,22 @@ class BanLogger(cogs.BaseCog):
             .gino.all()
         )
 
+        all_bans_by_user = (
+            await self.bot.models.BanLog.query.where(
+                self.bot.models.BanLog.guild_id == str(interaction.guild.id)
+            )
+            .where(self.bot.models.BanLog.banning_moderator == str(moderator.id))
+            .order_by(self.bot.models.BanLog.ban_time.desc())
+            .gino.all()
+        )
+
         embeds = []
         for ban in recent_bans_by_user:
-            embeds.append(
-                await self.convert_ban_to_pretty_string(
-                    ban, f"Bans by {moderator.name}"
-                )
+            temp_embed = await self.convert_ban_to_pretty_string(
+                ban, f"Bans by {moderator.name}"
             )
+            temp_embed.description += f"\n**Total bans:** {len(all_bans_by_user)}"
+            embeds.append(temp_embed)
 
         if len(embeds) == 0:
             embed = auxiliary.prepare_deny_embed(
