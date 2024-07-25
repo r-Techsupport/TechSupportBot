@@ -62,7 +62,9 @@ class Report(cogs.BaseCog):
                 f"**Name:** {interaction.user.name} ({interaction.user.mention})\n"
                 f"**Joined:** <t:{int(interaction.user.joined_at.timestamp())}:R>\n"
                 f"**Created:** <t:{int(interaction.user.created_at.timestamp())}:R>\n"
-                f"**Sent from:** {interaction.channel.mention} [Jump to context](https://discord.com/channels/{interaction.guild.id}/{interaction.channel.id}/{discord.utils.time_snowflake(datetime.datetime.utcnow())})"
+                f"**Sent from:** {interaction.channel.mention} [Jump to context]"
+                f"(https://discord.com/channels/{interaction.guild.id}/{interaction.channel.id}/"
+                f"{discord.utils.time_snowflake(datetime.datetime.utcnow())})"
             ),
         )
 

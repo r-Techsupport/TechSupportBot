@@ -213,7 +213,9 @@ async def send_command_usage_alert(
     )
     embed.add_field(
         name="Invoking User",
-        value=f"{interaction.user.display_name} ({interaction.user.mention}, {interaction.user.id})",
+        value=(
+            f"{interaction.user.display_name} ({interaction.user.mention}, {interaction.user.id})"
+        ),
     )
     embed.add_field(
         name="Target",

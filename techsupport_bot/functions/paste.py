@@ -180,10 +180,12 @@ class Paster(cogs.MatchCog):
             ctx (commands.Context): The context where the original message was sent
             content (str): The string content of the flagged message
         """
+        log_channel = config.get("logging_channel")
         if not self.bot.file_config.api.api_url.linx:
             await self.bot.logger.send_log(
                 message=(
-                    f"Would have pasted message {ctx.message.id} but no linx url has been configured."
+                    f"Would have pasted message {ctx.message.id}"
+                    " but no linx url has been configured."
                 ),
                 level=LogLevel.WARNING,
                 channel=log_channel,
@@ -196,7 +198,8 @@ class Paster(cogs.MatchCog):
         if not linx_embed:
             await self.bot.logger.send_log(
                 message=(
-                    f"Would have pasted message {ctx.message.id} but uploading the file to linx failed."
+                    f"Would have pasted message {ctx.message.id}"
+                    " but uploading the file to linx failed."
                 ),
                 level=LogLevel.WARNING,
                 channel=log_channel,
@@ -213,7 +216,6 @@ class Paster(cogs.MatchCog):
                 ) <= ctx.filesize_limit:
                     attachments.append(await attch.to_file())
             if (lf := len(ctx.message.attachments) - len(attachments)) != 0:
-                log_channel = config.get("logging_channel")
                 await self.bot.logger.send_log(
                     message=(
                         f"Protect did not reupload {lf} file(s) due to file size limit."

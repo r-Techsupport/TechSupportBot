@@ -87,11 +87,13 @@ class AutoModPunishment:
     """This is a base class holding the violation and recommended actions
     Since automod is a framework, the actions can translate to different things
 
-    violation_str - The string of the policy broken. Should be displayed to user
-    recommend_delete - If the policy recommends deletion of the message
-    recommend_warn - If the policy recommends warning the user
-    recommend_mute - If the policy recommends muting the user. If so, the amount of seconds to mute for
-    is_silent - If the punishment should be silent
+    Attrs:
+        violation_str (str): The string of the policy broken. Should be displayed to user
+        recommend_delete (bool): If the policy recommends deletion of the message
+        recommend_warn (bool): If the policy recommends warning the user
+        recommend_mute (int): If the policy recommends muting the user.
+            If so, the amount of seconds to mute for.
+        is_silent (bool, optional): If the punishment should be silent. Defaults to False
 
     """
 
@@ -121,6 +123,21 @@ class AutoModPunishment:
 
 @dataclass
 class AutoModAction:
+    """The final summarized action for this automod violation
+
+    Attrs:
+        warn (bool): Whether the user should be warned
+        delete_message (bool): Whether the message should be deleted
+        mute (bool): Whether the user should be muted
+        mute_duration (int): How many seconds to mute the user for
+        be_silent (bool): If the actions should be taken silently
+        action_string (str): The string of & separated actions taken
+        violation_string (str): The most severe punishment to be used as a reason
+        total_punishments (str): All the punishment reasons
+        violations_list (list[AutoModPunishment]): The list of original AutoModPunishment items
+
+    """
+
     warn: bool
     delete_message: bool
     mute: bool

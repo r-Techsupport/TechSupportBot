@@ -424,7 +424,8 @@ class DiscordToIRC(cogs.MatchCog):
                 embed.description = (
                     f"**Blocked message:** {split_message['content']}\n"
                     f"**Reason: ** {automod_final.violation_string}\n"
-                    f"**Message sent by:** {split_message['username']} ({split_message['hostmask']})\n"
+                    f"**Message sent by:** {split_message['username']} "
+                    f"({split_message['hostmask']})\n"
                     f"**In channel:** {split_message['channel']}"
                 )
                 embed.color = discord.Color.red()
