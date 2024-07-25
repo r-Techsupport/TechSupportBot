@@ -40,8 +40,8 @@ class HangmanGame:
     Attributes:
         HANG_PICS (list[str]): The list of hangman pictures
         FINAL_STEP (int): The last step of the hangman game
-        finished (bool): Determines if the game has been finished or not
-        failed (bool): Determines if the players failed to guess the word
+        finished: Determines if the game has been finished or not
+        failed: Determines if the players failed to guess the word
 
     Args:
         word (str): The word to start the game with
