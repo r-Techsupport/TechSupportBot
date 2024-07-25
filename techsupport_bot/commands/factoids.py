@@ -1820,7 +1820,7 @@ class FactoidManager(cogs.MatchCog):
             await ctx.send(embed=embed)
             return
 
-        factoids = await self.get_all_factoids(guild, list_hidden=True)
+        factoids = await self.get_all_factoids(guild, list_hidden=False)
         if not factoids:
             await auxiliary.send_deny_embed(
                 message="No factoids found!", channel=ctx.channel
