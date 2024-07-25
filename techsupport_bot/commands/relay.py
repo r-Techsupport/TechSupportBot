@@ -11,6 +11,7 @@ import ui
 from bidict import bidict
 from core import auxiliary, cogs
 from discord.ext import commands
+from functions import automod
 
 if TYPE_CHECKING:
     import bot
@@ -411,6 +412,36 @@ class DiscordToIRC(cogs.MatchCog):
         mentions = self.get_mentions(
             message=split_message["content"], channel=discord_channel
         )
+
+        config = self.bot.guild_configs[str(discord_channel.guild.id)]
+        if "automod" in config.get("enabled_extensions", []):
+            automod_actions = automod.run_only_string_checks(
+                config, split_message["content"]
+            )
+            automod_final = automod.process_automod_violations(automod_actions)
+            if automod_final and automod_final.delete_message:
+                embed = discord.Embed(title="IRC Automod")
+                embed.description = (
+                    f"**Blocked message:** {split_message['content']}\n"
+                    f"**Reason: ** {automod_final.violation_string}\n"
+                    f"**Message sent by:** {split_message['username']} ({split_message['hostmask']})\n"
+                    f"**In channel:** {split_message['channel']}"
+                )
+                embed.color = discord.Color.red()
+                try:
+                    alert_channel = discord_channel.guild.get_channel(
+                        int(config.extensions.automod.alert_channel.value)
+                    )
+                except TypeError:
+                    alert_channel = None
+
+                if not alert_channel:
+                    return
+
+                await alert_channel.send(embed=embed)
+
+                return
+
         mentions_string = auxiliary.construct_mention_string(targets=mentions)
 
         embed = self.generate_sent_message_embed(split_message=split_message)
