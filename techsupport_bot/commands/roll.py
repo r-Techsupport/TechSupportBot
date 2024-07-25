@@ -25,7 +25,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Roller(cogs.BaseCog):
     """Class for the roll command for the extension.
 
-    Attributes:
+    Attrs:
         ICON_URL (str): The URL for the dice icon
 
     """

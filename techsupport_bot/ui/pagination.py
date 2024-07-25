@@ -14,7 +14,7 @@ class PaginateView(discord.ui.View):
 
     To use this, call the send function. Everything else is automatic
 
-    Attributes:
+    Attrs:
         current_page (int): The current page number the user is on
         data (list[str | discord.Embed]): The list of data for the pages
         timeout (int): The timeout till the buttons dissapear without interaction

@@ -35,7 +35,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Wolfram(cogs.BaseCog):
     """Class to set up the wolfram extension.
 
-    Attributes:
+    Attrs:
         API_URL (str): The API URL for wolfram
         ICON_URL (str): The URL for the wolfram icon
 

@@ -71,7 +71,7 @@ async def invalid_channel(ctx: commands.Context) -> bool:
 class Grabber(cogs.BaseCog):
     """Class for the actual commands
 
-    Attributes:
+    Attrs:
         SEARCH_LIMIT (int): The max amount of messages to search when grabbing
     """
 

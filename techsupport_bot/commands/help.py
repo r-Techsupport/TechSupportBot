@@ -21,7 +21,7 @@ class PrintableCommand:
     """A custom class to store formatted information about a command
     With a priority on being sortable and searchable
 
-    Attributes:
+    Attrs:
         prefix (str): The prefix to call the command with
         name (str): The command name
         usage (str): The usage hints for the command

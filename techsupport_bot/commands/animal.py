@@ -24,7 +24,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Animals(cogs.BaseCog):
     """The class for the animals commands
 
-    Attributes:
+    Attrs:
         CAT_API_URL (str): The URL for the cat API
         DOG_API_URL (str): The URL for the dog API
         FOX_API_URL (str): The URL for the fox API

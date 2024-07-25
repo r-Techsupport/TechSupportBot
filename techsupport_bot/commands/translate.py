@@ -23,7 +23,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Translator(cogs.BaseCog):
     """Class to set up the translate extension.
 
-    Attributes:
+    Attrs:
         API_URL (str): The translated API URL
 
     """

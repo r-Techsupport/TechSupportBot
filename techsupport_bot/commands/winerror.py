@@ -30,7 +30,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Error:
     """The data to pull for the error.
 
-    Attributes:
+    Attrs:
         name (str): the name of the error
         source (str): the header file where the error is from
         description (str): the description of the error
@@ -46,7 +46,7 @@ class ErrorCategory:
     """A category of errors, based on how the error was found
     This contains the name of the category and a list of errors
 
-    Attributes:
+    Attrs:
         name (str): The name of the category of errors
         errors (list[Error]): The list of errors in the category
 

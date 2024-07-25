@@ -24,7 +24,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class ISSLocator(cogs.BaseCog):
     """Class to locate the ISS at its current position.
 
-    Attributes:
+    Attrs:
         ISS_URL (str): The API URL to get the location of the ISS
         GEO_URL (str): The API URL to turn lat/lon to location
 

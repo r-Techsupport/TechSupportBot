@@ -22,7 +22,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
     """The IRC bot class. This is the class that runs the entire IRC side of the bot
     The class to start the entire IRC bot
 
-    Attributes:
+    Attrs:
         irc_cog (commands.relay.DiscordToIRC): The discord cog for the relay,
             to allow communication between
         loop (asyncio.AbstractEventLoop): The discord bots event loop

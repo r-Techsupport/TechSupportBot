@@ -96,7 +96,7 @@ class Test_WYR_Command:
 class Test_Get_Question:
     """A set of tests to test the get_question function
 
-    Attributes:
+    Attrs:
         sample_resource (str): A set of same questions for doing unit tests
     """
 

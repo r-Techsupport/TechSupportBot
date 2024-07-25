@@ -23,7 +23,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for applications
         Currenty used in application.py
 
-        Attributes:
+        Attrs:
             pk (int): The automatic primary key
             guild_id (str): The string of the guild ID the application is in
             applicant_name (str): The name of the user who submitted the app
@@ -51,7 +51,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for users banned from applications
         Currently used in application.py and who.py
 
-        Attributes:
+        Attrs:
             pk (int): The automatic primary key
             guild_id (str): The string of the guild ID the applicant is banned in
             applicant_id (str): The string representation of the ID of the user
@@ -67,7 +67,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for ducks
         Currently used in duck.py
 
-        Attributes:
+        Attrs:
             pk (int): The automatic primary key
             author_id (str): The string representation of the ID of the user
             guild_id (str): The string of the guild ID the duckuser has participated in
@@ -93,7 +93,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for factoids
         Currently used in factoid.py
 
-        Attributes:
+        Attrs:
             factoid_id (int): The primary key of the factoid
             name (str): The name of the factoid
             guild (str): The string guild ID for the guild that the factoid is in
@@ -127,7 +127,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for factoid loops
         Currently used in factoid.py
 
-        Attributes:
+        Attrs:
             job_id (int): The primary key, ID of the job
             factoid (int): The primary key of the linked factoid
             channel (str): The channel this loop needs to run in
@@ -147,7 +147,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for grabs
         Currently used in grab.py
 
-        Attributes:
+        Attrs:
             pk (int): The primary key for this database
             author_id (str): The ID of the author of the original grab message
             channel (str): The channel the message was grabbed from
@@ -173,7 +173,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for IRC->discord maps
         Currently used in relay.py
 
-        Attributes:
+        Attrs:
             map_id (int): The primary key for the database
             guild_id (str): The guild where the discord channel exists at
             discord_channel_id (str): The ID of the discord channel
@@ -191,7 +191,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for modmail bans
         Currently used in modmail.py
 
-        Attributes:
+        Attrs:
             user_id (str): The ID of the user banned from modmail
         """
 
@@ -203,7 +203,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for notes
         Currently used in who.py
 
-        Attributes:
+        Attrs:
             pk (int): The primary key for this database
             user_id (str): The user ID that has a note
             guild_id (str): The guild ID that the note belongs to
@@ -227,7 +227,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for warnings
         Currently used in protect.py and who.py
 
-        Attributes:
+        Attrs:
             pk (int): The primary key for the database
             user_id (str): The user who got warned
             guild_id (str): The guild this warn occured in
@@ -249,7 +249,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for guild config
         Currently used nearly everywhere
 
-        Attributes:
+        Attrs:
             pk (int): The primary key for the database
             guild_id (str): The ID of the guild this config is for
             config (str): The config text
@@ -269,7 +269,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for listeners
         Currently used in listen.py
 
-        Attributes:
+        Attrs:
             pk (int): The primary key for the database
             src_id (str): The source channel for the listener
             dst_id (str): The destination channel for the listener
@@ -285,7 +285,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for rules
         Currently used in rules.py
 
-        Attributes:
+        Attrs:
             pk (int): The primary key for the database
             guild_id (str): The ID of the guild that these rules are for
             rules (str): The json representation of the rules
@@ -301,7 +301,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for votes
         Currently used in voting.py
 
-        Attributes:
+        Attrs:
             vote_id (int): The primary key of the vote
             guild_id (str): The guild the vote belongs to
             message_id (str): The ID of the message the vote is in

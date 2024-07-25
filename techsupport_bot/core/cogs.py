@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class BaseCog(commands.Cog):
     """The base cog to use when making extensions.
 
-    Attributes:
+    Attrs:
         COG_TYPE (str): The string representation for the type of cog
         KEEP_COG_ON_FAILURE (bool): Whether or not to keep the cog loaded if there was an error
 
@@ -97,7 +97,7 @@ class MatchCog(BaseCog):
 
     This makes the process of handling events simpler for development.
 
-    Attributes:
+    Attrs:
         COG_TYPE (str): The string representation for the type of cog
     """
 
@@ -182,7 +182,7 @@ class LoopCog(BaseCog):
 
     This currently doesn't utilize the tasks library.
 
-    Attributes:
+    Attrs:
         COG_TYPE (str): The string representation for the type of cog
         DEFAULT_WAIT (int): The default time to sleep for
         TRACKER_WAIT (int): The time to wait before looking for new channels

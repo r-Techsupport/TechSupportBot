@@ -15,7 +15,7 @@ class LogEmbed(discord.Embed):
     Args:
         message (str): The message to log. Will become the description of an embed
 
-    Attributes:
+    Attrs:
         title (str): The title of the embed
         color (discord.Color): The color of the embed
     """
@@ -49,7 +49,7 @@ class LogEmbed(discord.Embed):
 class InfoEmbed(LogEmbed):
     """Embed for info level log events.
 
-    Attributes:
+    Attrs:
         title (str): The title of the embed
         color (discord.Color): The color of the embed
     """
@@ -61,7 +61,7 @@ class InfoEmbed(LogEmbed):
 class DebugEmbed(LogEmbed):
     """Embed for debug level log events.
 
-    Attributes:
+    Attrs:
         title (str): The title of the embed
         color (discord.Color): The color of the embed
     """
@@ -73,7 +73,7 @@ class DebugEmbed(LogEmbed):
 class WarningEmbed(LogEmbed):
     """Embed for warning level log events.
 
-    Attributes:
+    Attrs:
         title (str): The title of the embed
         color (discord.Color): The color of the embed
     """
@@ -85,7 +85,7 @@ class WarningEmbed(LogEmbed):
 class ErrorEmbed(LogEmbed):
     """Embed for error level log events.
 
-    Attributes:
+    Attrs:
         title (str): The title of the embed
         color (discord.Color): The color of the embed
     """

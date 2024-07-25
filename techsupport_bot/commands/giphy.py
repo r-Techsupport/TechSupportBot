@@ -35,7 +35,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Giphy(cogs.BaseCog):
     """Class for the giphy extension.
 
-    Attributes:
+    Attrs:
         GIPHY_URL (str): The URL for the giphy API
         SEARCH_LIMIT (int): The max amount of gifs to search for
     """

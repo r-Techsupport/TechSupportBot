@@ -28,7 +28,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Rules(cogs.BaseCog):
     """Class to define the rules for the extension.
 
-    Attributes:
+    Attrs:
         RULE_ICON_URL (str): The icon to use for the rules
 
     """

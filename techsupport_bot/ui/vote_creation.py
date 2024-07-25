@@ -12,7 +12,7 @@ class VoteCreation(discord.ui.Modal, title="Staff voting"):
     """The class contianing the modal and all variables for it
     This must be sent as a response to an interaction, cannot be from a prefix command
 
-    Attributes:
+    Attrs:
         vote_short (discord.TextInput): The title to make the forum thread for the vote
         vote_reason (discord.TextInput): The main body of the vote
     """

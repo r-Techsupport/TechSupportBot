@@ -29,7 +29,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Burn(cogs.BaseCog):
     """Class for Burn command on the discord bot.
 
-    Attributes:
+    Attrs:
         PHRASES (list[str]): The list of phrases to pick from
     """
 

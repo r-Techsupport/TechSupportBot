@@ -50,7 +50,7 @@ class IssueCreator(cogs.BaseCog):
     """
     The class that holds the issue commands
 
-    Attributes:
+    Attrs:
         GITHUB_API_BASE_URL (str): The URL for the github API
 
     """
