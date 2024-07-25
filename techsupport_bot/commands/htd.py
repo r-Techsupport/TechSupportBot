@@ -235,7 +235,6 @@ def custom_embed_generation(raw_input: str, val_to_convert: int) -> discord.Embe
         inline=False,
     )
 
-    print(embed.fields[0].name)
     return embed
 
 

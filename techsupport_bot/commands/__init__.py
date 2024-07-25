@@ -16,5 +16,7 @@ from .lenny import *
 from .linter import *
 from .listen import *
 from .mock import *
+from .moderator import *
+from .modlog import *
 from .roll import *
 from .wyr import *

@@ -13,7 +13,7 @@ import discord
 import munch
 import ui
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs, extensionconfig, moderation
 from discord import Color as embed_colors
 from discord.ext import commands
 
@@ -382,9 +382,12 @@ class DuckHunt(cogs.LoopCog):
                 and channel.guild.me.guild_permissions.moderate_members
             ):
                 asyncio.create_task(
-                    message.author.timeout(
-                        timedelta(seconds=config.extensions.duck.cooldown.value),
+                    moderation.mute_user(
+                        user=message.author,
                         reason="Missed a duck",
+                        duration=timedelta(
+                            seconds=config.extensions.duck.cooldown.value
+                        ),
                     )
                 )
             asyncio.create_task(
