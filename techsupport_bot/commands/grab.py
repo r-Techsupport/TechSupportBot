@@ -75,7 +75,7 @@ class Grabber(cogs.BaseCog):
         SEARCH_LIMIT (int): The max amount of messages to search when grabbing
     """
 
-    SEARCH_LIMIT = 20
+    SEARCH_LIMIT: int = 20
 
     @auxiliary.with_typing
     @commands.guild_only()

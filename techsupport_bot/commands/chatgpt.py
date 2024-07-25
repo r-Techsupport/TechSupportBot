@@ -53,7 +53,7 @@ class ChatGPT(cogs.BaseCog):
         SYSTEM_PROMPT (dict[str, str]): The default starting prompt for chatGPT
     """
 
-    API_URL = "https://api.openai.com/v1/chat/completions"
+    API_URL: str = "https://api.openai.com/v1/chat/completions"
 
     async def preconfig(self: Self) -> None:
         """Sets up the dict"""
@@ -62,7 +62,7 @@ class ChatGPT(cogs.BaseCog):
             max_age_seconds=3600,
         )
 
-    SYSTEM_PROMPT = [
+    SYSTEM_PROMPT: dict[str, str] = [
         {
             "role": "system",
             "content": (

@@ -82,13 +82,13 @@ class Category(enum.Enum):
 
     """
 
-    BUSINESS = "business"
-    ENTERTAINMENT = "entertainment"
-    GENERAL = "general"
-    HEALTH = "health"
-    SCIENCE = "science"
-    SPORTS = "sports"
-    TECH = "technology"
+    BUSINESS: str = "business"
+    ENTERTAINMENT: str = "entertainment"
+    GENERAL: str = "general"
+    HEALTH: str = "health"
+    SCIENCE: str = "science"
+    SPORTS: str = "sports"
+    TECH: str = "technology"
 
 
 class News(cogs.LoopCog):

@@ -30,8 +30,8 @@ class ISSLocator(cogs.BaseCog):
 
     """
 
-    ISS_URL = "http://api.open-notify.org/iss-now.json"
-    GEO_URL = "https://geocode.xyz/{},{}?geoit=json"
+    ISS_URL: str = "http://api.open-notify.org/iss-now.json"
+    GEO_URL: str = "https://geocode.xyz/{},{}?geoit=json"
 
     @auxiliary.with_typing
     @commands.command(

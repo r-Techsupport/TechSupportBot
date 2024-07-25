@@ -32,8 +32,8 @@ class XKCD(cogs.BaseCog):
 
     """
 
-    MOST_RECENT_API_URL = "https://xkcd.com/info.0.json"
-    SPECIFIC_API_URL = "https://xkcd.com/%s/info.0.json"
+    MOST_RECENT_API_URL: str = "https://xkcd.com/info.0.json"
+    SPECIFIC_API_URL: str = "https://xkcd.com/%s/info.0.json"
 
     @commands.group(
         brief="xkcd extension parent",

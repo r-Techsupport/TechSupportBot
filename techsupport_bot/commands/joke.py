@@ -42,7 +42,7 @@ class Joker(cogs.BaseCog):
 
     """
 
-    API_URL = "https://v2.jokeapi.dev/joke/Any"
+    API_URL: str = "https://v2.jokeapi.dev/joke/Any"
 
     async def call_api(
         self: Self, ctx: commands.Context, config: munch.Munch

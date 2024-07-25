@@ -31,7 +31,7 @@ class Hugger(cogs.BaseCog):
 
     """
 
-    HUGS_SELECTION = [
+    HUGS_SELECTION: list[str] = [
         "{user_giving_hug} hugs {user_to_hug} forever and ever and ever",
         "{user_giving_hug} wraps arms around {user_to_hug} and clings forever",
         "{user_giving_hug} hugs {user_to_hug} and gives their hair a sniff",
@@ -45,7 +45,7 @@ class Hugger(cogs.BaseCog):
         "{user_giving_hug} smothers {user_to_hug} with a loving hug",
         "{user_giving_hug} squeezes {user_to_hug} to death",
     ]
-    ICON_URL = (
+    ICON_URL: str = (
         "https://cdn.icon-icons.com/icons2/1648/PNG/512/10022huggingface_110042.png"
     )
 

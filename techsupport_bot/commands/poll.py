@@ -110,9 +110,9 @@ class ReactionPoller(PollGenerator):
 
     """
 
-    OPTION_EMOJIS = ["one", "two", "three", "four", "five"]
-    STOP_EMOJI = "\u26d4"
-    EXAMPLE_DATA = {
+    OPTION_EMOJIS: list[str] = ["one", "two", "three", "four", "five"]
+    STOP_EMOJI: str = "\u26d4"
+    EXAMPLE_DATA: dict[str, str | list[str] | int] = {
         "question": "Best ice cream?",
         "options": ["Chocolate", "Vanilla", "Strawberry", "Cookie Dough", "Other..."],
         "timeout": 60,

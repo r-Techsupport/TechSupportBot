@@ -33,7 +33,7 @@ class Burn(cogs.BaseCog):
         PHRASES (list[str]): The list of phrases to pick from
     """
 
-    PHRASES = [
+    PHRASES: list[str] = [
         "Sick BURN!",
         "Someone is going to need ointment for that BURN!",
         "Fire! Call 911! Someone just got BURNED!",

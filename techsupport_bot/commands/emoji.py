@@ -35,7 +35,7 @@ class Emojis(cogs.BaseCog):
         KEY_MAP (dict[str,str]): Some manual mappings from character to emoji
     """
 
-    KEY_MAP = {"?": "question", "!": "exclamation"}
+    KEY_MAP: dict[str, str] = {"?": "question", "!": "exclamation"}
 
     @classmethod
     def emoji_from_char(cls: Self, char: str) -> str:

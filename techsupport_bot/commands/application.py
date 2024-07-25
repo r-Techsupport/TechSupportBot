@@ -202,7 +202,7 @@ class ApplicationManager(cogs.LoopCog):
         application_group (app_commands.Group): The group for the /application commands
     """
 
-    application_group = app_commands.Group(
+    application_group: app_commands.Group = app_commands.Group(
         name="application", description="...", extras={"module": "application"}
     )
 

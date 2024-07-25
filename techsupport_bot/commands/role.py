@@ -72,7 +72,7 @@ class RoleGiver(cogs.BaseCog):
         )
         self.bot.tree.add_command(self.ctx_menu)
 
-    role_group = app_commands.Group(name="role", description="...")
+    role_group: app_commands.Group = app_commands.Group(name="role", description="...")
 
     async def preconfig(self: Self) -> None:
         """This setups the global lock on the role command, to avoid conflicts"""

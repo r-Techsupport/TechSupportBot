@@ -30,7 +30,7 @@ class Lenny(cogs.BaseCog):
 
     """
 
-    LENNYS_SELECTION = [
+    LENNYS_SELECTION: list[str] = [
         "( ͡° ͜ʖ ͡°)",
         "( ͠° ͟ʖ ͡°)",
         "( ͡ʘ ͜ʖ ͡ʘ)",

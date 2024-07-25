@@ -29,8 +29,8 @@ class BaseCog(commands.Cog):
             if it needs to be different than the file name
     """
 
-    COG_TYPE = "Base"
-    KEEP_COG_ON_FAILURE = False
+    COG_TYPE: str = "Base"
+    KEEP_COG_ON_FAILURE: bool = False
 
     def __init__(
         self: Self,
@@ -101,7 +101,7 @@ class MatchCog(BaseCog):
         COG_TYPE (str): The string representation for the type of cog
     """
 
-    COG_TYPE = "Match"
+    COG_TYPE: str = "Match"
 
     @commands.Cog.listener()
     async def on_message(self: Self, message: discord.Message) -> None:

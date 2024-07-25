@@ -24,7 +24,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         Currenty used in application.py
 
         Attributes:
-            __tablename__ (str): The name of the table in postgres
             pk (int): The automatic primary key
             guild_id (str): The string of the guild ID the application is in
             applicant_name (str): The name of the user who submitted the app
@@ -53,7 +52,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         Currently used in application.py and who.py
 
         Attributes:
-            __tablename__ (str): The name of the table in postgres
             pk (int): The automatic primary key
             guild_id (str): The string of the guild ID the applicant is banned in
             applicant_id (str): The string representation of the ID of the user
@@ -70,7 +68,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         Currently used in duck.py
 
         Attributes:
-            __tablename__ (str): The name of the table in postgres
             pk (int): The automatic primary key
             author_id (str): The string representation of the ID of the user
             guild_id (str): The string of the guild ID the duckuser has participated in
@@ -95,7 +92,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         Currently used in factoid.py
 
         Attributes:
-            __tablename__ (str): The name of the table in postgres
             factoid_id (int): The primary key of the factoid
             name (str): The name of the factoid
             guild (str): The string guild ID for the guild that the factoid is in
@@ -128,7 +124,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         Currently used in factoid.py
 
         Attributes:
-            __tablename__ (str): The name of the table in postgres
             job_id (int): The primary key, ID of the job
             factoid (int): The primary key of the linked factoid
             channel (str): The channel this loop needs to run in
@@ -149,7 +144,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         Currently used in grab.py
 
         Attributes:
-            __tablename__ (str): The name of the table in postgres
             pk (int): The primary key for this database
             author_id (str): The ID of the author of the original grab message
             channel (str): The channel the message was grabbed from
@@ -174,7 +168,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         Currently used in relay.py
 
         Attributes:
-            __tablename__ (str): The name of the table in postgres
             map_id (int): The primary key for the database
             guild_id (str): The guild where the discord channel exists at
             discord_channel_id (str): The ID of the discord channel
@@ -182,6 +175,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """
 
         __tablename__ = "ircchannelmap"
+
         map_id = bot.db.Column(bot.db.Integer, primary_key=True)
         guild_id = bot.db.Column(bot.db.String, default=None)
         discord_channel_id = bot.db.Column(bot.db.String, default=None)
@@ -192,11 +186,11 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         Currently used in modmail.py
 
         Attributes:
-            __tablename__ (str): The name of the table in postgres
             user_id (str): The ID of the user banned from modmail
         """
 
         __tablename__ = "modmail_bans"
+
         user_id = bot.db.Column(bot.db.String, default=None, primary_key=True)
 
     class UserNote(bot.db.Model):
@@ -204,7 +198,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         Currently used in who.py
 
         Attributes:
-            __tablename__ (str): The name of the table in postgres
             pk (int): The primary key for this database
             user_id (str): The user ID that has a note
             guild_id (str): The guild ID that the note belongs to
@@ -227,7 +220,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         Currently used in protect.py and who.py
 
         Attributes:
-            __tablename__ (str): The name of the table in postgres
             pk (int): The primary key for the database
             user_id (str): The user who got warned
             guild_id (str): The guild this warn occured in
@@ -236,6 +228,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """
 
         __tablename__ = "warnings"
+
         pk = bot.db.Column(bot.db.Integer, primary_key=True)
         user_id = bot.db.Column(bot.db.String)
         guild_id = bot.db.Column(bot.db.String)
@@ -247,7 +240,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         Currently used nearly everywhere
 
         Attributes:
-            __tablename__ (str): The name of the table in postgres
             pk (int): The primary key for the database
             guild_id (str): The ID of the guild this config is for
             config (str): The config text
@@ -255,6 +247,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """
 
         __tablename__ = "guild_config"
+
         pk = bot.db.Column(bot.db.Integer, primary_key=True)
         guild_id = bot.db.Column(bot.db.String)
         config = bot.db.Column(bot.db.String)
@@ -265,13 +258,13 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         Currently used in listen.py
 
         Attributes:
-            __tablename__ (str): The name of the table in postgres
             pk (int): The primary key for the database
             src_id (str): The source channel for the listener
             dst_id (str): The destination channel for the listener
         """
 
         __tablename__ = "listeners"
+
         pk = bot.db.Column(bot.db.Integer, primary_key=True)
         src_id = bot.db.Column(bot.db.String)
         dst_id = bot.db.Column(bot.db.String)
@@ -281,13 +274,13 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         Currently used in rules.py
 
         Attributes:
-            __tablename__ (str): The name of the table in postgres
             pk (int): The primary key for the database
             guild_id (str): The ID of the guild that these rules are for
             rules (str): The json representation of the rules
         """
 
         __tablename__ = "guild_rules"
+
         pk = bot.db.Column(bot.db.Integer, primary_key=True)
         guild_id = bot.db.Column(bot.db.String)
         rules = bot.db.Column(bot.db.String)
@@ -297,7 +290,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         Currently used in voting.py
 
         Attributes:
-            __tablename__ (str): The name of the table in postgres
             vote_id (int): The primary key of the vote
             guild_id (str): The guild the vote belongs to
             message_id (str): The ID of the message the vote is in
@@ -317,6 +309,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """
 
         __tablename__ = "voting"
+
         vote_id = bot.db.Column(bot.db.Integer, primary_key=True)
         guild_id = bot.db.Column(bot.db.String)
         message_id = bot.db.Column(bot.db.String)

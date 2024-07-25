@@ -17,14 +17,14 @@ class Application(discord.ui.Modal, title="Staff interest form"):
         reason (discord.ui.TextInput): The reason question for the application
     """
 
-    background = discord.ui.TextInput(
+    background: discord.ui.TextInput = discord.ui.TextInput(
         label="Do you have any IT or programming experience?",
         style=discord.TextStyle.long,
         required=True,
         max_length=300,
     )
 
-    reason = discord.ui.TextInput(
+    reason: discord.ui.TextInput = discord.ui.TextInput(
         label="Why do you want to help here?",
         style=discord.TextStyle.long,
         required=True,

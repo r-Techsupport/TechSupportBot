@@ -19,10 +19,10 @@ class LogLevel(Enum):
         ERROR (str): Representation of error
     """
 
-    DEBUG = "debug"
-    INFO = "info"
-    WARNING = "warning"
-    ERROR = "error"
+    DEBUG: str = "debug"
+    INFO: str = "info"
+    WARNING: str = "warning"
+    ERROR: str = "error"
 
 
 @dataclass
@@ -32,7 +32,7 @@ class LogContext:
 
     Attributes:
         guild (discord.Guild | None): The guild the log occured with. Optional
-        channel (discord.abc.Messageble | None): The channel, DM, thread,
+        channel (discord.abc.Messageable | None): The channel, DM, thread,
             or other messagable the log occured in
     """
 

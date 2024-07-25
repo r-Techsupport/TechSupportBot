@@ -79,7 +79,7 @@ class ErrorResponse:
         dont_print_trace (bool): If true, the stack trace generated will not be logged
     """
 
-    DEFAULT_MESSAGE = "I ran into an error processing your command"
+    DEFAULT_MESSAGE: str = "I ran into an error processing your command"
 
     def __init__(
         self: Self,

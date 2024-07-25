@@ -20,8 +20,8 @@ class LogEmbed(discord.Embed):
         color (discord.Color): The color of the embed
     """
 
-    title = None
-    color = None
+    title: str = None
+    color: discord.Color = None
 
     def __init__(self: Self, message: str) -> None:
         super().__init__(
@@ -54,8 +54,8 @@ class InfoEmbed(LogEmbed):
         color (discord.Color): The color of the embed
     """
 
-    title = "info"
-    color = discord.Color.green()
+    title: str = "info"
+    color: discord.Color = discord.Color.green()
 
 
 class DebugEmbed(LogEmbed):
@@ -66,8 +66,8 @@ class DebugEmbed(LogEmbed):
         color (discord.Color): The color of the embed
     """
 
-    title = "debug"
-    color = discord.Color.dark_green()
+    title: str = "debug"
+    color: discord.Color = discord.Color.dark_green()
 
 
 class WarningEmbed(LogEmbed):
@@ -78,8 +78,8 @@ class WarningEmbed(LogEmbed):
         color (discord.Color): The color of the embed
     """
 
-    title = "warning"
-    color = discord.Color.gold()
+    title: str = "warning"
+    color: discord.Color = discord.Color.gold()
 
 
 class ErrorEmbed(LogEmbed):
@@ -90,5 +90,5 @@ class ErrorEmbed(LogEmbed):
         color (discord.Color): The color of the embed
     """
 
-    title = "error"
-    color = discord.Color.red()
+    title: str = "error"
+    color: discord.Color = discord.Color.red()

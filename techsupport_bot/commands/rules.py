@@ -33,7 +33,7 @@ class Rules(cogs.BaseCog):
 
     """
 
-    RULE_ICON_URL = (
+    RULE_ICON_URL: str = (
         "https://cdn.icon-icons.com/icons2/907/PNG"
         "/512/balance-scale-of-justice_icon-icons.com_70554.png"
     )

@@ -41,8 +41,10 @@ class Wolfram(cogs.BaseCog):
 
     """
 
-    API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
-    ICON_URL = "https://cdn.icon-icons.com/icons2/2107/PNG/512/file_type_wolfram_icon_130071.png"
+    API_URL: str = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
+    ICON_URL: str = (
+        "https://cdn.icon-icons.com/icons2/2107/PNG/512/file_type_wolfram_icon_130071.png"
+    )
 
     @auxiliary.with_typing
     @commands.command(

@@ -29,8 +29,8 @@ class IPInfo(cogs.BaseCog):
         IP_ICON_URL (str): The URL for the IP info icon
     """
 
-    API_URL = "https://ipinfo.io"
-    IP_ICON_URL = (
+    API_URL: str = "https://ipinfo.io"
+    IP_ICON_URL: str = (
         "https://cdn.icon-icons.com/icons2/1858/PNG/512/"
         "iconfinder-dedicatedipaddress-4263513_117864.png"
     )

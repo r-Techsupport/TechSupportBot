@@ -28,7 +28,7 @@ class Translator(cogs.BaseCog):
 
     """
 
-    API_URL = "https://api.mymemory.translated.net/get?q={}&langpair={}|{}"
+    API_URL: str = "https://api.mymemory.translated.net/get?q={}&langpair={}|{}"
 
     @auxiliary.with_typing
     @commands.command(

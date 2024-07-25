@@ -188,10 +188,10 @@ class Properties(Enum):
         PROTECTED (str): Representation of protected
     """
 
-    HIDDEN = "hidden"
-    DISABLED = "disabled"
-    RESTRICTED = "restricted"
-    PROTECTED = "protected"
+    HIDDEN: str = "hidden"
+    DISABLED: str = "disabled"
+    RESTRICTED: str = "restricted"
+    PROTECTED: str = "protected"
 
 
 class FactoidManager(cogs.MatchCog):
@@ -203,13 +203,13 @@ class FactoidManager(cogs.MatchCog):
         factoid_app_group (app_commands.Group): Group for /factoid commands
     """
 
-    CRON_REGEX = (
+    CRON_REGEX: str = (
         r"^((\*|([0-5]?\d|\*\/\d+)(-([0-5]?\d))?)(,\s*(\*|([0-5]?\d|\*\/\d+)(-([0-5]"
         + r"?\d))?)){0,59}\s+){4}(\*|([0-7]?\d|\*(\/[1-9]|[1-5]\d)|mon|tue|wed|thu|fri|sat|sun"
         + r")|\*\/[1-9])$"
     )
 
-    factoid_app_group = app_commands.Group(
+    factoid_app_group: app_commands.Group = app_commands.Group(
         name="factoid", description="Command Group for the Factoids Extension"
     )
 

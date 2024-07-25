@@ -41,7 +41,7 @@ class ExtensionControl(cogs.BaseCog):
         extension_app_command_group (app_commands.Group): The group for the /extension commands
     """
 
-    extension_app_command_group = app_commands.Group(
+    extension_app_command_group: app_commands.Group = app_commands.Group(
         name="extension", description="...", extras={"module": "extension"}
     )
 

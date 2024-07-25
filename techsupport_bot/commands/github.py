@@ -55,7 +55,7 @@ class IssueCreator(cogs.BaseCog):
 
     """
 
-    GITHUB_API_BASE_URL = "https://api.github.com"
+    GITHUB_API_BASE_URL: str = "https://api.github.com"
 
     @commands.check(auxiliary.bot_admin_check_context)
     @auxiliary.with_typing

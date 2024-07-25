@@ -35,7 +35,7 @@ class MagicConch(cogs.BaseCog):
 
     """
 
-    RESPONSES = [
+    RESPONSES: list[str] = [
         "As I see it, yes.",
         "Ask again later.",
         "Better not tell you now.",
@@ -57,7 +57,7 @@ class MagicConch(cogs.BaseCog):
         "Yes - definitely.",
         "You may rely on it.",
     ]
-    PIC_URL = "https://i.imgur.com/vdvGrsR.png"
+    PIC_URL: str = "https://i.imgur.com/vdvGrsR.png"
 
     def format_question(self: Self, question: str) -> str:
         """This formats a question properly. It will crop it if needed, and add a "?" to the end

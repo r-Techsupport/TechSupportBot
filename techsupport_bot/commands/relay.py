@@ -47,7 +47,7 @@ class DiscordToIRC(cogs.MatchCog):
 
     """
 
-    mapping = None  # bidict - discord:irc
+    mapping: bidict = None  # bidict - discord:irc
 
     async def preconfig(self: Self) -> None:
         """The preconfig setup for the discord side
