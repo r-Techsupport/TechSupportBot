@@ -69,7 +69,7 @@ class Who(cogs.BaseCog):
 
     """
 
-    notes = app_commands.Group(
+    notes: app_commands.Group = app_commands.Group(
         name="note", description="Command Group for the Notes Extension"
     )
 

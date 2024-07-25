@@ -99,7 +99,7 @@ class News(cogs.LoopCog):
 
     """
 
-    API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
+    API_URL: str = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
 
     async def preconfig(self: Self) -> None:
         """Sets up the list of valid categories in a class wide variable"""

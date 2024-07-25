@@ -31,19 +31,19 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             application_status (str): The string representation of the status
             background (str): The answer to the background question of the application
             reason (str): The answer to the reason question of the application
-            application_time (datetime): The time the application was submitted
+            application_time (datetime.datetime): The time the application was submitted
         """
 
         __tablename__ = "applications"
 
-        pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
-        guild_id = bot.db.Column(bot.db.String)
-        applicant_name = bot.db.Column(bot.db.String)
-        applicant_id = bot.db.Column(bot.db.String)
-        application_status = bot.db.Column(bot.db.String)
-        background = bot.db.Column(bot.db.String)
-        reason = bot.db.Column(bot.db.String)
-        application_time = bot.db.Column(
+        pk: int = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
+        guild_id: str = bot.db.Column(bot.db.String)
+        applicant_name: str = bot.db.Column(bot.db.String)
+        applicant_id: str = bot.db.Column(bot.db.String)
+        application_status: str = bot.db.Column(bot.db.String)
+        background: str = bot.db.Column(bot.db.String)
+        reason: str = bot.db.Column(bot.db.String)
+        application_time: datetime.datetime = bot.db.Column(
             bot.db.DateTime, default=datetime.datetime.utcnow
         )
 
@@ -59,9 +59,9 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         __tablename__ = "appbans"
 
-        pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
-        guild_id = bot.db.Column(bot.db.String)
-        applicant_id = bot.db.Column(bot.db.String)
+        pk: int = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
+        guild_id: str = bot.db.Column(bot.db.String)
+        applicant_id: str = bot.db.Column(bot.db.String)
 
     class DuckUser(bot.db.Model):
         """The postgres table for ducks
@@ -79,13 +79,15 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         __tablename__ = "duckusers"
 
-        pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
-        author_id = bot.db.Column(bot.db.String)
-        guild_id = bot.db.Column(bot.db.String)
-        befriend_count = bot.db.Column(bot.db.Integer, default=0)
-        kill_count = bot.db.Column(bot.db.Integer, default=0)
-        updated = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
-        speed_record = bot.db.Column(bot.db.Float, default=80.0)
+        pk: int = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
+        author_id: str = bot.db.Column(bot.db.String)
+        guild_id: str = bot.db.Column(bot.db.String)
+        befriend_count: int = bot.db.Column(bot.db.Integer, default=0)
+        kill_count: int = bot.db.Column(bot.db.Integer, default=0)
+        updated: datetime.datetime = bot.db.Column(
+            bot.db.DateTime, default=datetime.datetime.utcnow
+        )
+        speed_record: float = bot.db.Column(bot.db.Float, default=80.0)
 
     class Factoid(bot.db.Model):
         """The postgres table for factoids
@@ -107,17 +109,19 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         __tablename__ = "factoids"
 
-        factoid_id = bot.db.Column(bot.db.Integer, primary_key=True)
-        name = bot.db.Column(bot.db.String)
-        guild = bot.db.Column(bot.db.String)
-        message = bot.db.Column(bot.db.String)
-        time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
-        embed_config = bot.db.Column(bot.db.String, default=None)
-        hidden = bot.db.Column(bot.db.Boolean, default=False)
-        protected = bot.db.Column(bot.db.Boolean, default=False)
-        disabled = bot.db.Column(bot.db.Boolean, default=False)
-        restricted = bot.db.Column(bot.db.Boolean, default=False)
-        alias = bot.db.Column(bot.db.String, default=None)
+        factoid_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        name: str = bot.db.Column(bot.db.String)
+        guild: str = bot.db.Column(bot.db.String)
+        message: str = bot.db.Column(bot.db.String)
+        time: datetime.datetime = bot.db.Column(
+            bot.db.DateTime, default=datetime.datetime.utcnow
+        )
+        embed_config: str = bot.db.Column(bot.db.String, default=None)
+        hidden: bool = bot.db.Column(bot.db.Boolean, default=False)
+        protected: bool = bot.db.Column(bot.db.Boolean, default=False)
+        disabled: bool = bot.db.Column(bot.db.Boolean, default=False)
+        restricted: bool = bot.db.Column(bot.db.Boolean, default=False)
+        alias: str = bot.db.Column(bot.db.String, default=None)
 
     class FactoidJob(bot.db.Model):
         """The postgres table for factoid loops
@@ -132,12 +136,12 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         __tablename__ = "factoid_jobs"
 
-        job_id = bot.db.Column(bot.db.Integer, primary_key=True)
-        factoid = bot.db.Column(
+        job_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        factoid: int = bot.db.Column(
             bot.db.Integer, bot.db.ForeignKey("factoids.factoid_id")
         )
-        channel = bot.db.Column(bot.db.String)
-        cron = bot.db.Column(bot.db.String)
+        channel: str = bot.db.Column(bot.db.String)
+        cron: str = bot.db.Column(bot.db.String)
 
     class Grab(bot.db.Model):
         """The postgres table for grabs
@@ -155,13 +159,15 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         __tablename__ = "grabs"
 
-        pk = bot.db.Column(bot.db.Integer, primary_key=True)
-        author_id = bot.db.Column(bot.db.String)
-        channel = bot.db.Column(bot.db.String)
-        guild = bot.db.Column(bot.db.String)
-        message = bot.db.Column(bot.db.String)
-        time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
-        nsfw = bot.db.Column(bot.db.Boolean, default=False)
+        pk: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        author_id: str = bot.db.Column(bot.db.String)
+        channel: str = bot.db.Column(bot.db.String)
+        guild: str = bot.db.Column(bot.db.String)
+        message: str = bot.db.Column(bot.db.String)
+        time: datetime.datetime = bot.db.Column(
+            bot.db.DateTime, default=datetime.datetime.utcnow
+        )
+        nsfw: bool = bot.db.Column(bot.db.Boolean, default=False)
 
     class IRCChannelMapping(bot.db.Model):
         """The postgres table for IRC->discord maps
@@ -176,10 +182,10 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         __tablename__ = "ircchannelmap"
 
-        map_id = bot.db.Column(bot.db.Integer, primary_key=True)
-        guild_id = bot.db.Column(bot.db.String, default=None)
-        discord_channel_id = bot.db.Column(bot.db.String, default=None)
-        irc_channel_id = bot.db.Column(bot.db.String, default=None)
+        map_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild_id: str = bot.db.Column(bot.db.String, default=None)
+        discord_channel_id: str = bot.db.Column(bot.db.String, default=None)
+        irc_channel_id: str = bot.db.Column(bot.db.String, default=None)
 
     class ModmailBan(bot.db.Model):
         """The postgres table for modmail bans
@@ -191,7 +197,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         __tablename__ = "modmail_bans"
 
-        user_id = bot.db.Column(bot.db.String, default=None, primary_key=True)
+        user_id: str = bot.db.Column(bot.db.String, default=None, primary_key=True)
 
     class UserNote(bot.db.Model):
         """The postgres table for notes
@@ -208,12 +214,14 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         __tablename__ = "usernote"
 
-        pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
-        user_id = bot.db.Column(bot.db.String)
-        guild_id = bot.db.Column(bot.db.String)
-        updated = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
-        author_id = bot.db.Column(bot.db.String)
-        body = bot.db.Column(bot.db.String)
+        pk: int = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
+        user_id: str = bot.db.Column(bot.db.String)
+        guild_id: str = bot.db.Column(bot.db.String)
+        updated: datetime.datetime = bot.db.Column(
+            bot.db.DateTime, default=datetime.datetime.utcnow
+        )
+        author_id: str = bot.db.Column(bot.db.String)
+        body: str = bot.db.Column(bot.db.String)
 
     class Warning(bot.db.Model):
         """The postgres table for warnings
@@ -229,11 +237,13 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         __tablename__ = "warnings"
 
-        pk = bot.db.Column(bot.db.Integer, primary_key=True)
-        user_id = bot.db.Column(bot.db.String)
-        guild_id = bot.db.Column(bot.db.String)
-        reason = bot.db.Column(bot.db.String)
-        time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+        pk: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        user_id: str = bot.db.Column(bot.db.String)
+        guild_id: str = bot.db.Column(bot.db.String)
+        reason: str = bot.db.Column(bot.db.String)
+        time: datetime.datetime = bot.db.Column(
+            bot.db.DateTime, default=datetime.datetime.utcnow
+        )
 
     class Config(bot.db.Model):
         """The postgres table for guild config
@@ -248,10 +258,12 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         __tablename__ = "guild_config"
 
-        pk = bot.db.Column(bot.db.Integer, primary_key=True)
-        guild_id = bot.db.Column(bot.db.String)
-        config = bot.db.Column(bot.db.String)
-        update_time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+        pk: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild_id: str = bot.db.Column(bot.db.String)
+        config: str = bot.db.Column(bot.db.String)
+        update_time: datetime.datetime = bot.db.Column(
+            bot.db.DateTime, default=datetime.datetime.utcnow
+        )
 
     class Listener(bot.db.Model):
         """The postgres table for listeners
@@ -265,9 +277,9 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         __tablename__ = "listeners"
 
-        pk = bot.db.Column(bot.db.Integer, primary_key=True)
-        src_id = bot.db.Column(bot.db.String)
-        dst_id = bot.db.Column(bot.db.String)
+        pk: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        src_id: str = bot.db.Column(bot.db.String)
+        dst_id: str = bot.db.Column(bot.db.String)
 
     class Rule(bot.db.Model):
         """The postgres table for rules
@@ -281,9 +293,9 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         __tablename__ = "guild_rules"
 
-        pk = bot.db.Column(bot.db.Integer, primary_key=True)
-        guild_id = bot.db.Column(bot.db.String)
-        rules = bot.db.Column(bot.db.String)
+        pk: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild_id: str = bot.db.Column(bot.db.String)
+        rules: str = bot.db.Column(bot.db.String)
 
     class Votes(bot.db.Model):
         """The postgres table for votes
@@ -310,22 +322,24 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         __tablename__ = "voting"
 
-        vote_id = bot.db.Column(bot.db.Integer, primary_key=True)
-        guild_id = bot.db.Column(bot.db.String)
-        message_id = bot.db.Column(bot.db.String)
-        thread_id = bot.db.Column(bot.db.String)
-        vote_owner_id = bot.db.Column(bot.db.String)
-        vote_description = bot.db.Column(bot.db.String)
-        vote_ids_yes = bot.db.Column(bot.db.String, default="")
-        vote_ids_no = bot.db.Column(bot.db.String, default="")
-        vote_ids_all = bot.db.Column(bot.db.String, default="")
-        votes_yes = bot.db.Column(bot.db.Integer, default=0)
-        votes_no = bot.db.Column(bot.db.Integer, default=0)
-        votes_total = bot.db.Column(bot.db.Integer, default=0)
-        start_time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
-        vote_active = bot.db.Column(bot.db.Boolean, default=True)
-        blind = bot.db.Column(bot.db.Boolean, default=False)
-        anonymous = bot.db.Column(bot.db.Boolean, default=False)
+        vote_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild_id: str = bot.db.Column(bot.db.String)
+        message_id: str = bot.db.Column(bot.db.String)
+        thread_id: str = bot.db.Column(bot.db.String)
+        vote_owner_id: str = bot.db.Column(bot.db.String)
+        vote_description: str = bot.db.Column(bot.db.String)
+        vote_ids_yes: str = bot.db.Column(bot.db.String, default="")
+        vote_ids_no: str = bot.db.Column(bot.db.String, default="")
+        vote_ids_all: str = bot.db.Column(bot.db.String, default="")
+        votes_yes: int = bot.db.Column(bot.db.Integer, default=0)
+        votes_no: int = bot.db.Column(bot.db.Integer, default=0)
+        votes_total: int = bot.db.Column(bot.db.Integer, default=0)
+        start_time: datetime.datetime = bot.db.Column(
+            bot.db.DateTime, default=datetime.datetime.utcnow
+        )
+        vote_active: bool = bot.db.Column(bot.db.Boolean, default=True)
+        blind: bool = bot.db.Column(bot.db.Boolean, default=False)
+        anonymous: bool = bot.db.Column(bot.db.Boolean, default=False)
 
     bot.models.Applications = Applications
     bot.models.AppBans = ApplicationBans

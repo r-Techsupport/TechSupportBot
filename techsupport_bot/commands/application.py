@@ -27,10 +27,10 @@ class ApplicationStatus(Enum):
         REJECTED (str): The string representation for rejected
     """
 
-    PENDING = "pending"
-    APPROVED = "approved"
-    DENIED = "denied"
-    REJECTED = "rejected"
+    PENDING: str = "pending"
+    APPROVED: str = "approved"
+    DENIED: str = "denied"
+    REJECTED: str = "rejected"
 
 
 async def setup(bot: bot.TechSupportBot) -> None:

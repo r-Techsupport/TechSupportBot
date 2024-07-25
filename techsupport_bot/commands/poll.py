@@ -319,11 +319,11 @@ class StrawPoller(PollGenerator):
 
     """
 
-    EXAMPLE_DATA = {
+    EXAMPLE_DATA: dict[str, str | list[str]] = {
         "question": "Best ice cream?",
         "options": ["Chocolate", "Vanilla", "Strawberry", "Cookie Dough", "Other..."],
     }
-    API_URL = "https://strawpoll.com/api/poll"
+    API_URL: str = "https://strawpoll.com/api/poll"
 
     @commands.group(
         brief="Executes a strawpoll command",
