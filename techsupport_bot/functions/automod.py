@@ -94,6 +94,7 @@ class AutoModPunishment:
         recommend_mute (int): If the policy recommends muting the user.
             If so, the amount of seconds to mute for.
         is_silent (bool, optional): If the punishment should be silent. Defaults to False
+        score (int): The weighted score for sorting punishments
 
     """
 
@@ -337,6 +338,15 @@ class AutoMod(cogs.MatchCog):
 def process_automod_violations(
     all_punishments: list[AutoModPunishment],
 ) -> AutoModAction:
+    """This processes a list of potentially many AutoModPunishments into a single
+    recommended action
+
+    Args:
+        all_punishments (list[AutoModPunishment]): The list of punishments that should be taken
+
+    Returns:
+        AutoModAction: The final summarized action that is recommended to be taken
+    """
     if len(all_punishments) == 0:
         return None
 
@@ -397,7 +407,7 @@ def generate_automod_alert_embed(
 
     Args:
         ctx (commands.Context): The context of the message that violated the automod
-        violations (list[AutoModPunishment]): The list of all violations of the automod
+        violations (str): The string form of ALL automod violations the user triggered
         action_taken (str): The text based action taken against the user
 
     Returns:

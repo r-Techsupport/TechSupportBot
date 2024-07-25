@@ -283,7 +283,7 @@ async def log_ban(
         reason (str): The reason for the ban
     """
     config = bot.guild_configs[str(guild.id)]
-    if not "modlog" in config.get("enabled_extensions", []):
+    if "modlog" not in config.get("enabled_extensions", []):
         return
 
     if not reason:
@@ -339,7 +339,7 @@ async def log_unban(
         reason (str): The reason for the unban
     """
     config = bot.guild_configs[str(guild.id)]
-    if not "modlog" in config.get("enabled_extensions", []):
+    if "modlog" not in config.get("enabled_extensions", []):
         return
 
     if not reason:

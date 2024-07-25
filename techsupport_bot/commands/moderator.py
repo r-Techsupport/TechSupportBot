@@ -46,7 +46,11 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 class ProtectCommands(cogs.BaseCog):
     """The cog for all manual moderation activities
-    These are all slash commands"""
+    These are all slash commands
+
+    Attrs:
+        warnings_group (app_commands.Group): The group for the /warning commands
+    """
 
     warnings_group = app_commands.Group(
         name="warning", description="...", extras={"module": "moderator"}
