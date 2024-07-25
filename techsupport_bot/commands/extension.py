@@ -37,7 +37,7 @@ class ExtensionControl(cogs.BaseCog):
     """
     The class that holds the extension commands
 
-    Attrs:
+    Attributes:
         extension_app_command_group (app_commands.Group): The group for the /extension commands
     """
 

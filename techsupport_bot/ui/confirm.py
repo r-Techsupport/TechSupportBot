@@ -18,9 +18,9 @@ class ConfirmResponse(Enum):
         TIMEOUT (int): No buttons were pressed in the timeout range
     """
 
-    CONFIRMED = auto()
-    DENIED = auto()
-    TIMEOUT = auto()
+    CONFIRMED: int = auto()
+    DENIED: int = auto()
+    TIMEOUT: int = auto()
 
 
 class Confirm(discord.ui.View):

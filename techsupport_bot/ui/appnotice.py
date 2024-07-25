@@ -10,7 +10,7 @@ import discord
 class AppNotice(discord.ui.View):
     """The view containing a button and message encouraging users to apply
 
-    Attrs:
+    Attributes:
         ICON (str): The Icon for the application reminder
     """
 

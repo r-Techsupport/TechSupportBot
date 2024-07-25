@@ -56,7 +56,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class RoleGiver(cogs.BaseCog):
     """The main class for the role commands
 
-    Attrs:
+    Attributes:
         role_group (app_commands.Group): The group for the /role commands
 
     Args:

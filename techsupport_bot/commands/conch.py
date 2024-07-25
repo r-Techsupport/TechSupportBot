@@ -29,7 +29,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class MagicConch(cogs.BaseCog):
     """Class to create the conch command for discord bot.
 
-    Attrs:
+    Attributes:
         RESPONSES (list[str]): The list of random responses for the 8 ball
         PIC_URL (str): The direct URL for the picture to put in embeds
 

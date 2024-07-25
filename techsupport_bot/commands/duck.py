@@ -93,7 +93,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class DuckHunt(cogs.LoopCog):
     """Class for the actual duck commands
 
-    Attrs:
+    Attributes:
         DUCK_PIC_URL (str): The picture for the duck
         BEFRIEND_URL (str): The picture for the befriend target
         KILL_URL (str): The picture for the kill target

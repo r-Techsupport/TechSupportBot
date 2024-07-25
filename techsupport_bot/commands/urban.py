@@ -35,7 +35,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class UrbanDictionary(cogs.BaseCog):
     """Class for setting up the urban dictionary extension.
 
-    Attrs:
+    Attributes:
         BASE_URL (str): The base API URL for urban dict
         SEE_MORE_URL (str): The URL to link to search results from the API
         ICON_URL (str): The urban dict icon URL

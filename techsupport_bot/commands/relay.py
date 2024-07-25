@@ -42,7 +42,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class DiscordToIRC(cogs.MatchCog):
     """The discord side of the relay
 
-    Attrs:
+    Attributes:
         mapping (bidict): The dict that holds the IRC and discord mappings
 
     """

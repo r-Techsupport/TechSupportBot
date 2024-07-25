@@ -20,7 +20,7 @@ class ApplicationStatus(Enum):
     """Static string mapping of all status
     This is so the database can always be consistent
 
-    Attrs:
+    Attributes:
         PENDING (str): The string representation for pending
         APPROVED (str): The string representation for approved
         DENIED (str): The string representation for denied
@@ -198,7 +198,7 @@ class ApplicationNotifier(cogs.LoopCog):
 class ApplicationManager(cogs.LoopCog):
     """This cog is responsible for the majority of functions in the application system
 
-    Attrs:
+    Attributes:
         application_group (app_commands.Group): The group for the /application commands
     """
 

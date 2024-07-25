@@ -25,7 +25,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Hugger(cogs.BaseCog):
     """Class to make the hug command.
 
-    Attrs:
+    Attributes:
         HUGS_SELECTION (list[str]): The list of hug phrases to display
         ICON_URL (str): The icon to use when hugging
 
