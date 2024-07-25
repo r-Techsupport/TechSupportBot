@@ -17,13 +17,13 @@ class VoteCreation(discord.ui.Modal, title="Staff voting"):
         vote_reason (discord.TextInput): The main body of the vote
     """
 
-    vote_short = discord.ui.TextInput(
+    vote_short: discord.TextInput = discord.ui.TextInput(
         label="What are you starting a vote for?",
         style=discord.TextStyle.short,
         required=True,
         max_length=94,
     )
-    vote_reason = discord.ui.TextInput(
+    vote_reason: discord.TextInput = discord.ui.TextInput(
         label="Describe your vote",
         style=discord.TextStyle.paragraph,
         required=True,
