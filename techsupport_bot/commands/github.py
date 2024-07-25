@@ -50,12 +50,12 @@ class IssueCreator(cogs.BaseCog):
     """
     The class that holds the issue commands
 
-    Attrs:
+    Attributes:
         GITHUB_API_BASE_URL (str): The URL for the github API
 
     """
 
-    GITHUB_API_BASE_URL = "https://api.github.com"
+    GITHUB_API_BASE_URL: str = "https://api.github.com"
 
     @commands.check(auxiliary.bot_admin_check_context)
     @auxiliary.with_typing

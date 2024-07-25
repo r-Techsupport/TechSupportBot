@@ -37,12 +37,12 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Joker(cogs.BaseCog):
     """Class to make up the joke extension.
 
-    Attrs:
+    Attributes:
         API_URL (str): The joke API URL
 
     """
 
-    API_URL = "https://v2.jokeapi.dev/joke/Any"
+    API_URL: str = "https://v2.jokeapi.dev/joke/Any"
 
     async def call_api(
         self: Self, ctx: commands.Context, config: munch.Munch

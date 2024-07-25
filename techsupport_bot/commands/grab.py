@@ -71,11 +71,11 @@ async def invalid_channel(ctx: commands.Context) -> bool:
 class Grabber(cogs.BaseCog):
     """Class for the actual commands
 
-    Attrs:
+    Attributes:
         SEARCH_LIMIT (int): The max amount of messages to search when grabbing
     """
 
-    SEARCH_LIMIT = 20
+    SEARCH_LIMIT: int = 20
 
     @auxiliary.with_typing
     @commands.guild_only()

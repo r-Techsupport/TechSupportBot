@@ -31,11 +31,11 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Emojis(cogs.BaseCog):
     """Class for all the emoji commands
 
-    Attrs:
+    Attributes:
         KEY_MAP (dict[str,str]): Some manual mappings from character to emoji
     """
 
-    KEY_MAP = {"?": "question", "!": "exclamation"}
+    KEY_MAP: dict[str, str] = {"?": "question", "!": "exclamation"}
 
     @classmethod
     def emoji_from_char(cls: Self, char: str) -> str:

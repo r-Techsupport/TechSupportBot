@@ -9,6 +9,7 @@ import os
 import threading
 from typing import Self
 
+import commands
 import discord
 import ib3.auth
 import irc.bot
@@ -21,7 +22,7 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
     """The IRC bot class. This is the class that runs the entire IRC side of the bot
     The class to start the entire IRC bot
 
-    Attrs:
+    Attributes:
         irc_cog (commands.relay.DiscordToIRC): The discord cog for the relay,
             to allow communication between
         loop (asyncio.AbstractEventLoop): The discord bots event loop
@@ -40,13 +41,13 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         password (str): The password of the IRC bot account
     """
 
-    irc_cog = None
-    loop = None
-    console = logging.getLogger("root")
-    IRC_BOLD = ""
-    connection = None
-    join_thread = None
-    ready = False
+    irc_cog: commands.relay.DiscordToIRC = None
+    loop: asyncio.AbstractEventLoop = None
+    console: logging.Logger = logging.getLogger("root")
+    IRC_BOLD: str = ""
+    connection: irc.client.ServerConnection = None
+    join_thread: threading.Timer = None
+    ready: bool = False
 
     def __init__(
         self: Self,

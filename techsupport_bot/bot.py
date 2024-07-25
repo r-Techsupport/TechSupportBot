@@ -39,7 +39,7 @@ class TechSupportBot(commands.Bot):
         allowed_mentions (discord.AllowedMentions): What the bot is, or is not,
             allowed to mention
 
-    Attrs:
+    Attributes:
         CONFIG_PATH (str): The hard coded path to the yaml config file
         EXTENSIONS_DIR_NAME (str): The hardcoded folder for commands
         EXTENSIONS_DIR (str): The list of all files in the EXTENSIONS_DIR_NAME folder

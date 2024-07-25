@@ -28,12 +28,12 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Rules(cogs.BaseCog):
     """Class to define the rules for the extension.
 
-    Attrs:
+    Attributes:
         RULE_ICON_URL (str): The icon to use for the rules
 
     """
 
-    RULE_ICON_URL = (
+    RULE_ICON_URL: str = (
         "https://cdn.icon-icons.com/icons2/907/PNG"
         "/512/balance-scale-of-justice_icon-icons.com_70554.png"
     )
