@@ -73,7 +73,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             guild_id (str): The string of the guild ID the duckuser has participated in
             befriend_count (int): The amount of ducks the user has befriended
             kill_count (int): The amount of ducks the user has killed
-            updated (datetime): The last time the duck user interacted with a duck
+            updated (datetime.datetime): The last time the duck user interacted with a duck
             speed_record (float): The fastest this user has killed or friended a duck
         """
 
@@ -98,7 +98,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             name (str): The name of the factoid
             guild (str): The string guild ID for the guild that the factoid is in
             message (str): The string message of the factoid
-            time (datetime): When the factoid was created NOT edited
+            time (datetime.datetime): When the factoid was created NOT edited
             embed_config (str): The json of the factoid
             hidden (bool): If the factoid should be hidden or not
             protected (bool): If the factoid should be protected
@@ -153,7 +153,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             channel (str): The channel the message was grabbed from
             guild (str): The guild the message was grabbed from
             message (str): The string contents of the message
-            time (datetime): The time the message was grabbed
+            time (datetime.datetime): The time the message was grabbed
             nsfw (bool): Whether the message was grabbed in an NSFW channel
         """
 
@@ -207,7 +207,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             pk (int): The primary key for this database
             user_id (str): The user ID that has a note
             guild_id (str): The guild ID that the note belongs to
-            updated (datetime): The time the note was created on
+            updated (datetime.datetime): The time the note was created on
             author_id (str): The author of the note
             body (str): The contents of the note
         """
@@ -232,7 +232,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             user_id (str): The user who got warned
             guild_id (str): The guild this warn occured in
             reason (str): The reason for the warn
-            time (datetime): The time the warning was given
+            time (datetime.datetime): The time the warning was given
         """
 
         __tablename__ = "warnings"
@@ -253,7 +253,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             pk (int): The primary key for the database
             guild_id (str): The ID of the guild this config is for
             config (str): The config text
-            update_time (datetime): The time the config was last updated
+            update_time (datetime.datetime): The time the config was last updated
         """
 
         __tablename__ = "guild_config"
@@ -314,7 +314,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             votes_yes (int): The number of votes for yes
             votes_no (int): The number of votes for no
             votes_total (int): The number of votes
-            start_time (datetime): The start time of the vote
+            start_time (datetime.datetime): The start time of the vote
             vote_active (bool): If the vote is current active or not
             blind (bool): If the vote needs to be blind
             anonymous (bool): If the vote needs to be anonymous
