@@ -10,6 +10,7 @@ import munch
 from botlogging import LogContext, LogLevel
 from core import cogs, extensionconfig
 from discord.ext import commands
+from functions import automod
 
 if TYPE_CHECKING:
     import bot
@@ -114,7 +115,12 @@ class Paster(cogs.MatchCog):
         if len(content) > config.extensions.paste.length_limit.value or content.count(
             "\n"
         ) > self.max_newlines(config.extensions.paste.length_limit.value):
-            await self.handle_length_alert(config, ctx, content)
+            if "automod" in config.get("enabled_extensions", []):
+                automod_actions = automod.run_all_checks(config, ctx.message)
+                automod_final = automod.process_automod_violations(automod_actions)
+                if automod_final and automod_final.delete_message:
+                    return
+            await self.paste_message(config, ctx, content)
 
     def max_newlines(self: Self, max_length: int) -> int:
         """Gets a theoretical maximum number of new lines in a given message
@@ -164,7 +170,7 @@ class Paster(cogs.MatchCog):
 
         await self.response(config, ctx, message.content, None)
 
-    async def handle_length_alert(
+    async def paste_message(
         self: Self, config: munch.Munch, ctx: commands.Context, content: str
     ) -> None:
         """Moves message into a linx paste if it's too long
@@ -174,6 +180,30 @@ class Paster(cogs.MatchCog):
             ctx (commands.Context): The context where the original message was sent
             content (str): The string content of the flagged message
         """
+        if not self.bot.file_config.api.api_url.linx:
+            await self.bot.logger.send_log(
+                message=(
+                    f"Would have pasted message {ctx.message.id} but no linx url has been configured."
+                ),
+                level=LogLevel.WARNING,
+                channel=log_channel,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            )
+            return
+
+        linx_embed = await self.create_linx_embed(config, ctx, content)
+
+        if not linx_embed:
+            await self.bot.logger.send_log(
+                message=(
+                    f"Would have pasted message {ctx.message.id} but uploading the file to linx failed."
+                ),
+                level=LogLevel.WARNING,
+                channel=log_channel,
+                context=LogContext(guild=ctx.guild, channel=ctx.channel),
+            )
+            return
+
         attachments: list[discord.File] = []
         if ctx.message.attachments:
             total_attachment_size = 0
@@ -192,45 +222,13 @@ class Paster(cogs.MatchCog):
                     channel=log_channel,
                     context=LogContext(guild=ctx.guild, channel=ctx.channel),
                 )
-        await ctx.message.delete()
 
-        reason = "message too long (too many newlines or characters)"
-
-        if not self.bot.file_config.api.api_url.linx:
-            await self.send_default_delete_response(config, ctx, content, reason)
-            return
-
-        linx_embed = await self.create_linx_embed(config, ctx, content)
-        if not linx_embed:
-            await self.send_default_delete_response(config, ctx, content, reason)
-            # await self.send_alert(config, ctx, "Could not convert text to Linx paste")
-            return
-
-        await ctx.send(
+        message = await ctx.send(
             ctx.message.author.mention, embed=linx_embed, files=attachments[:10]
         )
 
-    async def send_default_delete_response(
-        self: Self,
-        config: munch.Munch,
-        ctx: commands.Context,
-        content: str,
-        reason: str,
-    ) -> None:
-        """Sends a DM to a user containing a message that was deleted
-
-        Args:
-            config (munch.Munch): The config of the guild where the message was sent
-            ctx (commands.Context): The context of the deleted message
-            content (str): The context of the deleted message
-            reason (str): The reason the message was deleted
-        """
-        embed = discord.Embed(
-            title="Chat Protection", description=f"Message deleted. Reason: *{reason}*"
-        )
-        embed.color = discord.Color.gold()
-        await ctx.send(ctx.message.author.mention, embed=embed)
-        await ctx.author.send(f"Deleted message: ```{content[:1994]}```")
+        if message:
+            await ctx.message.delete()
 
     async def create_linx_embed(
         self: Self, config: munch.Munch, ctx: commands.Context, content: str
