@@ -398,7 +398,9 @@ def generate_automod_alert_embed(
     )
     embed.add_field(name="Actions Taken", value=action_taken)
     embed.add_field(name="Channel", value=f"{ctx.channel.mention} ({ctx.channel.name})")
-    embed.add_field(name="User", value=f"{ctx.author.mention} ({ctx.author.name})")
+    embed.add_field(
+        name="User", value=f"{ctx.author.mention} ({ctx.author.name}, {ctx.author.id})"
+    )
     embed.add_field(name="Message", value=ctx.message.content[:1024], inline=False)
     embed.add_field(name="URL", value=ctx.message.jump_url, inline=False)
 

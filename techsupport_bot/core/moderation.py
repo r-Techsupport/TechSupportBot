@@ -204,7 +204,7 @@ async def send_command_usage_alert(
     if not alert_channel:
         return
 
-    embed = discord.Embed(title="Protect Alert")
+    embed = discord.Embed(title="Command Usage Alert")
 
     embed.add_field(name="Command", value=f"`{command}`", inline=False)
     embed.add_field(
@@ -213,11 +213,11 @@ async def send_command_usage_alert(
     )
     embed.add_field(
         name="Invoking User",
-        value=f"{interaction.user.display_name} ({interaction.user.mention})",
+        value=f"{interaction.user.display_name} ({interaction.user.mention}, {interaction.user.id})",
     )
     embed.add_field(
         name="Target",
-        value=f"{target.display_name} ({target.mention})",
+        value=f"{target.display_name} ({target.mention}, {target.id})",
     )
 
     embed.set_thumbnail(url=ALERT_ICON_URL)
