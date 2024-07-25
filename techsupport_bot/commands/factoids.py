@@ -942,6 +942,7 @@ class FactoidManager(cogs.MatchCog):
                     # This factoid job has been deleted from the DB
                     log_channel = None
                     log_context = None
+                    channel = None
 
                     if ctx:
                         config = self.bot.guild_configs[str(ctx.guild.id)]
