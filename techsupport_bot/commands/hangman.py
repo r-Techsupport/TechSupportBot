@@ -37,7 +37,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class HangmanGame:
     """Class for the game hangman.
 
-    Attrs:
+    Attributes:
         HANG_PICS (list[str]): The list of hangman pictures
         FINAL_STEP (int): The last step of the hangman game
         finished : Determines if the game has been finished or not

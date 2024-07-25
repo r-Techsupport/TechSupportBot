@@ -47,7 +47,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Googler(cogs.BaseCog):
     """Class for the google extension for the discord bot.
 
-    Attrs:
+    Attributes:
         GOOGLE_URL (str): The API URL for google search
         YOUTUBE_URL (str): The API URL for youtube search
         ICON_URL (str): The google icon

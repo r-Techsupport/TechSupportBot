@@ -168,7 +168,7 @@ class CalledFactoid:
     """A class to allow keeping the original factoid name in tact
     Without having to call the database lookup function every time
 
-    Attrs:
+    Attributes:
         original_call_str (str): The original name the user provided for a factoid
         factoid_db_entry (bot.models.Factoid): The database entry for the original factoid
     """
@@ -181,7 +181,7 @@ class Properties(Enum):
     """
     This enum is for the new factoid all to be able to handle dynamic properties
 
-    Attrs:
+    Attributes:
         HIDDEN (str): Representation of hidden
         DISABLED (str): Representation of disabled
         RESTRICTED (str): Representation of restricted
@@ -198,7 +198,7 @@ class FactoidManager(cogs.MatchCog):
     """
     Manages all factoid features
 
-    Attrs:
+    Attributes:
         CRON_REGEX (str): The regex to check if a cronjob is correct
         factoid_app_group (app_commands.Group): Group for /factoid commands
     """

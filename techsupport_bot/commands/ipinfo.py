@@ -24,7 +24,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class IPInfo(cogs.BaseCog):
     """Class to add ipinfo geodata to the bot.
 
-    Attrs:
+    Attributes:
         API_URL (str): The API url for IP info
         IP_ICON_URL (str): The URL for the IP info icon
     """
