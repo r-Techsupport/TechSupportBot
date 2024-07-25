@@ -660,7 +660,6 @@ class ProtectCommands(cogs.BaseCog):
 
         for warning in warnings:
             warning_moderator = await self.bot.fetch_user(int(warning.invoker_id))
-            print(type(warning.time))
             embed.add_field(
                 name=f"Warning by {warning_moderator.display_name} ({warning_moderator.name})",
                 value=f"{warning.reason}\nWarned <t:{int(warning.time.timestamp())}:R>",
