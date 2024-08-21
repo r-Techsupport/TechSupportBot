@@ -204,23 +204,8 @@ class News(cogs.LoopCog):
         """
         await aiocron.crontab(config.extensions.news.cron_config.value).next()
 
-    @commands.group(
-        brief="Executes a news command",
-        description="Executes a news command",
-    )
-    async def news(self: Self, ctx: commands.Context) -> None:
-        """The bare .news command. This does nothing but generate the help message
-
-        Args:
-            ctx (commands.Context): The context in which the command was run in
-        """
-
-        # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
-
-    @news.command(
-        name="random",
-        brief="Gets a random news article",
+    @app_commands.command(
+        name="news",
         description="Gets a random news headline",
         extras={"module": "news"},
     )
@@ -228,10 +213,12 @@ class News(cogs.LoopCog):
         """Discord command entry point for getting a news article
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction in which the command was run
             category (str, optional): The category to get news headlines from. Defaults to None.
         """
 
+        # Debug statement
+        print("Executing news command")
         if category is None or category.lower() not in self.valid_category:
             category = random.choice(list(Category)).value
         else:
@@ -254,6 +241,18 @@ class News(cogs.LoopCog):
 
         await interaction.response.send_message(content=url)
 
+        # Log the command execution
+        log_channel = config.get("logging_channel")
+        if log_channel:
+            await self.bot.logger.send_log(
+                message=f"News command executed: Sent a news headline to {interaction.channel.name}",
+                level=LogLevel.INFO,
+                context=LogContext(
+                    guild=interaction.guild, channel=interaction.channel
+                ),
+                channel=log_channel,
+            )
+
     @news_command.autocomplete("category")
     async def news_autocompletion(
         self, interaction: discord.Interaction, current: str
@@ -267,6 +266,8 @@ class News(cogs.LoopCog):
         Returns:
             The list of autocomplete for the news command.
         """
+        # Debug statement
+        print("Autocomplete interaction")
         news_category = []
         for category in Category:
             if current.lower() in category.value.lower():

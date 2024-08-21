@@ -963,6 +963,8 @@ class TechSupportBot(commands.Bot):
         Args:
             interaction (discord.Interaction): The interaction the slash command generated
         """
+        if interaction.type != discord.InteractionType.application_command:
+            return
         embed = discord.Embed()
         embed.add_field(name="User", value=interaction.user)
         embed.add_field(
