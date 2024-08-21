@@ -3,7 +3,7 @@ Uses the same filter as the automatic nickname filter"""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 from core import auxiliary, cogs
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     import bot
 
 
-async def setup(bot: bot.TechSupportBot):
+async def setup(bot: bot.TechSupportBot) -> None:
     """Registers the nicknamefixer cog
 
     Args:
@@ -36,8 +36,8 @@ class NicknameFixer(cogs.BaseCog):
         },
     )
     async def fixnickname(
-        self, interaction: discord.Interaction, member: discord.Member
-    ):
+        self: Self, interaction: discord.Interaction, member: discord.Member
+    ) -> None:
         """Manually adjusts someones nickname to comply with the nickname filter
         Does not send a DM
 

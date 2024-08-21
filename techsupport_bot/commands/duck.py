@@ -91,16 +91,28 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class DuckHunt(cogs.LoopCog):
-    """Class for the actual duck commands"""
+    """Class for the actual duck commands
 
-    DUCK_PIC_URL = "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
-    BEFRIEND_URL = (
+    Attributes:
+        DUCK_PIC_URL (str): The picture for the duck
+        BEFRIEND_URL (str): The picture for the befriend target
+        KILL_URL (str): The picture for the kill target
+        ON_START (bool): ???
+        CHANNELS_KEY (str): The config item for the channels that the duck hunt should run
+    """
+
+    DUCK_PIC_URL: str = (
+        "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
+    )
+    BEFRIEND_URL: str = (
         "https://cdn.icon-icons.com/icons2/603/PNG/512/"
         + "heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
     )
-    KILL_URL = "https://cdn.icon-icons.com/icons2/1919/PNG/512/huntingtarget_122049.png"
-    ON_START = False
-    CHANNELS_KEY = "hunt_channels"
+    KILL_URL: str = (
+        "https://cdn.icon-icons.com/icons2/1919/PNG/512/huntingtarget_122049.png"
+    )
+    ON_START: bool = False
+    CHANNELS_KEY: str = "hunt_channels"
 
     async def loop_preconfig(self: Self) -> None:
         """Preconfig for cooldowns"""
@@ -288,8 +300,11 @@ class DuckHunt(cogs.LoopCog):
 
         await channel.send(embed=embed)
 
-    def pick_quote(self) -> str:
-        """Method for picking a random quote for the miss message"""
+    def pick_quote(self: Self) -> str:
+        """Picks a random quote from the duckQuotes.txt file
+
+        Returns:
+            str: The quote picked randomly from the file, ready to use"""
         QUOTES_FILE = "resources/duckQuotes.txt"
         with open(QUOTES_FILE, "r", encoding="utf-8") as file:
             lines = file.readlines()
@@ -354,11 +369,16 @@ class DuckHunt(cogs.LoopCog):
         # Check to see if random failure
         choice_ = random.choice(random.choices([True, False], weights=weights, k=1000))
         if not choice_:
+            time = message.created_at - duck_message.created_at
+            duration_exact = float(str(time.seconds) + "." + str(time.microseconds))
             cooldowns[message.author.id] = datetime.datetime.now()
             quote = self.pick_quote()
             embed = auxiliary.prepare_deny_embed(message=quote)
             embed.set_footer(
-                text=f"You missed. Try again in {config.extensions.duck.cooldown.value} seconds"
+                text=(
+                    f"You missed. Try again in {config.extensions.duck.cooldown.value} "
+                    f"seconds. Time would have been {duration_exact} seconds"
+                )
             )
             # Only attempt timeout if we know we can do it
             if (
@@ -896,7 +916,7 @@ class DuckHunt(cogs.LoopCog):
         brief="Spawns a duck on command",
         description="Will spawn a duck with the command",
     )
-    async def spawn(self, ctx: commands.Context) -> None:
+    async def spawn(self: Self, ctx: commands.Context) -> None:
         """A debug focused command to force spawn a duck in any channel
 
         Args:

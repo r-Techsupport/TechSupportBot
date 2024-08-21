@@ -6,9 +6,12 @@ The cog in the file is named:
 This file does not contain any commands
 """
 
+from __future__ import annotations
+
 import random
 import re
 import string
+from typing import TYPE_CHECKING, Self
 
 import discord
 from botlogging import LogContext, LogLevel
@@ -16,9 +19,16 @@ from core import cogs
 from discord.ext import commands
 from unidecode import unidecode
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Registers the AutoNickName Cog"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Auto Nickname plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(AutoNickName(bot=bot))
 
 
@@ -72,8 +82,14 @@ class AutoNickName(cogs.BaseCog):
     """
 
     @commands.Cog.listener()
-    async def on_member_join(self, member: discord.Member) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join"""
+    async def on_member_join(self: Self, member: discord.Member) -> None:
+        """
+        This starts the running of the auto nickname formatter
+        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join
+
+        Args:
+            member (discord.Member): The member who joined
+        """
         config = self.bot.guild_configs[str(member.guild.id)]
 
         # Don't do anything if the filter is off for the guild

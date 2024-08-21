@@ -16,7 +16,7 @@ from __future__ import annotations
 import asyncio
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Self, Tuple
+from typing import TYPE_CHECKING, Self
 
 import discord
 import expiringdict
@@ -80,7 +80,7 @@ class Modmail_bot(discord.Client):
     """The bot used to send and receive DM messages"""
 
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message) -> None:
+    async def on_message(self: Self, message: discord.Message) -> None:
         """Listen to DMs, send them to handle_dm for proper handling when applicable
 
         Args:
@@ -141,7 +141,7 @@ class Modmail_bot(discord.Client):
 
     @commands.Cog.listener()
     async def on_message_edit(
-        self, before: discord.Message, after: discord.Message
+        self: Self, before: discord.Message, after: discord.Message
     ) -> None:
         """When someone edits a message, send the event to the appropriate thread
 
@@ -170,12 +170,10 @@ class Modmail_bot(discord.Client):
             # This is here to save space if this listener is triggered by something other than
             # a content modification, i.e. a message being pinned
             if before.content == after.content:
-                embed.add_field(name="Before", value=before.content).add_field(
-                    name="After", value="<The contents are unchanged>"
-                )
+                return
 
             # Length handling has to be here, 1024 is the limit for inividual fields
-            elif len(before.content) > 1016 or len(after.content) > 1016:
+            if len(before.content) > 1016 or len(after.content) > 1016:
                 embed.set_footer(
                     text="Edit was too long to send! Sending just the result instead..."
                 )
@@ -192,7 +190,7 @@ class Modmail_bot(discord.Client):
             await thread.send(embed=embed)
 
     @commands.Cog.listener()
-    async def on_member_remove(self, member: discord.Member) -> None:
+    async def on_member_remove(self: Self, member: discord.Member) -> None:
         """Sends a message into a thread if the addressee left
 
         Args:
@@ -208,7 +206,7 @@ class Modmail_bot(discord.Client):
             await thread.send(embed=embed)
 
     @commands.Cog.listener()
-    async def on_member_join(self, member: discord.Member) -> None:
+    async def on_member_join(self: Self, member: discord.Member) -> None:
         """Sends a message into a thread if the addressee joined the guild with an active thread
 
         Args:
@@ -231,6 +229,7 @@ DISABLE_THREAD_CREATION = None
 MODMAIL_FORUM_ID = None
 MODMAIL_LOG_CHANNEL_ID = None
 AUTOMATIC_RESPONSES = None
+AUTOMATIC_REJECTIONS = None
 ROLES_TO_PING = None
 THREAD_CREATION_MESSAGE = None
 
@@ -345,6 +344,15 @@ async def handle_dm(message: discord.Message) -> None:
         return
 
     # - No thread was found, create one -
+
+    for regex in AUTOMATIC_REJECTIONS:
+        if re.match(regex, message.content):
+            await auxiliary.send_deny_embed(
+                message="This message cannot be used to start a "
+                + f"thread: {AUTOMATIC_REJECTIONS[regex]}",
+                channel=message.channel,
+            )
+            return
 
     if message.author.id in awaiting_confirmation:
         await auxiliary.send_deny_embed(
@@ -588,7 +596,8 @@ async def reply_to_thread(
 
     if not target_member:
         await auxiliary.send_deny_embed(
-            message="Couldn't fetch the user! Are they in the guild?", channel=thread
+            message="This user isn't in the guild, so the message cannot be sent",
+            channel=thread,
         )
         return
 
@@ -809,8 +818,22 @@ async def log_closure(
     await log_channel.send(embed=embed)
 
 
-async def setup(bot):
-    """Sets the modmail extension up"""
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Modmail plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+
+    Raises:
+        AttributeError: Raised if modmail is disabled
+    """
+
+    # Only runs if modmail is enabled
+    if not bot.file_config.modmail_config.enable_modmail:
+        # Raising an exception makes the extension loading mark as failed, this is surprisingly
+        # the most reliable way to ensure the modmail bot or code doesn't run
+        raise AttributeError("Modmail was not loaded because it's disabled")
+
     config = extensionconfig.ExtensionConfig()
 
     config.add(
@@ -826,6 +849,14 @@ async def setup(bot):
         datatype="dict",
         title="Modmail autoresponses",
         description="If someone sends a message containing a key, sends its value",
+        default={},
+    )
+
+    config.add(
+        key="automatic_rejections",
+        datatype="dict",
+        title="Modmail auto-rejections",
+        description="If someone sends a message matching regex, blocks thread creation",
         default={},
     )
 
@@ -859,19 +890,13 @@ async def setup(bot):
 class Modmail(cogs.BaseCog):
     """The modmail cog class
 
-    Raises:
-        AttributeError: Modmail aborting loading due to being disabled
+    Args:
+        bot (bot.TechSupportBot): The main TS bot object to be stored in modmail
     """
 
-    def __init__(self: Self, bot: bot.TechSupportBot):
+    def __init__(self: Self, bot: bot.TechSupportBot) -> None:
         # Init is used to make variables global so they can be used on the modmail side
         super().__init__(bot=bot)
-
-        # Only runs if modmail is enabled
-        if not bot.file_config.modmail_config.enable_modmail:
-            # Raising an exception makes the extension loading mark as failed, this is surprisingly
-            # the most reliable way to ensure the modmail bot or code doesn't run
-            raise AttributeError("Modmail was not loaded because it's disabled")
 
         # Makes the TS client available globally for creating threads and populating them with info
         # pylint: disable=W0603
@@ -904,6 +929,10 @@ class Modmail(cogs.BaseCog):
         AUTOMATIC_RESPONSES = config.extensions.modmail.automatic_responses.value
 
         # pylint: disable=W0603
+        global AUTOMATIC_REJECTIONS
+        AUTOMATIC_REJECTIONS = config.extensions.modmail.automatic_rejections.value
+
+        # pylint: disable=W0603
         global ROLES_TO_PING
         # dict.fromkeys() to deduplicate the list
         ROLES_TO_PING = list(
@@ -920,12 +949,12 @@ class Modmail(cogs.BaseCog):
         self.prefix = bot.file_config.modmail_config.modmail_prefix
         self.bot = bot
 
-    async def handle_reboot(self):
+    async def handle_reboot(self: Self) -> None:
         """Ran when the bot is restarted"""
 
         await Modmail_client.close()
 
-    async def preconfig(self):
+    async def preconfig(self: Self) -> None:
         """Fetches modmail threads once ready"""
         self.modmail_forum = await self.bot.fetch_channel(MODMAIL_FORUM_ID)
 
@@ -936,7 +965,7 @@ class Modmail(cogs.BaseCog):
                 active_threads[int(thread.name.split(" | ")[3])] = thread.id
 
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
+    async def on_message(self: Self, message: discord.Message) -> None:
         """Processes messages sent in a modmail thread, basically a manual command handler
 
         Args:
@@ -1127,7 +1156,7 @@ class Modmail(cogs.BaseCog):
         description="Creates a modmail thread with a user",
         usage="[user-to-contact]",
     )
-    async def contact(self, ctx: commands.Context, user: discord.User):
+    async def contact(self: Self, ctx: commands.Context, user: discord.User) -> None:
         """Opens a modmail thread with a person of your choice
 
         Args:
@@ -1190,7 +1219,7 @@ class Modmail(cogs.BaseCog):
         description="Creates a modmail thread with yourself, doesn't ping anyone when doing so",
         usage="[user-to-contact]",
     )
-    async def selfcontact(self, ctx: commands.Context):
+    async def selfcontact(self: Self, ctx: commands.Context) -> None:
         """Opens a modmail thread with yourself
 
         Args:
@@ -1246,13 +1275,17 @@ class Modmail(cogs.BaseCog):
                     )
 
     @commands.group(name="modmail")
-    async def modmail(self, ctx):
-        """Method for the modmail command group."""
+    async def modmail(self: Self, ctx: commands.Context) -> None:
+        """The bare .modmail command. This does nothing but generate the help message
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
 
         # Executed if there are no/invalid args supplied
         await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
-    def modmail_commands_list(self) -> list[Tuple[str, str, str, str]]:
+    def modmail_commands_list(self: Self) -> list[tuple[str, str, str, str]]:
         """
         Builds a list of commands to allow both .modmail commands and .help to use them
         Commands are sorted into a 4 part tuple:
@@ -1260,6 +1293,10 @@ class Modmail(cogs.BaseCog):
         [1] - command name
         [2] - command usage
         [3] - command description
+
+        Returns:
+            list[tuple[str, str, str, str]]: The list of commands,
+                formatted to be added to the help menu
         """
         prefix = self.bot.file_config.modmail_config.modmail_prefix
         commands_list = [
@@ -1297,7 +1334,7 @@ class Modmail(cogs.BaseCog):
         name="commands",
         description="Lists all commands you can use in modmail threads",
     )
-    async def modmail_commands(self, ctx: commands.Context):
+    async def modmail_commands(self: Self, ctx: commands.Context) -> None:
         """Lists all commands usable in modmail threads
 
         Args:
@@ -1332,7 +1369,7 @@ class Modmail(cogs.BaseCog):
         description="Lists all existing modmail aliases",
         usage="",
     )
-    async def list_aliases(self, ctx: commands.context):
+    async def list_aliases(self: Self, ctx: commands.context) -> None:
         """Lists all existing modmail aliases
 
         Args:
@@ -1364,7 +1401,9 @@ class Modmail(cogs.BaseCog):
         description="Bans a user from creating future modmail threads",
         usage="[user-to-ban]",
     )
-    async def modmail_ban(self, ctx: commands.Context, user: discord.User):
+    async def modmail_ban(
+        self: Self, ctx: commands.Context, user: discord.User
+    ) -> None:
         """Bans a user from creating future modmail threads
 
         Args:
@@ -1417,19 +1456,21 @@ class Modmail(cogs.BaseCog):
                 pass
 
             case ui.ConfirmResponse.DENIED:
-                return await auxiliary.send_deny_embed(
+                await auxiliary.send_deny_embed(
                     message=f"{user.mention} was NOT banned from creating modmail threads.",
                     channel=ctx.channel,
                 )
+                return
 
             case ui.ConfirmResponse.CONFIRMED:
                 await self.bot.models.ModmailBan(user_id=str(user.id)).create()
 
-                return await auxiliary.send_confirm_embed(
+                await auxiliary.send_confirm_embed(
                     message=f"{user.mention} was successfully banned from creating future modmail"
                     + " threads.",
                     channel=ctx.channel,
                 )
+                return
 
     @auxiliary.with_typing
     @commands.check(has_modmail_management_role)
@@ -1438,7 +1479,9 @@ class Modmail(cogs.BaseCog):
         description="Unbans a user from creating future modmail threads",
         usage="[user-to-unban]",
     )
-    async def modmail_unban(self, ctx: commands.Context, user: discord.User):
+    async def modmail_unban(
+        self: Self, ctx: commands.Context, user: discord.User
+    ) -> None:
         """Opens a modmail thread with a person of your choice
 
         Args:
@@ -1450,14 +1493,15 @@ class Modmail(cogs.BaseCog):
         ).gino.first()
 
         if not ban_entry:
-            return await auxiliary.send_deny_embed(
+            await auxiliary.send_deny_embed(
                 message=f"{user.mention} is not currently banned from making modmail threads!",
                 channel=ctx.channel,
             )
+            return
 
         await ban_entry.delete()
 
-        return await auxiliary.send_confirm_embed(
+        await auxiliary.send_confirm_embed(
             message=f"{user.mention} was successfully unbanned from creating modmail threads!",
             channel=ctx.channel,
         )

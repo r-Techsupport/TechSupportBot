@@ -29,9 +29,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Emojis(cogs.BaseCog):
-    """Class for all the emoji commands"""
+    """Class for all the emoji commands
 
-    KEY_MAP = {"?": "question", "!": "exclamation"}
+    Attributes:
+        KEY_MAP (dict[str,str]): Some manual mappings from character to emoji
+    """
+
+    KEY_MAP: dict[str, str] = {"?": "question", "!": "exclamation"}
 
     @classmethod
     def emoji_from_char(cls: Self, char: str) -> str:
@@ -93,7 +97,7 @@ class Emojis(cogs.BaseCog):
         return emoji_list
 
     async def emoji_commands(
-        self,
+        self: Self,
         ctx: commands.Context,
         message: str,
         add_reactions: bool,
@@ -196,7 +200,7 @@ class Emojis(cogs.BaseCog):
         usage="[message] @user",
     )
     async def reaction(
-        self, ctx: commands.Context, message: str, react_user: discord.Member
+        self: Self, ctx: commands.Context, message: str, react_user: discord.Member
     ) -> None:
         """Entry point for the reaction emoji command
 

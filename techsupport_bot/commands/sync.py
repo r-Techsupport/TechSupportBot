@@ -7,12 +7,23 @@ This file contains 1 commands:
     .sync
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Registers the AppCommandSync Cog"""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Sync plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(AppCommandSync(bot=bot))
 
 
@@ -28,7 +39,7 @@ class AppCommandSync(cogs.BaseCog):
         description="Syncs slash commands",
         usage="",
     )
-    async def sync_slash_commands(self, ctx: commands.Context):
+    async def sync_slash_commands(self: Self, ctx: commands.Context) -> None:
         """A simple command to manually sync slash commands
 
         Args:

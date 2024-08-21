@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import enum
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import aiocron
 import discord
@@ -69,30 +69,56 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Category(enum.Enum):
-    """Class to set up categories for the news."""
+    """Class to set up categories for the news.
 
-    BUSINESS = "business"
-    ENTERTAINMENT = "entertainment"
-    GENERAL = "general"
-    HEALTH = "health"
-    SCIENCE = "science"
-    SPORTS = "sports"
-    TECH = "technology"
+    Attributes:
+        BUSINESS (str): The string representation for business
+        ENTERTAINMENT (str): The string representation for entertainment
+        GENERAL (str): The string representation for general
+        HEALTH (str): The string representation for health
+        SCIENCE (str): The string representation for science
+        SPORTS (str): The string representation for sports
+        TECH (str): The string representation for technology
+
+    """
+
+    BUSINESS: str = "business"
+    ENTERTAINMENT: str = "entertainment"
+    GENERAL: str = "general"
+    HEALTH: str = "health"
+    SCIENCE: str = "science"
+    SPORTS: str = "sports"
+    TECH: str = "technology"
 
 
 class News(cogs.LoopCog):
-    """Class to set up the news extension for the discord bot."""
+    """Class to set up the news extension for the discord bot.
 
-    API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
+    Attributes:
+        API_URL (str): The news API URL
 
-    async def preconfig(self):
-        """Function to check to see if value enter is valid."""
+    """
+
+    API_URL: str = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
+
+    async def preconfig(self: Self) -> None:
+        """Sets up the list of valid categories in a class wide variable"""
         self.valid_category = []
         for item in Category:
             self.valid_category.append(item.value)
 
-    async def get_headlines(self, country_code, category=None):
-        """Method to get the headline for the news command."""
+    async def get_headlines(
+        self: Self, country_code: str, category: str = None
+    ) -> list[munch.Munch]:
+        """Calls the API to get the list of headlines based on the category and country
+
+        Args:
+            country_code (str): The country code to get headlines from
+            category (str, optional): The category of headlines to get. Defaults to None.
+
+        Returns:
+            list[munch.Munch]: The list of article objects from the API
+        """
         url = self.API_URL.format(
             self.bot.file_config.api.api_keys.news,
             country_code,
@@ -105,11 +131,21 @@ class News(cogs.LoopCog):
         articles = response.get("articles")
         if not articles:
             return None
-
         return articles
 
-    async def get_random_headline(self, country_code, category=None) -> munch.Munch:
-        """Method to get a random headline for the news command."""
+    async def get_random_headline(
+        self: Self, country_code: str, category: str = None
+    ) -> munch.Munch:
+        """Gets a single article object from the news API
+
+        Args:
+            country_code (str): The country code of the headliens to get
+            category (str, optional): The category of headlines to get. Defaults to None.
+
+        Returns:
+            munch.Munch: The raw API object representing a news headline
+        """
+
         articles = await self.get_headlines(country_code, category)
 
         # Filter out articles with URLs containing "removed.com"
@@ -126,8 +162,14 @@ class News(cogs.LoopCog):
         # Choose a random article from the filtered list
         return random.choice(filtered_articles)
 
-    async def execute(self, config, guild):
-        """Method to execute the news command."""
+    async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
+        """Loop entry point for the news command
+        If a channel is configured to loop news headlines, this will execute that
+
+        Args:
+            config (munch.Munch): The guild config for the guild looping
+            guild (discord.Guild): The guild where the loop is running
+        """
         channel = guild.get_channel(int(config.extensions.news.channel.value))
         if not channel:
             return
@@ -154,17 +196,42 @@ class News(cogs.LoopCog):
             url = url[:-1]
         await channel.send(url)
 
-    async def wait(self, config, _):
-        """Method to define the wait time for the news api pull."""
+    async def wait(self: Self, config: munch.Munch, _: discord.Guild) -> None:
+        """Waits the defined time set for the loop, based on the cronjob
+
+        Args:
+            config (munch.Munch): The guild config where the loop will occur
+        """
         await aiocron.crontab(config.extensions.news.cron_config.value).next()
 
-    @app_commands.command(
-        name="news",
+    @commands.group(
+        brief="Executes a news command",
+        description="Executes a news command",
+    )
+    async def news(self: Self, ctx: commands.Context) -> None:
+        """The bare .news command. This does nothing but generate the help message
+
+        Args:
+            ctx (commands.Context): The context in which the command was run in
+        """
+
+        # Executed if there are no/invalid args supplied
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
+
+    @news.command(
+        name="random",
+        brief="Gets a random news article",
         description="Gets a random news headline",
         extras={"module": "news"},
     )
     async def news_command(self, interaction: discord.Interaction, category: str = ""):
-        """Method to define the random to get a news."""
+        """Discord command entry point for getting a news article
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+            category (str, optional): The category to get news headlines from. Defaults to None.
+        """
+
         if category is None or category.lower() not in self.valid_category:
             category = random.choice(list(Category)).value
         else:
