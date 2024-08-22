@@ -245,7 +245,8 @@ class News(cogs.LoopCog):
         log_channel = config.get("logging_channel")
         if log_channel:
             await self.bot.logger.send_log(
-                message=f"News command executed: Sent a news headline to {interaction.channel.name}",
+                message = f"""News command executed: 
+                    Sent a news headline to {interaction.channel.name}"""
                 level=LogLevel.INFO,
                 context=LogContext(
                     guild=interaction.guild, channel=interaction.channel
