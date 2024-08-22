@@ -269,7 +269,7 @@ class News(cogs.LoopCog):
             current (str): The current input from the user.
 
         Returns:
-            ['list']: The list of autocomplete for the news command.
+            list: The list of autocomplete for the news command.
         """
         # Debug statement
         print("Autocomplete interaction")
