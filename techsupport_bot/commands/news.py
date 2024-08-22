@@ -209,7 +209,9 @@ class News(cogs.LoopCog):
         description="Gets a random news headline",
         extras={"module": "news"},
     )
-    async def news_command(self, interaction: discord.Interaction, category: str = ""):
+    async def news_command(
+        self: Self, interaction: discord.Interaction, category: str = ""
+    ) -> None:
         """Discord command entry point for getting a news article
 
         Args:
@@ -258,7 +260,7 @@ class News(cogs.LoopCog):
 
     @news_command.autocomplete("category")
     async def news_autocompletion(
-        self, interaction: discord.Interaction, current: str
+        self: Self, interaction: discord.Interaction, current: str
     ) -> list:
         """This command creates a list of categories for autocomplete the news command.
 
@@ -267,7 +269,7 @@ class News(cogs.LoopCog):
             current (str): The current input from the user.
 
         Returns:
-            The list of autocomplete for the news command.
+            ['list']: The list of autocomplete for the news command.
         """
         # Debug statement
         print("Autocomplete interaction")
