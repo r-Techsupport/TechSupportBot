@@ -31,12 +31,14 @@ class Animals(cogs.BaseCog):
         DOG_API_URL (str): The URL for the dog API
         FOX_API_URL (str): The URL for the fox API
         FROG_API_URL (str): The URL for the frog API
+        FLICKR_API_URL (str): The URL for the animal API
     """
 
     CAT_API_URL = "https://api.thecatapi.com/v1/images/search?limit=1&api_key={}"
     DOG_API_URL = "https://dog.ceo/api/breeds/image/random"
     FOX_API_URL = "https://randomfox.ca/floof/"
     FROG_API_URL = "https://frogs.media/api/random"
+    FLICKR_API_URL = "https://api.flickr.com/services/rest/"
 
     @auxiliary.with_typing
     @commands.command(name="cat", brief="Gets a cat", description="Gets a cat")
@@ -96,6 +98,7 @@ class Animals(cogs.BaseCog):
     @commands.command(
         name="animal", brief="Gets an animal", description="Gets an animal"
     )
+    @commands.cooldown(5, 60, commands.BucketType.user)
     async def animal(self, ctx: commands.Context, *, animal: str = "animal") -> None:
         """Prints an animal to discord
 
@@ -104,6 +107,10 @@ class Animals(cogs.BaseCog):
             ctx (commands.Context): The context in which the command was run
             animal (str): The animal to search for
         """
+        # Check if the user is an admin, and if so, reset the cooldown
+        if ctx.author.guild_permissions.administrator:
+            self.animal.reset_cooldown(ctx)
+          
         flickr = flickrapi.FlickrAPI(
             self.bot.file_config.api.api_keys.flickr_api_key.encode("utf-8"),
             self.bot.file_config.api.api_keys.flicker_api_secret.encode("utf-8"),
@@ -114,14 +121,17 @@ class Animals(cogs.BaseCog):
             # Perform the initial search to get the total number of pages
             initial_search = flickr.photos.search(
                 text=animal,
-                tags=animal,
+                tags=f"{animal}, -person, -people, -portrait, -selfie, -human",
                 tag_mode="all",
                 extras="url_c",
                 per_page=1,
                 format="parsed-json",
+                content_type=1,  # 1 for photos only
+                safe_search=1,  # 1 for safe search
+                sort="relevance",
             )
             total_pages = initial_search["photos"]["pages"]
-
+            print(f"Flickr: {initial_search}")
             # Limit the number of pages to a reasonable subset (e.g., 1000)
             max_pages_to_check = min(total_pages, 1000)
 
@@ -134,7 +144,7 @@ class Animals(cogs.BaseCog):
                 # Perform the search on the random page
                 photos = flickr.photos.search(
                     text=animal,
-                    tags=animal,
+                    tags=f"{animal}, -person, -people, -portrait, -selfie, -human",
                     tag_mode="all",
                     extras="url_c",
                     per_page=1,
@@ -142,7 +152,9 @@ class Animals(cogs.BaseCog):
                     format="parsed-json",
                     content_type=1,  # 1 for photos only
                     safe_search=1,  # 1 for safe search
-                    sort="relevance",  # sort by relevance
+                    sort="relevance",  
+                    license="4,6,7,9", # filter by free and public domain licenses
+                    media="photos",
                 )
 
                 # Extract the URL of the first photo on the random page
@@ -169,5 +181,12 @@ class Animals(cogs.BaseCog):
                 channel=ctx.channel,
             )
 
+        except flickrapi.exceptions.FlickrError as e:
+            await ctx.send(
+                f"An error occurred while fetching data from Flickr: {str(e)}. Please try again later."
+            )
+            
         except Exception as e:
-            await ctx.send_deny_embed(f"An error occurred: {e}")
+            await ctx.send(
+                f"An unexpected error occurred: {str(e)}. The issue has been logged."
+            )
