@@ -380,17 +380,7 @@ class DuckHunt(cogs.LoopCog):
                     f"seconds. Time would have been {duration_exact} seconds"
                 )
             )
-            # Only attempt timeout if we know we can do it
-            if (
-                channel.guild.me.top_role > message.author.top_role
-                and channel.guild.me.guild_permissions.moderate_members
-            ):
-                asyncio.create_task(
-                    message.author.timeout(
-                        timedelta(seconds=config.extensions.duck.cooldown.value),
-                        reason="Missed a duck",
-                    )
-                )
+
             asyncio.create_task(
                 message.channel.send(
                     content=message.author.mention,
