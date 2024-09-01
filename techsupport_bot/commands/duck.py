@@ -6,7 +6,6 @@ import asyncio
 import datetime
 import functools
 import random
-from datetime import timedelta
 from typing import TYPE_CHECKING, Self
 
 import discord
