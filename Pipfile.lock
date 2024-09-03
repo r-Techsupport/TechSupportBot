@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "dbf9ed1270c7eaba519b481d72e51fa3df845ad26a72171077ca5345bf8de837"
+            "sha256": "970f6a04221f9458a9ad345d959b7861898edc3094b2965e6093ce6d047e88e9"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -967,12 +967,12 @@
         },
         "pydoclint": {
             "hashes": [
-                "sha256:903a33a25504df85b200d3a3f1207688de208890b79730ceb6045978864ba7c9",
-                "sha256:991d336a8058d482e581f55e0b140c5757ce11d2baa2d2fca94b8f678c03831b"
+                "sha256:22561b8f876b7bd3d4966a3b7fe27bfdbfa41fa50d0719f13b08844a39e2717c",
+                "sha256:d2938efc95233205822bebe5da5c8e1c4796da09988a2a73c2d6b63cef4577a6"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==0.5.6"
+            "version": "==0.5.7"
         },
         "pyflakes": {
             "hashes": [
