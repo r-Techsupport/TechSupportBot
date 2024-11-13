@@ -47,9 +47,12 @@ class Hugger(cogs.BaseCog):
         "{user_giving_hug} swaddles {user_to_hug} like a baby",
         "{user_giving_hug} tackles {user_to_hug} to the ground with a giant glomp",
         "{user_giving_hug} hugs {user_to_hug} and gives them Eskimo kisses",
-        "{user_giving_hug} grabs {user_to_hug} ,pulls them close, giving them three hearty raps on the back",
+        (
+            "{user_giving_hug} grabs {user_to_hug} ,pulls them close,"
+            " giving them three hearty raps on the back"
+        ),
         "{user_giving_hug} hugs {user_to_hug} and rubs their back slowly",
-        "{user_giving_hug} pulls {user_to_hug} into a tight hug and tries to squeeze the sadness out",
+        "{user_giving_hug} pulls {user_to_hug} into a tight hug and squeezes the sadness out",
         "{user_giving_hug} hugs {user_to_hug} too tightly until they pass out",
         "{user_giving_hug} went to hug {user_to_hug} but missed and ran into the wall instead",
     ]
