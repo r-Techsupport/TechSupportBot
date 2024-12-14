@@ -125,6 +125,7 @@ class DuckHunt(cogs.LoopCog):
         Args:
             config (munch.Munch): The guild config to use to determine the min and max wait times
         """
+        await asyncio.sleep(1)
         await asyncio.sleep(
             random.randint(
                 config.extensions.duck.min_wait.value * 3600,
@@ -361,14 +362,9 @@ class DuckHunt(cogs.LoopCog):
             )
             return False
 
-        weights = (
-            config.extensions.duck.success_rate.value,
-            100 - config.extensions.duck.success_rate.value,
-        )
-
         # Check to see if random failure
-        choice_ = random.choice(random.choices([True, False], weights=weights, k=1000))
-        if not choice_:
+        choice = self.random_choice(config)
+        if not choice:
             time = message.created_at - duck_message.created_at
             duration_exact = float(str(time.seconds) + "." + str(time.microseconds))
             cooldowns[message.author.id] = datetime.datetime.now()
@@ -398,7 +394,7 @@ class DuckHunt(cogs.LoopCog):
                 )
             )
 
-        return choice_
+        return choice
 
     async def get_duck_user(
         self: Self, user_id: int, guild_id: int
@@ -760,12 +756,7 @@ class DuckHunt(cogs.LoopCog):
 
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
 
-        weights = (
-            config.extensions.duck.success_rate.value,
-            100 - config.extensions.duck.success_rate.value,
-        )
-
-        passed = random.choice(random.choices([True, False], weights=weights, k=1000))
+        passed = self.random_choice(config)
         if not passed:
             await auxiliary.send_deny_embed(
                 message="The duck got away before you could kill it.",
@@ -838,12 +829,7 @@ class DuckHunt(cogs.LoopCog):
 
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
 
-        weights = (
-            config.extensions.duck.success_rate.value,
-            100 - config.extensions.duck.success_rate.value,
-        )
-
-        passed = random.choice(random.choices([True, False], weights=weights, k=1000))
+        passed = self.random_choice(config)
         if not passed:
             await auxiliary.send_deny_embed(
                 message="The duck got away before you could donate it.",
@@ -932,3 +918,25 @@ class DuckHunt(cogs.LoopCog):
             message="It looks like you don't have permissions to spawn a duck",
             channel=ctx.channel,
         )
+
+    def random_choice(self: Self, config: munch.Munch) -> bool:
+        """A function to pick true or false randomly based on the success_rate in the config
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+
+        Returns:
+            bool: Whether the random choice should succeed or not
+        """
+
+        weights = (
+            config.extensions.duck.success_rate.value,
+            100 - config.extensions.duck.success_rate.value,
+        )
+
+        # Check to see if random failure
+        choice_ = random.choice(
+            random.choices([True, False], weights=weights, k=100000)
+        )
+
+        return choice_
