@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "302f19015f207b9f72ee2617ddaeb3a563b8ddc69e39dc03b1a75267969bef03"
+            "sha256": "152c0ffea9f1a41fea6523d6e394f92970e761f286d289c6d19a4c872d04d8de"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -424,12 +424,12 @@
         },
         "flake8-docstrings-complete": {
             "hashes": [
-                "sha256:9707d243b943e67a07ca59fc561fd7e5679d9910f0cba203e59ed3190a4d23ef",
-                "sha256:b971c21e89dad8805ffb6987aa31fada7fac3d30a5d0909eb53eac491c29f6bf"
+                "sha256:43bf88e34e3029fc8b38b4e3ccb5966bd07ef63d94cd3943629d1be88cd72553",
+                "sha256:c315534455b2981e9c4ef21904dd35b7c4f4bf65814f726ac01a381786fc4eea"
             ],
             "index": "pypi",
-            "markers": "python_full_version >= '3.8.1' and python_full_version < '4.0.0'",
-            "version": "==1.3.0"
+            "markers": "python_full_version >= '3.9.0' and python_full_version < '4.0.0'",
+            "version": "==1.4.1"
         },
         "flake8-modern-annotations": {
             "hashes": [
