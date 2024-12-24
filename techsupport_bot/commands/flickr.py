@@ -1,3 +1,5 @@
+"""Module for the flickr extension for the discord bot."""
+
 from __future__ import annotations
 
 import random
