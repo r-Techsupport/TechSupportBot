@@ -36,6 +36,8 @@ api:
     api_keys:
         cat:
         dumpdbg:
+        flickr_api_key:
+        flicker_api_secret:
         giphy:
         google:
         google_cse:
