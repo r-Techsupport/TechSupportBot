@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import random
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import flickrapi
 from core import auxiliary, cogs
@@ -38,7 +38,7 @@ class Flickr(cogs.BaseCog):
         aliases=["animal"],
     )
     @commands.cooldown(5, 60, commands.BucketType.user)
-    async def flickr(self, ctx: commands.Context, *, animal: str = "animal") -> None:
+    async def flickr(self: Self, ctx: commands.Context, *, animal: str = "animal") -> None:
         """Fetches and displays an image of the specified animal from Flickr.
 
         Args:
