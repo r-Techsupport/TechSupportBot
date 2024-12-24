@@ -24,11 +24,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Flickr(cogs.BaseCog):
-    """The class for the flickr commands
-
-    Attrs:
-        FLICKR_API_URL (str): The URL for the animal API
-    """
+    """The class for the flickr commands"""
 
     @auxiliary.with_typing
     @commands.command(
@@ -38,7 +34,9 @@ class Flickr(cogs.BaseCog):
         aliases=["animal"],
     )
     @commands.cooldown(5, 60, commands.BucketType.user)
-    async def flickr(self: Self, ctx: commands.Context, *, animal: str = "animal") -> None:
+    async def flickr(
+        self: Self, ctx: commands.Context, *, animal: str = "animal"
+    ) -> None:
         """Fetches and displays an image of the specified animal from Flickr.
 
         Args:
