@@ -71,11 +71,11 @@ async def invalid_channel(ctx: commands.Context) -> bool:
 class Grabber(cogs.BaseCog):
     """Class for the actual commands
 
-    Attrs:
+    Attributes:
         SEARCH_LIMIT (int): The max amount of messages to search when grabbing
     """
 
-    SEARCH_LIMIT = 20
+    SEARCH_LIMIT: int = 20
 
     @auxiliary.with_typing
     @commands.guild_only()
@@ -280,7 +280,8 @@ class Grabber(cogs.BaseCog):
         ).where(self.bot.models.Grab.guild == str(ctx.guild.id))
 
         if not ctx.channel.is_nsfw():
-            query = query.where(self.bot.models.Grab.nsfw is False)
+            # pylint: disable=C0121
+            query = query.where(self.bot.models.Grab.nsfw == False)
 
         grabs = await query.gino.all()
 

@@ -15,13 +15,13 @@ class LogEmbed(discord.Embed):
     Args:
         message (str): The message to log. Will become the description of an embed
 
-    Attrs:
+    Attributes:
         title (str): The title of the embed
         color (discord.Color): The color of the embed
     """
 
-    title = None
-    color = None
+    title: str = None
+    color: discord.Color = None
 
     def __init__(self: Self, message: str) -> None:
         super().__init__(
@@ -49,46 +49,46 @@ class LogEmbed(discord.Embed):
 class InfoEmbed(LogEmbed):
     """Embed for info level log events.
 
-    Attrs:
+    Attributes:
         title (str): The title of the embed
         color (discord.Color): The color of the embed
     """
 
-    title = "info"
-    color = discord.Color.green()
+    title: str = "info"
+    color: discord.Color = discord.Color.green()
 
 
 class DebugEmbed(LogEmbed):
     """Embed for debug level log events.
 
-    Attrs:
+    Attributes:
         title (str): The title of the embed
         color (discord.Color): The color of the embed
     """
 
-    title = "debug"
-    color = discord.Color.dark_green()
+    title: str = "debug"
+    color: discord.Color = discord.Color.dark_green()
 
 
 class WarningEmbed(LogEmbed):
     """Embed for warning level log events.
 
-    Attrs:
+    Attributes:
         title (str): The title of the embed
         color (discord.Color): The color of the embed
     """
 
-    title = "warning"
-    color = discord.Color.gold()
+    title: str = "warning"
+    color: discord.Color = discord.Color.gold()
 
 
 class ErrorEmbed(LogEmbed):
     """Embed for error level log events.
 
-    Attrs:
+    Attributes:
         title (str): The title of the embed
         color (discord.Color): The color of the embed
     """
 
-    title = "error"
-    color = discord.Color.red()
+    title: str = "error"
+    color: discord.Color = discord.Color.red()

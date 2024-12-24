@@ -20,17 +20,17 @@ class ApplicationStatus(Enum):
     """Static string mapping of all status
     This is so the database can always be consistent
 
-    Attrs:
+    Attributes:
         PENDING (str): The string representation for pending
         APPROVED (str): The string representation for approved
         DENIED (str): The string representation for denied
         REJECTED (str): The string representation for rejected
     """
 
-    PENDING = "pending"
-    APPROVED = "approved"
-    DENIED = "denied"
-    REJECTED = "rejected"
+    PENDING: str = "pending"
+    APPROVED: str = "approved"
+    DENIED: str = "denied"
+    REJECTED: str = "rejected"
 
 
 async def setup(bot: bot.TechSupportBot) -> None:
@@ -198,11 +198,11 @@ class ApplicationNotifier(cogs.LoopCog):
 class ApplicationManager(cogs.LoopCog):
     """This cog is responsible for the majority of functions in the application system
 
-    Attrs:
+    Attributes:
         application_group (app_commands.Group): The group for the /application commands
     """
 
-    application_group = app_commands.Group(
+    application_group: app_commands.Group = app_commands.Group(
         name="application", description="...", extras={"module": "application"}
     )
 
@@ -811,6 +811,18 @@ class ApplicationManager(cogs.LoopCog):
         embed = auxiliary.prepare_confirm_embed(confirm_message)
 
         await interaction.response.send_message(embed=embed)
+
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+        management_channel = interaction.guild.get_channel(
+            int(config.extensions.application.management_channel.value)
+        )
+
+        embed.description = confirm_message + f"\n{message}"
+        embed.set_footer(
+            text="Change was submitted by: "
+            + f"{interaction.user.display_name} ({interaction.user.name})"
+        )
+        await management_channel.send(embed=embed)
 
     # DB Stuff
 

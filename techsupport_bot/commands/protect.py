@@ -147,21 +147,21 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Protector(cogs.MatchCog):
     """Class for the protector command.
 
-    Attrs:
+    Attributes:
         ALERT_ICON_URL (str): The icon for the alert messages
         CLIPBOARD_ICON_URL (str): The icon for the paste messages
         CHARS_PER_NEWLINE (int): The arbitrary length of a line
 
     """
 
-    ALERT_ICON_URL = (
+    ALERT_ICON_URL: str = (
         "https://cdn.icon-icons.com/icons2/2063/PNG/512/"
         + "alert_danger_warning_notification_icon_124692.png"
     )
-    CLIPBOARD_ICON_URL = (
+    CLIPBOARD_ICON_URL: str = (
         "https://icon-icons.com/icons2/203/PNG/128/diagram-30_24487.png"
     )
-    CHARS_PER_NEWLINE = 80
+    CHARS_PER_NEWLINE: int = 80
 
     async def preconfig(self: Self) -> None:
         """Method to preconfig the protect."""

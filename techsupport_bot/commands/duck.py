@@ -93,7 +93,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class DuckHunt(cogs.LoopCog):
     """Class for the actual duck commands
 
-    Attrs:
+    Attributes:
         DUCK_PIC_URL (str): The picture for the duck
         BEFRIEND_URL (str): The picture for the befriend target
         KILL_URL (str): The picture for the kill target
@@ -101,14 +101,18 @@ class DuckHunt(cogs.LoopCog):
         CHANNELS_KEY (str): The config item for the channels that the duck hunt should run
     """
 
-    DUCK_PIC_URL = "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
-    BEFRIEND_URL = (
+    DUCK_PIC_URL: str = (
+        "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
+    )
+    BEFRIEND_URL: str = (
         "https://cdn.icon-icons.com/icons2/603/PNG/512/"
         + "heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
     )
-    KILL_URL = "https://cdn.icon-icons.com/icons2/1919/PNG/512/huntingtarget_122049.png"
-    ON_START = False
-    CHANNELS_KEY = "hunt_channels"
+    KILL_URL: str = (
+        "https://cdn.icon-icons.com/icons2/1919/PNG/512/huntingtarget_122049.png"
+    )
+    ON_START: bool = False
+    CHANNELS_KEY: str = "hunt_channels"
 
     async def loop_preconfig(self: Self) -> None:
         """Preconfig for cooldowns"""

@@ -71,7 +71,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Category(enum.Enum):
     """Class to set up categories for the news.
 
-    Attrs:
+    Attributes:
         BUSINESS (str): The string representation for business
         ENTERTAINMENT (str): The string representation for entertainment
         GENERAL (str): The string representation for general
@@ -82,24 +82,24 @@ class Category(enum.Enum):
 
     """
 
-    BUSINESS = "business"
-    ENTERTAINMENT = "entertainment"
-    GENERAL = "general"
-    HEALTH = "health"
-    SCIENCE = "science"
-    SPORTS = "sports"
-    TECH = "technology"
+    BUSINESS: str = "business"
+    ENTERTAINMENT: str = "entertainment"
+    GENERAL: str = "general"
+    HEALTH: str = "health"
+    SCIENCE: str = "science"
+    SPORTS: str = "sports"
+    TECH: str = "technology"
 
 
 class News(cogs.LoopCog):
     """Class to set up the news extension for the discord bot.
 
-    Attrs:
+    Attributes:
         API_URL (str): The news API URL
 
     """
 
-    API_URL = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
+    API_URL: str = "http://newsapi.org/v2/top-headlines?apiKey={}&country={}"
 
     async def preconfig(self: Self) -> None:
         """Sets up the list of valid categories in a class wide variable"""

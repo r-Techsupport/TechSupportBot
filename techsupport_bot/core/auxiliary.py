@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 import discord
 import munch
 import ui
+from discord import app_commands
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -138,9 +139,15 @@ def prepare_deny_embed(message: str) -> discord.Embed:
     Args:
         message (str): The reason for deny
 
+    Raises:
+        ValueError: Raised if an empty message is passed
+
     Returns:
         discord.Embed: The formatted embed
     """
+    if message == "":
+        raise ValueError("An empty message cannot be passed to prepare_embed")
+
     return generate_basic_embed(
         title="😕 👎",
         description=message,
@@ -176,9 +183,15 @@ def prepare_confirm_embed(message: str) -> discord.Embed:
     Args:
         message (str): The reason for confirm
 
+    Raises:
+        ValueError: Raised if an empty message is passed
+
     Returns:
         discord.Embed: The formatted embed
     """
+    if message == "":
+        raise ValueError("An empty message cannot be passed to prepare_embed")
+
     return generate_basic_embed(
         title="😄 👍",
         description=message,
@@ -546,4 +559,22 @@ async def bot_admin_check_context(ctx: commands.Context) -> bool:
     is_admin = await ctx.bot.is_bot_admin(ctx.author)
     if not is_admin:
         raise commands.MissingPermissions(["bot_admin"])
+    return True
+
+
+async def bot_admin_check_interaction(interaction: discord.Interaction) -> bool:
+    """A simple check to put on an app command function to ensure that the caller is an admin
+
+    Args:
+        interaction (discord.Interaction): The context that the command was called in
+
+    Raises:
+        MissingPermissions: If the user is not a bot admin
+
+    Returns:
+        bool: True if can run
+    """
+    is_admin = await interaction.client.is_bot_admin(interaction.user)
+    if not is_admin:
+        raise app_commands.MissingPermissions(["bot_admin"])
     return True

@@ -56,7 +56,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class RoleGiver(cogs.BaseCog):
     """The main class for the role commands
 
-    Attrs:
+    Attributes:
         role_group (app_commands.Group): The group for the /role commands
 
     Args:
@@ -72,7 +72,7 @@ class RoleGiver(cogs.BaseCog):
         )
         self.bot.tree.add_command(self.ctx_menu)
 
-    role_group = app_commands.Group(name="role", description="...")
+    role_group: app_commands.Group = app_commands.Group(name="role", description="...")
 
     async def preconfig(self: Self) -> None:
         """This setups the global lock on the role command, to avoid conflicts"""

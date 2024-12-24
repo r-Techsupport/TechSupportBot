@@ -37,7 +37,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class HangmanGame:
     """Class for the game hangman.
 
-    Attrs:
+    Attributes:
         HANG_PICS (list[str]): The list of hangman pictures
         FINAL_STEP (int): The last step of the hangman game
         finished (bool): Determines if the game has been finished or not
@@ -50,7 +50,7 @@ class HangmanGame:
         ValueError: A valid alphabetic word wasn't provided
     """
 
-    HANG_PICS = [
+    HANG_PICS: list[str] = [
         """
         +---+
         |   |
@@ -108,7 +108,7 @@ class HangmanGame:
             |
         =========""",
     ]
-    FINAL_STEP = len(HANG_PICS) - 1
+    FINAL_STEP: int = len(HANG_PICS) - 1
 
     def __init__(self: Self, word: str) -> None:
         if not word or "_" in word or not word.isalpha():

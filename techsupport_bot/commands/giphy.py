@@ -35,13 +35,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Giphy(cogs.BaseCog):
     """Class for the giphy extension.
 
-    Attrs:
+    Attributes:
         GIPHY_URL (str): The URL for the giphy API
         SEARCH_LIMIT (int): The max amount of gifs to search for
     """
 
-    GIPHY_URL = "http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"
-    SEARCH_LIMIT = 10
+    GIPHY_URL: str = "http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"
+    SEARCH_LIMIT: int = 10
 
     @staticmethod
     def parse_url(url: str) -> str:

@@ -47,15 +47,17 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Googler(cogs.BaseCog):
     """Class for the google extension for the discord bot.
 
-    Attrs:
+    Attributes:
         GOOGLE_URL (str): The API URL for google search
         YOUTUBE_URL (str): The API URL for youtube search
         ICON_URL (str): The google icon
     """
 
-    GOOGLE_URL = "https://www.googleapis.com/customsearch/v1"
-    YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=10"
-    ICON_URL = (
+    GOOGLE_URL: str = "https://www.googleapis.com/customsearch/v1"
+    YOUTUBE_URL: str = (
+        "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=10"
+    )
+    ICON_URL: str = (
         "https://cdn.icon-icons.com/icons2/673/PNG/512/Google_icon-icons.com_60497.png"
     )
 
