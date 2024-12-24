@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import random
 from typing import TYPE_CHECKING, Self
 
-import flickrapi
 from core import auxiliary, cogs
 from discord.ext import commands
 
