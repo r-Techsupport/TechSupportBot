@@ -23,7 +23,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 class Flickr(cogs.BaseCog):
     """The class for the flickr commands
-    
+
     Attrs:
         FLICKR_API_URL (str): The URL for the animal API
     """
@@ -39,9 +39,9 @@ class Flickr(cogs.BaseCog):
     async def flickr(self, ctx: commands.Context, *, animal: str = "animal") -> None:
         """Fetches and displays an image of the specified animal from Flickr.
 
-            Args:
-                ctx (commands.Context): The context in which the command was run.
-                animal (str, optional): The animal to search for. Defaults to "animal".
+        Args:
+            ctx (commands.Context): The context in which the command was run.
+            animal (str, optional): The animal to search for. Defaults to "animal".
         """
         if ctx.author.guild_permissions.administrator:
             Flickr.flickr.reset_cooldown(ctx)
