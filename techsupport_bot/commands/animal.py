@@ -29,14 +29,12 @@ class Animals(cogs.BaseCog):
         DOG_API_URL (str): The URL for the dog API
         FOX_API_URL (str): The URL for the fox API
         FROG_API_URL (str): The URL for the frog API
-        FLICKR_API_URL (str): The URL for the animal API
     """
 
     CAT_API_URL: str = "https://api.thecatapi.com/v1/images/search?limit=1&api_key={}"
     DOG_API_URL: str = "https://dog.ceo/api/breeds/image/random"
     FOX_API_URL: str = "https://randomfox.ca/floof/"
     FROG_API_URL: str = "https://frogs.media/api/random"
-
 
     @auxiliary.with_typing
     @commands.command(name="cat", brief="Gets a cat", description="Gets a cat")
