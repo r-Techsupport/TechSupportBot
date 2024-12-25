@@ -187,7 +187,7 @@ class HangmanGame:
         Determines if the game of Hangman is finished.
 
         The game is considered finished in the following scenarios:
-        - The number of incorrect guesses (`step`) exceeds or equals the maximum allowed (`max_guesses`).
+        - The number of incorrect guesses exceeds or equals the maximum allowed.
         - All the letters in the word have been correctly guessed.
 
         Returns:
@@ -204,8 +204,8 @@ class HangmanGame:
         """
         Determines if the game was unsuccessful.
 
-        The game is considered a failure when the number of incorrect guesses (`step`) 
-        equals or exceeds the maximum allowed (`max_guesses`), meaning the players 
+        The game is considered a failure when the number of incorrect guesses (`step`)
+        equals or exceeds the maximum allowed (`max_guesses`), meaning the players
         failed to guess the word within the allowed attempts.
 
         Returns:
@@ -239,7 +239,7 @@ class HangmanGame:
         """
         Calculates the number of guesses remaining in the game.
 
-        The remaining guesses are determined by subtracting the number of incorrect 
+        The remaining guesses are determined by subtracting the number of incorrect
         guesses (`step`) from the maximum allowed guesses (`max_guesses`).
 
         Returns:
@@ -252,7 +252,7 @@ class HangmanGame:
         Increases the total number of allowed guesses in the game.
 
         Args:
-            num_guesses (int): The number of additional guesses to add to the 
+            num_guesses (int): The number of additional guesses to add to the
             current maximum allowed guesses.
         """
         self.max_guesses += num_guesses
@@ -450,16 +450,16 @@ class HangmanCog(cogs.BaseCog):
         Generates an embed representing the current state of the Hangman game.
 
         Args:
-            ctx_or_interaction (discord.Interaction | commands.Context): 
-                The context or interaction used to generate the embed, which provides 
+            ctx_or_interaction (discord.Interaction | commands.Context):
+                The context or interaction used to generate the embed, which provides
                 information about the user and the message.
-            game (HangmanGame): The current instance of the Hangman game, used to 
-                retrieve game state, including word state, remaining guesses, and the 
+            game (HangmanGame): The current instance of the Hangman game, used to
+                retrieve game state, including word state, remaining guesses, and the
                 hangman drawing.
 
         Returns:
-            discord.Embed: An embed displaying the current game state, including 
-                the hangman drawing, word state, remaining guesses, guessed letters, 
+            discord.Embed: An embed displaying the current game state, including
+                the hangman drawing, word state, remaining guesses, guessed letters,
                 and the footer indicating the game status and creator.
         """
         hangman_drawing = game.draw_hang_state()
