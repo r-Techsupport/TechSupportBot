@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime
 import uuid
-from typing import TYPE_CHECKING, Self, Union
+from typing import TYPE_CHECKING, Self
 
 import discord
 import ui
@@ -110,6 +110,25 @@ class HangmanGame:
     ]
 
     def __init__(self: Self, word: str, max_guesses: int = 6) -> None:
+        """
+        Initializes a new HangmanGame instance.
+
+        Args:
+            word (str): The word to be guessed in the game. Must consist of only alphabetic characters
+                        and cannot contain underscores.
+            max_guesses (int, optional): The maximum number of incorrect guesses allowed. Defaults to 6.
+
+        Raises:
+            ValueError: If the provided word is empty, contains underscores, or has non-alphabetic characters.
+
+        Attributes:
+            word (str): The word to be guessed in the game.
+            guesses (set): A set containing all the guessed letters.
+            step (int): The current step or state of the game, representing incorrect guesses made.
+            max_guesses (int): The maximum number of incorrect guesses allowed.
+            started (datetime.datetime): The UTC timestamp when the game was started.
+            id (uuid.UUID): A unique identifier for this game instance.
+        """
         if not word or "_" in word or not word.isalpha():
             raise ValueError("valid word must be provided")
         self.word = word
@@ -340,7 +359,7 @@ class HangmanCog(cogs.BaseCog):
         }
 
         await interaction.followup.send(
-            f"The Hangman game has started with a hidden word!", ephemeral=True
+            "The Hangman game has started with a hidden word!", ephemeral=True
         )
 
     @hangman.command(
@@ -398,19 +417,21 @@ class HangmanCog(cogs.BaseCog):
 
     async def generate_game_embed(
         self: Self,
-        ctx_or_interaction: Union[discord.Interaction, commands.Context],
+        ctx_or_interaction: discord.Interaction | commands.Context,
         game: HangmanGame,
     ) -> discord.Embed:
         """Generate an embed for the current game state."""
         hangman_drawing = game.draw_hang_state()
         hangman_word = game.draw_word_state()
+        prefix = await self.bot.get_prefix(ctx_or_interaction.message)
 
         embed = discord.Embed(
             title=f"`{hangman_word}`",
-            description=f"```{hangman_drawing}```",
+            description=(
+                f"Type `{prefix}help hangman` for more info\n\n"
+                f"```{hangman_drawing}```",
+            ),
         )
-
-        game_data = self.games.get(ctx_or_interaction.channel.id)
 
         if game.failed:
             embed.color = discord.Color.red()
@@ -436,6 +457,8 @@ class HangmanCog(cogs.BaseCog):
                 footer_text = f"Game started by {ctx_or_interaction.user}"
             elif isinstance(ctx_or_interaction, commands.Context):
                 footer_text = f"Game started by {ctx_or_interaction.author}"
+            else:
+                footer_text = " "
 
         embed.set_footer(text=footer_text)
         return embed
@@ -551,7 +574,10 @@ class HangmanCog(cogs.BaseCog):
 
         # Notify the channel
         await ctx.send(
-            content=f"{number_of_guesses} guesses have been added! Total guesses remaining: {game.remaining_guesses()}"
+            content=(
+                f"{number_of_guesses} guesses have been added! "
+                f"Total guesses remaining: {game.remaining_guesses()}"
+            )
         )
 
         # Update the game embed
