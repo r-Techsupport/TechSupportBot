@@ -186,9 +186,10 @@ class HangmanGame:
         """
         Determines if the game of Hangman is finished.
 
-        The game is considered finished in the following scenarios:
-        - The number of incorrect guesses exceeds or equals the maximum allowed.
-        - All the letters in the word have been correctly guessed.
+        The game is considered finished if:
+        - The number of incorrect guesses (`step`) is greater than or 
+            equal to the maximum allowed (`max_guesses`).
+        - All letters in the word have been correctly guessed, meaning the game has been won.
 
         Returns:
             bool: True if the game is finished (either won or lost), False otherwise.
@@ -205,15 +206,17 @@ class HangmanGame:
         Determines if the game was unsuccessful.
 
         The game is considered a failure when the number of incorrect guesses (`step`)
-        equals or exceeds the maximum allowed (`max_guesses`), meaning the players
+        equals or exceeds the maximum allowed guesses (`max_guesses`), meaning the players
         failed to guess the word within the allowed attempts.
 
         Returns:
-            bool: True if the game was unsuccessful (players lost), False otherwise.
+            bool: True if the game was unsuccessful (i.e., the number of incorrect guesses
+                is greater than or equal to the maximum allowed), False otherwise.
         """
         if self.step >= self.max_guesses:
             return True
         return False
+
 
     def guessed(self: Self, letter: str) -> bool:
         """
@@ -235,7 +238,7 @@ class HangmanGame:
             return True
         return False
 
-    def remaining_guesses(self) -> int:
+    def remaining_guesses(self: Self) -> int:
         """
         Calculates the number of guesses remaining in the game.
 
@@ -247,13 +250,16 @@ class HangmanGame:
         """
         return self.max_guesses - self.step
 
-    def add_guesses(self, num_guesses: int) -> None:
+    def add_guesses(self: Self, num_guesses: int) -> None:
         """
         Increases the total number of allowed guesses in the game.
 
         Args:
-            num_guesses (int): The number of additional guesses to add to the
-            current maximum allowed guesses.
+            num_guesses (int): The number of additional guesses to add to the 
+                current maximum allowed guesses.
+
+        Returns:
+            None
         """
         self.max_guesses += num_guesses
 
