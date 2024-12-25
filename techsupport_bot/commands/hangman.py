@@ -183,7 +183,16 @@ class HangmanGame:
 
     @property
     def finished(self: Self) -> bool:
-        """Method to finish the game of hangman."""
+        """
+        Determines if the game of Hangman is finished.
+
+        The game is considered finished in the following scenarios:
+        - The number of incorrect guesses (`step`) exceeds or equals the maximum allowed (`max_guesses`).
+        - All the letters in the word have been correctly guessed.
+
+        Returns:
+            bool: True if the game is finished (either won or lost), False otherwise.
+        """
         if self.step < 0 or self.step >= self.max_guesses:
             return True
         if all(letter in self.guesses for letter in self.word):
@@ -192,13 +201,23 @@ class HangmanGame:
 
     @property
     def failed(self: Self) -> bool:
-        """Method in case the game wasn't successful."""
+        """
+        Determines if the game was unsuccessful.
+
+        The game is considered a failure when the number of incorrect guesses (`step`) 
+        equals or exceeds the maximum allowed (`max_guesses`), meaning the players 
+        failed to guess the word within the allowed attempts.
+
+        Returns:
+            bool: True if the game was unsuccessful (players lost), False otherwise.
+        """
         if self.step >= self.max_guesses:
             return True
         return False
 
     def guessed(self: Self, letter: str) -> bool:
-        """Method to know if a letter has already been guessed
+        """
+        Method to know if a letter has already been guessed
 
         Args:
             letter (str): The letter to check if it has been guessed
@@ -217,16 +236,31 @@ class HangmanGame:
         return False
 
     def remaining_guesses(self) -> int:
-        """Returns the number of guesses remaining."""
+        """
+        Calculates the number of guesses remaining in the game.
+
+        The remaining guesses are determined by subtracting the number of incorrect 
+        guesses (`step`) from the maximum allowed guesses (`max_guesses`).
+
+        Returns:
+            int: The number of guesses the players have left.
+        """
         return self.max_guesses - self.step
 
     def add_guesses(self, num_guesses: int) -> None:
-        """Adds more guesses to the game."""
+        """
+        Increases the total number of allowed guesses in the game.
+
+        Args:
+            num_guesses (int): The number of additional guesses to add to the 
+            current maximum allowed guesses.
+        """
         self.max_guesses += num_guesses
 
 
 async def can_stop_game(ctx: commands.Context) -> bool:
-    """Checks if a user has the ability to stop the running game
+    """
+    Checks if a user has the ability to stop the running game
 
     Args:
         ctx (commands.Context): The context in which the stop command was run
@@ -412,7 +446,22 @@ class HangmanCog(cogs.BaseCog):
         ctx_or_interaction: discord.Interaction | commands.Context,
         game: HangmanGame,
     ) -> discord.Embed:
-        """Generate an embed for the current game state."""
+        """
+        Generates an embed representing the current state of the Hangman game.
+
+        Args:
+            ctx_or_interaction (discord.Interaction | commands.Context): 
+                The context or interaction used to generate the embed, which provides 
+                information about the user and the message.
+            game (HangmanGame): The current instance of the Hangman game, used to 
+                retrieve game state, including word state, remaining guesses, and the 
+                hangman drawing.
+
+        Returns:
+            discord.Embed: An embed displaying the current game state, including 
+                the hangman drawing, word state, remaining guesses, guessed letters, 
+                and the footer indicating the game status and creator.
+        """
         hangman_drawing = game.draw_hang_state()
         hangman_word = game.draw_word_state()
         prefix = await self.bot.get_prefix(ctx_or_interaction.message)
