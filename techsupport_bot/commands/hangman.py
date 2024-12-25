@@ -36,18 +36,29 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class HangmanGame:
-    """Class for the game hangman.
+    """
+    A class that represents a game of Hangman.
+
+    The game includes the logic for tracking the word to be guessed, the guesses made,
+    and the state of the hangman figure based on incorrect guesses. It also supports
+    additional functionality such as adding more guesses and determining whether the game
+    is finished or failed.
 
     Attributes:
-        HANG_PICS (list[str]): The list of hangman pictures
-        finished (bool): Determines if the game has been finished or not
-        failed (bool): Determines if the players failed to guess the word
+        HANG_PICS (list[str]): The list of hangman pictures.
+        word (str): The word that players need to guess.
+        guesses (set): A set of guessed letters.
+        step (int): The current number of incorrect guesses made.
+        max_guesses (int): The maximum number of incorrect guesses allowed before the game ends.
+        started (datetime): The UTC timestamp of when the game was started.
+        id (UUID): A unique identifier for the game.
 
     Args:
-        word (str): The word to start the game with
+        word (str): The word for the game. It must be an alphabetic string without underscores.
+        max_guesses (int, optional): The maximum number of incorrect guesses allowed.
 
     Raises:
-        ValueError: A valid alphabetic word wasn't provided
+        ValueError: A valid alphabetic word wasn't provided.
     """
 
     HANG_PICS: list[str] = [
@@ -109,26 +120,7 @@ class HangmanGame:
         =========""",
     ]
 
-    def __init__(self: Self, word: str, max_guesses: int = 6) -> None:
-        """
-        Initializes a new HangmanGame instance.
-
-        Args:
-            word (str): The word to be guessed in the game. Must consist of only alphabetic characters
-                        and cannot contain underscores.
-            max_guesses (int, optional): The maximum number of incorrect guesses allowed. Defaults to 6.
-
-        Raises:
-            ValueError: If the provided word is empty, contains underscores, or has non-alphabetic characters.
-
-        Attributes:
-            word (str): The word to be guessed in the game.
-            guesses (set): A set containing all the guessed letters.
-            step (int): The current step or state of the game, representing incorrect guesses made.
-            max_guesses (int): The maximum number of incorrect guesses allowed.
-            started (datetime.datetime): The UTC timestamp when the game was started.
-            id (uuid.UUID): A unique identifier for this game instance.
-        """
+    def __init__(self: Self, word: str, max_guesses: int = 6) -> None:      
         if not word or "_" in word or not word.isalpha():
             raise ValueError("valid word must be provided")
         self.word = word
