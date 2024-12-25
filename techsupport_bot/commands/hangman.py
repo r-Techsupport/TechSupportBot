@@ -120,7 +120,7 @@ class HangmanGame:
         =========""",
     ]
 
-    def __init__(self: Self, word: str, max_guesses: int = 6) -> None:      
+    def __init__(self: Self, word: str, max_guesses: int = 6) -> None:
         if not word or "_" in word or not word.isalpha():
             raise ValueError("valid word must be provided")
         self.word = word
