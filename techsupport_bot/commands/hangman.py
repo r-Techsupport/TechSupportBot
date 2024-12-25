@@ -276,7 +276,7 @@ class HangmanCog(cogs.BaseCog):
         await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @app_commands.command(
-        name="start_hangman", 
+        name="start_hangman",
         description="Start a Hangman game in the current channel.",
         extras={"module": "hangman"},
     )
@@ -397,7 +397,9 @@ class HangmanCog(cogs.BaseCog):
         await ctx.send(content=content)
 
     async def generate_game_embed(
-        self: Self, ctx_or_interaction: Union[discord.Interaction, commands.Context], game: HangmanGame
+        self: Self,
+        ctx_or_interaction: Union[discord.Interaction, commands.Context],
+        game: HangmanGame,
     ) -> discord.Embed:
         """Generate an embed for the current game state."""
         hangman_drawing = game.draw_hang_state()
@@ -409,7 +411,7 @@ class HangmanCog(cogs.BaseCog):
         )
 
         game_data = self.games.get(ctx_or_interaction.channel.id)
-        
+
         if game.failed:
             embed.color = discord.Color.red()
             footer_text = f"Game over! The word was `{game.word}`!"
@@ -421,12 +423,12 @@ class HangmanCog(cogs.BaseCog):
             embed.add_field(
                 name=f"Remaining Guesses {str(game.remaining_guesses())}",
                 value="\u200b",
-                inline=False
+                inline=False,
             )
             embed.add_field(
-                name="Guessed Letters", 
+                name="Guessed Letters",
                 value=", ".join(game.guesses) or "None",
-                inline=False
+                inline=False,
             )
 
             # Determine the game creator based on interaction type
@@ -437,7 +439,6 @@ class HangmanCog(cogs.BaseCog):
 
         embed.set_footer(text=footer_text)
         return embed
-
 
     @hangman.command(name="redraw", description="Redraws the current hangman game")
     async def redraw(self: Self, ctx: commands.Context) -> None:
