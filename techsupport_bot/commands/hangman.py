@@ -52,6 +52,8 @@ class HangmanGame:
         max_guesses (int): The maximum number of incorrect guesses allowed before the game ends.
         started (datetime): The UTC timestamp of when the game was started.
         id (UUID): A unique identifier for the game.
+        finished (bool): Determines if the game has been finished or not
+        failed (bool): Determines if the players failed to guess the word
 
     Args:
         word (str): The word for the game. It must be an alphabetic string without underscores.
@@ -187,7 +189,7 @@ class HangmanGame:
         Determines if the game of Hangman is finished.
 
         The game is considered finished if:
-        - The number of incorrect guesses (`step`) is greater than or 
+        - The number of incorrect guesses (`step`) is greater than or
             equal to the maximum allowed (`max_guesses`).
         - All letters in the word have been correctly guessed, meaning the game has been won.
 
@@ -216,7 +218,6 @@ class HangmanGame:
         if self.step >= self.max_guesses:
             return True
         return False
-
 
     def guessed(self: Self, letter: str) -> bool:
         """
@@ -255,11 +256,8 @@ class HangmanGame:
         Increases the total number of allowed guesses in the game.
 
         Args:
-            num_guesses (int): The number of additional guesses to add to the 
+            num_guesses (int): The number of additional guesses to add to the
                 current maximum allowed guesses.
-
-        Returns:
-            None
         """
         self.max_guesses += num_guesses
 
