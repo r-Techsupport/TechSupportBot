@@ -85,7 +85,10 @@ class PollGenerator(cogs.BaseCog):
 
         if not strawpoll:
             if not image_url or not isinstance(image_url, str):
-                request_body.image_url = "https://www.iconarchive.com/download/i6231/custom-icon-design/pretty-office-6/polls.256.png"
+                request_body.image_url = (
+                    "https://www.iconarchive.com/download/i6231/"
+                    "custom-icon-design/pretty-office-6/polls.256.png"
+                )
 
             if not timeout or not isinstance(timeout, int):
                 request_body.timeout = 60

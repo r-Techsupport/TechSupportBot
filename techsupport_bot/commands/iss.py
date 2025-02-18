@@ -90,7 +90,10 @@ class ISSLocator(cogs.BaseCog):
             value="https://spotthestation.nasa.gov/tracking_map.cfm",
         )
         embed.set_thumbnail(
-            url="https://www.iconarchive.com/download/i106861/goodstuff-no-nonsense/free-space/international-space-station.512.png"
+            url=(
+                "https://www.iconarchive.com/download/i106861/goodstuff-no-nonsense/"
+                "free-space/international-space-station.512.png"
+            )
         )
         embed.color = discord.Color.darker_gray()
 

@@ -158,7 +158,8 @@ class Protector(cogs.MatchCog):
         "https://www.iconarchive.com/download/i76061/martz90/circle-addon2/warning.512.png"
     )
     CLIPBOARD_ICON_URL: str = (
-        "https://www.iconarchive.com/download/i107916/google/noto-emoji-objects/62930-clipboard.512.png"
+        "https://www.iconarchive.com/download/i107916/"
+        "google/noto-emoji-objects/62930-clipboard.512.png"
     )
     CHARS_PER_NEWLINE: int = 80
 
