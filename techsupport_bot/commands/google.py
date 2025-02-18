@@ -58,7 +58,8 @@ class Googler(cogs.BaseCog):
         "https://www.googleapis.com/youtube/v3/search?part=id&maxResults=10"
     )
     ICON_URL: str = (
-        "https://cdn.icon-icons.com/icons2/673/PNG/512/Google_icon-icons.com_60497.png"
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/c/"
+        + "c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png"
     )
 
     async def get_items(
