@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "6e6241d4196152233b390362fee87332ef99450d25e04d432578d5e8e65853ea"
+            "sha256": "2992e5af6ef26383f2c8f623b27fb83a33f70480a341221629cc14abd52f4a9b"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -249,12 +249,11 @@
         },
         "certifi": {
             "hashes": [
-                "sha256:5a1e7645bc0ec61a09e26c36f6106dd4cf40c6db3a1fb6352b0244e7fb057c7b",
-                "sha256:c198e21b1289c2ab85ee4e67bb4b4ef3ead0892059901a8d5b622f24a1101e90"
+                "sha256:3d5da6925056f6f18f119200434a4780a94263f10d1c21d032a6f6b2baa20651",
+                "sha256:ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe"
             ],
-            "index": "pypi",
             "markers": "python_version >= '3.6'",
-            "version": "==2024.7.4"
+            "version": "==2025.1.31"
         },
         "cffi": {
             "hashes": [
@@ -357,10 +356,10 @@
         },
         "distlib": {
             "hashes": [
-                "sha256:034db59a0b96f8ca18035f36290806a9a6e6bd9d1ff91e45a7f172eb17e51784",
-                "sha256:1530ea13e350031b6312d8580ddb6b27a104275a31106523b8f123787f494f64"
+                "sha256:47f8c22fd27c27e25a65601af709b38e4f0a45ea4fc2e710f65755fa8caaaf87",
+                "sha256:a60f20dea646b8a33f3e7772f74dc0b2d0772d2837ee1342a00645c81edf9403"
             ],
-            "version": "==0.3.8"
+            "version": "==0.3.9"
         },
         "docstring-parser-fork": {
             "hashes": [
@@ -389,11 +388,11 @@
         },
         "filelock": {
             "hashes": [
-                "sha256:2207938cbc1844345cb01a5a95524dae30f0ce089eba5b00378295a17e3e90cb",
-                "sha256:6ca1fffae96225dab4c6eaf1c4f4f28cd2568d3ec2a44e15a08520504de468e7"
+                "sha256:533dc2f7ba78dc2f0f531fc6c4940addf7b70a481e269a5a3b93be94ffbe8338",
+                "sha256:ee4e77401ef576ebb38cd7f13b9b28893194acc20a8e68e18730ba9c0e54660e"
             ],
-            "markers": "python_version >= '3.8'",
-            "version": "==3.15.4"
+            "markers": "python_version >= '3.9'",
+            "version": "==3.17.0"
         },
         "flake8": {
             "hashes": [
@@ -822,12 +821,12 @@
         },
         "pipenv": {
             "hashes": [
-                "sha256:5360835c613837423a99b8c94952b139b777b3eaabb42cb9edb34556245b4c25",
-                "sha256:ae5a83fa5b66065cebd2bd8f73f0b281b3bd202a13d58cc644f0b9765128c990"
+                "sha256:ab26ee98a7d83d342c1f562ee0564094ab1de091e5d5cec4eeaa95fb600de998",
+                "sha256:e8ea6105c1cdda7d5c19df7bd6439a006751f3d4e017602c791e7b51314adf84"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==2024.0.1"
+            "version": "==2024.4.1"
         },
         "platformdirs": {
             "hashes": [
@@ -1186,11 +1185,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:01a1e793faa5bd89abc851fa15d0a0db26f160890c7102cd8dce643e886b47f5",
-                "sha256:d9b8b771455a97c8a9f3ab3448ebe0b29b5e105f1228bba41028be116985a267"
+                "sha256:c5afc8f407c626b8313a86e10311dd3f661c6cd9c09d4bf8c15c0e11f9f2b0e6",
+                "sha256:e3982f444617239225d675215d51f6ba05f845d4eec313da4418fdbb56fb27e3"
             ],
-            "markers": "python_version >= '3.8'",
-            "version": "==70.1.0"
+            "markers": "python_version >= '3.9'",
+            "version": "==75.8.0"
         },
         "six": {
             "hashes": [
@@ -1307,11 +1306,11 @@
         },
         "virtualenv": {
             "hashes": [
-                "sha256:4c43a2a236279d9ea36a0d76f98d84bd6ca94ac4e0f4a3b9d46d05e10fea542a",
-                "sha256:8cc4a31139e796e9a7de2cd5cf2489de1217193116a8fd42328f1bd65f434589"
+                "sha256:fdaabebf6d03b5ba83ae0a02cfe96f48a716f4fae556461d180825866f75b728",
+                "sha256:febddfc3d1ea571bdb1dc0f98d7b45d24def7428214d4fb73cc486c9568cce6a"
             ],
-            "markers": "python_version >= '3.7'",
-            "version": "==20.26.3"
+            "markers": "python_version >= '3.8'",
+            "version": "==20.29.2"
         },
         "yarl": {
             "hashes": [
