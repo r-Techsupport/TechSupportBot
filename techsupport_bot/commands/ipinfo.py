@@ -31,8 +31,8 @@ class IPInfo(cogs.BaseCog):
 
     API_URL: str = "https://ipinfo.io"
     IP_ICON_URL: str = (
-        "https://cdn.icon-icons.com/icons2/1858/PNG/512/"
-        "iconfinder-dedicatedipaddress-4263513_117864.png"
+        "https://www.iconarchive.com/download/i43033/oxygen-icons.org"
+        "/oxygen/Categories-applications-internet.256.png"
     )
 
     @commands.command(
