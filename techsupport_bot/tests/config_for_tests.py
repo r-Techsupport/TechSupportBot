@@ -40,7 +40,7 @@ PREFIX = "."
 def rand_history(
     draw: (
         Callable[[SearchStrategy[int, int]], int] | Callable[[SearchStrategy[str]], str]
-    )
+    ),
 ) -> list[MockMessage]:
     """This is a custom strategy to generate a random message history
     This history, returned as an array, will be 1 to 50 messages of random content
