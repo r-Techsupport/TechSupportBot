@@ -304,10 +304,15 @@ async def can_stop_game(ctx: commands.Context) -> bool:
 
 
 class HangmanCog(cogs.BaseCog):
-    """Class to define the hangman game.
+    """Class to define the Hangman game.
 
     Args:
         bot (commands.Bot): The bot instance that this cog is a part of.
+
+    Attributes:
+        games (dict): A dictionary to store ongoing games, where the keys are
+                      player identifiers and the values are the current game state.
+        hangman_app_group (app_commands.Group): The command group for the Hangman extension.
     """
 
     def __init__(self: Self, bot: commands.Bot) -> None:
@@ -326,7 +331,7 @@ class HangmanCog(cogs.BaseCog):
         """
 
         # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, module=self.__module__[9:])
 
     hangman_app_group: app_commands.Group = app_commands.Group(
         name="hangman", description="Command Group for the Hangman Extension"
