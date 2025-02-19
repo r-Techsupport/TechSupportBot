@@ -310,13 +310,7 @@ class HangmanCog(cogs.BaseCog):
         bot (commands.Bot): The bot instance that this cog is a part of.
     """
 
-    def __init__(self, bot):
-        """Initialize the HangmanCog with the given bot instance.
-
-        Args:
-            bot (commands.Bot): The bot instance that this cog is a part of.
-        """
-
+    def __init__(self: Self, bot: commands.Bot) -> None:
         super().__init__(bot)
         self.games = {}
 
