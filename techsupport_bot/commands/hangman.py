@@ -304,10 +304,13 @@ async def can_stop_game(ctx: commands.Context) -> bool:
 
 
 class HangmanCog(cogs.BaseCog):
-    """Class to define the hangman game."""
+    """Class to define the hangman game.
+
+    Args:
+        bot (commands.Bot): The bot instance that this cog is a part of.
+    """
 
     def __init__(self, bot):
-        """Initialize the HangmanCog."""
         super().__init__(bot)
         self.games = {}
 
