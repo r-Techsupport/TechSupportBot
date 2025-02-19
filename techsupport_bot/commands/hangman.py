@@ -306,8 +306,9 @@ async def can_stop_game(ctx: commands.Context) -> bool:
 class HangmanCog(cogs.BaseCog):
     """Class to define the hangman game."""
 
-    async def preconfig(self: Self) -> None:
-        """Method to preconfig the game."""
+    def __init__(self, bot):
+        """Initialize the HangmanCog."""
+        super().__init__(bot)
         self.games = {}
 
     @commands.guild_only()
@@ -468,13 +469,24 @@ class HangmanCog(cogs.BaseCog):
         """
         hangman_drawing = game.draw_hang_state()
         hangman_word = game.draw_word_state()
-        prefix = await self.bot.get_prefix(ctx_or_interaction.message)
+        # Determine the guild ID
+        guild_id = None
+        if isinstance(ctx_or_interaction, commands.Context):
+            guild_id = ctx_or_interaction.guild.id if ctx_or_interaction.guild else None
+        elif isinstance(ctx_or_interaction, discord.Interaction):
+            guild_id = ctx_or_interaction.guild_id
+
+        # Fetch the prefix manually since get_prefix expects a Message
+        if guild_id and str(guild_id) in self.bot.guild_configs:
+            prefix = self.bot.guild_configs[str(guild_id)].command_prefix
+        else:
+            prefix = self.file_config.bot_config.default_prefix
 
         embed = discord.Embed(
             title=f"`{hangman_word}`",
             description=(
                 f"Type `{prefix}help hangman` for more info\n\n"
-                f"```{hangman_drawing}```",
+                f"```{hangman_drawing}```"
             ),
         )
 
