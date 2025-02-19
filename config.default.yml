@@ -6,7 +6,7 @@ bot_config:
     disabled_extensions: ["kanye"]
     default_prefix: "."
     global_alerts_channel: ""
-    override_owner: "126551534447099905"
+    override_owner: ""
 modmail_config:
     enable_modmail: False
     disable_thread_creation: False
