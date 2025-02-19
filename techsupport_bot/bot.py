@@ -249,7 +249,7 @@ class TechSupportBot(commands.Bot):
             await self.logger.send_log(
                 message="Could not DM discord bot owner",
                 level=LogLevel.ERROR,
-                exception=exception
+                exception=exception,
             )
 
     async def on_message(self: Self, message: discord.Message) -> None:
