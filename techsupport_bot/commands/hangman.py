@@ -328,8 +328,12 @@ class HangmanCog(cogs.BaseCog):
         # Executed if there are no/invalid args supplied
         await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
-    @app_commands.command(
-        name="start_hangman",
+    hangman_app_group: app_commands.Group = app_commands.Group(
+        name="hangman", description="Command Group for the Hangman Extension"
+    )
+
+    @hangman_app_group.command(
+        name="start",
         description="Start a Hangman game in the current channel.",
         extras={"module": "hangman"},
     )
