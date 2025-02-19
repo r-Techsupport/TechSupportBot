@@ -358,7 +358,7 @@ class HangmanCog(cogs.BaseCog):
         await interaction.response.defer(ephemeral=True)
 
         # Check if the provided word is too long
-        if len(word) >= 256:
+        if len(word) >= 85:
             await interaction.followup.send(
                 "The word must be less than 256 characters.", ephemeral=True
             )
