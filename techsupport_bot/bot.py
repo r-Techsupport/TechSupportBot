@@ -245,10 +245,11 @@ class TechSupportBot(commands.Bot):
         embed.timestamp = datetime.datetime.utcnow()
         try:
             await owner.send(embed=embed)
-        except discord.Forbidden:
+        except discord.Forbidden as exception:
             await self.logger.send_log(
-                message=f"Could not DM discord bot owner",
-                level=LogLevel.WARNING,
+                message="Could not DM discord bot owner",
+                level=LogLevel.ERROR,
+                exception=exception
             )
 
     async def on_message(self: Self, message: discord.Message) -> None:
