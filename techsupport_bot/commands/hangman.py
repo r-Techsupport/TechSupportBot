@@ -282,6 +282,9 @@ async def can_stop_game(ctx: commands.Context) -> bool:
         raise AttributeError("could not find hangman cog when checking game states")
 
     game_data = cog.games.get(ctx.channel.id)
+    if not game_data:
+        return True
+
     user = game_data.get("user")
     if getattr(user, "id", 0) == ctx.author.id:
         return True
@@ -331,7 +334,7 @@ class HangmanCog(cogs.BaseCog):
         """
 
         # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, module=self.__module__[9:])
+        await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     hangman_app_group: app_commands.Group = app_commands.Group(
         name="hangman", description="Command Group for the Hangman Extension"
@@ -353,6 +356,13 @@ class HangmanCog(cogs.BaseCog):
         """
         # Ensure only the command's author can see this interaction
         await interaction.response.defer(ephemeral=True)
+
+        # Check if the provided word is too long
+        if len(word) >= 256:
+            await interaction.followup.send(
+                "The word must be less than 256 characters.", ephemeral=True
+            )
+            return
 
         # Check if a game is already active in the channel
         game_data = self.games.get(interaction.channel_id)
@@ -418,6 +428,13 @@ class HangmanCog(cogs.BaseCog):
             letter (str): The letter the user is trying to guess
         """
         game_data = self.games.get(ctx.channel.id)
+        if not game_data:
+            await auxiliary.send_deny_embed(
+                message="There is no game in progress for this channel",
+                channel=ctx.channel,
+            )
+            return
+
         if ctx.author == game_data.get("user"):
             await auxiliary.send_deny_embed(
                 message="You cannot guess letters because you started this game!",
@@ -431,16 +448,7 @@ class HangmanCog(cogs.BaseCog):
             )
             return
 
-        game_data = self.games.get(ctx.channel.id)
-        if not game_data:
-            await auxiliary.send_deny_embed(
-                message="There is no game in progress for this channel",
-                channel=ctx.channel,
-            )
-            return
-
         game = game_data.get("game")
-
         if game.guessed(letter):
             await auxiliary.send_deny_embed(
                 message="That letter has already been guessed", channel=ctx.channel
@@ -570,7 +578,8 @@ class HangmanCog(cogs.BaseCog):
         game_data = self.games.get(ctx.channel.id)
         if not game_data:
             await auxiliary.send_deny_embed(
-                "There is no game in progress for this channel", channel=ctx.channel
+                message="There is no game in progress for this channel",
+                channel=ctx.channel,
             )
             return
 
@@ -622,7 +631,7 @@ class HangmanCog(cogs.BaseCog):
         game_data = self.games.get(ctx.channel.id)
         if not game_data:
             await auxiliary.send_deny_embed(
-                message="There is no game in progress for this channel.",
+                message="There is no game in progress for this channel",
                 channel=ctx.channel,
             )
             return
