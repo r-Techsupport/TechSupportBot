@@ -915,7 +915,7 @@ class TechSupportBot(commands.Bot):
         await self.slash_command_log(interaction)
 
         await self.logger.send_log(
-            message="Checking if prefix command can run",
+            message="Checking if slash command can run",
             level=LogLevel.DEBUG,
             context=LogContext(guild=interaction.guild, channel=interaction.channel),
             console_only=True,
