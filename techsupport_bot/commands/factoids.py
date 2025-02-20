@@ -1793,23 +1793,6 @@ class FactoidManager(cogs.MatchCog):
         output_data = sorted(output_data, key=lambda x: list(x.keys())[0])
         return output_data
 
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @factoid.command(
-        name="all",
-        aliases=["lsf"],
-        brief="List all factoids",
-        description="Sends a list of all factoids as a url.",
-    )
-    async def all_(self: Self, ctx: commands.Context) -> None:
-        """Command to list all factoids
-        DEPREACTED, /factoid all is the main one now
-
-        Args:
-            ctx (commands.Context): Context of the invocation
-        """
-        await ctx.send("Progress has to be made. `.factoid all` has been sunset.")
-
     async def generate_html(
         self: Self,
         guild: discord.Guild,
