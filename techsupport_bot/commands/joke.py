@@ -31,8 +31,6 @@ async def setup(bot: bot.TechSupportBot) -> None:
         ),
         default=["nsfw","explicit"],
     )
-    
-    config = extensionconfig.ExtensionConfig()
     config.add(
         key="apply_in_nsfw_channels",
         datatype="bool",
@@ -40,6 +38,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
         description=(
             "Toggles whether or not filters are applies in NSFW channels"
         ),
+    )
         default=False,
     await bot.add_cog(Joker(bot=bot))
     bot.add_extension_config("joke", config)
@@ -86,8 +85,8 @@ class Joker(cogs.BaseCog):
             str: The URL, properly formatted and ready to be called
         """
         blacklist_flags = []
-        if apply_in_nsfw_channels or not ctx.channel.is_nsfw():
-            blacklist_flags = config.blacklisted_filters
+        if config.extensions.joke.apply_in_nsfw_channels.value or not ctx.channel.is_nsfw():
+            blacklist_flags = config.extensions.joke.blacklisted_filters.value
         blacklists = ",".join(blacklist_flags)
 
         url = f"{self.API_URL}?blacklistFlags={blacklists}&format=txt"
