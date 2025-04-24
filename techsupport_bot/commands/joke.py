@@ -38,8 +38,8 @@ async def setup(bot: bot.TechSupportBot) -> None:
         description=(
             "Toggles whether or not filters are applies in NSFW channels"
         ),
-    )
         default=False,
+    )
     await bot.add_cog(Joker(bot=bot))
     bot.add_extension_config("joke", config)
 
