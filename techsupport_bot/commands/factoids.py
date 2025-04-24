@@ -1444,6 +1444,8 @@ class FactoidManager(cogs.MatchCog):
 
         factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
 
+        aliases_list = await self.get_list_of_aliases(factoid_name, str(ctx.guild.id))
+
         if not factoid.embed_config:
             await auxiliary.send_deny_embed(
                 message=f"There is no embed config for `{factoid_name}`",
@@ -1456,7 +1458,7 @@ class FactoidManager(cogs.MatchCog):
         json_file = discord.File(
             io.StringIO(formatted),
             filename=(
-                f"{factoid.name}-factoid-embed-config-{datetime.datetime.utcnow()}.json"
+                f"{aliases_list[0]}-factoid-embed-config-{datetime.datetime.utcnow()}.json"
             ),
         )
 
