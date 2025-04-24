@@ -35,9 +35,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
         key="apply_in_nsfw_channels",
         datatype="bool",
         title="Apply in NSFW Channels",
-        description=(
-            "Toggles whether or not filters are applies in NSFW channels"
-        ),
+        description=("Toggles whether or not filters are applies in NSFW channels"),
         default=False,
     )
     await bot.add_cog(Joker(bot=bot))
@@ -85,7 +83,10 @@ class Joker(cogs.BaseCog):
             str: The URL, properly formatted and ready to be called
         """
         blacklist_flags = []
-        if config.extensions.joke.apply_in_nsfw_channels.value or not ctx.channel.is_nsfw():
+        if (
+            config.extensions.joke.apply_in_nsfw_channels.value
+            or not ctx.channel.is_nsfw()
+                ):
             blacklist_flags = config.extensions.joke.blacklisted_filters.value
         blacklists = ",".join(blacklist_flags)
 
