@@ -126,7 +126,6 @@ class DuckHunt(cogs.LoopCog):
         Args:
             config (munch.Munch): The guild config to use to determine the min and max wait times
         """
-        await asyncio.sleep(1)
         await asyncio.sleep(
             random.randint(
                 config.extensions.duck.min_wait.value * 3600,
