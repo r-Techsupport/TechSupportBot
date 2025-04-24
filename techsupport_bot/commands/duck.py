@@ -102,14 +102,15 @@ class DuckHunt(cogs.LoopCog):
     """
 
     DUCK_PIC_URL: str = (
-        "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
+        "https://www.iconarchive.com/download/i107380/google/"
+        + "noto-emoji-animals-nature/22276-duck.512.png"
     )
     BEFRIEND_URL: str = (
-        "https://cdn.icon-icons.com/icons2/603/PNG/512/"
-        + "heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/"
+        + "f/fb/Noto_Emoji_v2.034_2665.svg/512px-Noto_Emoji_v2.034_2665.svg.png"
     )
     KILL_URL: str = (
-        "https://cdn.icon-icons.com/icons2/1919/PNG/512/huntingtarget_122049.png"
+        "https://www.iconarchive.com/download/i97188/iconsmind/outline/Target.512.png"
     )
     ON_START: bool = False
     CHANNELS_KEY: str = "hunt_channels"
