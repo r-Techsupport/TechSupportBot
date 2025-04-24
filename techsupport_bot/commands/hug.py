@@ -57,7 +57,8 @@ class Hugger(cogs.BaseCog):
         "{user_giving_hug} went to hug {user_to_hug} but missed and ran into the wall instead",
     ]
     ICON_URL: str = (
-        "https://cdn.icon-icons.com/icons2/1648/PNG/512/10022huggingface_110042.png"
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/a/"
+        + "a5/Noto_Emoji_Oreo_1f917.svg/768px-Noto_Emoji_Oreo_1f917.svg.png"
     )
 
     @auxiliary.with_typing

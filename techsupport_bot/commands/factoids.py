@@ -713,7 +713,6 @@ class FactoidManager(cogs.MatchCog):
 
         # Removes the factoid from the cache
         await self.handle_cache(guild, name)
-
         await auxiliary.send_confirm_embed(
             message=f"Successfully {fmt} the factoid `{factoid_name}`",
             channel=ctx.channel,
@@ -1793,101 +1792,6 @@ class FactoidManager(cogs.MatchCog):
         output_data = sorted(output_data, key=lambda x: list(x.keys())[0])
         return output_data
 
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @factoid.command(
-        name="all",
-        aliases=["lsf"],
-        brief="List all factoids",
-        description="Sends a list of all factoids as a url.",
-    )
-    async def all_(self: Self, ctx: commands.Context) -> None:
-        """Command to list all factoids
-        DEPREACTED, /factoid all is the main one now
-
-        Args:
-            ctx (commands.Context): Context of the invocation
-        """
-        guild = str(ctx.guild.id)
-
-        # Gets the url from the cache if the invokation doesn't contain flags
-        if guild in self.factoid_all_cache:
-            url = self.factoid_all_cache[guild]["url"]
-            embed = auxiliary.prepare_confirm_embed(message=url)
-            embed.title = (
-                "WARNING: This command is deprecated, "
-                "please use /factoid all going forward"
-            )
-            await ctx.send(embed=embed)
-            return
-
-        factoids = await self.get_all_factoids(guild, list_hidden=False)
-        if not factoids:
-            await auxiliary.send_deny_embed(
-                message="No factoids found!", channel=ctx.channel
-            )
-            return
-
-        # Gets a dict of aliases where
-        # Aliased_factoid = ["list_of_aliases"]
-        aliases = {}
-        for factoid in factoids:
-            if factoid.alias not in [None, ""]:
-                # Append to aliases
-                if factoid.alias in aliases:
-                    aliases[factoid.alias].append(factoid.name)
-                    continue
-
-                aliases[factoid.alias] = [factoid.name]
-
-        try:
-            # -Tries calling the api-
-            html = await self.generate_html(ctx.guild, factoids, aliases)
-            # If there are no applicable factoids
-            if html is None:
-                await auxiliary.send_deny_embed(
-                    message="No factoids found!", channel=ctx.channel
-                )
-                return
-
-            headers = {
-                "Content-Type": "text/plain",
-            }
-            response = await self.bot.http_functions.http_call(
-                "put",
-                self.bot.file_config.api.api_url.linx,
-                headers=headers,
-                data=io.StringIO(html),
-                get_raw_response=True,
-            )
-            url = response["text"]
-            filename = url.split("/")[-1]
-            url = url.replace(filename, f"selif/{filename}")
-
-            # Returns the url
-            embed = auxiliary.prepare_confirm_embed(message=url)
-            embed.title = (
-                "WARNING: This command is deprecated, "
-                "please use /factoid all going forward"
-            )
-            await ctx.send(embed=embed)
-            self.factoid_all_cache[str(ctx.guild.id)] = {}
-            self.factoid_all_cache[str(ctx.guild.id)]["url"] = url
-
-        # If an error happened while calling the api
-        except (gaierror, InvalidURL) as exception:
-            config = self.bot.guild_configs[str(ctx.guild.id)]
-            log_channel = config.get("logging_channel")
-            await self.bot.logger.send_log(
-                message="Could not render/send all-factoid HTML",
-                level=LogLevel.ERROR,
-                context=LogContext(guild=ctx.guild, channel=ctx.channel),
-                channel=log_channel,
-                exception=exception,
-            )
-
-            await self.send_factoids_as_file(ctx, factoids, aliases)
-
     async def generate_html(
         self: Self,
         guild: discord.Guild,
@@ -1995,34 +1899,64 @@ class FactoidManager(cogs.MatchCog):
 
     def search_content_and_bold(
         self: Self, original: str, search_string: str
-    ) -> list[str]:
-        """Searches a string for a substring and bolds it
+    ) -> str | None:
+        """Finds all starting indices of the search_string in the original string.
 
         Args:
-            original (str): The original content to search through
-            search_string (str): The string we are searching for
+            original (str): The original content to search through.
+            search_string (str): The string we are searching for.
 
         Returns:
-            list[str]: Snippets that have been modified with the search string
+            str | None: A single string with bolded matches and surrounding context,
+                or None if no matches exist.
         """
-        # Compile the regular expression for the substring
-        pattern = re.compile(re.escape(search_string))
-        matches = list(pattern.finditer(original))
 
-        matches_list = []
+        original = original.replace(search_string, f"**{search_string}**")
 
-        # Print all instances with 20 characters before and after each occurrence
-        for match in matches:
-            start = max(match.start() - 20, 0)
-            end = min(match.end() + 20, len(original))
-            context = original[start:end]
-            # Replace the substring in the context with the formatted version
-            context_with_formatting = context.replace(
-                search_string, f"**{search_string}**"
+        show_range = 20
+
+        indices = []
+        search_len = len(search_string)
+        for i in range(len(original) - search_len + 1):
+            if original[i : i + search_len] == search_string:
+                indices.append(i)
+
+        if len(indices) == 0:
+            return None
+
+        # Generate ranges to include
+        ranges_to_include = []
+        for start in indices:
+            ranges_to_include.append(
+                (
+                    max(0, start - show_range - 2),
+                    min(len(original), start + search_len + show_range + 2),
+                )
             )
-            matches_list.append(context_with_formatting.replace("****", ""))
 
-        return matches_list
+        # Minimize ranges by merging overlapping or adjacent ranges
+        minimized_ranges = []
+        for start, end in sorted(ranges_to_include):
+            if minimized_ranges and start <= minimized_ranges[-1][1]:
+                minimized_ranges[-1] = (
+                    min(minimized_ranges[-1][0], start),
+                    max(minimized_ranges[-1][1], end),
+                )
+            else:
+                minimized_ranges.append((start, end))
+
+        ranges_to_strs = []
+
+        if minimized_ranges[0][0] != 0:
+            ranges_to_strs.append("")
+
+        for include_range in minimized_ranges:
+            ranges_to_strs.append(original[include_range[0] : include_range[1]])
+
+        if minimized_ranges[len(minimized_ranges) - 1][1] != len(original):
+            ranges_to_strs.append("")
+
+        return "...".join(ranges_to_strs)
 
     @auxiliary.with_typing
     @commands.guild_only()
@@ -2051,43 +1985,45 @@ class FactoidManager(cogs.MatchCog):
 
         factoids = await self.get_all_factoids(guild, list_hidden=False)
         matches = {}
-
         for factoid in factoids:
+            if factoid.alias:
+                continue
+
             factoid_key = ", ".join(await self.get_list_of_aliases(factoid.name, guild))
-            if query in factoid.name.lower():
+
+            # Name string
+            name_highlight = self.search_content_and_bold(factoid_key.lower(), query)
+            if name_highlight:
                 if factoid_key in matches:
-                    matches[factoid_key].append(
-                        f"Name: {factoid.name.lower().replace(query, f'**{query}**')}"
-                    )
+                    matches[factoid_key].append(f"Name: {name_highlight}")
                 else:
-                    matches[factoid_key] = [
-                        f"Name: {factoid.name.lower().replace(query, f'**{query}**')}"
-                    ]
+                    matches[factoid_key] = [f"Name: {name_highlight}"]
 
-            if query in factoid.message.lower():
-                matches_list = self.search_content_and_bold(
-                    factoid.message.lower(), query
-                )
-                for match in matches_list:
-                    if factoid_key in matches:
-                        matches[factoid_key].append(f"Content: {match}")
-                    else:
-                        matches[factoid_key] = [f"Content: {match}"]
+            # Content
+            content_highlight = self.search_content_and_bold(
+                factoid.message.lower(), query
+            )
+            if content_highlight:
+                if factoid_key in matches:
+                    matches[factoid_key].append(f"Content: {content_highlight}")
+                else:
+                    matches[factoid_key] = [f"Content: {content_highlight}"]
 
-            if (
-                factoid.embed_config is not None
-                and query in factoid.embed_config.lower()
-            ):
-                matches_list = self.search_content_and_bold(
+            # Embed
+            if factoid.embed_config is not None:
+                embed_highlight = self.search_content_and_bold(
                     factoid.embed_config.lower(), query
                 )
-                for match in matches_list:
+                if embed_highlight:
                     if factoid_key in matches:
                         matches[factoid_key].append(
-                            f"Embed: {match.replace('_', '`_`')}"
+                            f"Embed: {embed_highlight.replace('_', '`_`')}"
                         )
                     else:
-                        matches[factoid_key] = [f"Embed: {match.replace('_', '`_`')}"]
+                        matches[factoid_key] = [
+                            f"Embed: {embed_highlight.replace('_', '`_`')}"
+                        ]
+
         if len(matches) == 0:
             embed = auxiliary.prepare_deny_embed(
                 f"No factoids could be found matching `{query}`"
