@@ -86,7 +86,7 @@ class Joker(cogs.BaseCog):
         if (
             config.extensions.joke.apply_in_nsfw_channels.value
             or not ctx.channel.is_nsfw()
-                ):
+        ):
             blacklist_flags = config.extensions.joke.blacklisted_filters.value
         blacklists = ",".join(blacklist_flags)
 
