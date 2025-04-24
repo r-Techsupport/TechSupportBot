@@ -99,7 +99,7 @@ class HTTPCalls:
             **kwargs (dict[str, Any]): Used to allow any combination of parameters to the API
 
         Raises:
-            custom_errors.HTTPRateLimit: Raised if the API is currently on cooldown
+            HTTPRateLimit: Raised if the API is currently on cooldown
 
         Returns:
             munch.Munch: The munch object containing the response from the API
