@@ -29,7 +29,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
             "Filters all categories listed"
             "(nsfw,religious,political,racist,sexist,explicit)"
         ),
-        default=["nsfw","explicit"],
+        default=["nsfw", "explicit"],
     )
     config.add(
         key="apply_in_nsfw_channels",
