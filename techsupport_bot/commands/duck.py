@@ -6,6 +6,7 @@ import asyncio
 import datetime
 import functools
 import random
+from datetime import timedelta
 from typing import TYPE_CHECKING, Self
 
 import discord
@@ -62,6 +63,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         title="Duck cooldown (seconds)",
         description="The amount of time to wait between bef/bang messages",
         default=5,
+    )
+    config.add(
+        key="mute_for_cooldown",
+        datatype="bool",
+        title="Uses the timeout feature for cooldown",
+        description="If enabled, users who miss will be timed out for the cooldown seconds",
+        default=True,
     )
     config.add(
         key="success_rate",
@@ -375,6 +383,22 @@ class DuckHunt(cogs.LoopCog):
                     f"seconds. Time would have been {duration_exact} seconds"
                 )
             )
+
+            if (
+                config.extensions.duck.mute_for_cooldown.value
+                and config.extensions.duck.cooldown.value > 0
+            ):
+                # Only attempt timeout if we know we can do it
+                if (
+                    channel.guild.me.top_role > message.author.top_role
+                    and channel.guild.me.guild_permissions.moderate_members
+                ):
+                    asyncio.create_task(
+                        message.author.timeout(
+                            timedelta(seconds=config.extensions.duck.cooldown.value),
+                            reason="Missed a duck",
+                        )
+                    )
 
             asyncio.create_task(
                 message.channel.send(
