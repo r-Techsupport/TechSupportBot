@@ -90,15 +90,12 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         # pylint: disable=protected-access
         os._exit(1)
 
-    def start_bot(self):
+    def start_bot(self: Self) -> None:
         """Start the bot and handle SASL authentication."""
-        try:
-            self.connection.set_rate_limit(1)  # Be nice to server
-            self.connection.username = self.username
-            self.connection.sasl_login = self.username
-            self.start()  # Starts the IRC bot's main loop
-        except Exception as e:
-            os._exit(1)
+        self.connection.set_rate_limit(1)  # Be nice to server
+        self.connection.username = self.username
+        self.connection.sasl_login = self.username
+        self.start()  # Starts the IRC bot's main loop
 
     def reconnect_from_disconnect(
         self: Self, connection: irc.client.ServerConnection, event: irc.client.Event
@@ -340,15 +337,3 @@ class IRCBot(irc.bot.SingleServerIRCBot):
             bool: True if the bot is an operator, False if it's not
         """
         return self.channels[channel_name].is_oper(self.username)
-
-
-"""
-IRCBot(
-    loop="main_loop",
-    server="irc.libera.chat",
-    port=6697,
-    channels=["#techsupport-development", "##techsupport-dev-testing"],
-    username="TSDevBot",
-    password="Blemish2-Outback-Nag-Overplay",
-).start_bot()
-"""

@@ -1041,7 +1041,7 @@ class TechSupportBot(commands.Bot):
 
     # IRC Stuff
 
-    async def start_irc(self: Self):
+    async def start_irc(self: Self) -> None:
         """Starts the IRC bot in a separate thread."""
         main_loop = asyncio.get_running_loop()
         irc_config = self.file_config.api.irc
@@ -1058,7 +1058,7 @@ class TechSupportBot(commands.Bot):
 
         self.irc = irc_bot
 
-        def run_in_thread():
+        def run_in_thread() -> None:
             """Run the IRC bot in a separate thread."""
             irc_bot.start_bot()
 
