@@ -13,8 +13,6 @@ from typing import Self
 
 import commands
 import discord
-
-# import formatting
 import irc.bot
 import irc.client
 import irc.connection
