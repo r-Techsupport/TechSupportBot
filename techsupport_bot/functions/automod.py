@@ -200,6 +200,11 @@ class AutoMod(cogs.MatchCog):
             content (str): The string content of the message
             result (bool): What the match() function returned
         """
+
+        # If user outranks bot, do nothing
+        if ctx.message.author.top_role >= ctx.channel.guild.me.top_role:
+            return
+
         all_punishments = run_all_checks(config, ctx.message)
 
         if len(all_punishments) == 0:

@@ -53,7 +53,8 @@ class Report(cogs.BaseCog):
         embed = discord.Embed(title="New Report", description=report_str)
         embed.color = discord.Color.red()
         embed.set_author(
-            name=interaction.user.name, icon_url=interaction.user.avatar.url
+            name=interaction.user.name,
+            icon_url=interaction.user.avatar.url or interaction.user.default_avatar.url,
         )
 
         embed.add_field(

@@ -70,10 +70,14 @@ class BanLogger(cogs.BaseCog):
         final_string = ""
         for index, (moderator_id, count) in enumerate(sorted_ban_frequency):
             moderator = await interaction.guild.fetch_member(int(moderator_id))
-            final_string += (
-                f"{index+1}. {moderator.display_name} "
-                f"{moderator.mention} ({moderator.id}) - ({count})\n"
-            )
+            if moderator:
+                final_string += (
+                    f"{index+1}. {moderator.display_name} "
+                    f"{moderator.mention} ({moderator.id}) - ({count})\n"
+                )
+            else:
+                final_string += {f"{index+1}. Moderator left: {moderator_id}"}
+
         embed.description = final_string
         embed.color = discord.Color.blue()
         await interaction.response.send_message(embed=embed)

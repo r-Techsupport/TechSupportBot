@@ -58,14 +58,14 @@ class Purger(cogs.BaseCog):
 
         if amount <= 0 or amount > config.extensions.purge.max_purge_amount.value:
             embed = auxiliary.prepare_deny_embed(
-                message="This is an invalid amount of messages to purge",
+                message=f"Messages to purge must be between 0 and {config.extensions.purge.max_purge_amount.value}",
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         if duration_minutes and duration_minutes < 0:
             embed = auxiliary.prepare_deny_embed(
-                message="This is an invalid duration",
+                message="Message age must be older than 0 minutes",
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
@@ -86,5 +86,4 @@ class Purger(cogs.BaseCog):
             interaction=interaction,
             command=f"/purge amount: {amount}, duration: {duration_minutes}",
             guild=interaction.guild,
-            target=interaction.user,
         )

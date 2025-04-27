@@ -395,11 +395,11 @@ class DuckHunt(cogs.LoopCog):
                 ):
                     asyncio.create_task(
                         moderation.mute_user(
-                        user=message.author,
-                        reason="Missed a duck",
-                        duration=timedelta(
-                            seconds=config.extensions.duck.cooldown.value
-                        ),
+                            user=message.author,
+                            reason="Missed a duck",
+                            duration=timedelta(
+                                seconds=config.extensions.duck.cooldown.value
+                            ),
                         )
                     )
 

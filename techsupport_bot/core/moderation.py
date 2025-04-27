@@ -177,7 +177,7 @@ async def send_command_usage_alert(
     interaction: discord.Interaction,
     command: str,
     guild: discord.Guild,
-    target: discord.Member,
+    target: discord.Member = None,
 ) -> None:
     """Sends a usage alert to the protect events channel, if configured
 
@@ -210,16 +210,19 @@ async def send_command_usage_alert(
         name="Channel",
         value=f"{interaction.channel.name} ({interaction.channel.mention})",
     )
+
     embed.add_field(
         name="Invoking User",
         value=(
             f"{interaction.user.display_name} ({interaction.user.mention}, {interaction.user.id})"
         ),
     )
-    embed.add_field(
-        name="Target",
-        value=f"{target.display_name} ({target.mention}, {target.id})",
-    )
+
+    if target:
+        embed.add_field(
+            name="Target",
+            value=f"{target.display_name} ({target.mention}, {target.id})",
+        )
 
     embed.set_thumbnail(url=ALERT_ICON_URL)
     embed.color = discord.Color.red()
