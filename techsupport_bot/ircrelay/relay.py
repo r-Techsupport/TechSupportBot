@@ -4,21 +4,24 @@ message tranmissions to discord"""
 from __future__ import annotations
 
 import asyncio
+import functools
 import logging
 import os
+import ssl
 import threading
 from typing import Self
 
 import commands
 import discord
-import ib3.auth
+
+# import formatting
 import irc.bot
 import irc.client
-import irc.strings
+import irc.connection
 from ircrelay import formatting
 
 
-class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
+class IRCBot(irc.bot.SingleServerIRCBot):
     """The IRC bot class. This is the class that runs the entire IRC side of the bot
     The class to start the entire IRC bot
 
@@ -58,24 +61,44 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
         username: str,
         password: str,
     ) -> None:
-
         self.loop = loop
-        super().__init__(
-            server_list=[(server, port)],
-            realname=username,
-            nickname=username,
-            ident_password=password,
-            channels=channels,
-        )
-        self.join_channel_list = channels
         self.username = username
         self.password = password
+        self.join_channel_list = channels
+
+        # SSL context setup
+        context = ssl.create_default_context()
+        factory = irc.connection.Factory(
+            wrapper=functools.partial(context.wrap_socket, server_hostname=server)
+        )
+
+        # Pass the correct server info and password
+        super().__init__(
+            server_list=[
+                (server, port, password)
+            ],  # Ensure this has the correct password
+            realname=username,
+            nickname=username,
+            connect_factory=factory,
+        )
+
+        # Reconnect handler if disconnected
         self._on_disconnect = self.reconnect_from_disconnect
 
     def exit_irc(self: Self) -> None:
         """Instatly kills the IRC thread"""
         # pylint: disable=protected-access
         os._exit(1)
+
+    def start_bot(self):
+        """Start the bot and handle SASL authentication."""
+        try:
+            self.connection.set_rate_limit(1)  # Be nice to server
+            self.connection.username = self.username
+            self.connection.sasl_login = self.username
+            self.start()  # Starts the IRC bot's main loop
+        except Exception as e:
+            os._exit(1)
 
     def reconnect_from_disconnect(
         self: Self, connection: irc.client.ServerConnection, event: irc.client.Event
@@ -317,3 +340,15 @@ class IRCBot(ib3.auth.SASL, irc.bot.SingleServerIRCBot):
             bool: True if the bot is an operator, False if it's not
         """
         return self.channels[channel_name].is_oper(self.username)
+
+
+"""
+IRCBot(
+    loop="main_loop",
+    server="irc.libera.chat",
+    port=6697,
+    channels=["#techsupport-development", "##techsupport-dev-testing"],
+    username="TSDevBot",
+    password="Blemish2-Outback-Nag-Overplay",
+).start_bot()
+"""
