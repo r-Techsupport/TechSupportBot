@@ -189,9 +189,8 @@ async def send_command_usage_alert(
         target (discord.Member): The target of the command
     """
 
-    ALERT_ICON_URL = (
-        "https://cdn.icon-icons.com/icons2/2063/PNG/512/"
-        + "alert_danger_warning_notification_icon_124692.png"
+    ALERT_ICON_URL: str = (
+        "https://www.iconarchive.com/download/i76061/martz90/circle-addon2/warning.512.png"
     )
 
     config = bot_object.guild_configs[str(guild.id)]

@@ -14,7 +14,7 @@ class PaginateView(discord.ui.View):
 
     To use this, call the send function. Everything else is automatic
 
-    Attrs:
+    Attributes:
         current_page (int): The current page number the user is on
         data (list[str | discord.Embed]): The list of data for the pages
         timeout (int): The timeout till the buttons dissapear without interaction
@@ -22,9 +22,9 @@ class PaginateView(discord.ui.View):
     """
 
     current_page: int = 1
-    data = None
-    timeout = 120
-    message = ""
+    data: list[str | discord.Embed] = None
+    timeout: int = 120
+    message: discord.Message = ""
 
     def add_page_numbers(self: Self) -> None:
         """A simple function to add page numbers to embed footer"""

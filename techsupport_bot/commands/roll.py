@@ -25,12 +25,14 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Roller(cogs.BaseCog):
     """Class for the roll command for the extension.
 
-    Attrs:
+    Attributes:
         ICON_URL (str): The URL for the dice icon
 
     """
 
-    ICON_URL = "https://cdn.icon-icons.com/icons2/1465/PNG/512/678gamedice_100992.png"
+    ICON_URL: str = (
+        "https://www.iconarchive.com/download/i43702/iconcubic/dnd-dice/d20.128.png"
+    )
 
     @auxiliary.with_typing
     @commands.command(

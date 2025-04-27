@@ -18,5 +18,6 @@ from .listen import *
 from .mock import *
 from .moderator import *
 from .modlog import *
+from .relay import *
 from .roll import *
 from .wyr import *

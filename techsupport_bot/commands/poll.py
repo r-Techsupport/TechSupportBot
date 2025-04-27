@@ -86,8 +86,8 @@ class PollGenerator(cogs.BaseCog):
         if not strawpoll:
             if not image_url or not isinstance(image_url, str):
                 request_body.image_url = (
-                    "https://cdn.icon-icons.com/icons2"
-                    "/259/PNG/128/ic_poll_128_28553.png"
+                    "https://www.iconarchive.com/download/i6231/"
+                    "custom-icon-design/pretty-office-6/polls.256.png"
                 )
 
             if not timeout or not isinstance(timeout, int):
@@ -103,16 +103,16 @@ class PollGenerator(cogs.BaseCog):
 class ReactionPoller(PollGenerator):
     """Class to add reactions to the poll generator.
 
-    Attrs:
+    Attributes:
         OPTION_EMOJIS (list[str]): The list of emojis to react to the message with
         STOP_EMOJI (str): The stop emoji to reaction to the message with
         EXAMPLE_DATA (dict[str, str | list[str] | int]): The example poll that the bot can use
 
     """
 
-    OPTION_EMOJIS = ["one", "two", "three", "four", "five"]
-    STOP_EMOJI = "\u26d4"
-    EXAMPLE_DATA = {
+    OPTION_EMOJIS: list[str] = ["one", "two", "three", "four", "five"]
+    STOP_EMOJI: str = "\u26d4"
+    EXAMPLE_DATA: dict[str, str | list[str] | int] = {
         "question": "Best ice cream?",
         "options": ["Chocolate", "Vanilla", "Strawberry", "Cookie Dough", "Other..."],
         "timeout": 60,
@@ -313,17 +313,17 @@ class ReactionPoller(PollGenerator):
 class StrawPoller(PollGenerator):
     """Class to create a straw poll from discord.
 
-    Attrs:
+    Attributes:
         EXAMPLE_DATA (dict[str, str | list[str]]): The example poll that the bot can use
         API_URL (str): The strawpoll API URL
 
     """
 
-    EXAMPLE_DATA = {
+    EXAMPLE_DATA: dict[str, str | list[str]] = {
         "question": "Best ice cream?",
         "options": ["Chocolate", "Vanilla", "Strawberry", "Cookie Dough", "Other..."],
     }
-    API_URL = "https://strawpoll.com/api/poll"
+    API_URL: str = "https://strawpoll.com/api/poll"
 
     @commands.group(
         brief="Executes a strawpoll command",

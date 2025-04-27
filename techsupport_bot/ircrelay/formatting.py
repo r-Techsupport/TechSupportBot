@@ -46,10 +46,11 @@ def parse_ban_message(event: irc.client.Event) -> dict[str, str]:
     username = event.source.split("!")[0]
     hostmask = event.source.split("!")[1]
     channel = event.target
+    action = f"unknown: {event.arguments[0]}"
 
     if "+b" in event.arguments[0]:
         action = "banned"
-    elif "+b" in event.arguments[0]:
+    elif "-b" in event.arguments[0]:
         action = "unbanned"
     content = f"{event.arguments[1]} was {action} from {channel}"
 

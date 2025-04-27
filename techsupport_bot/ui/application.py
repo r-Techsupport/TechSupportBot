@@ -12,19 +12,19 @@ class Application(discord.ui.Modal, title="Staff interest form"):
     """The class contianing the modal and all variables for it
     This must be sent as a response to an interaction, cannot be from a prefix command
 
-    Attrs:
+    Attributes:
         background (discord.ui.TextInput): The background question for the application
         reason (discord.ui.TextInput): The reason question for the application
     """
 
-    background = discord.ui.TextInput(
+    background: discord.ui.TextInput = discord.ui.TextInput(
         label="Do you have any IT or programming experience?",
         style=discord.TextStyle.long,
         required=True,
         max_length=300,
     )
 
-    reason = discord.ui.TextInput(
+    reason: discord.ui.TextInput = discord.ui.TextInput(
         label="Why do you want to help here?",
         style=discord.TextStyle.long,
         required=True,
