@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Self
 
@@ -927,6 +928,8 @@ class ApplicationManager(cogs.LoopCog):
                 user = await guild.fetch_member(int(app.applicant_id))
             except discord.NotFound:
                 user = None
+
+            # User who made application left
             if not user:
                 audit_log.append(
                     f"Application by user: `{app.applicant_name}` was rejected because"
@@ -937,6 +940,7 @@ class ApplicationManager(cogs.LoopCog):
                 ).apply()
                 continue
 
+            # User changed their name
             if user.name != app.applicant_name:
                 audit_log.append(
                     f"Application by user: `{app.applicant_name}` had the stored name"
@@ -948,6 +952,7 @@ class ApplicationManager(cogs.LoopCog):
                 int(config.extensions.application.application_role.value)
             )
 
+            # User has the helper role
             if role in getattr(user, "roles", []):
                 audit_log.append(
                     f"Application by user: `{user.name}` was approved since they have"
@@ -956,6 +961,19 @@ class ApplicationManager(cogs.LoopCog):
                 await app.update(
                     application_status=ApplicationStatus.APPROVED.value
                 ).apply()
+
+            # Application has been pending for 30 days
+            if app.application_time < datetime.datetime.now() - datetime.timedelta(
+                days=30
+            ):
+                audit_log.append(
+                    f"Application by user: `{user.name}` was rejected since it's been"
+                    f" inactive for 30 days"
+                )
+                await app.update(
+                    application_status=ApplicationStatus.REJECTED.value
+                ).apply()
+
         if audit_log:
             embed = discord.Embed(title="Application manage events")
             for event in audit_log:
