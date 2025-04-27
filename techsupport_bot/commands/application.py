@@ -557,7 +557,7 @@ class ApplicationManager(cogs.LoopCog):
         )
 
         await interaction.followup.send(
-            f"Your application has been recieved, {interaction.user.display_name}!",
+            f"Your application has been received, {interaction.user.display_name}!",
             ephemeral=True,
         )
 

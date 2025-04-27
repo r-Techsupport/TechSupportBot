@@ -101,14 +101,15 @@ class DuckHunt(cogs.LoopCog):
     """
 
     DUCK_PIC_URL: str = (
-        "https://cdn.icon-icons.com/icons2/1446/PNG/512/22276duck_98782.png"
+        "https://www.iconarchive.com/download/i107380/google/"
+        + "noto-emoji-animals-nature/22276-duck.512.png"
     )
     BEFRIEND_URL: str = (
-        "https://cdn.icon-icons.com/icons2/603/PNG/512/"
-        + "heart_love_valentines_relationship_dating_date_icon-icons.com_55985.png"
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/"
+        + "f/fb/Noto_Emoji_v2.034_2665.svg/512px-Noto_Emoji_v2.034_2665.svg.png"
     )
     KILL_URL: str = (
-        "https://cdn.icon-icons.com/icons2/1919/PNG/512/huntingtarget_122049.png"
+        "https://www.iconarchive.com/download/i97188/iconsmind/outline/Target.512.png"
     )
     ON_START: bool = False
     CHANNELS_KEY: str = "hunt_channels"
@@ -360,14 +361,9 @@ class DuckHunt(cogs.LoopCog):
             )
             return False
 
-        weights = (
-            config.extensions.duck.success_rate.value,
-            100 - config.extensions.duck.success_rate.value,
-        )
-
         # Check to see if random failure
-        choice_ = random.choice(random.choices([True, False], weights=weights, k=1000))
-        if not choice_:
+        choice = self.random_choice(config)
+        if not choice:
             time = message.created_at - duck_message.created_at
             duration_exact = float(str(time.seconds) + "." + str(time.microseconds))
             cooldowns[message.author.id] = datetime.datetime.now()
@@ -387,7 +383,7 @@ class DuckHunt(cogs.LoopCog):
                 )
             )
 
-        return choice_
+        return choice
 
     async def get_duck_user(
         self: Self, user_id: int, guild_id: int
@@ -749,12 +745,7 @@ class DuckHunt(cogs.LoopCog):
 
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
 
-        weights = (
-            config.extensions.duck.success_rate.value,
-            100 - config.extensions.duck.success_rate.value,
-        )
-
-        passed = random.choice(random.choices([True, False], weights=weights, k=1000))
+        passed = self.random_choice(config)
         if not passed:
             await auxiliary.send_deny_embed(
                 message="The duck got away before you could kill it.",
@@ -827,12 +818,7 @@ class DuckHunt(cogs.LoopCog):
 
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
 
-        weights = (
-            config.extensions.duck.success_rate.value,
-            100 - config.extensions.duck.success_rate.value,
-        )
-
-        passed = random.choice(random.choices([True, False], weights=weights, k=1000))
+        passed = self.random_choice(config)
         if not passed:
             await auxiliary.send_deny_embed(
                 message="The duck got away before you could donate it.",
@@ -921,3 +907,25 @@ class DuckHunt(cogs.LoopCog):
             message="It looks like you don't have permissions to spawn a duck",
             channel=ctx.channel,
         )
+
+    def random_choice(self: Self, config: munch.Munch) -> bool:
+        """A function to pick true or false randomly based on the success_rate in the config
+
+        Args:
+            config (munch.Munch): The config for the guild
+
+        Returns:
+            bool: Whether the random choice should succeed or not
+        """
+
+        weights = (
+            config.extensions.duck.success_rate.value,
+            100 - config.extensions.duck.success_rate.value,
+        )
+
+        # Check to see if random failure
+        choice_ = random.choice(
+            random.choices([True, False], weights=weights, k=100000)
+        )
+
+        return choice_
