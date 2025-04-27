@@ -65,6 +65,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         default=5,
     )
     config.add(
+        key="mute_for_cooldown",
+        datatype="bool",
+        title="Uses the timeout feature for cooldown",
+        description="If enabled, users who miss will be timed out for the cooldown seconds",
+        default=True,
+    )
+    config.add(
         key="success_rate",
         datatype="int",
         title="Success rate (percent %)",
@@ -376,17 +383,23 @@ class DuckHunt(cogs.LoopCog):
                     f"seconds. Time would have been {duration_exact} seconds"
                 )
             )
-            # Only attempt timeout if we know we can do it
+
             if (
-                channel.guild.me.top_role > message.author.top_role
-                and channel.guild.me.guild_permissions.moderate_members
+                config.extensions.duck.mute_for_cooldown.value
+                and config.extensions.duck.cooldown.value > 0
             ):
-                asyncio.create_task(
-                    message.author.timeout(
-                        timedelta(seconds=config.extensions.duck.cooldown.value),
-                        reason="Missed a duck",
+                # Only attempt timeout if we know we can do it
+                if (
+                    channel.guild.me.top_role > message.author.top_role
+                    and channel.guild.me.guild_permissions.moderate_members
+                ):
+                    asyncio.create_task(
+                        message.author.timeout(
+                            timedelta(seconds=config.extensions.duck.cooldown.value),
+                            reason="Missed a duck",
+                        )
                     )
-                )
+
             asyncio.create_task(
                 message.channel.send(
                     content=message.author.mention,
