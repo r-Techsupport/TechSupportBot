@@ -38,7 +38,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class BanLogger(cogs.BaseCog):
     """The class that holds the /modlog commands
 
-    Attrs:
+    Attributes:
         modlog_group (app_commands.Group): The group for the /modlog commands
     """
 

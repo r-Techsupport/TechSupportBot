@@ -179,11 +179,12 @@ async def get_all_notes(
     """Calls to the database to get a list of note database entries for a given user and guild
 
     Args:
+        bot (object): The TS bot object to use for the database lookup
         user (discord.Member): The member to look for notes for
         guild (discord.Guild): The guild to fetch the notes from
 
     Returns:
-        list[bot.models.UserNote]: The list of notes on the member/guild combo.
+        list[munch.Munch]: The list of notes on the member/guild combo.
             Will be an empty list if there are no notes
     """
     user_notes = (

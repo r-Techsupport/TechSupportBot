@@ -344,6 +344,16 @@ def build_note_embeds(
     member: discord.Member,
     notes: list[bot.models.UserNote],
 ) -> list[discord.Embed]:
+    """Makes a list of embeds with 6 notes per page, for a given user
+
+    Args:
+        guild (discord.Guild): The guild where the notes occured
+        member (discord.Member): The member whose notes are being looked for
+        notes (list[bot.models.UserNote]): The list of notes from the database
+
+    Returns:
+        list[discord.Embed]: The list of well formatted embeds
+    """
     embed = auxiliary.generate_basic_embed(
         f"Notes for `{member.display_name}` (`{member.name}`)",
         color=discord.Color.dark_blue(),

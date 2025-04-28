@@ -87,7 +87,7 @@ class AutoModPunishment:
     """This is a base class holding the violation and recommended actions
     Since automod is a framework, the actions can translate to different things
 
-    Attrs:
+    Attributes:
         violation_str (str): The string of the policy broken. Should be displayed to user
         recommend_delete (bool): If the policy recommends deletion of the message
         recommend_warn (bool): If the policy recommends warning the user
@@ -126,7 +126,7 @@ class AutoModPunishment:
 class AutoModAction:
     """The final summarized action for this automod violation
 
-    Attrs:
+    Attributes:
         warn (bool): Whether the user should be warned
         delete_message (bool): Whether the message should be deleted
         mute (bool): Whether the user should be muted

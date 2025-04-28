@@ -38,7 +38,7 @@ class Whois(cogs.BaseCog):
 
         Args:
             interaction (discord.Interaction): The interaction that called this command
-            user (discord.Member): The member to lookup. Will not work on discord.User
+            member (discord.Member): The member to lookup. Will not work on discord.User
         """
         embed = auxiliary.generate_basic_embed(
             title=f"User info for `{member.display_name}` (`{member.name}`)",

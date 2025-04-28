@@ -49,6 +49,7 @@ class PaginateView(discord.ui.View):
                 with [0] being the first page
             interaction (discord.Interaction | None): The interaction this
                 should followup with (Optional)
+            ephemeral (bool): Whether the response should be ephemeral (optional)
         """
         self.author = author
         self.data = data

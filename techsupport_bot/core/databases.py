@@ -67,7 +67,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for banlogs
         Currently used in modlog.py
 
-        Attrs:
+        Attributes:
             __tablename__ (str): The name of the table in postgres
             pk (int): The automatic primary key
             guild_id (str): The string of the guild ID the user was banned in
@@ -250,7 +250,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         """The postgres table for warnings
         Currently used in protect.py and who.py
 
-        Attrs:
+        Attributes:
             __tablename__ (str): The name of the table in postgres
             pk (int): The primary key for the database
             user_id (str): The user who got warned
