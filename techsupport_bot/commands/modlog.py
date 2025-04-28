@@ -96,15 +96,8 @@ class BanLogger(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called the command
             user (discord.User): The user to search for bans for
         """
-        recent_bans_by_user = (
-            await self.bot.models.BanLog.query.where(
-                self.bot.models.BanLog.guild_id == str(interaction.guild.id)
-            )
-            .where(self.bot.models.BanLog.banned_member == str(user.id))
-            .order_by(self.bot.models.BanLog.ban_time.desc())
-            .limit(10)
-            .gino.all()
-        )
+
+        await interaction.response.defer(ephemeral=False)
 
         all_bans_by_user = (
             await self.bot.models.BanLog.query.where(
@@ -116,7 +109,7 @@ class BanLogger(cogs.BaseCog):
         )
 
         embeds = []
-        for ban in recent_bans_by_user:
+        for ban in all_bans_by_user[:10]:
             temp_embed = await self.convert_ban_to_pretty_string(
                 ban, f"{user.name} bans"
             )
@@ -127,10 +120,9 @@ class BanLogger(cogs.BaseCog):
             embed = auxiliary.prepare_deny_embed(
                 f"No bans for the user {user.name} could be found"
             )
-            await interaction.response.send_message(embed=embed)
+            await interaction.followup.send(embed=embed)
             return
 
-        await interaction.response.defer(ephemeral=False)
         view = ui.PaginateView()
         await view.send(interaction.channel, interaction.user, embeds, interaction)
 
@@ -148,15 +140,7 @@ class BanLogger(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called the command
             moderator (discord.Member): The moderator to search for bans for
         """
-        recent_bans_by_user = (
-            await self.bot.models.BanLog.query.where(
-                self.bot.models.BanLog.guild_id == str(interaction.guild.id)
-            )
-            .where(self.bot.models.BanLog.banning_moderator == str(moderator.id))
-            .order_by(self.bot.models.BanLog.ban_time.desc())
-            .limit(10)
-            .gino.all()
-        )
+        await interaction.response.defer(ephemeral=False)
 
         all_bans_by_user = (
             await self.bot.models.BanLog.query.where(
@@ -168,7 +152,7 @@ class BanLogger(cogs.BaseCog):
         )
 
         embeds = []
-        for ban in recent_bans_by_user:
+        for ban in all_bans_by_user[:10]:
             temp_embed = await self.convert_ban_to_pretty_string(
                 ban, f"Bans by {moderator.name}"
             )
@@ -179,10 +163,9 @@ class BanLogger(cogs.BaseCog):
             embed = auxiliary.prepare_deny_embed(
                 f"No bans by the user {moderator.name} could be found"
             )
-            await interaction.response.send_message(embed=embed)
+            await interaction.followup.send(embed=embed)
             return
 
-        await interaction.response.defer(ephemeral=False)
         view = ui.PaginateView()
         await view.send(interaction.channel, interaction.user, embeds, interaction)
 
