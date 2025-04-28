@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import datetime
-import io
 from typing import TYPE_CHECKING, Self
 
 import discord
 import ui
-import yaml
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, extensionconfig, moderation
 from discord import app_commands
