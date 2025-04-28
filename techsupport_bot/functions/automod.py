@@ -231,7 +231,10 @@ class AutoMod(cogs.MatchCog):
                 f" ({count_of_warnings} total warnings)"
             )
             await moderation.warn_user(
-                self.bot, ctx.author, ctx.author, total_punishment.violation_string
+                self.bot,
+                ctx.author,
+                ctx.channel.guild.me,
+                total_punishment.violation_string,
             )
             if count_of_warnings >= config.moderation.max_warnings:
                 ban_embed = moderator.generate_response_embed(
