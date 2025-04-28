@@ -52,9 +52,9 @@ class Whois(cogs.BaseCog):
         )
 
         embed.add_field(
-            name="Created at", value=member.created_at.replace(microsecond=0)
+            name="Created", value=f"<t:{int(member.created_at.timestamp())}>"
         )
-        embed.add_field(name="Joined at", value=member.joined_at.replace(microsecond=0))
+        embed.add_field(name="Joined", value=f"<t:{int(member.joined_at.timestamp())}>")
         embed.add_field(
             name="Status", value=interaction.guild.get_member(member.id).status
         )
@@ -65,6 +65,33 @@ class Whois(cogs.BaseCog):
 
         if interaction.permissions.kick_members:
             embed = await self.modify_embed_for_mods(interaction, member, embed)
+
+            flags = []
+            if member.flags.automod_quarantined_username:
+                flags.append("Quarantined by Automod")
+            if not member.flags.completed_onboarding:
+                flags.append("Not completed onboarding")
+            if member.flags.did_rejoin:
+                flags.append("Has left and rejoined the server")
+            if member.flags.guest:
+                flags.append("Is a guest")
+            if member.public_flags.staff:
+                flags.append("Is discord staff")
+            if member.public_flags.spammer:
+                flags.append("Is a flagged spammer")
+            if (
+                member.is_timed_out
+                and member.timed_out_until
+                and member.timed_out_until.astimezone(datetime.timezone.utc)
+                > datetime.datetime.now((datetime.timezone.utc))
+            ):
+                flags.append(
+                    f"Is timed out until <t:{int(member.timed_out_until.timestamp())}>"
+                )
+
+            flag_string = "\n - ".join(flag for flag in flags)
+            if flag_string:
+                embed.add_field(name="Flags", value=f"- {flag_string}")
 
         embeds = [embed]
 

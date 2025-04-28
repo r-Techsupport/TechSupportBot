@@ -167,6 +167,7 @@ async def get_all_warnings(
             bot_object.models.Warning.user_id == str(user.id)
         )
         .where(bot_object.models.Warning.guild_id == str(guild.id))
+        .order_by(bot_object.models.Warning.time.desc())
         .gino.all()
     )
     return warnings
