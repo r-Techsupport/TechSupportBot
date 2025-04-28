@@ -70,7 +70,7 @@ class ProtectCommands(cogs.BaseCog):
         interaction: discord.Interaction,
         target: discord.User,
         reason: str,
-        delete_days: int = None,
+        delete_days: app_commands.Range[int, 0, 7] = None,
     ) -> None:
         """The ban slash command. This checks that the permissions are correct
         and that the user is not already banned
