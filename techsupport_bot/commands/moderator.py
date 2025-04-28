@@ -647,26 +647,13 @@ class ProtectCommands(cogs.BaseCog):
             self.bot, target, interaction.guild
         )
 
-        if not warnings:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"No warnings could be found on {target}"
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
+        embeds = build_warning_embeds(interaction.guild, target, warnings)
 
-        embed = discord.Embed(
-            title=f"Warnings for `{target.display_name}` (`{target.name}`)"
+        await interaction.response.defer(ephemeral=True)
+        view = ui.PaginateView()
+        await view.send(
+            interaction.channel, interaction.user, embeds, interaction, True
         )
-
-        for warning in warnings:
-            warning_moderator = await self.bot.fetch_user(int(warning.invoker_id))
-            embed.add_field(
-                name=f"Warning by {warning_moderator.display_name} ({warning_moderator.name})",
-                value=f"{warning.reason}\nWarned <t:{int(warning.time.timestamp())}:R>",
-            )
-        embed.color = discord.Color.blue()
-
-        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     # Helper functions
 
@@ -772,3 +759,42 @@ def generate_response_embed(
     embed.color = discord.Color.gold()
 
     return embed
+
+
+def build_warning_embeds(
+    guild: discord.Guild,
+    member: discord.Member,
+    warnings: list[bot.models.UserNote],
+) -> list[discord.Embed]:
+    embed = auxiliary.generate_basic_embed(
+        f"Warnings for `{member.display_name}` (`{member.name}`)",
+        color=discord.Color.dark_blue(),
+    )
+    embed.set_footer(text=f"{len(warnings)} total warns.")
+
+    embeds = []
+
+    if not warnings:
+        embed.description = "No warnings"
+        return [embed]
+
+    for index, warn in enumerate(warnings):
+        if index % 6 == 0 and index > 0:
+            embeds.append(embed)
+            embed = auxiliary.generate_basic_embed(
+                f"Warnings for `{member.display_name}` (`{member.name}`)",
+                color=discord.Color.dark_blue(),
+            )
+            embed.set_footer(text=f"{len(warnings)} total warns.")
+        warn_author = "Unknown"
+        if warn.invoker_id:
+            warn_author = warn.invoker_id
+            author = guild.get_member(int(warn.invoker_id))
+            if author:
+                warn_author = author.name
+        embed.add_field(
+            name=f"Warned by {warn_author}",
+            value=f"{warn.reason}\nWarned <t:{int(warn.time.timestamp())}:R>",
+        )
+    embeds.append(embed)
+    return embeds

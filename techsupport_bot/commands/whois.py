@@ -10,8 +10,8 @@ import discord
 import ui
 import yaml
 from botlogging import LogContext, LogLevel
-from commands import notes
-from core import auxiliary, cogs
+from commands import moderator, notes
+from core import auxiliary, cogs, moderation
 from discord import app_commands
 from discord.ext import commands
 
@@ -69,9 +69,26 @@ class Whois(cogs.BaseCog):
         embeds = [embed]
 
         if await notes.is_reader(interaction):
-            all_notes = await notes.get_notes(self.bot, member, interaction.guild)
-            notes_embeds = notes.build_embeds(interaction.guild, member, all_notes)
+            all_notes = await moderation.get_all_notes(
+                self.bot, member, interaction.guild
+            )
+            notes_embeds = notes.build_note_embeds(interaction.guild, member, all_notes)
+            notes_embeds[0].description = (
+                f"Showing {min(len(all_notes), 6)}/{len(all_notes)} notes"
+            )
             embeds.append(notes_embeds[0])
+
+        if interaction.permissions.kick_members:
+            all_warnings = await moderation.get_all_warnings(
+                self.bot, member, interaction.guild
+            )
+            warning_embeds = moderator.build_warning_embeds(
+                interaction.guild, member, all_warnings
+            )
+            warning_embeds[0].description = (
+                f"Showing {min(len(all_warnings), 6)}/{len(all_warnings)} warnings"
+            )
+            embeds.append(warning_embeds[0])
 
         await interaction.response.defer(ephemeral=True)
         view = ui.PaginateView()
@@ -96,34 +113,6 @@ class Whois(cogs.BaseCog):
         Returns:
             discord.Embed: The embed with mod only information added
         """
-        # If the user has warnings, add them
-        warnings = (
-            await self.bot.models.Warning.query.where(
-                self.bot.models.Warning.user_id == str(user.id)
-            )
-            .where(self.bot.models.Warning.guild_id == str(interaction.guild.id))
-            .gino.all()
-        )
-        warning_str = ""
-        for warning in warnings[-3:]:
-            warning_moderator_name = "unknown"
-            if warning.invoker_id:
-                warning_moderator = await self.bot.fetch_user(int(warning.invoker_id))
-                if warning_moderator:
-                    warning_moderator_name = warning_moderator.name
-
-            warning_str += (
-                f"- {warning.reason} - <t:{int(warning.time.timestamp())}:R>. "
-            )
-            warning_str += f"Warned by: {warning_moderator_name}\n"
-
-        if warning_str:
-            embed.add_field(
-                name=f"**Warnings ({len(warnings)} total)**",
-                value=warning_str,
-                inline=True,
-            )
-
         # If the user has a pending application, show it
         # If the user is banned from making applications, show it
         application_cog = interaction.client.get_cog("ApplicationManager")

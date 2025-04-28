@@ -10,7 +10,7 @@ import discord
 import ui
 import yaml
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs, extensionconfig, moderation
 from discord import app_commands
 from discord.ext import commands
 
@@ -300,14 +300,13 @@ class Notes(cogs.BaseCog):
         """
         notes = await self.get_notes(member, interaction.guild)
 
-        embeds = build_embeds(interaction.guild, member, notes)
+        embeds = build_note_embeds(interaction.guild, member, notes)
 
         await interaction.response.defer(ephemeral=True)
         view = ui.PaginateView()
         await view.send(
             interaction.channel, interaction.user, embeds, interaction, True
         )
-        return
 
     # re-adds note role back to joining users
     @commands.Cog.listener()
@@ -328,7 +327,7 @@ class Notes(cogs.BaseCog):
         if not role:
             return
 
-        user_notes = await get_notes(bot, member, member.guild)
+        user_notes = await moderation.get_all_notes(bot, member, member.guild)
         if not user_notes:
             return
 
@@ -343,7 +342,7 @@ class Notes(cogs.BaseCog):
         )
 
 
-def build_embeds(
+def build_note_embeds(
     guild: discord.Guild,
     member: discord.Member,
     notes: list[bot.models.UserNote],
@@ -375,28 +374,3 @@ def build_embeds(
         )
     embeds.append(embed)
     return embeds
-
-
-async def get_notes(
-    bot: bot.TechSupportBot, user: discord.Member, guild: discord.Guild
-) -> list[bot.models.UserNote]:
-    """Calls to the database to get a list of note database entries for a given user and guild
-
-    Args:
-        user (discord.Member): The member to look for notes for
-        guild (discord.Guild): The guild to fetch the notes from
-
-    Returns:
-        list[bot.models.UserNote]: The list of notes on the member/guild combo.
-            Will be an empty list if there are no notes
-    """
-    user_notes = (
-        await bot.models.UserNote.query.where(
-            bot.models.UserNote.user_id == str(user.id)
-        )
-        .where(bot.models.UserNote.guild_id == str(guild.id))
-        .order_by(bot.models.UserNote.updated.desc())
-        .gino.all()
-    )
-
-    return user_notes

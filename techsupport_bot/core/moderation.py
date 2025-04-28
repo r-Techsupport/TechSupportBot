@@ -172,6 +172,31 @@ async def get_all_warnings(
     return warnings
 
 
+async def get_all_notes(
+    bot: object, user: discord.Member, guild: discord.Guild
+) -> list[munch.Munch]:
+    """Calls to the database to get a list of note database entries for a given user and guild
+
+    Args:
+        user (discord.Member): The member to look for notes for
+        guild (discord.Guild): The guild to fetch the notes from
+
+    Returns:
+        list[bot.models.UserNote]: The list of notes on the member/guild combo.
+            Will be an empty list if there are no notes
+    """
+    user_notes = (
+        await bot.models.UserNote.query.where(
+            bot.models.UserNote.user_id == str(user.id)
+        )
+        .where(bot.models.UserNote.guild_id == str(guild.id))
+        .order_by(bot.models.UserNote.updated.desc())
+        .gino.all()
+    )
+
+    return user_notes
+
+
 async def send_command_usage_alert(
     bot_object: object,
     interaction: discord.Interaction,
