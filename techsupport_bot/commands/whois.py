@@ -3,17 +3,13 @@
 from __future__ import annotations
 
 import datetime
-import io
 from typing import TYPE_CHECKING, Self
 
 import discord
 import ui
-import yaml
-from botlogging import LogContext, LogLevel
 from commands import moderator, notes
 from core import auxiliary, cogs, moderation
 from discord import app_commands
-from discord.ext import commands
 
 if TYPE_CHECKING:
     import bot
@@ -64,7 +60,7 @@ class Whois(cogs.BaseCog):
         embed.add_field(name="Roles", value=role_string or "No roles")
 
         if interaction.permissions.kick_members:
-            embed = await self.modify_embed_for_mods(interaction, member, embed)
+            embed = await modify_embed_for_mods(interaction, member, embed)
 
             flags = []
             if member.flags.automod_quarantined_username:
@@ -124,34 +120,34 @@ class Whois(cogs.BaseCog):
         )
         return
 
-    async def modify_embed_for_mods(
-        self: Self,
-        interaction: discord.Interaction,
-        user: discord.Member,
-        embed: discord.Embed,
-    ) -> discord.Embed:
-        """Makes modifications to the whois embed to add mod only information
 
-        Args:
-            interaction (discord.Interaction): The interaction where the /whois command was called
-            user (discord.Member): The user being looked up
-            embed (discord.Embed): The embed already filled with whois information
+async def modify_embed_for_mods(
+    interaction: discord.Interaction,
+    user: discord.Member,
+    embed: discord.Embed,
+) -> discord.Embed:
+    """Makes modifications to the whois embed to add mod only information
 
-        Returns:
-            discord.Embed: The embed with mod only information added
-        """
-        # If the user has a pending application, show it
-        # If the user is banned from making applications, show it
-        application_cog = interaction.client.get_cog("ApplicationManager")
-        if application_cog:
-            has_application = await application_cog.search_for_pending_application(user)
-            is_banned = await application_cog.get_ban_entry(user)
-            embed.add_field(
-                name="Application information:",
-                value=(
-                    f"Has pending application: {bool(has_application)}\nIs banned from"
-                    f" making applications: {bool(is_banned)}"
-                ),
-                inline=True,
-            )
-        return embed
+    Args:
+        interaction (discord.Interaction): The interaction where the /whois command was called
+        user (discord.Member): The user being looked up
+        embed (discord.Embed): The embed already filled with whois information
+
+    Returns:
+        discord.Embed: The embed with mod only information added
+    """
+    # If the user has a pending application, show it
+    # If the user is banned from making applications, show it
+    application_cog = interaction.client.get_cog("ApplicationManager")
+    if application_cog:
+        has_application = await application_cog.search_for_pending_application(user)
+        is_banned = await application_cog.get_ban_entry(user)
+        embed.add_field(
+            name="Application information:",
+            value=(
+                f"Has pending application: {bool(has_application)}\nIs banned from"
+                f" making applications: {bool(is_banned)}"
+            ),
+            inline=True,
+        )
+    return embed
