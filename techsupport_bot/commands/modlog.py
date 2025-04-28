@@ -227,14 +227,18 @@ class BanLogger(cogs.BaseCog):
         )
 
         entry = None
-        async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.ban):
+        moderator = None
+        async for entry in guild.audit_logs(
+            limit=10, action=discord.AuditLogAction.ban
+        ):
             if entry.target.id == user.id:
                 moderator = entry.user
+                break
 
         if not entry:
             return
 
-        if moderator.bot:
+        if not moderator or moderator.bot:
             return
 
         await log_ban(self.bot, user, moderator, guild, entry.reason)
@@ -255,15 +259,16 @@ class BanLogger(cogs.BaseCog):
         )
 
         entry = None
+        moderator = None
         async for entry in guild.audit_logs(
-            limit=1, action=discord.AuditLogAction.unban
+            limit=10, action=discord.AuditLogAction.unban
         ):
             if entry.target.id == user.id:
                 moderator = entry.user
         if not entry:
             return
 
-        if moderator.bot:
+        if not moderator or moderator.bot:
             return
 
         await log_unban(self.bot, user, moderator, guild, entry.reason)

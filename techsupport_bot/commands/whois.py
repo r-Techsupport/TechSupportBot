@@ -25,6 +25,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Whois(cogs.BaseCog):
+    """The class for the /whois command"""
 
     @app_commands.command(
         name="whois",

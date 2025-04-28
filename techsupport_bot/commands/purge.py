@@ -58,7 +58,10 @@ class Purger(cogs.BaseCog):
 
         if amount <= 0 or amount > config.extensions.purge.max_purge_amount.value:
             embed = auxiliary.prepare_deny_embed(
-                message=f"Messages to purge must be between 0 and {config.extensions.purge.max_purge_amount.value}",
+                message=(
+                    "Messages to purge must be between 0 "
+                    f"and {config.extensions.purge.max_purge_amount.value}"
+                ),
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
