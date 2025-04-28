@@ -78,7 +78,7 @@ async def is_reader(interaction: discord.Interaction) -> bool:
     """
 
     config = interaction.client.guild_configs[str(interaction.guild.id)]
-    if reader_roles := config.extensions.who.note_readers.value:
+    if reader_roles := config.extensions.notes.note_readers.value:
         roles = (
             discord.utils.get(interaction.guild.roles, name=role)
             for role in reader_roles
@@ -113,7 +113,7 @@ async def is_writer(interaction: discord.Interaction) -> bool:
         bool: True if the user can run, False if they cannot
     """
     config = interaction.client.guild_configs[str(interaction.guild.id)]
-    if reader_roles := config.extensions.who.note_writers.value:
+    if reader_roles := config.extensions.notes.note_writers.value:
         roles = (
             discord.utils.get(interaction.guild.roles, name=role)
             for role in reader_roles
@@ -182,7 +182,7 @@ class Notes(cogs.BaseCog):
         config = self.bot.guild_configs[str(interaction.guild.id)]
 
         # Check to make sure notes are allowed to be assigned
-        for name in config.extensions.who.note_bypass.value:
+        for name in config.extensions.notes.note_bypass.value:
             role_check = discord.utils.get(interaction.guild.roles, name=name)
             if not role_check:
                 continue
@@ -197,7 +197,7 @@ class Notes(cogs.BaseCog):
         await note.create()
 
         role = discord.utils.get(
-            interaction.guild.roles, name=config.extensions.who.note_role.value
+            interaction.guild.roles, name=config.extensions.notes.note_role.value
         )
 
         if not role:
@@ -268,7 +268,7 @@ class Notes(cogs.BaseCog):
 
         config = self.bot.guild_configs[str(interaction.guild.id)]
         role = discord.utils.get(
-            interaction.guild.roles, name=config.extensions.who.note_role.value
+            interaction.guild.roles, name=config.extensions.notes.note_role.value
         )
         if role:
             await user.remove_roles(
@@ -298,7 +298,7 @@ class Notes(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called this command
             member (discord.Member): The member to get all notes for
         """
-        notes = await self.get_notes(member, interaction.guild)
+        notes = await moderation.get_all_notes(self.bot, member, interaction.guild)
 
         embeds = build_note_embeds(interaction.guild, member, notes)
 
@@ -322,7 +322,7 @@ class Notes(cogs.BaseCog):
             return
 
         role = discord.utils.get(
-            member.guild.roles, name=config.extensions.who.note_role.value
+            member.guild.roles, name=config.extensions.notes.note_role.value
         )
         if not role:
             return
