@@ -79,7 +79,8 @@ class ProtectCommands(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called this command
             target (discord.User): The target to ban
             reason (str): The reason the person is getting banned
-            delete_days (int, optional): How many days of messages to delete. Defaults to None.
+            delete_days (app_commands.Range[int, 0, 7], optional): How many days of 
+                messages to delete. Defaults to None.
         """
         # Ensure we can ban the person
         permission_check = await self.permission_check(
