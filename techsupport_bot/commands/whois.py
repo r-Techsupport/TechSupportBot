@@ -60,7 +60,7 @@ class Whois(cogs.BaseCog):
         embed.add_field(name="Roles", value=role_string or "No roles")
 
         if interaction.permissions.kick_members:
-            embed = await modify_embed_for_mods(interaction, member, embed)
+            embed = await add_application_info_field(interaction, member, embed)
 
             flags = []
             if member.flags.automod_quarantined_username:
@@ -121,7 +121,7 @@ class Whois(cogs.BaseCog):
         return
 
 
-async def modify_embed_for_mods(
+async def add_application_info_field(
     interaction: discord.Interaction,
     user: discord.Member,
     embed: discord.Embed,
