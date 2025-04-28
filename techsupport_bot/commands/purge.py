@@ -77,10 +77,9 @@ class Purger(cogs.BaseCog):
         else:
             timestamp = None
 
-        await interaction.response.send_message("Purge Successful", ephemeral=True)
-
         await interaction.channel.purge(after=timestamp, limit=amount)
 
+        await interaction.response.send_message("Purge Successful", ephemeral=True)
         await moderation.send_command_usage_alert(
             bot_object=self.bot,
             interaction=interaction,
