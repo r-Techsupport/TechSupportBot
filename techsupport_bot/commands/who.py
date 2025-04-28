@@ -25,6 +25,8 @@ async def setup(bot: bot.TechSupportBot) -> None:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
 
+    return
+
     config = extensionconfig.ExtensionConfig()
     config.add(
         key="note_role",

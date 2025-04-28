@@ -1,49 +1,42 @@
+"""Module for the who extension for the discord bot."""
+
+from __future__ import annotations
+
+import datetime
+import io
+from typing import TYPE_CHECKING, Self
+
+import discord
+import ui
+import yaml
+from botlogging import LogContext, LogLevel
+from commands import notes
+from core import auxiliary, cogs
+from discord import app_commands
+from discord.ext import commands
+
+if TYPE_CHECKING:
+    import bot
 
 
-    @staticmethod
-    async def is_reader(interaction: discord.Interaction) -> bool:
-        """Checks whether invoker can read notes. If at least one reader
-        role is not set, NO members can read notes
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Who plugin into the bot
 
-        Args:
-            interaction (discord.Interaction): The interaction in which the whois command occured
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
+    await bot.add_cog(Whois(bot=bot, extension_name="whois"))
 
-        Raises:
-            MissingAnyRole: Raised if the user is lacking any reader role,
-                but there are roles defined
-            AppCommandError: Raised if there are no note_readers set in the config
 
-        Returns:
-            bool: True if the user can run, False if they cannot
-        """
+class Whois(cogs.BaseCog):
 
-        config = interaction.client.guild_configs[str(interaction.guild.id)]
-        if reader_roles := config.extensions.who.note_readers.value:
-            roles = (
-                discord.utils.get(interaction.guild.roles, name=role)
-                for role in reader_roles
-            )
-            status = any((role in interaction.user.roles for role in roles))
-            if not status:
-                raise app_commands.MissingAnyRole(reader_roles)
-            return True
-
-        # Reader_roles are empty (not set)
-        message = "There aren't any `note_readers` roles set in the config!"
-        embed = auxiliary.prepare_deny_embed(message=message)
-
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-        raise app_commands.AppCommandError(message)
-
-    @app_commands.check(is_reader)
     @app_commands.command(
         name="whois",
         description="Gets Discord user information",
         extras={"brief": "Gets user data", "usage": "@user", "module": "who"},
     )
-    async def get_note(
-        self: Self, interaction: discord.Interaction, user: discord.Member
+    async def whois_command(
+        self: Self, interaction: discord.Interaction, member: discord.Member
     ) -> None:
         """This is the base of the /whois command
 
@@ -51,44 +44,41 @@
             interaction (discord.Interaction): The interaction that called this command
             user (discord.Member): The member to lookup. Will not work on discord.User
         """
-        embed = discord.Embed(
-            title=f"User info for `{user}`",
-            description="**Note: this is a bot account!**" if user.bot else "",
+        embed = auxiliary.generate_basic_embed(
+            title=f"User info for `{member.display_name}` (`{member.name}`)",
+            description="**Note: this is a bot account!**" if member.bot else "",
+            color=discord.Color.dark_blue(),
+            url=member.display_avatar.url,
         )
 
-        embed.set_thumbnail(url=user.display_avatar.url)
-
-        embed.add_field(name="Created at", value=user.created_at.replace(microsecond=0))
-        embed.add_field(name="Joined at", value=user.joined_at.replace(microsecond=0))
         embed.add_field(
-            name="Status", value=interaction.guild.get_member(user.id).status
+            name="Created at", value=member.created_at.replace(microsecond=0)
         )
-        embed.add_field(name="Nickname", value=user.display_name)
+        embed.add_field(name="Joined at", value=member.joined_at.replace(microsecond=0))
+        embed.add_field(
+            name="Status", value=interaction.guild.get_member(member.id).status
+        )
+        embed.add_field(name="Nickname", value=member.display_name)
 
-        role_string = ", ".join(role.name for role in user.roles[1:])
+        role_string = ", ".join(role.name for role in member.roles[1:])
         embed.add_field(name="Roles", value=role_string or "No roles")
 
-        # Adds special information only visible to mods
         if interaction.permissions.kick_members:
-            embed = await self.modify_embed_for_mods(interaction, user, embed)
+            embed = await self.modify_embed_for_mods(interaction, member, embed)
 
-        user_notes = await self.get_notes(user, interaction.guild)
-        total_notes = 0
-        if user_notes:
-            total_notes = len(user_notes)
-            user_notes = user_notes[:3]
-        embed.set_footer(text=f"{total_notes} total notes")
-        embed.color = discord.Color.dark_blue()
+        embeds = [embed]
 
-        for note in user_notes:
-            author = interaction.guild.get_member(int(note.author_id)) or note.author_id
-            embed.add_field(
-                name=f"Note from {author} ({note.updated.date()})",
-                value=f"*{note.body}*" or "*None*",
-                inline=False,
-            )
+        if await notes.is_reader(interaction):
+            all_notes = await notes.get_notes(self.bot, member, interaction.guild)
+            notes_embeds = notes.build_embeds(interaction.guild, member, all_notes)
+            embeds.append(notes_embeds[0])
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.defer(ephemeral=True)
+        view = ui.PaginateView()
+        await view.send(
+            interaction.channel, interaction.user, embeds, interaction, True
+        )
+        return
 
     async def modify_embed_for_mods(
         self: Self,

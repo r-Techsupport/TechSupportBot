@@ -655,7 +655,7 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         embed = discord.Embed(
-            title=f"Warnings for {target.display_name} ({target.name})"
+            title=f"Warnings for `{target.display_name}` (`{target.name}`)"
         )
 
         for warning in warnings:

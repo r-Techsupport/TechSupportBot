@@ -61,6 +61,77 @@ async def setup(bot: bot.TechSupportBot) -> None:
     bot.add_extension_config("notes", config)
 
 
+async def is_reader(interaction: discord.Interaction) -> bool:
+    """Checks whether invoker can read notes. If at least one reader
+    role is not set, NO members can read notes
+
+    Args:
+        interaction (discord.Interaction): The interaction in which the whois command occured
+
+    Raises:
+        MissingAnyRole: Raised if the user is lacking any reader role,
+            but there are roles defined
+        AppCommandError: Raised if there are no note_readers set in the config
+
+    Returns:
+        bool: True if the user can run, False if they cannot
+    """
+
+    config = interaction.client.guild_configs[str(interaction.guild.id)]
+    if reader_roles := config.extensions.who.note_readers.value:
+        roles = (
+            discord.utils.get(interaction.guild.roles, name=role)
+            for role in reader_roles
+        )
+        status = any((role in interaction.user.roles for role in roles))
+        if not status:
+            raise app_commands.MissingAnyRole(reader_roles)
+        return True
+
+    # Reader_roles are empty (not set)
+    message = "There aren't any `note_readers` roles set in the config!"
+    embed = auxiliary.prepare_deny_embed(message=message)
+
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    raise app_commands.AppCommandError(message)
+
+
+async def is_writer(interaction: discord.Interaction) -> bool:
+    """Checks whether invoker can write notes. If at least one writer
+    role is not set, NO members can write notes
+
+    Args:
+        interaction (discord.Interaction): The interaction in which the whois command occured
+
+    Raises:
+        MissingAnyRole: Raised if the user is lacking any writer role,
+            but there are roles defined
+        AppCommandError: Raised if there are no note_writers set in the config
+
+    Returns:
+        bool: True if the user can run, False if they cannot
+    """
+    config = interaction.client.guild_configs[str(interaction.guild.id)]
+    if reader_roles := config.extensions.who.note_writers.value:
+        roles = (
+            discord.utils.get(interaction.guild.roles, name=role)
+            for role in reader_roles
+        )
+        status = any((role in interaction.user.roles for role in roles))
+        if not status:
+            raise app_commands.MissingAnyRole(reader_roles)
+        return True
+
+    # Reader_roles are empty (not set)
+    message = "There aren't any `note_writers` roles set in the config!"
+    embed = auxiliary.prepare_deny_embed(message=message)
+
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    raise app_commands.AppCommandError(message)
+
+
 class Notes(cogs.BaseCog):
     """Class to set up who for the extension.
 
@@ -72,77 +143,6 @@ class Notes(cogs.BaseCog):
     notes: app_commands.Group = app_commands.Group(
         name="notes", description="Command Group for the Notes Extension"
     )
-
-    @staticmethod
-    async def is_reader(interaction: discord.Interaction) -> bool:
-        """Checks whether invoker can read notes. If at least one reader
-        role is not set, NO members can read notes
-
-        Args:
-            interaction (discord.Interaction): The interaction in which the whois command occured
-
-        Raises:
-            MissingAnyRole: Raised if the user is lacking any reader role,
-                but there are roles defined
-            AppCommandError: Raised if there are no note_readers set in the config
-
-        Returns:
-            bool: True if the user can run, False if they cannot
-        """
-
-        config = interaction.client.guild_configs[str(interaction.guild.id)]
-        if reader_roles := config.extensions.who.note_readers.value:
-            roles = (
-                discord.utils.get(interaction.guild.roles, name=role)
-                for role in reader_roles
-            )
-            status = any((role in interaction.user.roles for role in roles))
-            if not status:
-                raise app_commands.MissingAnyRole(reader_roles)
-            return True
-
-        # Reader_roles are empty (not set)
-        message = "There aren't any `note_readers` roles set in the config!"
-        embed = auxiliary.prepare_deny_embed(message=message)
-
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-        raise app_commands.AppCommandError(message)
-
-    @staticmethod
-    async def is_writer(interaction: discord.Interaction) -> bool:
-        """Checks whether invoker can write notes. If at least one writer
-        role is not set, NO members can write notes
-
-        Args:
-            interaction (discord.Interaction): The interaction in which the whois command occured
-
-        Raises:
-            MissingAnyRole: Raised if the user is lacking any writer role,
-                but there are roles defined
-            AppCommandError: Raised if there are no note_writers set in the config
-
-        Returns:
-            bool: True if the user can run, False if they cannot
-        """
-        config = interaction.client.guild_configs[str(interaction.guild.id)]
-        if reader_roles := config.extensions.who.note_writers.value:
-            roles = (
-                discord.utils.get(interaction.guild.roles, name=role)
-                for role in reader_roles
-            )
-            status = any((role in interaction.user.roles for role in roles))
-            if not status:
-                raise app_commands.MissingAnyRole(reader_roles)
-            return True
-
-        # Reader_roles are empty (not set)
-        message = "There aren't any `note_writers` roles set in the config!"
-        embed = auxiliary.prepare_deny_embed(message=message)
-
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-        raise app_commands.AppCommandError(message)
 
     @app_commands.check(is_writer)
     @notes.command(
@@ -300,33 +300,7 @@ class Notes(cogs.BaseCog):
         """
         notes = await self.get_notes(member, interaction.guild)
 
-        embed = auxiliary.generate_basic_embed(
-            f"Notes for `{member.display_name}` (`{member.name}`)",
-            color=discord.Color.dark_blue(),
-        )
-        embed.set_footer(text=f"{len(notes)} total notes.")
-
-        embeds = []
-
-        if not notes:
-            embed.description = "No notes"
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-
-        for index, note in enumerate(notes):
-            if index % 10 == 0 and index > 0:
-                embeds.append(embed)
-                embed = auxiliary.generate_basic_embed(
-                    f"Notes for `{member.display_name}` (`{member.name}`)",
-                    color=discord.Color.dark_blue(),
-                )
-                embed.set_footer(text=f"{len(notes)} total notes.")
-            author = interaction.guild.get_member(int(note.author_id)) or note.author_id
-            embed.add_field(
-                name=f"Note by {author}",
-                value=f"{note.body}\nNote added <t:{int(note.updated.timestamp())}:R>",
-            )
-        embeds.append(embed)
+        embeds = build_embeds(interaction.guild, member, notes)
 
         await interaction.response.defer(ephemeral=True)
         view = ui.PaginateView()
@@ -334,47 +308,6 @@ class Notes(cogs.BaseCog):
             interaction.channel, interaction.user, embeds, interaction, True
         )
         return
-
-        note_output_data = []
-        for note in notes:
-            author = interaction.guild.get_member(int(note.author_id)) or note.author_id
-            data = {
-                "body": note.body,
-                "from": str(author),
-                "at": str(note.updated),
-            }
-            note_output_data.append(data)
-
-        yaml_file = discord.File(
-            io.StringIO(yaml.dump({"notes": note_output_data})),
-            filename=f"notes-for-{member.id}-{datetime.datetime.utcnow()}.yaml",
-        )
-
-        await interaction.response.send_message(file=yaml_file, ephemeral=True)
-
-    async def get_notes(
-        self: Self, user: discord.Member, guild: discord.Guild
-    ) -> list[bot.models.UserNote]:
-        """Calls to the database to get a list of note database entries for a given user and guild
-
-        Args:
-            user (discord.Member): The member to look for notes for
-            guild (discord.Guild): The guild to fetch the notes from
-
-        Returns:
-            list[bot.models.UserNote]: The list of notes on the member/guild combo.
-                Will be an empty list if there are no notes
-        """
-        user_notes = (
-            await self.bot.models.UserNote.query.where(
-                self.bot.models.UserNote.user_id == str(user.id)
-            )
-            .where(self.bot.models.UserNote.guild_id == str(guild.id))
-            .order_by(self.bot.models.UserNote.updated.desc())
-            .gino.all()
-        )
-
-        return user_notes
 
     # re-adds note role back to joining users
     @commands.Cog.listener()
@@ -395,7 +328,7 @@ class Notes(cogs.BaseCog):
         if not role:
             return
 
-        user_notes = await self.get_notes(member, member.guild)
+        user_notes = await get_notes(bot, member, member.guild)
         if not user_notes:
             return
 
@@ -408,3 +341,62 @@ class Notes(cogs.BaseCog):
             context=LogContext(guild=member.guild),
             channel=log_channel,
         )
+
+
+def build_embeds(
+    guild: discord.Guild,
+    member: discord.Member,
+    notes: list[bot.models.UserNote],
+) -> list[discord.Embed]:
+    embed = auxiliary.generate_basic_embed(
+        f"Notes for `{member.display_name}` (`{member.name}`)",
+        color=discord.Color.dark_blue(),
+    )
+    embed.set_footer(text=f"{len(notes)} total notes.")
+
+    embeds = []
+
+    if not notes:
+        embed.description = "No notes"
+        return [embed]
+
+    for index, note in enumerate(notes):
+        if index % 6 == 0 and index > 0:
+            embeds.append(embed)
+            embed = auxiliary.generate_basic_embed(
+                f"Notes for `{member.display_name}` (`{member.name}`)",
+                color=discord.Color.dark_blue(),
+            )
+            embed.set_footer(text=f"{len(notes)} total notes.")
+        author = guild.get_member(int(note.author_id)) or note.author_id
+        embed.add_field(
+            name=f"Note by {author}",
+            value=f"{note.body}\nNote added <t:{int(note.updated.timestamp())}:R>",
+        )
+    embeds.append(embed)
+    return embeds
+
+
+async def get_notes(
+    bot: bot.TechSupportBot, user: discord.Member, guild: discord.Guild
+) -> list[bot.models.UserNote]:
+    """Calls to the database to get a list of note database entries for a given user and guild
+
+    Args:
+        user (discord.Member): The member to look for notes for
+        guild (discord.Guild): The guild to fetch the notes from
+
+    Returns:
+        list[bot.models.UserNote]: The list of notes on the member/guild combo.
+            Will be an empty list if there are no notes
+    """
+    user_notes = (
+        await bot.models.UserNote.query.where(
+            bot.models.UserNote.user_id == str(user.id)
+        )
+        .where(bot.models.UserNote.guild_id == str(guild.id))
+        .order_by(bot.models.UserNote.updated.desc())
+        .gino.all()
+    )
+
+    return user_notes
