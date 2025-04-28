@@ -91,6 +91,12 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
+        if len(reason) > 500:
+            embed = auxiliary.prepare_deny_embed(
+                message="Reason length is capped at 500 characters"
+            )
+            await interaction.response.send_message(embed=embed)
+
         async for ban in interaction.guild.bans(limit=None):
             if target == ban.user:
                 embed = auxiliary.prepare_deny_embed(message="User is already banned.")
@@ -157,6 +163,12 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
+        if len(reason) > 500:
+            embed = auxiliary.prepare_deny_embed(
+                message="Reason length is capped at 500 characters"
+            )
+            await interaction.response.send_message(embed=embed)
+
         is_banned = False
 
         async for ban in interaction.guild.bans(limit=None):
@@ -222,6 +234,12 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
+        if len(reason) > 500:
+            embed = auxiliary.prepare_deny_embed(
+                message="Reason length is capped at 500 characters"
+            )
+            await interaction.response.send_message(embed=embed)
+
         result = await moderation.kick_user(
             guild=interaction.guild,
             user=target,
@@ -274,6 +292,12 @@ class ProtectCommands(cogs.BaseCog):
             embed = auxiliary.prepare_deny_embed(message=permission_check)
             await interaction.response.send_message(embed=embed)
             return
+
+        if len(reason) > 500:
+            embed = auxiliary.prepare_deny_embed(
+                message="Reason length is capped at 500 characters"
+            )
+            await interaction.response.send_message(embed=embed)
 
         # The API prevents administrators from being timed out. Check it here
         if target.guild_permissions.administrator:
@@ -361,6 +385,12 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
+        if len(reason) > 500:
+            embed = auxiliary.prepare_deny_embed(
+                message="Reason length is capped at 500 characters"
+            )
+            await interaction.response.send_message(embed=embed)
+
         if not target.timed_out_until:
             embed = auxiliary.prepare_deny_embed(
                 message=(f"{target} is not currently muted")
@@ -414,6 +444,12 @@ class ProtectCommands(cogs.BaseCog):
             embed = auxiliary.prepare_deny_embed(message=permission_check)
             await interaction.response.send_message(embed=embed)
             return
+
+        if len(reason) > 500:
+            embed = auxiliary.prepare_deny_embed(
+                message="Reason length is capped at 500 characters"
+            )
+            await interaction.response.send_message(embed=embed)
 
         if target not in interaction.channel.members:
             embed = auxiliary.prepare_deny_embed(
@@ -542,6 +578,12 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
+        if len(reason) > 500:
+            embed = auxiliary.prepare_deny_embed(
+                message="Reason length is capped at 500 characters"
+            )
+            await interaction.response.send_message(embed=embed)
+
         database_warning = await self.get_warning(user=target, warning=warning)
 
         if not database_warning:
@@ -598,6 +640,12 @@ class ProtectCommands(cogs.BaseCog):
             embed = auxiliary.prepare_deny_embed(message=permission_check)
             await interaction.response.send_message(embed=embed)
             return
+
+        if len(reason) > 500:
+            embed = auxiliary.prepare_deny_embed(
+                message="Reason length is capped at 500 characters"
+            )
+            await interaction.response.send_message(embed=embed)
 
         warnings = await moderation.get_all_warnings(
             self.bot, target, interaction.guild
