@@ -209,6 +209,10 @@ class BanLogger(cogs.BaseCog):
             discord.utils.utcnow() + datetime.timedelta(seconds=2)
         )
 
+        config = self.bot.guild_configs[str(guild.id)]
+        if not self.extension_enabled(config):
+            return
+
         entry = None
         moderator = None
         async for entry in guild.audit_logs(
@@ -240,6 +244,10 @@ class BanLogger(cogs.BaseCog):
         await discord.utils.sleep_until(
             discord.utils.utcnow() + datetime.timedelta(seconds=2)
         )
+
+        config = self.bot.guild_configs[str(guild.id)]
+        if not self.extension_enabled(config):
+            return
 
         entry = None
         moderator = None
