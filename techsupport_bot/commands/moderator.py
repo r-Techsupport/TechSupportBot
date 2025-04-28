@@ -52,7 +52,7 @@ class ProtectCommands(cogs.BaseCog):
         warnings_group (app_commands.Group): The group for the /warning commands
     """
 
-    warnings_group = app_commands.Group(
+    warnings_group: app_commands.Group = app_commands.Group(
         name="warning", description="...", extras={"module": "moderator"}
     )
 

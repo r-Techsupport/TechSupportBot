@@ -324,7 +324,7 @@ class Notes(cogs.BaseCog):
         if not role:
             return
 
-        user_notes = await moderation.get_all_notes(bot, member, member.guild)
+        user_notes = await moderation.get_all_notes(self.bot, member, member.guild)
         if not user_notes:
             return
 

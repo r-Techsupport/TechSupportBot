@@ -42,7 +42,7 @@ class BanLogger(cogs.BaseCog):
         modlog_group (app_commands.Group): The group for the /modlog commands
     """
 
-    modlog_group = app_commands.Group(
+    modlog_group: app_commands.Group = app_commands.Group(
         name="modlog", description="...", extras={"module": "modlog"}
     )
 
