@@ -258,7 +258,12 @@ class AutoMod(cogs.MatchCog):
                         )
 
                 await moderation.ban_user(
-                    ctx.guild, ctx.author, 7, total_punishment.violation_string
+                    ctx.guild,
+                    ctx.author,
+                    delete_seconds=(
+                        config.extensions.moderator.ban_delete_duration.value * 86400
+                    ),
+                    reason=total_punishment.violation_string,
                 )
                 await modlog.log_ban(
                     self.bot,

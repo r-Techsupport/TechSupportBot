@@ -8,7 +8,7 @@ import munch
 
 
 async def ban_user(
-    guild: discord.Guild, user: discord.User, delete_days: int, reason: str
+    guild: discord.Guild, user: discord.User, delete_seconds: int, reason: str
 ) -> bool:
     """A very simple function that bans a given user from the passed guild
 
@@ -25,7 +25,7 @@ async def ban_user(
     await guild.ban(
         user,
         reason=reason,
-        delete_message_days=delete_days,
+        delete_message_seconds=delete_seconds,
     )
     return True
 

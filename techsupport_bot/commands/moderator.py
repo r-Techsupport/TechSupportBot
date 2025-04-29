@@ -111,7 +111,7 @@ class ProtectCommands(cogs.BaseCog):
         result = await moderation.ban_user(
             guild=interaction.guild,
             user=target,
-            delete_days=delete_days,
+            delete_seconds=delete_days * 86400,
             reason=f"{reason} - banned by {interaction.user}",
         )
         if not result:
@@ -496,7 +496,9 @@ class ProtectCommands(cogs.BaseCog):
             ban_result = await moderation.ban_user(
                 guild=interaction.guild,
                 user=target,
-                delete_days=config.extensions.moderator.ban_delete_duration.value,
+                delete_seconds=(
+                    config.extensions.moderator.ban_delete_duration.value * 86400
+                ),
                 reason=(
                     f"Over max warning count {new_count_of_warnings} out of"
                     f" {config.moderation.max_warnings} (final warning:"
