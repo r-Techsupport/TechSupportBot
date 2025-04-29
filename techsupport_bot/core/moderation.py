@@ -255,3 +255,22 @@ async def send_command_usage_alert(
     embed.color = discord.Color.red()
 
     await alert_channel.send(embed=embed)
+
+
+async def check_if_user_banned(user: discord.User, guild: discord.Guild) -> bool:
+    """Queries the given guild to find if the given discord.User is banned or not
+
+    Args:
+        user (discord.User): The user to search for being banned
+        guild (discord.Guild): The guild to search the bans for
+
+    Returns:
+        bool: Whether the user is banned or not
+    """
+
+    try:
+        ban = await guild.fetch_ban(user)
+    except discord.NotFound:
+        return False
+
+    return True

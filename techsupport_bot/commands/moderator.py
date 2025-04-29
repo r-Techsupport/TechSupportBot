@@ -97,11 +97,11 @@ class ProtectCommands(cogs.BaseCog):
             )
             await interaction.response.send_message(embed=embed)
 
-        async for ban in interaction.guild.bans(limit=None):
-            if target == ban.user:
-                embed = auxiliary.prepare_deny_embed(message="User is already banned.")
-                await interaction.response.send_message(embed=embed)
-                return
+        is_banned = await moderation.check_if_user_banned(target, interaction.guild)
+        if is_banned:
+            embed = auxiliary.prepare_deny_embed(message="User is already banned.")
+            await interaction.response.send_message(embed=embed)
+            return
 
         if not delete_days:
             config = self.bot.guild_configs[str(interaction.guild.id)]
@@ -169,11 +169,7 @@ class ProtectCommands(cogs.BaseCog):
             )
             await interaction.response.send_message(embed=embed)
 
-        is_banned = False
-
-        async for ban in interaction.guild.bans(limit=None):
-            if target == ban.user:
-                is_banned = True
+        is_banned = await moderation.check_if_user_banned(target, interaction.guild)
 
         if not is_banned:
             embed = auxiliary.prepare_deny_embed(message=f"{target} is not banned")
