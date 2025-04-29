@@ -66,7 +66,7 @@ class Whois(cogs.BaseCog):
             try:
                 await application.command_permission_check(interaction)
                 embed = await add_application_info_field(interaction, member, embed)
-            except app_commands.MissingAnyRole or app_commands.AppCommandError:
+            except (app_commands.MissingAnyRole, app_commands.AppCommandError):
                 pass
 
         if interaction.permissions.kick_members:
@@ -112,7 +112,7 @@ class Whois(cogs.BaseCog):
                     f"Showing {min(len(all_notes), 6)}/{len(all_notes)} notes"
                 )
                 embeds.append(notes_embeds[0])
-            except app_commands.MissingAnyRole or app_commands.AppCommandError:
+            except (app_commands.MissingAnyRole, app_commands.AppCommandError):
                 pass
 
         if (
