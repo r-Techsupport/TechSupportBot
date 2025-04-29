@@ -116,6 +116,6 @@ class Report(cogs.BaseCog):
         await alert_channel.send(embed=embed)
 
         user_embed = auxiliary.prepare_confirm_embed(
-            message="Your report was successfully recieved"
+            message="Your report was successfully sent"
         )
         await interaction.response.send_message(embed=user_embed, ephemeral=True)
