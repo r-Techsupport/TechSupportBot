@@ -205,6 +205,7 @@ class BanLogger(cogs.BaseCog):
             user (discord.User | discord.Member): The user that got banned. Can be either User
                 or Member depending if the user was in the guild or not at the time of removal.
         """
+        # Wait a short time to ensure the audit log has been updated
         await discord.utils.sleep_until(
             discord.utils.utcnow() + datetime.timedelta(seconds=2)
         )
