@@ -165,7 +165,7 @@ class ProtectCommands(cogs.BaseCog):
 
         if len(reason) > 500:
             embed = auxiliary.prepare_deny_embed(
-                message="Reason length is capped at 500 characters"
+                message="Unban reason must be under 500 characters"
             )
             await interaction.response.send_message(embed=embed)
 
