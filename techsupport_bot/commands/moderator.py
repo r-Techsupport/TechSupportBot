@@ -354,7 +354,14 @@ class ProtectCommands(cogs.BaseCog):
             guild=interaction.guild,
             target=target,
         )
-        embed = generate_response_embed(user=target, action="mute", reason=reason)
+
+        muted_until_timestamp = (
+            f"<t:{int((datetime.now() + delta_duration).timestamp())}>"
+        )
+
+        full_reason = f"{reason} (muted until {muted_until_timestamp})"
+
+        embed = generate_response_embed(user=target, action="mute", reason=full_reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
     @app_commands.checks.has_permissions(moderate_members=True)
