@@ -230,7 +230,7 @@ class Notes(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called this command
             user (discord.Member): The member to remove all notes from
         """
-        notes = await self.get_notes(user, interaction.guild)
+        notes = await moderation.get_all_notes(self.bot, user, interaction.guild)
 
         if not notes:
             embed = auxiliary.prepare_deny_embed(
