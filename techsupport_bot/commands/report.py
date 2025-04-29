@@ -108,7 +108,7 @@ class Report(cogs.BaseCog):
 
         if not alert_channel:
             user_embed = auxiliary.prepare_deny_embed(
-                message="An error occured while processing your report. It was not received."
+                message="An error occurred while processing your report. It was not sent."
             )
             await interaction.response.send_message(embed=user_embed, ephemeral=True)
             return
