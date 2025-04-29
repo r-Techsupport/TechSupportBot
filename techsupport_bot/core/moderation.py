@@ -269,7 +269,7 @@ async def check_if_user_banned(user: discord.User, guild: discord.Guild) -> bool
     """
 
     try:
-        ban = await guild.fetch_ban(user)
+        await guild.fetch_ban(user)
     except discord.NotFound:
         return False
 
