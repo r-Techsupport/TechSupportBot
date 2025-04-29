@@ -115,15 +115,15 @@ async def is_writer(interaction: discord.Interaction) -> bool:
 
     try:
         await is_reader(interaction)
-    except app_commands.MissingAnyRole:
-        raise app_commands.MissingAnyRole(reader_roles)
-    except app_commands.AppCommandError:
+    except app_commands.MissingAnyRole as e:
+        raise app_commands.MissingAnyRole(reader_roles) from e
+    except app_commands.AppCommandError as e:
         message = "There aren't any `note_readers` roles set in the config!"
         embed = auxiliary.prepare_deny_embed(message=message)
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-        raise app_commands.AppCommandError(message)
+        raise app_commands.AppCommandError(message) from e
 
     if writer_roles:
         roles = (
