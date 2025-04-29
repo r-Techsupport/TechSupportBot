@@ -15,7 +15,7 @@ async def ban_user(
     Args:
         guild (discord.Guild): The guild to ban from
         user (discord.User): The user who needs to be banned
-        delete_days (int): The numbers of days of past messages to delete
+        delete_seconds (int): The numbers of seconds of past messages to delete
         reason (str): The reason for banning
 
     Returns:
