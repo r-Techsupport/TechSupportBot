@@ -747,13 +747,16 @@ class ProtectCommands(cogs.BaseCog):
             return None
 
         # Check to see if target has any immune roles
-        for name in config.extensions.moderator.immune_roles.value:
-            role_check = discord.utils.get(target.guild.roles, name=name)
-            if role_check and role_check in getattr(target, "roles", []):
-                return (
-                    f"You cannot {action_name} {target} because they have"
-                    f" `{role_check}` role"
-                )
+        try:
+            for name in config.extensions.moderator.immune_roles.value:
+                role_check = discord.utils.get(target.guild.roles, name=name)
+                if role_check and role_check in getattr(target, "roles", []):
+                    return (
+                        f"You cannot {action_name} {target} because they have"
+                        f" `{role_check}` role"
+                    )
+        except AttributeError:
+            pass
 
         # Check to see if the Bot can execute on the target
         if invoker.guild.get_member(int(self.bot.user.id)).top_role <= target.top_role:
