@@ -109,6 +109,7 @@ async def is_writer(interaction: discord.Interaction) -> bool:
     Returns:
         bool: True if the user can run, False if they cannot
     """
+    await is_reader(interaction)
     config = interaction.client.guild_configs[str(interaction.guild.id)]
     if reader_roles := config.extensions.notes.note_writers.value:
         roles = (
