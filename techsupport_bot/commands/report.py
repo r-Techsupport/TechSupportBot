@@ -74,7 +74,11 @@ class Report(cogs.BaseCog):
 
         mentioned_users = []
         for user_id in mentioned_user_ids:
-            user = await interaction.guild.fetch_member(int(user_id))
+            user = None
+            try:
+                user = await interaction.guild.fetch_member(int(user_id))
+            except discord.NotFound:
+                user = None
             if user:
                 mentioned_users.append(user)
         mentioned_users: list[discord.Member] = set(mentioned_users)
