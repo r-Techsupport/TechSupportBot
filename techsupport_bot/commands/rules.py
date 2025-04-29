@@ -34,8 +34,7 @@ class Rules(cogs.BaseCog):
     """
 
     RULE_ICON_URL: str = (
-        "https://cdn.icon-icons.com/icons2/907/PNG"
-        "/512/balance-scale-of-justice_icon-icons.com_70554.png"
+        "https://www.iconarchive.com/download/i96945/iconsmind/outline/Scale.512.png"
     )
 
     @commands.group(name="rule")

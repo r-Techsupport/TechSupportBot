@@ -137,8 +137,8 @@ class Weather(cogs.BaseCog):
             embed.add_field(name="Humidity", value=f"{int(response.main.humidity)} %")
             embed.set_thumbnail(
                 url=(
-                    "https://cdn.icon-icons.com/icons2/8/PNG/256/cloudyweather_cloud_"
-                    "inpart_day_wind_thunder_sunny_rain_darkness_nublad_1459.png"
+                    "https://www.iconarchive.com/download/i76758"
+                    "/pixelkit/flat-jewels/Weather.512.png"
                 )
             )
             embed.color = discord.Color.blurple()
