@@ -109,16 +109,30 @@ async def is_writer(interaction: discord.Interaction) -> bool:
     Returns:
         bool: True if the user can run, False if they cannot
     """
-    await is_reader(interaction)
     config = interaction.client.guild_configs[str(interaction.guild.id)]
-    if reader_roles := config.extensions.notes.note_writers.value:
+    reader_roles = config.extensions.notes.note_readers.value
+    writer_roles = config.extensions.notes.note_writers.value
+
+    try:
+        await is_reader(interaction)
+    except app_commands.MissingAnyRole:
+        raise app_commands.MissingAnyRole(reader_roles)
+    except app_commands.AppCommandError:
+        message = "There aren't any `note_readers` roles set in the config!"
+        embed = auxiliary.prepare_deny_embed(message=message)
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        raise app_commands.AppCommandError(message)
+
+    if writer_roles:
         roles = (
             discord.utils.get(interaction.guild.roles, name=role)
-            for role in reader_roles
+            for role in writer_roles
         )
         status = any((role in interaction.user.roles for role in roles))
         if not status:
-            raise app_commands.MissingAnyRole(reader_roles)
+            raise app_commands.MissingAnyRole(writer_roles)
         return True
 
     # Reader_roles are empty (not set)
