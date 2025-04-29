@@ -3,6 +3,7 @@ This is the folder for all cogs that contain commands
 Both app and prefix commands are in this module
 """
 
+from .application import *
 from .burn import *
 from .conch import *
 from .config import *

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Self
 
 import discord
 import ui
-from commands import moderator, notes
+from commands import application, moderator, notes
 from core import auxiliary, cogs, moderation
 from discord import app_commands
 
@@ -60,9 +60,15 @@ class Whois(cogs.BaseCog):
         role_string = ", ".join(role.name for role in member.roles[1:])
         embed.add_field(name="Roles", value=role_string or "No roles")
 
-        if interaction.permissions.kick_members:
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+
+        if (
+            "application" in config.enabled_extensions
+            and await application.command_permission_check(interaction)
+        ):
             embed = await add_application_info_field(interaction, member, embed)
 
+        if interaction.permissions.kick_members:
             flags = []
             if member.flags.automod_quarantined_username:
                 flags.append("Quarantined by Automod")
@@ -92,7 +98,7 @@ class Whois(cogs.BaseCog):
 
         embeds = [embed]
 
-        if await notes.is_reader(interaction):
+        if "notes" in config.enabled_extensions and await notes.is_reader(interaction):
             all_notes = await moderation.get_all_notes(
                 self.bot, member, interaction.guild
             )
@@ -102,7 +108,10 @@ class Whois(cogs.BaseCog):
             )
             embeds.append(notes_embeds[0])
 
-        if interaction.permissions.kick_members:
+        if (
+            "moderator" in config.enabled_extensions
+            and interaction.permissions.kick_members
+        ):
             all_warnings = await moderation.get_all_warnings(
                 self.bot, member, interaction.guild
             )
