@@ -74,7 +74,7 @@ class Whois(cogs.BaseCog):
             if member.flags.automod_quarantined_username:
                 flags.append("Quarantined by Automod")
             if not member.flags.completed_onboarding:
-                flags.append("Not completed onboarding")
+                flags.append("Has not completed onboarding")
             if member.flags.did_rejoin:
                 flags.append("Has left and rejoined the server")
             if member.flags.guest:
