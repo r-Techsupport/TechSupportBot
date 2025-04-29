@@ -657,9 +657,7 @@ class ProtectCommands(cogs.BaseCog):
         )
 
         if not warnings:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"{target} has no warnings"
-            )
+            embed = auxiliary.prepare_deny_embed(message=f"{target} has no warnings")
             await interaction.response.send_message(embed=embed)
             return
 
