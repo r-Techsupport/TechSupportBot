@@ -36,7 +36,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
         datatype="int",
         title="Ban delete duration (days)",
         description=(
-            "The amount of days to delete messages for a user after they are banned"
+            "The default amount of days to delete messages for a user after they are banned"
         ),
         default=7,
     )
