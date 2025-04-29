@@ -62,11 +62,12 @@ class Whois(cogs.BaseCog):
 
         config = self.bot.guild_configs[str(interaction.guild.id)]
 
-        if (
-            "application" in config.enabled_extensions
-            and await application.command_permission_check(interaction)
-        ):
-            embed = await add_application_info_field(interaction, member, embed)
+        if "application" in config.enabled_extensions:
+            try:
+                await application.command_permission_check(interaction)
+                embed = await add_application_info_field(interaction, member, embed)
+            except app_commands.MissingAnyRole or app_commands.AppCommandError:
+                pass
 
         if interaction.permissions.kick_members:
             flags = []
@@ -94,19 +95,25 @@ class Whois(cogs.BaseCog):
 
             flag_string = "\n - ".join(flag for flag in flags)
             if flag_string:
-                embed.add_field(name="Flags", value=f"- {flag_string}")
+                embed.add_field(name="Flags", value=f"- {flag_string}", inline=False)
 
         embeds = [embed]
 
-        if "notes" in config.enabled_extensions and await notes.is_reader(interaction):
-            all_notes = await moderation.get_all_notes(
-                self.bot, member, interaction.guild
-            )
-            notes_embeds = notes.build_note_embeds(interaction.guild, member, all_notes)
-            notes_embeds[0].description = (
-                f"Showing {min(len(all_notes), 6)}/{len(all_notes)} notes"
-            )
-            embeds.append(notes_embeds[0])
+        if "notes" in config.enabled_extensions:
+            try:
+                await notes.is_reader(interaction)
+                all_notes = await moderation.get_all_notes(
+                    self.bot, member, interaction.guild
+                )
+                notes_embeds = notes.build_note_embeds(
+                    interaction.guild, member, all_notes
+                )
+                notes_embeds[0].description = (
+                    f"Showing {min(len(all_notes), 6)}/{len(all_notes)} notes"
+                )
+                embeds.append(notes_embeds[0])
+            except app_commands.MissingAnyRole or app_commands.AppCommandError:
+                pass
 
         if (
             "moderator" in config.enabled_extensions
