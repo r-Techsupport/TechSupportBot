@@ -142,7 +142,7 @@ async def command_permission_check(interaction: discord.Interaction) -> bool:
     # Gets permitted roles
     allowed_roles = []
     for role_id in config.extensions.application.manage_roles.value:
-        if not role:
+        if not role_id:
             continue
 
         role = interaction.guild.get_role(int(role_id))
