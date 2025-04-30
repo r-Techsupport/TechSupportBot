@@ -110,22 +110,7 @@ async def is_writer(interaction: discord.Interaction) -> bool:
         bool: True if the user can run, False if they cannot
     """
     config = interaction.client.guild_configs[str(interaction.guild.id)]
-    reader_roles = config.extensions.notes.note_readers.value
-    writer_roles = config.extensions.notes.note_writers.value
-
-    try:
-        await is_reader(interaction)
-    except app_commands.MissingAnyRole as e:
-        raise app_commands.MissingAnyRole(reader_roles) from e
-    except app_commands.AppCommandError as e:
-        message = "There aren't any `note_readers` roles set in the config!"
-        embed = auxiliary.prepare_deny_embed(message=message)
-
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-        raise app_commands.AppCommandError(message) from e
-
-    if writer_roles:
+    if writer_roles := config.extensions.notes.note_writers.value:
         roles = (
             discord.utils.get(interaction.guild.roles, name=role)
             for role in writer_roles
@@ -156,6 +141,7 @@ class Notes(cogs.BaseCog):
         name="notes", description="Command Group for the Notes Extension"
     )
 
+    @app_commands.check(is_reader)
     @app_commands.check(is_writer)
     @notes.command(
         name="set",
@@ -225,6 +211,7 @@ class Notes(cogs.BaseCog):
         embed = auxiliary.prepare_confirm_embed(message=f"Note created for `{user}`")
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+    @app_commands.check(is_reader)
     @app_commands.check(is_writer)
     @notes.command(
         name="clear",
