@@ -5,7 +5,6 @@ from __future__ import annotations
 import datetime
 import re
 from dataclasses import dataclass
-from datetime import timedelta
 from typing import TYPE_CHECKING, Self
 
 import discord
