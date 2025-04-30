@@ -96,6 +96,7 @@ class ProtectCommands(cogs.BaseCog):
                 message="Ban reason must be under 500 characters"
             )
             await interaction.response.send_message(embed=embed)
+            return
 
         is_banned = await moderation.check_if_user_banned(target, interaction.guild)
         if is_banned:
@@ -168,6 +169,7 @@ class ProtectCommands(cogs.BaseCog):
                 message="Unban reason must be under 500 characters"
             )
             await interaction.response.send_message(embed=embed)
+            return
 
         is_banned = await moderation.check_if_user_banned(target, interaction.guild)
 
@@ -232,9 +234,10 @@ class ProtectCommands(cogs.BaseCog):
 
         if len(reason) > 500:
             embed = auxiliary.prepare_deny_embed(
-                message="Reason length is capped at 500 characters"
+                message="Kick reason must be under 500 characters"
             )
             await interaction.response.send_message(embed=embed)
+            return
 
         result = await moderation.kick_user(
             guild=interaction.guild,
@@ -288,9 +291,10 @@ class ProtectCommands(cogs.BaseCog):
 
         if len(reason) > 500:
             embed = auxiliary.prepare_deny_embed(
-                message="Mute reason must be below 500 characters"
+                message="Mute reason must be under 500 characters"
             )
             await interaction.response.send_message(embed=embed)
+            return
 
         # The API prevents administrators from being timed out. Check it here
         if target.guild_permissions.administrator:
@@ -399,9 +403,10 @@ class ProtectCommands(cogs.BaseCog):
 
         if len(reason) > 500:
             embed = auxiliary.prepare_deny_embed(
-                message="Unmute reason must be below 500 characters"
+                message="Unmute reason must be under 500 characters"
             )
             await interaction.response.send_message(embed=embed)
+            return
 
         if not target.timed_out_until:
             embed = auxiliary.prepare_deny_embed(
@@ -459,9 +464,10 @@ class ProtectCommands(cogs.BaseCog):
 
         if len(reason) > 500:
             embed = auxiliary.prepare_deny_embed(
-                message="Warn reason must be below 500 characters"
+                message="Warn reason must be under 500 characters"
             )
             await interaction.response.send_message(embed=embed)
+            return
 
         if target not in interaction.channel.members:
             embed = auxiliary.prepare_deny_embed(
@@ -594,9 +600,10 @@ class ProtectCommands(cogs.BaseCog):
 
         if len(reason) > 500:
             embed = auxiliary.prepare_deny_embed(
-                message="Unwarn reason must be below 500 characters"
+                message="Unwarn reason must be under 500 characters"
             )
             await interaction.response.send_message(embed=embed)
+            return
 
         database_warning = await self.get_warning(user=target, warning=warning)
 
@@ -657,9 +664,10 @@ class ProtectCommands(cogs.BaseCog):
 
         if len(reason) > 500:
             embed = auxiliary.prepare_deny_embed(
-                message="Reason must be below 500 characters"
+                message="Reason must be under 500 characters"
             )
             await interaction.response.send_message(embed=embed)
+            return
 
         warnings = await moderation.get_all_warnings(
             self.bot, target, interaction.guild
