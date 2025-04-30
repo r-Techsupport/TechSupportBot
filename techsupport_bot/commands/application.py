@@ -105,7 +105,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
         description=(
             "The role IDs required to manage the applications (not required to apply)"
         ),
-        default=[""],
+        default=[],
     )
     config.add(
         key="ping_role",
@@ -142,6 +142,9 @@ async def command_permission_check(interaction: discord.Interaction) -> bool:
     # Gets permitted roles
     allowed_roles = []
     for role_id in config.extensions.application.manage_roles.value:
+        if not role:
+            continue
+
         role = interaction.guild.get_role(int(role_id))
         if not role:
             continue
