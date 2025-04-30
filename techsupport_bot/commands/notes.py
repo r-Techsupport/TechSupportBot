@@ -159,7 +159,7 @@ class Notes(cogs.BaseCog):
     @app_commands.check(is_writer)
     @notes.command(
         name="set",
-        description="Sets a note for a user, which can be read later from their whois",
+        description="Adds a note to a given user.",
         extras={
             "brief": "Sets a note for a user",
             "usage": "@user [note]",
