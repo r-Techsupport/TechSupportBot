@@ -277,9 +277,6 @@ class ProtectCommands(cogs.BaseCog):
             target (discord.Member): The target for being muted
             reason (str): The reason for being muted
             duration (str, optional): The human readable duration to be muted for. Defaults to None.
-
-        Raises:
-            ValueError: Raised if the duration is invalid or cannot be parsed
         """
         permission_check = await self.permission_check(
             invoker=interaction.user, target=target, action_name="mute"
@@ -316,17 +313,29 @@ class ProtectCommands(cogs.BaseCog):
                     seconds=round(delta_duration.total_seconds())
                 )
             except TypeError as exc:
-                raise ValueError("Invalid duration") from exc
+                embed = auxiliary.prepare_deny_embed(message="Invalid duration")
+                await interaction.response.send_message(embed=embed)
+                return
             if not delta_duration:
-                raise ValueError("Invalid duration")
+                embed = auxiliary.prepare_deny_embed(message="Invalid duration")
+                await interaction.response.send_message(embed=embed)
+                return
         else:
             delta_duration = timedelta(hours=1)
 
         # Checks to ensure time is valid and within the scope of the API
         if delta_duration > timedelta(days=28):
-            raise ValueError("Timeout duration cannot be more than 28 days")
+            embed = auxiliary.prepare_deny_embed(
+                message="Timeout duration cannot be more than 28 days"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
         if delta_duration < timedelta(seconds=1):
-            raise ValueError("Timeout duration cannot be less than 1 second")
+            embed = auxiliary.prepare_deny_embed(
+                message="Timeout duration cannot be less than 1 second"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
 
         result = await moderation.mute_user(
             user=target,
