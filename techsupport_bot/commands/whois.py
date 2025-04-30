@@ -41,6 +41,8 @@ class Whois(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called this command
             member (discord.Member): The member to lookup. Will not work on discord.User
         """
+        await interaction.response.defer(ephemeral=True)
+
         embed = auxiliary.generate_basic_embed(
             title=f"User info for `{member.display_name}` (`{member.name}`)",
             description="**Note: this is a bot account!**" if member.bot else "",
@@ -130,7 +132,6 @@ class Whois(cogs.BaseCog):
             )
             embeds.append(warning_embeds[0])
 
-        await interaction.response.defer(ephemeral=True)
         view = ui.PaginateView()
         await view.send(
             interaction.channel, interaction.user, embeds, interaction, True
