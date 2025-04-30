@@ -312,7 +312,7 @@ class ProtectCommands(cogs.BaseCog):
                 delta_duration = timedelta(
                     seconds=round(delta_duration.total_seconds())
                 )
-            except TypeError as exc:
+            except TypeError:
                 embed = auxiliary.prepare_deny_embed(message="Invalid duration")
                 await interaction.response.send_message(embed=embed)
                 return
