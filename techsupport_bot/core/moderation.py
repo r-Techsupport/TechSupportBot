@@ -237,7 +237,9 @@ async def send_command_usage_alert(
     embed.add_field(name="Command", value=f"`{command}`", inline=False)
     embed.add_field(
         name="Channel",
-        value=f"{interaction.channel.name} ({interaction.channel.mention})",
+        value=f"{interaction.channel.name} ({interaction.channel.mention}) [Jump to context]"
+        f"(https://discord.com/channels/{interaction.guild.id}/{interaction.channel.id}/"
+        f"{discord.utils.time_snowflake(datetime.datetime.utcnow())})",
     )
 
     embed.add_field(
