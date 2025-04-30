@@ -234,7 +234,7 @@ async def send_command_usage_alert(
 
     embed = discord.Embed(title="Command Usage Alert")
 
-    embed.add_field(name="Command", value=f"`{command}`", inline=False)
+    embed.description = f"**Command**\n`{command}`"
     embed.add_field(
         name="Channel",
         value=f"{interaction.channel.name} ({interaction.channel.mention}) [Jump to context]"
