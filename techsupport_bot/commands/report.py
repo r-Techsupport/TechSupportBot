@@ -50,6 +50,13 @@ class Report(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called this command
             report_str (str): The report string that the user submitted
         """
+        if len(report_str) > 2000:
+            embed = auxiliary.prepare_deny_embed(
+                "Your report cannot be longer than 2000 characters."
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+
         embed = discord.Embed(title="New Report", description=report_str)
         embed.color = discord.Color.red()
         embed.set_author(
