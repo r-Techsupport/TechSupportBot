@@ -1,7 +1,7 @@
 """This file will hold the core moderation functions. These functions will:
 Do the proper moderative action and return true if successful, false if not."""
 
-from datetime import timedelta
+import datetime
 
 import discord
 import munch
@@ -64,13 +64,15 @@ async def kick_user(guild: discord.Guild, user: discord.Member, reason: str) -> 
     return True
 
 
-async def mute_user(user: discord.Member, reason: str, duration: timedelta) -> bool:
+async def mute_user(
+    user: discord.Member, reason: str, duration: datetime.timedelta
+) -> bool:
     """Times out a given user
 
     Args:
         user (discord.Member): The user to timeout
         reason (str): The reason they are being timed out
-        duration (timedelta): How long to timeout the user for
+        duration (datetime.timedelta): How long to timeout the user for
 
     Returns:
         bool: True if the timeout was successful
@@ -253,6 +255,7 @@ async def send_command_usage_alert(
 
     embed.set_thumbnail(url=ALERT_ICON_URL)
     embed.color = discord.Color.red()
+    embed.timestamp = datetime.datetime.utcnow()
 
     await alert_channel.send(embed=embed)
 

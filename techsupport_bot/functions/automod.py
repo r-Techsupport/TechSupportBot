@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import re
 from dataclasses import dataclass
 from datetime import timedelta
@@ -216,7 +217,7 @@ class AutoMod(cogs.MatchCog):
             await moderation.mute_user(
                 user=ctx.author,
                 reason=total_punishment.violation_string,
-                duration=timedelta(seconds=total_punishment.mute_duration),
+                duration=datetime.timedelta(seconds=total_punishment.mute_duration),
             )
 
         if total_punishment.delete_message:
@@ -445,6 +446,7 @@ def generate_automod_alert_embed(
 
     embed.set_thumbnail(url=ALERT_ICON_URL)
     embed.color = discord.Color.red()
+    embed.timestamp = datetime.datetime.utcnow()
 
     return embed
 
