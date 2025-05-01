@@ -47,7 +47,7 @@ class TechSupportBot(commands.Bot):
         FUNCTIONS_DIR (str):The list of all files in the FUNCTIONS_DIR_NAME folder
     """
 
-    CONFIG_PATH: str = "../config.yml"
+    CONFIG_PATH: str = "./config.yml"
     EXTENSIONS_DIR_NAME: str = "commands"
     EXTENSIONS_DIR: str = (
         f"{os.path.join(os.path.dirname(__file__))}/{EXTENSIONS_DIR_NAME}"
