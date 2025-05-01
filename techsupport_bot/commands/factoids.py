@@ -925,7 +925,7 @@ class FactoidManager(cogs.MatchCog):
             factoid_name (str): The factoid name to search for and print
 
         Raises:
-            custom_errors.TooLongFactoidMessageError: If the plaintext exceed 2000 characters
+            TooLongFactoidMessageError: If the plaintext exceed 2000 characters
         """
         query = factoid_name.replace("\n", " ").split(" ")[0].lower()
         config = self.bot.guild_configs[str(interaction.guild.id)]
