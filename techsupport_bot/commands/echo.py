@@ -58,19 +58,16 @@ class MessageEcho(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (commands.Context): the context object for the calling message
-            channel_id (int): the ID of the channel to send the echoed message
+            interaction (discord.Interaction): the associated interaction
+            channel (discord.Thread|discord.TextChannel|discord.VoiceChannel): the ID of the channel to send the echoed message
             message (str): the message to echo
         """
         try:
             await channel.send(content=message)
         except discord.Forbidden:
-            embed = auxiliary.prepare_deny_embed(
-                message="Unable to send message"
-            )
+            embed = auxiliary.prepare_deny_embed(message="Unable to send message")
             await interaction.response.send_message(embed=embed)
             return
-
 
         embed = auxiliary.prepare_confirm_embed(message="Message sent!")
         await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -89,7 +86,7 @@ class MessageEcho(cogs.BaseCog):
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (commands.Context): the context object for the calling message
+            interaction (discord.Interaction): the associated interaction
             user (discord.User): the the user to send the echoed message
             message (str): the message to echo
         """
