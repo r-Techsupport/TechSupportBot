@@ -4,8 +4,8 @@ The cog in the file is named:
     MessageEcho
 
 This file contains 2 commands:
-    .echo user
-    .echo channel
+    /echo user
+    /echo channel
 """
 
 from __future__ import annotations
@@ -14,9 +14,9 @@ from typing import TYPE_CHECKING, Self
 
 import discord.abc
 from discord import app_commands
+from discord.ext import commands
 
 from core import auxiliary, cogs
-from discord.ext import commands
 
 if TYPE_CHECKING:
     import bot
@@ -59,7 +59,7 @@ class MessageEcho(cogs.BaseCog):
 
         Args:
             interaction (discord.Interaction): the associated interaction
-            channel (discord.Thread|discord.TextChannel|discord.VoiceChannel): the ID of the channel to send the echoed message
+            channel (discord.Thread|discord.TextChannel|discord.VoiceChannel): channel to send the message to
             message (str): the message to echo
         """
         try:
@@ -92,9 +92,8 @@ class MessageEcho(cogs.BaseCog):
         """
 
         if user.bot:
-            await interaction.response.send_message(
-                embed=auxiliary.prepare_deny_embed(message="You cannot message a bot")
-            )
+            embed = auxiliary.prepare_deny_embed(message="You cannot message a bot")
+            await interaction.response.send_message(embed=embed)
             return
 
         try:
