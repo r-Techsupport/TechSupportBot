@@ -1512,9 +1512,7 @@ class Modmail(cogs.BaseCog):
         name="bans",
         description="Lists the users who are banned from using modmail",
     )
-    async def modmail_list_ban(
-        self: Self, ctx: commands.Context
-    ) -> None:
+    async def modmail_list_ban(self: Self, ctx: commands.Context) -> None:
         """Lists the users who are banned from using modmail
 
         Args:
@@ -1542,4 +1540,3 @@ class Modmail(cogs.BaseCog):
         )
 
         await ctx.channel.send(embed=embed)
-
