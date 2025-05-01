@@ -1386,6 +1386,9 @@ class Modmail(cogs.BaseCog):
                 description="There are no aliases registered for this guild",
             )
 
+            await ctx.channel.send(embed=embed)
+            return
+
         embed = discord.Embed(
             color=discord.Color.green(), title="Registered aliases for this guild:"
         )
