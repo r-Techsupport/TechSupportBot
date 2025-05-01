@@ -10,11 +10,11 @@ This file contains 2 commands:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self
-
 import discord.abc
 from discord import app_commands
 from discord.ext import commands
+
+from typing import TYPE_CHECKING, Self
 
 from core import auxiliary, cogs
 
