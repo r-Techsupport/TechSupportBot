@@ -12,6 +12,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import discord.abc
+from discord import app_commands
+
 from core import auxiliary, cogs
 from discord.ext import commands
 
@@ -25,7 +28,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    await bot.add_cog(MessageEcho(bot=bot))
+    await bot.add_cog(MessageEcho(bot=bot, extension_name="echo"))
 
 
 class MessageEcho(cogs.BaseCog):
@@ -33,28 +36,22 @@ class MessageEcho(cogs.BaseCog):
     The class that holds the echo commands
     """
 
-    @commands.check(auxiliary.bot_admin_check_context)
-    @commands.group(
-        brief="Executes an echo bot command", description="Executes an echo bot command"
+    echo: app_commands.Group = app_commands.Group(
+        name="echo", description="...", extras={"module": "echo"}
     )
-    async def echo(self: Self, ctx: commands.Context) -> None:
-        """The bare .echo command. This does nothing but generate the help message
 
-        Args:
-            ctx (commands.Context): The context in which the command was run in
-        """
-
-        # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
-
-    @auxiliary.with_typing
+    @commands.check(auxiliary.bot_admin_check_context)
     @echo.command(
         name="channel",
         description="Echos a message to a channel",
-        usage="[channel-id] [message]",
+        extras={"module": "echo"},
     )
     async def echo_channel(
-        self: Self, ctx: commands.Context, channel_id: int, *, message: str
+        self: Self,
+        interaction: discord.Interaction,
+        channel: discord.Thread | discord.TextChannel | discord.VoiceChannel,
+        *,
+        message: str,
     ) -> None:
         """Sends a message to a specified channel.
 
@@ -65,25 +62,27 @@ class MessageEcho(cogs.BaseCog):
             channel_id (int): the ID of the channel to send the echoed message
             message (str): the message to echo
         """
-        channel = self.bot.get_channel(channel_id)
-        if not channel:
-            await auxiliary.send_deny_embed(
-                message="I couldn't find that channel", channel=ctx.channel
+        try:
+            await channel.send(content=message)
+        except discord.Forbidden:
+            embed = auxiliary.prepare_deny_embed(
+                message="Unable to send message"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        await channel.send(content=message)
 
-        await auxiliary.send_confirm_embed(message="Message sent", channel=ctx.channel)
+        embed = auxiliary.prepare_confirm_embed(message="Message sent!")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @auxiliary.with_typing
+    @commands.check(auxiliary.bot_admin_check_context)
     @echo.command(
         name="user",
         description="Echos a message to a user",
-        usage="[user-id] [message]",
+        extras={"module": "echo"},
     )
     async def echo_user(
-        self: Self, ctx: commands.Context, user_id: int, *, message: str
+        self: Self, interaction: discord.Interaction, user: discord.User, message: str
     ) -> None:
         """Sends a message to a specified user.
 
@@ -91,16 +90,24 @@ class MessageEcho(cogs.BaseCog):
 
         Args:
             ctx (commands.Context): the context object for the calling message
-            user_id (int): the ID of the user to send the echoed message
+            user (discord.User): the the user to send the echoed message
             message (str): the message to echo
         """
-        user = await self.bot.fetch_user(int(user_id))
-        if not user:
-            await auxiliary.send_deny_embed(
-                message="I couldn't find that user", channel=ctx.channel
+
+        if user.bot:
+            await interaction.response.send_message(
+                embed=auxiliary.prepare_deny_embed(message="You cannot message a bot")
             )
             return
 
-        await user.send(content=message)
+        try:
+            await user.send(content=message)
+        except discord.Forbidden:
+            embed = auxiliary.prepare_deny_embed(
+                message="Unable to send message to this user"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
 
-        await auxiliary.send_confirm_embed(message="Message sent", channel=ctx.channel)
+        embed = auxiliary.prepare_confirm_embed(message="Message sent!")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
