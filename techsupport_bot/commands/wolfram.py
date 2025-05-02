@@ -42,9 +42,7 @@ class Wolfram(cogs.BaseCog):
     """
 
     API_URL: str = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
-    ICON_URL: str = (
-        "https://images.seeklogo.com/logo-png/42/1/mathematica-logo-png_seeklogo-428539.png"
-    )
+    ICON_URL: str = "https://images.seeklogo.com/logo-png/42/1/mathematica-logo-png_seeklogo-428539.png"
 
     @auxiliary.with_typing
     @commands.command(

@@ -153,7 +153,6 @@ class Modmail_bot(discord.Client):
             isinstance(before.channel, discord.DMChannel)
             and before.author.id in active_threads
         ):
-
             if await Ts_client.models.ModmailBan.query.where(
                 Ts_client.models.ModmailBan.user_id == str(before.author.id)
             ).gino.first():
@@ -452,7 +451,6 @@ async def create_thread(
         if not thread.name.startswith("[OPEN]") and thread.name.split("|")[
             -1
         ].strip() == str(user.id):
-
             past_thread_count += 1
 
     if past_thread_count == 0:
@@ -1197,7 +1195,6 @@ class Modmail(cogs.BaseCog):
                 )
 
             case ui.ConfirmResponse.CONFIRMED:
-
                 # Makes sure the user can reply if they were timed out from creating threads
                 if user.id in delayed_people:
                     del delayed_people[user.id]
@@ -1207,7 +1204,6 @@ class Modmail(cogs.BaseCog):
                     user=user,
                     source_channel=ctx.channel,
                 ):
-
                     await auxiliary.send_confirm_embed(
                         message="Thread successfully created!", channel=ctx.channel
                     )
@@ -1259,7 +1255,6 @@ class Modmail(cogs.BaseCog):
                 )
 
             case ui.ConfirmResponse.CONFIRMED:
-
                 # Makes sure the user can reply if they were timed out from creating threads
                 if ctx.author in delayed_people:
                     del delayed_people[ctx.author.id]
@@ -1269,7 +1264,6 @@ class Modmail(cogs.BaseCog):
                     user=ctx.author,
                     source_channel=ctx.channel,
                 ):
-
                     await auxiliary.send_confirm_embed(
                         message="Thread successfully created!", channel=ctx.channel
                     )
