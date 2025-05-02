@@ -21,7 +21,7 @@ class RoleSelect(discord.ui.Select):
             max_values=len(role_list),
             options=role_list,
         )
-        self.timeout = False
+        self.timeout = True
 
     async def callback(self: Self, interaction: discord.Interaction) -> None:
         """What happens when the select menu has been used
@@ -29,12 +29,12 @@ class RoleSelect(discord.ui.Select):
         Args:
             interaction (discord.Interaction): The interaction that called this select object
         """
+        self.timeout = False
         self.view.stop()
 
     async def on_timeout(self: Self) -> None:
         """What happens when the view timesout. This is to prevent all roles from being removed."""
         self.values = None
-        self.timeout = True
         self.view.stop()
 
 

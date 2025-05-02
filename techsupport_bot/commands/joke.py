@@ -19,16 +19,24 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
+
     config = extensionconfig.ExtensionConfig()
     config.add(
-        key="pc_jokes",
-        datatype="bool",
-        title="Politically correct jokes only",
+        key="blacklisted_filters",
+        datatype="list[str]",
+        title="Enable filter",
         description=(
-            "True only politically correct jokes should be shown"
-            " (non-racist/non-sexist)"
+            "Filters all categories listed"
+            "(nsfw,religious,political,racist,sexist,explicit)"
         ),
-        default=True,
+        default=["nsfw", "explicit"],
+    )
+    config.add(
+        key="apply_in_nsfw_channels",
+        datatype="bool",
+        title="Apply in NSFW Channels",
+        description=("Toggles whether or not filters are applies in NSFW channels"),
+        default=False,
     )
     await bot.add_cog(Joker(bot=bot))
     bot.add_extension_config("joke", config)
@@ -37,12 +45,12 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Joker(cogs.BaseCog):
     """Class to make up the joke extension.
 
-    Attrs:
+    Attributes:
         API_URL (str): The joke API URL
 
     """
 
-    API_URL = "https://v2.jokeapi.dev/joke/Any"
+    API_URL: str = "https://v2.jokeapi.dev/joke/Any"
 
     async def call_api(
         self: Self, ctx: commands.Context, config: munch.Munch
@@ -75,10 +83,11 @@ class Joker(cogs.BaseCog):
             str: The URL, properly formatted and ready to be called
         """
         blacklist_flags = []
-        if not ctx.channel.is_nsfw():
-            blacklist_flags.extend(["explicit", "nsfw"])
-        if config.extensions.joke.pc_jokes.value:
-            blacklist_flags.extend(["sexist", "racist", "religious"])
+        if (
+            config.extensions.joke.apply_in_nsfw_channels.value
+            or not ctx.channel.is_nsfw()
+        ):
+            blacklist_flags = config.extensions.joke.blacklisted_filters.value
         blacklists = ",".join(blacklist_flags)
 
         url = f"{self.API_URL}?blacklistFlags={blacklists}&format=txt"

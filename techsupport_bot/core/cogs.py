@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class BaseCog(commands.Cog):
     """The base cog to use when making extensions.
 
-    Attrs:
+    Attributes:
         COG_TYPE (str): The string representation for the type of cog
         KEEP_COG_ON_FAILURE (bool): Whether or not to keep the cog loaded if there was an error
 
@@ -29,8 +29,8 @@ class BaseCog(commands.Cog):
             if it needs to be different than the file name
     """
 
-    COG_TYPE = "Base"
-    KEEP_COG_ON_FAILURE = False
+    COG_TYPE: str = "Base"
+    KEEP_COG_ON_FAILURE: bool = False
 
     def __init__(
         self: Self,
@@ -97,11 +97,11 @@ class MatchCog(BaseCog):
 
     This makes the process of handling events simpler for development.
 
-    Attrs:
+    Attributes:
         COG_TYPE (str): The string representation for the type of cog
     """
 
-    COG_TYPE = "Match"
+    COG_TYPE: str = "Match"
 
     @commands.Cog.listener()
     async def on_message(self: Self, message: discord.Message) -> None:
@@ -182,7 +182,7 @@ class LoopCog(BaseCog):
 
     This currently doesn't utilize the tasks library.
 
-    Attrs:
+    Attributes:
         COG_TYPE (str): The string representation for the type of cog
         DEFAULT_WAIT (int): The default time to sleep for
         TRACKER_WAIT (int): The time to wait before looking for new channels
