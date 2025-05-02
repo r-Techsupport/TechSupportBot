@@ -1,15 +1,17 @@
 """
-Module for the hello command on the discord bot.
-This module has unit tests
-This modules requires no config, no databases, and no APIs
+Commands: /hello
+Config: None
+Databases: None
+Unit tests: No need
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
-from core import auxiliary, cogs
-from discord.ext import commands
+import discord
+from core import cogs
+from discord import app_commands
 
 if TYPE_CHECKING:
     import bot
@@ -27,26 +29,15 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Greeter(cogs.BaseCog):
     """Class for the greeter command."""
 
-    async def hello_command(self: Self, ctx: commands.Context) -> None:
-        """A simple function to add HEY reactions to the command invocation
-
-        Args:
-            ctx (commands.Context): The context in which the command was run in
-        """
-        await auxiliary.add_list_of_reactions(
-            message=ctx.message, reactions=["🇭", "🇪", "🇾"]
-        )
-
-    @commands.command(
+    @app_commands.command(
         name="hello",
-        brief="Says hello to the bot",
         description="Says hello to the bot (because they are doing such a great job!)",
-        usage="",
+        extras={"module": "hello"},
     )
-    async def hello(self: Self, ctx: commands.Context) -> None:
-        """Entry point for the .hello command on discord
+    async def hello_app_command(self: Self, interaction: discord.Interaction):
+        """A simple command to hace the bot say HEY to the invoker
 
         Args:
-            ctx (commands.Context): The context in which the command was run in
+            interaction (discord.Interaction): The interaction that called this command
         """
-        await self.hello_command(ctx)
+        await interaction.response.send_message("🇭 🇪 🇾")

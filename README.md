@@ -68,22 +68,21 @@ On startup, the bot will load all extension files in the `techsupport_bot/extens
 
 A (very) simple example:
 ```python
-from core import auxiliary, cogs
-from discord.ext import commands
-async def setup(bot):
+import discord
+from core import cogs
+from discord import app_commands
+
+async def setup(bot: bot.TechSupportBot) -> None:
     await bot.add_cog(Greeter(bot=bot))
+
 class Greeter(cogs.BaseCog):
-    async def hello_command(self, ctx) -> None:
-        await auxiliary.add_list_of_reactions(
-            message=ctx.message, reactions=["🇭", "🇪", "🇾"]
-        )
-    @commands.command(
+    @app_commands.command(
         name="hello",
-        brief="Says hello to the bot",
         description="Says hello to the bot (because they are doing such a great job!)",
-        usage="",
+        extras={"module": "hello"},
     )
-    async def hello(self, ctx):
-        await self.hello_command(ctx)
+    async def hello_app_command(self: Self, interaction: discord.Interaction):
+        await interaction.response.send_message("🇭 🇪 🇾")
+
 ```
 Extensions can be configured per-guild with settings saved on Postgres. There are several extensions included in the main repo, so please reference them for more advanced examples.
