@@ -423,7 +423,7 @@ class Who(cogs.BaseCog):
 
         yaml_file = discord.File(
             io.StringIO(yaml.dump({"notes": note_output_data})),
-            filename=f"notes-for-{user.id}-{datetime.datetime.utcnow()}.yaml",
+            filename=f"notes-for-{user.id}-{datetime.datetime.now()}.yaml",
         )
 
         await interaction.response.send_message(file=yaml_file, ephemeral=True)

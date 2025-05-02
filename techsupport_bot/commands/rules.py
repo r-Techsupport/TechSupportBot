@@ -127,7 +127,7 @@ class Rules(cogs.BaseCog):
 
         json_file = discord.File(
             io.StringIO(json.dumps(rules_data, indent=4)),
-            filename=f"{ctx.guild.id}-rules-{datetime.datetime.utcnow()}.json",
+            filename=f"{ctx.guild.id}-rules-{datetime.datetime.now()}.json",
         )
 
         await ctx.send(content="Re-upload this file to apply new rules", file=json_file)

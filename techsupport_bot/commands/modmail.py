@@ -165,7 +165,7 @@ class Modmail_bot(discord.Client):
                 title="Message edit",
                 description=f"Message ID: {before.id}",
             )
-            embed.timestamp = datetime.utcnow()
+            embed.timestamp = datetime.now()
 
             # This is here to save space if this listener is triggered by something other than
             # a content modification, i.e. a message being pinned
@@ -318,7 +318,7 @@ async def handle_dm(message: discord.Message) -> None:
 
         embed = discord.Embed(color=discord.Color.blue(), description=message.content)
         embed.set_footer(text=f"Message ID: {message.id}")
-        embed.timestamp = datetime.utcnow()
+        embed.timestamp = datetime.now()
         if message.author.avatar:
             embed.set_author(name=message.author, icon_url=message.author.avatar.url)
         else:
@@ -495,7 +495,7 @@ async def create_thread(
     # has to be done like this because of member handling
     embed.description = description
     embed.set_author(name=user, icon_url=url)
-    embed.timestamp = datetime.utcnow()
+    embed.timestamp = datetime.now()
     embed.set_footer(text=f"User ID: {user.id}")
 
     # Handling for roles to ping, not performed if the func was invoked by the contact command
@@ -523,7 +523,7 @@ async def create_thread(
         embed = discord.Embed(color=discord.Color.blue(), description=message.content)
         embed.set_author(name=user, icon_url=url)
         embed.set_footer(text=f"Message ID: {message.id}")
-        embed.timestamp = datetime.utcnow()
+        embed.timestamp = datetime.now()
 
         attachments = None
         if message.attachments:
@@ -541,7 +541,7 @@ async def create_thread(
         )
         embed.set_author(name="Thread Created")
         embed.set_footer(text="Your message has been sent.")
-        embed.timestamp = datetime.utcnow()
+        embed.timestamp = datetime.now()
 
         await message.author.send(embed=embed)
 
@@ -634,7 +634,7 @@ async def reply_to_thread(
         # No need to reconfirm
         user_attachments = await build_attachments(thread=thread, message=message)
 
-    embed.timestamp = datetime.utcnow()
+    embed.timestamp = datetime.now()
     embed.set_footer(text="Response")
 
     if automatic:
@@ -701,7 +701,7 @@ async def close_thread(
         embed.set_footer(
             text="Closing will be cancelled if a message is sent, or if the command is run again."
         )
-        embed.timestamp = datetime.utcnow()
+        embed.timestamp = datetime.now()
 
         await thread.send(embed=embed)
 
@@ -766,7 +766,7 @@ async def close_thread(
         description="Please wait 24 hours before creating a new one.",
     )
     embed.set_author(name="Thread Closed")
-    embed.timestamp = datetime.utcnow()
+    embed.timestamp = datetime.now()
 
     await user.send(embed=embed)
 
@@ -813,7 +813,7 @@ async def log_closure(
             icon_url=closed_by.avatar.url,
             text=f"Thread closed by {closed_by.name}",
         )
-    embed.timestamp = datetime.utcnow()
+    embed.timestamp = datetime.now()
 
     await log_channel.send(embed=embed)
 
@@ -1347,7 +1347,7 @@ class Modmail(cogs.BaseCog):
             description=f"*You can use these by typing `{prefix}<command>` in a modmail thread*",
             title="Modmail commands",
         )
-        embed.timestamp = datetime.utcnow()
+        embed.timestamp = datetime.now()
 
         # First three are reply commands
         for command in list_of_modmail_commands[:3]:

@@ -218,7 +218,7 @@ class TechSupportBot(commands.Bot):
         """Callback for when the bot is finished starting up.
         This function may be called more than once and should not have discord interactions in it
         """
-        self.startup_time = datetime.datetime.utcnow()
+        self.startup_time = datetime.datetime.now()
         await self.logger.send_log(
             message="Bot online", level=LogLevel.INFO, console_only=True
         )
@@ -242,7 +242,7 @@ class TechSupportBot(commands.Bot):
         embed = auxiliary.generate_basic_embed(
             f"{source} recieved a PM", f"PM from: {sent_from}\n{content}"
         )
-        embed.timestamp = datetime.datetime.utcnow()
+        embed.timestamp = datetime.datetime.now()
         await owner.send(embed=embed)
 
     async def on_message(self: Self, message: discord.Message) -> None:
@@ -362,7 +362,7 @@ class TechSupportBot(commands.Bot):
         ).gino.first()
         if database_config:
             await database_config.update(
-                config=str(config), update_time=datetime.datetime.utcnow()
+                config=str(config), update_time=datetime.datetime.now()
             ).apply()
         else:
             new_database_config = self.models.Config(

@@ -1457,7 +1457,7 @@ class FactoidManager(cogs.MatchCog):
         json_file = discord.File(
             io.StringIO(formatted),
             filename=(
-                f"{aliases_list[0]}-factoid-embed-config-{datetime.datetime.utcnow()}.json"
+                f"{aliases_list[0]}-factoid-embed-config-{datetime.datetime.now()}.json"
             ),
         )
 
@@ -1892,7 +1892,7 @@ class FactoidManager(cogs.MatchCog):
         yaml_file = discord.File(
             io.StringIO(yaml.dump(output_data)),
             filename=(
-                f"factoids-for-server-{guild.id}-{datetime.datetime.utcnow()}.yaml"
+                f"factoids-for-server-{guild.id}-{datetime.datetime.now()}.yaml"
             ),
         )
 

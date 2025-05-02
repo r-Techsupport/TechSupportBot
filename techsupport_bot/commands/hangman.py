@@ -129,7 +129,7 @@ class HangmanGame:
         self.guesses = set()
         self.step = 0
         self.max_guesses = max_guesses
-        self.started = datetime.datetime.utcnow()
+        self.started = datetime.datetime.now()
         self.id = uuid.uuid4()
 
     def draw_word_state(self: Self) -> str:

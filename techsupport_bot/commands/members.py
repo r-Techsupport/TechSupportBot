@@ -91,7 +91,7 @@ class Members(cogs.BaseCog):
         yaml_file = discord.File(
             io.StringIO(yaml.dump(yaml_output_data)),
             filename=f"members-with-{role.name}-in"
-            + f"-{ctx.guild.id}-{datetime.datetime.utcnow()}.yaml",
+            + f"-{ctx.guild.id}-{datetime.datetime.now()}.yaml",
         )
 
         await ctx.send(file=yaml_file)

@@ -118,7 +118,7 @@ class Logger(cogs.MatchCog):
 
         # Set basic items
         embed.color = discord.Color.greyple()
-        embed.timestamp = datetime.datetime.utcnow()
+        embed.timestamp = datetime.datetime.now()
 
         # Add the message content
         embed.title = "Content"

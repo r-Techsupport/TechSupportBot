@@ -27,7 +27,7 @@ class LogEmbed(discord.Embed):
         super().__init__(
             title=self.title.upper(), description=message, color=self.color
         )
-        self.timestamp = datetime.datetime.utcnow()
+        self.timestamp = datetime.datetime.now()
 
     def modify_embed(self: Self, embed: discord.Embed) -> discord.Embed:
         """This modifies an existing embed to match with the LogEmbed style
@@ -41,7 +41,7 @@ class LogEmbed(discord.Embed):
         embed.title = self.title
         embed.color = self.color
         embed.description = self.description
-        embed.timestamp = datetime.datetime.utcnow()
+        embed.timestamp = datetime.datetime.now()
 
         return embed
 

@@ -109,7 +109,7 @@ class ConfigControl(cogs.BaseCog):
 
         json_file = discord.File(
             io.StringIO(json.dumps(json_config, indent=4)),
-            filename=f"{ctx.guild.id}-config-{datetime.datetime.utcnow()}.json",
+            filename=f"{ctx.guild.id}-config-{datetime.datetime.now()}.json",
         )
 
         await ctx.send(file=json_file)
