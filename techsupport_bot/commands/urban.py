@@ -44,7 +44,9 @@ class UrbanDictionary(cogs.BaseCog):
 
     BASE_URL: str = "http://api.urbandictionary.com/v0/define?term="
     SEE_MORE_URL: str = "https://www.urbandictionary.com/define.php?term="
-    ICON_URL: str = "https://www.iconarchive.com/download/i79897/dtafalonso/ios7-desktop/Dictionary.256.png"
+    ICON_URL: str = (
+        "https://www.iconarchive.com/download/i79897/dtafalonso/ios7-desktop/Dictionary.256.png"
+    )
 
     @auxiliary.with_typing
     @commands.command(
