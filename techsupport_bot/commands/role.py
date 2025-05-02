@@ -22,13 +22,6 @@ async def setup(bot: bot.TechSupportBot) -> None:
     """
     config = extensionconfig.ExtensionConfig()
     config.add(
-        key="self_assignable_roles",
-        datatype="list",
-        title="All roles people can assign themselves",
-        description="The list of roles by name that people can assign themselves",
-        default=[],
-    )
-    config.add(
         key="allow_self_assign",
         datatype="list",
         title="List of roles allowed to use /role self",
@@ -49,6 +42,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         description="The list of roles that are allowed to assign others roles",
         default=[],
     )
+    config.add(
+        key="self_assign_map",
+        datatype="dict",
+        title="Map of all the roles allowed in self assign",
+        description="A map in the format target: [use, use]",
+        default={},
+    )
     await bot.add_cog(RoleGiver(bot=bot))
     bot.add_extension_config("role", config)
 
@@ -56,7 +56,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class RoleGiver(cogs.BaseCog):
     """The main class for the role commands
 
-    Attrs:
+    Attributes:
         role_group (app_commands.Group): The group for the /role commands
 
     Args:
@@ -72,7 +72,7 @@ class RoleGiver(cogs.BaseCog):
         )
         self.bot.tree.add_command(self.ctx_menu)
 
-    role_group = app_commands.Group(name="role", description="...")
+    role_group: app_commands.Group = app_commands.Group(name="role", description="...")
 
     async def preconfig(self: Self) -> None:
         """This setups the global lock on the role command, to avoid conflicts"""
@@ -92,13 +92,37 @@ class RoleGiver(cogs.BaseCog):
         # Pull config
         config = self.bot.guild_configs[str(interaction.guild.id)]
 
+        # Interaction user roles
+        current_roles = getattr(interaction.user, "roles", [])
+
+        # Get the roles map
+        roles_map = config.extensions.role.self_assign_map.value
+
+        allowed_roles_list = []
+
+        # Build the allowed roles list
+        for assignable_role in roles_map:
+            for allowed_role in roles_map[assignable_role]:
+                discord_allowed_role = discord.utils.get(
+                    interaction.guild.roles, id=int(allowed_role)
+                )
+                if discord_allowed_role in current_roles:
+                    allowed_roles_list.append(assignable_role)
+                    break
+
+        if len(allowed_roles_list) == 0:
+            embed = auxiliary.prepare_deny_embed(
+                message="You cannot assign yourself any roles right now"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
         # Get needed config items
-        roles = config.extensions.role.self_assignable_roles.value
         allowed_to_execute = config.extensions.role.allow_self_assign.value
 
         # Call the base function
         await self.role_command_base(
-            interaction, roles, allowed_to_execute, interaction.user
+            interaction, allowed_roles_list, allowed_to_execute, interaction.user
         )
 
     @role_group.command(
@@ -149,7 +173,7 @@ class RoleGiver(cogs.BaseCog):
 
         Args:
             interaction (discord.Interaction): The interaction that called this command
-            assignable_roles (list[str]): A list of roles that are assignabled for this command
+            assignable_roles (list[str]): A list of role IDs that are assignabled for this command
             allowed_roles (list[str]): A list of roles that are allowed to execute this command
             member (discord.Member): The member to assign roles to
         """
@@ -245,18 +269,18 @@ class RoleGiver(cogs.BaseCog):
         Args:
             user (discord.Member): The user that will be getting the roles applied
             guild (discord.Guild): The guild that the roles are from
-            roles (list[str]): A list of roles by name to add to the options
+            roles (list[str]): A list of roles by ID to add to the options
 
         Returns:
             list[discord.SelectOption]: A list of SelectOption with defaults set
         """
         options = []
 
-        for role_name in roles:
+        for role_id in roles:
             default = False
 
             # First, get the role
-            role = discord.utils.get(guild.roles, name=role_name)
+            role = discord.utils.get(guild.roles, id=int(role_id))
             if not role:
                 continue
 
@@ -265,7 +289,7 @@ class RoleGiver(cogs.BaseCog):
                 default = True
 
             # Third, the option to the list with relevant default
-            options.append(discord.SelectOption(label=role_name, default=default))
+            options.append(discord.SelectOption(label=role.name, default=default))
         return options
 
     async def modify_roles(
@@ -280,7 +304,7 @@ class RoleGiver(cogs.BaseCog):
         """Modifies a set of roles based on an input and reference list
 
         Args:
-            config_roles (list[str]): The list of roles allowed to be modified
+            config_roles (list[str]): The list of roles by ID allowed to be modified
             new_roles (list[str]): The list of roles from the config_roles that should be assigned
                 to the user. Any roles not on this list will be removed
             guild (discord.Guild): The guild to assign the roles in
@@ -291,8 +315,8 @@ class RoleGiver(cogs.BaseCog):
         added_roles = []
         removed_roles = []
 
-        for role_name in config_roles:
-            real_role = discord.utils.get(guild.roles, name=role_name)
+        for role_id in config_roles:
+            real_role = discord.utils.get(guild.roles, id=int(role_id))
             if not real_role:
                 continue
 

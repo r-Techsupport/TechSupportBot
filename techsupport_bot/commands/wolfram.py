@@ -35,14 +35,16 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Wolfram(cogs.BaseCog):
     """Class to set up the wolfram extension.
 
-    Attrs:
+    Attributes:
         API_URL (str): The API URL for wolfram
         ICON_URL (str): The URL for the wolfram icon
 
     """
 
-    API_URL = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
-    ICON_URL = "https://cdn.icon-icons.com/icons2/2107/PNG/512/file_type_wolfram_icon_130071.png"
+    API_URL: str = "http://api.wolframalpha.com/v1/result?appid={}&i={}"
+    ICON_URL: str = (
+        "https://images.seeklogo.com/logo-png/42/1/mathematica-logo-png_seeklogo-428539.png"
+    )
 
     @auxiliary.with_typing
     @commands.command(

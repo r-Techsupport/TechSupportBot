@@ -42,12 +42,12 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class DiscordToIRC(cogs.MatchCog):
     """The discord side of the relay
 
-    Attrs:
+    Attributes:
         mapping (bidict): The dict that holds the IRC and discord mappings
 
     """
 
-    mapping = None  # bidict - discord:irc
+    mapping: bidict = None  # bidict - discord:irc
 
     async def preconfig(self: Self) -> None:
         """The preconfig setup for the discord side
@@ -450,7 +450,7 @@ class DiscordToIRC(cogs.MatchCog):
         Returns:
             discord.Embed: The embed prepared and ready to send
         """
-        ICON_URL = "https://cdn.icon-icons.com/icons2/1508/PNG/512/ircchat_104581.png"
+        ICON_URL = "https://www.iconarchive.com/download/i94994/mahm0udwally/all-flat/Chat.256.png"
 
         embed = discord.Embed()
         embed.set_author(

@@ -25,13 +25,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Hugger(cogs.BaseCog):
     """Class to make the hug command.
 
-    Attrs:
+    Attributes:
         HUGS_SELECTION (list[str]): The list of hug phrases to display
         ICON_URL (str): The icon to use when hugging
 
     """
 
-    HUGS_SELECTION = [
+    HUGS_SELECTION: list[str] = [
         "{user_giving_hug} hugs {user_to_hug} forever and ever and ever",
         "{user_giving_hug} wraps arms around {user_to_hug} and clings forever",
         "{user_giving_hug} hugs {user_to_hug} and gives their hair a sniff",
@@ -44,9 +44,21 @@ class Hugger(cogs.BaseCog):
         "{user_giving_hug} hugs {user_to_hug} into a coma",
         "{user_giving_hug} smothers {user_to_hug} with a loving hug",
         "{user_giving_hug} squeezes {user_to_hug} to death",
+        "{user_giving_hug} swaddles {user_to_hug} like a baby",
+        "{user_giving_hug} tackles {user_to_hug} to the ground with a giant glomp",
+        "{user_giving_hug} hugs {user_to_hug} and gives them Eskimo kisses",
+        (
+            "{user_giving_hug} grabs {user_to_hug} ,pulls them close,"
+            " giving them three hearty raps on the back"
+        ),
+        "{user_giving_hug} hugs {user_to_hug} and rubs their back slowly",
+        "{user_giving_hug} pulls {user_to_hug} into a tight hug and squeezes the sadness out",
+        "{user_giving_hug} hugs {user_to_hug} too tightly until they pass out",
+        "{user_giving_hug} went to hug {user_to_hug} but missed and ran into the wall instead",
     ]
-    ICON_URL = (
-        "https://cdn.icon-icons.com/icons2/1648/PNG/512/10022huggingface_110042.png"
+    ICON_URL: str = (
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/a/"
+        + "a5/Noto_Emoji_Oreo_1f917.svg/768px-Noto_Emoji_Oreo_1f917.svg.png"
     )
 
     @auxiliary.with_typing

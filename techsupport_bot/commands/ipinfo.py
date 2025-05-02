@@ -24,15 +24,15 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class IPInfo(cogs.BaseCog):
     """Class to add ipinfo geodata to the bot.
 
-    Attrs:
+    Attributes:
         API_URL (str): The API url for IP info
         IP_ICON_URL (str): The URL for the IP info icon
     """
 
-    API_URL = "https://ipinfo.io"
-    IP_ICON_URL = (
-        "https://cdn.icon-icons.com/icons2/1858/PNG/512/"
-        "iconfinder-dedicatedipaddress-4263513_117864.png"
+    API_URL: str = "https://ipinfo.io"
+    IP_ICON_URL: str = (
+        "https://www.iconarchive.com/download/i43033/oxygen-icons.org"
+        "/oxygen/Categories-applications-internet.256.png"
     )
 
     @commands.command(

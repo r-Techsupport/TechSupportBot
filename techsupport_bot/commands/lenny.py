@@ -25,12 +25,12 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Lenny(cogs.BaseCog):
     """Class for lenny extension.
 
-    Attrs:
+    Attributes:
         LENNYS_SELECTION (list[str]): The list of lenny faces to pick one randomly
 
     """
 
-    LENNYS_SELECTION = [
+    LENNYS_SELECTION: list[str] = [
         "( ͡° ͜ʖ ͡°)",
         "( ͠° ͟ʖ ͡°)",
         "( ͡ʘ ͜ʖ ͡ʘ)",

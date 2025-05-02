@@ -51,13 +51,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class KanyeQuotes(cogs.LoopCog):
     """Class to get the Kanye quotes from the api.
 
-    Attrs:
+    Attributes:
         API_URL (str): The Kanye API URL
         KANYE_PICS (list[str]): The list of Kanye pics to pick from randomly
     """
 
-    API_URL = "https://api.kanye.rest"
-    KANYE_PICS = [
+    API_URL: str = "https://api.kanye.rest"
+    KANYE_PICS: list[str] = [
         "https://i.imgur.com/ITmTXGz.jpg",
         "https://i.imgur.com/o8BkPrL.jpg",
         "https://i.imgur.com/sA5qP3F.jpg",

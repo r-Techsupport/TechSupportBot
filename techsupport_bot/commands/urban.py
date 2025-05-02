@@ -35,16 +35,18 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class UrbanDictionary(cogs.BaseCog):
     """Class for setting up the urban dictionary extension.
 
-    Attrs:
+    Attributes:
         BASE_URL (str): The base API URL for urban dict
         SEE_MORE_URL (str): The URL to link to search results from the API
         ICON_URL (str): The urban dict icon URL
 
     """
 
-    BASE_URL = "http://api.urbandictionary.com/v0/define?term="
-    SEE_MORE_URL = "https://www.urbandictionary.com/define.php?term="
-    ICON_URL = "https://cdn.icon-icons.com/icons2/114/PNG/512/dictionary_19159.png"
+    BASE_URL: str = "http://api.urbandictionary.com/v0/define?term="
+    SEE_MORE_URL: str = "https://www.urbandictionary.com/define.php?term="
+    ICON_URL: str = (
+        "https://www.iconarchive.com/download/i79897/dtafalonso/ios7-desktop/Dictionary.256.png"
+    )
 
     @auxiliary.with_typing
     @commands.command(
