@@ -112,10 +112,11 @@ class Burn(cogs.BaseCog):
         if user_to_match is None:
             if ctx.message.reference is None:
                 await auxiliary.send_deny_embed(
-                    message="You need to mention someone to declare a burn.", channel=ctx.channel
+                    message="You need to mention someone to declare a burn.",
+                    channel=ctx.channel,
                 )
                 return
-            
+
             user_to_match = ctx.message.reference.resolved.author
 
         await self.burn_command(ctx, user_to_match)
