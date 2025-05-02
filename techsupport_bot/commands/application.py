@@ -329,15 +329,21 @@ class ApplicationManager(cogs.LoopCog):
             message (str, optional): The message to send to the user.
                 If none is passed, the application is approved silently. Defaults to None.
         """
-        application = await self.search_for_pending_application(member)
-        if not application:
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+        applications = await get_member_application_by_status(
+            self.bot, member, ApplicationStatus.PENDING, interaction.guild
+        )
+        if not applications:
             embed = auxiliary.prepare_deny_embed(
                 f"No application could be found for {member.name}"
             )
             await interaction.response.send_message(embed=embed)
             return
+        application = applications[0]
 
-        application_role = await self.get_application_role(interaction.guild)
+        application_role = get_application_role(
+            interaction.guild, config.extensions.application.application_role.value
+        )
         if not application_role:
             embed = auxiliary.prepare_deny_embed(
                 "This application could not be approved because no role to assign has"
@@ -346,9 +352,7 @@ class ApplicationManager(cogs.LoopCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        await application.update(
-            application_status=ApplicationStatus.APPROVED.value
-        ).apply()
+        await update_application_status(application, ApplicationStatus.APPROVED)
 
         await member.add_roles(
             application_role, reason=f"Application approved by {interaction.user}"
@@ -995,3 +999,52 @@ class ApplicationManager(cogs.LoopCog):
         await aiocron.crontab(
             config.extensions.application.reminder_cron_config.value
         ).next()
+
+
+async def get_member_application_by_status(
+    bot: bot.TechSupportBot,
+    member: discord.Member,
+    status: ApplicationStatus,
+    guild: discord.Guild,
+) -> list[bot.models.Applications]:
+    """Gets all applications of a given status
+
+    Args:
+        status (ApplicationStatus): The status to search for
+        guild (discord.Guild): The guild to get applications from
+
+    Returns:
+        list[bot.models.Applications]: The list of applications in a oldest first order
+    """
+    query = (
+        bot.models.Applications.query.where(
+            bot.models.Applications.application_status == status.value
+        )
+        .where(bot.models.Applications.guild_id == str(guild.id))
+        .where(bot.models.Applications.applicant_id == str(member.id))
+    )
+    entry = await query.gino.all()
+    entry.sort(key=lambda entry: entry.application_time)
+    return entry
+
+
+def get_application_role(
+    guild: discord.Guild, application_role_id: str
+) -> discord.Role | None:
+    """Gets the guild application role object from the config
+
+    Args:
+        guild (discord.Guild): The guild to search in
+
+    Returns:
+        discord.Role | None: Will return the role object from the guild,
+            or none if the role could not be found
+    """
+    role = guild.get_role(int(application_role_id))
+    return role
+
+
+async def update_application_status(
+    application: bot.models.Applications, new_status: ApplicationStatus
+) -> None:
+    await application.update(application_status=new_status.value).apply()
