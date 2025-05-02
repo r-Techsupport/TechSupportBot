@@ -33,6 +33,11 @@ class ConfigSchema:
     reports_channel: discord.abc.Messageable | None = None
     """The channel to send reports to from the /report command"""
 
-config = ConfigSchema()
+class Config(ConfigSchema):
+    def load_json():
+        ...
+    ...
+
+config = Config()
 
 config.reports_channel.send(content="example")
