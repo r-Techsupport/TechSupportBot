@@ -1,17 +1,6 @@
 from dataclasses import dataclass, field
 import discord
-
-@dataclass
-class RolePermissions:
-    role_id_list: list[int] = field(default_factory=list)
-    discord_role_list: list[discord.Role] = field(default_factory=list)
-
-    def check_if_has_permissions(member: discord.Member) -> bool:
-        ...
-    
-    def __str__() -> str:
-        ...
-
+from . import RolePermissions
 
 @dataclass
 class ConfigSchema:
@@ -27,17 +16,15 @@ class ConfigSchema:
     application_message: str = "Apply now!"
     """The message to show users when they are prompted to apply in the notification channels."""
 
-    automod_max_mentions: int = 3
+    automod_max_mentions: int = field(
+        default=3,
+        metadata={
+            "min": 0,
+            "max": 10
+        }
+    )
     """Max number of mentions allowed in a message before triggering auto-protect."""
 
     reports_channel: discord.abc.Messageable | None = None
     """The channel to send reports to from the /report command"""
 
-class Config(ConfigSchema):
-    def load_json():
-        ...
-    ...
-
-config = Config()
-
-config.reports_channel.send(content="example")
