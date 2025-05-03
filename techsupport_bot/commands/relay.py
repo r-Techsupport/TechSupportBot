@@ -11,6 +11,7 @@ import ui
 from bidict import bidict
 from core import auxiliary, cogs
 from discord.ext import commands
+from functions import logger as function_logger
 
 if TYPE_CHECKING:
     import bot
@@ -415,7 +416,27 @@ class DiscordToIRC(cogs.MatchCog):
 
         embed = self.generate_sent_message_embed(split_message=split_message)
 
-        await discord_channel.send(content=mentions_string, embed=embed)
+        sent_message = await discord_channel.send(content=mentions_string, embed=embed)
+
+        config = self.bot.guild_configs[str(discord_channel.guild.id)]
+        # Don't allow logging if extension is disabled
+        if "logger" not in config.enabled_extensions:
+            return
+        target_logging_channel = await function_logger.pre_log_checks(
+            self.bot, config, discord_channel
+        )
+        if not target_logging_channel:
+            return
+
+        await function_logger.send_message(
+            self.bot,
+            sent_message,
+            discord_channel.guild.me,
+            discord_channel,
+            target_logging_channel,
+            content_override=split_message["content"],
+            special_flags=[f"IRC Message from: {split_message['hostmask']}"],
+        )
 
     def get_mentions(
         self: Self, message: str, channel: discord.abc.Messageable
