@@ -428,14 +428,17 @@ class DiscordToIRC(cogs.MatchCog):
         if not target_logging_channel:
             return
 
+        irc_message_content = split_message["content"]
+        irc_message_hostmask = split_message["hostmask"]
+
         await function_logger.send_message(
             self.bot,
             sent_message,
             discord_channel.guild.me,
             discord_channel,
             target_logging_channel,
-            content_override=split_message["content"],
-            special_flags=[f"IRC Message from: {split_message['hostmask']}"],
+            content_override=irc_message_content,
+            special_flags=[f"IRC Message from: {irc_message_hostmask}"],
         )
 
     def get_mentions(

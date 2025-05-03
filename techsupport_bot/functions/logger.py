@@ -46,8 +46,7 @@ def get_channel_id(channel: discord.abc.GuildChannel | discord.Thread) -> int:
     """
     if isinstance(channel, discord.Thread):
         return channel.parent_id
-    else:
-        return channel.id
+    return channel.id
 
 
 def get_mapped_channel_object(
