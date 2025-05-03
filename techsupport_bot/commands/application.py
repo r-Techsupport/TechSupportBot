@@ -115,6 +115,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         description="The ID of the role to ping when a new application is created",
         default="",
     )
+    config.add(
+        key="max_age",
+        datatype="int",
+        title="Max days an application can live",
+        description="After this many days, the system will auto reject the applications.",
+        default=30,
+    )
     await bot.add_cog(ApplicationManager(bot=bot, extension_name="application"))
     await bot.add_cog(ApplicationNotifier(bot=bot, extension_name="application"))
     bot.add_extension_config("application", config)
@@ -940,6 +947,20 @@ class ApplicationManager(cogs.LoopCog):
                 ).apply()
                 continue
 
+            # Application has been pending for max_age days
+            max_age_config = config.extensions.application.max_age.value
+            if app.application_time < datetime.datetime.now() - datetime.timedelta(
+                days=max_age_config
+            ):
+                audit_log.append(
+                    f"Application by user: `{user.name}` was rejected since it's been"
+                    f" inactive for {max_age_config} days"
+                )
+                await app.update(
+                    application_status=ApplicationStatus.REJECTED.value
+                ).apply()
+                continue
+
             # User changed their name
             if user.name != app.applicant_name:
                 audit_log.append(
@@ -960,18 +981,6 @@ class ApplicationManager(cogs.LoopCog):
                 )
                 await app.update(
                     application_status=ApplicationStatus.APPROVED.value
-                ).apply()
-
-            # Application has been pending for 30 days
-            if app.application_time < datetime.datetime.now() - datetime.timedelta(
-                days=30
-            ):
-                audit_log.append(
-                    f"Application by user: `{user.name}` was rejected since it's been"
-                    f" inactive for 30 days"
-                )
-                await app.update(
-                    application_status=ApplicationStatus.REJECTED.value
                 ).apply()
 
         if audit_log:
