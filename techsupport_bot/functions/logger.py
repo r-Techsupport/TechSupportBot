@@ -166,7 +166,7 @@ async def send_message(
     src_channel: discord.abc.GuildChannel | discord.Thread,
     dest_channel: discord.TextChannel,
     content_override: str = None,
-    special_flags: list[str] = [],
+    special_flags: list[str] = None,
 ) -> None:
     """Makes the embed, uploads the attachements, and send a message in the dest_channel
     This will make zero checks
@@ -204,7 +204,7 @@ def build_embed(
     author: discord.Member,
     src_channel: discord.abc.GuildChannel | discord.Thread,
     content_override: str = None,
-    special_flags: list[str] = [],
+    special_flags: list[str] = None,
 ) -> discord.Embed:
     """Builds the logged messag embed
 
@@ -213,8 +213,6 @@ def build_embed(
         author (discord.Member): The author of the message
         src_channel (discord.abc.GuildChannel | discord.Thread): The source channel where
             the initial message was sent to
-        dest_channel (discord.TextChannel): The destination channel where the
-            log embed will be sent
         content_override (str, optional): If supplied, the content of the message will be
             replaced with this. Defaults to None.
         special_flags (list[str], optional): If supplied, a new field on the embed will be
