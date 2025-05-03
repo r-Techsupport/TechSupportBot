@@ -4,7 +4,7 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [packages]
-aiocron = "==1.8"
+aiocron = "==2.1"
 bidict = "==0.23.1"
 black = "==25.1.0"
 dateparser = "1.2.0"
