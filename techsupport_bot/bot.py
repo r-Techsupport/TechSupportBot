@@ -47,7 +47,7 @@ class TechSupportBot(commands.Bot):
         FUNCTIONS_DIR (str):The list of all files in the FUNCTIONS_DIR_NAME folder
     """
 
-    CONFIG_PATH: str = "./config.yml"
+    CONFIG_PATH: str = os.environ.get("CONFIG_YML", "./config.yml")
     EXTENSIONS_DIR_NAME: str = "commands"
     EXTENSIONS_DIR: str = (
         f"{os.path.join(os.path.dirname(__file__))}/{EXTENSIONS_DIR_NAME}"
@@ -243,7 +243,14 @@ class TechSupportBot(commands.Bot):
             f"{source} recieved a PM", f"PM from: {sent_from}\n{content}"
         )
         embed.timestamp = datetime.datetime.utcnow()
-        await owner.send(embed=embed)
+        try:
+            await owner.send(embed=embed)
+        except discord.Forbidden as exception:
+            await self.logger.send_log(
+                message="Could not DM discord bot owner",
+                level=LogLevel.ERROR,
+                exception=exception,
+            )
 
     async def on_message(self: Self, message: discord.Message) -> None:
         """Logs DMs and ensure that commands are processed
@@ -766,7 +773,6 @@ class TechSupportBot(commands.Bot):
             context=LogContext(guild=member.guild),
             console_only=True,
         )
-
         owner = await self.get_owner()
         if getattr(owner, "id", None) == member.id:
             return True
@@ -790,6 +796,12 @@ class TechSupportBot(commands.Bot):
         Returns:
             discord.User | None: The User object of the owner of the application on discords side
         """
+        if self.file_config.bot_config.override_owner:
+            self.owner = await self.fetch_user(
+                int(self.file_config.bot_config.override_owner)
+            )
+            return self.owner
+
         if not self.owner:
             try:
                 # If this isn't console only, it is a forever recursion
