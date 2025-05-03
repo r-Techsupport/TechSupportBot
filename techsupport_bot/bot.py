@@ -47,7 +47,7 @@ class TechSupportBot(commands.Bot):
         FUNCTIONS_DIR (str):The list of all files in the FUNCTIONS_DIR_NAME folder
     """
 
-    CONFIG_PATH: str = "./config.yml"
+    CONFIG_PATH: str = os.environ.get("CONFIG_YML", "./config.yml")
     EXTENSIONS_DIR_NAME: str = "commands"
     EXTENSIONS_DIR: str = (
         f"{os.path.join(os.path.dirname(__file__))}/{EXTENSIONS_DIR_NAME}"
@@ -927,7 +927,7 @@ class TechSupportBot(commands.Bot):
         await self.slash_command_log(interaction)
 
         await self.logger.send_log(
-            message="Checking if prefix command can run",
+            message="Checking if slash command can run",
             level=LogLevel.DEBUG,
             context=LogContext(guild=interaction.guild, channel=interaction.channel),
             console_only=True,
@@ -1054,11 +1054,12 @@ class TechSupportBot(commands.Bot):
     # IRC Stuff
 
     async def start_irc(self: Self) -> None:
-        """Starts the IRC connection in a seperate thread"""
-        irc_config = self.file_config.api.irc
+        """Starts the IRC bot in a separate thread."""
         main_loop = asyncio.get_running_loop()
+        irc_config = self.file_config.api.irc
 
-        irc_bot = ircrelay.IRCBot(
+        # Create the bot instance
+        irc_bot = ircrelay.relay.IRCBot(
             loop=main_loop,
             server=irc_config.server,
             port=irc_config.port,
@@ -1066,10 +1067,17 @@ class TechSupportBot(commands.Bot):
             username=irc_config.name,
             password=irc_config.password,
         )
+
         self.irc = irc_bot
 
-        irc_thread = threading.Thread(target=irc_bot.start)
+        def run_in_thread() -> None:
+            """Run the IRC bot in a separate thread."""
+            irc_bot.start_bot()
+
+        # Start the bot in a new thread
         await self.logger.send_log(
-            message="Logging in to IRC", level=LogLevel.INFO, console_only=True
+            message="Logging into IRC", level=LogLevel.INFO, console_only=True
         )
-        irc_thread.start()
+
+        bot_thread = threading.Thread(target=run_in_thread)
+        bot_thread.start()

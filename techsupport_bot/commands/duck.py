@@ -65,6 +65,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         default=5,
     )
     config.add(
+        key="mute_for_cooldown",
+        datatype="bool",
+        title="Uses the timeout feature for cooldown",
+        description="If enabled, users who miss will be timed out for the cooldown seconds",
+        default=True,
+    )
+    config.add(
         key="success_rate",
         datatype="int",
         title="Success rate (percent %)",
@@ -362,14 +369,9 @@ class DuckHunt(cogs.LoopCog):
             )
             return False
 
-        weights = (
-            config.extensions.duck.success_rate.value,
-            100 - config.extensions.duck.success_rate.value,
-        )
-
         # Check to see if random failure
-        choice_ = random.choice(random.choices([True, False], weights=weights, k=1000))
-        if not choice_:
+        choice = self.random_choice(config)
+        if not choice:
             time = message.created_at - duck_message.created_at
             duration_exact = float(str(time.seconds) + "." + str(time.microseconds))
             cooldowns[message.author.id] = datetime.datetime.now()
@@ -381,17 +383,23 @@ class DuckHunt(cogs.LoopCog):
                     f"seconds. Time would have been {duration_exact} seconds"
                 )
             )
-            # Only attempt timeout if we know we can do it
+
             if (
-                channel.guild.me.top_role > message.author.top_role
-                and channel.guild.me.guild_permissions.moderate_members
+                config.extensions.duck.mute_for_cooldown.value
+                and config.extensions.duck.cooldown.value > 0
             ):
-                asyncio.create_task(
-                    message.author.timeout(
-                        timedelta(seconds=config.extensions.duck.cooldown.value),
-                        reason="Missed a duck",
+                # Only attempt timeout if we know we can do it
+                if (
+                    channel.guild.me.top_role > message.author.top_role
+                    and channel.guild.me.guild_permissions.moderate_members
+                ):
+                    asyncio.create_task(
+                        message.author.timeout(
+                            timedelta(seconds=config.extensions.duck.cooldown.value),
+                            reason="Missed a duck",
+                        )
                     )
-                )
+
             asyncio.create_task(
                 message.channel.send(
                     content=message.author.mention,
@@ -399,7 +407,7 @@ class DuckHunt(cogs.LoopCog):
                 )
             )
 
-        return choice_
+        return choice
 
     async def get_duck_user(
         self: Self, user_id: int, guild_id: int
@@ -761,12 +769,7 @@ class DuckHunt(cogs.LoopCog):
 
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
 
-        weights = (
-            config.extensions.duck.success_rate.value,
-            100 - config.extensions.duck.success_rate.value,
-        )
-
-        passed = random.choice(random.choices([True, False], weights=weights, k=1000))
+        passed = self.random_choice(config)
         if not passed:
             await auxiliary.send_deny_embed(
                 message="The duck got away before you could kill it.",
@@ -839,12 +842,7 @@ class DuckHunt(cogs.LoopCog):
 
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
 
-        weights = (
-            config.extensions.duck.success_rate.value,
-            100 - config.extensions.duck.success_rate.value,
-        )
-
-        passed = random.choice(random.choices([True, False], weights=weights, k=1000))
+        passed = self.random_choice(config)
         if not passed:
             await auxiliary.send_deny_embed(
                 message="The duck got away before you could donate it.",
@@ -933,3 +931,25 @@ class DuckHunt(cogs.LoopCog):
             message="It looks like you don't have permissions to spawn a duck",
             channel=ctx.channel,
         )
+
+    def random_choice(self: Self, config: munch.Munch) -> bool:
+        """A function to pick true or false randomly based on the success_rate in the config
+
+        Args:
+            config (munch.Munch): The config for the guild
+
+        Returns:
+            bool: Whether the random choice should succeed or not
+        """
+
+        weights = (
+            config.extensions.duck.success_rate.value,
+            100 - config.extensions.duck.success_rate.value,
+        )
+
+        # Check to see if random failure
+        choice_ = random.choice(
+            random.choices([True, False], weights=weights, k=100000)
+        )
+
+        return choice_
