@@ -7,13 +7,14 @@ from __future__ import annotations
 
 from typing import Self
 
+import discord
 import pytest
 import importlib
 from commands import htd
 from core import auxiliary
 from discord.ext import commands
 from tests import config_for_tests, helpers
-from unittest.mock import AsyncMock, MagicMock, call
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
 
 def setup_local_extension(bot: helpers.MockBot = None):
