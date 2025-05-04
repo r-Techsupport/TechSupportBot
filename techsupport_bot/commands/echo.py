@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Self
 
 from core import auxiliary, cogs
 from discord.ext import commands
+from functions import logger as function_logger
 
 if TYPE_CHECKING:
     import bot
@@ -72,9 +73,31 @@ class MessageEcho(cogs.BaseCog):
             )
             return
 
-        await channel.send(content=message)
+        sent_message = await channel.send(content=message)
 
         await auxiliary.send_confirm_embed(message="Message sent", channel=ctx.channel)
+
+        config = self.bot.guild_configs[str(channel.guild.id)]
+
+        # Don't allow logging if extension is disabled
+        if "logger" not in config.enabled_extensions:
+            return
+
+        target_logging_channel = await function_logger.pre_log_checks(
+            self.bot, config, channel
+        )
+        if not target_logging_channel:
+            return
+
+        await function_logger.send_message(
+            self.bot,
+            sent_message,
+            ctx.author,
+            channel,
+            target_logging_channel,
+            content_override=message,
+            special_flags=["Echo command"],
+        )
 
     @auxiliary.with_typing
     @echo.command(
