@@ -87,9 +87,6 @@ async def is_reader(interaction: discord.Interaction) -> bool:
 
     # Reader_roles are empty (not set)
     message = "There aren't any `note_readers` roles set in the config!"
-    embed = auxiliary.prepare_deny_embed(message=message)
-
-    await interaction.response.send_message(embed=embed, ephemeral=True)
 
     raise app_commands.AppCommandError(message)
 
@@ -122,9 +119,6 @@ async def is_writer(interaction: discord.Interaction) -> bool:
 
     # Reader_roles are empty (not set)
     message = "There aren't any `note_writers` roles set in the config!"
-    embed = auxiliary.prepare_deny_embed(message=message)
-
-    await interaction.response.send_message(embed=embed, ephemeral=True)
 
     raise app_commands.AppCommandError(message)
 
