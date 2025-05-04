@@ -1,4 +1,4 @@
-FROM python:3.11-alpine
+FROM python:3.12-alpine
 
 RUN apk update
 RUN apk add --no-cache postgresql-dev gcc musl-dev libpq git
