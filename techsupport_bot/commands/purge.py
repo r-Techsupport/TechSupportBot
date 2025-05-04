@@ -81,7 +81,12 @@ class Purger(cogs.BaseCog):
             timestamp = None
 
         await interaction.response.send_message("Purge Successful", ephemeral=True)
-        await interaction.channel.purge(after=timestamp, limit=amount)
+        sent_message = await interaction.original_response()
+        deleted = await interaction.channel.purge(after=timestamp, limit=amount)
+        await interaction.followup.edit_message(
+            message_id=sent_message.id,
+            content=f"Purge Successful. Deleted {len(deleted)} messages.",
+        )
 
         await moderation.send_command_usage_alert(
             bot_object=self.bot,
