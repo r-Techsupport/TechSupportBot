@@ -8,10 +8,12 @@ from __future__ import annotations
 from typing import Self
 
 import pytest
+import importlib
 from commands import htd
 from core import auxiliary
 from discord.ext import commands
 from tests import config_for_tests, helpers
+from unittest.mock import AsyncMock, MagicMock, call
 
 
 def setup_local_extension(bot: helpers.MockBot = None):
@@ -382,6 +384,7 @@ class Test_FormatEmbedField:
 
         # Step 3 - Assert that everything works
         assert output == "A" * 1021 + "..."
+
 
 class Test_CustomEmbed:
     """A set of tests for custom_embed_generation"""
