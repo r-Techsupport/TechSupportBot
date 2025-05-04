@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "524ef208612ab2c46c094d68422e0d67993933aa88ae993fe2900cba2248f3c2"
+            "sha256": "3ce34879f1ba60b7e60de28aee2b226310c43516c3ac1665aeb707c5bc1b7fc6"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -18,11 +18,12 @@
     "default": {
         "aiocron": {
             "hashes": [
-                "sha256:48546513faf2eb7901e65a64eba7b653c80106ed00ed9ca3419c3d10b6555a01",
-                "sha256:b6313214c311b62aa2220e872b94139b648631b3103d062ef29e5d3230ddce6d"
+                "sha256:1bb65a36aee137e8833592783956e0c7dc478bc3e9273fc2841d5d0c6045e4d2",
+                "sha256:b2612b67c552ebc4d24f524fe0316dec30b44f3c5a1d9a3697493d840aa7a5de"
             ],
             "index": "pypi",
-            "version": "==1.8"
+            "markers": "python_version >= '3.9'",
+            "version": "==2.1"
         },
         "aiohappyeyeballs": {
             "hashes": [
@@ -357,14 +358,22 @@
             "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==6.0.0"
         },
+        "cronsim": {
+            "hashes": [
+                "sha256:5aab98716ef90ab5ac6be294b2c3965dbf76dc869f048846a0af74ebb506c10d",
+                "sha256:5e153ff8ed64da7ee8d5caac470dbeda8024ab052c3010b1be149772b4801835"
+            ],
+            "markers": "python_version >= '3.8'",
+            "version": "==2.6"
+        },
         "dateparser": {
             "hashes": [
-                "sha256:0b21ad96534e562920a0083e97fd45fa959882d4162acc358705144520a35830",
-                "sha256:7975b43a4222283e0ae15be7b4999d08c9a70e2d378ac87385b1ccf2cffbbb30"
+                "sha256:7e4919aeb48481dbfc01ac9683c8e20bfe95bb715a38c1e9f6af889f4f30ccc3",
+                "sha256:bdcac262a467e6260030040748ad7c10d6bacd4f3b9cdb4cfd2251939174508c"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.7'",
-            "version": "==1.2.0"
+            "markers": "python_version >= '3.8'",
+            "version": "==1.2.1"
         },
         "dill": {
             "hashes": [
