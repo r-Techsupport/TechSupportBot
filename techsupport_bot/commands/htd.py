@@ -290,6 +290,7 @@ def split_nicely(str_to_split: str) -> list:
 
     return parsed_list
 
+
 class Htd(cogs.BaseCog):
     """
     perform calculations on cross-base numbers and convert between them
