@@ -4,10 +4,10 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [packages]
-aiocron = "==1.8"
+aiocron = "==2.1"
 bidict = "==0.23.1"
 black = "==25.1.0"
-dateparser = "1.2.0"
+dateparser = "1.2.1"
 "discord.py" = "==2.5.2"
 emoji = "==2.14.1"
 expiringdict = "==1.2.2"
