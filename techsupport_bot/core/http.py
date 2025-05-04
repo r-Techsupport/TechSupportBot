@@ -100,6 +100,7 @@ class HTTPCalls:
 
         Raises:
             HTTPRateLimit: Raised if the API is currently on cooldown
+            HTTPRateLimitAppCommand: Raised if the API is currently on cooldown
 
         Returns:
             munch.Munch: The munch object containing the response from the API
