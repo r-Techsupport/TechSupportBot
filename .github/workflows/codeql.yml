@@ -14,15 +14,17 @@ name: "CodeQL"
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch:
-    inputs:
-      pr_branch:
-        description: 'Branch to run CI on'
-        required: true
+  pull_request:
+    branches: [ "main" ]
+    types: [opened, synchronize, reopened, labeled, unlabeled, edited]
   schedule:
     - cron: '31 18 * * 1'
 
 jobs:
+  if: |
+        contains(github.event.pull_request.title, '[run ci]') ||
+        contains(github.event.pull_request.body, '[run ci]') ||
+        contains(join(github.event.pull_request.labels.*.name), 'run-ci')
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
