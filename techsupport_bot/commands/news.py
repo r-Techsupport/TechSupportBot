@@ -108,13 +108,17 @@ class News(cogs.LoopCog):
             self.valid_category.append(item.value)
 
     async def get_headlines(
-        self: Self, country_code: str, category: str = None
+        self: Self,
+        country_code: str,
+        category: str = None,
+        is_interaction: bool = False,
     ) -> list[munch.Munch]:
         """Calls the API to get the list of headlines based on the category and country
 
         Args:
             country_code (str): The country code to get headlines from
             category (str, optional): The category of headlines to get. Defaults to None.
+            is_interaction (bool): If the headline is being called from an interaction
 
         Returns:
             list[munch.Munch]: The list of article objects from the API
@@ -126,7 +130,9 @@ class News(cogs.LoopCog):
         if category:
             url = f"{url}&category={category}"
 
-        response = await self.bot.http_functions.http_call("get", url)
+        response = await self.bot.http_functions.http_call(
+            "get", url, use_app_error=is_interaction
+        )
 
         articles = response.get("articles")
         if not articles:
@@ -134,19 +140,23 @@ class News(cogs.LoopCog):
         return articles
 
     async def get_random_headline(
-        self: Self, country_code: str, category: str = None
+        self: Self,
+        country_code: str,
+        category: str = None,
+        is_interaction: bool = False,
     ) -> munch.Munch:
         """Gets a single article object from the news API
 
         Args:
             country_code (str): The country code of the headliens to get
             category (str, optional): The category of headlines to get. Defaults to None.
+            is_interaction (bool): If the headline is being called from an interaction
 
         Returns:
             munch.Munch: The raw API object representing a news headline
         """
 
-        articles = await self.get_headlines(country_code, category)
+        articles = await self.get_headlines(country_code, category, is_interaction)
 
         # Filter out articles with URLs containing "removed.com"
         filtered_articles = []
@@ -231,7 +241,7 @@ class News(cogs.LoopCog):
         url = None
         while not url:
             article = await self.get_random_headline(
-                config.extensions.news.country.value, category
+                config.extensions.news.country.value, category, True
             )
             url = article.get("url")
 
