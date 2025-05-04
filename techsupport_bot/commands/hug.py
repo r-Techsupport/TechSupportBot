@@ -1,21 +1,37 @@
 """Module for the hug extension for the bot."""
 
+from __future__ import annotations
+
 import random
+from typing import TYPE_CHECKING, Self
 
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Method to add hug to the config file."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Hug plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(Hugger(bot=bot))
 
 
 class Hugger(cogs.BaseCog):
-    """Class to make the hug command."""
+    """Class to make the hug command.
 
-    HUGS_SELECTION = [
+    Attributes:
+        HUGS_SELECTION (list[str]): The list of hug phrases to display
+        ICON_URL (str): The icon to use when hugging
+
+    """
+
+    HUGS_SELECTION: list[str] = [
         "{user_giving_hug} hugs {user_to_hug} forever and ever and ever",
         "{user_giving_hug} wraps arms around {user_to_hug} and clings forever",
         "{user_giving_hug} hugs {user_to_hug} and gives their hair a sniff",
@@ -28,9 +44,21 @@ class Hugger(cogs.BaseCog):
         "{user_giving_hug} hugs {user_to_hug} into a coma",
         "{user_giving_hug} smothers {user_to_hug} with a loving hug",
         "{user_giving_hug} squeezes {user_to_hug} to death",
+        "{user_giving_hug} swaddles {user_to_hug} like a baby",
+        "{user_giving_hug} tackles {user_to_hug} to the ground with a giant glomp",
+        "{user_giving_hug} hugs {user_to_hug} and gives them Eskimo kisses",
+        (
+            "{user_giving_hug} grabs {user_to_hug} ,pulls them close,"
+            " giving them three hearty raps on the back"
+        ),
+        "{user_giving_hug} hugs {user_to_hug} and rubs their back slowly",
+        "{user_giving_hug} pulls {user_to_hug} into a tight hug and squeezes the sadness out",
+        "{user_giving_hug} hugs {user_to_hug} too tightly until they pass out",
+        "{user_giving_hug} went to hug {user_to_hug} but missed and ran into the wall instead",
     ]
-    ICON_URL = (
-        "https://cdn.icon-icons.com/icons2/1648/PNG/512/10022huggingface_110042.png"
+    ICON_URL: str = (
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/a/"
+        + "a5/Noto_Emoji_Oreo_1f917.svg/768px-Noto_Emoji_Oreo_1f917.svg.png"
     )
 
     @auxiliary.with_typing
@@ -41,7 +69,9 @@ class Hugger(cogs.BaseCog):
         description="Hugs a mentioned user using an embed",
         usage="@user",
     )
-    async def hug(self, ctx: commands.Context, user_to_hug: discord.Member = None):
+    async def hug(
+        self: Self, ctx: commands.Context, user_to_hug: discord.Member = None
+    ) -> None:
         """The .hug discord command function
 
         Args:
@@ -61,7 +91,7 @@ class Hugger(cogs.BaseCog):
         await self.hug_command(ctx, user_to_hug)
 
     def check_hug_eligibility(
-        self,
+        self: Self,
         author: discord.Member,
         user_to_hug: discord.Member,
     ) -> bool:
@@ -80,7 +110,7 @@ class Hugger(cogs.BaseCog):
         return True
 
     def generate_hug_phrase(
-        self, author: discord.Member, user_to_hug: discord.Member
+        self: Self, author: discord.Member, user_to_hug: discord.Member
     ) -> str:
         """Generates a hug phrase from the HUGS_SELECTION variable
 
@@ -98,7 +128,7 @@ class Hugger(cogs.BaseCog):
         return hug_text
 
     async def hug_command(
-        self, ctx: commands.Context, user_to_hug: discord.Member
+        self: Self, ctx: commands.Context, user_to_hug: discord.Member
     ) -> None:
         """The main logic for the hug command
 

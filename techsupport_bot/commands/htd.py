@@ -56,7 +56,6 @@ def perform_op_on_list(equation_list: list) -> int:
 
     Args:
         equation_list (list): The equation in a list form
-
     Raises:
         ValueError: If the operator is not valid, this is raised
 
@@ -290,7 +289,6 @@ def split_nicely(str_to_split: str) -> list:
     parsed_list.append(val_buffer)
 
     return parsed_list
-
 
 class Htd(cogs.BaseCog):
     """

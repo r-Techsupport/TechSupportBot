@@ -1,37 +1,43 @@
 """
-Module for the hello command on the discord bot.
-This module has unit tests
-This modules requires no config, no databases, and no APIs
+Commands: /hello
+Config: None
+Databases: None
+Unit tests: No need
 """
 
-from core import auxiliary, cogs
-from discord.ext import commands
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
+import discord
+from core import cogs
+from discord import app_commands
+
+if TYPE_CHECKING:
+    import bot
 
 
-async def setup(bot):
-    """Add the hello greeter to the config file."""
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the ChatGPT plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(Greeter(bot=bot))
 
 
 class Greeter(cogs.BaseCog):
     """Class for the greeter command."""
 
-    async def hello_command(self, ctx: commands.Context) -> None:
-        """A simple function to add HEY reactions to the command invocation
+    @app_commands.command(
+        name="hello",
+        description="Says hello to the bot (because they are doing such a great job!)",
+        extras={"module": "hello"},
+    )
+    async def hello_app_command(self: Self, interaction: discord.Interaction) -> None:
+        """A simple command to have the bot say HEY to the invoker
 
         Args:
-            ctx (commands.Context): The context in which the command was run in
+            interaction (discord.Interaction): The interaction that called this command
         """
-        await auxiliary.add_list_of_reactions(
-            message=ctx.message, reactions=["🇭", "🇪", "🇾"]
-        )
-
-    @commands.command(
-        name="hello",
-        brief="Says hello to the bot",
-        description="Says hello to the bot (because they are doing such a great job!)",
-        usage="",
-    )
-    async def hello(self, ctx):
-        """Method to respond to hellos by the bot."""
-        await self.hello_command(ctx)
+        await interaction.response.send_message("🇭 🇪 🇾")

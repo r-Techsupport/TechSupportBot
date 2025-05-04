@@ -1,12 +1,23 @@
 """Module for the autoreact extension for the discord bot."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
 import munch
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding the autoreact extension to the config file to get info."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Autoreact plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     config = extensionconfig.ExtensionConfig()
     config.add(
         key="react_map",
@@ -24,7 +35,7 @@ class AutoReact(cogs.MatchCog):
     """Class for the autoreact to make it to discord."""
 
     async def match(
-        self, config: munch.Munch, _: commands.Context, content: str
+        self: Self, config: munch.Munch, _: commands.Context, content: str
     ) -> bool:
         """A match function to determine if somehting should be reacted to
 
@@ -43,8 +54,8 @@ class AutoReact(cogs.MatchCog):
         return False
 
     async def response(
-        self, config: munch.Munch, ctx: commands.Context, content: str, _: bool
-    ):
+        self: Self, config: munch.Munch, ctx: commands.Context, content: str, _: bool
+    ) -> None:
         """The function to generate and add reactions
 
         Args:

@@ -6,7 +6,7 @@ This modules requires no config, no databases, and no APIs
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 import discord
 from core import auxiliary, cogs
@@ -29,7 +29,7 @@ class Corrector(cogs.BaseCog):
     """Class for the correct command for the discord bot."""
 
     async def correct_command(
-        self, ctx: commands.Context, to_replace: str, replacement: str
+        self: Self, ctx: commands.Context, to_replace: str, replacement: str
     ) -> None:
         """This is the main processing for the correct command
 
@@ -55,9 +55,25 @@ class Corrector(cogs.BaseCog):
         updated_message = self.prepare_message(
             message_to_correct.content, to_replace, replacement
         )
+
+        updated_message += " :white_check_mark:"
+
+        if len(updated_message) > 4096:
+            await auxiliary.send_deny_embed(
+                message="The corrected message is too long to send", channel=ctx.channel
+            )
+            return
+
+        if updated_message.count("\n") > 15:
+            await auxiliary.send_deny_embed(
+                message="The corrected message has too many lines to send",
+                channel=ctx.channel,
+            )
+            return
+
         embed = auxiliary.generate_basic_embed(
             title="Correction!",
-            description=f"{updated_message} :white_check_mark:",
+            description=updated_message,
             color=discord.Color.green(),
         )
         await ctx.send(
@@ -66,7 +82,7 @@ class Corrector(cogs.BaseCog):
         )
 
     def prepare_message(
-        self, old_content: str, to_replace: str, replacement: str
+        self: Self, old_content: str, to_replace: str, replacement: str
     ) -> str:
         """This corrects a message based on input
 
@@ -89,7 +105,7 @@ class Corrector(cogs.BaseCog):
         usage="[to_replace] [replacement]",
     )
     async def correct(
-        self, ctx: commands.Context, to_replace: str, replacement: str
+        self: Self, ctx: commands.Context, to_replace: str, replacement: str
     ) -> None:
         """Discord entry point into the correct command
 

@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Self
 import discord
 import ui
 from core import auxiliary, cogs
+from discord import app_commands
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -35,7 +36,42 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class ExtensionControl(cogs.BaseCog):
     """
     The class that holds the extension commands
+
+    Attributes:
+        extension_app_command_group (app_commands.Group): The group for the /extension commands
     """
+
+    extension_app_command_group: app_commands.Group = app_commands.Group(
+        name="extension", description="...", extras={"module": "extension"}
+    )
+
+    @extension_app_command_group.command(
+        name="list_disabled",
+        description="Lists all disabled extensions in the current server",
+        extras={"module": "extension"},
+    )
+    async def list_disabled(self: Self, interaction: discord.Interaction) -> None:
+        """This will read the current guild config and list all the
+        extensions that are currently disabled
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered the slash command
+        """
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+        missing_extensions = [
+            item
+            for item in self.bot.extension_name_list
+            if item not in config.enabled_extensions
+        ]
+        if len(missing_extensions) == 0:
+            embed = auxiliary.prepare_confirm_embed(
+                message="No currently loaded extensions are disabled"
+            )
+        else:
+            embed = auxiliary.prepare_confirm_embed(
+                message=f"Disabled extensions: {missing_extensions}"
+            )
+        await interaction.response.send_message(embed=embed)
 
     @commands.check(auxiliary.bot_admin_check_context)
     @commands.group(
@@ -60,7 +96,7 @@ class ExtensionControl(cogs.BaseCog):
         usage="[extension-name]",
     )
     async def extension_status(
-        self, ctx: commands.Context, *, extension_name: str
+        self: Self, ctx: commands.Context, *, extension_name: str
     ) -> None:
         """Gets the status of an extension.
 
@@ -99,7 +135,7 @@ class ExtensionControl(cogs.BaseCog):
         name="load", description="Loads an extension by name", usage="[extension-name]"
     )
     async def load_extension(
-        self, ctx: commands.Context, *, extension_name: str
+        self: Self, ctx: commands.Context, *, extension_name: str
     ) -> None:
         """Loads an extension by filename.
 
@@ -124,7 +160,7 @@ class ExtensionControl(cogs.BaseCog):
         usage="[extension-name]",
     )
     async def unload_extension(
-        self, ctx: commands.Context, *, extension_name: str
+        self: Self, ctx: commands.Context, *, extension_name: str
     ) -> None:
         """Unloads an extension by filename.
 
@@ -149,7 +185,7 @@ class ExtensionControl(cogs.BaseCog):
         usage="[extension-name] |python-file-upload|",
     )
     async def register_extension(
-        self, ctx: commands.Context, extension_name: str
+        self: Self, ctx: commands.Context, extension_name: str
     ) -> None:
         """Unloads an extension by filename.
 

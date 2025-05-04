@@ -27,9 +27,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Burn(cogs.BaseCog):
-    """Class for Burn command on the discord bot."""
+    """Class for Burn command on the discord bot.
 
-    PHRASES = [
+    Attributes:
+        PHRASES (list[str]): The list of phrases to pick from
+    """
+
+    PHRASES: list[str] = [
         "Sick BURN!",
         "Someone is going to need ointment for that BURN!",
         "Fire! Call 911! Someone just got BURNED!",
@@ -70,7 +74,7 @@ class Burn(cogs.BaseCog):
         await ctx.send(embed=embed, content=auxiliary.construct_mention_string([user]))
 
     async def burn_command(
-        self, ctx: commands.Context, user_to_match: discord.Member
+        self: Self, ctx: commands.Context, user_to_match: discord.Member
     ) -> None:
         """This the core logic of the burn command
         This is a command and should be accessed via discord
@@ -79,10 +83,13 @@ class Burn(cogs.BaseCog):
             ctx (commands.Context): The context in which the command was run
             user_to_match (discord.Member): The user in which to burn
         """
-        prefix = await self.bot.get_prefix(ctx.message)
-        message = await auxiliary.search_channel_for_message(
-            channel=ctx.channel, prefix=prefix, member_to_match=user_to_match
-        )
+        if ctx.message.reference is None:
+            prefix = await self.bot.get_prefix(ctx.message)
+            message = await auxiliary.search_channel_for_message(
+                channel=ctx.channel, prefix=prefix, member_to_match=user_to_match
+            )
+        else:
+            message = ctx.message.reference.resolved
 
         await self.handle_burn(ctx, user_to_match, message)
 
@@ -90,14 +97,26 @@ class Burn(cogs.BaseCog):
     @commands.guild_only()
     @commands.command(
         brief="Declares a BURN!",
-        description="Declares the user's last message as a BURN!",
+        description="Declares mentioned user's message as a BURN!",
         usage="@user",
     )
-    async def burn(self, ctx: commands.Context, user_to_match: discord.Member) -> None:
+    async def burn(
+        self: Self, ctx: commands.Context, user_to_match: discord.Member = None
+    ) -> None:
         """The only purpose of this function is to accept input from discord
 
         Args:
             ctx (commands.Context): The context in which the command was run
             user_to_match (discord.Member): The user in which to burn
         """
+        if user_to_match is None:
+            if ctx.message.reference is None:
+                await auxiliary.send_deny_embed(
+                    message="You need to mention someone to declare a burn.",
+                    channel=ctx.channel,
+                )
+                return
+
+            user_to_match = ctx.message.reference.resolved.author
+
         await self.burn_command(ctx, user_to_match)

@@ -1,21 +1,31 @@
 """Module for the wyr extension for the discord bot."""
 
+from __future__ import annotations
+
 import random
+from typing import TYPE_CHECKING, Self
 
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
 
+if TYPE_CHECKING:
+    import bot
 
-async def setup(bot):
-    """Adding the would you rather configuration to the config file."""
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the WYR plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
     await bot.add_cog(WouldYouRather(bot=bot))
 
 
 class WouldYouRather(cogs.BaseCog):
     """Class to create a would you rather scenario."""
 
-    async def preconfig(self):
+    async def preconfig(self: Self) -> None:
         """Method to preconfig the wyr scenario."""
         self.last = None
 
@@ -25,11 +35,15 @@ class WouldYouRather(cogs.BaseCog):
         brief="Gets Would You Rather questions",
         description="Creates a random Would You Rather question",
     )
-    async def wyr(self, ctx: commands.Context) -> None:
-        """Exists to preserve undecorated wyr_command for testing"""
+    async def wyr(self: Self, ctx: commands.Context) -> None:
+        """Exists to preserve undecorated wyr_command for testing
+
+        Args:
+            ctx (commands.Context): The context in which the command was run
+        """
         await self.wyr_command(ctx)
 
-    async def wyr_command(self, ctx: commands.Context) -> None:
+    async def wyr_command(self: Self, ctx: commands.Context) -> None:
         """The main processing of .wyr
 
         Args:
@@ -43,7 +57,7 @@ class WouldYouRather(cogs.BaseCog):
         )
         await ctx.send(embed=embed)
 
-    def get_question(self) -> str:
+    def get_question(self: Self) -> str:
         """This gets a non-repeated question
 
         Returns:

@@ -1,12 +1,12 @@
 """A bunch of functions to format messages going to and from IRC"""
 
-from typing import Dict, List
+from __future__ import annotations
 
 import discord
 import irc.client
 
 
-def parse_irc_message(event: irc.client.Event) -> Dict[str, str]:
+def parse_irc_message(event: irc.client.Event) -> dict[str, str]:
     """This turns the irc.client.Event object into a dictionary
     This dictionary contains more direct access to import information
     This gets username, hostmask, channel, and raw content
@@ -15,7 +15,7 @@ def parse_irc_message(event: irc.client.Event) -> Dict[str, str]:
         event (irc.client.Event): The event object that triggered this function
 
     Returns:
-        Dict[str, str]: The formatted message
+        dict[str, str]: The formatted message
     """
     # Looking for username, hostmask, action, channel, content
     username = event.source.split("!")[0]
@@ -31,7 +31,7 @@ def parse_irc_message(event: irc.client.Event) -> Dict[str, str]:
     }
 
 
-def parse_ban_message(event: irc.client.Event) -> Dict[str, str]:
+def parse_ban_message(event: irc.client.Event) -> dict[str, str]:
     """This turns the irc.client.Event object into a dictionary
     This dictionary contains more direct access to import information
     This gets username, hostmask, channel
@@ -41,15 +41,16 @@ def parse_ban_message(event: irc.client.Event) -> Dict[str, str]:
         event (irc.client.Event): The event object that triggered this function
 
     Returns:
-        Dict[str, str]: The formatted message
+        dict[str, str]: The formatted message
     """
     username = event.source.split("!")[0]
     hostmask = event.source.split("!")[1]
     channel = event.target
+    action = f"unknown: {event.arguments[0]}"
 
     if "+b" in event.arguments[0]:
         action = "banned"
-    elif "+b" in event.arguments[0]:
+    elif "-b" in event.arguments[0]:
         action = "unbanned"
     content = f"{event.arguments[1]} was {action} from {channel}"
 
@@ -162,11 +163,11 @@ def get_permissions_prefix_for_discord_user(member: discord.Member) -> str:
     return prefix_str
 
 
-def get_file_links(message_attachments: List[discord.Attachment]) -> str:
+def get_file_links(message_attachments: list[discord.Attachment]) -> str:
     """Turns a list of attachments into a string containing links to them
 
     Args:
-        message_attachments (List[discord.Attachment]): The list of attachments from a
+        message_attachments (list[discord.Attachment]): The list of attachments from a
             discord.Message object
 
     Returns:
