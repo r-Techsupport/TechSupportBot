@@ -994,7 +994,7 @@ class TechSupportBot(commands.Bot):
         message = f"Command detected: `{command}`"
 
         await self.logger.send_log(
-            message=message.strip(),
+            message=message.strip()[:6000],
             level=LogLevel.INFO,
             context=LogContext(guild=interaction.guild, channel=interaction.channel),
             channel=log_channel,
