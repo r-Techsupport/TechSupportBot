@@ -422,7 +422,7 @@ class Voting(cogs.LoopCog):
         )
         for vote in active_votes:
             end_time = int((vote.start_time + timedelta(hours=72)).timestamp())
-            if end_time <= int(datetime.datetime.utcnow().timestamp()):
+            if end_time <= int(datetime.datetime.now().timestamp()):
                 await self.end_vote(vote, guild)
 
     async def end_vote(self: Self, vote: munch.Munch, guild: discord.Guild) -> None:

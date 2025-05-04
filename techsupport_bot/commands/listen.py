@@ -60,7 +60,7 @@ class Listener(cogs.BaseCog):
         """
         embed = auxiliary.generate_basic_embed(description=message.clean_content)
 
-        embed.timestamp = datetime.datetime.utcnow()
+        embed.timestamp = datetime.datetime.now()
         embed.set_author(
             name=message.author.name, icon_url=message.author.display_avatar.url
         )

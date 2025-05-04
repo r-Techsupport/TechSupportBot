@@ -44,7 +44,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         background: str = bot.db.Column(bot.db.String)
         reason: str = bot.db.Column(bot.db.String)
         application_time: datetime.datetime = bot.db.Column(
-            bot.db.DateTime, default=datetime.datetime.utcnow
+            bot.db.DateTime, default=datetime.datetime.now
         )
 
     class ApplicationBans(bot.db.Model):
@@ -85,7 +85,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         befriend_count: int = bot.db.Column(bot.db.Integer, default=0)
         kill_count: int = bot.db.Column(bot.db.Integer, default=0)
         updated: datetime.datetime = bot.db.Column(
-            bot.db.DateTime, default=datetime.datetime.utcnow
+            bot.db.DateTime, default=datetime.datetime.now
         )
         speed_record: float = bot.db.Column(bot.db.Float, default=80.0)
 
@@ -114,7 +114,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild: str = bot.db.Column(bot.db.String)
         message: str = bot.db.Column(bot.db.String)
         time: datetime.datetime = bot.db.Column(
-            bot.db.DateTime, default=datetime.datetime.utcnow
+            bot.db.DateTime, default=datetime.datetime.now
         )
         embed_config: str = bot.db.Column(bot.db.String, default=None)
         hidden: bool = bot.db.Column(bot.db.Boolean, default=False)
@@ -165,7 +165,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild: str = bot.db.Column(bot.db.String)
         message: str = bot.db.Column(bot.db.String)
         time: datetime.datetime = bot.db.Column(
-            bot.db.DateTime, default=datetime.datetime.utcnow
+            bot.db.DateTime, default=datetime.datetime.now
         )
         nsfw: bool = bot.db.Column(bot.db.Boolean, default=False)
 
@@ -218,7 +218,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         user_id: str = bot.db.Column(bot.db.String)
         guild_id: str = bot.db.Column(bot.db.String)
         updated: datetime.datetime = bot.db.Column(
-            bot.db.DateTime, default=datetime.datetime.utcnow
+            bot.db.DateTime, default=datetime.datetime.now
         )
         author_id: str = bot.db.Column(bot.db.String)
         body: str = bot.db.Column(bot.db.String)
@@ -242,7 +242,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild_id: str = bot.db.Column(bot.db.String)
         reason: str = bot.db.Column(bot.db.String)
         time: datetime.datetime = bot.db.Column(
-            bot.db.DateTime, default=datetime.datetime.utcnow
+            bot.db.DateTime, default=datetime.datetime.now
         )
 
     class Config(bot.db.Model):
@@ -262,7 +262,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild_id: str = bot.db.Column(bot.db.String)
         config: str = bot.db.Column(bot.db.String)
         update_time: datetime.datetime = bot.db.Column(
-            bot.db.DateTime, default=datetime.datetime.utcnow
+            bot.db.DateTime, default=datetime.datetime.now
         )
 
     class Listener(bot.db.Model):
@@ -335,7 +335,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         votes_no: int = bot.db.Column(bot.db.Integer, default=0)
         votes_total: int = bot.db.Column(bot.db.Integer, default=0)
         start_time: datetime.datetime = bot.db.Column(
-            bot.db.DateTime, default=datetime.datetime.utcnow
+            bot.db.DateTime, default=datetime.datetime.now
         )
         vote_active: bool = bot.db.Column(bot.db.Boolean, default=True)
         blind: bool = bot.db.Column(bot.db.Boolean, default=False)

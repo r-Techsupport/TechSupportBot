@@ -1251,7 +1251,7 @@ class Protector(cogs.MatchCog):
             )
             return
 
-        timestamp = datetime.datetime.utcnow() - datetime.timedelta(
+        timestamp = datetime.datetime.now() - datetime.timedelta(
             minutes=duration_minutes
         )
 
