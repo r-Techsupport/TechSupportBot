@@ -49,7 +49,7 @@ class BotInfo(cogs.BaseCog):
 
         embed.add_field(
             name="Started",
-            value=f"{self.bot.startup_time} UTC" if self.bot.startup_time else "None",
+            value=f"<t:{int(self.bot.startup_time.timestamp())}:R>" if self.bot.startup_time else "Unknown",
             inline=True,
         )
         embed.add_field(
