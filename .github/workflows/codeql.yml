@@ -15,6 +15,10 @@ on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
+    inputs:
+      pr_branch:
+        description: 'Branch to run CI on'
+        required: true
   schedule:
     - cron: '31 18 * * 1'
 
