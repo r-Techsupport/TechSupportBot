@@ -907,6 +907,118 @@ class FactoidManager(cogs.MatchCog):
             factoid_message=factoid_message,
         )
 
+    @factoid_app_group.command(
+        name="call",
+        description="Calls a factoid from the database and sends it publicy in the channel.",
+        extras={
+            "usage": "[factoid_name]",
+            "module": "factoids",
+        },
+    )
+    async def factoid_call_command(
+        self: Self, interaction: discord.Interaction, factoid_name: str
+    ) -> None:
+        """This is an app command version of typing {prefix}call
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid name to search for and print
+
+        Raises:
+            TooLongFactoidMessageError: If the plaintext exceed 2000 characters
+        """
+        query = factoid_name.replace("\n", " ").split(" ")[0].lower()
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+        try:
+            factoid = await self.get_factoid(query, str(interaction.guild.id))
+
+        except custom_errors.FactoidNotFoundError:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid {factoid_name} couldn't be found"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await self.bot.logger.send_log(
+                message=f"Invalid factoid call {query} from {interaction.guild.id}",
+                level=LogLevel.DEBUG,
+                context=LogContext(
+                    guild=interaction.guild, channel=interaction.channel
+                ),
+            )
+            return
+
+        # Checking for disabled or restricted
+        if factoid.disabled:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid {factoid_name} is disabled."
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        if (
+            factoid.restricted
+            and str(interaction.channel.id)
+            not in config.extensions.factoids.restricted_list.value
+        ):
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid {factoid_name} is restricted and not allowed in this channel."
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        if not config.extensions.factoids.disable_embeds.value:
+            embed = self.get_embed_from_factoid(factoid)
+        else:
+            embed = None
+        # if the json doesn't include non embed argument, then don't send anything
+        # otherwise send message text with embed
+        try:
+            content = factoid.message if not embed else None
+        except ValueError:
+            # The not embed causes a ValueError in certain cases. This ensures fallback works
+            content = factoid.message
+
+        if content and len(content) > 2000:
+            embed = auxiliary.prepare_deny_embed(
+                message="I ran into an error sending that factoid: "
+                + "The factoid message is longer than the discord size limit (2000)",
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+
+            raise custom_errors.TooLongFactoidMessageError
+
+        try:
+            # define the message and send it
+            await interaction.response.send_message(content=content, embed=embed)
+            # log it in the logging channel with type info and generic content
+            log_channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message=(
+                    f"Sending factoid: {query} (triggered by {interaction.user} in"
+                    f" #{interaction.channel.name})"
+                ),
+                level=LogLevel.INFO,
+                context=LogContext(
+                    guild=interaction.guild, channel=interaction.channel
+                ),
+                channel=log_channel,
+            )
+        # If something breaks, also log it
+        except discord.errors.HTTPException as exception:
+            log_channel = config.get("logging_channel")
+            await self.bot.logger.send_log(
+                message="Could not send factoid",
+                level=LogLevel.ERROR,
+                context=LogContext(
+                    guild=interaction.guild, channel=interaction.channel
+                ),
+                channel=log_channel,
+                exception=exception,
+            )
+            # Sends the raw factoid instead of the embed as fallback
+            await interaction.response.send_message(content=factoid.message)
+        await self.send_to_irc(
+            interaction.channel, interaction.message, factoid.message
+        )
+
     # -- Factoid job related functions --
     async def kickoff_jobs(self: Self) -> None:
         """Gets a list of cron jobs and starts them"""

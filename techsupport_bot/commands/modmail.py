@@ -1499,3 +1499,38 @@ class Modmail(cogs.BaseCog):
             message=f"{user.mention} was successfully unbanned from creating modmail threads!",
             channel=ctx.channel,
         )
+
+    @auxiliary.with_typing
+    @commands.check(has_modmail_management_role)
+    @modmail.command(
+        name="bans",
+        description="Lists the users who are banned from using modmail",
+    )
+    async def modmail_list_bans(self: Self, ctx: commands.Context) -> None:
+        """Lists the users who are banned from using modmail
+
+        Args:
+            ctx (commands.Context): Context of the command execution
+        """
+        bans = await self.bot.models.ModmailBan.query.gino.all()
+        if not bans:
+            embed = auxiliary.generate_basic_embed(
+                color=discord.Color.green(),
+                description="There are no modmail bans",
+            )
+            await ctx.channel.send(embed=embed)
+            return
+
+        embed_description = ""
+
+        for ban in bans:
+            user: discord.User = await self.bot.fetch_user(ban.user_id)
+            embed_description += f"{user.mention} - `{user}`\n"
+
+        embed: discord.Embed = discord.Embed(
+            color=discord.Color.green(),
+            title="Modmail Bans:",
+            description=embed_description,
+        )
+
+        await ctx.channel.send(embed=embed)

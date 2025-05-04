@@ -242,8 +242,16 @@ class TechSupportBot(commands.Bot):
         embed = auxiliary.generate_basic_embed(
             f"{source} recieved a PM", f"PM from: {sent_from}\n{content}"
         )
+
         embed.timestamp = datetime.datetime.now()
-        await owner.send(embed=embed)
+        try:
+            await owner.send(embed=embed)
+        except discord.Forbidden as exception:
+            await self.logger.send_log(
+                message="Could not DM discord bot owner",
+                level=LogLevel.ERROR,
+                exception=exception,
+            )
 
     async def on_message(self: Self, message: discord.Message) -> None:
         """Logs DMs and ensure that commands are processed
@@ -763,7 +771,6 @@ class TechSupportBot(commands.Bot):
             context=LogContext(guild=member.guild),
             console_only=True,
         )
-
         owner = await self.get_owner()
         if getattr(owner, "id", None) == member.id:
             return True
@@ -787,6 +794,12 @@ class TechSupportBot(commands.Bot):
         Returns:
             discord.User | None: The User object of the owner of the application on discords side
         """
+        if self.file_config.bot_config.override_owner:
+            self.owner = await self.fetch_user(
+                int(self.file_config.bot_config.override_owner)
+            )
+            return self.owner
+
         if not self.owner:
             try:
                 # If this isn't console only, it is a forever recursion
