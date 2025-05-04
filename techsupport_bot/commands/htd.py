@@ -122,7 +122,7 @@ def convert_list_to_ints(raw_list: list) -> list:
         try:
             # Attempt to convert each value
             raw_list[index] = convert_value_to_integer(value)
-        except ValueError:
+        except ValueError as exc:
             # If conversion fails, get the base from the value
             if value.startswith("0x"):
                 base = "hexadecimal"
@@ -131,7 +131,7 @@ def convert_list_to_ints(raw_list: list) -> list:
             else:
                 base = "decimal"
 
-            raise ValueError(f"Failed to convert `{value}` from {base} base.")
+            raise ValueError(f"Failed to convert `{value}` from {base} base.") from exc
 
     return raw_list
 
