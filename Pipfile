@@ -37,4 +37,4 @@ pyyaml = "==6.0.1"
 unidecode = "==1.4.0"
 
 [requires]
-python_version = "3.11"
+python_version = "3.12"

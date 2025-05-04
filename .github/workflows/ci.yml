@@ -22,10 +22,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 3.11
+    - name: Set up Python 2
       uses: actions/setup-python@v3
       with:
-        python-version: 3.11
+        python-version: 3.12
     - name: Install pip
       run: |
         python -m pip install pip==$(sed -nE 's/pip = "==(.*)"/\1/p' Pipfile)
@@ -39,7 +39,7 @@ jobs:
     - name: Running pytest
       run: |
         cd techsupport_bot
-        python3.11 -m pytest tests/ -p no:warnings
+        python3.12 -m pytest tests/ -p no:warnings
 
   black:
     if: |
@@ -55,10 +55,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 3.11
+    - name: Set up Python 3.12
       uses: actions/setup-python@v3
       with:
-        python-version: 3.11
+        python-version: 3.12
     - name: Install dependencies
       run: |
         python -m pip install pip==$(sed -nE 's/pip = "==(.*)"/\1/p' Pipfile)
@@ -82,10 +82,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 3.11
+    - name: Set up Python 3.12
       uses: actions/setup-python@v3
       with:
-        python-version: 3.11
+        python-version: 3.12
     - name: Install dependencies
       run: |
         python -m pip install pip==$(sed -nE 's/pip = "==(.*)"/\1/p' Pipfile)
@@ -135,10 +135,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 3.11
+    - name: Set up Python 3.12
       uses: actions/setup-python@v3
       with:
-        python-version: 3.11
+        python-version: 3.12
     - name: Install dependencies
       run: |
         python -m pip install pip==$(sed -nE 's/pip = "==(.*)"/\1/p' Pipfile)
@@ -162,10 +162,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 3.11
+    - name: Set up Python 3.12
       uses: actions/setup-python@v3
       with:
-        python-version: 3.11
+        python-version: 3.12
     - name: Install dependencies
       run: |
         python -m pip install pip==$(sed -nE 's/pip = "==(.*)"/\1/p' Pipfile)

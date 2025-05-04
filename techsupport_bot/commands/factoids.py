@@ -32,7 +32,7 @@ import yaml
 from aiohttp.client_exceptions import InvalidURL
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, custom_errors, extensionconfig
-from croniter import CroniterBadCronError
+import cronsim
 from discord import app_commands
 from discord.ext import commands
 
@@ -1077,7 +1077,7 @@ class FactoidManager(cogs.MatchCog):
             try:
                 await aiocron.crontab(job.cron).next()
 
-            except CroniterBadCronError as exception:
+            except cronsim.CronSimError as exception:
                 log_channel = None
                 log_context = None
 
