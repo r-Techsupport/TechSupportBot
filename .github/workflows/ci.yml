@@ -30,6 +30,23 @@ jobs:
         cd techsupport_bot
         python3.11 -m pytest tests/ -p no:warnings
 
+  blackCheck:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.11
+    - name: Install dependencies
+      run: |
+        python -m pip install pip==$(sed -nE 's/pip = "==(.*)"/\1/p' Pipfile)
+        BLACK_VERSION=$(sed -nE 's/black = "==(.*)"/\1/p' Pipfile)
+        pip install black==$BLACK_VERSION
+    - name: Analysing the code with black
+      run: |
+        black $(git rev-parse --show-toplevel) --check
+
   pyLint:
     runs-on: ubuntu-latest
     steps:
@@ -166,7 +183,7 @@ jobs:
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Merge PR
-        if: steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch' && steps.dependabot-metadata.outputs.dependency-names == 'pylint'
+        if: steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch' && steps.dependabot-metadata.outputs.dependency-names == 'flake8'
         run: gh pr merge --auto --merge "$PR_URL"
         env:
           PR_URL: ${{github.event.pull_request.html_url}}
