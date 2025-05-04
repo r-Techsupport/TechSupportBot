@@ -21,17 +21,17 @@ on:
     - cron: '31 18 * * 1'
 
 jobs:
-  if: |
-      github.event_name == 'push' ||
-      (
-        github.event_name == 'pull_request' &&
-        (
-          contains(github.event.pull_request.title, '[run ci]') ||
-          contains(github.event.pull_request.body, '[run ci]') ||
-          contains(join(github.event.pull_request.labels.*.name), 'run-ci')
-        )
-      )
   analyze:
+    if: |
+        github.event_name == 'push' ||
+        (
+          github.event_name == 'pull_request' &&
+          (
+            contains(github.event.pull_request.title, '[run ci]') ||
+            contains(github.event.pull_request.body, '[run ci]') ||
+            contains(join(github.event.pull_request.labels.*.name), 'run-ci')
+          )
+        )
     name: Analyze
     runs-on: ubuntu-latest
     permissions:
