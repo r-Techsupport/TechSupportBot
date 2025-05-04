@@ -35,7 +35,7 @@ class Greeter(cogs.BaseCog):
         extras={"module": "hello"},
     )
     async def hello_app_command(self: Self, interaction: discord.Interaction) -> None:
-        """A simple command to hace the bot say HEY to the invoker
+        """A simple command to have the bot say HEY to the invoker
 
         Args:
             interaction (discord.Interaction): The interaction that called this command
