@@ -1,0 +1,211 @@
+name: Test and build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  pyTest:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.11
+    - name: Install pip
+      run: |
+        python -m pip install pip==$(sed -nE 's/pip = "==(.*)"/\1/p' Pipfile)
+    - name: Install pipenv
+      run: |
+        PIPENV_VERSION=$(sed -nE 's/pipenv = "==(.*)"/\1/p' Pipfile)
+        python -m pip install pipenv==$PIPENV_VERSION
+    - name: Install from pipfile
+      run: |
+        pipenv install --system
+    - name: Running pytest
+      run: |
+        cd techsupport_bot
+        python3.11 -m pytest tests/ -p no:warnings
+
+  black:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.11
+    - name: Install dependencies
+      run: |
+        python -m pip install pip==$(sed -nE 's/pip = "==(.*)"/\1/p' Pipfile)
+        BLACK_VERSION=$(sed -nE 's/black = "==(.*)"/\1/p' Pipfile)
+        pip install black==$BLACK_VERSION
+    - name: Analysing the code with black
+      run: |
+        black $(git rev-parse --show-toplevel) --check
+
+  pyLint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.11
+    - name: Install dependencies
+      run: |
+        python -m pip install pip==$(sed -nE 's/pip = "==(.*)"/\1/p' Pipfile)
+        PYLINT_VERSION=$(sed -nE 's/pylint = "==(.*)"/\1/p' Pipfile)
+        pip install pylint==$PYLINT_VERSION
+    - name: Analysing the code with pylint
+      run: |
+        pylint $(git ls-files '*.py')
+
+  lineEndingCheck:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Check for CRLF line endings
+      run: |
+        for file in $(git ls-files); do
+          if grep -q $'\r$' "$file"; then
+            echo "$file has faulty file endings"
+          fi
+        done
+        if git grep -I --name-only $'\r'; then
+          echo "CRLF line endings detected"
+          exit 1
+        fi
+
+  flake8:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.11
+    - name: Install dependencies
+      run: |
+        python -m pip install pip==$(sed -nE 's/pip = "==(.*)"/\1/p' Pipfile)
+        pip install pipenv==$(sed -nE 's/pipenv = "==(.*)"/\1/p' Pipfile)
+        pipenv install --system
+    - name: Analysing the code with flake8
+      run: |
+        flake8 $(git rev-parse --show-toplevel)
+
+  isort:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.11
+    - name: Install dependencies
+      run: |
+        python -m pip install pip==$(sed -nE 's/pip = "==(.*)"/\1/p' Pipfile)
+        ISORT_VERSION=$(sed -nE 's/isort = "==(.*)"/\1/p' Pipfile)
+        pip install isort==$ISORT_VERSION
+    - name: Analysing the code with isort
+      run: |
+        isort --check-only $(git rev-parse --show-toplevel)/ --profile black
+
+  containerBuild:
+    runs-on: ubuntu-latest
+    needs: 
+      - pyTest
+      - pyLint
+      - flake8
+      - isort
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the Docker image
+      run: make establish_config && docker build -f Dockerfile . -t techsupportbot:$(date +%s)
+
+  close_pyTest:
+    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]' 
+    runs-on: ubuntu-latest
+    needs: 
+      - pyTest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Dependabot metadata
+        id: dependabot-metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Merge PR
+        if: steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch' && steps.dependabot-metadata.outputs.dependency-names == 'pytest'
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+  close_pyLint:
+    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]' 
+    runs-on: ubuntu-latest
+    needs: 
+      - pyLint
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Dependabot metadata
+        id: dependabot-metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Merge PR
+        if: steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch' && steps.dependabot-metadata.outputs.dependency-names == 'pylint'
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+  close_flake8:
+    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]' 
+    runs-on: ubuntu-latest
+    needs: 
+      - flake8
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Dependabot metadata
+        id: dependabot-metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Merge PR
+        if: steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch' && steps.dependabot-metadata.outputs.dependency-names == 'flake8'
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+  close_isort:
+    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]' 
+    runs-on: ubuntu-latest
+    needs: 
+      - isort
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Dependabot metadata
+        id: dependabot-metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Merge PR
+        if: steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch' && steps.dependabot-metadata.outputs.dependency-names == 'isort'
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
