@@ -1,0 +1,34 @@
+# .github/workflows/comment-trigger.yml
+name: PR Comment Trigger
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  trigger-ci:
+    if: github.event.comment.body == '/run-ci' && github.event.issue.pull_request != null
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      actions: write
+      issues: read
+      pull-requests: read
+
+    steps:
+    - name: Extract PR branch name
+      id: pr
+      run: |
+        pr_url="${{ github.event.issue.pull_request.url }}"
+        branch=$(gh api "$pr_url" --jq '.head.ref')
+        echo "branch=$branch" >> "$GITHUB_OUTPUT"
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Trigger CI workflow
+      run: |
+        gh workflow run ci.yml -f pr_branch=${{ steps.pr.outputs.branch }} -r ${{ steps.pr.outputs.branch }}
+        gh workflow run codeql.yml -f pr_branch=${{ steps.pr.outputs.branch }} -r ${{ steps.pr.outputs.branch }}
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
