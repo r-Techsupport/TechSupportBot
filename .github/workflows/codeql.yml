@@ -16,7 +16,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-    types: [opened, synchronize, reopened, labeled, unlabeled, edited]
+    types: [opened, labeled]
   schedule:
     - cron: '31 18 * * 1'
 
@@ -27,8 +27,6 @@ jobs:
         (
           github.event_name == 'pull_request' &&
           (
-            contains(github.event.pull_request.title, '[run ci]') ||
-            contains(github.event.pull_request.body, '[run ci]') ||
             contains(join(github.event.pull_request.labels.*.name), 'run-ci')
           )
         )
