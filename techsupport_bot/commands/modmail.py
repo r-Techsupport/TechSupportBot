@@ -1375,10 +1375,12 @@ class Modmail(cogs.BaseCog):
         # Checks if the command was an alias
         aliases = config.extensions.modmail.aliases.value
         if not aliases:
-            embed = auxiliary.generate_basic_embed(
-                color=discord.Color.green(),
-                description="There are no aliases registered for this guild",
+            embed = auxiliary.prepare_deny_embed(
+                message="There are no aliases registered for this guild",
             )
+
+            await ctx.channel.send(embed=embed)
+            return
 
         embed = discord.Embed(
             color=discord.Color.green(), title="Registered aliases for this guild:"
