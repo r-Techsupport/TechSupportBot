@@ -10,7 +10,7 @@ import aiocron
 import discord
 import munch
 from botlogging import LogContext, LogLevel
-from core import cogs, extensionconfig
+from core import cogs, custom_errors, extensionconfig
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -127,11 +127,9 @@ class News(cogs.LoopCog):
             url = f"{url}&category={category}"
 
         response = await self.bot.http_functions.http_call("get", url)
+        print(f"response {response}")
 
-        articles = response.get("articles")
-        if not articles:
-            return None
-        return articles
+        return response.get("articles")
 
     async def get_random_headline(
         self: Self, country_code: str, category: str = None
@@ -152,7 +150,7 @@ class News(cogs.LoopCog):
         filtered_articles = []
         for article in articles:
             url = article.get("url", "")
-            if url != "https://removed.com":
+            if url != "https://removed.com" or url != "https://news.google.com":
                 filtered_articles.append(article)
 
         # Check if there are any articles left after filtering
@@ -219,12 +217,8 @@ class News(cogs.LoopCog):
             category (str, optional): The category to get news headlines from. Defaults to None.
         """
 
-        # Debug statement
-        print("Executing news command")
         if category is None or category.lower() not in self.valid_category:
             category = random.choice(list(Category)).value
-        else:
-            category.lower()
 
         config = self.bot.guild_configs[str(interaction.guild.id)]
 
@@ -261,7 +255,7 @@ class News(cogs.LoopCog):
     @news_command.autocomplete("category")
     async def news_autocompletion(
         self: Self, interaction: discord.Interaction, current: str
-    ) -> list:
+    ) -> list[app_commands.Choice[str]]:
         """This command creates a list of categories for autocomplete the news command.
 
         Args:

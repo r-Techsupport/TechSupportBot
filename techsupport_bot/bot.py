@@ -486,6 +486,13 @@ class TechSupportBot(commands.Bot):
             interaction (discord.Interaction): The interaction where the error occured at
             error (app_commands.AppCommandError): The error object that occured
         """
+        print(f"Interaction error: {interaction}")
+        message_argument = error.args[0]
+        message_parts = [part.strip() for part in message_argument.split(':')]
+        _, error_type, wait_time, *_ = message_parts
+        if error_type == 'HTTPRateLimit':
+            error = custom_errors.HTTPRateLimit(float(wait_time[2]))
+
         error_message = await self.handle_error(
             exception=error, channel=interaction.channel, guild=interaction.guild
         )

@@ -63,7 +63,7 @@ class HTTPRateLimit(commands.errors.CommandError):
         wait (int): The amount of seconds left until the rate limit expires
     """
 
-    def __init__(self: Self, wait: int) -> None:
+    def __init__(self: Self, wait: float) -> None:
         self.wait = wait
 
 
