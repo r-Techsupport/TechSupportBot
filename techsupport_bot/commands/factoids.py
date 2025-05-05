@@ -1700,6 +1700,13 @@ class FactoidManager(cogs.MatchCog):
                 guild, exclusive_property=property, include_hidden=show_hidden
             )
 
+        if not factoids:
+            embed = auxiliary.prepare_deny_embed(
+                "No factoids could be found matching your filter"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+
         aliases = self.build_alias_dict_for_given_factoids(factoids)
 
         # If the linx server isn't configured, we must make it a file
