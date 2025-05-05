@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "3ce34879f1ba60b7e60de28aee2b226310c43516c3ac1665aeb707c5bc1b7fc6"
+            "sha256": "10bc1420d1536ca1722d14fea878db91ca5f5983e0c56c79baa475ddf8790c75"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -890,21 +890,21 @@
         },
         "pip": {
             "hashes": [
-                "sha256:13b4aa0aaad055020a11bec8a1c2a70a2b2d080e12d89b962266029fff0a16ba",
-                "sha256:272bdd1289f80165e9070a4f881e8f9e1001bbb50378561d1af20e49bf5a2200"
+                "sha256:2913a38a2abf4ea6b64ab507bd9e967f3b53dc1ede74b01b0931e1ce548751af",
+                "sha256:3de45d411d308d5054c2168185d8da7f9a2cd753dbac8acbfa88a8909ecd9077"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.9'",
-            "version": "==25.1"
+            "version": "==25.1.1"
         },
         "pipenv": {
             "hashes": [
-                "sha256:66fb22b2b5487c7a00d1630ff670f8b0c4294b8b7a34b16b227bb0eec6a62b12",
-                "sha256:923bfdf4e41d160d23d91cc1a8a00ebdf25f8bad4f014c3a278512e4c4f2d1d5"
+                "sha256:85d42e13da78f27f0213c998dba9a59f3ba6a6fe9e420b75b561acc344f021ad",
+                "sha256:f26dc0352f3fb167c3897a66a5d8c9ab81dd52a836a48630712e1e5a06840ebf"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.9'",
-            "version": "==2025.0.1"
+            "version": "==2025.0.2"
         },
         "platformdirs": {
             "hashes": [
@@ -1382,11 +1382,11 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:a38f898dcd6e5380f4da4381a87ec90bd0a7eec23d204a5552e80ee3cab6bd27",
-                "sha256:c40a5b3729d58dd749c0f08f1a07d134fb8a0a3d7f87dc33e7c5e1f762138650"
+                "sha256:a65cffc4fb86167e3020b3ef58e08226baad8b29a3b34ce2c9d07e901bac481d",
+                "sha256:ec8308eb180b2312062b1c5523204acf872cd8b0a9e6c2ae76431b22bc4065d7"
             ],
             "markers": "python_version >= '3.9'",
-            "version": "==80.0.0"
+            "version": "==80.3.0"
         },
         "six": {
             "hashes": [
