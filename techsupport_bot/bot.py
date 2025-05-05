@@ -498,10 +498,14 @@ class TechSupportBot(commands.Bot):
 
         embed = auxiliary.prepare_deny_embed(message=error_message)
 
+        ephemeral_errors = interaction.command.extras.get("ephemeral_error", False)
+
         if interaction.response.is_done():
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral_errors)
         else:
-            await interaction.response.send_message(embed=embed)
+            await interaction.response.send_message(
+                embed=embed, ephemeral=ephemeral_errors
+            )
 
     async def handle_error(
         self: Self,
