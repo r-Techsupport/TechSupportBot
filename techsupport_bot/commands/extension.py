@@ -74,6 +74,7 @@ class ExtensionControl(cogs.BaseCog):
             )
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.checks.has_permissions(administrator=True)
     @extension_app_command_group.command(
         name="enable_all",
         description="Enables all loaded but disabled extensions in the guild",
