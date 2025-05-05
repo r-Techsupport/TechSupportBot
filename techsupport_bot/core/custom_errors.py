@@ -67,6 +67,17 @@ class HTTPRateLimit(commands.errors.CommandError):
         self.wait = wait
 
 
+class HTTPRateLimitAppCommand(app_commands.CommandInvokeError):
+    """An API call is on rate limit
+
+    Args:
+        wait (int): The amount of seconds left until the rate limit expires
+    """
+
+    def __init__(self: Self, wait: int) -> None:
+        self.wait = wait
+
+
 class ErrorResponse:
     """Object for generating a custom error message from an exception.
 
@@ -249,6 +260,10 @@ COMMAND_ERROR_RESPONSES = {
         {"key": "retry_after", "wrapper": float},
     ),
     HTTPRateLimit: ErrorResponse(
+        "That API is on cooldown. Try again in %.2f seconds",
+        {"key": "wait"},
+    ),
+    HTTPRateLimitAppCommand: ErrorResponse(
         "That API is on cooldown. Try again in %.2f seconds",
         {"key": "wait"},
     ),

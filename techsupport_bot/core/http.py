@@ -100,12 +100,14 @@ class HTTPCalls:
 
         Raises:
             HTTPRateLimit: Raised if the API is currently on cooldown
+            HTTPRateLimitAppCommand: Raised if the API is currently on cooldown
 
         Returns:
             munch.Munch: The munch object containing the response from the API
         """
 
         # Get the URL not the endpoint being called
+        use_app_error = kwargs.pop("use_app_error", False)
         ignore_rate_limit = False
         root_url = urlparse(url).netloc
 
@@ -138,6 +140,8 @@ class HTTPCalls:
                     now - self.url_rate_limit_history[root_url][0]
                 )
                 time_to_wait = max(time_to_wait, 0)
+                if use_app_error:
+                    raise custom_errors.HTTPRateLimitAppCommand(time_to_wait)
                 raise custom_errors.HTTPRateLimit(time_to_wait)
 
             # Add an entry for this call with the timestamp the call was placed

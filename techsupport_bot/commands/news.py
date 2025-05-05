@@ -10,8 +10,8 @@ import aiocron
 import discord
 import munch
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, extensionconfig
-from discord.ext import commands
+from core import cogs, extensionconfig
+from discord import app_commands
 
 if TYPE_CHECKING:
     import bot
@@ -108,13 +108,17 @@ class News(cogs.LoopCog):
             self.valid_category.append(item.value)
 
     async def get_headlines(
-        self: Self, country_code: str, category: str = None
+        self: Self,
+        country_code: str,
+        category: str = None,
+        is_interaction: bool = False,
     ) -> list[munch.Munch]:
         """Calls the API to get the list of headlines based on the category and country
 
         Args:
             country_code (str): The country code to get headlines from
             category (str, optional): The category of headlines to get. Defaults to None.
+            is_interaction (bool): If the headline is being called from an interaction
 
         Returns:
             list[munch.Munch]: The list of article objects from the API
@@ -126,7 +130,9 @@ class News(cogs.LoopCog):
         if category:
             url = f"{url}&category={category}"
 
-        response = await self.bot.http_functions.http_call("get", url)
+        response = await self.bot.http_functions.http_call(
+            "get", url, use_app_error=is_interaction
+        )
 
         articles = response.get("articles")
         if not articles:
@@ -134,19 +140,37 @@ class News(cogs.LoopCog):
         return articles
 
     async def get_random_headline(
-        self: Self, country_code: str, category: str = None
+        self: Self,
+        country_code: str,
+        category: str = None,
+        is_interaction: bool = False,
     ) -> munch.Munch:
         """Gets a single article object from the news API
 
         Args:
             country_code (str): The country code of the headliens to get
             category (str, optional): The category of headlines to get. Defaults to None.
+            is_interaction (bool): If the headline is being called from an interaction
 
         Returns:
             munch.Munch: The raw API object representing a news headline
         """
-        articles = await self.get_headlines(country_code, category)
-        return random.choice(articles)
+
+        articles = await self.get_headlines(country_code, category, is_interaction)
+
+        # Filter out articles with URLs containing "removed.com"
+        filtered_articles = []
+        for article in articles:
+            url = article.get("url", "")
+            if url != "https://removed.com":
+                filtered_articles.append(article)
+
+        # Check if there are any articles left after filtering
+        if not filtered_articles:
+            return None
+
+        # Choose a random article from the filtered list
+        return random.choice(filtered_articles)
 
     async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
         """Loop entry point for the news command
@@ -168,6 +192,9 @@ class News(cogs.LoopCog):
             )
             url = article.get("url")
 
+        if article is None:
+            return
+
         log_channel = config.get("logging_channel")
         await self.bot.logger.send_log(
             message=f"Sending news headline to #{channel.name}",
@@ -187,48 +214,79 @@ class News(cogs.LoopCog):
         """
         await aiocron.crontab(config.extensions.news.cron_config.value).next()
 
-    @commands.group(
-        brief="Executes a news command",
-        description="Executes a news command",
-    )
-    async def news(self: Self, ctx: commands.Context) -> None:
-        """The bare .news command. This does nothing but generate the help message
-
-        Args:
-            ctx (commands.Context): The context in which the command was run in
-        """
-
-        # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
-
-    @news.command(
-        name="random",
-        brief="Gets a random news article",
+    @app_commands.command(
+        name="news",
         description="Gets a random news headline",
-        usage="[category] (optional)",
+        extras={"module": "news"},
     )
-    async def random(self: Self, ctx: commands.Context, category: str = None) -> None:
+    async def news_command(
+        self: Self, interaction: discord.Interaction, category: str = ""
+    ) -> None:
         """Discord command entry point for getting a news article
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction in which the command was run
             category (str, optional): The category to get news headlines from. Defaults to None.
         """
+
+        # Debug statement
+        print("Executing news command")
         if category is None or category.lower() not in self.valid_category:
             category = random.choice(list(Category)).value
         else:
             category.lower()
 
-        config = self.bot.guild_configs[str(ctx.guild.id)]
+        config = self.bot.guild_configs[str(interaction.guild.id)]
 
         url = None
         while not url:
             article = await self.get_random_headline(
-                config.extensions.news.country.value, category
+                config.extensions.news.country.value, category, True
             )
             url = article.get("url")
+
+        if article is None:
+            return
 
         if url.endswith("/"):
             url = url[:-1]
 
-        await ctx.send(content=url)
+        await interaction.response.send_message(content=url)
+
+        # Log the command execution
+        log_channel = config.get("logging_channel")
+        if log_channel:
+            await self.bot.logger.send_log(
+                message=(
+                    f"News command executed: "
+                    f"Sent a news headline to {interaction.channel.name}"
+                ),
+                level=LogLevel.INFO,
+                context=LogContext(
+                    guild=interaction.guild, channel=interaction.channel
+                ),
+                channel=log_channel,
+            )
+
+    @news_command.autocomplete("category")
+    async def news_autocompletion(
+        self: Self, interaction: discord.Interaction, current: str
+    ) -> list:
+        """This command creates a list of categories for autocomplete the news command.
+
+        Args:
+            interaction (discord.Interaction): The interaction that started the command
+            current (str): The current input from the user.
+
+        Returns:
+            list: The list of autocomplete for the news command.
+        """
+        # Debug statement
+        print("Autocomplete interaction")
+        news_category = []
+        for category in Category:
+            if current.lower() in category.value.lower():
+                news_category.append(
+                    app_commands.Choice(name=category.value, value=category.value)
+                )
+        return news_category
