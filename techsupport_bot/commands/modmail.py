@@ -1066,23 +1066,23 @@ class Modmail(cogs.BaseCog):
 
             # - Replies -
             case "reply":
-                await message.delete()
                 await reply_to_thread(
                     raw_contents=content[5:],
                     message=message,
                     thread=message.channel,
                     anonymous=False,
                 )
+                await message.delete()
                 return
 
             case "areply":
-                await message.delete()
                 await reply_to_thread(
                     raw_contents=content[6:],
                     message=message,
                     thread=message.channel,
                     anonymous=True,
                 )
+                await message.delete()
                 return
 
             # Sends a factoid
