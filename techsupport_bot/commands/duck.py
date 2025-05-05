@@ -564,7 +564,7 @@ class DuckHunt(cogs.LoopCog):
             embed.color = embed_colors.green()
 
             embed.add_field(
-                name=self.get_user_text(duck_user),
+                name=await self.get_user_text(duck_user, ctx.guild),
                 value=f"Friends: `{duck_user.befriend_count}`",
                 inline=False,
             )
@@ -597,18 +597,20 @@ class DuckHunt(cogs.LoopCog):
                 channel=ctx.channel,
             )
             return
-        record_user = (
+        record_user_entry = (
             await self.bot.models.DuckUser.query.where(
                 self.bot.models.DuckUser.speed_record == record_time
             )
             .where(self.bot.models.DuckUser.guild_id == str(ctx.guild.id))
             .gino.first()
         )
-
         embed = discord.Embed(title="Duck Speed Record")
         embed.color = embed_colors.green()
         embed.add_field(name="Time", value=f"{str(record_time)} seconds")
-        embed.add_field(name="Record Holder", value=f"<@{record_user.author_id}>")
+        embed.add_field(
+            name="Record Holder",
+            value=await self.get_user_text(record_user_entry, ctx.guild),
+        )
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
         await ctx.send(embed=embed)
@@ -659,7 +661,7 @@ class DuckHunt(cogs.LoopCog):
             embed.color = embed_colors.green()
 
             embed.add_field(
-                name=self.get_user_text(duck_user),
+                name=await self.get_user_text(duck_user, ctx.guild),
                 value=f"Kills: `{duck_user.kill_count}`",
                 inline=False,
             )
@@ -671,23 +673,27 @@ class DuckHunt(cogs.LoopCog):
 
         await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
-    def get_user_text(self: Self, duck_user: bot.models.DuckUser) -> str:
+    async def get_user_text(
+        self: Self, duck_user: bot.models.DuckUser, guild: discord.Guild
+    ) -> str:
         """Gets the name of a user formatted to be displayed across the extension
 
         Args:
             duck_user (bot.models.DuckUser): The database entry of the user to format
+            guild (discord.Guild): The guild to fetch duck records from
 
         Returns:
             str: The username in a pretty string format, ready to print
         """
-        user = self.bot.get_user(int(duck_user.author_id))
-        if user:
-            user_text = f"{user.display_name}"
-            user_text_extra = f"({user.name})" if user.name != user.display_name else ""
-        else:
-            user_text = "<Unknown>"
-            user_text_extra = ""
-        return f"{user_text}{user_text_extra}"
+        user_object = await self.bot.fetch_user(duck_user.author_id)
+        display_name = user_object.global_name
+        try:
+            member_object = await guild.fetch_member(user_object.id)
+            display_name = member_object.display_name
+        except discord.NotFound:
+            ...
+
+        return f"`{display_name}` (`{user_object.name}`)"
 
     @auxiliary.with_typing
     @commands.guild_only()
