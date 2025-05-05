@@ -827,10 +827,23 @@ class FactoidManager(cogs.MatchCog):
             not in config.extensions.factoids.restricted_list.value
         ):
             return
-        if not config.extensions.factoids.disable_embeds.value:
-            embed = self.get_embed_from_factoid(factoid)
-        else:
+
+        if config.extensions.factoids.disable_embeds.value:
             embed = None
+        else:
+            try:
+                embed = self.get_embed_from_factoid(factoid)
+            except TypeError as exception:
+                log_channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message=f"Unable to make embed for factoid `{factoid.name}`, sending fallback.",
+                    level=LogLevel.ERROR,
+                    channel=log_channel,
+                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                    exception=exception,
+                )
+                embed = None
+
         # if the json doesn't include non embed argument, then don't send anything
         # otherwise send message text with embed
         try:
@@ -964,10 +977,23 @@ class FactoidManager(cogs.MatchCog):
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
-        if not config.extensions.factoids.disable_embeds.value:
-            embed = self.get_embed_from_factoid(factoid)
-        else:
+        if config.extensions.factoids.disable_embeds.value:
             embed = None
+        else:
+            try:
+                embed = self.get_embed_from_factoid(factoid)
+            except TypeError as exception:
+                log_channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message=f"Unable to make embed for factoid `{factoid.name}`, sending fallback.",
+                    level=LogLevel.ERROR,
+                    channel=log_channel,
+                    context=LogContext(
+                        guild=interaction.guild, channel=interaction.channel
+                    ),
+                    exception=exception,
+                )
+                embed = None
         # if the json doesn't include non embed argument, then don't send anything
         # otherwise send message text with embed
         try:
@@ -1154,10 +1180,21 @@ class FactoidManager(cogs.MatchCog):
                 return
 
             # Get_embed accepts job as a factoid object
-            if not config.extensions.factoids.disable_embeds.value:
-                embed = self.get_embed_from_factoid(factoid)
-            else:
+            if config.extensions.factoids.disable_embeds.value:
                 embed = None
+            else:
+                try:
+                    embed = self.get_embed_from_factoid(factoid)
+                except TypeError as exception:
+                    log_channel = config.get("logging_channel")
+                    await self.bot.logger.send_log(
+                        message=f"Unable to make embed for factoid `{factoid.name}`, sending fallback.",
+                        level=LogLevel.ERROR,
+                        channel=log_channel,
+                        context=LogContext(guild=channel.guild, channel=channel),
+                        exception=exception,
+                    )
+                    embed = None
 
             try:
                 content = factoid.message if not embed else None
