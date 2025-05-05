@@ -685,7 +685,10 @@ class DuckHunt(cogs.LoopCog):
         Returns:
             str: The username in a pretty string format, ready to print
         """
-        user_object = await self.bot.fetch_user(duck_user.author_id)
+        try:
+            user_object = await self.bot.fetch_user(duck_user.author_id)
+        except discord.NotFound:
+            return f"`Account not found` ({duck_user.author_id})"
         display_name = user_object.global_name
         try:
             member_object = await guild.fetch_member(user_object.id)
