@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Self
 
 import discord
 import git
+import newconfig
 from core import auxiliary, cogs
 from discord.ext import commands
 
@@ -45,6 +46,8 @@ class BotInfo(cogs.BaseCog):
         Args:
             ctx (commands.Context): the context object for the calling message
         """
+        new_config = newconfig.Config(ctx.guild)
+        await ctx.channel.send(new_config)
         embed = discord.Embed(title=self.bot.user.name, color=discord.Color.blurple())
 
         embed.add_field(
