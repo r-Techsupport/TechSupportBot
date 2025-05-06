@@ -1567,7 +1567,7 @@ class FactoidManager(cogs.MatchCog):
         json_file = discord.File(
             io.StringIO(formatted),
             filename=(
-                f"{factoid_name}-factoid-embed-config-{datetime.datetime.utcnow()}.json"
+                f"{factoid_name.lower()}-factoid-embed-config-{datetime.datetime.utcnow()}.json"
             ),
         )
 
