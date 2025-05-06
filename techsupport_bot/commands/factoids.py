@@ -733,13 +733,23 @@ class FactoidManager(cogs.MatchCog):
         factoid = await self.get_raw_factoid_entry(
             called_factoid.factoid_db_entry.name, str(ctx.guild.id)
         )
+        aliases_list = await self.get_list_of_aliases(
+            called_factoid.factoid_db_entry.name, str(ctx.guild.id)
+        )
+        aliases_list.remove(called_factoid.original_call_str)
+        print_aliases_list = ", ".join(aliases_list)
+
+        send_message = (
+            f"This will remove the factoid `{called_factoid.original_call_str}`"
+        )
+        if print_aliases_list:
+            send_message += f" and all of it's aliases `({print_aliases_list})` forever"
+
+        send_message += ". Are you sure?"
 
         view = ui.Confirm()
         await view.send(
-            message=(
-                f"This will remove the factoid `{called_factoid.original_call_str}` "
-                "and all of it's aliases forever. Are you sure?"
-            ),
+            message=send_message,
             channel=ctx.channel,
             author=ctx.author,
         )
@@ -758,13 +768,13 @@ class FactoidManager(cogs.MatchCog):
         await self.delete_factoid_call(factoid, str(ctx.guild.id))
 
         # Don't send the confirmation message if this is an alias either
-        await auxiliary.send_confirm_embed(
-            (
-                f"Successfully deleted the factoid `{called_factoid.original_call_str}`"
-                "and all of it's aliases"
-            ),
-            channel=ctx.channel,
+        confirm_message = (
+            f"Successfully deleted the factoid `{called_factoid.original_call_str}`"
         )
+        if print_aliases_list:
+            confirm_message += f" and all of it's aliases `({print_aliases_list})`"
+
+        await auxiliary.send_confirm_embed(message=confirm_message, channel=ctx.channel)
         return True
 
     # -- Getting and responding with a factoid --
