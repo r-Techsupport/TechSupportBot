@@ -20,14 +20,6 @@ on:
 
 jobs:
   analyze:
-    if: |
-        github.event_name == 'push' ||
-        (
-          github.event_name == 'pull_request' &&
-          (
-            contains(join(github.event.pull_request.labels.*.name), 'run-ci')
-          )
-        )
     name: Analyze
     runs-on: ubuntu-latest
     permissions:
