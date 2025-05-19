@@ -311,7 +311,9 @@ class TechSupportBot(commands.Bot):
         for extension_name, extension_config in self.extension_configs.items():
             if extension_config:
                 # don't attach to guild config if extension isn't configurable
-                extensions_config[extension_name] = extension_config.data
+                extensions_config[extension_name] = munch.munchify(
+                    extension_config.data
+                )
         self.extension_name_list.sort()
 
         config_ = munch.DefaultMunch(None)
@@ -345,13 +347,8 @@ class TechSupportBot(commands.Bot):
             # Modify the database
             await self.write_new_config(str(guild_id), json.dumps(config_))
 
-            # Modify the local cache by reloading from the database
-            reload_config = await self.models.Config.query.where(
-                self.models.Config.guild_id == guild_id
-            ).gino.first()
-            self.guild_configs[reload_config.guild_id] = munch.munchify(
-                json.loads(reload_config.config)
-            )
+            # Modify the local cache
+            self.guild_configs[guild_id] = config_
 
         except Exception as exception:
             # safely finish because the new config is still useful
