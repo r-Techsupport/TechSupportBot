@@ -345,8 +345,13 @@ class TechSupportBot(commands.Bot):
             # Modify the database
             await self.write_new_config(str(guild_id), json.dumps(config_))
 
-            # Modify the local cache
-            self.guild_configs[guild_id] = config_
+            # Modify the local cache by reloading from the database
+            reload_config = await self.models.Config.query.where(
+                self.models.Config.guild_id == guild_id
+            ).gino.first()
+            self.guild_configs[reload_config.guild_id] = munch.munchify(
+                json.loads(reload_config.config)
+            )
 
         except Exception as exception:
             # safely finish because the new config is still useful
