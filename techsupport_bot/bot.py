@@ -78,6 +78,7 @@ class TechSupportBot(commands.Bot):
             )
         )
         self.command_execute_history: dict[str, dict[int, bool]] = {}
+        self.notified_dm_log: list[int] = []
 
         # Loads the file config, which includes things like the token
         self.load_file_config()
@@ -265,6 +266,13 @@ class TechSupportBot(commands.Bot):
             and message.author.id != owner.id
             and not message.author.bot
         ):
+            if message.author.id not in self.notified_dm_log:
+                self.notified_dm_log.append(message.author.id)
+                await message.author.send(
+                    "All DMs sent to this bot are permanently logged and not "
+                    "regularly checked. No responses will be given to any messages."
+                )
+
             attachment_urls = ", ".join(a.url for a in message.attachments)
             content_string = f'"{message.content}"' if message.content else ""
             attachment_string = f"({attachment_urls})" if attachment_urls else ""
