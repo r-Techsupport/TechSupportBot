@@ -38,6 +38,7 @@ class PaginateView(discord.ui.View):
         author: discord.Member,
         data: list[str | discord.Embed],
         interaction: discord.Interaction | None = None,
+        ephemeral: bool = False,
     ) -> None:
         """Entry point for PaginateView
 
@@ -48,6 +49,7 @@ class PaginateView(discord.ui.View):
                 with [0] being the first page
             interaction (discord.Interaction | None): The interaction this
                 should followup with (Optional)
+            ephemeral (bool): Whether the response should be ephemeral (optional)
         """
         self.author = author
         self.data = data
@@ -57,7 +59,7 @@ class PaginateView(discord.ui.View):
 
         if interaction:
             self.followup = interaction.followup
-            self.message = await self.followup.send(view=self)
+            self.message = await self.followup.send(view=self, ephemeral=ephemeral)
         else:
             self.message = await channel.send(view=self)
 
