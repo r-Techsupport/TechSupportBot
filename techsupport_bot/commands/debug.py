@@ -1,0 +1,175 @@
+"""
+This is a development and issue tracking command designed to dump all attributes
+of a given object type.
+Current supported is message, member and channel
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
+
+import discord
+import ui
+from core import auxiliary, cogs
+from discord import app_commands
+
+if TYPE_CHECKING:
+    import bot
+
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Registers the slowmode cog
+
+    Args:
+        bot (bot.TechSupportBot): The bot to register the cog to
+    """
+    await bot.add_cog(Debugger(bot=bot))
+
+
+class Debugger(cogs.BaseCog):
+    """The cog that holds the slowmode commands and helper functions
+
+    Attrs:
+        debug_group (app_commands.Group): The group for the /debug commands
+    """
+
+    debug_group = app_commands.Group(
+        name="debug", description="...", extras={"module": "debug"}
+    )
+
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @debug_group.command(
+        name="message",
+        description="Searches and displays all the message properties",
+        extras={
+            "module": "debug",
+        },
+    )
+    async def debug_message(
+        self: Self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel,
+        id: str,
+    ) -> None:
+        """Modifies slowmode on a given channel
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            seconds (int): The seconds to change the slowmode to. 0 will disable slowmode
+            channel (discord.abc.GuildChannel, optional): If specified, the channel to modify
+                slowmode on. Defaults to the channel the command was invoked in.
+        """
+        await interaction.response.defer(ephemeral=False)
+        message = await channel.fetch_message(str(id))
+        embeds = build_debug_embed(message)
+
+        view = ui.PaginateView()
+        await view.send(interaction.channel, interaction.user, embeds, interaction)
+
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @debug_group.command(
+        name="member",
+        description="Searches and displays all the member properties",
+        extras={
+            "module": "debug",
+        },
+    )
+    async def debug_member(
+        self: Self, interaction: discord.Interaction, member: discord.Member
+    ) -> None:
+        """Modifies slowmode on a given channel
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            seconds (int): The seconds to change the slowmode to. 0 will disable slowmode
+            channel (discord.abc.GuildChannel, optional): If specified, the channel to modify
+                slowmode on. Defaults to the channel the command was invoked in.
+        """
+        await interaction.response.defer(ephemeral=False)
+        embeds = build_debug_embed(member)
+        view = ui.PaginateView()
+        await view.send(interaction.channel, interaction.user, embeds, interaction)
+
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @debug_group.command(
+        name="channel",
+        description="Searches and displays all the channel properties",
+        extras={
+            "module": "debug",
+        },
+    )
+    async def debug_channel(
+        self: Self, interaction: discord.Interaction, channel: discord.abc.GuildChannel
+    ) -> None:
+        """Modifies slowmode on a given channel
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            seconds (int): The seconds to change the slowmode to. 0 will disable slowmode
+            channel (discord.abc.GuildChannel):
+        """
+        await interaction.response.defer(ephemeral=False)
+        embeds = build_debug_embed(channel)
+        view = ui.PaginateView()
+        await view.send(interaction.channel, interaction.user, embeds, interaction)
+
+
+def build_debug_embed(object: object):
+    """Builds a list of embeds, with each one at a max of 4000 characters
+    This will be every attribute of the given object.
+
+    Args:
+        object (object): A discord object that needs to be explored
+    """
+    all_strings = []
+    properties_string = ""
+
+    for attribute in dir(object):
+        if not attribute.startswith("_"):
+            try:
+                value = getattr(object, attribute)
+            except AttributeError:
+                continue
+
+            temp_string = f"**{attribute}:** {value}\n"
+            if temp_string.startswith(f"**{attribute}:** <bound method"):
+                continue
+
+            all_add_strings = format_attribute_chunks(
+                attribute=attribute, value=str(value)
+            )
+            for print_string in all_add_strings:
+
+                if (len(properties_string) + len(print_string)) > 1500:
+                    all_strings.append(properties_string)
+                    properties_string = ""
+
+                properties_string += print_string
+
+    all_strings.append(properties_string)
+
+    embeds = []
+    for string in all_strings:
+        embeds.append(discord.Embed(description=string[:4000]))
+
+    return embeds
+
+
+def format_attribute_chunks(attribute: str, value: str) -> list[str]:
+    def make_chunk_label(index: int, total: int) -> str:
+        return f"**{attribute} ({index}):** " if total > 1 else f"**{attribute}:** "
+
+    max_length = 750
+    # First, determine the prefix length assuming worst-case (e.g., "attribute (10): ")
+    temp_prefix = f"**{attribute} (999):** "  # Conservative estimation
+    chunk_size = max_length - len(temp_prefix) - 1  # Reserve space for prefix and \n
+
+    # Create raw chunks of value
+    raw_chunks = [value[i : i + chunk_size] for i in range(0, len(value), chunk_size)]
+    total_chunks = len(raw_chunks)
+
+    # Format each chunk with appropriate prefix
+    return [
+        f"{make_chunk_label(i + 1, total_chunks)}{chunk}\n"
+        for i, chunk in enumerate(raw_chunks)
+    ]
