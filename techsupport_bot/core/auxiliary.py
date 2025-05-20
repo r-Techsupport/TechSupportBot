@@ -93,7 +93,11 @@ async def add_list_of_reactions(message: discord.Message, reactions: list) -> No
         reactions (list): A list of all unicode emojis to add
     """
     for emoji in reactions:
-        await message.add_reaction(emoji)
+        try:
+            await message.add_reaction(emoji)
+        except discord.NotFound:
+            # Message was deleted, ignore and stop executing
+            return
 
 
 def construct_mention_string(targets: list[discord.User]) -> str:
