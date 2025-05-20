@@ -986,18 +986,20 @@ class TechSupportBot(commands.Bot):
             name="Channel", value=getattr(interaction.channel, "name", "DM")
         )
         embed.add_field(name="Server", value=getattr(interaction.guild, "name", "None"))
-        embed.add_field(name="Namespace", value=f"{interaction.namespace}")
-        embed.set_footer(text=f"Requested by {interaction.user.id}")
+        parameters = []
+        for parameter in interaction.namespace:
+            parameters.append(f"{parameter[0]}: {parameter[1]}")
 
         log_channel = await self.get_log_channel_from_guild(
             interaction.guild, key="logging_channel"
         )
 
         sliced_content = interaction.command.qualified_name[:100]
-        message = f"Command detected: `/{sliced_content}`"
+        command = f"/{sliced_content} {', '.join(parameters)}".strip()
+        message = f"Command detected: `{command}`"
 
         await self.logger.send_log(
-            message=message,
+            message=message.strip()[:6000],
             level=LogLevel.INFO,
             context=LogContext(guild=interaction.guild, channel=interaction.channel),
             channel=log_channel,
