@@ -1206,7 +1206,7 @@ class Modmail(cogs.BaseCog):
                 ):
                     await auxiliary.send_confirm_embed(
                         message=(
-                            "Thread successfully created!"
+                            "Thread successfully created! "
                             f"{self.bot.get_channel(active_threads[user.id]).mention}"
                         ),
                         channel=ctx.channel,
@@ -1270,7 +1270,7 @@ class Modmail(cogs.BaseCog):
                 ):
                     await auxiliary.send_confirm_embed(
                         message=(
-                            f"Thread successfully created!"
+                            f"Thread successfully created! "
                             f"{self.bot.get_channel(active_threads[ctx.author.id]).mention}"
                         ),
                         channel=ctx.channel,
