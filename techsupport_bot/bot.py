@@ -329,6 +329,9 @@ class TechSupportBot(commands.Bot):
         config_.rate_limit.enabled = False
         config_.rate_limit.commands = 4
         config_.rate_limit.time = 10
+        config_.moderation = munch.DefaultMunch(None)
+        config_.moderation.max_warnings = 3
+        config_.moderation.alert_channel = None
 
         config_.extensions = extensions_config
 
