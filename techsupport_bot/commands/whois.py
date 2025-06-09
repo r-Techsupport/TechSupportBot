@@ -30,7 +30,11 @@ class Whois(cogs.BaseCog):
     @app_commands.command(
         name="whois",
         description="Gets Discord user information",
-        extras={"brief": "Gets user data", "usage": "@user", "module": "whois"},
+        extras={
+            "usage": "@user",
+            "module": "whois",
+            "ephemeral_error": True,
+        },
     )
     async def whois_command(
         self: Self, interaction: discord.Interaction, member: discord.Member
