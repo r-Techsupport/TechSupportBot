@@ -1198,7 +1198,9 @@ class FactoidManager(cogs.MatchCog):
                 except TypeError as exception:
                     log_channel = config.get("logging_channel")
                     await self.bot.logger.send_log(
-                        message=f"Unable to make embed for factoid `{factoid.name}`, sending fallback.",
+                        message=(
+                            f"Unable to make embed for factoid `{factoid.name}`, sending fallback."
+                        ),
                         level=LogLevel.ERROR,
                         channel=log_channel,
                         context=LogContext(guild=channel.guild, channel=channel),
