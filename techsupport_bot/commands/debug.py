@@ -33,7 +33,7 @@ class Debugger(cogs.BaseCog):
         debug_group (app_commands.Group): The group for the /debug commands
     """
 
-    debug_group = app_commands.Group(
+    debug_group: app_commands.Group = app_commands.Group(
         name="debug", description="...", extras={"module": "debug"}
     )
 
