@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 async def setup(bot: bot.TechSupportBot) -> None:
-    """Registers the slowmode cog
+    """Registers the debugger cog
 
     Args:
         bot (bot.TechSupportBot): The bot to register the cog to
@@ -156,12 +156,22 @@ def build_debug_embed(object: object):
 
 
 def format_attribute_chunks(attribute: str, value: str) -> list[str]:
+    """This makes a simple paginated split fields, to break up long attributes
+
+    Args:
+        attribute (str): The name of the attribute to be formatted.
+        value (str): The string representation of the attribute
+
+    Returns:
+        list[str]: A list of attributes, split if needed
+    """
+
     def make_chunk_label(index: int, total: int) -> str:
         return f"**{attribute} ({index}):** " if total > 1 else f"**{attribute}:** "
 
     max_length = 750
-    # First, determine the prefix length assuming worst-case (e.g., "attribute (10): ")
-    temp_prefix = f"**{attribute} (999):** "  # Conservative estimation
+
+    temp_prefix = f"**{attribute} (999):** "
     chunk_size = max_length - len(temp_prefix) - 1  # Reserve space for prefix and \n
 
     # Create raw chunks of value
