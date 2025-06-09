@@ -29,7 +29,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Debugger(cogs.BaseCog):
     """The cog that holds the slowmode commands and helper functions
 
-    Attrs:
+    Attributes:
         debug_group (app_commands.Group): The group for the /debug commands
     """
 
@@ -51,13 +51,12 @@ class Debugger(cogs.BaseCog):
         channel: discord.TextChannel,
         id: str,
     ) -> None:
-        """Modifies slowmode on a given channel
+        """Searches for a message by ID in the given channel.
 
         Args:
             interaction (discord.Interaction): The interaction that called this command
-            seconds (int): The seconds to change the slowmode to. 0 will disable slowmode
-            channel (discord.abc.GuildChannel, optional): If specified, the channel to modify
-                slowmode on. Defaults to the channel the command was invoked in.
+            channel (discord.TextChannel): The channel to find the message in
+            id (str): The ID of the message to search for
         """
         await interaction.response.defer(ephemeral=False)
         message = await channel.fetch_message(str(id))
@@ -77,13 +76,11 @@ class Debugger(cogs.BaseCog):
     async def debug_member(
         self: Self, interaction: discord.Interaction, member: discord.Member
     ) -> None:
-        """Modifies slowmode on a given channel
+        """Displays attributes for a member of the guild where the command was run.
 
         Args:
             interaction (discord.Interaction): The interaction that called this command
-            seconds (int): The seconds to change the slowmode to. 0 will disable slowmode
-            channel (discord.abc.GuildChannel, optional): If specified, the channel to modify
-                slowmode on. Defaults to the channel the command was invoked in.
+            member (discord.Member): The member to search for information on
         """
         await interaction.response.defer(ephemeral=False)
         embeds = build_debug_embed(member)
@@ -101,12 +98,11 @@ class Debugger(cogs.BaseCog):
     async def debug_channel(
         self: Self, interaction: discord.Interaction, channel: discord.abc.GuildChannel
     ) -> None:
-        """Modifies slowmode on a given channel
+        """Displays attributes for a channel of the guild where the command was run.
 
         Args:
             interaction (discord.Interaction): The interaction that called this command
-            seconds (int): The seconds to change the slowmode to. 0 will disable slowmode
-            channel (discord.abc.GuildChannel):
+            channel (discord.abc.GuildChannel): The channel to search for information on
         """
         await interaction.response.defer(ephemeral=False)
         embeds = build_debug_embed(channel)
@@ -114,12 +110,15 @@ class Debugger(cogs.BaseCog):
         await view.send(interaction.channel, interaction.user, embeds, interaction)
 
 
-def build_debug_embed(object: object):
+def build_debug_embed(object: object) -> list[discord.Embed]:
     """Builds a list of embeds, with each one at a max of 4000 characters
     This will be every attribute of the given object.
 
     Args:
         object (object): A discord object that needs to be explored
+
+    Returns:
+        list[discord.Embed]: A list of embeds to be displayed in a paginated display
     """
     all_strings = []
     properties_string = ""
