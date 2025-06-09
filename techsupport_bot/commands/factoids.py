@@ -733,13 +733,23 @@ class FactoidManager(cogs.MatchCog):
         factoid = await self.get_raw_factoid_entry(
             called_factoid.factoid_db_entry.name, str(ctx.guild.id)
         )
+        aliases_list = await self.get_list_of_aliases(
+            called_factoid.factoid_db_entry.name, str(ctx.guild.id)
+        )
+        aliases_list.remove(called_factoid.original_call_str)
+        print_aliases_list = ", ".join(aliases_list)
+
+        send_message = (
+            f"This will remove the factoid `{called_factoid.original_call_str}`"
+        )
+        if print_aliases_list:
+            send_message += f" and all of it's aliases `({print_aliases_list})` forever"
+
+        send_message += ". Are you sure?"
 
         view = ui.Confirm()
         await view.send(
-            message=(
-                f"This will remove the factoid `{called_factoid.original_call_str}` "
-                "and all of it's aliases forever. Are you sure?"
-            ),
+            message=send_message,
             channel=ctx.channel,
             author=ctx.author,
         )
@@ -758,13 +768,13 @@ class FactoidManager(cogs.MatchCog):
         await self.delete_factoid_call(factoid, str(ctx.guild.id))
 
         # Don't send the confirmation message if this is an alias either
-        await auxiliary.send_confirm_embed(
-            (
-                f"Successfully deleted the factoid `{called_factoid.original_call_str}`"
-                "and all of it's aliases"
-            ),
-            channel=ctx.channel,
+        confirm_message = (
+            f"Successfully deleted the factoid `{called_factoid.original_call_str}`"
         )
+        if print_aliases_list:
+            confirm_message += f" and all of it's aliases `({print_aliases_list})`"
+
+        await auxiliary.send_confirm_embed(message=confirm_message, channel=ctx.channel)
         return True
 
     # -- Getting and responding with a factoid --
@@ -1283,7 +1293,6 @@ class FactoidManager(cogs.MatchCog):
             alias=None,
         )
 
-    @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
@@ -1592,8 +1601,6 @@ class FactoidManager(cogs.MatchCog):
 
         factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
 
-        aliases_list = await self.get_list_of_aliases(factoid_name, str(ctx.guild.id))
-
         if not factoid.embed_config:
             await auxiliary.send_deny_embed(
                 message=f"There is no embed config for `{factoid_name}`",
@@ -1606,7 +1613,7 @@ class FactoidManager(cogs.MatchCog):
         json_file = discord.File(
             io.StringIO(formatted),
             filename=(
-                f"{aliases_list[0]}-factoid-embed-config-{datetime.datetime.utcnow()}.json"
+                f"{factoid_name.lower()}-factoid-embed-config-{datetime.datetime.utcnow()}.json"
             ),
         )
 
@@ -1736,6 +1743,13 @@ class FactoidManager(cogs.MatchCog):
             factoids = await self.build_list_of_factoids(
                 guild, exclusive_property=property, include_hidden=show_hidden
             )
+
+        if not factoids:
+            embed = auxiliary.prepare_deny_embed(
+                "No factoids could be found matching your filter"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
 
         aliases = self.build_alias_dict_for_given_factoids(factoids)
 
