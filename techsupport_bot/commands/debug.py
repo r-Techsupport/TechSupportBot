@@ -110,12 +110,12 @@ class Debugger(cogs.BaseCog):
         await view.send(interaction.channel, interaction.user, embeds, interaction)
 
 
-def build_debug_embed(object: object) -> list[discord.Embed]:
+def build_debug_embed(discord_object: object) -> list[discord.Embed]:
     """Builds a list of embeds, with each one at a max of 4000 characters
     This will be every attribute of the given object.
 
     Args:
-        object (object): A discord object that needs to be explored
+        discord_object (object): A discord object that needs to be explored
 
     Returns:
         list[discord.Embed]: A list of embeds to be displayed in a paginated display
@@ -123,10 +123,10 @@ def build_debug_embed(object: object) -> list[discord.Embed]:
     all_strings = []
     properties_string = ""
 
-    for attribute in dir(object):
+    for attribute in dir(discord_object):
         if not attribute.startswith("_"):
             try:
-                value = getattr(object, attribute)
+                value = getattr(discord_object, attribute)
             except AttributeError:
                 continue
 
