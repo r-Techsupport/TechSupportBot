@@ -364,6 +364,24 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         blind: bool = bot.db.Column(bot.db.Boolean, default=False)
         anonymous: bool = bot.db.Column(bot.db.Boolean, default=False)
 
+    class XP(bot.db.Model):
+        """The postgres table for XP
+        Currently used in xp.py
+
+        Attributes:
+            pk (int): The primary key for the database
+            guild_id (str): The ID of the guild that the XP is for
+            user_id (str): The ID of the user
+            xp (int): The amount of XP the user has
+        """
+
+        __tablename__ = "user_xp"
+
+        pk: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild_id: str = bot.db.Column(bot.db.String)
+        user_id: str = bot.db.Column(bot.db.String)
+        xp: int = bot.db.Column(bot.db.Integer)
+
     bot.models.Applications = Applications
     bot.models.AppBans = ApplicationBans
     bot.models.BanLog = BanLog
@@ -379,3 +397,4 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.Listener = Listener
     bot.models.Rule = Rule
     bot.models.Votes = Votes
+    bot.models.XP = XP

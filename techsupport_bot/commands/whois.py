@@ -71,6 +71,9 @@ class Whois(cogs.BaseCog):
             except (app_commands.MissingAnyRole, app_commands.AppCommandError):
                 pass
 
+        if "xp" in config.enabled_extensions:
+            embed.add_field(name="XP", value="NOT YET IMPLEMENTED")
+
         if interaction.permissions.kick_members:
             flags = []
             if member.flags.automod_quarantined_username:

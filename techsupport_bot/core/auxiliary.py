@@ -54,6 +54,7 @@ async def search_channel_for_message(
     member_to_match: discord.Member = None,
     content_to_match: str = "",
     allow_bot: bool = True,
+    skip_messages: list[int] = [],
 ) -> discord.Message:
     """Searches the last 50 messages in a channel based on given conditions
 
@@ -65,6 +66,7 @@ async def search_channel_for_message(
         content_to_match (str, optional): The content the message must contain. Defaults to None.
         allow_bot (bool, optional): If you want to allow messages to
             be authored by a bot. Defaults to True
+        skip_messages (list[int], optional): Message IDs to be ignored by the search
 
     Returns:
         discord.Message: The message object that meets the given critera.
@@ -74,6 +76,8 @@ async def search_channel_for_message(
     SEARCH_LIMIT = 50
 
     async for message in channel.history(limit=SEARCH_LIMIT):
+        if message.id in skip_messages:
+            continue
         if (
             (member_to_match is None or message.author == member_to_match)
             and (content_to_match == "" or content_to_match in message.content)
