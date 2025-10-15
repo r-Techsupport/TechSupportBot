@@ -111,6 +111,8 @@ class LevelXP(cogs.MatchCog):
 
         await update_current_XP(self.bot, ctx.author, ctx.guild, (current_XP + new_XP))
 
+        await self.apply_level_ups(ctx.author, current_XP, (current_XP + new_XP))
+
         await ctx.channel.send(
             f"{ctx.author.display_name}: XP. New: {new_XP}, Total: {current_XP+new_XP}"
         )
@@ -119,22 +121,44 @@ class LevelXP(cogs.MatchCog):
     async def apply_level_ups(
         self: Self, user: discord.Member, old_xp: int, new_xp: int
     ) -> None:
-        old_level = False
-        new_level = False
+        old_level = None
+        new_level = None
 
-        config = self.bot.guild_configs[user.guild.id]
-        levels = config.extensions.xp.categories_counted.value
+        config = self.bot.guild_configs[str(user.guild.id)]
+        levels = config.extensions.xp.level_roles.value
+        print(levels)
         if len(levels) == 0:
             return
 
-        for level in levels:
-            if old_xp >= level:
-                old_level = levels[level]
-            if new_xp >= level:
-                new_level = levels[level]
+        old_level = max(
+            ((int(xp), role_id) for xp, role_id in levels.items() if old_xp >= int(xp)),
+            default=(-1, None),
+            key=lambda t: t[0],
+        )[1]
+
+        new_level = max(
+            ((int(xp), role_id) for xp, role_id in levels.items() if new_xp >= int(xp)),
+            default=(-1, None),
+            key=lambda t: t[0],
+        )[1]
 
         if old_level != new_level:
-            # TODO: Handle level up process
+            guild = user.guild
+
+            if old_level:
+                old_role = guild.get_role(old_level)
+                if old_role in user.roles:
+                    await user.remove_roles(
+                        old_role, reason="Level up - replacing old level role"
+                    )
+
+            if new_level:
+                new_role = guild.get_role(new_level)
+                if new_role not in user.roles:
+                    await user.add_roles(
+                        new_role, reason="Level up - new level role applied"
+                    )
+
             return
 
 
