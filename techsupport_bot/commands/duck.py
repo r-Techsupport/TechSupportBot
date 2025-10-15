@@ -16,6 +16,7 @@ from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, extensionconfig, moderation
 from discord import Color as embed_colors
 from discord.ext import commands
+from functions import holidays
 
 if TYPE_CHECKING:
     import bot
@@ -157,6 +158,9 @@ class DuckHunt(cogs.LoopCog):
             banned_user (discord.User, optional): A user that is not allowed to claim the duck.
                 Defaults to None.
         """
+        if holidays.isGuildClosed(self.bot, guild):
+            return
+
         if not channel:
             config = self.bot.guild_configs[str(guild.id)]
             log_channel = config.get("logging_channel")

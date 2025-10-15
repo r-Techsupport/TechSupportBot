@@ -24,6 +24,7 @@ import munch
 import ui
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
+from functions import holidays
 
 if TYPE_CHECKING:
     import bot
@@ -86,6 +87,10 @@ class Modmail_bot(discord.Client):
         Args:
             message (discord.Message): Every sent message, gets filtered to only dms
         """
+        channel = Ts_client.get_channel(MODMAIL_FORUM_ID)
+        if holidays.isGuildClosed(Ts_client, channel.guild):
+            await message.add_reaction("🎄")
+            return
 
         if isinstance(message.channel, discord.DMChannel) and not message.author.bot:
             # Log all DMs regardless of what happens to them

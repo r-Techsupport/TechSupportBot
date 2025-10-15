@@ -12,6 +12,7 @@ import munch
 from botlogging import LogContext, LogLevel
 from core import cogs, extensionconfig
 from discord import app_commands
+from functions import holidays
 
 if TYPE_CHECKING:
     import bot
@@ -180,6 +181,8 @@ class News(cogs.LoopCog):
             config (munch.Munch): The guild config for the guild looping
             guild (discord.Guild): The guild where the loop is running
         """
+        if holidays.isGuildClosed(self.bot, guild):
+            return
         channel = guild.get_channel(int(config.extensions.news.channel.value))
         if not channel:
             return
