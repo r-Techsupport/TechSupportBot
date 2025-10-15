@@ -10,6 +10,7 @@ import discord
 import munch
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
+from functions import holidays
 
 if TYPE_CHECKING:
     import bot
@@ -100,6 +101,8 @@ class KanyeQuotes(cogs.LoopCog):
             config (munch.Munch): The guild config where the loop is taking place
             guild (discord.Guild): The guild where the loop is taking place
         """
+        if holidays.isGuildClosed(self.bot, guild):
+            return
         quote = await self.get_quote()
         embed = self.generate_themed_embed(quote=quote)
 

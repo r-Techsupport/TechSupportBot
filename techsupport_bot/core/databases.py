@@ -192,6 +192,20 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         )
         nsfw: bool = bot.db.Column(bot.db.Boolean, default=False)
 
+    class HolidayClose(bot.db.Model):
+        """The postgres table for holiday closures
+        Currently used in holidays.py
+
+        Attributes:
+            pk (int): The automatic primary key
+            guild_id (str): The ID of the user banned from modmail
+        """
+
+        __tablename__ = "holiday_closeda"
+
+        pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
+        guild_id: str = bot.db.Column(bot.db.String, default=None)
+
     class IRCChannelMapping(bot.db.Model):
         """The postgres table for IRC->discord maps
         Currently used in relay.py
@@ -371,6 +385,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.Factoid = Factoid
     bot.models.FactoidJob = FactoidJob
     bot.models.Grab = Grab
+    bot.models.HolidayClose = HolidayClose
     bot.models.IRCChannelMapping = IRCChannelMapping
     bot.models.ModmailBan = ModmailBan
     bot.models.UserNote = UserNote

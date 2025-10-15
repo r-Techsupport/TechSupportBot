@@ -35,6 +35,7 @@ from core import auxiliary, cogs, custom_errors, extensionconfig
 from croniter import CroniterBadCronError
 from discord import app_commands
 from discord.ext import commands
+from functions import holidays
 
 if TYPE_CHECKING:
     import bot
@@ -1176,7 +1177,8 @@ class FactoidManager(cogs.MatchCog):
                 content = factoid.message
 
             try:
-                message = await channel.send(content=content, embed=embed)
+                if not holidays.isGuildClosed(self.bot, ctx.guild):
+                    message = await channel.send(content=content, embed=embed)
 
             except discord.errors.HTTPException as exception:
                 config = self.bot.guild_configs[str(ctx.guild.id)]
@@ -1189,9 +1191,11 @@ class FactoidManager(cogs.MatchCog):
                     exception=exception,
                 )
                 # Sends the raw factoid instead of the embed as fallback
-                message = await channel.send(content=factoid.message)
+                if not holidays.isGuildClosed(self.bot, ctx.guild):
+                    message = await channel.send(content=factoid.message)
 
-            await self.send_to_irc(channel, message, factoid.message)
+            if not holidays.isGuildClosed(self.bot, ctx.guild):
+                await self.send_to_irc(channel, message, factoid.message)
 
     @commands.group(
         brief="Executes a factoid command",
@@ -1634,7 +1638,7 @@ class FactoidManager(cogs.MatchCog):
         # Adds all fields to the embed
         embed.add_field(name="Aliases", value=alias_list)
         embed.add_field(name="Embed", value=bool(factoid.embed_config))
-        embed.add_field(name="Contents", value=factoid.message[:1020])
+        embed.add_field(name="Contents", value=factoid.message)
         embed.add_field(name="Date of creation", value=factoid.time)
 
         # Get all the special properties of a factoid, if any are set
