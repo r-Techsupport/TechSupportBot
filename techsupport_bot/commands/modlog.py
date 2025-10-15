@@ -57,6 +57,7 @@ class BanLogger(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that started this command
         """
+        await interaction.response.defer()
         all_bans = await self.bot.models.BanLog.query.where(
             self.bot.models.BanLog.guild_id == str(interaction.guild.id)
         ).gino.all()
@@ -68,19 +69,22 @@ class BanLogger(cogs.BaseCog):
         embed = discord.Embed(title="Most active moderators")
 
         final_string = ""
-        for index, (moderator_id, count) in enumerate(sorted_ban_frequency):
-            moderator = await interaction.guild.fetch_member(int(moderator_id))
+        for index, (moderator_id, count) in enumerate(sorted_ban_frequency[:10]):
+            try:
+                moderator = await interaction.guild.fetch_member(int(moderator_id))
+            except discord.NotFound:
+                moderator = None
             if moderator:
                 final_string += (
                     f"{index+1}. {moderator.display_name} "
-                    f"{moderator.mention} ({moderator.id}) - ({count})\n"
+                    f"{moderator.mention} ({moderator.id}) - {count}\n"
                 )
             else:
-                final_string += {f"{index+1}. Moderator left: {moderator_id}"}
+                final_string += f"{index+1}. Moderator left: {moderator_id} - {count}\n"
 
         embed.description = final_string
         embed.color = discord.Color.blue()
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
 
     @modlog_group.command(
         name="lookup-user",
