@@ -54,7 +54,7 @@ async def search_channel_for_message(
     member_to_match: discord.Member = None,
     content_to_match: str = "",
     allow_bot: bool = True,
-    skip_messages: list[int] = [],
+    skip_messages: list[int] = None,
 ) -> discord.Message:
     """Searches the last 50 messages in a channel based on given conditions
 

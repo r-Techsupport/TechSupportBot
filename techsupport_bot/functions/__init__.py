@@ -2,3 +2,4 @@
 
 from .automod import *
 from .nickname import *
+from .xp import *

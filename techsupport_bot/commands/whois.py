@@ -10,6 +10,7 @@ import ui
 from commands import application, moderator, notes
 from core import auxiliary, cogs, moderation
 from discord import app_commands
+from functions import xp
 
 if TYPE_CHECKING:
     import bot
@@ -72,7 +73,8 @@ class Whois(cogs.BaseCog):
                 pass
 
         if "xp" in config.enabled_extensions:
-            embed.add_field(name="XP", value="NOT YET IMPLEMENTED")
+            current_XP = await xp.get_current_XP(self.bot, member, interaction.guild)
+            embed.add_field(name="XP", value=current_XP)
 
         if interaction.permissions.kick_members:
             flags = []

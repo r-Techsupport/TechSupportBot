@@ -1,3 +1,5 @@
+"""Module for the XP extension for the discord bot."""
+
 from __future__ import annotations
 
 import random
@@ -121,6 +123,13 @@ class LevelXP(cogs.MatchCog):
     async def apply_level_ups(
         self: Self, user: discord.Member, old_xp: int, new_xp: int
     ) -> None:
+        """This function will determine if a user leveled up and apply the proper roles
+
+        Args:
+            user (discord.Member): The user who just gained XP
+            old_xp (int): The old amount of XP the user had
+            new_xp (int): The new amount of XP the user has
+        """
         old_level = None
         new_level = None
 
