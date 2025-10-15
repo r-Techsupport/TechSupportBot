@@ -76,7 +76,7 @@ async def search_channel_for_message(
     SEARCH_LIMIT = 50
 
     async for message in channel.history(limit=SEARCH_LIMIT):
-        if message.id in skip_messages:
+        if skip_messages and message.id in skip_messages:
             continue
         if (
             (member_to_match is None or message.author == member_to_match)
