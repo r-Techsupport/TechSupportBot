@@ -52,13 +52,13 @@ class LevelXP(cogs.MatchCog):
         )
 
     async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str
+        self: Self, config: munch.Munch, ctx: commands.Context, _: str
     ) -> bool:
         """A match function to determine if somehting should be reacted to
 
         Args:
             config (munch.Munch): The guild config for the running bot
-            content (str): The string content of the message
+            ctx (commands.Context): The context that the original message was sent in
 
         Returns:
             bool: True if there needs to be a reaction, False otherwise
