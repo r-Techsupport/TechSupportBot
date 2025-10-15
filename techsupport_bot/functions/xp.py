@@ -27,6 +27,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         description="List of category IDs to count for XP",
         default=[],
     )
+    config.add(
+        key="level_roles",
+        datatype="dict",
+        title="Dict of levels in XP:Role ID.",
+        description="Dict of levels in XP:Role ID",
+        default={},
+    )
 
     await bot.add_cog(LevelXP(bot=bot, extension_name="xp"))
     bot.add_extension_config("xp", config)
@@ -108,6 +115,27 @@ class LevelXP(cogs.MatchCog):
             f"{ctx.author.display_name}: XP. New: {new_XP}, Total: {current_XP+new_XP}"
         )
         self.ineligible[ctx.author.id] = True
+
+    async def apply_level_ups(
+        self: Self, user: discord.Member, old_xp: int, new_xp: int
+    ) -> None:
+        old_level = False
+        new_level = False
+
+        config = self.bot.guild_configs[user.guild.id]
+        levels = config.extensions.xp.categories_counted.value
+        if len(levels) == 0:
+            return
+
+        for level in levels:
+            if old_xp >= level:
+                old_level = levels[level]
+            if new_xp >= level:
+                new_level = levels[level]
+
+        if old_level != new_level:
+            # TODO: Handle level up process
+            return
 
 
 async def get_current_XP(
