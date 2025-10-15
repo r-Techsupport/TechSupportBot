@@ -177,6 +177,8 @@ class DuckHunt(cogs.LoopCog):
         if config.extensions.duck.use_category.value:
             all_valid_channels = channel.category.text_channels
             use_channel = random.choice(all_valid_channels)
+        else:
+            use_channel = channel
 
         self.cooldowns[guild.id] = {}
 
