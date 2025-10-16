@@ -195,7 +195,11 @@ class Voting(cogs.LoopCog):
         )
         embed.add_field(
             name="Vote counts",
-            value=f"Votes for yes: {print_yes_votes}\nVotes for no: {print_no_votes}\nVotes to abstain: {print_abstain_votes}",
+            value=(
+                f"Votes for yes: {print_yes_votes}\n"
+                f"Votes for no: {print_no_votes}\n"
+                f"Votes to abstain: {print_abstain_votes}"
+            ),
         )
         footer_str = f"Vote ID: {db_entry.vote_id}. "
         if db_entry.blind:
