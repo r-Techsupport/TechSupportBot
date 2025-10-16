@@ -50,7 +50,10 @@ class ForumChannel(cogs.LoopCog):
 
     abandoned_embed = discord.Embed(
         title="Abandoned thread archived",
-        description="It appears this thread has been abandoned. You are welcome to create another thread",
+        description=(
+            "It appears this thread has been abandoned. "
+            "You are welcome to create another thread"
+        ),
         color=discord.Color.blurple(),
     )
 
