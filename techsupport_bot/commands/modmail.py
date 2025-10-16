@@ -153,7 +153,6 @@ class Modmail_bot(discord.Client):
             isinstance(before.channel, discord.DMChannel)
             and before.author.id in active_threads
         ):
-
             if await Ts_client.models.ModmailBan.query.where(
                 Ts_client.models.ModmailBan.user_id == str(before.author.id)
             ).gino.first():
@@ -452,7 +451,6 @@ async def create_thread(
         if not thread.name.startswith("[OPEN]") and thread.name.split("|")[
             -1
         ].strip() == str(user.id):
-
             past_thread_count += 1
 
     if past_thread_count == 0:
@@ -1068,23 +1066,23 @@ class Modmail(cogs.BaseCog):
 
             # - Replies -
             case "reply":
-                await message.delete()
                 await reply_to_thread(
                     raw_contents=content[5:],
                     message=message,
                     thread=message.channel,
                     anonymous=False,
                 )
+                await message.delete()
                 return
 
             case "areply":
-                await message.delete()
                 await reply_to_thread(
                     raw_contents=content[6:],
                     message=message,
                     thread=message.channel,
                     anonymous=True,
                 )
+                await message.delete()
                 return
 
             # Sends a factoid
@@ -1197,7 +1195,6 @@ class Modmail(cogs.BaseCog):
                 )
 
             case ui.ConfirmResponse.CONFIRMED:
-
                 # Makes sure the user can reply if they were timed out from creating threads
                 if user.id in delayed_people:
                     del delayed_people[user.id]
@@ -1207,9 +1204,12 @@ class Modmail(cogs.BaseCog):
                     user=user,
                     source_channel=ctx.channel,
                 ):
-
                     await auxiliary.send_confirm_embed(
-                        message="Thread successfully created!", channel=ctx.channel
+                        message=(
+                            "Thread successfully created! "
+                            f"{self.bot.get_channel(active_threads[user.id]).mention}"
+                        ),
+                        channel=ctx.channel,
                     )
 
     @auxiliary.with_typing
@@ -1259,7 +1259,6 @@ class Modmail(cogs.BaseCog):
                 )
 
             case ui.ConfirmResponse.CONFIRMED:
-
                 # Makes sure the user can reply if they were timed out from creating threads
                 if ctx.author in delayed_people:
                     del delayed_people[ctx.author.id]
@@ -1269,9 +1268,12 @@ class Modmail(cogs.BaseCog):
                     user=ctx.author,
                     source_channel=ctx.channel,
                 ):
-
                     await auxiliary.send_confirm_embed(
-                        message="Thread successfully created!", channel=ctx.channel
+                        message=(
+                            f"Thread successfully created! "
+                            f"{self.bot.get_channel(active_threads[ctx.author.id]).mention}"
+                        ),
+                        channel=ctx.channel,
                     )
 
     @commands.group(name="modmail")
@@ -1381,10 +1383,12 @@ class Modmail(cogs.BaseCog):
         # Checks if the command was an alias
         aliases = config.extensions.modmail.aliases.value
         if not aliases:
-            embed = auxiliary.generate_basic_embed(
-                color=discord.Color.green(),
-                description="There are no aliases registered for this guild",
+            embed = auxiliary.prepare_deny_embed(
+                message="There are no aliases registered for this guild",
             )
+
+            await ctx.channel.send(embed=embed)
+            return
 
         embed = discord.Embed(
             color=discord.Color.green(), title="Registered aliases for this guild:"
@@ -1505,3 +1509,38 @@ class Modmail(cogs.BaseCog):
             message=f"{user.mention} was successfully unbanned from creating modmail threads!",
             channel=ctx.channel,
         )
+
+    @auxiliary.with_typing
+    @commands.check(has_modmail_management_role)
+    @modmail.command(
+        name="bans",
+        description="Lists the users who are banned from using modmail",
+    )
+    async def modmail_list_bans(self: Self, ctx: commands.Context) -> None:
+        """Lists the users who are banned from using modmail
+
+        Args:
+            ctx (commands.Context): Context of the command execution
+        """
+        bans = await self.bot.models.ModmailBan.query.gino.all()
+        if not bans:
+            embed = auxiliary.generate_basic_embed(
+                color=discord.Color.green(),
+                description="There are no modmail bans",
+            )
+            await ctx.channel.send(embed=embed)
+            return
+
+        embed_description = ""
+
+        for ban in bans:
+            user: discord.User = await self.bot.fetch_user(ban.user_id)
+            embed_description += f"{user.mention} - `{user}`\n"
+
+        embed: discord.Embed = discord.Embed(
+            color=discord.Color.green(),
+            title="Modmail Bans:",
+            description=embed_description,
+        )
+
+        await ctx.channel.send(embed=embed)

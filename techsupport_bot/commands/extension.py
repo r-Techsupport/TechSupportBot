@@ -12,6 +12,7 @@ This file contains 4 commands:
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING, Self
 
 import discord
@@ -70,6 +71,47 @@ class ExtensionControl(cogs.BaseCog):
         else:
             embed = auxiliary.prepare_confirm_embed(
                 message=f"Disabled extensions: {missing_extensions}"
+            )
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.checks.has_permissions(administrator=True)
+    @extension_app_command_group.command(
+        name="enable_all",
+        description="Enables all loaded but disabled extensions in the guild",
+        extras={"module": "extension"},
+    )
+    async def enable_everything(self: Self, interaction: discord.Interaction) -> None:
+        """This will get all the disabled extensions and enable them for the current
+        guild.
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered the slash command
+        """
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+        missing_extensions = [
+            item
+            for item in self.bot.extension_name_list
+            if item not in config.enabled_extensions
+        ]
+        if len(missing_extensions) == 0:
+            embed = auxiliary.prepare_confirm_embed(
+                message="No currently loaded extensions are disabled"
+            )
+        else:
+            for extension in missing_extensions:
+                config.enabled_extensions.append(extension)
+
+            config.enabled_extensions.sort()
+            # Modify the database
+            await self.bot.write_new_config(
+                str(interaction.guild.id), json.dumps(config)
+            )
+
+            # Modify the local cache
+            self.bot.guild_configs[str(interaction.guild.id)] = config
+
+            embed = auxiliary.prepare_confirm_embed(
+                f"I have enabled {len(missing_extensions)} for this guild."
             )
         await interaction.response.send_message(embed=embed)
 

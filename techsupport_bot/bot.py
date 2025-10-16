@@ -47,7 +47,7 @@ class TechSupportBot(commands.Bot):
         FUNCTIONS_DIR (str):The list of all files in the FUNCTIONS_DIR_NAME folder
     """
 
-    CONFIG_PATH: str = "./config.yml"
+    CONFIG_PATH: str = os.environ.get("CONFIG_YML", "./config.yml")
     EXTENSIONS_DIR_NAME: str = "commands"
     EXTENSIONS_DIR: str = (
         f"{os.path.join(os.path.dirname(__file__))}/{EXTENSIONS_DIR_NAME}"
@@ -78,6 +78,7 @@ class TechSupportBot(commands.Bot):
             )
         )
         self.command_execute_history: dict[str, dict[int, bool]] = {}
+        self.notified_dm_log: list[int] = []
 
         # Loads the file config, which includes things like the token
         self.load_file_config()
@@ -243,7 +244,14 @@ class TechSupportBot(commands.Bot):
             f"{source} recieved a PM", f"PM from: {sent_from}\n{content}"
         )
         embed.timestamp = datetime.datetime.utcnow()
-        await owner.send(embed=embed)
+        try:
+            await owner.send(embed=embed)
+        except discord.Forbidden as exception:
+            await self.logger.send_log(
+                message="Could not DM discord bot owner",
+                level=LogLevel.ERROR,
+                exception=exception,
+            )
 
     async def on_message(self: Self, message: discord.Message) -> None:
         """Logs DMs and ensure that commands are processed
@@ -258,6 +266,13 @@ class TechSupportBot(commands.Bot):
             and message.author.id != owner.id
             and not message.author.bot
         ):
+            if message.author.id not in self.notified_dm_log:
+                self.notified_dm_log.append(message.author.id)
+                await message.author.send(
+                    "All DMs sent to this bot are permanently logged and not "
+                    "regularly checked. No responses will be given to any messages."
+                )
+
             attachment_urls = ", ".join(a.url for a in message.attachments)
             content_string = f'"{message.content}"' if message.content else ""
             attachment_string = f"({attachment_urls})" if attachment_urls else ""
@@ -322,6 +337,9 @@ class TechSupportBot(commands.Bot):
         config_.rate_limit.enabled = False
         config_.rate_limit.commands = 4
         config_.rate_limit.time = 10
+        config_.moderation = munch.DefaultMunch(None)
+        config_.moderation.max_warnings = 3
+        config_.moderation.alert_channel = None
 
         config_.extensions = extensions_config
 
@@ -763,7 +781,6 @@ class TechSupportBot(commands.Bot):
             context=LogContext(guild=member.guild),
             console_only=True,
         )
-
         owner = await self.get_owner()
         if getattr(owner, "id", None) == member.id:
             return True
@@ -787,6 +804,12 @@ class TechSupportBot(commands.Bot):
         Returns:
             discord.User | None: The User object of the owner of the application on discords side
         """
+        if self.file_config.bot_config.override_owner:
+            self.owner = await self.fetch_user(
+                int(self.file_config.bot_config.override_owner)
+            )
+            return self.owner
+
         if not self.owner:
             try:
                 # If this isn't console only, it is a forever recursion
@@ -915,7 +938,7 @@ class TechSupportBot(commands.Bot):
         await self.slash_command_log(interaction)
 
         await self.logger.send_log(
-            message="Checking if prefix command can run",
+            message="Checking if slash command can run",
             level=LogLevel.DEBUG,
             context=LogContext(guild=interaction.guild, channel=interaction.channel),
             console_only=True,
@@ -963,24 +986,28 @@ class TechSupportBot(commands.Bot):
         Args:
             interaction (discord.Interaction): The interaction the slash command generated
         """
+        if interaction.type != discord.InteractionType.application_command:
+            return
         embed = discord.Embed()
         embed.add_field(name="User", value=interaction.user)
         embed.add_field(
             name="Channel", value=getattr(interaction.channel, "name", "DM")
         )
         embed.add_field(name="Server", value=getattr(interaction.guild, "name", "None"))
-        embed.add_field(name="Namespace", value=f"{interaction.namespace}")
-        embed.set_footer(text=f"Requested by {interaction.user.id}")
+        parameters = []
+        for parameter in interaction.namespace:
+            parameters.append(f"{parameter[0]}: {parameter[1]}")
 
         log_channel = await self.get_log_channel_from_guild(
             interaction.guild, key="logging_channel"
         )
 
         sliced_content = interaction.command.qualified_name[:100]
-        message = f"Command detected: `/{sliced_content}`"
+        command = f"/{sliced_content} {', '.join(parameters)}".strip()
+        message = f"Command detected: `{command}`"
 
         await self.logger.send_log(
-            message=message,
+            message=message.strip()[:6000],
             level=LogLevel.INFO,
             context=LogContext(guild=interaction.guild, channel=interaction.channel),
             channel=log_channel,
@@ -1042,11 +1069,12 @@ class TechSupportBot(commands.Bot):
     # IRC Stuff
 
     async def start_irc(self: Self) -> None:
-        """Starts the IRC connection in a seperate thread"""
-        irc_config = self.file_config.api.irc
+        """Starts the IRC bot in a separate thread."""
         main_loop = asyncio.get_running_loop()
+        irc_config = self.file_config.api.irc
 
-        irc_bot = ircrelay.IRCBot(
+        # Create the bot instance
+        irc_bot = ircrelay.relay.IRCBot(
             loop=main_loop,
             server=irc_config.server,
             port=irc_config.port,
@@ -1054,10 +1082,17 @@ class TechSupportBot(commands.Bot):
             username=irc_config.name,
             password=irc_config.password,
         )
+
         self.irc = irc_bot
 
-        irc_thread = threading.Thread(target=irc_bot.start)
+        def run_in_thread() -> None:
+            """Run the IRC bot in a separate thread."""
+            irc_bot.start_bot()
+
+        # Start the bot in a new thread
         await self.logger.send_log(
-            message="Logging in to IRC", level=LogLevel.INFO, console_only=True
+            message="Logging into IRC", level=LogLevel.INFO, console_only=True
         )
-        irc_thread.start()
+
+        bot_thread = threading.Thread(target=run_in_thread)
+        bot_thread.start()

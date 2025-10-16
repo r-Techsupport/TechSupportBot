@@ -63,6 +63,29 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild_id: str = bot.db.Column(bot.db.String)
         applicant_id: str = bot.db.Column(bot.db.String)
 
+    class BanLog(bot.db.Model):
+        """The postgres table for banlogs
+        Currently used in modlog.py
+
+        Attributes:
+            __tablename__ (str): The name of the table in postgres
+            pk (int): The automatic primary key
+            guild_id (str): The string of the guild ID the user was banned in
+            reason (str): The reason of the ban
+            banning_moderator (str): The ID of the moderator who banned
+            banned_member (str): The ID of the user who was banned
+            ban_time (datetime): The date and time of the ban
+        """
+
+        __tablename__ = "banlog"
+
+        pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
+        guild_id = bot.db.Column(bot.db.String)
+        reason = bot.db.Column(bot.db.String)
+        banning_moderator = bot.db.Column(bot.db.String)
+        banned_member = bot.db.Column(bot.db.String)
+        ban_time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+
     class DuckUser(bot.db.Model):
         """The postgres table for ducks
         Currently used in duck.py
@@ -228,22 +251,22 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         Currently used in protect.py and who.py
 
         Attributes:
+            __tablename__ (str): The name of the table in postgres
             pk (int): The primary key for the database
             user_id (str): The user who got warned
             guild_id (str): The guild this warn occured in
             reason (str): The reason for the warn
-            time (datetime.datetime): The time the warning was given
+            time (datetime): The time the warning was given
+            invoker_id (str): The moderator who made the warning
         """
 
         __tablename__ = "warnings"
-
-        pk: int = bot.db.Column(bot.db.Integer, primary_key=True)
-        user_id: str = bot.db.Column(bot.db.String)
-        guild_id: str = bot.db.Column(bot.db.String)
-        reason: str = bot.db.Column(bot.db.String)
-        time: datetime.datetime = bot.db.Column(
-            bot.db.DateTime, default=datetime.datetime.utcnow
-        )
+        pk = bot.db.Column(bot.db.Integer, primary_key=True)
+        user_id = bot.db.Column(bot.db.String)
+        guild_id = bot.db.Column(bot.db.String)
+        reason = bot.db.Column(bot.db.String)
+        time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+        invoker_id = bot.db.Column(bot.db.String)
 
     class Config(bot.db.Model):
         """The postgres table for guild config
@@ -343,6 +366,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     bot.models.Applications = Applications
     bot.models.AppBans = ApplicationBans
+    bot.models.BanLog = BanLog
     bot.models.DuckUser = DuckUser
     bot.models.Factoid = Factoid
     bot.models.FactoidJob = FactoidJob
