@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Self
 
 import discord
 import munch
-from core import cogs
+from core import cogs, extensionconfig
 from discord import app_commands
 from discord.ext import commands
 
@@ -23,7 +23,37 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot to register the cog to
     """
+    config = extensionconfig.ExtensionConfig()
+    config.add(
+        key="forum_channel_id",
+        datatype="str",
+        title="forum channel",
+        description="The forum channel id as a string to manage threads in",
+        default="",
+    ),
+    config.add(
+        key="max_age_minutes",
+        datatype="int",
+        title="Max age in minutes",
+        description="The max age of a thread before it times out",
+        default=1440,
+    ),
+    config.add(
+        key="title_regex_list",
+        datatype="list[str]",
+        title="List of regex to ban in titles",
+        description="List of regex to ban in titles",
+        default=["^\S+$"],
+    ),
+    config.add(
+        key="body_regex_list",
+        datatype="list[str]",
+        title="List of regex to ban in bodies",
+        description="List of regex to ban in bodies",
+        default=["^\S+$"],
+    )
     await bot.add_cog(ForumChannel(bot=bot, extension_name="forum"))
+    bot.add_extension_config("forum", config)
 
 
 class ForumChannel(cogs.LoopCog):
@@ -67,24 +97,6 @@ class ForumChannel(cogs.LoopCog):
         name="forum", description="...", extras={"module": "forum"}
     )
 
-    channel_id = "1288279278839926855"
-    max_age_minutes = 1
-    disallowed_title_patterns = [
-        re.compile(
-            # pylint: disable=C0301
-            r"^(?:I)?(?:\s)?(?:need|please I need|please|pls|plz)?(?:\s)?help(?:\s)?(?:me|please)?(?:\?|!)?$",
-            re.IGNORECASE,
-        ),
-        re.compile(r"^\S+$"),  # Very short single-word titles
-        re.compile(r"\b(urgent|ASAP|quick help|fast help)\b", re.IGNORECASE),
-        re.compile(r"[!?]{3,}"),  # Titles with excessive punctuation
-    ]
-
-    disallowed_body_patterns = [
-        re.compile(r"^.{0,29}$"),  # Bodies shorter than 15 characters
-        re.compile(r"^(\[[^\]]*\])?https?://\S+$"),  # Only links in the body
-    ]
-
     @forum_group.command(
         name="solved",
         description="Mark a support forum thread as solved",
@@ -97,7 +109,10 @@ class ForumChannel(cogs.LoopCog):
         Args:
             interaction (discord.Interaction): The interaction that called the command
         """
-        channel = await interaction.guild.fetch_channel(int(self.channel_id))
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+        channel = await interaction.guild.fetch_channel(
+            int(config.extensions.forum.forum_channel_id.value)
+        )
         if (
             hasattr(interaction.channel, "parent")
             and interaction.channel.parent == channel
@@ -131,14 +146,18 @@ class ForumChannel(cogs.LoopCog):
         Args:
             thread (discord.Thread): The thread that was created
         """
-        channel = await thread.guild.fetch_channel(int(self.channel_id))
+        config = self.bot.guild_configs[str(thread.guild.id)]
+        channel = await thread.guild.fetch_channel(
+            int(config.extensions.forum.forum_channel_id.value)
+        )
         if thread.parent != channel:
             return
 
+        disallowed_title_patterns = create_regex_list(
+            config.extensions.forum.title_regex_list.value
+        )
         # Check if the thread title is disallowed
-        if any(
-            pattern.search(thread.name) for pattern in self.disallowed_title_patterns
-        ):
+        if any(pattern.search(thread.name) for pattern in disallowed_title_patterns):
             await thread.send(embed=self.reject_embed)
             await thread.edit(
                 name=f"[REJECTED] {thread.name}"[:100],
@@ -151,7 +170,10 @@ class ForumChannel(cogs.LoopCog):
         messages = [message async for message in thread.history(limit=5)]
         if messages:
             body = messages[-1].content
-            if any(pattern.search(body) for pattern in self.disallowed_body_patterns):
+            disallowed_body_patterns = create_regex_list(
+                config.extensions.forum.body_regex_list.value
+            )
+            if any(pattern.search(body) for pattern in disallowed_body_patterns):
                 await thread.send(embed=self.reject_embed)
                 await thread.edit(
                     name=f"[REJECTED] {thread.name}"[:100],
@@ -202,7 +224,9 @@ class ForumChannel(cogs.LoopCog):
             config (munch.Munch): The guild config where the loop is taking place
             guild (discord.Guild): The guild where the loop is taking place
         """
-        channel = await guild.fetch_channel(int(self.channel_id))
+        channel = await guild.fetch_channel(
+            int(config.extensions.forum.forum_channel_id.value)
+        )
         for existing_thread in channel.threads:
             if not existing_thread.archived and not existing_thread.locked:
                 most_recent_message_id = existing_thread.last_message_id
@@ -212,7 +236,7 @@ class ForumChannel(cogs.LoopCog):
                 if datetime.datetime.now(
                     datetime.timezone.utc
                 ) - most_recent_message.created_at > datetime.timedelta(
-                    minutes=self.max_age_minutes
+                    minutes=config.extensions.forum.max_age_minutes.value
                 ):
                     await existing_thread.send(embed=self.abandoned_embed)
                     await existing_thread.edit(
@@ -228,3 +252,7 @@ class ForumChannel(cogs.LoopCog):
             config (munch.Munch): The guild config where the loop is taking place
         """
         await asyncio.sleep(5)
+
+
+def create_regex_list(str_list: list[str]) -> list[re.Pattern[str]]:
+    return [re.compile(p, re.IGNORECASE) for p in str_list]
