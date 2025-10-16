@@ -90,6 +90,7 @@ class ForumChannel(cogs.LoopCog):
     Attributes:
         forum_group (app_commands.Group): The group for the /forum commands
     """
+
     forum_group: app_commands.Group = app_commands.Group(
         name="forum", description="...", extras={"module": "forum"}
     )
