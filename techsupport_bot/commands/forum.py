@@ -277,4 +277,12 @@ class ForumChannel(cogs.LoopCog):
 
 
 def create_regex_list(str_list: list[str]) -> list[re.Pattern[str]]:
+    """This turns a list of strings into a list of complied regex
+
+    Args:
+        str_list (list[str]): The list of string versions of regexs
+
+    Returns:
+        list[re.Pattern[str]]: The compiled list of regex for later use
+    """
     return [re.compile(p, re.IGNORECASE) for p in str_list]
