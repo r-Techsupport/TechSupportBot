@@ -30,6 +30,31 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class ForumChannel(cogs.LoopCog):
     """The cog that holds the slowmode commands and helper functions"""
 
+    # Hard code default embed types
+    reject_embed = discord.Embed(
+        title="Thread rejected",
+        description="Your thread doesn't meet our posting requirements. Please make sure you have a descriptive title and good body.",
+        color=discord.Color.red(),
+    )
+
+    duplicate_embed = discord.Embed(
+        title="Duplicate thread detected",
+        description="You already have an open thread. Please continue in your existing thread.",
+        color=discord.Color.orange(),
+    )
+
+    abandoned_embed = discord.Embed(
+        title="Abandoned thread archived",
+        description="It appears this thread has been abandoned. You are welcome to create another thread",
+        color=discord.Color.blurple(),
+    )
+
+    solved_embed = discord.Embed(
+        title="Thread marked as solved",
+        description="This thread has been archived and locked.",
+        color=discord.Color.green(),
+    )
+
     forum_group: app_commands.Group = app_commands.Group(
         name="forum", description="...", extras={"module": "forum"}
     )
@@ -56,31 +81,36 @@ class ForumChannel(cogs.LoopCog):
 
     @forum_group.command(
         name="solved",
-        description="Ban someone from making new applications",
+        description="Mark a support forum thread as solved",
         extras={"module": "forum"},
     )
     async def markSolved(self: Self, interaction: discord.Interaction) -> None:
         channel = await interaction.guild.fetch_channel(int(self.channel_id))
-        if interaction.channel.parent == channel:
+        if (
+            hasattr(interaction.channel, "parent")
+            and interaction.channel.parent == channel
+        ):
             if interaction.user != interaction.channel.owner:
                 embed = discord.Embed(
-                    title="Permission Denied",
+                    title="Permission denied",
                     description="You cannot do this",
                     color=discord.Color.red(),
                 )
-                await interaction.response.send_message(embed=embed)
+                await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
-            embed = discord.Embed(
-                title="Thread Marked as Solved",
-                description="This thread has been archived and locked.",
-                color=discord.Color.green(),
-            )
-            await interaction.response.send_message(embed=embed)
+            await interaction.response.send_message(embed=self.solved_embed)
             await interaction.channel.edit(
                 name=f"[SOLVED] {interaction.channel.name}"[:100],
                 archived=True,
                 locked=True,
             )
+        else:
+            embed = discord.Embed(
+                title="Invalid location",
+                description="The location this was run isn't a valid support forum",
+                color=discord.Color.red(),
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @commands.Cog.listener()
     async def on_thread_create(self: Self, thread: discord.Thread) -> None:
@@ -88,17 +118,11 @@ class ForumChannel(cogs.LoopCog):
         if thread.parent != channel:
             return
 
-        embed = discord.Embed(
-            title="Thread Rejected",
-            description="Your thread doesn't meet our posting requirements. Please make sure you have a descriptive title and good body.",
-            color=discord.Color.red(),
-        )
-
         # Check if the thread title is disallowed
         if any(
             pattern.search(thread.name) for pattern in self.disallowed_title_patterns
         ):
-            await thread.send(embed=embed)
+            await thread.send(embed=self.reject_embed)
             await thread.edit(
                 name=f"[REJECTED] {thread.name}"[:100],
                 archived=True,
@@ -111,7 +135,17 @@ class ForumChannel(cogs.LoopCog):
         if messages:
             body = messages[-1].content
             if any(pattern.search(body) for pattern in self.disallowed_body_patterns):
-                await thread.send(embed=embed)
+                await thread.send(embed=self.reject_embed)
+                await thread.edit(
+                    name=f"[REJECTED] {thread.name}"[:100],
+                    archived=True,
+                    locked=True,
+                )
+                return
+            if body.lower() == thread.name.lower() or len(body.lower()) < len(
+                thread.name.lower()
+            ):
+                await thread.send(embed=self.reject_embed)
                 await thread.edit(
                     name=f"[REJECTED] {thread.name}"[:100],
                     archived=True,
@@ -126,12 +160,7 @@ class ForumChannel(cogs.LoopCog):
                 and not existing_thread.archived
                 and existing_thread.id != thread.id
             ):
-                embed = discord.Embed(
-                    title="Duplicate Thread Detected",
-                    description="You already have an open thread. Please continue in your existing thread.",
-                    color=discord.Color.orange(),
-                )
-                await thread.send(embed=embed)
+                await thread.send(embed=self.duplicate_embed)
                 await thread.edit(
                     name=f"[DUPLICATE] {thread.name}"[:100],
                     archived=True,
@@ -143,7 +172,7 @@ class ForumChannel(cogs.LoopCog):
             title="Welcome!",
             description=(
                 "Your thread has been created successfully!\n"
-                "Run the command /forum solved when your issue gets solved\n"
+                "Run the command </forum solved:1428385659311095920> when your issue gets solved"
             ),
             color=discord.Color.blue(),
         )
@@ -169,14 +198,9 @@ class ForumChannel(cogs.LoopCog):
                 ) - most_recent_message.created_at > datetime.timedelta(
                     minutes=self.max_age_minutes
                 ):
-                    embed = discord.Embed(
-                        title="Old thread archived",
-                        description="This thread it too old and has been closed. You are welcome to create another thread",
-                        color=discord.Color.blurple(),
-                    )
-                    await existing_thread.send(embed=embed)
+                    await existing_thread.send(embed=self.abandoned_embed)
                     await existing_thread.edit(
-                        name=f"[OLD] {existing_thread.name}"[:100],
+                        name=f"[ABANDONED] {existing_thread.name}"[:100],
                         archived=True,
                         locked=True,
                     )
