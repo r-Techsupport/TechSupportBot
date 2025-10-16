@@ -88,6 +88,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         description="List of role ids as ints for staff, able to mark threads solved/abandoned/rejected",
         default=[],
     )
+    config.add(
+        key="welcome_message",
+        datatype="str",
+        title="The message displayed on new threads",
+        description="The message displayed on new threads",
+        default="thread welcome",
+    )
     await bot.add_cog(ForumChannel(bot=bot, extension_name="forum"))
     bot.add_extension_config("forum", config)
 
@@ -317,10 +324,7 @@ class ForumChannel(cogs.LoopCog):
 
         embed = discord.Embed(
             title="Welcome!",
-            description=(
-                "Your thread has been created successfully!\n"
-                "Run the command </forum solved:1428385659311095920> when your issue gets solved"
-            ),
+            description=config.extensions.forum.welcome_message.value,
             color=discord.Color.blue(),
         )
         await thread.send(embed=embed)
