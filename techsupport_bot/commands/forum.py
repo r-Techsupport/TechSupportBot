@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import random
 import re
 from typing import TYPE_CHECKING, Self
 
@@ -151,7 +152,7 @@ class ForumChannel(cogs.LoopCog):
 
     @forum_group.command(
         name="reject",
-        description="Mark a support forum thread as solved",
+        description="Mark a support forum thread as rejected",
         extras={"module": "forum"},
     )
     async def markRejected(self: Self, interaction: discord.Interaction) -> None:
@@ -195,7 +196,7 @@ class ForumChannel(cogs.LoopCog):
 
     @forum_group.command(
         name="abandon",
-        description="Mark a support forum thread as solved",
+        description="Mark a support forum thread as abandoned",
         extras={"module": "forum"},
     )
     async def markAbandoned(self: Self, interaction: discord.Interaction) -> None:
@@ -236,6 +237,34 @@ class ForumChannel(cogs.LoopCog):
         embed = auxiliary.prepare_confirm_embed("Thread marked as abandoned!")
         await interaction.followup.send(embed=embed, ephemeral=True)
         await mark_thread_abandoned(interaction.channel, config)
+
+    @forum_group.command(
+        name="get-unsolved",
+        description="Gets a collection of unsolved issues",
+        extras={"module": "forum"},
+    )
+    async def showUnsolved(self: Self, interaction: discord.Interaction) -> None:
+        """A command to mark the thread as abandoned
+        Usable by all
+
+        Args:
+            interaction (discord.Interaction): The interaction that called the command
+        """
+        await interaction.response.defer(ephemeral=True)
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+        channel = await interaction.guild.fetch_channel(
+            int(config.extensions.forum.forum_channel_id.value)
+        )
+        mention_threads = "\n".join(
+            [
+                thread.mention
+                for thread in random.sample(
+                    channel.threads, min(len(channel.threads), 5)
+                )
+            ]
+        )
+        embed = discord.Embed(title="Unsolved", description=mention_threads)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @commands.Cog.listener()
     async def on_thread_create(self: Self, thread: discord.Thread) -> None:
@@ -325,7 +354,7 @@ class ForumChannel(cogs.LoopCog):
         Args:
             config (munch.Munch): The guild config where the loop is taking place
         """
-        await asyncio.sleep(5)
+        await asyncio.sleep(300)
 
 
 def create_regex_list(str_list: list[str]) -> list[re.Pattern[str]]:
