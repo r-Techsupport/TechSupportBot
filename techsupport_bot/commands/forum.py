@@ -3,10 +3,13 @@ Holds only a single slash command"""
 
 from __future__ import annotations
 
+import asyncio
+import datetime
 import re
 from typing import TYPE_CHECKING, Self
 
 import discord
+import munch
 from core import auxiliary, cogs
 from discord import app_commands
 from discord.ext import commands
@@ -24,7 +27,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     await bot.add_cog(ForumChannel(bot=bot, extension_name="forum"))
 
 
-class ForumChannel(cogs.BaseCog):
+class ForumChannel(cogs.LoopCog):
     """The cog that holds the slowmode commands and helper functions"""
 
     forum_group: app_commands.Group = app_commands.Group(
@@ -32,6 +35,7 @@ class ForumChannel(cogs.BaseCog):
     )
 
     channel_id = "1288279278839926855"
+    max_age_minutes = 1
     disallowed_title_patterns = [
         re.compile(
             r"^(?:I)?(?:\s)?(?:need|please I need|please|pls|plz)?(?:\s)?help(?:\s)?(?:me|please)?(?:\?|!)?$",
@@ -137,7 +141,50 @@ class ForumChannel(cogs.BaseCog):
 
         embed = discord.Embed(
             title="Welcome!",
-            description="Your thread has been created successfully!",
+            description=(
+                "Your thread has been created successfully!\n"
+                "Run the command /forum solved when your issue gets solved\n"
+            ),
             color=discord.Color.blue(),
         )
         await thread.send(embed=embed)
+
+    async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
+        """The main entry point for the loop for kanye
+        This is executed automatically and shouldn't be called manually
+
+        Args:
+            config (munch.Munch): The guild config where the loop is taking place
+            guild (discord.Guild): The guild where the loop is taking place
+        """
+        channel = await guild.fetch_channel(int(self.channel_id))
+        for existing_thread in channel.threads:
+            if not existing_thread.archived and not existing_thread.locked:
+                most_recent_message_id = existing_thread.last_message_id
+                most_recent_message = await existing_thread.fetch_message(
+                    most_recent_message_id
+                )
+                if datetime.datetime.now(
+                    datetime.timezone.utc
+                ) - most_recent_message.created_at > datetime.timedelta(
+                    minutes=self.max_age_minutes
+                ):
+                    embed = discord.Embed(
+                        title="Old thread archived",
+                        description="This thread it too old and has been closed. You are welcome to create another thread",
+                        color=discord.Color.blurple(),
+                    )
+                    await existing_thread.send(embed=embed)
+                    await existing_thread.edit(
+                        name=f"[OLD] {existing_thread.name}"[:100],
+                        archived=True,
+                        locked=True,
+                    )
+
+    async def wait(self: Self, config: munch.Munch, _: discord.Guild) -> None:
+        """This sleeps a random amount of time between Kanye quotes
+
+        Args:
+            config (munch.Munch): The guild config where the loop is taking place
+        """
+        await asyncio.sleep(self.max_age_minutes * 60)
