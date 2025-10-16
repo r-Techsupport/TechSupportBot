@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Self
 
 import discord
 import munch
-from core import auxiliary, cogs
+from core import cogs
 from discord import app_commands
 from discord.ext import commands
 
@@ -32,13 +32,19 @@ class ForumChannel(cogs.LoopCog):
     # Hard code default embed types
     reject_embed = discord.Embed(
         title="Thread rejected",
-        description="Your thread doesn't meet our posting requirements. Please make sure you have a well written title and a detailed body.",
+        description=(
+            "Your thread doesn't meet our posting requirements. Please make sure you have "
+            "a well written title and a detailed body."
+        ),
         color=discord.Color.red(),
     )
 
     duplicate_embed = discord.Embed(
         title="Duplicate thread detected",
-        description="You already have an open thread. Please continue in your existing thread.",
+        description=(
+            "You already have an open thread. "
+            "Please continue in your existing thread."
+        ),
         color=discord.Color.orange(),
     )
 
@@ -61,12 +67,13 @@ class ForumChannel(cogs.LoopCog):
     channel_id = "1288279278839926855"
     max_age_minutes = 1
     disallowed_title_patterns = [
+        # pylint: disable=C0301
         re.compile(
             r"^(?:I)?(?:\s)?(?:need|please I need|please|pls|plz)?(?:\s)?help(?:\s)?(?:me|please)?(?:\?|!)?$",
             re.IGNORECASE,
         ),
         re.compile(r"^\S+$"),  # Very short single-word titles
-        re.compile(r"\b(urgent|ASAP|quick help|fast)\b", re.IGNORECASE),
+        re.compile(r"\b(urgent|ASAP|quick help|fast help)\b", re.IGNORECASE),
         re.compile(r"[!?]{3,}"),  # Titles with excessive punctuation
     ]
 
