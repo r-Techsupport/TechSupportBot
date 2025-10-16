@@ -43,14 +43,14 @@ async def setup(bot: bot.TechSupportBot) -> None:
         datatype="list[str]",
         title="List of regex to ban in titles",
         description="List of regex to ban in titles",
-        default=["^\S+$"],
+        default=[""],
     ),
     config.add(
         key="body_regex_list",
         datatype="list[str]",
         title="List of regex to ban in bodies",
         description="List of regex to ban in bodies",
-        default=["^\S+$"],
+        default=[""],
     ),
     config.add(
         key="reject_message",
