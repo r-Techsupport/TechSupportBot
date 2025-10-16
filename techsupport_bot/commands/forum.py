@@ -1,4 +1,4 @@
-"""The support forum management features.s"""
+"""The support forum management features"""
 
 from __future__ import annotations
 
@@ -51,48 +51,45 @@ async def setup(bot: bot.TechSupportBot) -> None:
         title="List of regex to ban in bodies",
         description="List of regex to ban in bodies",
         default=["^\S+$"],
+    ),
+    config.add(
+        key="reject_message",
+        datatype="str",
+        title="The message displayed on rejected threads",
+        description="The message displayed on rejected threads",
+        default="thread rejected",
+    ),
+    config.add(
+        key="duplicate_message",
+        datatype="str",
+        title="The message displayed on duplicated threads",
+        description="The message displayed on duplicated threads",
+        default="thread duplicated",
+    ),
+    config.add(
+        key="solve_message",
+        datatype="str",
+        title="The message displayed on solved threads",
+        description="The message displayed on solved threads",
+        default="thread solved",
+    ),
+    config.add(
+        key="abandoned_message",
+        datatype="str",
+        title="The message displayed on abandoned threads",
+        description="The message displayed on abandoned threads",
+        default="thread abandoned",
     )
     await bot.add_cog(ForumChannel(bot=bot, extension_name="forum"))
     bot.add_extension_config("forum", config)
 
 
 class ForumChannel(cogs.LoopCog):
-    """The cog that holds the forum channel commands and helper functions"""
+    """The cog that holds the forum channel commands and helper functions
 
-    # Hard code default embed types
-    reject_embed = discord.Embed(
-        title="Thread rejected",
-        description=(
-            "Your thread doesn't meet our posting requirements. Please make sure you have "
-            "a well written title and a detailed body."
-        ),
-        color=discord.Color.red(),
-    )
-
-    duplicate_embed = discord.Embed(
-        title="Duplicate thread detected",
-        description=(
-            "You already have an open thread. "
-            "Please continue in your existing thread."
-        ),
-        color=discord.Color.orange(),
-    )
-
-    abandoned_embed = discord.Embed(
-        title="Abandoned thread archived",
-        description=(
-            "It appears this thread has been abandoned. "
-            "You are welcome to create another thread"
-        ),
-        color=discord.Color.blurple(),
-    )
-
-    solved_embed = discord.Embed(
-        title="Thread marked as solved",
-        description="This thread has been archived and locked.",
-        color=discord.Color.green(),
-    )
-
+    Attributes:
+        forum_group (app_commands.Group): The group for the /forum commands
+    """
     forum_group: app_commands.Group = app_commands.Group(
         name="forum", description="...", extras={"module": "forum"}
     )
@@ -125,7 +122,12 @@ class ForumChannel(cogs.LoopCog):
                 )
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
-            await interaction.response.send_message(embed=self.solved_embed)
+            solved_embed = discord.Embed(
+                title="Thread marked as solved",
+                description=config.extensions.forum.solve_message.value,
+                color=discord.Color.green(),
+            )
+            await interaction.response.send_message(embed=solved_embed)
             await interaction.channel.edit(
                 name=f"[SOLVED] {interaction.channel.name}"[:100],
                 archived=True,
@@ -156,9 +158,16 @@ class ForumChannel(cogs.LoopCog):
         disallowed_title_patterns = create_regex_list(
             config.extensions.forum.title_regex_list.value
         )
+
+        reject_embed = discord.Embed(
+            title="Thread rejected",
+            description=config.extensions.forum.reject_message.value,
+            color=discord.Color.red(),
+        )
+
         # Check if the thread title is disallowed
         if any(pattern.search(thread.name) for pattern in disallowed_title_patterns):
-            await thread.send(embed=self.reject_embed)
+            await thread.send(embed=reject_embed)
             await thread.edit(
                 name=f"[REJECTED] {thread.name}"[:100],
                 archived=True,
@@ -174,7 +183,7 @@ class ForumChannel(cogs.LoopCog):
                 config.extensions.forum.body_regex_list.value
             )
             if any(pattern.search(body) for pattern in disallowed_body_patterns):
-                await thread.send(embed=self.reject_embed)
+                await thread.send(embed=reject_embed)
                 await thread.edit(
                     name=f"[REJECTED] {thread.name}"[:100],
                     archived=True,
@@ -184,7 +193,7 @@ class ForumChannel(cogs.LoopCog):
             if body.lower() == thread.name.lower() or len(body.lower()) < len(
                 thread.name.lower()
             ):
-                await thread.send(embed=self.reject_embed)
+                await thread.send(embed=reject_embed)
                 await thread.edit(
                     name=f"[REJECTED] {thread.name}"[:100],
                     archived=True,
@@ -199,7 +208,13 @@ class ForumChannel(cogs.LoopCog):
                 and not existing_thread.archived
                 and existing_thread.id != thread.id
             ):
-                await thread.send(embed=self.duplicate_embed)
+                duplicate_embed = discord.Embed(
+                    title="Duplicate thread detected",
+                    description=config.extensions.forum.duplicate_message.value,
+                    color=discord.Color.orange(),
+                )
+
+                await thread.send(embed=duplicate_embed)
                 await thread.edit(
                     name=f"[DUPLICATE] {thread.name}"[:100],
                     archived=True,
@@ -238,7 +253,13 @@ class ForumChannel(cogs.LoopCog):
                 ) - most_recent_message.created_at > datetime.timedelta(
                     minutes=config.extensions.forum.max_age_minutes.value
                 ):
-                    await existing_thread.send(embed=self.abandoned_embed)
+                    abandoned_embed = discord.Embed(
+                        title="Abandoned thread archived",
+                        description=config.extensions.forum.abandoned_message.value,
+                        color=discord.Color.blurple(),
+                    )
+
+                    await existing_thread.send(embed=abandoned_embed)
                     await existing_thread.edit(
                         name=f"[ABANDONED] {existing_thread.name}"[:100],
                         archived=True,
