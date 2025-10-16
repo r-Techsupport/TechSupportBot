@@ -1,5 +1,4 @@
-""" ""The channel slowmode modification extension
-Holds only a single slash command"""
+"""The support forum management features.s"""
 
 from __future__ import annotations
 
@@ -19,7 +18,7 @@ if TYPE_CHECKING:
 
 
 async def setup(bot: bot.TechSupportBot) -> None:
-    """Registers the slowmode cog
+    """Registers the forum channel cog
 
     Args:
         bot (bot.TechSupportBot): The bot to register the cog to
@@ -28,12 +27,12 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class ForumChannel(cogs.LoopCog):
-    """The cog that holds the slowmode commands and helper functions"""
+    """The cog that holds the forum channel commands and helper functions"""
 
     # Hard code default embed types
     reject_embed = discord.Embed(
         title="Thread rejected",
-        description="Your thread doesn't meet our posting requirements. Please make sure you have a descriptive title and good body.",
+        description="Your thread doesn't meet our posting requirements. Please make sure you have a well written title and a detailed body.",
         color=discord.Color.red(),
     )
 
@@ -67,15 +66,12 @@ class ForumChannel(cogs.LoopCog):
             re.IGNORECASE,
         ),
         re.compile(r"^\S+$"),  # Very short single-word titles
-        re.compile(
-            r"\b(it('?s)? not working|not working|issue|problem|error)\b", re.IGNORECASE
-        ),
         re.compile(r"\b(urgent|ASAP|quick help|fast)\b", re.IGNORECASE),
         re.compile(r"[!?]{3,}"),  # Titles with excessive punctuation
     ]
 
     disallowed_body_patterns = [
-        re.compile(r"^.{0,14}$"),  # Bodies shorter than 15 characters
+        re.compile(r"^.{0,29}$"),  # Bodies shorter than 15 characters
         re.compile(r"^(\[[^\]]*\])?https?://\S+$"),  # Only links in the body
     ]
 
@@ -85,6 +81,12 @@ class ForumChannel(cogs.LoopCog):
         extras={"module": "forum"},
     )
     async def markSolved(self: Self, interaction: discord.Interaction) -> None:
+        """A command to mark the thread as solved
+        Usable by OP and staff
+
+        Args:
+            interaction (discord.Interaction): The interaction that called the command
+        """
         channel = await interaction.guild.fetch_channel(int(self.channel_id))
         if (
             hasattr(interaction.channel, "parent")
@@ -114,6 +116,11 @@ class ForumChannel(cogs.LoopCog):
 
     @commands.Cog.listener()
     async def on_thread_create(self: Self, thread: discord.Thread) -> None:
+        """A listener for threads being created anywhere on the server
+
+        Args:
+            thread (discord.Thread): The thread that was created
+        """
         channel = await thread.guild.fetch_channel(int(self.channel_id))
         if thread.parent != channel:
             return
@@ -179,8 +186,7 @@ class ForumChannel(cogs.LoopCog):
         await thread.send(embed=embed)
 
     async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
-        """The main entry point for the loop for kanye
-        This is executed automatically and shouldn't be called manually
+        """This is what closes threads after inactivity
 
         Args:
             config (munch.Munch): The guild config where the loop is taking place
@@ -206,9 +212,9 @@ class ForumChannel(cogs.LoopCog):
                     )
 
     async def wait(self: Self, config: munch.Munch, _: discord.Guild) -> None:
-        """This sleeps a random amount of time between Kanye quotes
+        """This waits and rechecks every 5 minutes to search for old threads
 
         Args:
             config (munch.Munch): The guild config where the loop is taking place
         """
-        await asyncio.sleep(self.max_age_minutes * 60)
+        await asyncio.sleep(5)
