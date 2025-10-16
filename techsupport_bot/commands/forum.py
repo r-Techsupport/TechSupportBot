@@ -30,49 +30,49 @@ async def setup(bot: bot.TechSupportBot) -> None:
         title="forum channel",
         description="The forum channel id as a string to manage threads in",
         default="",
-    ),
+    )
     config.add(
         key="max_age_minutes",
         datatype="int",
         title="Max age in minutes",
         description="The max age of a thread before it times out",
         default=1440,
-    ),
+    )
     config.add(
         key="title_regex_list",
         datatype="list[str]",
         title="List of regex to ban in titles",
         description="List of regex to ban in titles",
         default=[""],
-    ),
+    )
     config.add(
         key="body_regex_list",
         datatype="list[str]",
         title="List of regex to ban in bodies",
         description="List of regex to ban in bodies",
         default=[""],
-    ),
+    )
     config.add(
         key="reject_message",
         datatype="str",
         title="The message displayed on rejected threads",
         description="The message displayed on rejected threads",
         default="thread rejected",
-    ),
+    )
     config.add(
         key="duplicate_message",
         datatype="str",
         title="The message displayed on duplicated threads",
         description="The message displayed on duplicated threads",
         default="thread duplicated",
-    ),
+    )
     config.add(
         key="solve_message",
         datatype="str",
         title="The message displayed on solved threads",
         description="The message displayed on solved threads",
         default="thread solved",
-    ),
+    )
     config.add(
         key="abandoned_message",
         datatype="str",
