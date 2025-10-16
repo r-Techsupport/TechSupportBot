@@ -67,8 +67,8 @@ class ForumChannel(cogs.LoopCog):
     channel_id = "1288279278839926855"
     max_age_minutes = 1
     disallowed_title_patterns = [
-        # pylint: disable=C0301
         re.compile(
+            # pylint: disable=C0301
             r"^(?:I)?(?:\s)?(?:need|please I need|please|pls|plz)?(?:\s)?help(?:\s)?(?:me|please)?(?:\?|!)?$",
             re.IGNORECASE,
         ),
