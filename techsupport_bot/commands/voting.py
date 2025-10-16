@@ -17,7 +17,6 @@ import aiocron
 import discord
 import munch
 import ui
-import ui.persistent_voting
 from core import cogs, extensionconfig
 from discord import app_commands
 
@@ -40,13 +39,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         default="",
     )
     config.add(
-        key="ping_role_id",
+        key="ping_role_ids",
         datatype="str",
-        title="The role to ping when starting a vote",
+        title="The list of roles to ping when starting a vote",
         description=(
-            "The role to ping when starting a vote, which will always be pinged"
+            "The list of roles to ping when starting a vote, which will always be pinged"
         ),
-        default="",
+        default=[],
     )
     await bot.add_cog(Voting(bot=bot, extension_name="voting"))
     bot.add_extension_config("voting", config)
@@ -89,10 +88,10 @@ class Voting(cogs.LoopCog):
             int(config.extensions.voting.votes_channel_id.value)
         )
         roles = await interaction.guild.fetch_roles()
-        role = next(
-            role
+        roles_to_ping = " ".join(
+            role.mention
             for role in roles
-            if role.id == int(config.extensions.voting.ping_role_id.value)
+            if str(role.id) in config.extensions.voting.ping_role_ids.value
         )
 
         vote = await self.bot.models.Votes(
@@ -111,7 +110,7 @@ class Voting(cogs.LoopCog):
             name=f"VOTE: {form.vote_short}",
             allowed_mentions=discord.AllowedMentions(roles=True),
             embed=embed,
-            content=role.mention,
+            content=roles_to_ping,
             view=view,
         )
 
@@ -185,14 +184,18 @@ class Voting(cogs.LoopCog):
                 guild,
                 db_entry.vote_ids_yes.split(","),
                 db_entry.vote_ids_no.split(","),
+                db_entry.vote_ids_abstain.split(","),
                 (db_entry.vote_active and hide) or db_entry.anonymous,
             ),
         )
         print_yes_votes = "?" if (hide and db_entry.vote_active) else db_entry.votes_yes
         print_no_votes = "?" if (hide and db_entry.vote_active) else db_entry.votes_no
+        print_abstain_votes = (
+            "?" if (hide and db_entry.vote_active) else db_entry.votes_abstain
+        )
         embed.add_field(
             name="Vote counts",
-            value=f"Votes for yes: {print_yes_votes}\nVotes for no: {print_no_votes}",
+            value=f"Votes for yes: {print_yes_votes}\nVotes for no: {print_no_votes}\nVotes to abstain: {print_abstain_votes}",
         )
         footer_str = f"Vote ID: {db_entry.vote_id}. "
         if db_entry.blind:
@@ -207,6 +210,7 @@ class Voting(cogs.LoopCog):
         guild: discord.Guild,
         voters_yes: list[str],
         voters_no: list[str],
+        voters_abstain: list[str],
         should_hide: bool,
     ) -> str:
         """This makes a new line seperated string to be used in the "Votes" field
@@ -216,12 +220,13 @@ class Voting(cogs.LoopCog):
             guild (discord.Guild): The guild this vote is taking place in
             voters_yes (list[str]): The list of IDs of yes votes
             voters_no (list[str]): The list of IDs of no votes
+            voters_abstain (list[str]): The list of IDs of abstian votes
             should_hide (bool): Should who voted for what be hidden
 
         Returns:
             str: The prepared string, that respects blind/anonymous
         """
-        voters = voters_yes + voters_no
+        voters = voters_yes + voters_no + voters_abstain
         final_str = []
         for user in voters:
             if len(user) == 0:
@@ -231,8 +236,10 @@ class Voting(cogs.LoopCog):
                 final_str.append(f"{user_object.display_name} - ?")
             elif user in voters_yes:
                 final_str.append(f"{user_object.display_name} - yes")
-            else:
+            elif user in voters_no:
                 final_str.append(f"{user_object.display_name} - no")
+            else:
+                final_str.append(f"{user_object.display_name} - abstain")
         final_str.sort()
         return "\n".join(final_str)
 
@@ -275,6 +282,8 @@ class Voting(cogs.LoopCog):
             votes_no=db_entry.votes_no,
             vote_ids_yes=db_entry.vote_ids_yes,
             votes_yes=db_entry.votes_yes,
+            vote_ids_abstain=db_entry.vote_ids_abstain,
+            votes_abstain=db_entry.votes_abstain,
             vote_ids_all=db_entry.vote_ids_all,
         ).apply()
 
@@ -282,6 +291,56 @@ class Voting(cogs.LoopCog):
         await interaction.message.edit(embed=embed, view=view)
         await interaction.response.send_message(
             "Your vote for yes has been counted", ephemeral=True
+        )
+
+    async def register_abstain_vote(
+        self: Self,
+        interaction: discord.Interaction,
+        view: discord.ui.View,
+    ) -> None:
+        """This updates the vote database when someone votes to abstain
+
+        Args:
+            interaction (discord.Interaction): The interaction that started the vote
+            view (discord.ui.View): The view that was interacted with
+        """
+        db_entry = await self.search_db_for_vote_by_message(str(interaction.message.id))
+
+        # Update vote_ids_abstain
+        vote_ids_abstain = db_entry.vote_ids_abstain.split(",")
+        if str(interaction.user.id) in vote_ids_abstain:
+            await interaction.response.send_message(
+                "You have already voted to abstian", ephemeral=True
+            )
+            return  # Already voted to abstian, don't do anything more
+
+        db_entry = self.clear_vote_record(db_entry, str(interaction.user.id))
+
+        vote_ids_abstain.append(str(interaction.user.id))
+        db_entry.vote_ids_abstain = ",".join(vote_ids_abstain)
+
+        # Increment votes_abstian
+        db_entry.votes_abstain += 1
+
+        # Update vote_ids_all
+        vote_ids_all = db_entry.vote_ids_all.split(",")
+        vote_ids_all.append(str(interaction.user.id))
+        db_entry.vote_ids_all = ",".join(vote_ids_all)
+
+        await db_entry.update(
+            vote_ids_no=db_entry.vote_ids_no,
+            votes_no=db_entry.votes_no,
+            vote_ids_yes=db_entry.vote_ids_yes,
+            votes_yes=db_entry.votes_yes,
+            vote_ids_abstain=db_entry.vote_ids_abstain,
+            votes_abstain=db_entry.votes_abstain,
+            vote_ids_all=db_entry.vote_ids_all,
+        ).apply()
+
+        embed = await self.build_vote_embed(db_entry.vote_id, interaction.guild)
+        await interaction.message.edit(embed=embed, view=view)
+        await interaction.response.send_message(
+            "Your vote to abstain has been counted", ephemeral=True
         )
 
     async def register_no_vote(
@@ -323,6 +382,8 @@ class Voting(cogs.LoopCog):
             votes_no=db_entry.votes_no,
             vote_ids_yes=db_entry.vote_ids_yes,
             votes_yes=db_entry.votes_yes,
+            vote_ids_abstain=db_entry.vote_ids_abstain,
+            votes_abstain=db_entry.votes_abstain,
             vote_ids_all=db_entry.vote_ids_all,
         ).apply()
 
@@ -352,6 +413,8 @@ class Voting(cogs.LoopCog):
             votes_no=db_entry.votes_no,
             vote_ids_yes=db_entry.vote_ids_yes,
             votes_yes=db_entry.votes_yes,
+            vote_ids_abstain=db_entry.vote_ids_abstain,
+            votes_abstain=db_entry.votes_abstain,
             vote_ids_all=db_entry.vote_ids_all,
         ).apply()
 
@@ -387,6 +450,13 @@ class Voting(cogs.LoopCog):
             vote_ids_no.remove(user_id)
             db_entry.votes_no -= 1
         db_entry.vote_ids_no = ",".join(vote_ids_no)
+
+        # If there is a vote for abstain, remote it
+        vote_ids_abstain = db_entry.vote_ids_abstain.split(",")
+        if user_id in vote_ids_abstain:
+            vote_ids_abstain.remove(user_id)
+            db_entry.votes_abstain -= 1
+        db_entry.vote_ids_abstain = ",".join(vote_ids_abstain)
 
         # Remove from vote id all
         vote_ids_all = db_entry.vote_ids_all.split(",")
@@ -437,7 +507,9 @@ class Voting(cogs.LoopCog):
         embed = await self.build_vote_embed(vote.vote_id, guild)
         # If the vote is anonymous, at this point we need to clear the vote record forever
         if vote.anonymous:
-            await vote.update(vote_ids_yes="", vote_ids_no="").apply()
+            await vote.update(
+                vote_ids_yes="", vote_ids_no="", vote_ids_abstain=""
+            ).apply()
 
         channel = await guild.fetch_channel(int(vote.thread_id))
         message = await channel.fetch_message(int(vote.message_id))
