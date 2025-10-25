@@ -78,6 +78,7 @@ class TechSupportBot(commands.Bot):
             )
         )
         self.command_execute_history: dict[str, dict[int, bool]] = {}
+        self.notified_dm_log: list[int] = []
 
         # Loads the file config, which includes things like the token
         self.load_file_config()
@@ -265,6 +266,13 @@ class TechSupportBot(commands.Bot):
             and message.author.id != owner.id
             and not message.author.bot
         ):
+            if message.author.id not in self.notified_dm_log:
+                self.notified_dm_log.append(message.author.id)
+                await message.author.send(
+                    "All DMs sent to this bot are permanently logged and not "
+                    "regularly checked. No responses will be given to any messages."
+                )
+
             attachment_urls = ", ".join(a.url for a in message.attachments)
             content_string = f'"{message.content}"' if message.content else ""
             attachment_string = f"({attachment_urls})" if attachment_urls else ""
@@ -980,24 +988,28 @@ class TechSupportBot(commands.Bot):
         Args:
             interaction (discord.Interaction): The interaction the slash command generated
         """
+        if interaction.type != discord.InteractionType.application_command:
+            return
         embed = discord.Embed()
         embed.add_field(name="User", value=interaction.user)
         embed.add_field(
             name="Channel", value=getattr(interaction.channel, "name", "DM")
         )
         embed.add_field(name="Server", value=getattr(interaction.guild, "name", "None"))
-        embed.add_field(name="Namespace", value=f"{interaction.namespace}")
-        embed.set_footer(text=f"Requested by {interaction.user.id}")
+        parameters = []
+        for parameter in interaction.namespace:
+            parameters.append(f"{parameter[0]}: {parameter[1]}")
 
         log_channel = await self.get_log_channel_from_guild(
             interaction.guild, key="logging_channel"
         )
 
         sliced_content = interaction.command.qualified_name[:100]
-        message = f"Command detected: `/{sliced_content}`"
+        command = f"/{sliced_content} {', '.join(parameters)}".strip()
+        message = f"Command detected: `{command}`"
 
         await self.logger.send_log(
-            message=message,
+            message=message.strip()[:6000],
             level=LogLevel.INFO,
             context=LogContext(guild=interaction.guild, channel=interaction.channel),
             channel=log_channel,

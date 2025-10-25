@@ -32,7 +32,6 @@ import yaml
 from aiohttp.client_exceptions import InvalidURL
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, custom_errors, extensionconfig
-from croniter import CroniterBadCronError
 from discord import app_commands
 from discord.ext import commands
 
@@ -1087,7 +1086,7 @@ class FactoidManager(cogs.MatchCog):
             try:
                 await aiocron.crontab(job.cron).next()
 
-            except CroniterBadCronError as exception:
+            except ValueError as exception:
                 log_channel = None
                 log_context = None
 
@@ -1706,6 +1705,13 @@ class FactoidManager(cogs.MatchCog):
             factoids = await self.build_list_of_factoids(
                 guild, exclusive_property=property, include_hidden=show_hidden
             )
+
+        if not factoids:
+            embed = auxiliary.prepare_deny_embed(
+                "No factoids could be found matching your filter"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
 
         aliases = self.build_alias_dict_for_given_factoids(factoids)
 
