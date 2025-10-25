@@ -37,6 +37,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         default=[],
     )
     config.add(
+        key="use_category",
+        datatype="bool",
+        title="Whether to use the whole category for ducks",
+        description="Whether to use the whole category for ducks",
+        default=False,
+    )
+    config.add(
         key="min_wait",
         datatype="int",
         title="Min wait (hours)",
@@ -144,7 +151,7 @@ class DuckHunt(cogs.LoopCog):
         self: Self,
         config: munch.Munch,
         guild: discord.Guild,
-        channel: discord.abc.Messageable,
+        channel: discord.TextChannel,
         banned_user: discord.User = None,
     ) -> None:
         """Sends a duck in the given channel
@@ -153,12 +160,11 @@ class DuckHunt(cogs.LoopCog):
         Args:
             config (munch.Munch): The config of the guild where the duck is going
             guild (discord.Guild): The guild where the duck is going
-            channel (discord.abc.Messageable): The channel to spawn the duck in
+            channel (discord.TextChannel): The channel to spawn the duck in
             banned_user (discord.User, optional): A user that is not allowed to claim the duck.
                 Defaults to None.
         """
         if not channel:
-            config = self.bot.guild_configs[str(guild.id)]
             log_channel = config.get("logging_channel")
             await self.bot.logger.send_log(
                 message="Channel not found for Duckhunt loop - continuing",
@@ -167,6 +173,12 @@ class DuckHunt(cogs.LoopCog):
                 channel=log_channel,
             )
             return
+
+        if config.extensions.duck.use_category.value:
+            all_valid_channels = channel.category.text_channels
+            use_channel = random.choice(all_valid_channels)
+        else:
+            use_channel = channel
 
         self.cooldowns[guild.id] = {}
 
@@ -177,7 +189,7 @@ class DuckHunt(cogs.LoopCog):
         embed.set_image(url=self.DUCK_PIC_URL)
         embed.color = discord.Color.green()
 
-        duck_message = await channel.send(embed=embed)
+        duck_message = await use_channel.send(embed=embed)
         start_time = duck_message.created_at
 
         response_message = None
@@ -187,7 +199,7 @@ class DuckHunt(cogs.LoopCog):
                 timeout=config.extensions.duck.timeout.value,
                 # can't pull the config in a non-coroutine
                 check=functools.partial(
-                    self.message_check, config, channel, duck_message, banned_user
+                    self.message_check, config, use_channel, duck_message, banned_user
                 ),
             )
         except asyncio.TimeoutError:
@@ -198,7 +210,7 @@ class DuckHunt(cogs.LoopCog):
             await self.bot.logger.send_log(
                 message="Exception thrown waiting for duckhunt input",
                 level=LogLevel.ERROR,
-                context=LogContext(guild=guild, channel=channel),
+                context=LogContext(guild=guild, channel=use_channel),
                 channel=log_channel,
                 exception=exception,
             )
@@ -211,10 +223,10 @@ class DuckHunt(cogs.LoopCog):
                 "befriended" if response_message.content.lower() == "bef" else "killed"
             )
             await self.handle_winner(
-                response_message.author, guild, action, raw_duration, channel
+                response_message.author, guild, action, raw_duration, use_channel
             )
         else:
-            await self.got_away(channel)
+            await self.got_away(use_channel)
 
     async def got_away(self: Self, channel: discord.TextChannel) -> None:
         """Sends a message telling everyone the duck got away
