@@ -119,9 +119,6 @@ class LevelXP(cogs.MatchCog):
 
         await self.apply_level_ups(ctx.author, (current_XP + new_XP))
 
-        await ctx.channel.send(
-            f"{ctx.author.display_name}: XP. New: {new_XP}, Total: {current_XP+new_XP}"
-        )
         self.ineligible[ctx.author.id] = True
 
     async def apply_level_ups(self: Self, user: discord.Member, new_xp: int) -> None:
