@@ -319,7 +319,9 @@ class TechSupportBot(commands.Bot):
         for extension_name, extension_config in self.extension_configs.items():
             if extension_config:
                 # don't attach to guild config if extension isn't configurable
-                extensions_config[extension_name] = extension_config.data
+                extensions_config[extension_name] = munch.munchify(
+                    extension_config.data
+                )
         self.extension_name_list.sort()
 
         config_ = munch.DefaultMunch(None)
