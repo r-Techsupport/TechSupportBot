@@ -74,6 +74,10 @@ class LevelXP(cogs.MatchCog):
         # Ignore messages outside of tracked categories
         if ctx.channel.category_id not in config.extensions.xp.categories_counted.value:
             return False
+        
+        # Ignore messages that are too short
+        if len(ctx.message.clean_content) < 20:
+            return False
 
         prefix = await self.bot.get_prefix(ctx.message)
 
@@ -109,66 +113,59 @@ class LevelXP(cogs.MatchCog):
             content (str): The string content of the message
         """
         current_XP = await get_current_XP(self.bot, ctx.author, ctx.guild)
-        new_XP = random.randint(10, 50)
+        new_XP = random.randint(10, 20)
 
         await update_current_XP(self.bot, ctx.author, ctx.guild, (current_XP + new_XP))
 
-        await self.apply_level_ups(ctx.author, current_XP, (current_XP + new_XP))
+        await self.apply_level_ups(ctx.author, (current_XP + new_XP))
 
         await ctx.channel.send(
             f"{ctx.author.display_name}: XP. New: {new_XP}, Total: {current_XP+new_XP}"
         )
         self.ineligible[ctx.author.id] = True
 
-    async def apply_level_ups(
-        self: Self, user: discord.Member, old_xp: int, new_xp: int
-    ) -> None:
+    async def apply_level_ups(self: Self, user: discord.Member, new_xp: int) -> None:
         """This function will determine if a user leveled up and apply the proper roles
 
         Args:
             user (discord.Member): The user who just gained XP
-            old_xp (int): The old amount of XP the user had
             new_xp (int): The new amount of XP the user has
         """
-        old_level = None
-        new_level = None
-
         config = self.bot.guild_configs[str(user.guild.id)]
         levels = config.extensions.xp.level_roles.value
-        print(levels)
+
         if len(levels) == 0:
             return
 
-        old_level = max(
-            ((int(xp), role_id) for xp, role_id in levels.items() if old_xp >= int(xp)),
+        configured_levels = [
+            (int(xp_threshold), int(role_id))
+            for xp_threshold, role_id in levels.items()
+        ]
+        configured_role_ids = {role_id for _, role_id in configured_levels}
+
+        # Determine the role id that corresponds to the new XP (target role)
+        target_role_id = max(
+            ((xp, role_id) for xp, role_id in configured_levels if new_xp >= xp),
             default=(-1, None),
             key=lambda t: t[0],
         )[1]
 
-        new_level = max(
-            ((int(xp), role_id) for xp, role_id in levels.items() if new_xp >= int(xp)),
-            default=(-1, None),
-            key=lambda t: t[0],
-        )[1]
+        # A list of roles IDs related to the level system that the user currently has.
+        user_level_roles_ids = [
+            role.id for role in user.roles if role.id in configured_role_ids
+        ]
 
-        if old_level != new_level:
-            guild = user.guild
-
-            if old_level:
-                old_role = guild.get_role(old_level)
-                if old_role in user.roles:
-                    await user.remove_roles(
-                        old_role, reason="Level up - replacing old level role"
-                    )
-
-            if new_level:
-                new_role = guild.get_role(new_level)
-                if new_role not in user.roles:
-                    await user.add_roles(
-                        new_role, reason="Level up - new level role applied"
-                    )
-
+        # If the user has only the correct role, do nothing.
+        if user_level_roles_ids == [target_role_id]:
             return
+
+        # Otherwise, remove all the roles from user_level_roles and then apply target_role_id
+        for role_id in user_level_roles_ids:
+            role_object = await user.guild.fetch_role(role_id)
+            await user.remove_roles(role_object, reason="Level up")
+
+        target_role_object = await user.guild.fetch_role(target_role_id)
+        await user.add_roles(target_role_object, reason="Level up")
 
 
 async def get_current_XP(
