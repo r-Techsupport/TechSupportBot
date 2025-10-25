@@ -54,14 +54,14 @@ class LevelXP(cogs.MatchCog):
     async def match(
         self: Self, config: munch.Munch, ctx: commands.Context, _: str
     ) -> bool:
-        """A match function to determine if somehting should be reacted to
+        """Checks a given message to determine if XP should be applied
 
         Args:
             config (munch.Munch): The guild config for the running bot
             ctx (commands.Context): The context that the original message was sent in
 
         Returns:
-            bool: True if there needs to be a reaction, False otherwise
+            bool: True if XP should be granted, False if it shouldn't be.
         """
         # Ignore all bot messages
         if ctx.message.author.bot:
@@ -105,7 +105,8 @@ class LevelXP(cogs.MatchCog):
     async def response(
         self: Self, config: munch.Munch, ctx: commands.Context, content: str, _: bool
     ) -> None:
-        """The function to generate and add reactions
+        """Updates XP for the given user.
+        Message has already been validated when you reach this function.
 
         Args:
             config (munch.Munch): The guild config for the running bot
