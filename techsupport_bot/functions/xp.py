@@ -74,7 +74,7 @@ class LevelXP(cogs.MatchCog):
         # Ignore messages outside of tracked categories
         if ctx.channel.category_id not in config.extensions.xp.categories_counted.value:
             return False
-        
+
         # Ignore messages that are too short
         if len(ctx.message.clean_content) < 20:
             return False
