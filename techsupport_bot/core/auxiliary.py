@@ -453,42 +453,7 @@ def get_help_embed_for_extension(
     Returns:
         discord.Embed: Embed containing all commands with their description
     """
-    embed = discord.Embed()
-    embed.title = f"Extension Commands: `{extension_name}`"
-
-    # Sorts commands alphabetically
-    command_list = list(cog.bot.walk_commands())
-    command_list.sort(key=lambda command: command.name)
-
-    # Loops through every command in the bots library
-    for command in command_list:
-        # Gets the command name
-        command_extension_name = cog.bot.get_command_extension_name(command)
-
-        # Continues the loop if the command isn't a part of the target extension
-        if extension_name != command_extension_name or issubclass(
-            command.__class__, commands.Group
-        ):
-            continue
-
-        if command.full_parent_name == "":
-            syntax = f"{command_prefix}{command.name}"
-
-        else:
-            syntax = f"{command_prefix}{command.full_parent_name} {command.name}"
-
-        usage = command.usage or ""
-
-        embed.add_field(
-            name=f"`{syntax} {usage}`",
-            value=command.description or "No description available",
-            inline=False,
-        )
-
-    # Default for when no matching commands were found
-    if len(embed.fields) == 0:
-        embed.description = "There are no commands for this extension"
-
+    embed = prepare_deny_embed("This function has been moved under the help command.")
     return embed
 
 
