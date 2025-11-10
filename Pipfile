@@ -6,7 +6,7 @@ verify_ssl = true
 [packages]
 aiocron = "==2.1"
 bidict = "==0.23.1"
-black = "==25.9.0"
+black = "==25.11.0"
 dateparser = "1.2.1"
 "discord.py" = "==2.6.4"
 emoji = "==2.14.1"
