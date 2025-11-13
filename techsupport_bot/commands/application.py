@@ -12,6 +12,7 @@ import munch
 import ui
 from core import auxiliary, cogs, extensionconfig
 from discord import app_commands
+from functions import holidays
 
 if TYPE_CHECKING:
     import bot
@@ -182,6 +183,8 @@ class ApplicationNotifier(cogs.LoopCog):
             config (munch.Munch): The guild config for the executing loop
             guild (discord.Guild): The guild the loop is executing for
         """
+        if holidays.isGuildClosed(self.bot, guild):
+            return
         channels = config.extensions.application.notification_channels.value
         for channel in channels:
             channel = guild.get_channel(int(channel))
@@ -719,6 +722,9 @@ class ApplicationManager(cogs.LoopCog):
         Returns:
             bool: True if they can apply, False if they cannot apply
         """
+        if holidays.isGuildClosed(self.bot, applicant.guild):
+            return False
+
         config = self.bot.guild_configs[str(applicant.guild.id)]
         role = applicant.guild.get_role(
             int(config.extensions.application.application_role.value)
@@ -992,7 +998,8 @@ class ApplicationManager(cogs.LoopCog):
                     embed.description = f"{embed.description}\n{event}"
                 else:
                     embed.description = f"{event}"
-            await channel.send(embed=embed)
+            if not holidays.isGuildClosed(self.bot, guild):
+                await channel.send(embed=embed)
 
         apps = await self.get_applications_by_status(ApplicationStatus.PENDING, guild)
         if not apps:
@@ -1012,7 +1019,8 @@ class ApplicationManager(cogs.LoopCog):
 
         embed.description = "\n".join(list_of_applicants)
 
-        await channel.send(embed=embed)
+        if not holidays.isGuildClosed(self.bot, guild):
+            await channel.send(embed=embed)
 
     async def wait(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
         """The queues the pending application reminder based on the cron config
