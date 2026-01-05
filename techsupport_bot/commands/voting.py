@@ -198,7 +198,7 @@ class Voting(cogs.LoopCog):
 
             # Optional name filter (autocomplete)
             if current.lower() not in channel.name.lower():
-                return False
+                continue
 
             if not self.user_can_use_vote_channel(
                 member=member,
@@ -215,10 +215,7 @@ class Voting(cogs.LoopCog):
                 )
             )
 
-            if len(choices) >= 25:
-                break
-
-        return choices
+        return choices[:25]
 
     def user_can_use_vote_channel(
         self: Self,
