@@ -498,7 +498,9 @@ class TechSupportBot(commands.Bot):
 
         embed = auxiliary.prepare_deny_embed(message=error_message)
 
-        ephemeral_errors_parameter = interaction.command.extras.get("ephemeral_error", False)
+        ephemeral_errors_parameter = interaction.command.extras.get(
+            "ephemeral_error", False
+        )
         debug_mode = bool(int(os.environ.get("DEBUG", 0)))
         ephemeral_errors = ephemeral_errors_parameter and not debug_mode
 
