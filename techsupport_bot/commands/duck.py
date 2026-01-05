@@ -37,6 +37,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         default=[],
     )
     config.add(
+        key="use_category",
+        datatype="bool",
+        title="Whether to use the whole category for ducks",
+        description="Whether to use the whole category for ducks",
+        default=False,
+    )
+    config.add(
         key="min_wait",
         datatype="int",
         title="Min wait (hours)",
@@ -144,7 +151,7 @@ class DuckHunt(cogs.LoopCog):
         self: Self,
         config: munch.Munch,
         guild: discord.Guild,
-        channel: discord.abc.Messageable,
+        channel: discord.TextChannel,
         banned_user: discord.User = None,
     ) -> None:
         """Sends a duck in the given channel
@@ -153,12 +160,11 @@ class DuckHunt(cogs.LoopCog):
         Args:
             config (munch.Munch): The config of the guild where the duck is going
             guild (discord.Guild): The guild where the duck is going
-            channel (discord.abc.Messageable): The channel to spawn the duck in
+            channel (discord.TextChannel): The channel to spawn the duck in
             banned_user (discord.User, optional): A user that is not allowed to claim the duck.
                 Defaults to None.
         """
         if not channel:
-            config = self.bot.guild_configs[str(guild.id)]
             log_channel = config.get("logging_channel")
             await self.bot.logger.send_log(
                 message="Channel not found for Duckhunt loop - continuing",
@@ -167,6 +173,12 @@ class DuckHunt(cogs.LoopCog):
                 channel=log_channel,
             )
             return
+
+        if config.extensions.duck.use_category.value:
+            all_valid_channels = channel.category.text_channels
+            use_channel = random.choice(all_valid_channels)
+        else:
+            use_channel = channel
 
         self.cooldowns[guild.id] = {}
 
@@ -177,7 +189,7 @@ class DuckHunt(cogs.LoopCog):
         embed.set_image(url=self.DUCK_PIC_URL)
         embed.color = discord.Color.green()
 
-        duck_message = await channel.send(embed=embed)
+        duck_message = await use_channel.send(embed=embed)
         start_time = duck_message.created_at
 
         response_message = None
@@ -187,7 +199,7 @@ class DuckHunt(cogs.LoopCog):
                 timeout=config.extensions.duck.timeout.value,
                 # can't pull the config in a non-coroutine
                 check=functools.partial(
-                    self.message_check, config, channel, duck_message, banned_user
+                    self.message_check, config, use_channel, duck_message, banned_user
                 ),
             )
         except asyncio.TimeoutError:
@@ -198,7 +210,7 @@ class DuckHunt(cogs.LoopCog):
             await self.bot.logger.send_log(
                 message="Exception thrown waiting for duckhunt input",
                 level=LogLevel.ERROR,
-                context=LogContext(guild=guild, channel=channel),
+                context=LogContext(guild=guild, channel=use_channel),
                 channel=log_channel,
                 exception=exception,
             )
@@ -211,10 +223,10 @@ class DuckHunt(cogs.LoopCog):
                 "befriended" if response_message.content.lower() == "bef" else "killed"
             )
             await self.handle_winner(
-                response_message.author, guild, action, raw_duration, channel
+                response_message.author, guild, action, raw_duration, use_channel
             )
         else:
-            await self.got_away(channel)
+            await self.got_away(use_channel)
 
     async def got_away(self: Self, channel: discord.TextChannel) -> None:
         """Sends a message telling everyone the duck got away
@@ -466,9 +478,7 @@ class DuckHunt(cogs.LoopCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-
-        # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
+        return
 
     @auxiliary.with_typing
     @commands.guild_only()
@@ -564,7 +574,7 @@ class DuckHunt(cogs.LoopCog):
             embed.color = embed_colors.green()
 
             embed.add_field(
-                name=self.get_user_text(duck_user),
+                name=await self.get_user_text(duck_user, ctx.guild),
                 value=f"Friends: `{duck_user.befriend_count}`",
                 inline=False,
             )
@@ -597,18 +607,20 @@ class DuckHunt(cogs.LoopCog):
                 channel=ctx.channel,
             )
             return
-        record_user = (
+        record_user_entry = (
             await self.bot.models.DuckUser.query.where(
                 self.bot.models.DuckUser.speed_record == record_time
             )
             .where(self.bot.models.DuckUser.guild_id == str(ctx.guild.id))
             .gino.first()
         )
-
         embed = discord.Embed(title="Duck Speed Record")
         embed.color = embed_colors.green()
         embed.add_field(name="Time", value=f"{str(record_time)} seconds")
-        embed.add_field(name="Record Holder", value=f"<@{record_user.author_id}>")
+        embed.add_field(
+            name="Record Holder",
+            value=await self.get_user_text(record_user_entry, ctx.guild),
+        )
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
         await ctx.send(embed=embed)
@@ -659,7 +671,7 @@ class DuckHunt(cogs.LoopCog):
             embed.color = embed_colors.green()
 
             embed.add_field(
-                name=self.get_user_text(duck_user),
+                name=await self.get_user_text(duck_user, ctx.guild),
                 value=f"Kills: `{duck_user.kill_count}`",
                 inline=False,
             )
@@ -671,23 +683,30 @@ class DuckHunt(cogs.LoopCog):
 
         await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
 
-    def get_user_text(self: Self, duck_user: bot.models.DuckUser) -> str:
+    async def get_user_text(
+        self: Self, duck_user: bot.models.DuckUser, guild: discord.Guild
+    ) -> str:
         """Gets the name of a user formatted to be displayed across the extension
 
         Args:
             duck_user (bot.models.DuckUser): The database entry of the user to format
+            guild (discord.Guild): The guild to fetch duck records from
 
         Returns:
             str: The username in a pretty string format, ready to print
         """
-        user = self.bot.get_user(int(duck_user.author_id))
-        if user:
-            user_text = f"{user.display_name}"
-            user_text_extra = f"({user.name})" if user.name != user.display_name else ""
-        else:
-            user_text = "<Unknown>"
-            user_text_extra = ""
-        return f"{user_text}{user_text_extra}"
+        try:
+            user_object = await self.bot.fetch_user(duck_user.author_id)
+        except discord.NotFound:
+            return f"`Account not found` ({duck_user.author_id})"
+        display_name = user_object.global_name
+        try:
+            member_object = await guild.fetch_member(user_object.id)
+            display_name = member_object.display_name
+        except discord.NotFound:
+            ...
+
+        return f"`{display_name}` (`{user_object.name}`)"
 
     @auxiliary.with_typing
     @commands.guild_only()
