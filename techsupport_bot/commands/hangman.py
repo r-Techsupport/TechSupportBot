@@ -332,9 +332,7 @@ class HangmanCog(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-
-        # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
+        return
 
     hangman_app_group: app_commands.Group = app_commands.Group(
         name="hangman", description="Command Group for the Hangman Extension"

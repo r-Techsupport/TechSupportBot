@@ -174,7 +174,7 @@ class Emojis(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
+        return
 
     @auxiliary.with_typing
     @emoji.command(
