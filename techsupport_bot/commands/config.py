@@ -41,9 +41,7 @@ class ConfigControl(cogs.BaseCog):
         Args:
             ctx (commands.Context): the context object for the message
         """
-
-        # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
+        ...
 
     @commands.has_permissions(administrator=True)
     @commands.guild_only()

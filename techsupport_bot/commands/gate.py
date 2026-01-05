@@ -184,9 +184,7 @@ class ServerGate(cogs.MatchCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-
-        # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
+        ...
 
     @commands.has_permissions(manage_messages=True)
     @commands.guild_only()

@@ -187,9 +187,7 @@ class ChatGPT(cogs.BaseCog):
         Args:
             ctx (commands.Context): Context of the invokation
         """
-
-        # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
+        ...
 
     @auxiliary.with_typing
     @gptutil.command(

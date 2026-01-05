@@ -53,9 +53,6 @@ class XKCD(cogs.BaseCog):
         """
         if number:
             await self.numbered_comic(ctx, number)
-        else:
-            # Executed if there are no/invalid args supplied
-            await auxiliary.extension_help(self, ctx, self.__module__[9:])
 
     @xkcd.command(
         name="random",
@@ -116,7 +113,7 @@ class XKCD(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context generate by this command
         """
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
+        ...
 
     async def numbered_comic(self: Self, ctx: commands.Context, number: int) -> None:
         """Gets the comic from XKCD by number
