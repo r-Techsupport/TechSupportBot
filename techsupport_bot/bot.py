@@ -1022,6 +1022,7 @@ class TechSupportBot(commands.Bot):
             context=LogContext(guild=interaction.guild, channel=interaction.channel),
             channel=log_channel,
             embed=embed,
+            console_only=interaction.command.extras.get("suppress_logs", False),
         )
 
     async def can_run(
