@@ -2330,6 +2330,7 @@ class FactoidManager(cogs.MatchCog):
         )
 
     @auxiliary.with_typing
+    @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
         brief="Deletes only an alias",
