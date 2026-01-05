@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any
 
 import discord
 import munch
-import ui
 from discord import app_commands
 from discord.ext import commands
 
@@ -54,6 +53,7 @@ async def search_channel_for_message(
     member_to_match: discord.Member = None,
     content_to_match: str = "",
     allow_bot: bool = True,
+    skip_messages: list[int] = None,
 ) -> discord.Message:
     """Searches the last 50 messages in a channel based on given conditions
 
@@ -65,6 +65,7 @@ async def search_channel_for_message(
         content_to_match (str, optional): The content the message must contain. Defaults to None.
         allow_bot (bool, optional): If you want to allow messages to
             be authored by a bot. Defaults to True
+        skip_messages (list[int], optional): Message IDs to be ignored by the search
 
     Returns:
         discord.Message: The message object that meets the given critera.
@@ -74,6 +75,8 @@ async def search_channel_for_message(
     SEARCH_LIMIT = 50
 
     async for message in channel.history(limit=SEARCH_LIMIT):
+        if skip_messages and message.id in skip_messages:
+            continue
         if (
             (member_to_match is None or message.author == member_to_match)
             and (content_to_match == "" or content_to_match in message.content)
@@ -490,62 +493,6 @@ def get_help_embed_for_extension(
         embed.description = "There are no commands for this extension"
 
     return embed
-
-
-async def extension_help(
-    cog: cogs.BaseCog, ctx: commands.Context, extension_name: str
-) -> None:
-    """Automatically prompts for help if improper syntax for an extension is called.
-
-    The format for extension_name that's used is `self.__module__[11:]`, because
-    all extensions have the value set to extension.<name>, it's the most reliable
-    way to get the extension name regardless of aliases
-
-    Args:
-        cog (cogs.BaseCog): The cog that needs the commands put into a help menu
-        ctx (commands.Context): context of the message
-        extension_name (str): the name of the extension to show the help for
-    """
-
-    # Checks whether the first given argument is valid if an argument is supplied
-    if len(ctx.message.content.split()) > 1:
-        arg = ctx.message.content.split().pop(1)
-        valid_commands = []
-        valid_args = []
-        # Loops through each command for said extension
-        for command in cog.bot.get_cog(cog.qualified_name).walk_commands():
-            valid_commands.append(command.name)
-            valid_args.append(command.aliases)
-
-        # Flatmaps nested lists, because aliases are returned as lists.
-        valid_args = [item for sublist in valid_args for item in sublist]
-
-        # If argument isn't a valid command or alias, wait for confirmation to show help page
-        if arg not in valid_args and arg not in valid_commands:
-            view = ui.Confirm()
-            await view.send(
-                message="Invalid argument! Show help command?",
-                channel=ctx.channel,
-                author=ctx.author,
-                timeout=10,
-            )
-            await view.wait()
-            if view.value != ui.ConfirmResponse.CONFIRMED:
-                return
-
-            await ctx.send(
-                embed=get_help_embed_for_extension(
-                    cog, extension_name, await cog.bot.get_prefix(ctx.message)
-                )
-            )
-
-    # Executed if no arguments were supplied
-    elif len(ctx.message.content.split()) == 1:
-        await ctx.send(
-            embed=get_help_embed_for_extension(
-                cog, extension_name, await cog.bot.get_prefix(ctx.message)
-            )
-        )
 
 
 async def bot_admin_check_context(ctx: commands.Context) -> bool:

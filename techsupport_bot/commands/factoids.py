@@ -32,9 +32,9 @@ import yaml
 from aiohttp.client_exceptions import InvalidURL
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, custom_errors, extensionconfig
-from croniter import CroniterBadCronError
 from discord import app_commands
 from discord.ext import commands
+from functions import logger as function_logger
 
 if TYPE_CHECKING:
     import bot
@@ -837,10 +837,23 @@ class FactoidManager(cogs.MatchCog):
             not in config.extensions.factoids.restricted_list.value
         ):
             return
-        if not config.extensions.factoids.disable_embeds.value:
-            embed = self.get_embed_from_factoid(factoid)
-        else:
+
+        if config.extensions.factoids.disable_embeds.value:
             embed = None
+        else:
+            try:
+                embed = self.get_embed_from_factoid(factoid)
+            except TypeError as exception:
+                log_channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message=f"Unable to make embed for factoid `{factoid.name}`, sending fallback.",
+                    level=LogLevel.ERROR,
+                    channel=log_channel,
+                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                    exception=exception,
+                )
+                embed = None
+
         # if the json doesn't include non embed argument, then don't send anything
         # otherwise send message text with embed
         try:
@@ -861,7 +874,9 @@ class FactoidManager(cogs.MatchCog):
 
         try:
             # define the message and send it
-            await ctx.reply(content=content, embed=embed, mention_author=not mentions)
+            sent_message = await ctx.reply(
+                content=content, embed=embed, mention_author=not mentions
+            )
             # log it in the logging channel with type info and generic content
             config = self.bot.guild_configs[str(ctx.guild.id)]
             log_channel = config.get("logging_channel")
@@ -886,12 +901,15 @@ class FactoidManager(cogs.MatchCog):
                 exception=exception,
             )
             # Sends the raw factoid instead of the embed as fallback
-            await ctx.reply(
+            sent_message = await ctx.reply(
                 f"{mentions+' ' if mentions else ''}{factoid.message}",
                 mention_author=not mentions,
             )
 
         await self.send_to_irc(ctx.channel, ctx.message, factoid.message)
+        await self.send_to_logger(
+            sent_message, ctx.author, ctx.channel, factoid.message
+        )
 
     async def send_to_irc(
         self: Self,
@@ -915,6 +933,44 @@ class FactoidManager(cogs.MatchCog):
             channel=channel,
             discord_message=message,
             factoid_message=factoid_message,
+        )
+
+    async def send_to_logger(
+        self: Self,
+        factoid_message_object: discord.Message,
+        factoid_caller: discord.Member,
+        channel: discord.abc.GuildChannel | discord.Thread,
+        factoid_message: str,
+    ) -> None:
+        """Send a factoid call to the logger function
+
+        Args:
+            factoid_message_object (discord.Message): The message that the factoid is sent in
+            factoid_caller (discord.Member): The person who called the factoid
+            channel (discord.abc.GuildChannel | discord.Thread): The channel the
+                factoid was sent in
+            factoid_message (str): The plaintext message content of the factoid
+        """
+        config = self.bot.guild_configs[str(channel.guild.id)]
+
+        # Don't allow logging if extension is disabled
+        if "logger" not in config.enabled_extensions:
+            return
+
+        target_logging_channel = await function_logger.pre_log_checks(
+            self.bot, config, channel
+        )
+        if not target_logging_channel:
+            return
+
+        await function_logger.send_message(
+            self.bot,
+            factoid_message_object,
+            factoid_caller,
+            channel,
+            target_logging_channel,
+            content_override=factoid_message,
+            special_flags=["Factoid call"],
         )
 
     @factoid_app_group.command(
@@ -974,10 +1030,23 @@ class FactoidManager(cogs.MatchCog):
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
-        if not config.extensions.factoids.disable_embeds.value:
-            embed = self.get_embed_from_factoid(factoid)
-        else:
+        if config.extensions.factoids.disable_embeds.value:
             embed = None
+        else:
+            try:
+                embed = self.get_embed_from_factoid(factoid)
+            except TypeError as exception:
+                log_channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message=f"Unable to make embed for factoid `{factoid.name}`, sending fallback.",
+                    level=LogLevel.ERROR,
+                    channel=log_channel,
+                    context=LogContext(
+                        guild=interaction.guild, channel=interaction.channel
+                    ),
+                    exception=exception,
+                )
+                embed = None
         # if the json doesn't include non embed argument, then don't send anything
         # otherwise send message text with embed
         try:
@@ -1027,6 +1096,11 @@ class FactoidManager(cogs.MatchCog):
             await interaction.response.send_message(content=factoid.message)
         await self.send_to_irc(
             interaction.channel, interaction.message, factoid.message
+        )
+
+        sent_message = await interaction.original_response()
+        await self.send_to_logger(
+            sent_message, interaction.user, interaction.channel, factoid.message
         )
 
     # -- Factoid job related functions --
@@ -1087,7 +1161,7 @@ class FactoidManager(cogs.MatchCog):
             try:
                 await aiocron.crontab(job.cron).next()
 
-            except CroniterBadCronError as exception:
+            except ValueError as exception:
                 log_channel = None
                 log_context = None
 
@@ -1164,10 +1238,23 @@ class FactoidManager(cogs.MatchCog):
                 return
 
             # Get_embed accepts job as a factoid object
-            if not config.extensions.factoids.disable_embeds.value:
-                embed = self.get_embed_from_factoid(factoid)
-            else:
+            if config.extensions.factoids.disable_embeds.value:
                 embed = None
+            else:
+                try:
+                    embed = self.get_embed_from_factoid(factoid)
+                except TypeError as exception:
+                    log_channel = config.get("logging_channel")
+                    await self.bot.logger.send_log(
+                        message=(
+                            f"Unable to make embed for factoid `{factoid.name}`, sending fallback."
+                        ),
+                        level=LogLevel.ERROR,
+                        channel=log_channel,
+                        context=LogContext(guild=channel.guild, channel=channel),
+                        exception=exception,
+                    )
+                    embed = None
 
             try:
                 content = factoid.message if not embed else None
@@ -1192,6 +1279,7 @@ class FactoidManager(cogs.MatchCog):
                 message = await channel.send(content=factoid.message)
 
             await self.send_to_irc(channel, message, factoid.message)
+            await self.send_to_logger(message, ctx.author, ctx.channel, factoid.message)
 
     @commands.group(
         brief="Executes a factoid command",
@@ -1203,9 +1291,7 @@ class FactoidManager(cogs.MatchCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-
-        # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
+        return
 
     @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)
@@ -1634,7 +1720,7 @@ class FactoidManager(cogs.MatchCog):
         # Adds all fields to the embed
         embed.add_field(name="Aliases", value=alias_list)
         embed.add_field(name="Embed", value=bool(factoid.embed_config))
-        embed.add_field(name="Contents", value=factoid.message)
+        embed.add_field(name="Contents", value=factoid.message[:1020])
         embed.add_field(name="Date of creation", value=factoid.time)
 
         # Get all the special properties of a factoid, if any are set
@@ -2292,6 +2378,7 @@ class FactoidManager(cogs.MatchCog):
         )
 
     @auxiliary.with_typing
+    @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
         brief="Deletes only an alias",

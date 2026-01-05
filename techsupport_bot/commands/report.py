@@ -28,6 +28,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         description="The ID of the channel to send auto-protect alerts to",
         default=None,
     )
+    config.add(
+        key="anonymous",
+        datatype="bool",
+        title="If reports are anonymous",
+        description="Whether reports are anonymous",
+        default=False,
+    )
     await bot.add_cog(Report(bot=bot, extension_name="report"))
     bot.add_extension_config("report", config)
 
@@ -38,7 +45,7 @@ class Report(cogs.BaseCog):
     @app_commands.command(
         name="report",
         description="Reports something to the moderators",
-        extras={"module": "report"},
+        extras={"module": "report", "suppress_logs": True},
     )
     async def report_command(
         self: Self, interaction: discord.Interaction, report_str: str
@@ -59,17 +66,31 @@ class Report(cogs.BaseCog):
 
         embed = discord.Embed(title="New Report", description=report_str)
         embed.color = discord.Color.red()
-        embed.set_author(
-            name=interaction.user.name,
-            icon_url=interaction.user.avatar.url or interaction.user.default_avatar.url,
-        )
+
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+
+        is_anonymous = config.extensions.report.anonymous.value
+
+        if is_anonymous:
+            embed.set_author(name="Anonymous")
+        else:
+            embed.set_author(
+                name=interaction.user.name,
+                icon_url=interaction.user.avatar.url
+                or interaction.user.default_avatar.url,
+            )
+            embed.add_field(
+                name="User info",
+                value=(
+                    f"**Name:** {interaction.user.name} ({interaction.user.mention})\n"
+                    f"**Joined:** <t:{int(interaction.user.joined_at.timestamp())}:R>\n"
+                    f"**Created:** <t:{int(interaction.user.created_at.timestamp())}:R>\n"
+                ),
+            )
 
         embed.add_field(
-            name="User info",
+            name="** **",
             value=(
-                f"**Name:** {interaction.user.name} ({interaction.user.mention})\n"
-                f"**Joined:** <t:{int(interaction.user.joined_at.timestamp())}:R>\n"
-                f"**Created:** <t:{int(interaction.user.created_at.timestamp())}:R>\n"
                 f"**Sent from:** {interaction.channel.mention} [Jump to context]"
                 f"(https://discord.com/channels/{interaction.guild.id}/{interaction.channel.id}/"
                 f"{discord.utils.time_snowflake(datetime.datetime.utcnow())})"
@@ -101,10 +122,9 @@ class Report(cogs.BaseCog):
                 ),
             )
 
-        embed.set_footer(text=f"Author ID: {interaction.user.id}")
+        if not is_anonymous:
+            embed.set_footer(text=f"Author ID: {interaction.user.id}")
         embed.timestamp = datetime.datetime.utcnow()
-
-        config = self.bot.guild_configs[str(interaction.guild.id)]
 
         try:
             alert_channel = interaction.guild.get_channel(
