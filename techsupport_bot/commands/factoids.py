@@ -1672,7 +1672,7 @@ class FactoidManager(cogs.MatchCog):
         # Adds all fields to the embed
         embed.add_field(name="Aliases", value=alias_list)
         embed.add_field(name="Embed", value=bool(factoid.embed_config))
-        embed.add_field(name="Contents", value=factoid.message)
+        embed.add_field(name="Contents", value=factoid.message[:1020])
         embed.add_field(name="Date of creation", value=factoid.time)
 
         # Get all the special properties of a factoid, if any are set
