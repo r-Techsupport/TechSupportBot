@@ -41,7 +41,7 @@ class ConfigControl(cogs.BaseCog):
         Args:
             ctx (commands.Context): the context object for the message
         """
-        ...
+        return
 
     @commands.has_permissions(administrator=True)
     @commands.guild_only()

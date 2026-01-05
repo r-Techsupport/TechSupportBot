@@ -44,7 +44,7 @@ class Rules(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-        ...
+        return
 
     async def get_guild_rules(self: Self, guild: discord.Guild) -> munch.Munch:
         """Gets the munchified rules for a given guild.

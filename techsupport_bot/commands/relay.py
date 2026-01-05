@@ -155,7 +155,7 @@ class DiscordToIRC(cogs.MatchCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        ...
+        return
 
     @irc_base.command(name="maps", description="List all the maps for IRC")
     async def irc_maps(self: Self, ctx: commands.Context) -> None:

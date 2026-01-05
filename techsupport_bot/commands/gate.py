@@ -184,7 +184,7 @@ class ServerGate(cogs.MatchCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-        ...
+        return
 
     @commands.has_permissions(manage_messages=True)
     @commands.guild_only()

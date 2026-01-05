@@ -45,7 +45,7 @@ class CommandControl(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-        ...
+        return
 
     @auxiliary.with_typing
     @command_group.command(

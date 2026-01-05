@@ -135,7 +135,7 @@ class ReactionPoller(PollGenerator):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-        ...
+        return
 
     @auxiliary.with_typing
     @poll.command(
@@ -333,7 +333,7 @@ class StrawPoller(PollGenerator):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-        ...
+        return
 
     @auxiliary.with_typing
     @strawpoll.command(

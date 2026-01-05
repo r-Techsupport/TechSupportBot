@@ -1291,7 +1291,7 @@ class FactoidManager(cogs.MatchCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-        ...
+        return
 
     @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)

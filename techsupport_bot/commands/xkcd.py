@@ -113,7 +113,7 @@ class XKCD(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context generate by this command
         """
-        ...
+        return
 
     async def numbered_comic(self: Self, ctx: commands.Context, number: int) -> None:
         """Gets the comic from XKCD by number

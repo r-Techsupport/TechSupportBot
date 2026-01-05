@@ -1283,7 +1283,7 @@ class Modmail(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-        ...
+        return
 
     def modmail_commands_list(self: Self) -> list[tuple[str, str, str, str]]:
         """

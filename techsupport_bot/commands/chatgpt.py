@@ -187,7 +187,7 @@ class ChatGPT(cogs.BaseCog):
         Args:
             ctx (commands.Context): Context of the invokation
         """
-        ...
+        return
 
     @auxiliary.with_typing
     @gptutil.command(

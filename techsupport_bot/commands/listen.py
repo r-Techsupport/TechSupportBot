@@ -265,7 +265,7 @@ class Listener(cogs.BaseCog):
         Args:
             ctx (commands.Context): the context object for the message
         """
-        ...
+        return
 
     @listen.command(
         description="Starts a listening job", usage="[src-channel] [dst-channel]"

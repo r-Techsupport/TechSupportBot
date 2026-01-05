@@ -159,7 +159,7 @@ Even though it executes no code, we add an automatic help trigger that is called
         description="Long-description",
     )
     async def command-group-name():
-        ...
+        return
 ```
 This defines a command group that is called using `.command-group-name <command>`.
 The help is included and called if it is called by itself, should be included unless the command group itself serves a purpose.
