@@ -162,6 +162,9 @@ class LevelXP(cogs.MatchCog):
             role_object = await user.guild.fetch_role(role_id)
             await user.remove_roles(role_object, reason="Level up")
 
+        if not target_role_id:
+            return
+
         target_role_object = await user.guild.fetch_role(target_role_id)
         await user.add_roles(target_role_object, reason="Level up")
 
