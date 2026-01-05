@@ -14,7 +14,6 @@ from discord.ext import commands
 from functions import automod
 from functions import logger as function_logger
 
-
 if TYPE_CHECKING:
     import bot
 
