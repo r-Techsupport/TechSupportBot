@@ -47,6 +47,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         ),
         default=[],
     )
+    config.add(
+        key="votes_channel_ids",
+        datatype="list[str]",
+        title="Votes channels",
+        description="Forum channels where votes may be started",
+        default=[],
+    )
     await bot.add_cog(Voting(bot=bot, extension_name="voting"))
     bot.add_extension_config("voting", config)
 
@@ -54,7 +61,27 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Voting(cogs.LoopCog):
     """The class that holds the core voting system"""
 
-    @app_commands.checks.has_permissions(manage_nicknames=True)
+    VOTE_CONFIG = {
+        "yes": {
+            "ids_field": "vote_ids_yes",
+            "count_field": "votes_yes",
+            "already_msg": "You have already voted yes",
+            "success_msg": "Your vote for yes has been counted",
+        },
+        "no": {
+            "ids_field": "vote_ids_no",
+            "count_field": "votes_no",
+            "already_msg": "You have already voted no",
+            "success_msg": "Your vote for no has been counted",
+        },
+        "abstain": {
+            "ids_field": "vote_ids_abstain",
+            "count_field": "votes_abstain",
+            "already_msg": "You have already voted to abstain",
+            "success_msg": "Your vote to abstain has been counted",
+        },
+    }
+
     @app_commands.command(
         name="vote",
         description="Starts a yes/no vote that runs for 72 hours",
@@ -65,8 +92,9 @@ class Voting(cogs.LoopCog):
     async def votingbutton(
         self: Self,
         interaction: discord.Interaction,
+        channel: str,
         blind: bool = False,
-        anonymous: bool = False,
+        anonymous: bool = True,
     ) -> None:
         """Will open a modal
 
@@ -79,14 +107,16 @@ class Voting(cogs.LoopCog):
                 from the database upon completion of the vote
         """
 
+        # Check if user is active
+        # Check if user is allowed to vote in given channel
+
         form = ui.VoteCreation()
         await interaction.response.send_modal(form)
         await form.wait()
 
         config = self.bot.guild_configs[str(interaction.guild.id)]
-        channel = await interaction.guild.fetch_channel(
-            int(config.extensions.voting.votes_channel_id.value)
-        )
+        channel = await interaction.guild.fetch_channel(int(channel))
+
         roles = await interaction.guild.fetch_roles()
         roles_to_ping = " ".join(
             role.mention
@@ -121,6 +151,37 @@ class Voting(cogs.LoopCog):
         await vote.update(
             thread_id=str(vote_thread.id), message_id=str(vote_message.id)
         ).apply()
+
+    @votingbutton.autocomplete("channel")
+    async def vote_channel_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        config = self.bot.guild_configs.get(str(interaction.guild.id))
+        if not config:
+            return []
+
+        channel_ids = config.extensions.voting.votes_channel_ids.value
+
+        choices: list[app_commands.Choice[str]] = []
+
+        for channel_id in channel_ids:
+            channel = interaction.guild.get_channel(int(channel_id))
+            if not channel:
+                continue
+
+            if current.lower() not in channel.name.lower():
+                continue
+
+            choices.append(
+                app_commands.Choice(
+                    name=f"#{channel.name}",
+                    value=str(channel.id),
+                )
+            )
+
+        return choices[:25]  # Just in case, 25 is the limit
 
     async def search_db_for_vote_by_id(self: Self, vote_id: int) -> munch.Munch:
         """Gets a vote entry from the database by a given vote ID
@@ -247,38 +308,43 @@ class Voting(cogs.LoopCog):
         final_str.sort()
         return "\n".join(final_str)
 
-    async def register_yes_vote(
+    async def register_vote(
         self: Self,
         interaction: discord.Interaction,
         view: discord.ui.View,
+        vote_type: str,  # "yes" | "no" | "abstain"
     ) -> None:
-        """This updates the vote database when someone votes yes
+        config = self.VOTE_CONFIG[vote_type]
+        user_id = str(interaction.user.id)
 
-        Args:
-            interaction (discord.Interaction): The interaction that started the vote
-            view (discord.ui.View): The view that was interacted with
-        """
         db_entry = await self.search_db_for_vote_by_message(str(interaction.message.id))
 
-        # Update vote_ids_yes
-        vote_ids_yes = db_entry.vote_ids_yes.split(",")
-        if str(interaction.user.id) in vote_ids_yes:
+        # Get the correct vote_ids field dynamically
+        vote_ids = getattr(db_entry, config["ids_field"]).split(",")
+
+        if user_id in vote_ids:
             await interaction.response.send_message(
-                "You have already voted yes", ephemeral=True
+                config["already_msg"], ephemeral=True
             )
-            return  # Already voted yes, don't do anything more
+            return
 
-        db_entry = self.clear_vote_record(db_entry, str(interaction.user.id))
+        # Remove user from any previous vote
+        db_entry = self.clear_vote_record(db_entry, user_id)
 
-        vote_ids_yes.append(str(interaction.user.id))
-        db_entry.vote_ids_yes = ",".join(vote_ids_yes)
+        # Add vote
+        vote_ids.append(user_id)
+        setattr(db_entry, config["ids_field"], ",".join(vote_ids))
 
-        # Increment votes_yes
-        db_entry.votes_yes += 1
+        # Increment counter
+        setattr(
+            db_entry,
+            config["count_field"],
+            getattr(db_entry, config["count_field"]) + 1,
+        )
 
         # Update vote_ids_all
         vote_ids_all = db_entry.vote_ids_all.split(",")
-        vote_ids_all.append(str(interaction.user.id))
+        vote_ids_all.append(user_id)
         db_entry.vote_ids_all = ",".join(vote_ids_all)
 
         await db_entry.update(
@@ -293,109 +359,8 @@ class Voting(cogs.LoopCog):
 
         embed = await self.build_vote_embed(db_entry.vote_id, interaction.guild)
         await interaction.message.edit(embed=embed, view=view)
-        await interaction.response.send_message(
-            "Your vote for yes has been counted", ephemeral=True
-        )
 
-    async def register_abstain_vote(
-        self: Self,
-        interaction: discord.Interaction,
-        view: discord.ui.View,
-    ) -> None:
-        """This updates the vote database when someone votes to abstain
-
-        Args:
-            interaction (discord.Interaction): The interaction that started the vote
-            view (discord.ui.View): The view that was interacted with
-        """
-        db_entry = await self.search_db_for_vote_by_message(str(interaction.message.id))
-
-        # Update vote_ids_abstain
-        vote_ids_abstain = db_entry.vote_ids_abstain.split(",")
-        if str(interaction.user.id) in vote_ids_abstain:
-            await interaction.response.send_message(
-                "You have already voted to abstian", ephemeral=True
-            )
-            return  # Already voted to abstian, don't do anything more
-
-        db_entry = self.clear_vote_record(db_entry, str(interaction.user.id))
-
-        vote_ids_abstain.append(str(interaction.user.id))
-        db_entry.vote_ids_abstain = ",".join(vote_ids_abstain)
-
-        # Increment votes_abstian
-        db_entry.votes_abstain += 1
-
-        # Update vote_ids_all
-        vote_ids_all = db_entry.vote_ids_all.split(",")
-        vote_ids_all.append(str(interaction.user.id))
-        db_entry.vote_ids_all = ",".join(vote_ids_all)
-
-        await db_entry.update(
-            vote_ids_no=db_entry.vote_ids_no,
-            votes_no=db_entry.votes_no,
-            vote_ids_yes=db_entry.vote_ids_yes,
-            votes_yes=db_entry.votes_yes,
-            vote_ids_abstain=db_entry.vote_ids_abstain,
-            votes_abstain=db_entry.votes_abstain,
-            vote_ids_all=db_entry.vote_ids_all,
-        ).apply()
-
-        embed = await self.build_vote_embed(db_entry.vote_id, interaction.guild)
-        await interaction.message.edit(embed=embed, view=view)
-        await interaction.response.send_message(
-            "Your vote to abstain has been counted", ephemeral=True
-        )
-
-    async def register_no_vote(
-        self: Self,
-        interaction: discord.Interaction,
-        view: discord.ui.View,
-    ) -> None:
-        """This updates the vote database when someone votes no
-
-        Args:
-            interaction (discord.Interaction): The interaction that started the vote
-            view (discord.ui.View): The view that was interacted with
-        """
-        db_entry = await self.search_db_for_vote_by_message(str(interaction.message.id))
-
-        # Update vote_ids_no
-        vote_ids_no = db_entry.vote_ids_no.split(",")
-        if str(interaction.user.id) in vote_ids_no:
-            await interaction.response.send_message(
-                "You have already voted no", ephemeral=True
-            )
-            return  # Already voted no, don't do anything more
-
-        db_entry = self.clear_vote_record(db_entry, str(interaction.user.id))
-
-        vote_ids_no.append(str(interaction.user.id))
-        db_entry.vote_ids_no = ",".join(vote_ids_no)
-
-        # Increment votes_no
-        db_entry.votes_no += 1
-
-        # Update vote_ids_all
-        vote_ids_all = db_entry.vote_ids_all.split(",")
-        vote_ids_all.append(str(interaction.user.id))
-        db_entry.vote_ids_all = ",".join(vote_ids_all)
-
-        await db_entry.update(
-            vote_ids_no=db_entry.vote_ids_no,
-            votes_no=db_entry.votes_no,
-            vote_ids_yes=db_entry.vote_ids_yes,
-            votes_yes=db_entry.votes_yes,
-            vote_ids_abstain=db_entry.vote_ids_abstain,
-            votes_abstain=db_entry.votes_abstain,
-            vote_ids_all=db_entry.vote_ids_all,
-        ).apply()
-
-        embed = await self.build_vote_embed(db_entry.vote_id, interaction.guild)
-        await interaction.message.edit(embed=embed, view=view)
-        await interaction.response.send_message(
-            "Your vote for no has been counted", ephemeral=True
-        )
+        await interaction.response.send_message(config["success_msg"], ephemeral=True)
 
     async def clear_vote(
         self: Self,

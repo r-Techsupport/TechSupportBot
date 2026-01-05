@@ -29,7 +29,7 @@ class VotingButtonPersistent(discord.ui.View):
             button (discord.ui.Button): The button object itself
         """
         cog = interaction.client.get_cog("Voting")
-        await cog.register_yes_vote(interaction, self)
+        await cog.register_vote(interaction, self, "yes")
 
     @discord.ui.button(
         label="Abstain from voting",
@@ -48,7 +48,7 @@ class VotingButtonPersistent(discord.ui.View):
             button (discord.ui.Button): The button object itself
         """
         cog = interaction.client.get_cog("Voting")
-        await cog.register_abstain_vote(interaction, self)
+        await cog.register_vote(interaction, self, "abstain")
 
     @discord.ui.button(
         label="No, don't make changes",
@@ -67,7 +67,7 @@ class VotingButtonPersistent(discord.ui.View):
             button (discord.ui.Button): The button object itself
         """
         cog = interaction.client.get_cog("Voting")
-        await cog.register_no_vote(interaction, self)
+        await cog.register_vote(interaction, self, "no")
 
     @discord.ui.button(
         label="Remove your vote",
