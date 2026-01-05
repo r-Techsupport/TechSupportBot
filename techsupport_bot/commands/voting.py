@@ -169,6 +169,16 @@ class Voting(cogs.LoopCog):
         interaction: discord.Interaction,
         current: str,
     ) -> list[app_commands.Choice[str]]:
+        """This is the autocomplete for the voting
+        It will show the user what channel(s) they can start a vote in
+
+        Args:
+            interaction (discord.Interaction): The interaction that is causing the lookup
+            current (str): The current string that the user has typed
+
+        Returns:
+            list[app_commands.Choice[str]]: The list of channels that match the current string
+        """
         config = self.bot.guild_configs.get(str(interaction.guild.id))
         if not config:
             return []
@@ -185,6 +195,10 @@ class Voting(cogs.LoopCog):
             channel = interaction.guild.get_channel(int(channel_id))
             if not channel:
                 continue
+
+            # Optional name filter (autocomplete)
+            if current.lower() not in channel.name.lower():
+                return False
 
             if not self.user_can_use_vote_channel(
                 member=member,
@@ -208,21 +222,20 @@ class Voting(cogs.LoopCog):
 
     def user_can_use_vote_channel(
         self: Self,
-        *,
         member: discord.Member,
         channel: discord.abc.GuildChannel,
-        config,
-        name_filter: str | None = None,
+        config: munch.Munch,
     ) -> bool:
-        """
-        Returns True if the user is allowed to use this channel for voting.
+        """This checks if the user can start a vote in a given channel
 
-        Conditions:
-        - User has active_role_id
-        - Channel exists
-        - Channel is a ForumChannel
-        - User has at least one role mapped to the channel
-        - Channel name matches name_filter (if provided)
+        Args:
+            self (Self): _description_
+            member (discord.Member): The member that is trying to start a vote
+            channel (discord.abc.GuildChannel): The channel the vote is going to be started in
+            config (munch.Munch): The guild config for the current guild
+
+        Returns:
+            bool: True if the channel is valid, false if its not
         """
         if not isinstance(channel, discord.ForumChannel):
             return False
@@ -245,10 +258,6 @@ class Voting(cogs.LoopCog):
 
         # Must have at least one channel-specific role
         if not user_role_ids.intersection(allowed_role_ids):
-            return False
-
-        # Optional name filter (autocomplete)
-        if name_filter and name_filter.lower() not in channel.name.lower():
             return False
 
         return True
