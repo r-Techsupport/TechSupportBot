@@ -4,7 +4,7 @@ The cog in the file is named:
     Voting
 
 This file contains 1 commands:
-    /voting
+    /vote
 """
 
 from __future__ import annotations
@@ -204,7 +204,6 @@ class Voting(cogs.LoopCog):
                 member=member,
                 channel=channel,
                 config=config,
-                name_filter=current,
             ):
                 continue
 
@@ -226,7 +225,6 @@ class Voting(cogs.LoopCog):
         """This checks if the user can start a vote in a given channel
 
         Args:
-            self (Self): _description_
             member (discord.Member): The member that is trying to start a vote
             channel (discord.abc.GuildChannel): The channel the vote is going to be started in
             config (munch.Munch): The guild config for the current guild
@@ -284,6 +282,16 @@ class Voting(cogs.LoopCog):
         return await self.bot.models.Votes.query.where(
             self.bot.models.Votes.message_id == message_id
         ).gino.first()
+
+    async def calculate_eligible_voters(
+        self: Self, channel: discord.ForumChannel, guild: discord.Guild
+    ):
+        # Only needs to be run at the start of the vote
+        config = self.bot.guild_configs[str(guild.id)]
+        # Get list of role IDs associated with the channel
+        # Get role ID of regular
+        # Produce union of individuals who have both
+        ...
 
     async def build_vote_embed(
         self: Self, vote_id: int, guild: discord.Guild
@@ -388,19 +396,19 @@ class Voting(cogs.LoopCog):
         self: Self,
         interaction: discord.Interaction,
         view: discord.ui.View,
-        vote_type: str,  # "yes" | "no" | "abstain"
+        vote_type: str,
     ) -> None:
-        config = self.VOTE_CONFIG[vote_type]
+        vote_config = self.VOTE_CONFIG[vote_type]
         user_id = str(interaction.user.id)
 
         db_entry = await self.search_db_for_vote_by_message(str(interaction.message.id))
 
         # Get the correct vote_ids field dynamically
-        vote_ids = getattr(db_entry, config["ids_field"]).split(",")
+        vote_ids = getattr(db_entry, vote_config["ids_field"]).split(",")
 
         if user_id in vote_ids:
             await interaction.response.send_message(
-                config["already_msg"], ephemeral=True
+                vote_config["already_msg"], ephemeral=True
             )
             return
 
@@ -409,13 +417,13 @@ class Voting(cogs.LoopCog):
 
         # Add vote
         vote_ids.append(user_id)
-        setattr(db_entry, config["ids_field"], ",".join(vote_ids))
+        setattr(db_entry, vote_config["ids_field"], ",".join(vote_ids))
 
         # Increment counter
         setattr(
             db_entry,
-            config["count_field"],
-            getattr(db_entry, config["count_field"]) + 1,
+            vote_config["count_field"],
+            getattr(db_entry, vote_config["count_field"]) + 1,
         )
 
         # Update vote_ids_all
@@ -436,7 +444,9 @@ class Voting(cogs.LoopCog):
         embed = await self.build_vote_embed(db_entry.vote_id, interaction.guild)
         await interaction.message.edit(embed=embed, view=view)
 
-        await interaction.response.send_message(config["success_msg"], ephemeral=True)
+        await interaction.response.send_message(
+            vote_config["success_msg"], ephemeral=True
+        )
 
     async def clear_vote(
         self: Self,

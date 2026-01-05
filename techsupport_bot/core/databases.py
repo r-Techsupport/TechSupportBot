@@ -335,10 +335,10 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             vote_ids_no (str): The comma separated list of who has voted no
             vote_ids_abstain (str): The comma separated list of who have abstained
             vote_ids_all (str): The comma separated list of who has voted
+            vote_ids_eligible (str): The comma separated list of all who can vote
             votes_yes (int): The number of votes for yes
             votes_no (int): The number of votes for no
             votes_abstain (int): The number of votes that have abstained
-            votes_total (int): The number of votes
             start_time (datetime.datetime): The start time of the vote
             vote_active (bool): If the vote is current active or not
             blind (bool): If the vote needs to be blind
@@ -357,10 +357,10 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         vote_ids_no: str = bot.db.Column(bot.db.String, default="")
         vote_ids_abstain: str = bot.db.Column(bot.db.String, default="")
         vote_ids_all: str = bot.db.Column(bot.db.String, default="")
+        vote_ids_eligible: str = bot.db.Column(bot.db.String, default="")
         votes_yes: int = bot.db.Column(bot.db.Integer, default=0)
         votes_no: int = bot.db.Column(bot.db.Integer, default=0)
         votes_abstain: int = bot.db.Column(bot.db.Integer, default=0)
-        votes_total: int = bot.db.Column(bot.db.Integer, default=0)
         start_time: datetime.datetime = bot.db.Column(
             bot.db.DateTime, default=datetime.datetime.utcnow
         )
