@@ -45,6 +45,7 @@ class FactoidNotFoundError(commands.errors.CommandError):
     """
 
     def __init__(self: Self, factoid: str) -> None:
+        super().__init__(factoid)
         self.dont_print_trace = True
         self.argument = factoid
 
@@ -57,6 +58,17 @@ class TooLongFactoidMessageError(commands.errors.CommandError):
 
 
 class HTTPRateLimit(commands.errors.CommandError):
+    """An API call is on rate limit
+
+    Args:
+        wait (int): The amount of seconds left until the rate limit expires
+    """
+
+    def __init__(self: Self, wait: int) -> None:
+        self.wait = wait
+
+
+class HTTPRateLimitAppCommand(app_commands.CommandInvokeError):
     """An API call is on rate limit
 
     Args:
@@ -249,6 +261,10 @@ COMMAND_ERROR_RESPONSES = {
         {"key": "retry_after", "wrapper": float},
     ),
     HTTPRateLimit: ErrorResponse(
+        "That API is on cooldown. Try again in %.2f seconds",
+        {"key": "wait"},
+    ),
+    HTTPRateLimitAppCommand: ErrorResponse(
         "That API is on cooldown. Try again in %.2f seconds",
         {"key": "wait"},
     ),

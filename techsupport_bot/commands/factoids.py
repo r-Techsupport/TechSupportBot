@@ -32,7 +32,6 @@ import yaml
 from aiohttp.client_exceptions import InvalidURL
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, custom_errors, extensionconfig
-from croniter import CroniterBadCronError
 from discord import app_commands
 from discord.ext import commands
 from functions import logger as function_logger
@@ -734,13 +733,23 @@ class FactoidManager(cogs.MatchCog):
         factoid = await self.get_raw_factoid_entry(
             called_factoid.factoid_db_entry.name, str(ctx.guild.id)
         )
+        aliases_list = await self.get_list_of_aliases(
+            called_factoid.factoid_db_entry.name, str(ctx.guild.id)
+        )
+        aliases_list.remove(called_factoid.original_call_str)
+        print_aliases_list = ", ".join(aliases_list)
+
+        send_message = (
+            f"This will remove the factoid `{called_factoid.original_call_str}`"
+        )
+        if print_aliases_list:
+            send_message += f" and all of it's aliases `({print_aliases_list})` forever"
+
+        send_message += ". Are you sure?"
 
         view = ui.Confirm()
         await view.send(
-            message=(
-                f"This will remove the factoid `{called_factoid.original_call_str}` "
-                "and all of it's aliases forever. Are you sure?"
-            ),
+            message=send_message,
             channel=ctx.channel,
             author=ctx.author,
         )
@@ -759,13 +768,13 @@ class FactoidManager(cogs.MatchCog):
         await self.delete_factoid_call(factoid, str(ctx.guild.id))
 
         # Don't send the confirmation message if this is an alias either
-        await auxiliary.send_confirm_embed(
-            (
-                f"Successfully deleted the factoid `{called_factoid.original_call_str}`"
-                "and all of it's aliases"
-            ),
-            channel=ctx.channel,
+        confirm_message = (
+            f"Successfully deleted the factoid `{called_factoid.original_call_str}`"
         )
+        if print_aliases_list:
+            confirm_message += f" and all of it's aliases `({print_aliases_list})`"
+
+        await auxiliary.send_confirm_embed(message=confirm_message, channel=ctx.channel)
         return True
 
     # -- Getting and responding with a factoid --
@@ -828,10 +837,23 @@ class FactoidManager(cogs.MatchCog):
             not in config.extensions.factoids.restricted_list.value
         ):
             return
-        if not config.extensions.factoids.disable_embeds.value:
-            embed = self.get_embed_from_factoid(factoid)
-        else:
+
+        if config.extensions.factoids.disable_embeds.value:
             embed = None
+        else:
+            try:
+                embed = self.get_embed_from_factoid(factoid)
+            except TypeError as exception:
+                log_channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message=f"Unable to make embed for factoid `{factoid.name}`, sending fallback.",
+                    level=LogLevel.ERROR,
+                    channel=log_channel,
+                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                    exception=exception,
+                )
+                embed = None
+
         # if the json doesn't include non embed argument, then don't send anything
         # otherwise send message text with embed
         try:
@@ -1008,10 +1030,23 @@ class FactoidManager(cogs.MatchCog):
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
-        if not config.extensions.factoids.disable_embeds.value:
-            embed = self.get_embed_from_factoid(factoid)
-        else:
+        if config.extensions.factoids.disable_embeds.value:
             embed = None
+        else:
+            try:
+                embed = self.get_embed_from_factoid(factoid)
+            except TypeError as exception:
+                log_channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message=f"Unable to make embed for factoid `{factoid.name}`, sending fallback.",
+                    level=LogLevel.ERROR,
+                    channel=log_channel,
+                    context=LogContext(
+                        guild=interaction.guild, channel=interaction.channel
+                    ),
+                    exception=exception,
+                )
+                embed = None
         # if the json doesn't include non embed argument, then don't send anything
         # otherwise send message text with embed
         try:
@@ -1126,7 +1161,7 @@ class FactoidManager(cogs.MatchCog):
             try:
                 await aiocron.crontab(job.cron).next()
 
-            except CroniterBadCronError as exception:
+            except ValueError as exception:
                 log_channel = None
                 log_context = None
 
@@ -1203,10 +1238,23 @@ class FactoidManager(cogs.MatchCog):
                 return
 
             # Get_embed accepts job as a factoid object
-            if not config.extensions.factoids.disable_embeds.value:
-                embed = self.get_embed_from_factoid(factoid)
-            else:
+            if config.extensions.factoids.disable_embeds.value:
                 embed = None
+            else:
+                try:
+                    embed = self.get_embed_from_factoid(factoid)
+                except TypeError as exception:
+                    log_channel = config.get("logging_channel")
+                    await self.bot.logger.send_log(
+                        message=(
+                            f"Unable to make embed for factoid `{factoid.name}`, sending fallback."
+                        ),
+                        level=LogLevel.ERROR,
+                        channel=log_channel,
+                        context=LogContext(guild=channel.guild, channel=channel),
+                        exception=exception,
+                    )
+                    embed = None
 
             try:
                 content = factoid.message if not embed else None
@@ -1296,7 +1344,6 @@ class FactoidManager(cogs.MatchCog):
             alias=None,
         )
 
-    @auxiliary.with_typing
     @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
@@ -1605,8 +1652,6 @@ class FactoidManager(cogs.MatchCog):
 
         factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
 
-        aliases_list = await self.get_list_of_aliases(factoid_name, str(ctx.guild.id))
-
         if not factoid.embed_config:
             await auxiliary.send_deny_embed(
                 message=f"There is no embed config for `{factoid_name}`",
@@ -1619,7 +1664,7 @@ class FactoidManager(cogs.MatchCog):
         json_file = discord.File(
             io.StringIO(formatted),
             filename=(
-                f"{aliases_list[0]}-factoid-embed-config-{datetime.datetime.utcnow()}.json"
+                f"{factoid_name.lower()}-factoid-embed-config-{datetime.datetime.utcnow()}.json"
             ),
         )
 
@@ -1677,7 +1722,7 @@ class FactoidManager(cogs.MatchCog):
         # Adds all fields to the embed
         embed.add_field(name="Aliases", value=alias_list)
         embed.add_field(name="Embed", value=bool(factoid.embed_config))
-        embed.add_field(name="Contents", value=factoid.message)
+        embed.add_field(name="Contents", value=factoid.message[:1020])
         embed.add_field(name="Date of creation", value=factoid.time)
 
         # Get all the special properties of a factoid, if any are set
@@ -1749,6 +1794,13 @@ class FactoidManager(cogs.MatchCog):
             factoids = await self.build_list_of_factoids(
                 guild, exclusive_property=property, include_hidden=show_hidden
             )
+
+        if not factoids:
+            embed = auxiliary.prepare_deny_embed(
+                "No factoids could be found matching your filter"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
 
         aliases = self.build_alias_dict_for_given_factoids(factoids)
 
@@ -2328,6 +2380,7 @@ class FactoidManager(cogs.MatchCog):
         )
 
     @auxiliary.with_typing
+    @commands.check(has_manage_factoids_role)
     @commands.guild_only()
     @factoid.command(
         brief="Deletes only an alias",

@@ -78,6 +78,7 @@ class TechSupportBot(commands.Bot):
             )
         )
         self.command_execute_history: dict[str, dict[int, bool]] = {}
+        self.notified_dm_log: list[int] = []
 
         # Loads the file config, which includes things like the token
         self.load_file_config()
@@ -265,6 +266,13 @@ class TechSupportBot(commands.Bot):
             and message.author.id != owner.id
             and not message.author.bot
         ):
+            if message.author.id not in self.notified_dm_log:
+                self.notified_dm_log.append(message.author.id)
+                await message.author.send(
+                    "All DMs sent to this bot are permanently logged and not "
+                    "regularly checked. No responses will be given to any messages."
+                )
+
             attachment_urls = ", ".join(a.url for a in message.attachments)
             content_string = f'"{message.content}"' if message.content else ""
             attachment_string = f"({attachment_urls})" if attachment_urls else ""
@@ -311,7 +319,9 @@ class TechSupportBot(commands.Bot):
         for extension_name, extension_config in self.extension_configs.items():
             if extension_config:
                 # don't attach to guild config if extension isn't configurable
-                extensions_config[extension_name] = extension_config.data
+                extensions_config[extension_name] = munch.munchify(
+                    extension_config.data
+                )
         self.extension_name_list.sort()
 
         config_ = munch.DefaultMunch(None)
@@ -329,6 +339,9 @@ class TechSupportBot(commands.Bot):
         config_.rate_limit.enabled = False
         config_.rate_limit.commands = 4
         config_.rate_limit.time = 10
+        config_.moderation = munch.DefaultMunch(None)
+        config_.moderation.max_warnings = 3
+        config_.moderation.alert_channel = None
 
         config_.extensions = extensions_config
 
@@ -975,24 +988,28 @@ class TechSupportBot(commands.Bot):
         Args:
             interaction (discord.Interaction): The interaction the slash command generated
         """
+        if interaction.type != discord.InteractionType.application_command:
+            return
         embed = discord.Embed()
         embed.add_field(name="User", value=interaction.user)
         embed.add_field(
             name="Channel", value=getattr(interaction.channel, "name", "DM")
         )
         embed.add_field(name="Server", value=getattr(interaction.guild, "name", "None"))
-        embed.add_field(name="Namespace", value=f"{interaction.namespace}")
-        embed.set_footer(text=f"Requested by {interaction.user.id}")
+        parameters = []
+        for parameter in interaction.namespace:
+            parameters.append(f"{parameter[0]}: {parameter[1]}")
 
         log_channel = await self.get_log_channel_from_guild(
             interaction.guild, key="logging_channel"
         )
 
         sliced_content = interaction.command.qualified_name[:100]
-        message = f"Command detected: `/{sliced_content}`"
+        command = f"/{sliced_content} {', '.join(parameters)}".strip()
+        message = f"Command detected: `{command}`"
 
         await self.logger.send_log(
-            message=message,
+            message=message.strip()[:6000],
             level=LogLevel.INFO,
             context=LogContext(guild=interaction.guild, channel=interaction.channel),
             channel=log_channel,
