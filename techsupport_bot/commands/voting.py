@@ -17,7 +17,7 @@ import aiocron
 import discord
 import munch
 import ui
-from core import cogs, extensionconfig
+from core import auxiliary, cogs, extensionconfig
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -32,27 +32,21 @@ async def setup(bot: bot.TechSupportBot) -> None:
     """
     config = extensionconfig.ExtensionConfig()
     config.add(
-        key="votes_channel_id",
-        datatype="str",
-        title="Votes channel",
-        description="The forum channel id as a string to start votes in",
-        default="",
-    )
-    config.add(
-        key="ping_role_ids",
-        datatype="str",
-        title="The list of roles to ping when starting a vote",
+        key="votes_channel_roles",
+        datatype="dict[str, list[str]]",
+        title="Votes channels → allowed roles",
         description=(
-            "The list of roles to ping when starting a vote, which will always be pinged"
+            "Map of forum channel IDs to a list of role IDs. "
+            "User must have at least one role from the list."
         ),
-        default=[],
+        default={},
     )
     config.add(
-        key="votes_channel_ids",
-        datatype="list[str]",
-        title="Votes channels",
-        description="Forum channels where votes may be started",
-        default=[],
+        key="active_role_id",
+        datatype="str",
+        title="Active voter role",
+        description="User must have this role to start or participate in votes",
+        default="",
     )
     await bot.add_cog(Voting(bot=bot, extension_name="voting"))
     bot.add_extension_config("voting", config)
@@ -106,23 +100,40 @@ class Voting(cogs.LoopCog):
                 This also hides who voted for what forever, and triggers it to be deleted
                 from the database upon completion of the vote
         """
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+        channel = await interaction.guild.fetch_channel(int(channel))
 
-        # Check if user is active
-        # Check if user is allowed to vote in given channel
+        if not self.user_can_use_vote_channel(
+            member=interaction.user,
+            channel=channel,
+            config=config,
+        ):
+            embed = auxiliary.prepare_deny_embed(
+                "You do not have rights to start that vote!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
 
         form = ui.VoteCreation()
         await interaction.response.send_modal(form)
         await form.wait()
 
-        config = self.bot.guild_configs[str(interaction.guild.id)]
-        channel = await interaction.guild.fetch_channel(int(channel))
-
+        # Fetch all roles from the guild
         roles = await interaction.guild.fetch_roles()
-        roles_to_ping = " ".join(
-            role.mention
-            for role in roles
-            if str(role.id) in config.extensions.voting.ping_role_ids.value
+
+        # Get the allowed role IDs for this channel from the config
+        channel_role_map: dict[str, list[str]] = (
+            config.extensions.voting.votes_channel_roles.value
         )
+        allowed_role_ids = channel_role_map.get(str(channel.id), [])
+
+        # Build a list of discord.Role objects
+        ping_roles: list[discord.Role] = [
+            role for role in roles if str(role.id) in allowed_role_ids
+        ]
+
+        # Build the mention string
+        roles_to_ping = " ".join(role.mention for role in ping_roles)
 
         vote = await self.bot.models.Votes(
             guild_id=str(interaction.guild.id),
@@ -162,16 +173,25 @@ class Voting(cogs.LoopCog):
         if not config:
             return []
 
-        channel_ids = config.extensions.voting.votes_channel_ids.value
+        member = interaction.user
+        if not isinstance(member, discord.Member):
+            return []
+
+        channel_role_map = config.extensions.voting.votes_channel_roles.value
 
         choices: list[app_commands.Choice[str]] = []
 
-        for channel_id in channel_ids:
+        for channel_id in channel_role_map.keys():
             channel = interaction.guild.get_channel(int(channel_id))
             if not channel:
                 continue
 
-            if current.lower() not in channel.name.lower():
+            if not self.user_can_use_vote_channel(
+                member=member,
+                channel=channel,
+                config=config,
+                name_filter=current,
+            ):
                 continue
 
             choices.append(
@@ -181,7 +201,57 @@ class Voting(cogs.LoopCog):
                 )
             )
 
-        return choices[:25]  # Just in case, 25 is the limit
+            if len(choices) >= 25:
+                break
+
+        return choices
+
+    def user_can_use_vote_channel(
+        self: Self,
+        *,
+        member: discord.Member,
+        channel: discord.abc.GuildChannel,
+        config,
+        name_filter: str | None = None,
+    ) -> bool:
+        """
+        Returns True if the user is allowed to use this channel for voting.
+
+        Conditions:
+        - User has active_role_id
+        - Channel exists
+        - Channel is a ForumChannel
+        - User has at least one role mapped to the channel
+        - Channel name matches name_filter (if provided)
+        """
+        if not isinstance(channel, discord.ForumChannel):
+            return False
+
+        voting_config = config.extensions.voting
+
+        active_role_id: str = voting_config.active_role_id.value
+        channel_role_map: dict[str, list[str]] = voting_config.votes_channel_roles.value
+
+        # Channel must be configured
+        allowed_role_ids = channel_role_map.get(str(channel.id))
+        if not allowed_role_ids:
+            return False
+
+        user_role_ids = {str(role.id) for role in member.roles}
+
+        # Must have the active role
+        if active_role_id not in user_role_ids:
+            return False
+
+        # Must have at least one channel-specific role
+        if not user_role_ids.intersection(allowed_role_ids):
+            return False
+
+        # Optional name filter (autocomplete)
+        if name_filter and name_filter.lower() not in channel.name.lower():
+            return False
+
+        return True
 
     async def search_db_for_vote_by_id(self: Self, vote_id: int) -> munch.Munch:
         """Gets a vote entry from the database by a given vote ID
