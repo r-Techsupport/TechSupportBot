@@ -135,11 +135,17 @@ class Voting(cogs.LoopCog):
         # Build the mention string
         roles_to_ping = " ".join(role.mention for role in ping_roles)
 
+        eligible_voters = await self.calculate_eligible_voters(
+            channel, interaction.guild
+        )
+        eligible_voters = "," + ",".join(str(voter.id) for voter in eligible_voters)
+
         vote = await self.bot.models.Votes(
             guild_id=str(interaction.guild.id),
             message_id="0",
             vote_owner_id=str(interaction.user.id),
             vote_description=form.vote_reason.value,
+            vote_ids_eligible=eligible_voters,
             anonymous=anonymous,
             blind=blind,
         ).create()
@@ -284,14 +290,55 @@ class Voting(cogs.LoopCog):
         ).gino.first()
 
     async def calculate_eligible_voters(
-        self: Self, channel: discord.ForumChannel, guild: discord.Guild
-    ):
-        # Only needs to be run at the start of the vote
+        self: Self,
+        channel: discord.ForumChannel,
+        guild: discord.Guild,
+    ) -> list[discord.Member]:
+        """Gets a list of members that are eligible to vote, based on the forum channel
+
+        Args:
+            self (Self): _description_
+            channel (discord.ForumChannel): The channel the vote is run in
+            guild (discord.Guild): The guild that the vote is run in
+
+        Returns:
+            list[discord.Member]: The list of eligible voters
+        """
         config = self.bot.guild_configs[str(guild.id)]
-        # Get list of role IDs associated with the channel
-        # Get role ID of regular
-        # Produce union of individuals who have both
-        ...
+        voting_config = config.extensions.voting
+
+        channel_role_map: dict[str, list[str]] = voting_config.votes_channel_roles.value
+        active_role_id: str = voting_config.active_role_id.value
+
+        active_role = guild.get_role(int(active_role_id))
+        if not active_role:
+            return []
+
+        channel_role_ids = channel_role_map.get(str(channel.id))
+        if not channel_role_ids:
+            return []
+
+        channel_roles = [
+            guild.get_role(int(role_id))
+            for role_id in channel_role_ids
+            if guild.get_role(int(role_id)) is not None
+        ]
+
+        if not channel_roles:
+            return []
+
+        # Members with the active role
+        active_members = set(active_role.members)
+
+        # Members with ANY channel role
+        channel_members: set[discord.Member] = set()
+        for role in channel_roles:
+            channel_members.update(role.members)
+
+        # Voters must have both roles
+        eligible_members = active_members & channel_members
+
+        return [member for member in eligible_members if not member.bot]
 
     async def build_vote_embed(
         self: Self, vote_id: int, guild: discord.Guild
@@ -324,6 +371,11 @@ class Voting(cogs.LoopCog):
             inline=False,
         )
         embed.add_field(
+            name="Eligible voters",
+            value=await self.make_named_eligible_list(guild, db_entry),
+            inline=False,
+        )
+        embed.add_field(
             name="Votes",
             value=await self.make_fancy_voting_list(
                 guild,
@@ -352,7 +404,27 @@ class Voting(cogs.LoopCog):
         if db_entry.anonymous:
             footer_str += "This vote is anonymous. "
         embed.set_footer(text=footer_str)
+        embed.color = discord.Color.blurple()
         return embed
+
+    async def make_named_eligible_list(
+        self: Self, guild: discord.Guild, db_entry: munch.Munch
+    ) -> str:
+        """This builds a pretty list of eligible voters
+        This uses the vote_ids_eligible
+
+        Args:
+            guild (discord.Guild): The guild the vote is in
+            db_entry (munch.Munch): The db_entry for the vote
+
+        Returns:
+            str: A comma separated string of names
+        """
+        voter_ids = (v for v in db_entry.vote_ids_eligible.split(",") if v)
+        voter_names = [
+            (await guild.fetch_member(int(v))).display_name for v in voter_ids
+        ]
+        return ", ".join(sorted(voter_names, key=str.lower))
 
     async def make_fancy_voting_list(
         self: Self,
@@ -402,6 +474,14 @@ class Voting(cogs.LoopCog):
         user_id = str(interaction.user.id)
 
         db_entry = await self.search_db_for_vote_by_message(str(interaction.message.id))
+
+        # Check if voter is allowed to vote
+        vote_ids_eligible = db_entry.vote_ids_eligible.split(",")
+        if user_id not in vote_ids_eligible:
+            await interaction.response.send_message(
+                "You are not eligible to vote here.", ephemeral=True
+            )
+            return
 
         # Get the correct vote_ids field dynamically
         vote_ids = getattr(db_entry, vote_config["ids_field"]).split(",")
@@ -460,6 +540,14 @@ class Voting(cogs.LoopCog):
             view (discord.ui.View): The view that was interacted with
         """
         db_entry = await self.search_db_for_vote_by_message(str(interaction.message.id))
+
+        # Check if voter is allowed to vote
+        vote_ids_eligible = db_entry.vote_ids_eligible.split(",")
+        if str(interaction.user.id) not in vote_ids_eligible:
+            await interaction.response.send_message(
+                "You are not eligible to vote here.", ephemeral=True
+            )
+            return
 
         db_entry = self.clear_vote_record(db_entry, str(interaction.user.id))
 
