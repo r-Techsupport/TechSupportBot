@@ -17,6 +17,7 @@ class VotingButtonPersistent(discord.ui.View):
         label="Yes, make changes",
         style=discord.ButtonStyle.green,
         custom_id="persistent_voting_view:yes",
+        row=0,
     )
     async def yes_button(
         self: Self, interaction: discord.Interaction, button: discord.ui.Button
@@ -29,12 +30,13 @@ class VotingButtonPersistent(discord.ui.View):
             button (discord.ui.Button): The button object itself
         """
         cog = interaction.client.get_cog("Voting")
-        await cog.register_yes_vote(interaction, self)
+        await cog.register_vote(interaction, self, "yes")
 
     @discord.ui.button(
         label="No, don't make changes",
         style=discord.ButtonStyle.red,
         custom_id="persistent_voting_view:no",
+        row=0,
     )
     async def no_button(
         self: Self, interaction: discord.Interaction, button: discord.ui.Button
@@ -47,12 +49,32 @@ class VotingButtonPersistent(discord.ui.View):
             button (discord.ui.Button): The button object itself
         """
         cog = interaction.client.get_cog("Voting")
-        await cog.register_no_vote(interaction, self)
+        await cog.register_vote(interaction, self, "no")
 
     @discord.ui.button(
-        label="Clear vote",
+        label="Abstain from voting",
+        style=discord.ButtonStyle.blurple,
+        custom_id="persistent_voting_view:abstain",
+        row=1,
+    )
+    async def abstain_button(
+        self: Self, interaction: discord.Interaction, button: discord.ui.Button
+    ) -> None:
+        """The button that is for voting yes.
+        Calls the yes function in the main commands/voting.py file
+
+        Args:
+            interaction (discord.Interaction): The interaction created when the button was pressed
+            button (discord.ui.Button): The button object itself
+        """
+        cog = interaction.client.get_cog("Voting")
+        await cog.register_vote(interaction, self, "abstain")
+
+    @discord.ui.button(
+        label="Remove your vote",
         style=discord.ButtonStyle.grey,
         custom_id="persistent_voting_view:clear",
+        row=1,
     )
     async def clear_button(
         self: Self, interaction: discord.Interaction, button: discord.ui.Button
