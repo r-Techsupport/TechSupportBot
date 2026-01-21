@@ -56,7 +56,6 @@ def perform_op_on_list(equation_list: list) -> int:
 
     Args:
         equation_list (list): The equation in a list form
-
     Raises:
         ValueError: If the operator is not valid, this is raised
 
@@ -82,6 +81,8 @@ def perform_op_on_list(equation_list: list) -> int:
                 running_value = running_value * value
             elif current_operator == "/":
                 running_value = int(running_value / value)
+            elif current_operator == "%":
+                running_value = running_value % value
             else:
                 raise ValueError("Invalid Equation")
     return running_value
@@ -117,7 +118,20 @@ def convert_list_to_ints(raw_list: list) -> list:
     for index, value in enumerate(raw_list):
         if index % 2 == 1:
             continue
-        raw_list[index] = convert_value_to_integer(value)
+        try:
+            # Attempt to convert each value
+            raw_list[index] = convert_value_to_integer(value)
+        except ValueError as exc:
+            # If conversion fails, get the base from the value
+            if value.startswith("0x"):
+                base = "hexadecimal"
+            elif value.startswith("0b"):
+                base = "binary"
+            else:
+                base = "decimal"
+
+            raise ValueError(f"Failed to convert `{value}` from {base} base.") from exc
+
     return raw_list
 
 
@@ -249,7 +263,7 @@ def split_nicely(str_to_split: str) -> list:
         list: A list containing strings of the operators and numbers
     """
 
-    OPERATORS = ["+", "-", "*", "/"]
+    OPERATORS = ["+", "-", "*", "/", "%"]
 
     parsed_list: list = []
     val_buffer = ""
@@ -310,11 +324,17 @@ class Htd(cogs.BaseCog):
         # Convert the list to all ints
         try:
             int_list = convert_list_to_ints(parsed_list.copy())
-        except ValueError:
-            await auxiliary.send_deny_embed(
-                message="Unable to convert value, are you sure it's valid?",
-                channel=ctx.channel,
+        except ValueError as e:
+            # Handle the exception properly and send the embed here
+            embed = auxiliary.prepare_deny_embed(
+                message="Unable to convert value, are you sure it's valid?"
             )
+            embed.add_field(
+                name="Error Details",
+                value=str(e),
+                inline=False,
+            )
+            await ctx.send(embed=embed)
             return
 
         # Attempt to parse the given equation and return a single integer answer
