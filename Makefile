@@ -12,9 +12,11 @@ make sync:
 	python3 -m pipenv sync -d
 
 check-format:
-	black --check ./
-	isort --check-only ./ --profile black
-
+	black $(shell git rev-parse --show-toplevel) --check
+	pylint $(shell git ls-files '*.py')
+	flake8 $(shell git rev-parse --show-toplevel)
+	isort --check-only $(shell git rev-parse --show-toplevel)/ --profile black
+	
 format:
 	black ./
 	isort ./ --profile black
