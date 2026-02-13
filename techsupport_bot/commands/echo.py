@@ -4,20 +4,22 @@ The cog in the file is named:
     MessageEcho
 
 This file contains 2 commands:
-    .echo user
-    .echo channel
+    /echo user
+    /echo channel
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import discord
 from core import auxiliary, cogs
-from discord.ext import commands
+from discord import app_commands
 from functions import logger as function_logger
 
 if TYPE_CHECKING:
     import bot
+    import munch
 
 
 async def setup(bot: bot.TechSupportBot) -> None:
@@ -34,51 +36,44 @@ class MessageEcho(cogs.BaseCog):
     The class that holds the echo commands
     """
 
-    @commands.check(auxiliary.bot_admin_check_context)
-    @commands.group(
-        brief="Executes an echo bot command", description="Executes an echo bot command"
+    echo_group: app_commands.Group = app_commands.Group(
+        name="echo",
+        description="Command Group for Echo Commands",
+        extras={"module": "echo"},
     )
-    async def echo(self: Self, ctx: commands.Context) -> None:
-        """The bare .echo command. This does nothing but generate the help message
 
-        Args:
-            ctx (commands.Context): The context in which the command was run in
-        """
-        return
-
-    @auxiliary.with_typing
-    @echo.command(
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @echo_group.command(
         name="channel",
         description="Echos a message to a channel",
-        usage="[channel-id] [message]",
+        extras={
+            "brief": "Echos a message to a channel",
+            "usage": "#channel [message]",
+            "module": "echo",
+        },
     )
     async def echo_channel(
-        self: Self, ctx: commands.Context, channel_id: int, *, message: str
+        self: Self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel,
+        message: str,
     ) -> None:
         """Sends a message to a specified channel.
 
-        This is a command and should be accessed via Discord.
-
         Args:
-            ctx (commands.Context): the context object for the calling message
-            channel_id (int): the ID of the channel to send the echoed message
+            interaction (discord.Interaction): The interaction that called this command
+            channel (discord.TextChannel): The channel to send the echoed message to
             message (str): the message to echo
         """
-        channel = self.bot.get_channel(channel_id)
-        if not channel:
-            await auxiliary.send_deny_embed(
-                message="I couldn't find that channel", channel=ctx.channel
-            )
-            return
-
+        await interaction.response.defer(ephemeral=True)
         sent_message = await channel.send(content=message)
-
-        await auxiliary.send_confirm_embed(message="Message sent", channel=ctx.channel)
+        await interaction.followup.send(
+            embed=auxiliary.prepare_confirm_embed("Message sent"), ephemeral=True
+        )
 
         config = self.bot.guild_configs[str(channel.guild.id)]
-
-        # Don't allow logging if extension is disabled
-        if "logger" not in config.enabled_extensions:
+        logging_payload = build_echo_channel_log_payload(config, message)
+        if not logging_payload:
             return
 
         target_logging_channel = await function_logger.pre_log_checks(
@@ -90,38 +85,73 @@ class MessageEcho(cogs.BaseCog):
         await function_logger.send_message(
             self.bot,
             sent_message,
-            ctx.author,
+            interaction.user,
             channel,
             target_logging_channel,
-            content_override=message,
-            special_flags=["Echo command"],
+            content_override=logging_payload["content_override"],
+            special_flags=logging_payload["special_flags"],
         )
 
-    @auxiliary.with_typing
-    @echo.command(
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @echo_group.command(
         name="user",
         description="Echos a message to a user",
-        usage="[user-id] [message]",
+        extras={
+            "brief": "Echos a message to a user",
+            "usage": "@user [message]",
+            "module": "echo",
+        },
     )
     async def echo_user(
-        self: Self, ctx: commands.Context, user_id: int, *, message: str
+        self: Self, interaction: discord.Interaction, user: discord.User, message: str
     ) -> None:
         """Sends a message to a specified user.
 
-        This is a command and should be accessed via Discord.
-
         Args:
-            ctx (commands.Context): the context object for the calling message
-            user_id (int): the ID of the user to send the echoed message
+            interaction (discord.Interaction): The interaction that called this command
+            user (discord.User): The user to send the echoed message to
             message (str): the message to echo
         """
-        user = await self.bot.fetch_user(int(user_id))
-        if not user:
-            await auxiliary.send_deny_embed(
-                message="I couldn't find that user", channel=ctx.channel
-            )
-            return
-
+        await interaction.response.defer(ephemeral=True)
         await user.send(content=message)
+        await interaction.followup.send(
+            embed=auxiliary.prepare_confirm_embed("Message sent"), ephemeral=True
+        )
 
-        await auxiliary.send_confirm_embed(message="Message sent", channel=ctx.channel)
+
+def normalize_echo_message(message: str) -> str:
+    """Normalizes user supplied message text for consistent logging payloads.
+
+    Args:
+        message (str): The message provided to the echo command
+
+    Returns:
+        str: A non-empty message string suitable for log output
+    """
+    normalized_message = message.strip()
+    if len(normalized_message) == 0:
+        return "No content"
+    return normalized_message
+
+
+def build_echo_channel_log_payload(
+    config: munch.Munch, message: str
+) -> dict[str, str | list[str]] | None:
+    """Builds the payload needed by the logger extension for /echo channel.
+
+    Args:
+        config (munch.Munch): The guild config for the channel where the echo happened
+        message (str): The message that was echoed
+
+    Returns:
+        dict[str, str | list[str]] | None: A prepared payload for logger calls.
+            Returns None when the logger extension is disabled.
+    """
+    enabled_extensions = set(config.enabled_extensions)
+    if "logger" not in enabled_extensions:
+        return None
+
+    return {
+        "content_override": normalize_echo_message(message),
+        "special_flags": ["Echo command"],
+    }

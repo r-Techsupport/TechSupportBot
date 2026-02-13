@@ -1,132 +1,106 @@
 """
 This is a file to test the extensions/hug.py file
-This contains 5 tests
+This contains helper function tests for hug.py
 """
 
 from __future__ import annotations
 
-import importlib
 from typing import Self
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
-import pytest
 from commands import hug
-from core import auxiliary
-from tests import config_for_tests, helpers
 
 
-def setup_local_extension(bot: helpers.MockBot = None) -> hug.Hugger:
-    """A simple function to setup an instance of the hug extension
+class Test_IsValidHugTarget:
+    """Tests for is_valid_hug_target"""
 
-    Args:
-        bot (helpers.MockBot, optional): A fake bot object. Should be used if using a
-            fake_discord_env in the test. Defaults to None.
+    def test_valid_target(self: Self) -> None:
+        """Ensures different author and target IDs are valid"""
+        # Step 1 - Call the function
+        result = hug.is_valid_hug_target(1, 2)
 
-    Returns:
-        hug.Hugger: The instance of the Hugger class
-    """
-    with patch("asyncio.create_task", return_value=None):
-        return hug.Hugger(bot)
+        # Step 2 - Assert that everything works
+        assert result
+
+    def test_invalid_target(self: Self) -> None:
+        """Ensures identical author and target IDs are invalid"""
+        # Step 1 - Call the function
+        result = hug.is_valid_hug_target(1, 1)
+
+        # Step 2 - Assert that everything works
+        assert not result
 
 
-class Test_CheckEligibility:
-    """A set of tests to test split_nicely"""
+class Test_NormalizeHugTemplates:
+    """Tests for normalize_hug_templates"""
 
-    def test_eligible(self: Self) -> None:
-        """A test to ensure that when 2 different members are passed, True is returned"""
-        # Step 1 - Setup env
-        discord_env = config_for_tests.FakeDiscordEnv()
-        hugger = setup_local_extension(discord_env.bot)
-
-        # Step 2 - Call the function
-        result = hugger.check_hug_eligibility(
-            author=discord_env.person1, user_to_hug=discord_env.person2
+    def test_normalize_hug_templates(self: Self) -> None:
+        """Ensures blank templates are removed and values are trimmed"""
+        # Step 1 - Call the function
+        normalized = hug.normalize_hug_templates(
+            ["  one  ", "", "two", "   ", "three  "]
         )
 
-        # Step 3 - Assert that everything works
-        assert result is True
+        # Step 2 - Assert that everything works
+        assert normalized == ["one", "two", "three"]
 
-    def test_ineligible(self: Self) -> None:
-        """A test to ensure that when the same person is passed twice, False is returned"""
-        # Step 1 - Setup env
-        discord_env = config_for_tests.FakeDiscordEnv()
-        hugger = setup_local_extension(discord_env.bot)
 
-        # Step 2 - Call the function
-        result = hugger.check_hug_eligibility(
-            author=discord_env.person1, user_to_hug=discord_env.person1
+class Test_PickHugTemplate:
+    """Tests for pick_hug_template"""
+
+    def test_pick_hug_template(self: Self) -> None:
+        """Ensures a template can be selected from a non-empty list"""
+        # Step 1 - Call the function
+        with patch("commands.hug.random.choice", return_value="selected"):
+            selected = hug.pick_hug_template(["one", "two"])
+
+        # Step 2 - Assert that everything works
+        assert selected == "selected"
+
+    def test_pick_hug_template_empty(self: Self) -> None:
+        """Ensures empty template lists return no selected template"""
+        # Step 1 - Call the function
+        selected = hug.pick_hug_template([])
+
+        # Step 2 - Assert that everything works
+        assert selected is None
+
+
+class Test_BuildHugPhrase:
+    """Tests for build_hug_phrase"""
+
+    def test_build_hug_phrase(self: Self) -> None:
+        """Ensures hug phrase placeholders are formatted correctly"""
+        # Step 1 - Call the function
+        phrase = hug.build_hug_phrase(
+            "{user_giving_hug} hugs {user_to_hug}",
+            "<@1>",
+            "<@2>",
         )
 
-        # Step 3 - Assert that everything works
-        assert result is False
+        # Step 2 - Assert that everything works
+        assert phrase == "<@1> hugs <@2>"
 
 
-class Test_GeneratePhrase:
-    """A set of tests to test generate_hug_phrase"""
+class Test_BuildHugFailureMessage:
+    """Tests for build_hug_failure_message"""
 
-    def test_string_generation(self: Self) -> None:
-        """A test to ensure that string generation is working correctly"""
-        # Step 1 - Setup env
-        discord_env = config_for_tests.FakeDiscordEnv()
-        hugger = setup_local_extension(discord_env.bot)
-        hugger.HUGS_SELECTION = ["{user_giving_hug} squeezes {user_to_hug} to death"]
+    def test_build_hug_failure_message(self: Self) -> None:
+        """Ensures failure message text is stable"""
+        # Step 1 - Call the function
+        message = hug.build_hug_failure_message()
 
-        # Step 2 - Call the function
-        output = hugger.generate_hug_phrase(
-            author=discord_env.person1, user_to_hug=discord_env.person2
-        )
-
-        # Step 3 - Assert that everything works
-        assert output == "<@1> squeezes <@2> to death"
+        # Step 2 - Assert that everything works
+        assert message == "Let's be serious"
 
 
-class Test_HugCommand:
-    """A set of tests to test hug_command"""
+class Test_BuildHugEmbedData:
+    """Tests for build_hug_embed_data"""
 
-    @pytest.mark.asyncio
-    async def test_failure(self: Self) -> None:
-        """A test to ensure that nothing is called when the eligiblity is False"""
-        # Step 1 - Setup env
-        discord_env = config_for_tests.FakeDiscordEnv()
-        hugger = setup_local_extension(discord_env.bot)
-        hugger.check_hug_eligibility = MagicMock(return_value=False)
-        auxiliary.send_deny_embed = AsyncMock()
-        discord_env.context.send = AsyncMock()
+    def test_build_hug_embed_data(self: Self) -> None:
+        """Ensures embed title/description payload is formed correctly"""
+        # Step 1 - Call the function
+        payload = hug.build_hug_embed_data("hug text")
 
-        # Step 2 - Call the function
-        await hugger.hug_command(discord_env.context, discord_env.person2)
-
-        # Step 3 - Assert that everything works
-        auxiliary.send_deny_embed.assert_called_once_with(
-            message="Let's be serious",
-            channel=discord_env.context.channel,
-        )
-        discord_env.context.send.assert_not_called()
-
-        # Step 4 - Cleanup
-        importlib.reload(auxiliary)
-
-    @pytest.mark.asyncio
-    async def test_success(self: Self) -> None:
-        """A test to ensure that send is properly called"""
-        # Step 1 - Setup env
-        discord_env = config_for_tests.FakeDiscordEnv()
-        hugger = setup_local_extension(discord_env.bot)
-        hugger.check_hug_eligibility = MagicMock(return_value=True)
-        hugger.generate_hug_phrase = MagicMock()
-        auxiliary.send_deny_embed = AsyncMock()
-        auxiliary.generate_basic_embed = MagicMock(return_value="Embed")
-        auxiliary.construct_mention_string = MagicMock(return_value="String")
-        discord_env.context.send = AsyncMock()
-
-        # Step 2 - Call the function
-        await hugger.hug_command(discord_env.context, discord_env.person2)
-
-        # Step 3 - Assert that everything works
-        auxiliary.send_deny_embed.assert_not_called()
-        discord_env.context.send.assert_called_once_with(
-            embed="Embed", content="String"
-        )
-
-        # Step 4 - Cleanup
-        importlib.reload(auxiliary)
+        # Step 2 - Assert that everything works
+        assert payload == {"title": "You've been hugged!", "description": "hug text"}

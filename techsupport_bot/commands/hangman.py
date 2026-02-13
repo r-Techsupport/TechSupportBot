@@ -16,6 +16,9 @@ if TYPE_CHECKING:
     import bot
 
 
+MAX_START_WORD_LENGTH = 84
+
+
 async def setup(bot: bot.TechSupportBot) -> None:
     """Loading the HangMan plugin into the bot
 
@@ -262,48 +265,240 @@ class HangmanGame:
         self.max_guesses += num_guesses
 
 
-async def can_stop_game(ctx: commands.Context) -> bool:
-    """
-    Checks if a user has the ability to stop the running game
+def normalize_secret_word(word: str) -> str:
+    """Normalizes a word used for new game creation.
 
     Args:
-        ctx (commands.Context): The context in which the stop command was run
-
-    Raises:
-        AttributeError: The Hangman game could not be found
-        CommandError: No admin roles have been defined in the config
-        MissingAnyRole: The doesn't have the admin roles needed to stop the game
+        word (str): The raw word supplied by a user
 
     Returns:
-        bool: True the user can stop the game, False they cannot
+        str: The normalized lower-case word without surrounding whitespace
     """
-    cog = ctx.bot.get_cog("HangmanCog")
-    if not cog:
-        raise AttributeError("could not find hangman cog when checking game states")
+    return word.strip().lower()
 
-    game_data = cog.games.get(ctx.channel.id)
-    if not game_data:
-        return True
 
-    user = game_data.get("user")
-    if getattr(user, "id", 0) == ctx.author.id:
-        return True
+def validate_start_word_input(
+    word: str, max_length: int = MAX_START_WORD_LENGTH
+) -> str | None:
+    """Checks a start word for length and alphabetical requirements.
 
-    config = ctx.bot.guild_configs[str(ctx.guild.id)]
-    roles = []
-    for role_name in config.extensions.hangman.hangman_roles.value:
-        role = discord.utils.get(ctx.guild.roles, name=role_name)
-        if not role:
-            continue
-        roles.append(role)
+    Args:
+        word (str): The potential secret word for a new game
+        max_length (int, optional): The max allowed word length. Defaults to 84.
 
-    if not roles:
-        raise commands.CommandError("no hangman admin roles found")
+    Returns:
+        str | None: A deny reason if invalid, otherwise None
+    """
+    normalized_word = normalize_secret_word(word)
 
-    if not any(role in ctx.author.roles for role in roles):
-        raise commands.MissingAnyRole(roles)
+    if len(normalized_word) == 0:
+        return "A word must be provided"
 
-    return True
+    if len(normalized_word) > max_length:
+        return f"The word must be {max_length} characters or fewer"
+
+    if not normalized_word.isalpha() or "_" in normalized_word:
+        return "The word can only contain letters"
+
+    return None
+
+
+def validate_letter_guess_input(letter: str) -> str | None:
+    """Validates a single-letter guess.
+
+    Args:
+        letter (str): The guessed letter
+
+    Returns:
+        str | None: A deny reason if invalid, otherwise None
+    """
+    normalized_letter = letter.strip()
+
+    if len(normalized_letter) != 1:
+        return "You can only guess a single letter"
+
+    if not normalized_letter.isalpha():
+        return "You can only guess alphabetic letters"
+
+    return None
+
+
+def validate_solve_guess_input(
+    word: str, max_length: int = MAX_START_WORD_LENGTH
+) -> str | None:
+    """Validates a full-word solve guess.
+
+    Args:
+        word (str): The proposed full-word answer
+        max_length (int, optional): The max allowed guess length. Defaults to 84.
+
+    Returns:
+        str | None: A deny reason if invalid, otherwise None
+    """
+    normalized_word = normalize_secret_word(word)
+
+    if len(normalized_word) == 0:
+        return "A word must be provided"
+
+    if len(normalized_word) > max_length:
+        return f"The guessed word must be {max_length} characters or fewer"
+
+    if not normalized_word.isalpha():
+        return "The guessed word can only contain letters"
+
+    return None
+
+
+def decide_start_conflict(caller_id: int, owner_id: int) -> str:
+    """Determines what action should happen when a game already exists.
+
+    Args:
+        caller_id (int): The user id of the command caller
+        owner_id (int): The user id of the existing game owner
+
+    Returns:
+        str: "confirm-overwrite" when caller is owner, otherwise "deny"
+    """
+    if caller_id == owner_id:
+        return "confirm-overwrite"
+
+    return "deny"
+
+
+def evaluate_solve_attempt(secret_word: str, guess_word: str) -> bool:
+    """Evaluates whether a full-word solve attempt is correct.
+
+    Args:
+        secret_word (str): The secret game word
+        guess_word (str): The user submitted guess
+
+    Returns:
+        bool: True when the guess matches the secret word, otherwise False
+    """
+    normalized_secret = normalize_secret_word(secret_word)
+    normalized_guess = normalize_secret_word(guess_word)
+    return normalized_secret == normalized_guess
+
+
+def build_letter_guess_result(letter: str, correct: bool) -> str:
+    """Builds a user-facing result message for a single-letter guess.
+
+    Args:
+        letter (str): The guessed letter
+        correct (bool): Whether the guess was found in the word
+
+    Returns:
+        str: The status message for the guess
+    """
+    normalized_letter = letter.strip().lower()
+    if correct:
+        return f"Found `{normalized_letter}`"
+
+    return f"Letter `{normalized_letter}` not in word"
+
+
+def build_solve_result(guess_word: str, correct: bool) -> str:
+    """Builds a user-facing result message for a full-word solve guess.
+
+    Args:
+        guess_word (str): The guessed word
+        correct (bool): Whether the full-word guess is correct
+
+    Returns:
+        str: The status message for the guess
+    """
+    normalized_word = normalize_secret_word(guess_word)
+    if correct:
+        return f"`{normalized_word}` is correct"
+
+    return f"`{normalized_word}` is not the word"
+
+
+def build_add_guesses_result(number_of_guesses: int, remaining_guesses: int) -> str:
+    """Builds a user-facing result message for adding more guesses.
+
+    Args:
+        number_of_guesses (int): Number of guesses that were added
+        remaining_guesses (int): Remaining guesses after update
+
+    Returns:
+        str: A formatted status message
+    """
+    return (
+        f"{number_of_guesses} guesses have been added! "
+        f"Total guesses remaining: {remaining_guesses}"
+    )
+
+
+def build_stop_permission_denial(
+    caller_id: int,
+    owner_id: int | None,
+    configured_role_names: list[str],
+    caller_role_names: list[str],
+) -> str | None:
+    """Determines if a non-owner is allowed to stop a running game.
+
+    Args:
+        caller_id (int): The user id of the command caller
+        owner_id (int | None): The owner id for the active game
+        configured_role_names (list[str]): Role names from hangman config
+        caller_role_names (list[str]): Role names that caller currently has
+
+    Returns:
+        str | None: Deny reason if caller cannot stop the game, otherwise None
+    """
+    if owner_id is not None and caller_id == owner_id:
+        return None
+
+    filtered_config_roles = {
+        name.strip().lower() for name in configured_role_names if len(name.strip()) > 0
+    }
+    if len(filtered_config_roles) == 0:
+        return "No hangman admin roles are configured"
+
+    normalized_user_roles = {
+        name.strip().lower() for name in caller_role_names if len(name.strip()) > 0
+    }
+
+    if filtered_config_roles.isdisjoint(normalized_user_roles):
+        return "You are not allowed to stop this game"
+
+    return None
+
+
+def build_game_display_data(
+    game: HangmanGame, owner: discord.Member
+) -> dict[str, object]:
+    """Builds display fields for a hangman embed.
+
+    Args:
+        game (HangmanGame): The hangman game to render
+        owner (discord.Member): The user that started the game
+
+    Returns:
+        dict[str, object]: String fields and style data for embed rendering
+    """
+    help_text = "Use /hangman commands to keep playing"
+    display_data = {
+        "title": f"`{game.draw_word_state()}`",
+        "description": f"{help_text}\n\n```{game.draw_hang_state()}```",
+        "remaining_guesses": game.remaining_guesses(),
+        "guessed_letters": ", ".join(sorted(game.guesses)) or "None",
+    }
+
+    if game.failed:
+        display_data["color"] = discord.Color.red()
+        display_data["footer"] = f"Game over! The word was `{game.word}`!"
+        return display_data
+
+    if game.finished:
+        display_data["color"] = discord.Color.green()
+        display_data["footer"] = "Word guessed! Nice job!"
+        return display_data
+
+    display_data["color"] = discord.Color.gold()
+    display_data["footer"] = f"Game started by {owner}"
+    return display_data
 
 
 class HangmanCog(cogs.BaseCog):
@@ -321,18 +516,6 @@ class HangmanCog(cogs.BaseCog):
     def __init__(self: Self, bot: commands.Bot) -> None:
         super().__init__(bot)
         self.games = {}
-
-    @commands.guild_only()
-    @commands.group(
-        name="hangman", description="Runs a hangman command", aliases=["hm"]
-    )
-    async def hangman(self: Self, ctx: commands.Context) -> None:
-        """The bare .hangman command. This does nothing but generate the help message
-
-        Args:
-            ctx (commands.Context): The context in which the command was run in
-        """
-        return
 
     hangman_app_group: app_commands.Group = app_commands.Group(
         name="hangman", description="Command Group for the Hangman Extension"
@@ -352,22 +535,21 @@ class HangmanCog(cogs.BaseCog):
             interaction (discord.Interaction): The interaction object from Discord.
             word (str): The word to start the Hangman game with.
         """
-        # Ensure only the command's author can see this interaction
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=False)
 
-        # Check if the provided word is too long
-        if len(word) >= 85:
-            await interaction.followup.send(
-                "The word must be less than 256 characters.", ephemeral=True
-            )
+        invalid_word_message = validate_start_word_input(word)
+        if invalid_word_message:
+            await interaction.followup.send(invalid_word_message)
             return
 
-        # Check if a game is already active in the channel
+        normalized_word = normalize_secret_word(word)
+
         game_data = self.games.get(interaction.channel_id)
         if game_data:
-            # Check if the game owner wants to overwrite the current game
-            user = game_data.get("user")
-            if user.id == interaction.user.id:
+            owner = game_data.get("user")
+            conflict_action = decide_start_conflict(interaction.user.id, owner.id)
+
+            if conflict_action == "confirm-overwrite":
                 view = ui.Confirm()
                 await view.send(
                     message="There is a current game in progress. Do you want to end it?",
@@ -379,28 +561,23 @@ class HangmanCog(cogs.BaseCog):
                     ui.ConfirmResponse.TIMEOUT,
                     ui.ConfirmResponse.DENIED,
                 ]:
-                    await interaction.followup.send(
-                        "The current game was not ended.", ephemeral=True
-                    )
+                    await interaction.followup.send("The current game was not ended.")
                     return
 
-                # Remove the existing game
                 del self.games[interaction.channel_id]
             else:
                 await interaction.followup.send(
-                    "A game is already in progress for this channel.", ephemeral=True
+                    "A game is already in progress for this channel."
                 )
                 return
 
-        # Validate the provided word
         try:
-            game = HangmanGame(word=word.lower())
-        except ValueError as e:
-            await interaction.followup.send(f"Invalid word: {e}", ephemeral=True)
+            game = HangmanGame(word=normalized_word)
+        except ValueError as exception:
+            await interaction.followup.send(f"Invalid word: {exception}")
             return
 
-        # Create and send the initial game embed
-        embed = await self.generate_game_embed(interaction, game, interaction.user)
+        embed = await self.generate_game_embed(game, interaction.user)
         message = await interaction.channel.send(embed=embed)
         self.games[interaction.channel_id] = {
             "user": interaction.user,
@@ -410,143 +587,182 @@ class HangmanCog(cogs.BaseCog):
         }
 
         await interaction.followup.send(
-            "The Hangman game has started with a hidden word!", ephemeral=True
+            "The Hangman game has started with a hidden word!"
         )
 
-    @hangman.command(
+    @hangman_app_group.command(
         name="guess",
         description="Guesses a letter for the current hangman game",
-        usage="[letter]",
+        extras={"module": "hangman"},
     )
-    async def guess(self: Self, ctx: commands.Context, letter: str) -> None:
-        """Discord command to guess a letter in a running hangman game
+    async def guess(self: Self, interaction: discord.Interaction, letter: str) -> None:
+        """Guesses a letter in a running hangman game.
 
         Args:
-            ctx (commands.Context): The context in which the command was run in
-            letter (str): The letter the user is trying to guess
+            interaction (discord.Interaction): The interaction that called this command
+            letter (str): The guessed letter
         """
-        game_data = self.games.get(ctx.channel.id)
+        await interaction.response.defer(ephemeral=False)
+
+        game_data = self.games.get(interaction.channel.id)
         if not game_data:
-            await auxiliary.send_deny_embed(
-                message="There is no game in progress for this channel",
-                channel=ctx.channel,
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    "There is no game in progress for this channel"
+                )
             )
             return
 
-        if ctx.author == game_data.get("user"):
-            await auxiliary.send_deny_embed(
-                message="You cannot guess letters because you started this game!",
-                channel=ctx.channel,
+        if interaction.user == game_data.get("user"):
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    "You cannot guess letters because you started this game!"
+                )
             )
             return
 
-        if len(letter) > 1 or not letter.isalpha():
-            await auxiliary.send_deny_embed(
-                message="You can only guess a letter", channel=ctx.channel
+        invalid_guess_message = validate_letter_guess_input(letter)
+        if invalid_guess_message:
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(invalid_guess_message)
             )
             return
 
         game = game_data.get("game")
-        if game.guessed(letter):
-            await auxiliary.send_deny_embed(
-                message="That letter has already been guessed", channel=ctx.channel
+        normalized_letter = letter.strip().lower()
+        if game.guessed(normalized_letter):
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    "That letter has already been guessed"
+                )
             )
             return
 
-        correct = game.guess(letter)
-        embed = await self.generate_game_embed(ctx, game, game_data.get("user"))
+        correct = game.guess(normalized_letter)
+        embed = await self.generate_game_embed(game, game_data.get("user"))
         message = game_data.get("message")
         await message.edit(embed=embed)
 
-        content = f"Found `{letter}`" if correct else f"Letter `{letter}` not in word"
+        content = build_letter_guess_result(normalized_letter, correct)
         if game.finished:
             content = f"{content} - game finished! The word was {game.word}"
-            del self.games[ctx.channel.id]
-        await ctx.send(content=content)
+            del self.games[interaction.channel.id]
+        await interaction.followup.send(content=content)
+
+    @hangman_app_group.command(
+        name="solve",
+        description="Guesses the full word for the current hangman game",
+        extras={"module": "hangman"},
+    )
+    async def solve(self: Self, interaction: discord.Interaction, word: str) -> None:
+        """Attempts to solve a running hangman game with a full-word guess.
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            word (str): The full-word guess
+        """
+        await interaction.response.defer(ephemeral=False)
+
+        game_data = self.games.get(interaction.channel.id)
+        if not game_data:
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    "There is no game in progress for this channel"
+                )
+            )
+            return
+
+        if interaction.user == game_data.get("user"):
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    "You cannot guess the word because you started this game!"
+                )
+            )
+            return
+
+        invalid_guess_message = validate_solve_guess_input(word)
+        if invalid_guess_message:
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(invalid_guess_message)
+            )
+            return
+
+        game = game_data.get("game")
+        normalized_word = normalize_secret_word(word)
+        correct = evaluate_solve_attempt(game.word, normalized_word)
+
+        if correct:
+            for letter in game.word:
+                game.guesses.add(letter.lower())
+        else:
+            game.step += 1
+
+        embed = await self.generate_game_embed(game, game_data.get("user"))
+        message = game_data.get("message")
+        await message.edit(embed=embed)
+
+        content = build_solve_result(normalized_word, correct)
+        if game.finished:
+            content = f"{content} - game finished! The word was {game.word}"
+            del self.games[interaction.channel.id]
+        await interaction.followup.send(content=content)
 
     async def generate_game_embed(
         self: Self,
-        ctx_or_interaction: discord.Interaction | commands.Context,
         game: HangmanGame,
         owner: discord.Member,
     ) -> discord.Embed:
-        """
-        Generates an embed representing the current state of the Hangman game.
+        """Generates an embed representing the current state of the Hangman game.
 
         Args:
-            ctx_or_interaction (discord.Interaction | commands.Context):
-                The context or interaction used to generate the embed, which provides
-                information about the user and the message.
-            game (HangmanGame): The current instance of the Hangman game, used to
-                retrieve game state, including word state, remaining guesses, and the
-                hangman drawing.
+            game (HangmanGame): The current game to render
             owner (discord.Member): The owner of the game
 
         Returns:
-            discord.Embed: An embed displaying the current game state, including
-                the hangman drawing, word state, remaining guesses, guessed letters,
-                and the footer indicating the game status and creator.
+            discord.Embed: The embed for the current game state
         """
-        hangman_drawing = game.draw_hang_state()
-        hangman_word = game.draw_word_state()
-        # Determine the guild ID
-        guild_id = None
-        if isinstance(ctx_or_interaction, commands.Context):
-            guild_id = ctx_or_interaction.guild.id if ctx_or_interaction.guild else None
-        elif isinstance(ctx_or_interaction, discord.Interaction):
-            guild_id = ctx_or_interaction.guild_id
-
-        # Fetch the prefix manually since get_prefix expects a Message
-        if guild_id and str(guild_id) in self.bot.guild_configs:
-            prefix = self.bot.guild_configs[str(guild_id)].command_prefix
-        else:
-            prefix = self.file_config.bot_config.default_prefix
+        display_data = build_game_display_data(game, owner)
 
         embed = discord.Embed(
-            title=f"`{hangman_word}`",
-            description=(
-                f"Type `{prefix}help hangman` for more info\n\n"
-                f"```{hangman_drawing}```"
-            ),
+            title=display_data["title"],
+            description=display_data["description"],
+            color=display_data["color"],
         )
 
-        if game.failed:
-            embed.color = discord.Color.red()
-            footer_text = f"Game over! The word was `{game.word}`!"
-        elif game.finished:
-            embed.color = discord.Color.green()
-            footer_text = "Word guessed! Nice job!"
-        else:
-            embed.color = discord.Color.gold()
+        if not game.finished:
             embed.add_field(
-                name=f"Remaining Guesses {str(game.remaining_guesses())}",
+                name=f"Remaining Guesses {str(display_data['remaining_guesses'])}",
                 value="\u200b",
                 inline=False,
             )
             embed.add_field(
                 name="Guessed Letters",
-                value=", ".join(game.guesses) or "None",
+                value=display_data["guessed_letters"],
                 inline=False,
             )
 
-            footer_text = f"Game started by {owner}"
-
-        embed.set_footer(text=footer_text)
+        embed.set_footer(text=display_data["footer"])
         return embed
 
-    @hangman.command(name="redraw", description="Redraws the current hangman game")
-    async def redraw(self: Self, ctx: commands.Context) -> None:
-        """A discord command to make a new embed with a new drawing of the running hangman game
-        This redraws the hangman game being played in the current channel
+    @hangman_app_group.command(
+        name="redraw",
+        description="Redraws the current hangman game",
+        extras={"module": "hangman"},
+    )
+    async def redraw(self: Self, interaction: discord.Interaction) -> None:
+        """Makes a new embed with a new drawing of the running hangman game.
 
         Args:
-            ctx (commands.Context): The context in which the command was in
+            interaction (discord.Interaction): The interaction in which the command was used
         """
-        game_data = self.games.get(ctx.channel.id)
+        await interaction.response.defer(ephemeral=False)
+
+        game_data = self.games.get(interaction.channel.id)
         if not game_data:
-            await auxiliary.send_deny_embed(
-                message="There is no game in progress for this channel",
-                channel=ctx.channel,
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    "There is no game in progress for this channel"
+                )
             )
             return
 
@@ -557,104 +773,128 @@ class HangmanCog(cogs.BaseCog):
             pass
 
         embed = await self.generate_game_embed(
-            ctx, game_data.get("game"), game_data.get("user")
+            game_data.get("game"), game_data.get("user")
         )
-        new_message = await ctx.send(embed=embed)
+        new_message = await interaction.channel.send(embed=embed)
         game_data["message"] = new_message
 
-    @commands.check(can_stop_game)
-    @hangman.command(name="stop", description="Stops the current channel game")
-    async def stop(self: Self, ctx: commands.Context) -> None:
-        """Checks if a user can stop the hangman game in the current channel
-        If they can, the game is stopped
+        await interaction.followup.send("The game board has been redrawn")
+
+    @hangman_app_group.command(
+        name="stop",
+        description="Stops the current channel game",
+        extras={"module": "hangman"},
+    )
+    async def stop(self: Self, interaction: discord.Interaction) -> None:
+        """Stops the running hangman game in the current channel.
 
         Args:
-            ctx (commands.Context): The context in which the command was run in
+            interaction (discord.Interaction): The interaction in which stop was run
         """
-        game_data = self.games.get(ctx.channel.id)
+        await interaction.response.defer(ephemeral=False)
+
+        game_data = self.games.get(interaction.channel.id)
         if not game_data:
-            await auxiliary.send_deny_embed(
-                message="There is no game in progress for this channel",
-                channel=ctx.channel,
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    "There is no game in progress for this channel"
+                )
+            )
+            return
+
+        game_owner = game_data.get("user")
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+        configured_roles = config.extensions.hangman.hangman_roles.value
+        caller_roles = [role.name for role in getattr(interaction.user, "roles", [])]
+
+        deny_reason = build_stop_permission_denial(
+            caller_id=interaction.user.id,
+            owner_id=getattr(game_owner, "id", None),
+            configured_role_names=configured_roles,
+            caller_role_names=caller_roles,
+        )
+        if deny_reason:
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(deny_reason)
             )
             return
 
         view = ui.Confirm()
         await view.send(
             message="Are you sure you want to end the current game?",
-            channel=ctx.channel,
-            author=ctx.author,
+            channel=interaction.channel,
+            author=interaction.user,
         )
         await view.wait()
         if view.value is ui.ConfirmResponse.TIMEOUT:
             return
         if view.value is ui.ConfirmResponse.DENIED:
-            await auxiliary.send_deny_embed(
-                "The current game was not ended", channel=ctx.channel
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed("The current game was not ended")
             )
             return
 
         game = game_data.get("game")
         word = getattr(game, "word", "???")
 
-        del self.games[ctx.channel.id]
-        await auxiliary.send_confirm_embed(
-            message=f"That game is now finished. The word was: `{word}`",
-            channel=ctx.channel,
+        del self.games[interaction.channel.id]
+        await interaction.followup.send(
+            embed=auxiliary.prepare_confirm_embed(
+                f"That game is now finished. The word was: `{word}`"
+            )
         )
 
-    @hangman.command(
-        name="add_guesses",
+    @hangman_app_group.command(
+        name="add-guesses",
         description="Allows the creator of the game to give more guesses",
-        usage="[number_of_guesses]",
+        extras={"module": "hangman"},
     )
     async def add_guesses(
-        self: Self, ctx: commands.Context, number_of_guesses: int
+        self: Self, interaction: discord.Interaction, number_of_guesses: int
     ) -> None:
-        """Discord command to allow the game creator to add more guesses.
+        """Allows the game creator to add more guesses.
 
         Args:
-            ctx (commands.Context): The context in which the command was run.
-            number_of_guesses (int): The number of guesses to add.
+            interaction (discord.Interaction): The interaction in which the command was run
+            number_of_guesses (int): The number of guesses to add
         """
+        await interaction.response.defer(ephemeral=False)
+
         if number_of_guesses <= 0:
-            await auxiliary.send_deny_embed(
-                message="The number of guesses must be a positive integer.",
-                channel=ctx.channel,
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    "The number of guesses must be a positive integer."
+                )
             )
             return
 
-        game_data = self.games.get(ctx.channel.id)
+        game_data = self.games.get(interaction.channel.id)
         if not game_data:
-            await auxiliary.send_deny_embed(
-                message="There is no game in progress for this channel",
-                channel=ctx.channel,
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    "There is no game in progress for this channel"
+                )
             )
             return
 
-        # Ensure only the creator of the game can add guesses
         game_author = game_data.get("user")
-        if ctx.author.id != game_author.id:
-            await auxiliary.send_deny_embed(
-                message="Only the creator of the game can add more guesses.",
-                channel=ctx.channel,
+        if interaction.user.id != game_author.id:
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    "Only the creator of the game can add more guesses."
+                )
             )
             return
 
         game = game_data.get("game")
-
-        # Add the new guesses
         game.add_guesses(number_of_guesses)
 
-        # Notify the channel
-        await ctx.send(
-            content=(
-                f"{number_of_guesses} guesses have been added! "
-                f"Total guesses remaining: {game.remaining_guesses()}"
-            )
-        )
-
-        # Update the game embed
-        embed = await self.generate_game_embed(ctx, game, game_data.get("user"))
+        embed = await self.generate_game_embed(game, game_data.get("user"))
         message = game_data.get("message")
         await message.edit(embed=embed)
+
+        await interaction.followup.send(
+            content=build_add_guesses_result(
+                number_of_guesses, game.remaining_guesses()
+            )
+        )
