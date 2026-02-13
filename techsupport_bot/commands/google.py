@@ -213,6 +213,7 @@ class Googler(cogs.BaseCog):
         GOOGLE_URL (str): The API URL for google search
         YOUTUBE_URL (str): The API URL for youtube search
         ICON_URL (str): The google icon
+        google_group (app_commands.Group): The group for the /google commands
     """
 
     GOOGLE_URL: str = "https://www.googleapis.com/customsearch/v1"

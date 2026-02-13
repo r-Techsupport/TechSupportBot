@@ -112,6 +112,9 @@ class Hugger(cogs.BaseCog):
         HUGS_SELECTION (list[str]): The list of hug phrases to display
         ICON_URL (str): The icon to use when hugging
 
+    Args:
+        bot (bot.TechSupportBot): The bot instance
+
     """
 
     HUGS_SELECTION: list[str] = [
@@ -145,11 +148,6 @@ class Hugger(cogs.BaseCog):
     )
 
     def __init__(self: Self, bot: bot.TechSupportBot) -> None:
-        """Initializes hug commands and registers the user context menu.
-
-        Args:
-            bot (bot.TechSupportBot): The bot instance
-        """
         super().__init__(bot=bot)
         self.user_context_menu = app_commands.ContextMenu(
             name="Hug User",

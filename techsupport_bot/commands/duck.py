@@ -285,6 +285,7 @@ class DuckHunt(cogs.LoopCog):
         KILL_URL (str): The picture for the kill target
         ON_START (bool): ???
         CHANNELS_KEY (str): The config item for the channels that the duck hunt should run
+        duck_group (app_commands.Group): The group for the /duck commands
     """
 
     DUCK_PIC_URL: str = (

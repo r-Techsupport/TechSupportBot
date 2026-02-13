@@ -34,6 +34,9 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class MessageEcho(cogs.BaseCog):
     """
     The class that holds the echo commands
+
+    Attributes:
+        ehco_group (app_commands.Group): The group for the /echo commands
     """
 
     echo_group: app_commands.Group = app_commands.Group(

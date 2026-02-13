@@ -31,6 +31,9 @@ class Burn(cogs.BaseCog):
 
     Attributes:
         PHRASES (list[str]): The list of phrases to pick from
+
+    Args:
+        bot (bot.TechSupportBot): The bot instance
     """
 
     PHRASES: list[str] = [
@@ -43,11 +46,6 @@ class Burn(cogs.BaseCog):
     ]
 
     def __init__(self: Self, bot: bot.TechSupportBot) -> None:
-        """Initializes burn command handlers and registers context menu command.
-
-        Args:
-            bot (bot.TechSupportBot): The bot instance
-        """
         super().__init__(bot=bot)
         self.ctx_menu = app_commands.ContextMenu(
             name="Declare Burn",
