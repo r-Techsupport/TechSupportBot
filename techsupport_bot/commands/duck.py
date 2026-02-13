@@ -1143,25 +1143,3 @@ class DuckHunt(cogs.LoopCog):
             random.choices([True, False], weights=weights, k=100000)
         )
         return choice_
-
-    def random_choice(self: Self, config: munch.Munch) -> bool:
-        """A function to pick true or false randomly based on the success_rate in the config
-
-        Args:
-            config (munch.Munch): The config for the guild
-
-        Returns:
-            bool: Whether the random choice should succeed or not
-        """
-
-        weights = (
-            config.extensions.duck.success_rate.value,
-            100 - config.extensions.duck.success_rate.value,
-        )
-
-        # Check to see if random failure
-        choice_ = random.choice(
-            random.choices([True, False], weights=weights, k=100000)
-        )
-
-        return choice_
