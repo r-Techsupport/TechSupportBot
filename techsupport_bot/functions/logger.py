@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Self
 import discord
 import munch
 from botlogging import LogContext, LogLevel
-from core import cogs, extensionconfig
+from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -193,13 +193,13 @@ async def send_message(
     attachments.insert(0, await author.display_avatar.to_file(filename="avatar.png"))
 
     # Make and send the embed and files
-    embed = build_embed(
+    embed = await build_embed(
         message, author, src_channel, content_override, special_flags=special_flags
     )
     await dest_channel.send(embed=embed, files=attachments[:11])
 
 
-def build_embed(
+async def build_embed(
     message: discord.Message,
     author: discord.Member,
     src_channel: discord.abc.GuildChannel | discord.Thread,
@@ -265,6 +265,18 @@ def build_embed(
         name="Roles",
         value=", ".join(generate_role_list(author)),
     )
+
+    # Add file hashes, if relevant
+    file_hash_string = ""
+
+    if message.attachments:
+        parts = []
+        for attachment in message.attachments:
+            file_hash = await auxiliary.get_attachment_hash(attachment)
+            parts.append(f"{attachment.filename}: {file_hash}")
+
+        file_hash_string = ", ".join(parts)
+        embed.add_field(name="File Hashes", value=file_hash_string)
 
     # Flags
     if special_flags:
