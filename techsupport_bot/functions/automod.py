@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-import hashlib
 import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Self
@@ -545,13 +544,7 @@ async def handle_file_hashes(
     violations = []
 
     for attachment in attachments:
-        try:
-            file_hash = await auxiliary.get_attachment_hash(attachment)
-        except Exception:
-            # Catch all, in case message is deleted during download
-            # Not ideal
-            continue
-
+        file_hash = await auxiliary.get_attachment_hash(attachment)
         if file_hash in config.extensions.automod.banned_file_hashes.value:
             violations.append(
                 AutoModPunishment(
