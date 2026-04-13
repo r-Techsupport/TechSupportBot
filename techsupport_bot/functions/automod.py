@@ -11,7 +11,7 @@ import discord
 import munch
 from botlogging import LogContext, LogLevel
 from commands import moderator, modlog
-from core import cogs, extensionconfig, moderation
+from core import auxiliary, cogs, extensionconfig, moderation
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -205,7 +205,7 @@ class AutoMod(cogs.MatchCog):
         if ctx.message.author.top_role >= ctx.channel.guild.me.top_role:
             return
 
-        all_punishments = run_all_checks(config, ctx.message)
+        all_punishments = await run_all_checks(config, ctx.message)
 
         if len(all_punishments) == 0:
             return
@@ -455,7 +455,7 @@ def generate_automod_alert_embed(
 # All checks will return a list of AutoModPunishment, which may be nothing
 
 
-def run_all_checks(
+async def run_all_checks(
     config: munch.Munch, message: discord.Message
 ) -> list[AutoModPunishment]:
     """This runs all 4 checks on a given discord.Message
@@ -475,6 +475,7 @@ def run_all_checks(
         run_only_string_checks(config, message.clean_content)
         + handle_file_extensions(config, message.attachments)
         + handle_mentions(config, message)
+        + await handle_file_hashes(config, message.attachments)
     )
     return all_violations
 
@@ -525,6 +526,35 @@ def handle_file_extensions(
                     recommend_mute=0,
                 )
             )
+    return violations
+
+
+async def handle_file_hashes(
+    config: munch.Munch, attachments: list[discord.Attachment]
+) -> list[AutoModPunishment]:
+    """This checks a list of attachments for attachments that match the configured list of hashes
+
+    Args:
+        config (munch.Munch): The guild config to check with
+        attachments (list[discord.Attachment]): The list of attachments to search
+
+    Returns:
+        list[AutoModPunishment]: The automod violations that the given message violated
+    """
+    violations = []
+
+    for attachment in attachments:
+        file_hash = await auxiliary.get_attachment_hash(attachment)
+        if file_hash in config.extensions.automod.banned_file_hashes.value:
+            violations.append(
+                AutoModPunishment(
+                    f"{attachment.filename} matches a banned file hash",
+                    recommend_delete=True,
+                    recommend_warn=False,
+                    recommend_mute=3600,
+                )
+            )
+
     return violations
 
 
