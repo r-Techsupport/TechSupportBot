@@ -332,9 +332,7 @@ class HangmanCog(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-
-        # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
+        return
 
     hangman_app_group: app_commands.Group = app_commands.Group(
         name="hangman", description="Command Group for the Hangman Extension"
@@ -402,7 +400,7 @@ class HangmanCog(cogs.BaseCog):
             return
 
         # Create and send the initial game embed
-        embed = await self.generate_game_embed(interaction, game)
+        embed = await self.generate_game_embed(interaction, game, interaction.user)
         message = await interaction.channel.send(embed=embed)
         self.games[interaction.channel_id] = {
             "user": interaction.user,
@@ -456,7 +454,7 @@ class HangmanCog(cogs.BaseCog):
             return
 
         correct = game.guess(letter)
-        embed = await self.generate_game_embed(ctx, game)
+        embed = await self.generate_game_embed(ctx, game, game_data.get("user"))
         message = game_data.get("message")
         await message.edit(embed=embed)
 
@@ -470,6 +468,7 @@ class HangmanCog(cogs.BaseCog):
         self: Self,
         ctx_or_interaction: discord.Interaction | commands.Context,
         game: HangmanGame,
+        owner: discord.Member,
     ) -> discord.Embed:
         """
         Generates an embed representing the current state of the Hangman game.
@@ -481,6 +480,7 @@ class HangmanCog(cogs.BaseCog):
             game (HangmanGame): The current instance of the Hangman game, used to
                 retrieve game state, including word state, remaining guesses, and the
                 hangman drawing.
+            owner (discord.Member): The owner of the game
 
         Returns:
             discord.Embed: An embed displaying the current game state, including
@@ -529,13 +529,7 @@ class HangmanCog(cogs.BaseCog):
                 inline=False,
             )
 
-            # Determine the game creator based on interaction type
-            if isinstance(ctx_or_interaction, discord.Interaction):
-                footer_text = f"Game started by {ctx_or_interaction.user}"
-            elif isinstance(ctx_or_interaction, commands.Context):
-                footer_text = f"Game started by {ctx_or_interaction.author}"
-            else:
-                footer_text = " "
+            footer_text = f"Game started by {owner}"
 
         embed.set_footer(text=footer_text)
         return embed
@@ -562,7 +556,9 @@ class HangmanCog(cogs.BaseCog):
         except discord.errors.NotFound:
             pass
 
-        embed = await self.generate_game_embed(ctx, game_data.get("game"))
+        embed = await self.generate_game_embed(
+            ctx, game_data.get("game"), game_data.get("user")
+        )
         new_message = await ctx.send(embed=embed)
         game_data["message"] = new_message
 
@@ -659,6 +655,6 @@ class HangmanCog(cogs.BaseCog):
         )
 
         # Update the game embed
-        embed = await self.generate_game_embed(ctx, game)
+        embed = await self.generate_game_embed(ctx, game, game_data.get("user"))
         message = game_data.get("message")
         await message.edit(embed=embed)

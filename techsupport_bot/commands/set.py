@@ -46,9 +46,7 @@ class Setter(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-
-        # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
+        return
 
     @auxiliary.with_typing
     @set_group.command(

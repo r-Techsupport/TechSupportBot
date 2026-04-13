@@ -45,6 +45,7 @@ class FactoidNotFoundError(commands.errors.CommandError):
     """
 
     def __init__(self: Self, factoid: str) -> None:
+        super().__init__(factoid)
         self.dont_print_trace = True
         self.argument = factoid
 

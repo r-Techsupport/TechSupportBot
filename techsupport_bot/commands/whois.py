@@ -10,6 +10,7 @@ import ui
 from commands import application, moderator, notes
 from core import auxiliary, cogs, moderation
 from discord import app_commands
+from functions import xp
 
 if TYPE_CHECKING:
     import bot
@@ -30,7 +31,11 @@ class Whois(cogs.BaseCog):
     @app_commands.command(
         name="whois",
         description="Gets Discord user information",
-        extras={"brief": "Gets user data", "usage": "@user", "module": "whois"},
+        extras={
+            "usage": "@user",
+            "module": "whois",
+            "ephemeral_error": True,
+        },
     )
     async def whois_command(
         self: Self, interaction: discord.Interaction, member: discord.Member
@@ -70,6 +75,10 @@ class Whois(cogs.BaseCog):
                 embed = await add_application_info_field(interaction, member, embed)
             except (app_commands.MissingAnyRole, app_commands.AppCommandError):
                 pass
+
+        if "xp" in config.enabled_extensions:
+            current_XP = await xp.get_current_XP(self.bot, member, interaction.guild)
+            embed.add_field(name="XP", value=current_XP)
 
         if interaction.permissions.kick_members:
             flags = []
