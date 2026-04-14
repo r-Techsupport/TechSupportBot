@@ -695,18 +695,29 @@ class DuckHunt(cogs.LoopCog):
         Returns:
             str: The username in a pretty string format, ready to print
         """
-        try:
-            user_object = await self.bot.fetch_user(duck_user.author_id)
-        except discord.NotFound:
-            return f"`Account not found` ({duck_user.author_id})"
-        display_name = user_object.global_name
-        try:
-            member_object = await guild.fetch_member(user_object.id)
-            display_name = member_object.display_name
-        except discord.NotFound:
-            ...
 
-        return f"`{display_name}` (`{user_object.name}`)"
+        user_id = int(duck_user.author_id)
+
+        # Start with trying to get the member object. If we can get the member object, use it.
+        member_object = guild.get_member(user_id)
+        if member_object is None:
+            try:
+                member_object = await guild.fetch_member(user_id)
+            except discord.NotFound:
+                member_object = None
+
+        if member_object:
+            return f"`{member_object.display_name}` (`{member_object.name}`)"
+
+        # If the duck user is not a guild member, fallback to getting the user object.
+        user_object = self.bot.get_user(user_id)
+        if user_object is None or user_object.global_name is None:
+            try:
+                user_object = await self.bot.fetch_user(user_id)
+            except discord.NotFound:
+                return f"`Account not found` ({user_id})"
+
+        return f"`{user_object.global_name}` (`{user_object.name}`)"
 
     @auxiliary.with_typing
     @commands.guild_only()
