@@ -190,7 +190,10 @@ async def send_message(
     attachments = await build_attachments(bot, config, message)
 
     # Add avatar to attachments to all it to be added to the embed
-    attachments.insert(0, await author.display_avatar.to_file(filename="avatar.png"))
+    try:
+        attachments.insert(0, await author.display_avatar.to_file(filename="avatar.png"))
+    except discord.errors.HTTPException:
+        attachments.insert(0, await author.default_avatar.to_file(filename="avatar.png"))
 
     # Make and send the embed and files
     embed = await build_embed(
