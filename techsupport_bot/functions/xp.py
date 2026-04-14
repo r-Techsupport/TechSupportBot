@@ -30,6 +30,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         default=[],
     )
     config.add(
+        key="excluded_channels",
+        datatype="list",
+        title="List of channel IDs to exclude for XP",
+        description="List of channel IDs to exclude for XP",
+        default=[],
+    )
+    config.add(
         key="level_roles",
         datatype="dict",
         title="Dict of levels in XP:Role ID.",
@@ -75,6 +82,10 @@ class LevelXP(cogs.MatchCog):
         if ctx.channel.category_id not in config.extensions.xp.categories_counted.value:
             return False
 
+        # Ignore messages in exlucded channels
+        if ctx.channel.id in config.extensions.xp.excluded_channels.value:
+            return False
+
         # Ignore messages that are too short
         if len(ctx.message.clean_content) < 20:
             return False
@@ -87,7 +98,7 @@ class LevelXP(cogs.MatchCog):
 
         # Ignore messages that are factoid calls
         if "factoids" in config.enabled_extensions:
-            factoid_prefix = prefix = config.extensions.factoids.prefix.value
+            factoid_prefix = config.extensions.factoids.prefix.value
             if ctx.message.clean_content.startswith(factoid_prefix):
                 return False
 
