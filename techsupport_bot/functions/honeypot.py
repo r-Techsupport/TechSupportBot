@@ -105,6 +105,9 @@ class HoneyPot(cogs.MatchCog):
         history = ctx.channel.history(oldest_first=True, limit=1)
         starting_message = await anext(history)
         starting_embed = starting_message.embeds[0]
-        starting_embed.description = f"{starting_embed.description.split(':')[0]}: {int(starting_embed.description.split(':')[1]) + 1}"
+        new_actions = int(starting_embed.description.split(":")[1]) + 1
+        starting_embed.description = (
+            f"{starting_embed.description.split(':')[0]}: {new_actions}"
+        )
 
         await starting_message.edit(embeds=[starting_embed])
