@@ -40,7 +40,7 @@ class HoneyPot(cogs.MatchCog):
     async def match(
         self: Self, config: munch.Munch, ctx: commands.Context, content: str
     ) -> bool:
-        """Checks to see if a message should be considered for a paste
+        """Checks to see if a message was sent in a honeypot channel
 
         Args:
             config (munch.Munch): The config of the guild to check
@@ -48,7 +48,7 @@ class HoneyPot(cogs.MatchCog):
             content (str): The string representation of the message
 
         Returns:
-            bool: Whether the message should be inspected for a paste
+            bool: Whether the author sent in a honeypot channel
         """
         # If the channel isn't a honeypot, do nothing.
         if not str(ctx.channel.id) in config.extensions.honeypot.channels.value:
@@ -62,7 +62,7 @@ class HoneyPot(cogs.MatchCog):
         content: str,
         result: bool,
     ) -> None:
-        """Handles a paste check
+        """Handles a honeypot check
 
         Args:
             config (munch.Munch): The config of the guild where the message was sent
