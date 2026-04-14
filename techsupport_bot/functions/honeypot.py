@@ -99,3 +99,12 @@ class HoneyPot(cogs.MatchCog):
         )
 
         await alert_channel.send(embed=embed)
+
+        # Get only message in the channel and edit the description
+        # Just in case, we make sure we pick the first message in the channel, as a foolproof method
+        history = ctx.channel.history(oldest_first=True, limit=1)
+        starting_message = await anext(history)
+        starting_embed = starting_message.embeds[0]
+        starting_embed.description = f"{starting_embed.description.split(':')[0]}: {int(starting_embed.description.split(':')[1]) + 1}"
+
+        await starting_message.edit(embeds=[starting_embed])
