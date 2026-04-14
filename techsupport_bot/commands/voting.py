@@ -48,6 +48,17 @@ async def setup(bot: bot.TechSupportBot) -> None:
         description="User must have this role to start or participate in votes",
         default="",
     )
+    config.add(
+        key="voting_thresholds",
+        datatype="list[int]",
+        title="The 3 percentage thresholds for voting pass/fail",
+        description=(
+            "1, % of eligible voters who must vote yes"
+            "2, % of yes/no voters who must have voted yes"
+            "3, % of eligible voters who must have voted anything at all"
+        ),
+        default=[50, 67, 75],
+    )
     await bot.add_cog(Voting(bot=bot, extension_name="voting"))
     bot.add_extension_config("voting", config)
 
@@ -629,7 +640,7 @@ class Voting(cogs.LoopCog):
             config (munch.Munch): The guild config where the vote was started
         """
         # We check every hour on the hour for completed votes
-        await aiocron.crontab("0 * * * *").next()
+        await aiocron.crontab("* * * * *").next()
 
     async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
         """This looks for completed votes and ends then
@@ -648,10 +659,12 @@ class Voting(cogs.LoopCog):
         )
         for vote in active_votes:
             end_time = int((vote.start_time + timedelta(hours=72)).timestamp())
-            if end_time <= int(datetime.datetime.utcnow().timestamp()):
-                await self.end_vote(vote, guild)
+            # if end_time <= int(datetime.datetime.utcnow().timestamp()):
+            await self.end_vote(vote, guild, config)
 
-    async def end_vote(self: Self, vote: munch.Munch, guild: discord.Guild) -> None:
+    async def end_vote(
+        self: Self, vote: munch.Munch, guild: discord.Guild, config: munch.Munch
+    ) -> None:
         """This ends a vote, and if it was anonymous purges who voted for what from the database
         This will edit the vote message and remove the buttons, and mention the vote owner
 
@@ -661,6 +674,7 @@ class Voting(cogs.LoopCog):
         """
         await vote.update(vote_active=False).apply()
         embed = await self.build_vote_embed(vote.vote_id, guild)
+        pass_embed = self.build_vote_pass_embed(vote, config)
         # If the vote is anonymous, at this point we need to clear the vote record forever
         if vote.anonymous:
             await vote.update(
@@ -672,5 +686,77 @@ class Voting(cogs.LoopCog):
         vote_owner = await guild.fetch_member(int(vote.vote_owner_id))
         await message.edit(content="Vote over", embed=embed, view=None)
         await channel.send(
-            f"{vote_owner.mention} your vote is over. Results:", embed=embed
+            f"{vote_owner.mention} your vote is over. Results:",
+            embeds=[embed, pass_embed],
         )
+
+    def build_vote_pass_embed(
+        self: Self, vote: munch.Munch, config: munch.Munch
+    ) -> discord.Embed:
+        """This builds an embed that shows if the vote passed or failed,
+            based on configurable thresholds
+
+        Args:
+            vote (munch.Munch): The vote that has ended and needs an embed
+            config (munch.Munch): The guild config for the guild
+
+        Returns:
+            discord.Embed: The embed in a ready to send state
+        """
+        embed = discord.Embed(
+            title="Voting statistics", description="This vote **PASSED**"
+        )
+        eligible_voters = sum(1 for v in vote.vote_ids_eligible.split(",") if v)
+        yes_voters = vote.votes_yes
+        no_voters = vote.votes_no
+        abstain_voters = vote.votes_abstain
+
+        thresholds = config.extensions.voting.voting_thresholds.value
+
+        # Percentages
+        percent_eligible_yes = (yes_voters / eligible_voters) * 100
+        percent_voted_yes = (
+            (yes_voters / (yes_voters + no_voters)) * 100
+            if (yes_voters + no_voters) > 0
+            else 0
+        )
+        percent_voted_anything = (
+            (yes_voters + no_voters + abstain_voters) / eligible_voters
+        ) * 100
+
+        did_vote_pass = True
+
+        # Greater than X% of eligible voters must vote yes
+        if percent_eligible_yes < thresholds[0]:
+            did_vote_pass = False
+
+        # At least X% of voters (yes/no) must be yes
+        if percent_voted_yes < thresholds[1]:
+            did_vote_pass = False
+
+        # At least X% of eligible voters must have interacted
+        if percent_voted_anything < thresholds[2]:
+            did_vote_pass = False
+
+        if not did_vote_pass:
+            embed.description = "This vote **FAILED**"
+
+        embed.add_field(
+            name="Eligible voters voting yes:",
+            value=f"Got {percent_eligible_yes:.2f}%\nRequired {thresholds[0]:.2f}%",
+            inline=True,
+        )
+        embed.add_field(
+            name="Votes for yes:",
+            value=f"Got {percent_voted_yes:.2f}%\nRequired {thresholds[1]:.2f}%",
+            inline=True,
+        )
+        embed.add_field(
+            name="Voter turnout:",
+            value=f"Got {percent_voted_anything:.2f}%\nRequired {thresholds[2]:.2f}%",
+            inline=True,
+        )
+
+        embed.color = discord.Color.blurple()
+
+        return embed
