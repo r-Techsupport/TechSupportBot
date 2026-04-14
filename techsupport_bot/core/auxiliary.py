@@ -5,6 +5,7 @@ This replaces duplicate or similar code across many extensions
 
 from __future__ import annotations
 
+import hashlib
 import json
 from functools import wraps
 from typing import TYPE_CHECKING, Any
@@ -529,3 +530,16 @@ async def bot_admin_check_interaction(interaction: discord.Interaction) -> bool:
     if not is_admin:
         raise app_commands.MissingPermissions(["bot_admin"])
     return True
+
+
+async def get_attachment_hash(attachment: discord.Attachment) -> str:
+    """Computes a sha256 file hash for a given discord attachment
+
+    Args:
+        attachment (discord.Attachment): The attachment to generate the hash of
+
+    Returns:
+        str: The hash, as a string
+    """
+    file_bytes = await attachment.read()
+    return hashlib.sha256(file_bytes).hexdigest()
