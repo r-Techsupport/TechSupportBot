@@ -75,7 +75,7 @@ class LevelXP(cogs.MatchCog):
             return False
 
         # Ignore anyone in the ineligible list
-        if ctx.author.id in self.ineligible:
+        if f"{ctx.guild.id}:{ctx.author.id}" in self.ineligible:
             return False
 
         # Ignore messages outside of tracked categories
@@ -131,7 +131,7 @@ class LevelXP(cogs.MatchCog):
 
         await self.apply_level_ups(ctx.author, (current_XP + new_XP))
 
-        self.ineligible[ctx.author.id] = True
+        self.ineligible[f"{ctx.guild.id}:{ctx.author.id}"] = True
 
     async def apply_level_ups(self: Self, user: discord.Member, new_xp: int) -> None:
         """This function will determine if a user leveled up and apply the proper roles
