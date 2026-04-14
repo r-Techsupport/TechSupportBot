@@ -53,7 +53,12 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Voting(cogs.LoopCog):
-    """The class that holds the core voting system"""
+    """The class that holds the core voting system
+
+    Attributes:
+        VOTE_CONFIG: dict[str, dict[str, str]]:
+            Config for display strings and IDs for vote buttons
+    """
 
     VOTE_CONFIG = {
         "yes": {
@@ -94,6 +99,7 @@ class Voting(cogs.LoopCog):
 
         Args:
             interaction (discord.Interaction): The interaction the command was called at
+            channel (str): The ID of the channel the vote is to be started in
             blind (bool): A blind vote hides the tally and who voted for what
                 for the duration of the vote
             anonymous (bool): A blind vote hides the tally for the duration of the vote
@@ -171,7 +177,7 @@ class Voting(cogs.LoopCog):
 
     @votingbutton.autocomplete("channel")
     async def vote_channel_autocomplete(
-        self,
+        self: Self,
         interaction: discord.Interaction,
         current: str,
     ) -> list[app_commands.Choice[str]]:
