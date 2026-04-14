@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import io
+import datetime
 from typing import TYPE_CHECKING, Self
 
 import discord
 import munch
-from botlogging import LogContext, LogLevel
 from core import cogs, extensionconfig
 from discord.ext import commands
-from functions import automod
 
 if TYPE_CHECKING:
     import bot
@@ -74,3 +72,30 @@ class HoneyPot(cogs.MatchCog):
         # This should be replaced with a guild wide purge when discord.py can be updated.
         await ctx.author.ban(delete_message_days=1, reason="triggered honeypot")
         await ctx.guild.unban(ctx.author, reason="triggered honeypot")
+
+        # Send an alert in the alert channel, if its configured
+        try:
+            alert_channel = ctx.guild.get_channel(int(config.moderation.alert_channel))
+        except TypeError:
+            alert_channel = None
+
+        if not alert_channel:
+            return
+
+        embed = discord.Embed(title="Honeypot triggered")
+        embed.add_field(
+            name="Offending member",
+            value=f"{ctx.author.global_name} ({ctx.author.name})",
+        )
+        embed.add_field(name="Message text", value=ctx.message.clean_content[:500])
+        embed.add_field(
+            name="Number of attachments", value=len(ctx.message.attachments)
+        )
+        embed.color = discord.Color.red()
+        embed.timestamp = datetime.datetime.utcnow()
+
+        embed.set_footer(
+            text=f"Author ID: {ctx.author.id} • Message ID: {ctx.message.id}"
+        )
+
+        await alert_channel.send(embed=embed)
