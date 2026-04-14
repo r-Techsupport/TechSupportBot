@@ -297,7 +297,6 @@ class Voting(cogs.LoopCog):
         """Gets a list of members that are eligible to vote, based on the forum channel
 
         Args:
-            self (Self): _description_
             channel (discord.ForumChannel): The channel the vote is run in
             guild (discord.Guild): The guild that the vote is run in
 
@@ -470,6 +469,14 @@ class Voting(cogs.LoopCog):
         view: discord.ui.View,
         vote_type: str,
     ) -> None:
+        """Updates the database to add or update a users vote
+        Handles eligibility checking
+
+        Args:
+            interaction (discord.Interaction): The interaction of the button press
+            view (discord.ui.View): The view where the vote is stored
+            vote_type (str): Whether the user voted yes, no or abstain
+        """
         vote_config = self.VOTE_CONFIG[vote_type]
         user_id = str(interaction.user.id)
 
