@@ -75,6 +75,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         default="thread solved",
     )
     config.add(
+        key="close_message",
+        datatype="str",
+        title="The message displayed on closed threads",
+        description="The message displayed on closed threads",
+        default="thread closed",
+    )
+    config.add(
         key="abandoned_message",
         datatype="str",
         title="The message displayed on abandoned threads",
@@ -99,6 +106,40 @@ async def setup(bot: bot.TechSupportBot) -> None:
     bot.add_extension_config("forum", config)
 
 
+STATUS_CONFIG = {
+    "solved": {
+        "title": "Thread marked as solved",
+        "prefix": "[SOLVED]",
+        "color": discord.Color.green(),
+        "message_key": "solve_message",
+    },
+    "closed": {
+        "title": "Thread marked as closed",
+        "prefix": "[CLOSED]",
+        "color": discord.Color.red(),
+        "message_key": "close_message",
+    },
+    "rejected": {
+        "title": "Thread rejected",
+        "prefix": "[REJECTED]",
+        "color": discord.Color.red(),
+        "message_key": "reject_message",
+    },
+    "duplicate": {
+        "title": "Duplicate thread detected",
+        "prefix": "[DUPLICATE]",
+        "color": discord.Color.orange(),
+        "message_key": "duplicate_message",
+    },
+    "abandoned": {
+        "title": "Abandoned thread archived",
+        "prefix": "[ABANDONED]",
+        "color": discord.Color.blurple(),
+        "message_key": "abandoned_message",
+    },
+}
+
+
 class ForumChannel(cogs.LoopCog):
     """The cog that holds the forum channel commands and helper functions
 
@@ -111,20 +152,19 @@ class ForumChannel(cogs.LoopCog):
     )
 
     @forum_group.command(
-        name="solved",
-        description="Mark a support forum thread as solved",
+        name="mark",
+        description="Mark a support forum thread",
         extras={"module": "forum"},
     )
-    async def markSolved(self: Self, interaction: discord.Interaction) -> None:
-        """A command to mark the thread as solved
-        Usable by OP and staff
-
-        Args:
-            interaction (discord.Interaction): The interaction that called the command
-        """
+    async def mark_thread_command(
+        self: Self,
+        interaction: discord.Interaction,
+        status: str,
+    ) -> None:
         await interaction.response.defer(ephemeral=True)
+
         config = self.bot.guild_configs[str(interaction.guild.id)]
-        channel = await interaction.guild.fetch_channel(
+        forum_channel = await interaction.guild.fetch_channel(
             int(config.extensions.forum.forum_channel_id.value)
         )
 
@@ -134,17 +174,36 @@ class ForumChannel(cogs.LoopCog):
             color=discord.Color.red(),
         )
 
-        if not hasattr(interaction.channel, "parent"):
-            await interaction.followup.send(embed=invalid_embed, ephemeral=True)
-            return
-        if not interaction.channel.parent == channel:
-            await interaction.followup.send(embed=invalid_embed, ephemeral=True)
-            return
-
-        if not (
-            interaction.user == interaction.channel.owner
-            or is_thread_staff(interaction.user, interaction.guild, config)
+        # Check 1: Ensure command was run in the forum channel
+        if (
+            not hasattr(interaction.channel, "parent")
+            or interaction.channel.parent != forum_channel
         ):
+            await interaction.followup.send(embed=invalid_embed, ephemeral=True)
+            return
+
+        is_staff = is_thread_staff(interaction.user, interaction.guild, config)
+        is_owner = interaction.user == interaction.channel.owner
+
+        # Check 2: Ensure status is valid
+        if status not in ("solved", "closed", "rejected", "abandoned"):
+            embed = discord.Embed(
+                title="Invalid status",
+                description="That status is not valid",
+                color=discord.Color.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        if status in ("rejected", "abandoned") and not is_staff:
+            denied = True
+        elif status in ("solved", "closed") and not (is_staff or is_owner):
+            denied = True
+        else:
+            denied = False
+
+        # Check 3: Ensure permissions are valid
+        if denied:
             embed = discord.Embed(
                 title="Permission denied",
                 description="You cannot do this",
@@ -153,97 +212,62 @@ class ForumChannel(cogs.LoopCog):
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
-        embed = auxiliary.prepare_confirm_embed("Thread marked as solved!")
-        await interaction.followup.send(embed=embed, ephemeral=True)
-        await mark_thread_solved(interaction.channel, config)
+        confirm_embed = auxiliary.prepare_confirm_embed(f"Thread marked as {status}!")
+        await interaction.followup.send(embed=confirm_embed, ephemeral=True)
 
-    @forum_group.command(
-        name="reject",
-        description="Mark a support forum thread as rejected",
-        extras={"module": "forum"},
-    )
-    async def markRejected(self: Self, interaction: discord.Interaction) -> None:
-        """A command to mark the thread as rejected
-        Usable by staff
+        await mark_thread(interaction.channel, config, status)
+
+    @mark_thread_command.autocomplete("status")
+    async def status_autocomplete(
+        self: Self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        """This is the autocomplete function for status on the thread mark command
+        This parses a list of valid statuses and shows the user the list they can actually use
 
         Args:
-            interaction (discord.Interaction): The interaction that called the command
+            self (Self): _description_
+            interaction (discord.Interaction): The interaction that is calling the command
+            current (str): The current choice the user is typing
+
+        Returns:
+            list[app_commands.Choice[str]]: The list of all valid choices
+                that fit with the users current selection
         """
-        await interaction.response.defer(ephemeral=True)
+
         config = self.bot.guild_configs[str(interaction.guild.id)]
-        channel = await interaction.guild.fetch_channel(
-            int(config.extensions.forum.forum_channel_id.value)
+
+        is_staff = is_thread_staff(interaction.user, interaction.guild, config)
+        is_owner = (
+            hasattr(interaction.channel, "owner")
+            and interaction.user == interaction.channel.owner
         )
 
-        invalid_embed = discord.Embed(
-            title="Invalid location",
-            description="The location this was run isn't a valid support forum",
-            color=discord.Color.red(),
-        )
+        choices = []
 
-        if not hasattr(interaction.channel, "parent"):
-            await interaction.followup.send(embed=invalid_embed, ephemeral=True)
-            return
-        if not interaction.channel.parent == channel:
-            await interaction.followup.send(embed=invalid_embed, ephemeral=True)
-            return
-
-        if not (is_thread_staff(interaction.user, interaction.guild, config)):
-            embed = discord.Embed(
-                title="Permission denied",
-                description="You cannot do this",
-                color=discord.Color.red(),
+        # Staff can do all 4 options
+        if is_staff:
+            choices.extend(
+                [
+                    app_commands.Choice(name="Rejected", value="rejected"),
+                    app_commands.Choice(name="Abandoned", value="abandoned"),
+                    app_commands.Choice(name="Closed", value="closed"),
+                    app_commands.Choice(name="Solved", value="solved"),
+                ]
             )
-            await interaction.followup.send(embed=embed, ephemeral=True)
-            return
 
-        embed = auxiliary.prepare_confirm_embed("Thread marked as rejected!")
-        await interaction.followup.send(embed=embed, ephemeral=True)
-        await mark_thread_rejected(interaction.channel, config)
-
-    @forum_group.command(
-        name="abandon",
-        description="Mark a support forum thread as abandoned",
-        extras={"module": "forum"},
-    )
-    async def markAbandoned(self: Self, interaction: discord.Interaction) -> None:
-        """A command to mark the thread as abandoned
-        Usable by staff
-
-        Args:
-            interaction (discord.Interaction): The interaction that called the command
-        """
-        await interaction.response.defer(ephemeral=True)
-        config = self.bot.guild_configs[str(interaction.guild.id)]
-        channel = await interaction.guild.fetch_channel(
-            int(config.extensions.forum.forum_channel_id.value)
-        )
-
-        invalid_embed = discord.Embed(
-            title="Invalid location",
-            description="The location this was run isn't a valid support forum",
-            color=discord.Color.red(),
-        )
-
-        if not hasattr(interaction.channel, "parent"):
-            await interaction.followup.send(embed=invalid_embed, ephemeral=True)
-            return
-        if not interaction.channel.parent == channel:
-            await interaction.followup.send(embed=invalid_embed, ephemeral=True)
-            return
-
-        if not (is_thread_staff(interaction.user, interaction.guild, config)):
-            embed = discord.Embed(
-                title="Permission denied",
-                description="You cannot do this",
-                color=discord.Color.red(),
+        # The OP can mark their thread closed or solved, but not rejected or abandoned
+        elif is_owner:
+            choices.extend(
+                [
+                    app_commands.Choice(name="Closed", value="closed"),
+                    app_commands.Choice(name="Solved", value="solved"),
+                ]
             )
-            await interaction.followup.send(embed=embed, ephemeral=True)
-            return
 
-        embed = auxiliary.prepare_confirm_embed("Thread marked as abandoned!")
-        await interaction.followup.send(embed=embed, ephemeral=True)
-        await mark_thread_abandoned(interaction.channel, config)
+        # This just filters out anything not matching what the user is typing
+        return [choice for choice in choices if current.lower() in choice.name.lower()]
 
     @forum_group.command(
         name="get-unsolved",
@@ -293,7 +317,7 @@ class ForumChannel(cogs.LoopCog):
 
         # Check if the thread title is disallowed
         if any(pattern.search(thread.name) for pattern in disallowed_title_patterns):
-            await mark_thread_rejected(thread, config)
+            await mark_thread(thread, config, "rejected")
             return
 
         # Check if the thread body is disallowed
@@ -304,12 +328,12 @@ class ForumChannel(cogs.LoopCog):
                 config.extensions.forum.body_regex_list.value
             )
             if any(pattern.search(body) for pattern in disallowed_body_patterns):
-                await mark_thread_rejected(thread, config)
+                await mark_thread(thread, config, "rejected")
                 return
             if body.lower() == thread.name.lower() or len(body.lower()) < len(
                 thread.name.lower()
             ):
-                await mark_thread_rejected(thread, config)
+                await mark_thread(thread, config, "rejected")
                 return
 
         # Check if the thread creator has an existing open thread
@@ -319,7 +343,7 @@ class ForumChannel(cogs.LoopCog):
                 and not existing_thread.archived
                 and existing_thread.id != thread.id
             ):
-                await mark_thread_duplicated(thread, config)
+                await mark_thread(thread, config, "duplicate")
                 return
 
         embed = discord.Embed(
@@ -350,7 +374,7 @@ class ForumChannel(cogs.LoopCog):
                 ) - most_recent_message.created_at > datetime.timedelta(
                     minutes=config.extensions.forum.max_age_minutes.value
                 ):
-                    await mark_thread_abandoned(existing_thread, config)
+                    await mark_thread(existing_thread, config, "abandoned")
 
     async def wait(self: Self, config: munch.Munch, _: discord.Guild) -> None:
         """This waits and rechecks every 5 minutes to search for old threads
@@ -384,61 +408,31 @@ def is_thread_staff(
     return False
 
 
-async def mark_thread_solved(thread: discord.Thread, config: munch.Munch) -> None:
-    solved_embed = discord.Embed(
-        title="Thread marked as solved",
-        description=config.extensions.forum.solve_message.value,
-        color=discord.Color.green(),
+async def mark_thread(
+    thread: discord.Thread,
+    config: munch.Munch,
+    status: str,
+) -> None:
+    """This modifies a thread, can be marked as any of the options in STATUS_CONFIG
+    No validation is done, assuming data passed here is always valid
+
+    Args:
+        thread (discord.Thread): The thread to modify
+        config (munch.Munch): The guild config
+        status (str): The status to modify the thread with
+    """
+    data = STATUS_CONFIG[status]
+
+    embed = discord.Embed(
+        title=data["title"],
+        description=getattr(config.extensions.forum, data["message_key"]).value,
+        color=data["color"],
     )
 
-    await thread.send(content=thread.owner.mention, embed=solved_embed)
+    await thread.send(content=thread.owner.mention, embed=embed)
+
     await thread.edit(
-        name=f"[SOLVED] {thread.name}"[:100],
-        archived=True,
-        locked=True,
-    )
-
-
-async def mark_thread_rejected(thread: discord.Thread, config: munch.Munch) -> None:
-    reject_embed = discord.Embed(
-        title="Thread rejected",
-        description=config.extensions.forum.reject_message.value,
-        color=discord.Color.red(),
-    )
-
-    await thread.send(content=thread.owner.mention, embed=reject_embed)
-    await thread.edit(
-        name=f"[REJECTED] {thread.name}"[:100],
-        archived=True,
-        locked=True,
-    )
-
-
-async def mark_thread_duplicated(thread: discord.Thread, config: munch.Munch) -> None:
-    duplicate_embed = discord.Embed(
-        title="Duplicate thread detected",
-        description=config.extensions.forum.duplicate_message.value,
-        color=discord.Color.orange(),
-    )
-
-    await thread.send(content=thread.owner.mention, embed=duplicate_embed)
-    await thread.edit(
-        name=f"[DUPLICATE] {thread.name}"[:100],
-        archived=True,
-        locked=True,
-    )
-
-
-async def mark_thread_abandoned(thread: discord.Thread, config: munch.Munch) -> None:
-    abandoned_embed = discord.Embed(
-        title="Abandoned thread archived",
-        description=config.extensions.forum.abandoned_message.value,
-        color=discord.Color.blurple(),
-    )
-
-    await thread.send(content=thread.owner.mention, embed=abandoned_embed)
-    await thread.edit(
-        name=f"[ABANDONED] {thread.name}"[:100],
+        name=f"{data['prefix']} {thread.name}"[:100],
         archived=True,
         locked=True,
     )
