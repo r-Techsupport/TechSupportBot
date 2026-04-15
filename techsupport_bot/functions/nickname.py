@@ -120,7 +120,7 @@ class AutoNickName(cogs.MatchCog):
         # If user outranks bot, do nothing
         if ctx.message.author.top_role >= ctx.channel.guild.me.top_role:
             return
-        
+
         modified_name = format_username(ctx.author.display_name)
 
         # If we need to change the username, do so
