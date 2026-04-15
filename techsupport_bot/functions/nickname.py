@@ -14,6 +14,7 @@ import string
 from typing import TYPE_CHECKING, Self
 
 import discord
+import munch
 from botlogging import LogContext, LogLevel
 from core import cogs
 from discord.ext import commands
@@ -29,7 +30,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    await bot.add_cog(AutoNickName(bot=bot))
+    await bot.add_cog(AutoNickName(bot=bot, extension_name="nickname"))
 
 
 def format_username(username: str) -> str:
@@ -76,10 +77,64 @@ def format_username(username: str) -> str:
     return username
 
 
-class AutoNickName(cogs.BaseCog):
+class AutoNickName(cogs.MatchCog):
     """
     The class that holds the listener and functions to auto change peoples nicknames
     """
+
+    async def match(
+        self: Self, config: munch.Munch, ctx: commands.Context, content: str
+    ) -> bool:
+        """On every message, check if the authors nickname should be changed
+
+        Args:
+            config (munch.Munch): The guild config
+            ctx (commands.Context): The context that sent the message
+            content (str): The content of the message
+
+        Returns:
+            bool: If the nickname needs to be changed or not
+        """
+        modified_name = format_username(ctx.author.display_name)
+
+        # If the name didn't change for the user, do nothing
+        if modified_name == ctx.author.display_name:
+            return False
+        return True
+
+    async def response(
+        self: Self,
+        config: munch.Munch,
+        ctx: commands.Context,
+        content: str,
+        result: bool,
+    ) -> None:
+        """Changes the nickname of a given user, on message
+
+        Args:
+            config (munch.Munch): The guild config
+            ctx (commands.Context): The context that sent the message
+            content (str): The content of the message
+            result (bool): The return value of the match function
+        """
+        modified_name = format_username(ctx.author.display_name)
+
+        # If we need to change the username, do so
+        if modified_name != ctx.author.display_name:
+            await ctx.author.edit(nick=modified_name)
+            try:
+                await ctx.author.send(
+                    "Your nickname has been changed to make it easy to read and"
+                    f" ping your name. Your new nickname is {modified_name}."
+                )
+            except discord.Forbidden:
+                channel = config.get("logging_channel")
+                await self.bot.logger.send_log(
+                    message=f"Could not DM {ctx.author.name} about nickname changes",
+                    level=LogLevel.WARNING,
+                    channel=channel,
+                    context=LogContext(guild=ctx.author.guild),
+                )
 
     @commands.Cog.listener()
     async def on_member_join(self: Self, member: discord.Member) -> None:
