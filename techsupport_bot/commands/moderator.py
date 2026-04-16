@@ -469,7 +469,7 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        if target not in interaction.channel.members:
+        if not can_user_see_punishment(target, interaction.channel):
             embed = auxiliary.prepare_deny_embed(
                 message=f"{target} cannot see this warning. No warning was added."
             )
@@ -880,3 +880,26 @@ def build_warning_embeds(
         )
     embeds.append(embed)
     return embeds
+
+
+def can_user_see_punishment(
+    user: discord.Member, channel: discord.abc.GuildChannel | discord.Thread
+) -> bool:
+    """This checks if a user can see a given punishments.
+    This handles threads by checking if the parent channel has the user
+
+    Args:
+        user (discord.Member): The user who is getting punished
+        channel (discord.abc.GuildChannel | discord.Thread):
+            The channel or thread the command was run from
+
+    Returns:
+        bool: If the user can see the punishment
+    """
+    if isinstance(channel, discord.Thread):
+        if user in channel.parent.members:
+            return True
+    else:
+        if user in channel.members:
+            return True
+    return False
