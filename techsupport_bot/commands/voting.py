@@ -671,6 +671,7 @@ class Voting(cogs.LoopCog):
         Args:
             vote (munch.Munch): The vote database object that needs to be ended
             guild (discord.Guild): The guild that vote belongs to
+            config (munch.Munch): The guild config for the guild of the vote
         """
         await vote.update(vote_active=False).apply()
         embed = await self.build_vote_embed(vote.vote_id, guild)
