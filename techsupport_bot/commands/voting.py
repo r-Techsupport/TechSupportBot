@@ -640,7 +640,7 @@ class Voting(cogs.LoopCog):
             config (munch.Munch): The guild config where the vote was started
         """
         # We check every hour on the hour for completed votes
-        await aiocron.crontab("* * * * *").next()
+        await aiocron.crontab("0 * * * *").next()
 
     async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
         """This looks for completed votes and ends then
@@ -659,8 +659,8 @@ class Voting(cogs.LoopCog):
         )
         for vote in active_votes:
             end_time = int((vote.start_time + timedelta(hours=72)).timestamp())
-            # if end_time <= int(datetime.datetime.utcnow().timestamp()):
-            await self.end_vote(vote, guild, config)
+            if end_time <= int(datetime.datetime.utcnow().timestamp()):
+                await self.end_vote(vote, guild, config)
 
     async def end_vote(
         self: Self, vote: munch.Munch, guild: discord.Guild, config: munch.Munch
