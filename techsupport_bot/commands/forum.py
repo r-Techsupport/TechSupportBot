@@ -92,8 +92,8 @@ async def setup(bot: bot.TechSupportBot) -> None:
     config.add(
         key="staff_role_ids",
         datatype="list[int]",
-        title="List of role ids as ints for staff, able to mark threads solved/abandoned/rejected",
-        description="List of role ids as ints for staff, able to mark threads solved/abandoned/rejected",
+        title="Staff role ids as ints able to mark threads solved/abandoned/rejected",
+        description="Staff role ids as ints able to mark threads solved/abandoned/rejected",
         default=[],
     )
     config.add(
@@ -434,7 +434,12 @@ class ForumChannel(cogs.LoopCog):
                 ) - most_recent_message.created_at > datetime.timedelta(
                     minutes=config.extensions.forum.max_age_minutes.value
                 ):
-                    await mark_thread(existing_thread, config, "abandoned")
+                    await mark_thread(
+                        existing_thread,
+                        config,
+                        "abandoned",
+                        "Threads are automatically closed after periods of no activity",
+                    )
 
     async def wait(self: Self, config: munch.Munch, _: discord.Guild) -> None:
         """This waits and rechecks every 5 minutes to search for old threads
@@ -458,8 +463,19 @@ def create_regex_list(str_list: list[str]) -> list[re.Pattern[str]]:
 
 
 def is_thread_staff(
-    user: discord.User, guild: discord.Guild, config: munch.Munch
+    user: discord.Member, guild: discord.Guild, config: munch.Munch
 ) -> bool:
+    """This checks if a user is staff in a given thread
+    This uses the staff roles config
+
+    Args:
+        user (discord.Member): The user to check
+        guild (discord.Guild): The guild this thread is in
+        config (munch.Munch): The config of the guild
+
+    Returns:
+        bool: Whether the user is staff or not
+    """
     if staff_roles := config.extensions.forum.staff_role_ids.value:
         roles = (discord.utils.get(guild.roles, id=int(role)) for role in staff_roles)
         status = any((role in user.roles for role in roles))
