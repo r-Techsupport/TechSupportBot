@@ -158,10 +158,16 @@ class ForumChannel(cogs.LoopCog):
         extras={"module": "forum"},
     )
     async def mark_thread_command(
-        self: Self,
-        interaction: discord.Interaction,
-        status: str,
+        self: Self, interaction: discord.Interaction, status: str, reason: str = ""
     ) -> None:
+        """This is the command to change the status of a thread
+        This has autofill for stauts and does permissions checks
+
+        Args:
+            interaction (discord.Interaction): The interaction calling the command
+            status (str): The status to change the command to
+            reason (str): The reason the status is being changed. Defaults to ""
+        """
         await interaction.response.defer(ephemeral=True)
 
         config = self.bot.guild_configs[str(interaction.guild.id)]
@@ -216,7 +222,7 @@ class ForumChannel(cogs.LoopCog):
         confirm_embed = auxiliary.prepare_confirm_embed(f"Thread marked as {status}!")
         await interaction.followup.send(embed=confirm_embed, ephemeral=True)
 
-        await mark_thread(interaction.channel, config, status)
+        await mark_thread(interaction.channel, config, status, reason, interaction.user)
 
     @mark_thread_command.autocomplete("status")
     async def status_autocomplete(
@@ -339,7 +345,15 @@ class ForumChannel(cogs.LoopCog):
 
         # Check if the thread title is disallowed
         if any(pattern.search(thread.name) for pattern in disallowed_title_patterns):
-            await mark_thread(thread, config, "rejected")
+            await mark_thread(
+                thread,
+                config,
+                "rejected",
+                reason=(
+                    "Your thread doesn't meet our posting requirements. "
+                    "Please make sure you have a well written title and a detailed body."
+                ),
+            )
             return
 
         # Check if the thread body is disallowed
@@ -350,12 +364,28 @@ class ForumChannel(cogs.LoopCog):
                 config.extensions.forum.body_regex_list.value
             )
             if any(pattern.search(body) for pattern in disallowed_body_patterns):
-                await mark_thread(thread, config, "rejected")
+                await mark_thread(
+                    thread,
+                    config,
+                    "rejected",
+                    reason=(
+                        "Your thread doesn't meet our posting requirements. "
+                        "Please make sure you have a well written title and a detailed body."
+                    ),
+                )
                 return
             if body.lower() == thread.name.lower() or len(body.lower()) < len(
                 thread.name.lower()
             ):
-                await mark_thread(thread, config, "rejected")
+                await mark_thread(
+                    thread,
+                    config,
+                    "rejected",
+                    reason=(
+                        "Your thread doesn't meet our posting requirements. "
+                        "Please make sure you have a well written title and a detailed body."
+                    ),
+                )
                 return
 
         # Check if the thread creator has an existing open thread
@@ -365,7 +395,15 @@ class ForumChannel(cogs.LoopCog):
                 and not existing_thread.archived
                 and existing_thread.id != thread.id
             ):
-                await mark_thread(thread, config, "duplicate")
+                await mark_thread(
+                    thread,
+                    config,
+                    "duplicate",
+                    reason=(
+                        "You are only allowed to have 1 open thread at any time. "
+                        f"You must use {existing_thread.mention}"
+                    ),
+                )
                 return
 
         embed = discord.Embed(
@@ -434,6 +472,8 @@ async def mark_thread(
     thread: discord.Thread,
     config: munch.Munch,
     status: str,
+    reason: str,
+    editor: discord.Member | None = None,
 ) -> None:
     """This modifies a thread, can be marked as any of the options in STATUS_CONFIG
     No validation is done, assuming data passed here is always valid
@@ -442,6 +482,8 @@ async def mark_thread(
         thread (discord.Thread): The thread to modify
         config (munch.Munch): The guild config
         status (str): The status to modify the thread with
+        reason (str): The reason the thread was changed
+        editor (discord.Member | None): The user who edited the thread
     """
     data = STATUS_CONFIG[status]
 
@@ -450,6 +492,16 @@ async def mark_thread(
         description=getattr(config.extensions.forum, data["message_key"]).value,
         color=data["color"],
     )
+    # If there is a reason, add the reason to the embed
+    if reason:
+        embed.add_field(name="Reason", value=reason)
+
+    # If an editor was passed, it was done by a human
+    # Otherwise, mark is as being done automatically
+    if editor:
+        embed.set_footer(text=f"Changed by {editor.display_name}")
+    else:
+        embed.set_footer(text="Changed automatically")
 
     await thread.send(content=thread.owner.mention, embed=embed)
 
