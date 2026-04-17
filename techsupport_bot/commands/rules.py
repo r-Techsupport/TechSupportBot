@@ -44,9 +44,7 @@ class Rules(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-
-        # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
+        return
 
     async def get_guild_rules(self: Self, guild: discord.Guild) -> munch.Munch:
         """Gets the munchified rules for a given guild.
@@ -66,8 +64,14 @@ class Rules(cogs.BaseCog):
             rules_data = json.dumps(
                 {
                     "rules": [
-                        {"description": "No spamming! (this is an example rule)"},
-                        {"description": "Keep it friendly! (this is an example rule)"},
+                        {
+                            "name": "Anti-Spam",
+                            "description": "No spamming! (this is an example rule)",
+                        },
+                        {
+                            "name": "No Harassment",
+                            "description": "Keep it friendly! (this is an example rule)",
+                        },
                     ],
                 }
             )
@@ -182,7 +186,7 @@ class Rules(cogs.BaseCog):
         guild_rules = raw_rules.get("rules")
         for rule_number in numbers:
             embed.add_field(
-                name=f"Rule {rule_number}",
+                name=f"Rule {rule_number}: {guild_rules[rule_number - 1].get('name', '')}",
                 value=guild_rules[rule_number - 1].get("description", "None"),
                 inline=False,
             )
@@ -220,7 +224,7 @@ class Rules(cogs.BaseCog):
 
         for index, rule in enumerate(rules_data.get("rules")):
             embed.add_field(
-                name=f"Rule {index+1}",
+                name=f"Rule {index+1}: {rule.get('name', '')}",
                 value=rule.get("description", "None"),
                 inline=False,
             )

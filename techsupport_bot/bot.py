@@ -319,7 +319,9 @@ class TechSupportBot(commands.Bot):
         for extension_name, extension_config in self.extension_configs.items():
             if extension_config:
                 # don't attach to guild config if extension isn't configurable
-                extensions_config[extension_name] = extension_config.data
+                extensions_config[extension_name] = munch.munchify(
+                    extension_config.data
+                )
         self.extension_name_list.sort()
 
         config_ = munch.DefaultMunch(None)
@@ -506,10 +508,18 @@ class TechSupportBot(commands.Bot):
 
         embed = auxiliary.prepare_deny_embed(message=error_message)
 
+        ephemeral_errors_parameter = interaction.command.extras.get(
+            "ephemeral_error", False
+        )
+        debug_mode = bool(int(os.environ.get("DEBUG", 0)))
+        ephemeral_errors = ephemeral_errors_parameter and not debug_mode
+
         if interaction.response.is_done():
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=embed, ephemeral=ephemeral_errors)
         else:
-            await interaction.response.send_message(embed=embed)
+            await interaction.response.send_message(
+                embed=embed, ephemeral=ephemeral_errors
+            )
 
     async def handle_error(
         self: Self,
@@ -1012,6 +1022,7 @@ class TechSupportBot(commands.Bot):
             context=LogContext(guild=interaction.guild, channel=interaction.channel),
             channel=log_channel,
             embed=embed,
+            console_only=interaction.command.extras.get("suppress_logs", False),
         )
 
     async def can_run(

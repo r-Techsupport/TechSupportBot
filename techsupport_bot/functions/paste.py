@@ -116,7 +116,7 @@ class Paster(cogs.MatchCog):
             "\n"
         ) > self.max_newlines(config.extensions.paste.length_limit.value):
             if "automod" in config.get("enabled_extensions", []):
-                automod_actions = automod.run_all_checks(config, ctx.message)
+                automod_actions = await automod.run_all_checks(config, ctx.message)
                 automod_final = automod.process_automod_violations(automod_actions)
                 if automod_final and automod_final.delete_message:
                     return

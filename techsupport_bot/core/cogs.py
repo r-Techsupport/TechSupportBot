@@ -122,6 +122,12 @@ class MatchCog(BaseCog):
         if not self.extension_enabled(config):
             return
 
+        if (
+            message.reference
+            and message.reference.type == discord.MessageReferenceType.forward
+        ):
+            message.content = message.message_snapshots[0].content
+
         result = await self.match(config, ctx, message.content)
         if not result:
             return
@@ -135,11 +141,11 @@ class MatchCog(BaseCog):
                 context=LogContext(guild=ctx.guild, channel=ctx.channel),
             )
             config = self.bot.guild_configs[str(ctx.guild.id)]
-            channel = config.get("logging_channel")
+            bot_logging_channel = config.get("logging_channel")
             await self.bot.logger.send_log(
                 message=f"Match cog error: {self.__class__.__name__} {exception}!",
                 level=LogLevel.ERROR,
-                channel=channel,
+                channel=bot_logging_channel,
                 context=LogContext(guild=ctx.guild, channel=ctx.channel),
                 exception=exception,
             )

@@ -159,14 +159,10 @@ Even though it executes no code, we add an automatic help trigger that is called
         description="Long-description",
     )
     async def command-group-name():
-
-        # Executed if there are no/invalid args supplied
-        await auxiliary.extension_help(self, ctx, self.__module__[9:])
+        return
 ```
 This defines a command group that is called using `.command-group-name <command>`.
 The help is included and called if it is called by itself, should be included unless the command group itself serves a purpose.
-
-Note: The help call uses `self.module[11:]` since that is the most reliable way to get the actual extension name, since it always contains `extensions:<extension-name>`
 
 
 ## Command definition
