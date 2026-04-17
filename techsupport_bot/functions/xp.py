@@ -30,6 +30,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         default=[],
     )
     config.add(
+        key="excluded_channels",
+        datatype="list",
+        title="List of channel IDs to exclude for XP",
+        description="List of channel IDs to exclude for XP",
+        default=[],
+    )
+    config.add(
         key="level_roles",
         datatype="dict",
         title="Dict of levels in XP:Role ID.",
@@ -68,11 +75,15 @@ class LevelXP(cogs.MatchCog):
             return False
 
         # Ignore anyone in the ineligible list
-        if ctx.author.id in self.ineligible:
+        if f"{ctx.guild.id}:{ctx.author.id}" in self.ineligible:
             return False
 
         # Ignore messages outside of tracked categories
         if ctx.channel.category_id not in config.extensions.xp.categories_counted.value:
+            return False
+
+        # Ignore messages in exlucded channels
+        if ctx.channel.id in config.extensions.xp.excluded_channels.value:
             return False
 
         # Ignore messages that are too short
@@ -87,7 +98,7 @@ class LevelXP(cogs.MatchCog):
 
         # Ignore messages that are factoid calls
         if "factoids" in config.enabled_extensions:
-            factoid_prefix = prefix = config.extensions.factoids.prefix.value
+            factoid_prefix = config.extensions.factoids.prefix.value
             if ctx.message.clean_content.startswith(factoid_prefix):
                 return False
 
@@ -120,7 +131,7 @@ class LevelXP(cogs.MatchCog):
 
         await self.apply_level_ups(ctx.author, (current_XP + new_XP))
 
-        self.ineligible[ctx.author.id] = True
+        self.ineligible[f"{ctx.guild.id}:{ctx.author.id}"] = True
 
     async def apply_level_ups(self: Self, user: discord.Member, new_xp: int) -> None:
         """This function will determine if a user leveled up and apply the proper roles
