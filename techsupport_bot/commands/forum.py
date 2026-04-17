@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Self
 
 import discord
 import munch
+import ui
 from core import auxiliary, cogs, extensionconfig
 from discord import app_commands
 from discord.ext import commands
@@ -270,7 +271,7 @@ class ForumChannel(cogs.LoopCog):
         return [choice for choice in choices if current.lower() in choice.name.lower()]
 
     @forum_group.command(
-        name="get-unsolved",
+        name="unsolved",
         description="Gets a collection of unsolved issues",
         extras={"module": "forum"},
     )
@@ -286,16 +287,37 @@ class ForumChannel(cogs.LoopCog):
         channel = await interaction.guild.fetch_channel(
             int(config.extensions.forum.forum_channel_id.value)
         )
-        mention_threads = "\n".join(
-            [
-                thread.mention
-                for thread in random.sample(
-                    channel.threads, min(len(channel.threads), 5)
-                )
-            ]
+        mention_threads: list[discord.Thread] = channel.threads
+        if len(mention_threads) == 0:
+            embed = discord.Embed(
+                title="Unsolved",
+                description="No unsolved issues. Hopefully not a bug",
+                color=discord.Color.blurple(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+        # To prevent bias, we randomize the open threads
+        random.shuffle(mention_threads)
+        embeds = []
+        index = 1
+        running_desc = ""
+        embed = discord.Embed(title="Unsolved", color=discord.Color.blurple())
+        for thread in mention_threads:
+            if index % 10 == 0:
+                embed.description = running_desc
+                embeds.append(embed)
+                embed = discord.Embed(title="Unsolved", color=discord.Color.blurple())
+                running_desc = ""
+            running_desc += f"{thread.name}: {thread.mention}\n"
+            index += 1
+
+        embed.description = running_desc
+        embeds.append(embed)
+
+        view = ui.PaginateView()
+        await view.send(
+            interaction.channel, interaction.user, embeds, interaction, True
         )
-        embed = discord.Embed(title="Unsolved", description=mention_threads)
-        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @commands.Cog.listener()
     async def on_thread_create(self: Self, thread: discord.Thread) -> None:
