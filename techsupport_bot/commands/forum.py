@@ -234,7 +234,6 @@ class ForumChannel(cogs.LoopCog):
         This parses a list of valid statuses and shows the user the list they can actually use
 
         Args:
-            self (Self): _description_
             interaction (discord.Interaction): The interaction that is calling the command
             current (str): The current choice the user is typing
 
