@@ -547,9 +547,12 @@ class ProtectCommands(cogs.BaseCog):
             target=target,
         )
 
+        response_action = "warn"
+        if should_ban:
+            response_action = response_action + " + ban"
         embed = generate_response_embed(
             user=target,
-            action="warn",
+            action=response_action,
             reason=f"{reason} ({new_count_of_warnings} total warnings)",
         )
         if interaction.response.is_done():
