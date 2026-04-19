@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
-from core import auxiliary, cogs
 from discord.ext import commands
+
+from core import auxiliary, cogs
 
 if TYPE_CHECKING:
     import bot
@@ -46,7 +47,7 @@ class Animals(cogs.BaseCog):
         """
         if not self.bot.file_config.api.api_keys.cat:
             embed = auxiliary.prepare_deny_embed(
-                "No cat API has been set, so not cat can be shown"
+                "No cat API key has been set, so not cat can be shown"
             )
             await ctx.send(embed=embed)
             return
