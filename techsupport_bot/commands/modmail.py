@@ -1087,6 +1087,12 @@ class Modmail(cogs.BaseCog):
 
             # Sends a factoid
             case "send":
+                if content == "send":
+                    await auxiliary.send_deny_embed(
+                        message="No factoid to send",
+                        channel=message.channel,
+                    )
+                    return
                 # Replaces \n with spaces so factoid can be called even with newlines
                 query = message.content.replace("\n", " ").split(" ")[1].lower()
                 factoid = (
