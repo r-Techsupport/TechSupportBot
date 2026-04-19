@@ -27,14 +27,13 @@ import aiocron
 import discord
 import expiringdict
 import munch
+import ui
 import yaml
 from aiohttp.client_exceptions import InvalidURL
-from discord import app_commands
-from discord.ext import commands
-
-import ui
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, custom_errors, extensionconfig
+from discord import app_commands
+from discord.ext import commands
 from functions import logger as function_logger
 
 if TYPE_CHECKING:
