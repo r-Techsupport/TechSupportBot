@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Self
 from core import auxiliary, cogs
 from discord.ext import commands
 
-
 if TYPE_CHECKING:
     import bot
 
