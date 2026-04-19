@@ -27,13 +27,14 @@ import aiocron
 import discord
 import expiringdict
 import munch
-import ui
 import yaml
 from aiohttp.client_exceptions import InvalidURL
-from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, custom_errors, extensionconfig
 from discord import app_commands
 from discord.ext import commands
+
+import ui
+from botlogging import LogContext, LogLevel
+from core import auxiliary, cogs, custom_errors, extensionconfig
 from functions import logger as function_logger
 
 if TYPE_CHECKING:
@@ -831,12 +832,18 @@ class FactoidManager(cogs.MatchCog):
         if factoid.disabled:
             return
 
-        if (
-            factoid.restricted
-            and str(ctx.channel.id)
-            not in config.extensions.factoids.restricted_list.value
-        ):
-            return
+        if factoid.restricted:
+            channel = ctx.channel
+            restricted_list = config.extensions.factoids.restricted_list.value
+            if isinstance(channel, discord.Thread):
+                if (
+                    str(channel.id) not in restricted_list
+                    and str(channel.parent.id) not in restricted_list
+                ):
+                    return
+            else:
+                if str(channel.id) not in restricted_list:
+                    return
 
         if config.extensions.factoids.disable_embeds.value:
             embed = None
