@@ -369,7 +369,7 @@ class HangmanCog(cogs.BaseCog):
         # Check if word matches an automod rule
         config = interaction.client.guild_configs[str(interaction.guild.id)]
         if "automod" in config.get("enabled_extensions", []):
-            automod_actions = automod.run_only_string_checks(config,word)
+            automod_actions = automod.run_only_string_checks(config, word)
             automod_final = automod.process_automod_violations(automod_actions)
             print(automod_final)
             if automod_final:
@@ -377,12 +377,18 @@ class HangmanCog(cogs.BaseCog):
                     await moderation.mute_user(
                         user=interaction.user,
                         reason=automod_final.violation_string,
-                        duration=datetime.timedelta(seconds=automod_final.mute_duration),
+                        duration=datetime.timedelta(
+                            seconds=automod_final.mute_duration
+                        ),
                     )
                 if automod_final.warn:
                     count_of_warnings = (
-                            len(await moderation.get_all_warnings(self.bot, interaction.user, interaction.guild))
-                            + 1
+                        len(
+                            await moderation.get_all_warnings(
+                                self.bot, interaction.user, interaction.guild
+                            )
+                        )
+                        + 1
                     )
                     automod_final.violation_string += (
                         f" ({count_of_warnings} total warnings)"
@@ -404,21 +410,27 @@ class HangmanCog(cogs.BaseCog):
                             ),
                         )
                         if not automod_final.be_silent:
-                            await interaction.channel.send(content=interaction.user.mention, embed=ban_embed)
+                            await interaction.channel.send(
+                                content=interaction.user.mention, embed=ban_embed
+                            )
                             try:
                                 await interaction.user.send(embed=ban_embed)
                             except discord.Forbidden:
                                 await self.bot.logger.send_log(
                                     message=f"Could not DM {interaction.user} about being banned",
                                     level=LogLevel.WARNING,
-                                    context=LogContext(guild=interaction.guild, channel=interaction.channel),
+                                    context=LogContext(
+                                        guild=interaction.guild,
+                                        channel=interaction.channel,
+                                    ),
                                 )
 
                         await moderation.ban_user(
                             interaction.guild,
                             interaction.user,
                             delete_seconds=(
-                                    config.extensions.moderator.ban_delete_duration.value * 86400
+                                config.extensions.moderator.ban_delete_duration.value
+                                * 86400
                             ),
                             reason=automod_final.violation_string,
                         )
@@ -436,18 +448,23 @@ class HangmanCog(cogs.BaseCog):
                         automod_final.violation_string,
                     )
 
-                    await interaction.channel.send(content=interaction.user.mention, embed=embed)
+                    await interaction.channel.send(
+                        content=interaction.user.mention, embed=embed
+                    )
                     try:
                         await interaction.user.send(embed=embed)
                     except discord.Forbidden:
                         await self.bot.logger.send_log(
                             message=f"Could not DM {interaction.user} about being automodded",
                             level=LogLevel.WARNING,
-                            context=LogContext(guild=interaction.guild, channel=interaction.channel),
+                            context=LogContext(
+                                guild=interaction.guild, channel=interaction.channel
+                            ),
                         )
                 if automod_final.delete_message:
                     await interaction.followup.send(
-                        "Your word was flagged by automod. Please choose a different word.", ephemeral=True
+                        "Your word was flagged by automod. Please choose a different word.",
+                        ephemeral=True,
                     )
                     return
 
