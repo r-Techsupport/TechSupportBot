@@ -80,7 +80,7 @@ class ProtectCommands(cogs.BaseCog):
             target (discord.User): The target to ban
             reason (str): The reason the person is getting banned
             delete_days (app_commands.Range[int, 0, 7], optional): How many days of
-                messages to delete. Defaults to None.
+                messages to delete. Defaults to 7.
         """
         # Ensure we can ban the person
         permission_check = await self.permission_check(
