@@ -4,7 +4,7 @@ The cog in the file is named:
     Voting
 
 This file contains 1 commands:
-    /voting
+    /vote
 """
 
 from __future__ import annotations
@@ -17,8 +17,7 @@ import aiocron
 import discord
 import munch
 import ui
-import ui.persistent_voting
-from core import cogs, extensionconfig
+from core import auxiliary, cogs, extensionconfig
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -33,29 +32,66 @@ async def setup(bot: bot.TechSupportBot) -> None:
     """
     config = extensionconfig.ExtensionConfig()
     config.add(
-        key="votes_channel_id",
+        key="votes_channel_roles",
+        datatype="dict[str, list[str]]",
+        title="Votes channels → allowed roles",
+        description=(
+            "Map of forum channel IDs to a list of role IDs. "
+            "User must have at least one role from the list."
+        ),
+        default={},
+    )
+    config.add(
+        key="active_role_id",
         datatype="str",
-        title="Votes channel",
-        description="The forum channel id as a string to start votes in",
+        title="Active voter role",
+        description="User must have this role to start or participate in votes",
         default="",
     )
     config.add(
-        key="ping_role_id",
-        datatype="str",
-        title="The role to ping when starting a vote",
+        key="voting_thresholds",
+        datatype="list[int]",
+        title="The 3 percentage thresholds for voting pass/fail",
         description=(
-            "The role to ping when starting a vote, which will always be pinged"
+            "1, % of eligible voters who must vote yes"
+            "2, % of yes/no voters who must have voted yes"
+            "3, % of eligible voters who must have voted anything at all"
         ),
-        default="",
+        default=[50, 67, 75],
     )
     await bot.add_cog(Voting(bot=bot, extension_name="voting"))
     bot.add_extension_config("voting", config)
 
 
 class Voting(cogs.LoopCog):
-    """The class that holds the core voting system"""
+    """The class that holds the core voting system
 
-    @app_commands.checks.has_permissions(manage_nicknames=True)
+    Attributes:
+        VOTE_CONFIG: dict[str, dict[str, str]]:
+            Config for display strings and IDs for vote buttons
+    """
+
+    VOTE_CONFIG = {
+        "yes": {
+            "ids_field": "vote_ids_yes",
+            "count_field": "votes_yes",
+            "already_msg": "You have already voted yes",
+            "success_msg": "Your vote for yes has been counted",
+        },
+        "no": {
+            "ids_field": "vote_ids_no",
+            "count_field": "votes_no",
+            "already_msg": "You have already voted no",
+            "success_msg": "Your vote for no has been counted",
+        },
+        "abstain": {
+            "ids_field": "vote_ids_abstain",
+            "count_field": "votes_abstain",
+            "already_msg": "You have already voted to abstain",
+            "success_msg": "Your vote to abstain has been counted",
+        },
+    }
+
     @app_commands.command(
         name="vote",
         description="Starts a yes/no vote that runs for 72 hours",
@@ -66,40 +102,67 @@ class Voting(cogs.LoopCog):
     async def votingbutton(
         self: Self,
         interaction: discord.Interaction,
+        channel: str,
         blind: bool = False,
-        anonymous: bool = False,
+        anonymous: bool = True,
     ) -> None:
         """Will open a modal
 
         Args:
             interaction (discord.Interaction): The interaction the command was called at
+            channel (str): The ID of the channel the vote is to be started in
             blind (bool): A blind vote hides the tally and who voted for what
                 for the duration of the vote
             anonymous (bool): A blind vote hides the tally for the duration of the vote
                 This also hides who voted for what forever, and triggers it to be deleted
                 from the database upon completion of the vote
         """
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+        channel = await interaction.guild.fetch_channel(int(channel))
+
+        if not self.user_can_use_vote_channel(
+            member=interaction.user,
+            channel=channel,
+            config=config,
+        ):
+            embed = auxiliary.prepare_deny_embed(
+                "You do not have rights to start that vote!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
 
         form = ui.VoteCreation()
         await interaction.response.send_modal(form)
         await form.wait()
 
-        config = self.bot.guild_configs[str(interaction.guild.id)]
-        channel = await interaction.guild.fetch_channel(
-            int(config.extensions.voting.votes_channel_id.value)
-        )
+        # Fetch all roles from the guild
         roles = await interaction.guild.fetch_roles()
-        role = next(
-            role
-            for role in roles
-            if role.id == int(config.extensions.voting.ping_role_id.value)
+
+        # Get the allowed role IDs for this channel from the config
+        channel_role_map: dict[str, list[str]] = (
+            config.extensions.voting.votes_channel_roles.value
         )
+        allowed_role_ids = channel_role_map.get(str(channel.id), [])
+
+        # Build a list of discord.Role objects
+        ping_roles: list[discord.Role] = [
+            role for role in roles if str(role.id) in allowed_role_ids
+        ]
+
+        # Build the mention string
+        roles_to_ping = " ".join(role.mention for role in ping_roles)
+
+        eligible_voters = await self.calculate_eligible_voters(
+            channel, interaction.guild
+        )
+        eligible_voters = "," + ",".join(str(voter.id) for voter in eligible_voters)
 
         vote = await self.bot.models.Votes(
             guild_id=str(interaction.guild.id),
             message_id="0",
             vote_owner_id=str(interaction.user.id),
             vote_description=form.vote_reason.value,
+            vote_ids_eligible=eligible_voters,
             anonymous=anonymous,
             blind=blind,
         ).create()
@@ -111,7 +174,7 @@ class Voting(cogs.LoopCog):
             name=f"VOTE: {form.vote_short}",
             allowed_mentions=discord.AllowedMentions(roles=True),
             embed=embed,
-            content=role.mention,
+            content=roles_to_ping,
             view=view,
         )
 
@@ -122,6 +185,100 @@ class Voting(cogs.LoopCog):
         await vote.update(
             thread_id=str(vote_thread.id), message_id=str(vote_message.id)
         ).apply()
+
+    @votingbutton.autocomplete("channel")
+    async def vote_channel_autocomplete(
+        self: Self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        """This is the autocomplete for the voting
+        It will show the user what channel(s) they can start a vote in
+
+        Args:
+            interaction (discord.Interaction): The interaction that is causing the lookup
+            current (str): The current string that the user has typed
+
+        Returns:
+            list[app_commands.Choice[str]]: The list of channels that match the current string
+        """
+        config = self.bot.guild_configs.get(str(interaction.guild.id))
+        if not config:
+            return []
+
+        member = interaction.user
+        if not isinstance(member, discord.Member):
+            return []
+
+        channel_role_map = config.extensions.voting.votes_channel_roles.value
+
+        choices: list[app_commands.Choice[str]] = []
+
+        for channel_id in channel_role_map.keys():
+            channel = interaction.guild.get_channel(int(channel_id))
+            if not channel:
+                continue
+
+            # Optional name filter (autocomplete)
+            if current.lower() not in channel.name.lower():
+                continue
+
+            if not self.user_can_use_vote_channel(
+                member=member,
+                channel=channel,
+                config=config,
+            ):
+                continue
+
+            choices.append(
+                app_commands.Choice(
+                    name=f"#{channel.name}",
+                    value=str(channel.id),
+                )
+            )
+
+        return choices[:25]
+
+    def user_can_use_vote_channel(
+        self: Self,
+        member: discord.Member,
+        channel: discord.abc.GuildChannel,
+        config: munch.Munch,
+    ) -> bool:
+        """This checks if the user can start a vote in a given channel
+
+        Args:
+            member (discord.Member): The member that is trying to start a vote
+            channel (discord.abc.GuildChannel): The channel the vote is going to be started in
+            config (munch.Munch): The guild config for the current guild
+
+        Returns:
+            bool: True if the channel is valid, false if its not
+        """
+        if not isinstance(channel, discord.ForumChannel):
+            return False
+
+        voting_config = config.extensions.voting
+
+        active_role_id: str = voting_config.active_role_id.value
+        channel_role_map: dict[str, list[str]] = voting_config.votes_channel_roles.value
+
+        # Channel must be configured
+        allowed_role_ids = channel_role_map.get(str(channel.id))
+        if not allowed_role_ids:
+            return False
+
+        user_role_ids = {str(role.id) for role in member.roles}
+
+        # Must have the active role
+        if active_role_id not in user_role_ids:
+            return False
+
+        # Must have at least one channel-specific role
+        if not user_role_ids.intersection(allowed_role_ids):
+            return False
+
+        return True
 
     async def search_db_for_vote_by_id(self: Self, vote_id: int) -> munch.Munch:
         """Gets a vote entry from the database by a given vote ID
@@ -148,6 +305,56 @@ class Voting(cogs.LoopCog):
         return await self.bot.models.Votes.query.where(
             self.bot.models.Votes.message_id == message_id
         ).gino.first()
+
+    async def calculate_eligible_voters(
+        self: Self,
+        channel: discord.ForumChannel,
+        guild: discord.Guild,
+    ) -> list[discord.Member]:
+        """Gets a list of members that are eligible to vote, based on the forum channel
+
+        Args:
+            channel (discord.ForumChannel): The channel the vote is run in
+            guild (discord.Guild): The guild that the vote is run in
+
+        Returns:
+            list[discord.Member]: The list of eligible voters
+        """
+        config = self.bot.guild_configs[str(guild.id)]
+        voting_config = config.extensions.voting
+
+        channel_role_map: dict[str, list[str]] = voting_config.votes_channel_roles.value
+        active_role_id: str = voting_config.active_role_id.value
+
+        active_role = guild.get_role(int(active_role_id))
+        if not active_role:
+            return []
+
+        channel_role_ids = channel_role_map.get(str(channel.id))
+        if not channel_role_ids:
+            return []
+
+        channel_roles = [
+            guild.get_role(int(role_id))
+            for role_id in channel_role_ids
+            if guild.get_role(int(role_id)) is not None
+        ]
+
+        if not channel_roles:
+            return []
+
+        # Members with the active role
+        active_members = set(active_role.members)
+
+        # Members with ANY channel role
+        channel_members: set[discord.Member] = set()
+        for role in channel_roles:
+            channel_members.update(role.members)
+
+        # Voters must have both roles
+        eligible_members = active_members & channel_members
+
+        return [member for member in eligible_members if not member.bot]
 
     async def build_vote_embed(
         self: Self, vote_id: int, guild: discord.Guild
@@ -180,19 +387,32 @@ class Voting(cogs.LoopCog):
             inline=False,
         )
         embed.add_field(
+            name="Eligible voters",
+            value=await self.make_named_eligible_list(guild, db_entry),
+            inline=False,
+        )
+        embed.add_field(
             name="Votes",
             value=await self.make_fancy_voting_list(
                 guild,
                 db_entry.vote_ids_yes.split(","),
                 db_entry.vote_ids_no.split(","),
+                db_entry.vote_ids_abstain.split(","),
                 (db_entry.vote_active and hide) or db_entry.anonymous,
             ),
         )
         print_yes_votes = "?" if (hide and db_entry.vote_active) else db_entry.votes_yes
         print_no_votes = "?" if (hide and db_entry.vote_active) else db_entry.votes_no
+        print_abstain_votes = (
+            "?" if (hide and db_entry.vote_active) else db_entry.votes_abstain
+        )
         embed.add_field(
             name="Vote counts",
-            value=f"Votes for yes: {print_yes_votes}\nVotes for no: {print_no_votes}",
+            value=(
+                f"Votes for yes: {print_yes_votes}\n"
+                f"Votes for no: {print_no_votes}\n"
+                f"Votes to abstain: {print_abstain_votes}"
+            ),
         )
         footer_str = f"Vote ID: {db_entry.vote_id}. "
         if db_entry.blind:
@@ -200,13 +420,34 @@ class Voting(cogs.LoopCog):
         if db_entry.anonymous:
             footer_str += "This vote is anonymous. "
         embed.set_footer(text=footer_str)
+        embed.color = discord.Color.blurple()
         return embed
+
+    async def make_named_eligible_list(
+        self: Self, guild: discord.Guild, db_entry: munch.Munch
+    ) -> str:
+        """This builds a pretty list of eligible voters
+        This uses the vote_ids_eligible
+
+        Args:
+            guild (discord.Guild): The guild the vote is in
+            db_entry (munch.Munch): The db_entry for the vote
+
+        Returns:
+            str: A comma separated string of names
+        """
+        voter_ids = (v for v in db_entry.vote_ids_eligible.split(",") if v)
+        voter_names = [
+            (await guild.fetch_member(int(v))).display_name for v in voter_ids
+        ]
+        return ", ".join(sorted(voter_names, key=str.lower))
 
     async def make_fancy_voting_list(
         self: Self,
         guild: discord.Guild,
         voters_yes: list[str],
         voters_no: list[str],
+        voters_abstain: list[str],
         should_hide: bool,
     ) -> str:
         """This makes a new line seperated string to be used in the "Votes" field
@@ -216,12 +457,13 @@ class Voting(cogs.LoopCog):
             guild (discord.Guild): The guild this vote is taking place in
             voters_yes (list[str]): The list of IDs of yes votes
             voters_no (list[str]): The list of IDs of no votes
+            voters_abstain (list[str]): The list of IDs of abstian votes
             should_hide (bool): Should who voted for what be hidden
 
         Returns:
             str: The prepared string, that respects blind/anonymous
         """
-        voters = voters_yes + voters_no
+        voters = voters_yes + voters_no + voters_abstain
         final_str = []
         for user in voters:
             if len(user) == 0:
@@ -231,91 +473,66 @@ class Voting(cogs.LoopCog):
                 final_str.append(f"{user_object.display_name} - ?")
             elif user in voters_yes:
                 final_str.append(f"{user_object.display_name} - yes")
-            else:
+            elif user in voters_no:
                 final_str.append(f"{user_object.display_name} - no")
+            else:
+                final_str.append(f"{user_object.display_name} - abstain")
         final_str.sort()
         return "\n".join(final_str)
 
-    async def register_yes_vote(
+    async def register_vote(
         self: Self,
         interaction: discord.Interaction,
         view: discord.ui.View,
+        vote_type: str,
     ) -> None:
-        """This updates the vote database when someone votes yes
+        """Updates the database to add or update a users vote
+        Handles eligibility checking
 
         Args:
-            interaction (discord.Interaction): The interaction that started the vote
-            view (discord.ui.View): The view that was interacted with
+            interaction (discord.Interaction): The interaction of the button press
+            view (discord.ui.View): The view where the vote is stored
+            vote_type (str): Whether the user voted yes, no or abstain
         """
+        vote_config = self.VOTE_CONFIG[vote_type]
+        user_id = str(interaction.user.id)
+
         db_entry = await self.search_db_for_vote_by_message(str(interaction.message.id))
 
-        # Update vote_ids_yes
-        vote_ids_yes = db_entry.vote_ids_yes.split(",")
-        if str(interaction.user.id) in vote_ids_yes:
+        # Check if voter is allowed to vote
+        vote_ids_eligible = db_entry.vote_ids_eligible.split(",")
+        if user_id not in vote_ids_eligible:
             await interaction.response.send_message(
-                "You have already voted yes", ephemeral=True
+                "You are not eligible to vote here.", ephemeral=True
             )
-            return  # Already voted yes, don't do anything more
+            return
 
-        db_entry = self.clear_vote_record(db_entry, str(interaction.user.id))
+        # Get the correct vote_ids field dynamically
+        vote_ids = getattr(db_entry, vote_config["ids_field"]).split(",")
 
-        vote_ids_yes.append(str(interaction.user.id))
-        db_entry.vote_ids_yes = ",".join(vote_ids_yes)
+        if user_id in vote_ids:
+            await interaction.response.send_message(
+                vote_config["already_msg"], ephemeral=True
+            )
+            return
 
-        # Increment votes_yes
-        db_entry.votes_yes += 1
+        # Remove user from any previous vote
+        db_entry = self.clear_vote_record(db_entry, user_id)
 
-        # Update vote_ids_all
-        vote_ids_all = db_entry.vote_ids_all.split(",")
-        vote_ids_all.append(str(interaction.user.id))
-        db_entry.vote_ids_all = ",".join(vote_ids_all)
+        # Add vote
+        vote_ids.append(user_id)
+        setattr(db_entry, vote_config["ids_field"], ",".join(vote_ids))
 
-        await db_entry.update(
-            vote_ids_no=db_entry.vote_ids_no,
-            votes_no=db_entry.votes_no,
-            vote_ids_yes=db_entry.vote_ids_yes,
-            votes_yes=db_entry.votes_yes,
-            vote_ids_all=db_entry.vote_ids_all,
-        ).apply()
-
-        embed = await self.build_vote_embed(db_entry.vote_id, interaction.guild)
-        await interaction.message.edit(embed=embed, view=view)
-        await interaction.response.send_message(
-            "Your vote for yes has been counted", ephemeral=True
+        # Increment counter
+        setattr(
+            db_entry,
+            vote_config["count_field"],
+            getattr(db_entry, vote_config["count_field"]) + 1,
         )
 
-    async def register_no_vote(
-        self: Self,
-        interaction: discord.Interaction,
-        view: discord.ui.View,
-    ) -> None:
-        """This updates the vote database when someone votes no
-
-        Args:
-            interaction (discord.Interaction): The interaction that started the vote
-            view (discord.ui.View): The view that was interacted with
-        """
-        db_entry = await self.search_db_for_vote_by_message(str(interaction.message.id))
-
-        # Update vote_ids_no
-        vote_ids_no = db_entry.vote_ids_no.split(",")
-        if str(interaction.user.id) in vote_ids_no:
-            await interaction.response.send_message(
-                "You have already voted no", ephemeral=True
-            )
-            return  # Already voted no, don't do anything more
-
-        db_entry = self.clear_vote_record(db_entry, str(interaction.user.id))
-
-        vote_ids_no.append(str(interaction.user.id))
-        db_entry.vote_ids_no = ",".join(vote_ids_no)
-
-        # Increment votes_no
-        db_entry.votes_no += 1
-
         # Update vote_ids_all
         vote_ids_all = db_entry.vote_ids_all.split(",")
-        vote_ids_all.append(str(interaction.user.id))
+        vote_ids_all.append(user_id)
         db_entry.vote_ids_all = ",".join(vote_ids_all)
 
         await db_entry.update(
@@ -323,13 +540,16 @@ class Voting(cogs.LoopCog):
             votes_no=db_entry.votes_no,
             vote_ids_yes=db_entry.vote_ids_yes,
             votes_yes=db_entry.votes_yes,
+            vote_ids_abstain=db_entry.vote_ids_abstain,
+            votes_abstain=db_entry.votes_abstain,
             vote_ids_all=db_entry.vote_ids_all,
         ).apply()
 
         embed = await self.build_vote_embed(db_entry.vote_id, interaction.guild)
         await interaction.message.edit(embed=embed, view=view)
+
         await interaction.response.send_message(
-            "Your vote for no has been counted", ephemeral=True
+            vote_config["success_msg"], ephemeral=True
         )
 
     async def clear_vote(
@@ -345,6 +565,14 @@ class Voting(cogs.LoopCog):
         """
         db_entry = await self.search_db_for_vote_by_message(str(interaction.message.id))
 
+        # Check if voter is allowed to vote
+        vote_ids_eligible = db_entry.vote_ids_eligible.split(",")
+        if str(interaction.user.id) not in vote_ids_eligible:
+            await interaction.response.send_message(
+                "You are not eligible to vote here.", ephemeral=True
+            )
+            return
+
         db_entry = self.clear_vote_record(db_entry, str(interaction.user.id))
 
         await db_entry.update(
@@ -352,6 +580,8 @@ class Voting(cogs.LoopCog):
             votes_no=db_entry.votes_no,
             vote_ids_yes=db_entry.vote_ids_yes,
             votes_yes=db_entry.votes_yes,
+            vote_ids_abstain=db_entry.vote_ids_abstain,
+            votes_abstain=db_entry.votes_abstain,
             vote_ids_all=db_entry.vote_ids_all,
         ).apply()
 
@@ -388,6 +618,13 @@ class Voting(cogs.LoopCog):
             db_entry.votes_no -= 1
         db_entry.vote_ids_no = ",".join(vote_ids_no)
 
+        # If there is a vote for abstain, remote it
+        vote_ids_abstain = db_entry.vote_ids_abstain.split(",")
+        if user_id in vote_ids_abstain:
+            vote_ids_abstain.remove(user_id)
+            db_entry.votes_abstain -= 1
+        db_entry.vote_ids_abstain = ",".join(vote_ids_abstain)
+
         # Remove from vote id all
         vote_ids_all = db_entry.vote_ids_all.split(",")
         if user_id in vote_ids_all:
@@ -423,26 +660,104 @@ class Voting(cogs.LoopCog):
         for vote in active_votes:
             end_time = int((vote.start_time + timedelta(hours=72)).timestamp())
             if end_time <= int(datetime.datetime.utcnow().timestamp()):
-                await self.end_vote(vote, guild)
+                await self.end_vote(vote, guild, config)
 
-    async def end_vote(self: Self, vote: munch.Munch, guild: discord.Guild) -> None:
+    async def end_vote(
+        self: Self, vote: munch.Munch, guild: discord.Guild, config: munch.Munch
+    ) -> None:
         """This ends a vote, and if it was anonymous purges who voted for what from the database
         This will edit the vote message and remove the buttons, and mention the vote owner
 
         Args:
             vote (munch.Munch): The vote database object that needs to be ended
             guild (discord.Guild): The guild that vote belongs to
+            config (munch.Munch): The guild config for the guild of the vote
         """
         await vote.update(vote_active=False).apply()
         embed = await self.build_vote_embed(vote.vote_id, guild)
+        pass_embed = self.build_vote_pass_embed(vote, config)
         # If the vote is anonymous, at this point we need to clear the vote record forever
         if vote.anonymous:
-            await vote.update(vote_ids_yes="", vote_ids_no="").apply()
+            await vote.update(
+                vote_ids_yes="", vote_ids_no="", vote_ids_abstain=""
+            ).apply()
 
         channel = await guild.fetch_channel(int(vote.thread_id))
         message = await channel.fetch_message(int(vote.message_id))
         vote_owner = await guild.fetch_member(int(vote.vote_owner_id))
         await message.edit(content="Vote over", embed=embed, view=None)
         await channel.send(
-            f"{vote_owner.mention} your vote is over. Results:", embed=embed
+            f"{vote_owner.mention} your vote is over. Results:",
+            embeds=[embed, pass_embed],
         )
+
+    def build_vote_pass_embed(
+        self: Self, vote: munch.Munch, config: munch.Munch
+    ) -> discord.Embed:
+        """This builds an embed that shows if the vote passed or failed,
+            based on configurable thresholds
+
+        Args:
+            vote (munch.Munch): The vote that has ended and needs an embed
+            config (munch.Munch): The guild config for the guild
+
+        Returns:
+            discord.Embed: The embed in a ready to send state
+        """
+        embed = discord.Embed(
+            title="Voting statistics", description="This vote **PASSED**"
+        )
+        eligible_voters = sum(1 for v in vote.vote_ids_eligible.split(",") if v)
+        yes_voters = vote.votes_yes
+        no_voters = vote.votes_no
+        abstain_voters = vote.votes_abstain
+
+        thresholds = config.extensions.voting.voting_thresholds.value
+
+        # Percentages
+        percent_eligible_yes = (yes_voters / eligible_voters) * 100
+        percent_voted_yes = (
+            (yes_voters / (yes_voters + no_voters)) * 100
+            if (yes_voters + no_voters) > 0
+            else 0
+        )
+        percent_voted_anything = (
+            (yes_voters + no_voters + abstain_voters) / eligible_voters
+        ) * 100
+
+        did_vote_pass = True
+
+        # Greater than X% of eligible voters must vote yes
+        if percent_eligible_yes < thresholds[0]:
+            did_vote_pass = False
+
+        # At least X% of voters (yes/no) must be yes
+        if percent_voted_yes < thresholds[1]:
+            did_vote_pass = False
+
+        # At least X% of eligible voters must have interacted
+        if percent_voted_anything < thresholds[2]:
+            did_vote_pass = False
+
+        if not did_vote_pass:
+            embed.description = "This vote **FAILED**"
+
+        embed.add_field(
+            name="Eligible voters voting yes:",
+            value=f"Got {percent_eligible_yes:.2f}%\nRequired {thresholds[0]:.2f}%",
+            inline=True,
+        )
+        embed.add_field(
+            name="Votes for yes:",
+            value=f"Got {percent_voted_yes:.2f}%\nRequired {thresholds[1]:.2f}%",
+            inline=True,
+        )
+        embed.add_field(
+            name="Voter turnout:",
+            value=f"Got {percent_voted_anything:.2f}%\nRequired {thresholds[2]:.2f}%",
+            inline=True,
+        )
+
+        embed.color = discord.Color.blurple()
+
+        return embed
