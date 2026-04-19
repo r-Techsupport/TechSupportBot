@@ -8,9 +8,13 @@ from typing import TYPE_CHECKING, Self
 
 import discord
 import ui
-from core import auxiliary, cogs, extensionconfig
+from commands import moderator, modlog
+from core import auxiliary, cogs, extensionconfig, moderation
 from discord import app_commands
 from discord.ext import commands
+
+from functions import automod
+from techsupport_bot import LogLevel, LogContext
 
 if TYPE_CHECKING:
     import bot
@@ -358,9 +362,94 @@ class HangmanCog(cogs.BaseCog):
         # Check if the provided word is too long
         if len(word) >= 85:
             await interaction.followup.send(
-                "The word must be less than 256 characters.", ephemeral=True
+                "The word must be less than 85 characters.", ephemeral=True
             )
             return
+
+        # Check if word matches an automod rule
+        config = interaction.client.guild_configs[str(interaction.guild.id)]
+        if "automod" in config.get("enabled_extensions", []):
+            automod_actions = automod.run_only_string_checks(config,word)
+            automod_final = automod.process_automod_violations(automod_actions)
+            print(automod_final)
+            if automod_final:
+                if automod_final.mute > 0:
+                    await moderation.mute_user(
+                        user=interaction.user,
+                        reason=automod_final.violation_string,
+                        duration=datetime.timedelta(seconds=automod_final.mute_duration),
+                    )
+                if automod_final.warn:
+                    count_of_warnings = (
+                            len(await moderation.get_all_warnings(self.bot, interaction.user, interaction.guild))
+                            + 1
+                    )
+                    automod_final.violation_string += (
+                        f" ({count_of_warnings} total warnings)"
+                    )
+                    await moderation.warn_user(
+                        self.bot,
+                        interaction.user,
+                        interaction.guild.me,
+                        automod_final.violation_string,
+                    )
+                    if count_of_warnings >= config.moderation.max_warnings:
+                        ban_embed = moderator.generate_response_embed(
+                            interaction.user,
+                            "ban",
+                            reason=(
+                                f"Over max warning count {count_of_warnings} out of"
+                                f" {config.moderation.max_warnings} (final warning:"
+                                f" {automod_final.violation_string}) - banned by automod"
+                            ),
+                        )
+                        if not automod_final.be_silent:
+                            await interaction.channel.send(content=interaction.user.mention, embed=ban_embed)
+                            try:
+                                await interaction.user.send(embed=ban_embed)
+                            except discord.Forbidden:
+                                await self.bot.logger.send_log(
+                                    message=f"Could not DM {interaction.user} about being banned",
+                                    level=LogLevel.WARNING,
+                                    context=LogContext(guild=interaction.guild, channel=interaction.channel),
+                                )
+
+                        await moderation.ban_user(
+                            interaction.guild,
+                            interaction.user,
+                            delete_seconds=(
+                                    config.extensions.moderator.ban_delete_duration.value * 86400
+                            ),
+                            reason=automod_final.violation_string,
+                        )
+                        await modlog.log_ban(
+                            self.bot,
+                            interaction.user,
+                            interaction.guild.me,
+                            interaction.guild,
+                            automod_final.violation_string,
+                        )
+                if not automod_final.be_silent:
+                    embed = moderator.generate_response_embed(
+                        interaction.user,
+                        automod_final.action_string,
+                        automod_final.violation_string,
+                    )
+
+                    await interaction.channel.send(content=interaction.user.mention, embed=embed)
+                    try:
+                        await interaction.user.send(embed=embed)
+                    except discord.Forbidden:
+                        await self.bot.logger.send_log(
+                            message=f"Could not DM {interaction.user} about being automodded",
+                            level=LogLevel.WARNING,
+                            context=LogContext(guild=interaction.guild, channel=interaction.channel),
+                        )
+                if automod_final.delete_message:
+                    await interaction.followup.send(
+                        "Your word was flagged by automod. Please choose a different word.", ephemeral=True
+                    )
+                    return
 
         # Check if a game is already active in the channel
         game_data = self.games.get(interaction.channel_id)
