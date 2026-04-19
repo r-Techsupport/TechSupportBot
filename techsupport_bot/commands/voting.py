@@ -502,7 +502,7 @@ class Voting(cogs.LoopCog):
         # Check if voter is allowed to vote
         vote_ids_eligible = db_entry.vote_ids_eligible.split(",")
         if user_id not in vote_ids_eligible:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "You are not eligible to vote here.", ephemeral=True
             )
             return
@@ -511,9 +511,7 @@ class Voting(cogs.LoopCog):
         vote_ids = getattr(db_entry, vote_config["ids_field"]).split(",")
 
         if user_id in vote_ids:
-            await interaction.response.send_message(
-                vote_config["already_msg"], ephemeral=True
-            )
+            await interaction.followup.send(vote_config["already_msg"], ephemeral=True)
             return
 
         # Remove user from any previous vote
@@ -548,9 +546,7 @@ class Voting(cogs.LoopCog):
         embed = await self.build_vote_embed(db_entry.vote_id, interaction.guild)
         await interaction.message.edit(embed=embed, view=view)
 
-        await interaction.response.send_message(
-            vote_config["success_msg"], ephemeral=True
-        )
+        await interaction.followup.send(vote_config["success_msg"], ephemeral=True)
 
     async def clear_vote(
         self: Self,

@@ -29,6 +29,7 @@ class VotingButtonPersistent(discord.ui.View):
             interaction (discord.Interaction): The interaction created when the button was pressed
             button (discord.ui.Button): The button object itself
         """
+        await interaction.response.defer(ephemeral=True)
         cog = interaction.client.get_cog("Voting")
         await cog.register_vote(interaction, self, "yes")
 
@@ -48,6 +49,7 @@ class VotingButtonPersistent(discord.ui.View):
             interaction (discord.Interaction): The interaction created when the button was pressed
             button (discord.ui.Button): The button object itself
         """
+        await interaction.response.defer(ephemeral=True)
         cog = interaction.client.get_cog("Voting")
         await cog.register_vote(interaction, self, "no")
 
@@ -67,6 +69,7 @@ class VotingButtonPersistent(discord.ui.View):
             interaction (discord.Interaction): The interaction created when the button was pressed
             button (discord.ui.Button): The button object itself
         """
+        await interaction.response.defer(ephemeral=True)
         cog = interaction.client.get_cog("Voting")
         await cog.register_vote(interaction, self, "abstain")
 
@@ -86,5 +89,6 @@ class VotingButtonPersistent(discord.ui.View):
             interaction (discord.Interaction): The interaction created when the button was pressed
             button (discord.ui.Button): The button object itself
         """
+        await interaction.response.defer(ephemeral=True)
         cog = interaction.client.get_cog("Voting")
         await cog.clear_vote(interaction, self)
