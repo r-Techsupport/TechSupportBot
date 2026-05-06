@@ -46,7 +46,7 @@ class Animals(cogs.BaseCog):
         """
         if not self.bot.file_config.api.api_keys.cat:
             embed = auxiliary.prepare_deny_embed(
-                "No cat API has been set, so not cat can be shown"
+                "No cat API key has been set, so not cat can be shown"
             )
             await ctx.send(embed=embed)
             return
