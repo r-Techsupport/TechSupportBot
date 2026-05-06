@@ -564,7 +564,7 @@ class Voting(cogs.LoopCog):
         # Check if voter is allowed to vote
         vote_ids_eligible = db_entry.vote_ids_eligible.split(",")
         if str(interaction.user.id) not in vote_ids_eligible:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "You are not eligible to vote here.", ephemeral=True
             )
             return
@@ -583,9 +583,7 @@ class Voting(cogs.LoopCog):
 
         embed = await self.build_vote_embed(db_entry.vote_id, interaction.guild)
         await interaction.message.edit(embed=embed, view=view)
-        await interaction.response.send_message(
-            "Your vote has been removed", ephemeral=True
-        )
+        await interaction.followup.send("Your vote has been removed", ephemeral=True)
 
     def clear_vote_record(
         self: Self, db_entry: munch.Munch, user_id: str
