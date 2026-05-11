@@ -59,6 +59,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         ),
         default=[50, 67, 75],
     )
+    config.add(
+        key="reminders_at",
+        datatype="list[int]",
+        title="The list of hours remaining in vote to remind non voters",
+        description="The list of hours remaining in vote to remind non voters",
+        default=[36, 6],
+    )
     await bot.add_cog(Voting(bot=bot, extension_name="voting"))
     bot.add_extension_config("voting", config)
 
@@ -651,10 +658,62 @@ class Voting(cogs.LoopCog):
             .where(self.bot.models.Votes.guild_id == str(guild.id))
             .gino.all()
         )
+        reminder_times = config.extensions.voting.reminders_at.value
+
+        timestamp_now = int(datetime.datetime.utcnow().timestamp())
+
         for vote in active_votes:
             end_time = int((vote.start_time + timedelta(hours=72)).timestamp())
-            if end_time <= int(datetime.datetime.utcnow().timestamp()):
+
+            # End expired votes
+            if end_time <= timestamp_now:
                 await self.end_vote(vote, guild, config)
+                continue
+
+            # Reminder checks
+            for reminder_hour in reminder_times:
+                reminder_timestamp = end_time - (reminder_hour * 3600)
+
+                # To allow for some slight variation in time, give a 5 minute valid reminder window
+                if abs(timestamp_now - reminder_timestamp) <= 300:
+                    await self.remind_vote(vote, guild, config, reminder_hour)
+
+    async def remind_vote(
+        self: Self,
+        vote: munch.Munch,
+        guild: discord.Guild,
+        config: munch.Munch,
+        reminder_hour: int,
+    ) -> None:
+        """This sends a reminder to vote, based on who hasn't voted in the current vote
+        This will send based on configured reminder times
+
+        Args:
+            vote (munch.Munch): The vote object we are reminding for
+            guild (discord.Guild): The guild the vote is in
+            config (munch.Munch): The guild config
+            reminder_hour (int): The hours remining until the vote closes
+        """
+        # Get all eligible voters
+        eligible_voters = [v for v in vote.vote_ids_eligible.split(",") if v]
+        # Get all voted voters
+        voted_voters = [v for v in vote.vote_ids_all.split(",") if v]
+
+        non_voters = [v for v in eligible_voters if v not in voted_voters]
+
+        # Theoretically we can exceed the max length of a discord message. Cut at 60 just to protect us.
+        # We would probably error somewhere else if 61 people ever could vote though
+        mention_string = " ".join(f"<@{v}>" for v in non_voters[:60])
+
+        embed = discord.Embed(
+            title="Remember to vote",
+            description=f"Vote closes in around {reminder_hour} hours!",
+        )
+        embed.color = discord.Color.red()
+
+        channel = await guild.fetch_channel(int(vote.thread_id))
+
+        await channel.send(content=mention_string, embed=embed)
 
     async def end_vote(
         self: Self, vote: munch.Munch, guild: discord.Guild, config: munch.Munch
