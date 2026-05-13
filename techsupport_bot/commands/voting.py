@@ -701,7 +701,7 @@ class Voting(cogs.LoopCog):
 
         non_voters = [v for v in eligible_voters if v not in voted_voters]
 
-        # Theoretically we can exceed the max length of a discord message. Cut at 60 just to protect us.
+        # Theoretically we can exceed the max length of a discord message. Cut at 60 just in case.
         # We would probably error somewhere else if 61 people ever could vote though
         mention_string = " ".join(f"<@{v}>" for v in non_voters[:60])
 
