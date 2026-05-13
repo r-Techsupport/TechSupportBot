@@ -1,19 +1,30 @@
-FROM python:3.11-alpine
+FROM python:3.11-slim
 
-RUN apk update
-RUN apk add --no-cache postgresql-dev gcc musl-dev libpq git
+# Install OS dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    git \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
+# Install uv
+RUN pip install --no-cache-dir uv
+
+# App directory
 WORKDIR /var/TechSupportBot
 
-COPY Pipfile .
-COPY Pipfile.lock .
+# Copy dependency files first for Docker layer caching
+COPY pyproject.toml uv.lock ./
 
-RUN pip install --no-cache-dir pip==$(sed -nE 's/pip = "==(.*)"/\1/p' Pipfile) 
-RUN pip install --no-cache-dir pipenv==$(sed -nE 's/pipenv = "==(.*)"/\1/p' Pipfile)
-RUN pipenv install --system
+# Install dependencies into project venv
+RUN uv sync --frozen --no-dev
 
+# Copy project files
 COPY . .
 
+# Move into bot directory
 WORKDIR /var/TechSupportBot/techsupport_bot
 
-CMD python3 -u main.py
+# Run bot
+CMD ["uv", "run", "--", "python3", "-u", "main.py"]
