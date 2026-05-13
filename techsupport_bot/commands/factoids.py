@@ -831,12 +831,18 @@ class FactoidManager(cogs.MatchCog):
         if factoid.disabled:
             return
 
-        if (
-            factoid.restricted
-            and str(ctx.channel.id)
-            not in config.extensions.factoids.restricted_list.value
-        ):
-            return
+        if factoid.restricted:
+            channel = ctx.channel
+            restricted_list = config.extensions.factoids.restricted_list.value
+            if isinstance(channel, discord.Thread):
+                if (
+                    str(channel.id) not in restricted_list
+                    and str(channel.parent.id) not in restricted_list
+                ):
+                    return
+            else:
+                if str(channel.id) not in restricted_list:
+                    return
 
         if config.extensions.factoids.disable_embeds.value:
             embed = None
