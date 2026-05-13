@@ -19,7 +19,7 @@ dependencies = [
     "pip==26.1.1", # Pinned to fix temporary problems
     "pydantic==2.13.4", # Pinned to fix temporary problems
     "pyyaml==6.0.3",
-    "setuptools==80.9.0", # Added so gino/asyncpg/sqlalchemy doesn't break.
+    "setuptools==82.0.1", # Added so gino/asyncpg/sqlalchemy doesn't break.
     "unidecode==1.4.0",
 ]
 
