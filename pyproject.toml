@@ -6,7 +6,7 @@ dependencies = [
     "aiocron==2.1",
     "aiohttp==3.13.5",
     "bidict==0.23.1",
-    "dateparser==1.2.2",
+    "dateparser==1.4.0",
     "discord.py==2.7.1",
     "emoji==2.15.0",
     "expiringdict==1.2.2",
