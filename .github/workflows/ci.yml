@@ -44,7 +44,7 @@ jobs:
         uv run isort --check-only $(git rev-parse --show-toplevel)/ --profile black
     - name: Running pytest
       run: |
-        cd techsupport_bot
+        working-directory: techsupport_bot
         uv run pytest tests/ -p no:warnings
 
   containerBuild:
