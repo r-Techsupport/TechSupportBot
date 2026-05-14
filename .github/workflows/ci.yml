@@ -45,7 +45,7 @@ jobs:
     - name: Running pytest
       working-directory: techsupport_bot
       run: |
-        uv run pytest tests/ -p no:warnings
+        PYTHONPATH=techsupport_bot uv run pytest tests/ -p no:warnings
 
   containerBuild:
     runs-on: ubuntu-latest
