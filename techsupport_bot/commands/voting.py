@@ -708,6 +708,8 @@ class Voting(cogs.LoopCog):
         voted_voters = [v for v in vote.vote_ids_all.split(",") if v]
 
         non_voters = [v for v in eligible_voters if v not in voted_voters]
+        if len(non_voters) == 0:
+            return
 
         # Theoretically we can exceed the max length of a discord message. Cut at 60 just in case.
         # We would probably error somewhere else if 61 people ever could vote though
