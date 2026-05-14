@@ -43,8 +43,9 @@ jobs:
       run: |
         uv run isort --check-only $(git rev-parse --show-toplevel)/ --profile black
     - name: Running pytest
+      working-directory: techsupport_bot
       run: |
-        PYTHONPATH=techsupport_bot uv run pytest tests/ -p no:warnings
+        PYTHONPATH=. uv run pytest tests/ -p no:warnings
 
   containerBuild:
     runs-on: ubuntu-latest
