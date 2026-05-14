@@ -44,7 +44,7 @@ jobs:
         uv run isort --check-only $(git rev-parse --show-toplevel)/ --profile black
     - name: Running pytest
       run: |
-        uv run pytest tests/ -p no:warnings
+        uv run pytest techsupport_bot/tests/ -p no:warnings
 
   containerBuild:
     runs-on: ubuntu-latest
