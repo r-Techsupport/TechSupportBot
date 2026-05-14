@@ -21,10 +21,10 @@ jobs:
       run: uv sync --frozen --all-extras
     - name: Analysing the code with black
       run: |
-        black $(git rev-parse --show-toplevel) --check
+        uv run black $(git rev-parse --show-toplevel) --check
     - name: Analysing the code with pylint
       run: |
-        pylint $(git ls-files '*.py')
+        uv run pylint $(git ls-files '*.py')
     - name: Check for CRLF line endings
       run: |
         for file in $(git ls-files); do
@@ -38,14 +38,13 @@ jobs:
         fi
     - name: Analysing the code with flake8
       run: |
-        flake8 $(git rev-parse --show-toplevel)
+        uv run flake8 $(git rev-parse --show-toplevel)
     - name: Analysing the code with isort
       run: |
-        isort --check-only $(git rev-parse --show-toplevel)/ --profile black
+        uv run isort --check-only $(git rev-parse --show-toplevel)/ --profile black
     - name: Running pytest
       run: |
-        cd techsupport_bot
-        python3.11 -m pytest tests/ -p no:warnings
+        uv run pytest tests/ -p no:warnings
 
   containerBuild:
     runs-on: ubuntu-latest
