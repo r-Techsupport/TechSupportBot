@@ -45,7 +45,7 @@ The only thing left to do is run `make start`. This will build the container, do
 
 The Makefile offers shortcut commands for development.
 
-* `sync` makes an updated pipenv virtual environment.
+* `sync` updates uv.lock and installs updated packages
 * `check-format` checks the formatting without changing files. Required black and isort be installed on your computer.
 * `format` checks formatting and changes files. Required black and isort be installed on your computer.
 * `lint` runs pylint.

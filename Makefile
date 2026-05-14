@@ -9,7 +9,8 @@ else
 endif
 
 make sync:
-	python3 -m pipenv sync -d
+	uv lock
+	uv sync --frozen
 
 check-format:
 	black --check ./
