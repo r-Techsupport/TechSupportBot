@@ -679,7 +679,7 @@ class Voting(cogs.LoopCog):
             for reminder_hour in reminder_times:
                 reminder_timestamp = int(
                     (
-                        rounded_start_time + timedelta(hours=(72 - reminder_hour))
+                        rounded_start_time + timedelta(hours=72 - reminder_hour)
                     ).timestamp()
                 )
 
