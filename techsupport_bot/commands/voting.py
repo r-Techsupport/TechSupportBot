@@ -665,6 +665,11 @@ class Voting(cogs.LoopCog):
         for vote in active_votes:
             end_time = int((vote.start_time + timedelta(hours=72)).timestamp())
 
+            # Round up to next hour to match the hourly check
+            rounded_start_time = vote.start_time.replace(
+                minute=0, second=0, microsecond=0
+            ) + timedelta(hours=1)
+
             # End expired votes
             if end_time <= timestamp_now:
                 await self.end_vote(vote, guild, config)
@@ -672,9 +677,12 @@ class Voting(cogs.LoopCog):
 
             # Reminder checks
             for reminder_hour in reminder_times:
-                reminder_timestamp = end_time - (reminder_hour * 3600)
+                reminder_timestamp = int(
+                    (
+                        rounded_start_time + timedelta(hours=72 - reminder_hour)
+                    ).timestamp()
+                )
 
-                # To allow for some slight variation in time, give a 5 minute valid reminder window
                 if abs(timestamp_now - reminder_timestamp) <= 300:
                     await self.remind_vote(vote, guild, config, reminder_hour)
 
@@ -700,6 +708,8 @@ class Voting(cogs.LoopCog):
         voted_voters = [v for v in vote.vote_ids_all.split(",") if v]
 
         non_voters = [v for v in eligible_voters if v not in voted_voters]
+        if len(non_voters) == 0:
+            return
 
         # Theoretically we can exceed the max length of a discord message. Cut at 60 just in case.
         # We would probably error somewhere else if 61 people ever could vote though
