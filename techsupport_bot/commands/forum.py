@@ -520,6 +520,8 @@ async def mark_thread(
 
     if thread.owner:
         ping = thread.owner.mention
+    else:
+        ping = ""
 
     await thread.send(content=ping, embed=embed)
 
