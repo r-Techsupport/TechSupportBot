@@ -518,7 +518,10 @@ async def mark_thread(
     else:
         embed.set_footer(text="Changed automatically")
 
-    await thread.send(content=thread.owner.mention, embed=embed)
+    if thread.owner:
+        ping = thread.owner.mention
+
+    await thread.send(content=ping, embed=embed)
 
     await thread.edit(
         name=f"{data['prefix']} {thread.name}"[:100],
