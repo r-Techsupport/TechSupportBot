@@ -144,7 +144,7 @@ wheels = [
 
 [[package]]
 name = "black"
-version = "26.3.1"
+version = "26.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -154,14 +154,14 @@ dependencies = [
     { name = "platformdirs" },
     { name = "pytokens" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e1/c5/61175d618685d42b005847464b8fb4743a67b1b8fdb75e50e5a96c31a27a/black-26.3.1.tar.gz", hash = "sha256:2c50f5063a9641c7eed7795014ba37b0f5fa227f3d408b968936e24bc0566b07", size = 666155, upload-time = "2026-03-12T03:36:03.593Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/22/58/0a9d9b1195c159d206000c541c3e05897e339be754f0e4d8b29445ab536e/black-26.5.0.tar.gz", hash = "sha256:5cbe4cc4037ffca34cdb0a6a9a046f104b262d0bd63c30fd4a88c7adc2049b1d", size = 677762, upload-time = "2026-05-16T17:57:12.54Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/17/57/5f11c92861f9c92eb9dddf515530bc2d06db843e44bdcf1c83c1427824bc/black-26.3.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:28ef38aee69e4b12fda8dba75e21f9b4f979b490c8ac0baa7cb505369ac9e1ff", size = 1851987, upload-time = "2026-03-12T03:40:06.248Z" },
-    { url = "https://files.pythonhosted.org/packages/54/aa/340a1463660bf6831f9e39646bf774086dbd8ca7fc3cded9d59bbdf4ad0a/black-26.3.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:bf9bf162ed91a26f1adba8efda0b573bc6924ec1408a52cc6f82cb73ec2b142c", size = 1689499, upload-time = "2026-03-12T03:40:07.642Z" },
-    { url = "https://files.pythonhosted.org/packages/f3/01/b726c93d717d72733da031d2de10b92c9fa4c8d0c67e8a8a372076579279/black-26.3.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:474c27574d6d7037c1bc875a81d9be0a9a4f9ee95e62800dab3cfaadbf75acd5", size = 1754369, upload-time = "2026-03-12T03:40:09.279Z" },
-    { url = "https://files.pythonhosted.org/packages/e3/09/61e91881ca291f150cfc9eb7ba19473c2e59df28859a11a88248b5cbbc4d/black-26.3.1-cp311-cp311-win_amd64.whl", hash = "sha256:5e9d0d86df21f2e1677cc4bd090cd0e446278bcbbe49bf3659c308c3e402843e", size = 1413613, upload-time = "2026-03-12T03:40:10.943Z" },
-    { url = "https://files.pythonhosted.org/packages/16/73/544f23891b22e7efe4d8f812371ab85b57f6a01b2fc45e3ba2e52ba985b8/black-26.3.1-cp311-cp311-win_arm64.whl", hash = "sha256:9a5e9f45e5d5e1c5b5c29b3bd4265dcc90e8b92cf4534520896ed77f791f4da5", size = 1219719, upload-time = "2026-03-12T03:40:12.597Z" },
-    { url = "https://files.pythonhosted.org/packages/8e/0d/52d98722666d6fc6c3dd4c76df339501d6efd40e0ff95e6186a7b7f0befd/black-26.3.1-py3-none-any.whl", hash = "sha256:2bd5aa94fc267d38bb21a70d7410a89f1a1d318841855f698746f8e7f51acd1b", size = 207542, upload-time = "2026-03-12T03:36:01.668Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/71/17d04d49a406640f531f6d12e0f15858e0d337b7dbd4a5a05476cd04b229/black-26.5.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:862945b2a08193cdff9f632f51bdadbb11e6852da1d31c306a3508449dc81b84", size = 1965325, upload-time = "2026-05-16T18:00:53.755Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/a6/0739015dbd9df669529657bf6bef1185679a0eb8ba93bb6e160561f57652/black-26.5.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:03102aa97c279e5f62e1e1ab828cfe8aa72c3af4cf86f9448e5537b2519cbfea", size = 1786840, upload-time = "2026-05-16T18:00:55.55Z" },
+    { url = "https://files.pythonhosted.org/packages/09/23/6cd101b4bc2234708120450d8ac54f6580d6ae52f6dce1098e040e6f259c/black-26.5.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:990ee0e1d96dd8ca623f19dd3f339c138bdc02f74e4fea01cc64aee38944ea2b", size = 1840560, upload-time = "2026-05-16T18:00:57.103Z" },
+    { url = "https://files.pythonhosted.org/packages/73/8a/ded16f0183e370d44a4042a731f61669ad5e171f6d3ae98f8bb52182f917/black-26.5.0-cp311-cp311-win_amd64.whl", hash = "sha256:209fabb250681900502b3b6a03e31d8cac606c9ef9629fd0fbd5d33235647c00", size = 1475629, upload-time = "2026-05-16T18:00:59.209Z" },
+    { url = "https://files.pythonhosted.org/packages/95/80/9191f47b6a7e7e752e55b6b01122594135f12ccad60aad27d4c206a38ad6/black-26.5.0-cp311-cp311-win_arm64.whl", hash = "sha256:dbb6fc70f8bd9821981fd47efb68a5be0eee9055f400eb3bf2dbebf49f9ec4fe", size = 1274370, upload-time = "2026-05-16T18:01:01.711Z" },
+    { url = "https://files.pythonhosted.org/packages/14/c8/13da5c6a37b46a690199e0895c33a758ba4f2ec3cd81d1d72ebb373509a8/black-26.5.0-py3-none-any.whl", hash = "sha256:241f25bf59f5ca17f5121031e310e089b84cd22bb4eca47360099ea825544f17", size = 212907, upload-time = "2026-05-16T17:57:10.792Z" },
 ]
 
 [[package]]
@@ -264,7 +264,7 @@ requires-dist = [
     { name = "aiocron", specifier = "==2.1" },
     { name = "aiohttp", specifier = "==3.13.5" },
     { name = "bidict", specifier = "==0.23.1" },
-    { name = "black", marker = "extra == 'dev'", specifier = "==26.3.1" },
+    { name = "black", marker = "extra == 'dev'", specifier = "==26.5.0" },
     { name = "dateparser", specifier = "==1.4.0" },
     { name = "discord-py", specifier = "==2.7.1" },
     { name = "emoji", specifier = "==2.15.0" },
