@@ -32,7 +32,7 @@ dev = [
     "flake8-docstrings-complete==1.4.1",
     "flake8-modern-annotations==1.6.0",
     "flake8-variables-names==0.0.6",
-    "hypothesis==6.152.9",
+    "hypothesis==6.153.0",
     "isort==8.0.1",
     "pydoclint==0.8.4",
     "pylint==4.0.5",
