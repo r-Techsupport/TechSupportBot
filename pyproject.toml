@@ -16,7 +16,7 @@ dependencies = [
     "irc==20.5.0",
     "munch==4.0.0",
     "typing_extensions==4.15.0", # Pinned to fix temporary problems
-    "pip==26.1.1", # Pinned to fix temporary problems
+    "pip==26.1.2", # Pinned to fix temporary problems
     "pydantic==2.13.4", # Pinned to fix temporary problems
     "pyyaml==6.0.3",
     "setuptools==80.9.0", # Added so gino/asyncpg/sqlalchemy doesn't break.
