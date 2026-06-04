@@ -84,6 +84,20 @@ async def setup(bot: bot.TechSupportBot) -> None:
         default="thread closed",
     )
     config.add(
+        key="left_message",
+        datatype="str",
+        title="The message displayed on left threads",
+        description="The message displayed on left threads",
+        default="thread left",
+    )
+    config.add(
+        key="delete_message",
+        datatype="str",
+        title="The message displayed on deleted threads",
+        description="The message displayed on deleted threads",
+        default="thread deleted",
+    )
+    config.add(
         key="abandoned_message",
         datatype="str",
         title="The message displayed on abandoned threads",
@@ -120,6 +134,18 @@ STATUS_CONFIG = {
         "prefix": "[CLOSED]",
         "color": discord.Color.red(),
         "message_key": "close_message",
+    },
+    "left": {
+        "title": "OP has left the server",
+        "prefix": "[LEFT]",
+        "color": discord.Color.red(),
+        "message_key": "left_message",
+    },
+    "deleted": {
+        "title": "Thread message was deleted",
+        "prefix": "[DELETED]",
+        "color": discord.Color.red(),
+        "message_key": "delete_message",
     },
     "rejected": {
         "title": "Thread rejected",
@@ -470,6 +496,86 @@ class ForumChannel(cogs.LoopCog):
             color=discord.Color.blue(),
         )
         await thread.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_member_remove(self: Self, member: discord.Member):
+        """Monitor for members leaving to mark [LEFT] on threads
+
+        Args:
+            member (discord.Member): The member who has left the server
+        """
+        config = self.bot.guild_configs[str(member.guild.id)]
+        channel = await member.guild.fetch_channel(
+            int(config.extensions.forum.forum_channel_id.value)
+        )
+        for thread in channel.threads:
+            if thread.archived:
+                continue
+
+            if thread.owner_id != member.id:
+                continue
+
+            # At this point we know for a fact that the the owner has left
+            # Mark the thread as left
+            await mark_thread(
+                thread,
+                config,
+                self.thread_ID_closed,
+                "left",
+                reason=(
+                    "It appears you have left the server. "
+                    "You are welcome to create a new thread if you return."
+                ),
+            )
+
+    @commands.Cog.listener()
+    async def on_raw_message_delete(
+        self: Self,
+        payload: discord.RawMessageDeleteEvent,
+    ):
+        """Monitor for deleted thread starter messages to mark [DELETED]
+
+        Args:
+            payload (discord.RawMessageDeleteEvent): The delete event payload
+        """
+        if payload.guild_id is None:
+            return
+
+        guild = self.bot.get_guild(payload.guild_id)
+        if guild is None:
+            return
+
+        try:
+            thread = await guild.fetch_channel(payload.channel_id)
+        except (discord.NotFound, discord.Forbidden):
+            return
+
+        if not isinstance(thread, discord.Thread):
+            return
+
+        config = self.bot.guild_configs[str(thread.guild.id)]
+        channel = await thread.guild.fetch_channel(
+            int(config.extensions.forum.forum_channel_id.value)
+        )
+        if thread.parent != channel:
+            return
+
+        if thread.archived:
+            return
+
+        # For forum posts, the starter message ID is the same as the thread ID
+        if payload.message_id != thread.id:
+            return
+
+        # At this point we know for a fact that the original post was deleted
+        # Mark the thread as deleted
+        await mark_thread(
+            thread,
+            config,
+            self.thread_ID_closed,
+            "deleted",
+            reason=("It appears the original post for this thread was deleted."),
+        )
 
     async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
         """This is what closes threads after inactivity
