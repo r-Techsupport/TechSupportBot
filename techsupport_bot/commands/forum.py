@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Self
 import discord
 import munch
 import ui
+from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, extensionconfig
 from discord import app_commands
 from discord.ext import commands
@@ -152,6 +153,10 @@ class ForumChannel(cogs.LoopCog):
         name="forum", description="...", extras={"module": "forum"}
     )
 
+    async def preconfig(self: Self) -> None:
+        """Sets up a small list of threads closed by TS"""
+        self.thread_ID_closed = []
+
     @forum_group.command(
         name="mark",
         description="Mark a support forum thread",
@@ -168,6 +173,7 @@ class ForumChannel(cogs.LoopCog):
             status (str): The status to change the command to
             reason (str): The reason the status is being changed. Defaults to ""
         """
+        status = status.lower()
         await interaction.response.defer(ephemeral=True)
 
         config = self.bot.guild_configs[str(interaction.guild.id)]
@@ -222,7 +228,14 @@ class ForumChannel(cogs.LoopCog):
         confirm_embed = auxiliary.prepare_confirm_embed(f"Thread marked as {status}!")
         await interaction.followup.send(embed=confirm_embed, ephemeral=True)
 
-        await mark_thread(interaction.channel, config, status, reason, interaction.user)
+        await mark_thread(
+            interaction.channel,
+            config,
+            self.thread_ID_closed,
+            status,
+            reason,
+            interaction.user,
+        )
 
     @mark_thread_command.autocomplete("status")
     async def status_autocomplete(
@@ -325,12 +338,54 @@ class ForumChannel(cogs.LoopCog):
         )
 
     @commands.Cog.listener()
+    async def on_thread_update(
+        self: Self, before: discord.Thread, after: discord.Thread
+    ) -> None:
+        """A listener for threads being update anywhere on the server
+        This is specifically to prevent people from closing their own threads
+
+        Args:
+            before (discord.Thread): The original thread
+            after (discord.Thread): The thread after the update
+        """
+        config = self.bot.guild_configs[str(before.guild.id)]
+        channel = await before.guild.fetch_channel(
+            int(config.extensions.forum.forum_channel_id.value)
+        )
+        if before.parent != channel:
+            return
+
+        # If the edit was not archiving it, we don't care
+        if not after.archived:
+            return
+
+        await asyncio.sleep(5)
+
+        # If TS closed
+        if after.id in self.thread_ID_closed:
+            self.thread_ID_closed.remove(after.id)
+            return
+
+        await after.edit(
+            archived=False,
+            locked=False,
+        )
+
+        embed = auxiliary.prepare_deny_embed(
+            "It appears this thread was closed without using our commands. "
+            "Please use the /forum mark command to close this thread."
+        )
+        await after.send(embed=embed)
+
+    @commands.Cog.listener()
     async def on_thread_create(self: Self, thread: discord.Thread) -> None:
         """A listener for threads being created anywhere on the server
 
         Args:
             thread (discord.Thread): The thread that was created
         """
+        # Fuck if I know what causes this bug
+        await asyncio.sleep(5)
         config = self.bot.guild_configs[str(thread.guild.id)]
         channel = await thread.guild.fetch_channel(
             int(config.extensions.forum.forum_channel_id.value)
@@ -347,6 +402,7 @@ class ForumChannel(cogs.LoopCog):
             await mark_thread(
                 thread,
                 config,
+                self.thread_ID_closed,
                 "rejected",
                 reason=(
                     "Your thread doesn't meet our posting requirements. "
@@ -366,6 +422,7 @@ class ForumChannel(cogs.LoopCog):
                 await mark_thread(
                     thread,
                     config,
+                    self.thread_ID_closed,
                     "rejected",
                     reason=(
                         "Your thread doesn't meet our posting requirements. "
@@ -379,6 +436,7 @@ class ForumChannel(cogs.LoopCog):
                 await mark_thread(
                     thread,
                     config,
+                    self.thread_ID_closed,
                     "rejected",
                     reason=(
                         "Your thread doesn't meet our posting requirements. "
@@ -397,6 +455,7 @@ class ForumChannel(cogs.LoopCog):
                 await mark_thread(
                     thread,
                     config,
+                    self.thread_ID_closed,
                     "duplicate",
                     reason=(
                         "You are only allowed to have 1 open thread at any time. "
@@ -425,17 +484,21 @@ class ForumChannel(cogs.LoopCog):
         for existing_thread in channel.threads:
             if not existing_thread.archived and not existing_thread.locked:
                 most_recent_message_id = existing_thread.last_message_id
-                most_recent_message = await existing_thread.fetch_message(
-                    most_recent_message_id
+                # If there are NO messages in the thread, use the thread creation timestamp instead
+                if not most_recent_message_id:
+                    most_recent_message_id = existing_thread.id
+
+                message_timestamp = discord.utils.snowflake_time(most_recent_message_id)
+                timestamp_delta = (
+                    datetime.datetime.now(datetime.timezone.utc) - message_timestamp
                 )
-                if datetime.datetime.now(
-                    datetime.timezone.utc
-                ) - most_recent_message.created_at > datetime.timedelta(
+                if timestamp_delta > datetime.timedelta(
                     minutes=config.extensions.forum.max_age_minutes.value
                 ):
                     await mark_thread(
                         existing_thread,
                         config,
+                        self.thread_ID_closed,
                         "abandoned",
                         "Threads are automatically closed after periods of no activity",
                     )
@@ -486,6 +549,7 @@ def is_thread_staff(
 async def mark_thread(
     thread: discord.Thread,
     config: munch.Munch,
+    closed_list: list[int],
     status: str,
     reason: str,
     editor: discord.Member | None = None,
@@ -496,10 +560,13 @@ async def mark_thread(
     Args:
         thread (discord.Thread): The thread to modify
         config (munch.Munch): The guild config
+        closed_list (list[int]): The list of threads closed by TS
         status (str): The status to modify the thread with
         reason (str): The reason the thread was changed
         editor (discord.Member | None): The user who edited the thread
     """
+    closed_list.append(thread.id)
+
     data = STATUS_CONFIG[status]
 
     embed = discord.Embed(
