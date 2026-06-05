@@ -299,6 +299,7 @@ class ForumChannel(cogs.LoopCog):
                     app_commands.Choice(name="Abandoned", value="abandoned"),
                     app_commands.Choice(name="Closed", value="closed"),
                     app_commands.Choice(name="Solved", value="solved"),
+                    app_commands.Choice(name="Deleted", value="deleted"),
                 ]
             )
 
@@ -361,6 +362,70 @@ class ForumChannel(cogs.LoopCog):
         view = ui.PaginateView()
         await view.send(
             interaction.channel, interaction.user, embeds, interaction, True
+        )
+
+    @forum_group.command(
+        name="reopen",
+        description="Reopens a support thread",
+        extras={"module": "forum"},
+    )
+    async def reopen_thread(self: Self, interaction: discord.Interaction) -> None:
+        """This command reopens a closed and locked thread
+
+        Args:
+            interaction (discord.Interaction): The interaction calling the command
+        """
+        await interaction.response.defer(ephemeral=True)
+
+        config = self.bot.guild_configs[str(interaction.guild.id)]
+        forum_channel = await interaction.guild.fetch_channel(
+            int(config.extensions.forum.forum_channel_id.value)
+        )
+
+        invalid_embed = discord.Embed(
+            title="Invalid location",
+            description="The location this was run isn't a valid support forum",
+            color=discord.Color.red(),
+        )
+
+        # Check 1: Ensure command was run in the forum channel
+        if (
+            not hasattr(interaction.channel, "parent")
+            or interaction.channel.parent != forum_channel
+        ):
+            await interaction.followup.send(embed=invalid_embed, ephemeral=True)
+            return
+
+        is_staff = is_thread_staff(interaction.user, interaction.guild, config)
+
+        # Check 2: Called must be staff:
+        if not is_staff:
+            embed = auxiliary.prepare_deny_embed(
+                "You must be thread staff to run this command"
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        # Check 3: Ensure thread is locked
+        # (we cannot use archived because running even an ephemeral command opens it)
+        if not interaction.channel.locked:
+            embed = auxiliary.prepare_deny_embed(
+                "It does not appear this thread is closed"
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        await interaction.channel.edit(
+            name=interaction.channel.name.split(" ", 1)[1],
+            archived=False,
+            locked=False,
+        )
+        embed = auxiliary.prepare_confirm_embed(
+            f"Thread was successfully re-opened by {interaction.user.name}"
+        )
+        await interaction.channel.send(embed=embed)
+        await interaction.followup.send(
+            "Successfully reopened the thread", ephemeral=True
         )
 
     @commands.Cog.listener()
