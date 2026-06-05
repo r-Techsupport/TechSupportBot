@@ -361,6 +361,9 @@ class DuckHunt(cogs.LoopCog):
         if not message.content.lower() in ["bef", "bang"]:
             return False
 
+        if message.author.bot:
+            return False
+
         if banned_user and message.author == banned_user:
             embed = auxiliary.prepare_deny_embed("You cannot hunt a duck you released")
             asyncio.create_task(channel.send(content=banned_user.mention, embed=embed))
