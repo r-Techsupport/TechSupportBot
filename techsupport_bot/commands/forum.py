@@ -596,7 +596,7 @@ class ForumChannel(cogs.LoopCog):
     async def on_raw_message_delete(
         self: Self,
         payload: discord.RawMessageDeleteEvent,
-    ):
+    ) -> None:
         """Monitor for deleted thread starter messages to mark [DELETED]
 
         Args:
