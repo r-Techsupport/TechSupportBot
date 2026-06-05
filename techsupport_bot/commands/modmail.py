@@ -79,10 +79,13 @@ async def has_modmail_management_role(
 class Modmail_bot(discord.Client):
     """The bot used to send and receive DM messages"""
 
-    def __init__(self: Self):
+    def __init__(self: Self) -> None:
+        # Setup some basic varibles that will be assigned from the TS side
         self.threads_disabled: bool = False
         self.guild_id: int = None
         self.forum_channel_id: int = None
+
+        # Setup all intents and call the discord.Client init call to start the bot
         intents = discord.Intents.all()
         intents.members = True
         super().__init__(intents=intents)
