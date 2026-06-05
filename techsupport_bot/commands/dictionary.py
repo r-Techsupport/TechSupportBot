@@ -17,6 +17,9 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
+    
+    Raises:
+        AttributeError: Raised if an API key is missing to prevent unusable commands from loading
     """
 
     # Don't load without the API key
@@ -38,7 +41,7 @@ class Dictionary(cogs.BaseCog):
         DICT_API_URL (str): The URL for the dict API
     """
 
-    DICT_APT_URL: str = (
+    DICT_API_URL: str = (
         "https://www.dictionaryapi.com/api/v3/references/collegiate/json/{}?key={}"
     )
 
@@ -57,7 +60,7 @@ class Dictionary(cogs.BaseCog):
             word (str): The word to lookup in the dictionary
         """
         await interaction.response.defer()
-        url = self.DICT_APT_URL.format(
+        url = self.DICT_API_URL.format(
             word, self.bot.file_config.api.api_keys.dictionary
         )
         response = await self.bot.http_functions.http_call("get", url)
