@@ -22,6 +22,7 @@ import discord
 import expiringdict
 import munch
 import ui
+from commands import rules
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 
@@ -1131,6 +1132,37 @@ class Modmail(cogs.BaseCog):
                     anonymous=True,
                 )
 
+            case "rule":
+                if "rules" not in config.enabled_extensions:
+                    await auxiliary.send_deny_embed(
+                        message="Rules are not enabled in this guild",
+                        channel=message.channel,
+                    )
+                    return
+                rule_num = int(content[4:])
+
+                raw_rules = await rules.get_guild_rules(self.bot, message.guild)
+                guild_rules = raw_rules.get("rules")
+
+                try:
+                    rule = guild_rules[rule_num - 1]
+                except IndexError:
+                    await auxiliary.send_deny_embed(
+                        message=f"Couldn't find the rule `{rule_num}`",
+                        channel=message.channel,
+                    )
+                    return
+
+                await reply_to_thread(
+                    raw_contents=str(
+                        f"## Rule {rule_num}: {rule.get('name', 'None')}"
+                        f"\n{rule.get('description', 'None')}"
+                    ),
+                    message=message,
+                    thread=message.channel,
+                    anonymous=True,
+                )
+
         # Checks if the command was an alias
         aliases = config.extensions.modmail.aliases.value
 
@@ -1303,6 +1335,7 @@ class Modmail(cogs.BaseCog):
             (prefix, "reply", "[message]", "Sends a message"),
             (prefix, "areply", "[message]", "Sends a message anonymously"),
             (prefix, "send", "[factoid]", "Sends the user a factoid"),
+            (prefix, "rule", "[rule_num]", "Sends the user a rule"),
             (
                 prefix,
                 "close",

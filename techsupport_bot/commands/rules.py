@@ -46,63 +46,6 @@ class Rules(cogs.BaseCog):
         """
         return
 
-    async def get_guild_rules(self: Self, guild: discord.Guild) -> munch.Munch:
-        """Gets the munchified rules for a given guild.
-        Will create and write to the database if no rules exist
-
-        Args:
-            guild (discord.Guild): The guild to get rules for
-
-        Returns:
-            munch.Munch: The munchified rules ready to be parsed and shown to the user
-        """
-        query = await self.bot.models.Rule.query.where(
-            self.bot.models.Rule.guild_id == str(guild.id)
-        ).gino.first()
-        if not query:
-            # Handle case where guild doesn't have rules
-            rules_data = json.dumps(
-                {
-                    "rules": [
-                        {
-                            "name": "Anti-Spam",
-                            "description": "No spamming! (this is an example rule)",
-                        },
-                        {
-                            "name": "No Harassment",
-                            "description": "Keep it friendly! (this is an example rule)",
-                        },
-                    ],
-                }
-            )
-            new_rules = munch.munchify(json.loads(rules_data))
-            await self.write_new_rules(guild=guild, rules=new_rules)
-            return munch.munchify(json.loads(rules_data))
-        return munch.munchify(json.loads(query.rules))
-
-    async def write_new_rules(
-        self: Self, guild: discord.Guild, rules: munch.Munch
-    ) -> None:
-        """This converts the munchified rules into a string and writes it to the database
-
-        Args:
-            guild (discord.Guild): The guild to write the rules for
-            rules (munch.Munch): The rules to convert and write
-        """
-        query = await self.bot.models.Rule.query.where(
-            self.bot.models.Rule.guild_id == str(guild.id)
-        ).gino.first()
-        if not query:
-            # Handle case where guild doesn't have rules
-            rules_data = json.dumps(rules)
-            new_guild_rules = self.bot.models.Rule(
-                guild_id=str(guild.id),
-                rules=str(json.dumps(rules_data)),
-            )
-            await new_guild_rules.create()
-        else:
-            await query.update(rules=str(json.dumps(rules))).apply()
-
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     @rule_group.command(
@@ -121,13 +64,13 @@ class Rules(cogs.BaseCog):
         uploaded_data = await auxiliary.get_json_from_attachments(ctx.message)
         if uploaded_data:
             uploaded_data["guild_id"] = str(ctx.guild.id)
-            await self.write_new_rules(ctx.guild, uploaded_data)
+            await write_new_rules(self.bot, ctx.guild, uploaded_data)
             await auxiliary.send_confirm_embed(
                 message="I've updated to those rules", channel=ctx.channel
             )
             return
 
-        rules_data = await self.get_guild_rules(ctx.guild)
+        rules_data = await get_guild_rules(self.bot, ctx.guild)
 
         json_file = discord.File(
             io.StringIO(json.dumps(rules_data, indent=4)),
@@ -182,7 +125,7 @@ class Rules(cogs.BaseCog):
             color=discord.Color.gold(),
             url=self.RULE_ICON_URL,
         )
-        raw_rules = await self.get_guild_rules(ctx.guild)
+        raw_rules = await get_guild_rules(self.bot, ctx.guild)
         guild_rules = raw_rules.get("rules")
         for rule_number in numbers:
             embed.add_field(
@@ -209,7 +152,7 @@ class Rules(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context that was generated when the command was run
         """
-        rules_data = await self.get_guild_rules(ctx.guild)
+        rules_data = await get_guild_rules(self.bot, ctx.guild)
         if not rules_data or not rules_data.get("rules"):
             await auxiliary.send_confirm_embed(
                 message="There are no rules for this server", channel=ctx.channel
@@ -244,8 +187,69 @@ class Rules(cogs.BaseCog):
         Returns:
             int: The number of rules in the given guild
         """
-        rules_data = await self.get_guild_rules(guild)
+        rules_data = await get_guild_rules(self.bot, guild)
         if not rules_data or not rules_data.get("rules"):
             return 0
 
         return len(rules_data.get("rules"))
+
+
+async def get_guild_rules(bot: object, guild: discord.Guild) -> munch.Munch:
+    """Gets the munchified rules for a given guild.
+    Will create and write to the database if no rules exist
+
+    Args:
+        bot (object): The instance of TS to use
+        guild (discord.Guild): The guild to get rules for
+
+    Returns:
+        munch.Munch: The munchified rules ready to be parsed and shown to the user
+    """
+    query = await bot.models.Rule.query.where(
+        bot.models.Rule.guild_id == str(guild.id)
+    ).gino.first()
+    if not query:
+        # Handle case where guild doesn't have rules
+        rules_data = json.dumps(
+            {
+                "rules": [
+                    {
+                        "name": "Anti-Spam",
+                        "description": "No spamming! (this is an example rule)",
+                    },
+                    {
+                        "name": "No Harassment",
+                        "description": "Keep it friendly! (this is an example rule)",
+                    },
+                ],
+            }
+        )
+        new_rules = munch.munchify(json.loads(rules_data))
+        await write_new_rules(guild=guild, rules=new_rules)
+        return munch.munchify(json.loads(rules_data))
+    return munch.munchify(json.loads(query.rules))
+
+
+async def write_new_rules(
+    bot: object, guild: discord.Guild, rules: munch.Munch
+) -> None:
+    """This converts the munchified rules into a string and writes it to the database
+
+    Args:
+        bot (object): The instance of TS to use
+        guild (discord.Guild): The guild to write the rules for
+        rules (munch.Munch): The rules to convert and write
+    """
+    query = await bot.models.Rule.query.where(
+        bot.models.Rule.guild_id == str(guild.id)
+    ).gino.first()
+    if not query:
+        # Handle case where guild doesn't have rules
+        rules_data = json.dumps(rules)
+        new_guild_rules = bot.models.Rule(
+            guild_id=str(guild.id),
+            rules=str(json.dumps(rules_data)),
+        )
+        await new_guild_rules.create()
+    else:
+        await query.update(rules=str(json.dumps(rules))).apply()
