@@ -502,38 +502,40 @@ class ForumChannel(cogs.LoopCog):
             return
 
         # Check if the thread body is disallowed
-        messages = [message async for message in thread.history(limit=5)]
-        if messages:
-            body = messages[-1].content
-            disallowed_body_patterns = create_regex_list(
-                config.extensions.forum.body_regex_list.value
+        message = await thread.fetch_message(thread.id)
+        body = message.clean_content
+        if not body:
+            body = ""
+
+        disallowed_body_patterns = create_regex_list(
+            config.extensions.forum.body_regex_list.value
+        )
+        if any(pattern.search(body) for pattern in disallowed_body_patterns):
+            await mark_thread(
+                thread,
+                config,
+                self.thread_ID_closed,
+                "rejected",
+                reason=(
+                    "Your thread doesn't meet our posting requirements. "
+                    "Please make sure you have a well written title and a detailed body."
+                ),
             )
-            if any(pattern.search(body) for pattern in disallowed_body_patterns):
-                await mark_thread(
-                    thread,
-                    config,
-                    self.thread_ID_closed,
-                    "rejected",
-                    reason=(
-                        "Your thread doesn't meet our posting requirements. "
-                        "Please make sure you have a well written title and a detailed body."
-                    ),
-                )
-                return
-            if body.lower() == thread.name.lower() or len(body.lower()) < len(
-                thread.name.lower()
-            ):
-                await mark_thread(
-                    thread,
-                    config,
-                    self.thread_ID_closed,
-                    "rejected",
-                    reason=(
-                        "Your thread doesn't meet our posting requirements. "
-                        "Please make sure you have a well written title and a detailed body."
-                    ),
-                )
-                return
+            return
+        if body.lower() == thread.name.lower() or len(body.lower()) < len(
+            thread.name.lower()
+        ):
+            await mark_thread(
+                thread,
+                config,
+                self.thread_ID_closed,
+                "rejected",
+                reason=(
+                    "Your thread doesn't meet our posting requirements. "
+                    "Please make sure you have a well written title and a detailed body."
+                ),
+            )
+            return
 
         # Check if the thread creator has an existing open thread
         for existing_thread in channel.threads:
