@@ -34,14 +34,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
     await bot.add_cog(WebSearcher(bot=bot))
 
+
 class WebSearcher(cogs.BaseCog):
     """Class for the google extension for the discord bot.
 
     Attributes:
         search (app_commands.Group): The group for the /search commands
     """
-
-    
 
     search: app_commands.Group = app_commands.Group(
         name="search", description="Command Group for the Search Extension"
@@ -86,7 +85,7 @@ class WebSearcher(cogs.BaseCog):
             "module": "search",
         },
     )
-    async def websearch(
+    async def websearch_text(
         self: Self, interaction: discord.Interaction, query: str
     ) -> None:
         """This is the command for plaintext searches
@@ -110,7 +109,7 @@ class WebSearcher(cogs.BaseCog):
             )
             embed.color = discord.Color.blurple()
             embeds.append(embed)
-        
+
         if not embeds:
             embed = auxiliary.prepare_deny_embed(f"No results returned for {query}")
             await interaction.followup.send(embed=embed)
@@ -120,13 +119,13 @@ class WebSearcher(cogs.BaseCog):
 
     @search.command(
         name="images",
-        description="Returns the top Web search result",
+        description="Returns the top Web search image result",
         extras={
             "usage": "[query]",
             "module": "search",
         },
     )
-    async def websearch(
+    async def websearch_image(
         self: Self, interaction: discord.Interaction, query: str
     ) -> None:
         """This is the command for image searches
@@ -145,11 +144,10 @@ class WebSearcher(cogs.BaseCog):
             embed.set_image(url=result)
             embed.color = discord.Color.blurple()
             embeds.append(embed)
-        
+
         if not embeds:
             embed = auxiliary.prepare_deny_embed(f"No results returned for {query}")
             await interaction.followup.send(embed=embed)
 
         view = ui.PaginateView()
         await view.send(interaction.channel, interaction.user, embeds, interaction)
-
