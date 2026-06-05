@@ -310,7 +310,7 @@ def generate_role_list(author: discord.Member) -> list[str]:
     if not hasattr(author, "roles"):
         return ["None"]
 
-    roles = [role.name for role in author.roles[1:]]
+    roles = [role.mention for role in author.roles[1:]]
     roles.reverse()
 
     if len(roles) == 0:
