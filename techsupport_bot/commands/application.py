@@ -1006,7 +1006,7 @@ class ApplicationManager(cogs.LoopCog):
             list_of_applicants.append(
                 (
                     f"Application by: `{member.display_name} ({app.applicant_name})`"
-                    f", applied on: {app.application_time}"
+                    f", applied on: <t:{int(app.application_time.timestamp())}>"
                 )
             )
 
