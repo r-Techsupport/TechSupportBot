@@ -562,7 +562,7 @@ class ForumChannel(cogs.LoopCog):
         await thread.send(embed=embed)
 
     @commands.Cog.listener()
-    async def on_member_remove(self: Self, member: discord.Member):
+    async def on_member_remove(self: Self, member: discord.Member) -> None:
         """Monitor for members leaving to mark [LEFT] on threads
 
         Args:
