@@ -72,12 +72,12 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
         # Pass the correct server info and password
         super().__init__(
-            server_list=[
-                (server, port, password)
-            ],  # Ensure this has the correct password
+            server_list=[(server, port, password)],
             realname=username,
             nickname=username,
             connect_factory=factory,
+            username=username,
+            sasl_login=username,
         )
 
         # Reconnect handler if disconnected
