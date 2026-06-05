@@ -79,10 +79,12 @@ async def has_modmail_management_role(
 class Modmail_bot(discord.Client):
     """The bot used to send and receive DM messages"""
 
-    def __init__(self: Self, intents: discord.Intents):
+    def __init__(self: Self):
         self.threads_disabled: bool = False
         self.guild_id: int = None
         self.forum_channel_id: int = None
+        intents = discord.Intents.all()
+        intents.members = True
         super().__init__(intents=intents)
 
     @commands.Cog.listener()
@@ -227,7 +229,8 @@ class Modmail_bot(discord.Client):
             await thread.send(embed=embed)
 
 
-# Makes the Ts_client variable a global variable so we can use the data from the main bot in the modmail bot instance
+# Makes the Ts_client variable a global variable
+# This is so we can use the data from the main bot in the modmail bot instance
 Ts_client = None
 
 active_threads = {}  # User id: Thread id
@@ -241,12 +244,10 @@ delayed_people = expiringdict.ExpiringDict(
 # and then clicking the confirmations really quickly
 awaiting_confirmation = []
 
-# Prepares the Modmail client with the Members intent used for lookups
-# Is started in __init__ of the modmail exntension, the client is defined here
+# Prepares the Modmail client
+# Is started in __init__ of the modmail extension, the client is defined here
 # since it is used elsewhere
-intents = discord.Intents.all()
-intents.members = True
-Modmail_client = Modmail_bot(intents=intents)
+Modmail_client = Modmail_bot()
 
 
 async def build_attachments(
