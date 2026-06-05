@@ -225,7 +225,7 @@ async def get_guild_rules(bot: object, guild: discord.Guild) -> munch.Munch:
             }
         )
         new_rules = munch.munchify(json.loads(rules_data))
-        await write_new_rules(guild=guild, rules=new_rules)
+        await write_new_rules(bot=bot, guild=guild, rules=new_rules)
         return munch.munchify(json.loads(rules_data))
     return munch.munchify(json.loads(query.rules))
 
