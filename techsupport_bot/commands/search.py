@@ -51,7 +51,6 @@ class WebSearcher(cogs.BaseCog):
         This pulls the API key from the config and returns a munch.Munch result
 
         Args:
-            self (Self): _description_
             query (str): The string query passed in by the user
 
         Returns:
