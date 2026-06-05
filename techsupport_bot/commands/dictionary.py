@@ -66,14 +66,14 @@ class Dictionary(cogs.BaseCog):
         response = await self.bot.http_functions.http_call("get", url)
         if not response:
             embed = auxiliary.prepare_deny_embed(
-                f"I could not find any definition for {word}"
+                f"I could not find any definition for `{word}`"
             )
             await interaction.followup.send(embed=embed)
             return
 
         definition = response[0].shortdef
 
-        embed = discord.Embed(title=f"Definition of {word}")
+        embed = discord.Embed(title=f"Definition of `{word}`")
         embed.color = discord.Color.orange()
         embed.description = "\n".join(f"- {string}" for string in definition)
 
