@@ -35,6 +35,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
         description="Whether reports are anonymous",
         default=False,
     )
+    config.add(
+        key="ping_role",
+        datatype="int",
+        title="New report ping role",
+        description="The ID of the role to ping when a new report is created",
+        default=None,
+    )
     await bot.add_cog(Report(bot=bot, extension_name="report"))
     bot.add_extension_config("report", config)
 
@@ -140,7 +147,13 @@ class Report(cogs.BaseCog):
             await interaction.response.send_message(embed=user_embed, ephemeral=True)
             return
 
-        await alert_channel.send(embed=embed)
+        role = interaction.guild.get_role(int(config.extensions.report.ping_role.value))
+
+        await alert_channel.send(
+            content=role.mention,
+            embed=embed,
+            allowed_mentions=discord.AllowedMentions(roles=True),
+        )
 
         user_embed = auxiliary.prepare_confirm_embed(
             message="Your report was successfully sent"
