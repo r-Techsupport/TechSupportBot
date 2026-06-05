@@ -110,7 +110,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         updated: datetime.datetime = bot.db.Column(
             bot.db.DateTime, default=datetime.datetime.utcnow
         )
-        speed_record: float = bot.db.Column(bot.db.Float, default=80.0)
+        speed_record: float = bot.db.Column(bot.db.Float, default=-1.0)
 
     class Factoid(bot.db.Model):
         """The postgres table for factoids

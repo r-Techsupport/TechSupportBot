@@ -281,7 +281,7 @@ class DuckHunt(cogs.LoopCog):
                 guild_id=str(guild.id),
                 befriend_count=0,
                 kill_count=0,
-                speed_record=80.0,
+                speed_record=-1.0,
             )
             await duck_user.create()
 
@@ -308,7 +308,7 @@ class DuckHunt(cogs.LoopCog):
         )
         global_record = await self.get_global_record(guild.id)
         footer_string = ""
-        if duration_exact < duck_user.speed_record:
+        if duration_exact < duck_user.speed_record or duck_user.speed_record == -1:
             footer_string += f"New personal record: {duration_exact} seconds."
             if duration_exact < global_record:
                 footer_string += "\nNew global record!"
@@ -461,7 +461,9 @@ class DuckHunt(cogs.LoopCog):
             self.bot.models.DuckUser.guild_id == str(guild_id)
         ).gino.all()
 
-        speed_records = [record.speed_record for record in query]
+        speed_records = [
+            record.speed_record for record in query if record.speed_record > 0
+        ]
 
         if not speed_records:
             return None
@@ -519,7 +521,10 @@ class DuckHunt(cogs.LoopCog):
         embed.color = embed_colors.green()
         embed.add_field(name="Friends", value=duck_user.befriend_count)
         embed.add_field(name="Kills", value=duck_user.kill_count)
-        footer_string = f"Speed record: {str(duck_user.speed_record)} seconds"
+        if duck_user.speed_record > 0:
+            footer_string = f"Speed record: {str(duck_user.speed_record)} seconds"
+        else:
+            footer_string = ""
         if duck_user.speed_record == await self.get_global_record(ctx.guild.id):
             footer_string += "\nYou hold the current global record!"
         embed.set_footer(text=footer_string)
