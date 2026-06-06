@@ -7,10 +7,11 @@ from enum import Enum
 from typing import TYPE_CHECKING, Self
 
 import aiocron
+import configuration
 import discord
 import munch
 import ui
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -40,91 +41,8 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="management_channel",
-        datatype="str",
-        title="ID of the staff side channel",
-        description=(
-            "The ID of the channel the application notifications and reminders should"
-            " appear in"
-        ),
-        default=None,
-    )
-    config.add(
-        key="notification_channels",
-        datatype="list",
-        title="List of channels to get application",
-        description=(
-            "The list of channel IDs that should receive periodic messages about the"
-            " application, with a button to apply"
-        ),
-        default=None,
-    )
-    config.add(
-        key="reminder_cron_config",
-        datatype="string",
-        title="Cronjob config for the reminder about pending applications for staff",
-        description=(
-            "Crontab syntax for executing pending reminder events (example: 0 17 * * *)"
-        ),
-        default="0 17 * * *",
-    )
-    config.add(
-        key="notification_cron_config",
-        datatype="string",
-        title="Cronjob config for the user facing notification",
-        description=(
-            "Crontab syntax for users being notified about the application (example: 0"
-            " */3 * * *)"
-        ),
-        default="0 */3 * * *",
-    )
-    config.add(
-        key="application_message",
-        datatype="str",
-        title="Message on the application reminder",
-        description=(
-            "The message to show users when they are prompted to apply in the"
-            " notification_channels"
-        ),
-        default="Apply now!",
-    )
-    config.add(
-        key="application_role",
-        datatype="str",
-        title="ID of the role to give applicants",
-        description=(
-            "The ID of the role to give applicants when there application is approved"
-        ),
-        default=None,
-    )
-    config.add(
-        key="manage_roles",
-        datatype="list",
-        title="Manage application roles",
-        description=(
-            "The role IDs required to manage the applications (not required to apply)"
-        ),
-        default=[],
-    )
-    config.add(
-        key="ping_role",
-        datatype="str",
-        title="New application ping role",
-        description="The ID of the role to ping when a new application is created",
-        default="",
-    )
-    config.add(
-        key="max_age",
-        datatype="int",
-        title="Max days an application can live",
-        description="After this many days, the system will auto reject the applications.",
-        default=30,
-    )
     await bot.add_cog(ApplicationManager(bot=bot, extension_name="application"))
     await bot.add_cog(ApplicationNotifier(bot=bot, extension_name="application"))
-    bot.add_extension_config("application", config)
 
 
 async def command_permission_check(interaction: discord.Interaction) -> bool:
@@ -141,15 +59,11 @@ async def command_permission_check(interaction: discord.Interaction) -> bool:
     Returns:
         bool: Will return true if the command is allowed to execute, false if it should not execute
     """
-    # Get the bot object for easier access
-    bot = interaction.client
-
-    # Get the config
-    config = bot.guild_configs[str(interaction.guild.id)]
-
     # Gets permitted roles
     allowed_roles = []
-    for role_id in config.extensions.application.manage_roles.value:
+    for role_id in configuration.get_config_entry(
+        interaction.guild.id, "application_manage_role_ids"
+    ):
         if not role_id:
             continue
         role = interaction.guild.get_role(int(role_id))
@@ -182,7 +96,7 @@ class ApplicationNotifier(cogs.LoopCog):
             config (munch.Munch): The guild config for the executing loop
             guild (discord.Guild): The guild the loop is executing for
         """
-        channels = config.extensions.application.notification_channels.value
+        channels = configuration.get_config_entry(guild.id, "application_notification_channels")
         for channel in channels:
             channel = guild.get_channel(int(channel))
             if not channel:
@@ -190,7 +104,9 @@ class ApplicationNotifier(cogs.LoopCog):
 
             await ui.AppNotice(timeout=None).send(
                 channel=channel,
-                message=config.extensions.application.application_message.value,
+                message=configuration.get_config_entry(
+                    guild.id, "application_application_message"
+                ),
             )
 
     async def wait(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
@@ -201,7 +117,7 @@ class ApplicationNotifier(cogs.LoopCog):
             guild (discord.Guild): The guild the loop is executing for
         """
         await aiocron.crontab(
-            config.extensions.application.notification_cron_config.value
+            configuration.get_config_entry(guild.id, "application_notification_cron_config")
         ).next()
 
 
@@ -688,12 +604,12 @@ class ApplicationManager(cogs.LoopCog):
         # Find the channel to send to
         config = self.bot.guild_configs[str(applicant.guild.id)]
         channel = applicant.guild.get_channel(
-            int(config.extensions.application.management_channel.value)
+            int(configuration.get_config_entry(applicant.guild.id, "application_management_channel"))
         )
 
         # Send notice to staff channel
         role = applicant.guild.get_role(
-            int(config.extensions.application.ping_role.value)
+            int(configuration.get_config_entry(applicant.guild.id, "application_ping_role"))
         )
         content_string = ""
         if role:
@@ -721,7 +637,11 @@ class ApplicationManager(cogs.LoopCog):
         """
         config = self.bot.guild_configs[str(applicant.guild.id)]
         role = applicant.guild.get_role(
-            int(config.extensions.application.application_role.value)
+            int(
+                configuration.get_config_entry(
+                    applicant.guild.id, "application_application_role_id"
+                )
+            )
         )
         # Don't allow applications if extension is disabled
         if "application" not in config.enabled_extensions:
@@ -737,7 +657,9 @@ class ApplicationManager(cogs.LoopCog):
 
         # Don't allow users who can manage the applications to apply
         allowed_roles = []
-        for role_id in config.extensions.application.manage_roles.value:
+        for role_id in configuration.get_config_entry(
+            applicant.guild.id, "application_manage_role_ids"
+        ):
             role = applicant.guild.get_role(int(role_id))
             if not role:
                 continue
@@ -763,8 +685,13 @@ class ApplicationManager(cogs.LoopCog):
             discord.Role | None: Will return the role object from the guild,
                 or none if the role could not be found
         """
-        config = self.bot.guild_configs[str(guild.id)]
-        role = guild.get_role(int(config.extensions.application.application_role.value))
+        role = guild.get_role(
+            int(
+                configuration.get_config_entry(
+                    guild.id, "application_application_role_id"
+                )
+            )
+        )
         return role
 
     async def notify_for_application_change(
@@ -824,7 +751,7 @@ class ApplicationManager(cogs.LoopCog):
 
         config = self.bot.guild_configs[str(interaction.guild.id)]
         management_channel = interaction.guild.get_channel(
-            int(config.extensions.application.management_channel.value)
+            int(configuration.get_config_entry(interaction.guild.id, "application_management_channel"))
         )
 
         embed.description = confirm_message + f"\n{message}"
@@ -921,7 +848,7 @@ class ApplicationManager(cogs.LoopCog):
             guild (discord.Guild): The guild the loop is executing for
         """
         channel = guild.get_channel(
-            int(config.extensions.application.management_channel.value)
+            int(configuration.get_config_entry(guild.id, "application_management_channel"))
         )
         if not channel:
             return
@@ -950,7 +877,7 @@ class ApplicationManager(cogs.LoopCog):
                 continue
 
             # Application has been pending for max_age days
-            max_age_config = config.extensions.application.max_age.value
+            max_age_config = configuration.get_config_entry(guild.id, "application_max_age")
             if app.application_time < datetime.datetime.now() - datetime.timedelta(
                 days=max_age_config
             ):
@@ -972,7 +899,11 @@ class ApplicationManager(cogs.LoopCog):
                 await app.update(applicant_name=user.name).apply()
 
             role = guild.get_role(
-                int(config.extensions.application.application_role.value)
+                int(
+                    configuration.get_config_entry(
+                        guild.id, "application_application_role_id"
+                    )
+                )
             )
 
             # User has the helper role
@@ -1022,5 +953,5 @@ class ApplicationManager(cogs.LoopCog):
             guild (discord.Guild): The guild the loop is executing for
         """
         await aiocron.crontab(
-            config.extensions.application.reminder_cron_config.value
+            configuration.get_config_entry(guild.id, "application_reminder_cron_config")
         ).next()

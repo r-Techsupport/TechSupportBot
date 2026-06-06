@@ -1,0 +1,45 @@
+{
+    "application_application_message": {
+        "datatype": "str",
+        "description": "The message to show users when they are prompted to apply in the notification_channels"
+    },
+    "application_application_role_id": {
+        "datatype": "discord.Role",
+        "description": "The role to give applicants when their application is approved"
+    },
+    "application_manage_role_ids": {
+        "datatype": "list[discord.Role]",
+        "description": "The roles required to manage the applications (not required to apply)"
+    },
+    "application_management_channel": {
+        "datatype": "discord.TextChannel",
+        "description": "The channel the application notifications and reminders should appear in"
+    },
+    "application_max_age": {
+        "datatype": "int",
+        "description": "After this many days, the system will auto reject the applications"
+    },
+    "application_notification_channels": {
+        "datatype": "list[discord.TextChannel]",
+        "description": "The channels that should receive periodic messages about the application, with a button to apply"
+    },
+    "application_notification_cron_config": {
+        "datatype": "CronTab",
+        "description": "CronTab for users being notified about the application"
+    },
+    "application_ping_role": {
+        "datatype": "discord.Role",
+        "description": "The role to ping when a new application is created"
+    },
+    "application_reminder_cron_config": {
+        "datatype": "CronTab",
+        "description": "Crontab for executing pending reminder events"
+    }
+}
+
+
+
+"": {
+        "datatype": "",
+        "description": ""
+    }

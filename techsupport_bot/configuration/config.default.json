@@ -1,0 +1,11 @@
+{
+    "application_application_message": "Apply Default!",
+    "application_application_role_id": "",
+    "application_manage_role_ids": [],
+    "application_management_channel": "",
+    "application_max_age": 30,
+    "application_notification_channels": [],
+    "application_notification_cron_config": "0 */3 * * *",
+    "application_ping_role": "",
+    "application_reminder_cron_config": "0 17 * * *"
+}
