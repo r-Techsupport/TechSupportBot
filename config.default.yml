@@ -36,6 +36,7 @@ api:
         password:
     api_keys:
         cat:
+        dictionary:
         dumpdbg:
         giphy:
         google:
