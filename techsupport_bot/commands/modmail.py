@@ -79,6 +79,17 @@ async def has_modmail_management_role(
 class Modmail_bot(discord.Client):
     """The bot used to send and receive DM messages"""
 
+    def __init__(self: Self) -> None:
+        # Setup some basic varibles that will be assigned from the TS side
+        self.threads_disabled: bool = False
+        self.guild_id: int = None
+        self.forum_channel_id: int = None
+
+        # Setup all intents and call the discord.Client init call to start the bot
+        intents = discord.Intents.all()
+        intents.members = True
+        super().__init__(intents=intents)
+
     @commands.Cog.listener()
     async def on_message(self: Self, message: discord.Message) -> None:
         """Listen to DMs, send them to handle_dm for proper handling when applicable
@@ -103,7 +114,7 @@ class Modmail_bot(discord.Client):
                 return
 
             # Makes sure existing threads can still be responded to
-            if message.author.id not in active_threads and DISABLE_THREAD_CREATION:
+            if message.author.id not in active_threads and self.threads_disabled:
                 await message.add_reaction("❌")
                 await auxiliary.send_deny_embed(
                     message="Modmail isn't accepting messages right now. "
@@ -124,7 +135,7 @@ class Modmail_bot(discord.Client):
                 return
 
             # Everything looks good - handle dm properly
-            await handle_dm(message)
+            await handle_dm(message, self.guild_id, self.forum_channel_id)
 
     @commands.Cog.listener()
     async def on_typing(
@@ -221,34 +232,25 @@ class Modmail_bot(discord.Client):
             await thread.send(embed=embed)
 
 
-# These get assigned in the __init__, are needed for inter-bot comm
-# It is a goofy solution but given that this extension is only used in ONE guild, it's good enough
+# Makes the Ts_client variable a global variable
+# This is so we can use the data from the main bot in the modmail bot instance
 Ts_client = None
-DISABLE_THREAD_CREATION = None
-MODMAIL_FORUM_ID = None
-MODMAIL_LOG_CHANNEL_ID = None
-AUTOMATIC_RESPONSES = None
-AUTOMATIC_REJECTIONS = None
-ROLES_TO_PING = None
-THREAD_CREATION_MESSAGE = None
 
 active_threads = {}  # User id: Thread id
 closure_jobs = {}  # Used in timed closes
 # Is a dict because expiringDict only has dictionaries... go figure
 delayed_people = expiringdict.ExpiringDict(
-    max_age_seconds=93600, max_len=1000  # max_len has to be set for some reason
+    max_age_seconds=86400, max_len=1000  # max_len has to be set for some reason
 )
 
 # This is needed to prevent being able to open more than one thread by sending several messages
 # and then clicking the confirmations really quickly
 awaiting_confirmation = []
 
-# Prepares the Modmail client with the Members intent used for lookups
-# Is started in __init__ of the modmail exntension, the client is defined here
+# Prepares the Modmail client
+# Is started in __init__ of the modmail extension, the client is defined here
 # since it is used elsewhere
-intents = discord.Intents.default()
-intents.members = True
-Modmail_client = Modmail_bot(intents=intents)
+Modmail_client = Modmail_bot()
 
 
 async def build_attachments(
@@ -283,14 +285,16 @@ async def build_attachments(
     return attachments
 
 
-async def handle_dm(message: discord.Message) -> None:
+async def handle_dm(message: discord.Message, guild_id: int, forum_id: int) -> None:
     """Sends a message to the corresponding thread, creates one if needed
 
     Args:
         message (discord.Message): The incoming message
+        guild_id (int): The ID of the guild modmail is operating in
+        forum_id (int): The ID of the forum channel modmail is operating in
     """
     # The bot is not ready to handle dms yet, this should only take a few seconds after startup
-    if not Ts_client or not MODMAIL_FORUM_ID:
+    if not Ts_client or not guild_id:
         await message.channel.send(
             embed=auxiliary.generate_basic_embed(
                 color=discord.Color.light_gray(),
@@ -298,6 +302,8 @@ async def handle_dm(message: discord.Message) -> None:
             )
         )
         return
+
+    config = Ts_client.guild_configs[str(guild_id)]
 
     # The user already has an open thread
     if message.author.id in active_threads:
@@ -344,11 +350,12 @@ async def handle_dm(message: discord.Message) -> None:
 
     # - No thread was found, create one -
 
-    for regex in AUTOMATIC_REJECTIONS:
+    auto_rejections = config.extensions.modmail.automatic_rejections.value
+    for regex in auto_rejections:
         if re.match(regex, message.content):
             await auxiliary.send_deny_embed(
                 message="This message cannot be used to start a "
-                + f"thread: {AUTOMATIC_REJECTIONS[regex]}",
+                + f"thread: {auto_rejections[regex]}",
                 channel=message.channel,
             )
             return
@@ -363,7 +370,7 @@ async def handle_dm(message: discord.Message) -> None:
 
     confirmation = ui.Confirm()
     await confirmation.send(
-        message=THREAD_CREATION_MESSAGE,
+        message=config.extensions.modmail.thread_creation_message.value,
         channel=message.channel,
         author=message.author,
     )
@@ -389,7 +396,7 @@ async def handle_dm(message: discord.Message) -> None:
         return
 
     if not await create_thread(
-        channel=Ts_client.get_channel(MODMAIL_FORUM_ID),
+        channel=Ts_client.get_channel(forum_id),
         user=message.author,
         source_channel=message.channel,
         message=message,
@@ -404,7 +411,7 @@ async def handle_dm(message: discord.Message) -> None:
 async def create_thread(
     channel: discord.TextChannel,
     user: discord.User,
-    source_channel: discord.TextChannel,
+    source_channel: discord.TextChannel | discord.DMChannel,
     message: discord.Message = None,
 ) -> bool:
     """Creates a thread from a DM message.
@@ -413,12 +420,13 @@ async def create_thread(
     Args:
         channel (discord.TextChannel): The forum channel to create the thread in
         user (discord.User): The user who sent the DM or is being contacted
-        source_channel (discord.TextChannel): Used for error handling
+        source_channel (discord.TextChannel | discord.DMChannel): Used for error handling
         message (discord.Message, optional): The incoming message
 
     Returns:
         bool: Whether the thread was created succesfully
     """
+    config = Ts_client.guild_configs[str(channel.guild.id)]
     # --> CHECKS <--
 
     # These checks can be triggered on both the users and server side using .contact
@@ -498,8 +506,9 @@ async def create_thread(
 
     # Handling for roles to ping, not performed if the func was invoked by the contact command
     role_string = ""
-    if message and ROLES_TO_PING:
-        for role_id in ROLES_TO_PING:
+    roles_to_ping = list(dict.fromkeys(config.extensions.modmail.roles_to_ping.value))
+    if message and roles_to_ping:
+        for role_id in roles_to_ping:
             role_string += f"<@&{role_id}> "
 
     # --> THREAD CREATION <--
@@ -544,10 +553,11 @@ async def create_thread(
         await message.author.send(embed=embed)
 
         # - Auto responses -
-        for regex in AUTOMATIC_RESPONSES:
+        automatic_responses = config.extensions.modmail.automatic_responses.value
+        for regex in automatic_responses:
             if re.match(regex, message.content):
                 await reply_to_thread(
-                    raw_contents=AUTOMATIC_RESPONSES[regex],
+                    raw_contents=automatic_responses[regex],
                     message=message,
                     thread=thread[0],
                     anonymous=True,
@@ -903,44 +913,12 @@ class Modmail(cogs.BaseCog):
         Ts_client.loop.create_task(
             Modmail_client.start(bot.file_config.modmail_config.modmail_auth_token)
         )
-
-        # -> This makes the configs available from the whole file, this can only be done here
-        # -> thanks to modmail only being available in one guild. It is NEEDED for inter-bot comms
-        # -> Pylint disables present because it bitches about using globals
-
-        # pylint: disable=W0603
-        global DISABLE_THREAD_CREATION
-        DISABLE_THREAD_CREATION = bot.file_config.modmail_config.disable_thread_creation
-
-        # pylint: disable=W0603
-        global MODMAIL_FORUM_ID
-        MODMAIL_FORUM_ID = int(bot.file_config.modmail_config.modmail_forum_channel)
-
-        # pylint: disable=W0603
-        global MODMAIL_LOG_CHANNEL_ID
-        MODMAIL_LOG_CHANNEL_ID = int(bot.file_config.modmail_config.modmail_log_channel)
-
-        config = bot.guild_configs[str(bot.file_config.modmail_config.modmail_guild)]
-
-        # pylint: disable=W0603
-        global AUTOMATIC_RESPONSES
-        AUTOMATIC_RESPONSES = config.extensions.modmail.automatic_responses.value
-
-        # pylint: disable=W0603
-        global AUTOMATIC_REJECTIONS
-        AUTOMATIC_REJECTIONS = config.extensions.modmail.automatic_rejections.value
-
-        # pylint: disable=W0603
-        global ROLES_TO_PING
-        # dict.fromkeys() to deduplicate the list
-        ROLES_TO_PING = list(
-            dict.fromkeys(config.extensions.modmail.roles_to_ping.value)
+        Modmail_client.threads_disabled = (
+            bot.file_config.modmail_config.disable_thread_creation
         )
-
-        # pylint: disable=W0603
-        global THREAD_CREATION_MESSAGE
-        THREAD_CREATION_MESSAGE = (
-            config.extensions.modmail.thread_creation_message.value
+        Modmail_client.guild_id = str(bot.file_config.modmail_config.modmail_guild)
+        Modmail_client.forum_channel_id = int(
+            bot.file_config.modmail_config.modmail_forum_channel
         )
 
         # Finally, makes the TS client available from within the Modmail extension class once again
@@ -954,7 +932,9 @@ class Modmail(cogs.BaseCog):
 
     async def preconfig(self: Self) -> None:
         """Fetches modmail threads once ready"""
-        self.modmail_forum = await self.bot.fetch_channel(MODMAIL_FORUM_ID)
+        self.modmail_forum = await self.bot.fetch_channel(
+            int(self.bot.file_config.modmail_config.modmail_forum_channel)
+        )
 
         # Populates the currently active threads
         for thread in self.modmail_forum.threads:
@@ -989,6 +969,10 @@ class Modmail(cogs.BaseCog):
         # Gets the content without the prefix
         content = message.content.partition(self.prefix)[2]
 
+        modmail_log_channel = int(
+            self.bot.file_config.modmail_config.modmail_log_channel
+        )
+
         # Checks if the message had a command
         match content.split()[0]:
             # - Normal closes -
@@ -997,7 +981,7 @@ class Modmail(cogs.BaseCog):
                     thread=message.channel,
                     silent=False,
                     timed=False,
-                    log_channel=self.bot.get_channel(MODMAIL_LOG_CHANNEL_ID),
+                    log_channel=self.bot.get_channel(modmail_log_channel),
                     closed_by=message.author,
                 )
 
@@ -1017,13 +1001,12 @@ class Modmail(cogs.BaseCog):
                     )
                     return
 
-                # I LOVE INDENTATIONS THEY ARE SO COOL
                 closure_jobs[message.channel.id] = asyncio.create_task(
                     close_thread(
                         thread=message.channel,
                         silent=False,
                         timed=True,
-                        log_channel=self.bot.get_channel(MODMAIL_LOG_CHANNEL_ID),
+                        log_channel=self.bot.get_channel(modmail_log_channel),
                         closed_by=message.author,
                     )
                 )
@@ -1034,7 +1017,7 @@ class Modmail(cogs.BaseCog):
                     thread=message.channel,
                     silent=True,
                     timed=False,
-                    log_channel=self.bot.get_channel(MODMAIL_LOG_CHANNEL_ID),
+                    log_channel=self.bot.get_channel(modmail_log_channel),
                     closed_by=message.author,
                 )
 
@@ -1059,7 +1042,7 @@ class Modmail(cogs.BaseCog):
                         thread=message.channel,
                         silent=True,
                         timed=True,
-                        log_channel=self.bot.get_channel(MODMAIL_LOG_CHANNEL_ID),
+                        log_channel=self.bot.get_channel(modmail_log_channel),
                         closed_by=message.author,
                     )
                 )
@@ -1119,7 +1102,7 @@ class Modmail(cogs.BaseCog):
 
                 if factoid.disabled or (
                     factoid.restricted
-                    and str(MODMAIL_FORUM_ID)
+                    and str(self.modmail_forum.id)
                     not in config.extensions.factoids.restricted_list.value
                 ):
                     return
@@ -1200,7 +1183,7 @@ class Modmail(cogs.BaseCog):
                     del delayed_people[user.id]
 
                 if await create_thread(
-                    channel=self.bot.get_channel(MODMAIL_FORUM_ID),
+                    channel=self.modmail_forum,
                     user=user,
                     source_channel=ctx.channel,
                 ):
@@ -1264,7 +1247,7 @@ class Modmail(cogs.BaseCog):
                     del delayed_people[ctx.author.id]
 
                 if await create_thread(
-                    channel=self.bot.get_channel(MODMAIL_FORUM_ID),
+                    channel=self.modmail_forum,
                     user=ctx.author,
                     source_channel=ctx.channel,
                 ):
