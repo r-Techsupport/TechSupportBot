@@ -9,6 +9,7 @@ import discord
 import expiringdict
 import munch
 from core import auxiliary, cogs, extensionconfig
+from discord import app_commands
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -49,7 +50,16 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class LevelXP(cogs.MatchCog):
-    """Class for the LevelXP to make it to discord."""
+    """Class for the LevelXP to make it to discord.
+
+    Attributes:
+        xp (app_commands.Group): The group for the /xp commands
+
+    """
+
+    xp: app_commands.Group = app_commands.Group(
+        name="xp", description="Command Group for the XP Extension"
+    )
 
     async def preconfig(self: Self) -> None:
         """Sets up the dict"""
@@ -57,6 +67,61 @@ class LevelXP(cogs.MatchCog):
             max_len=1000,
             max_age_seconds=60,
         )
+
+    @xp.command(
+        name="top",
+        description="Shows the top 10 XP users in the server",
+        extras={
+            "usage": "",
+            "module": "xp",
+        },
+    )
+    async def top_xp_command(self: Self, interaction: discord.Interaction) -> None:
+        """This command will display an embed of the top 10 users with XP
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+        """
+        await interaction.response.defer()
+
+        top_xp = (
+            await self.bot.models.XP.query.order_by(-self.bot.models.XP.xp)
+            .where(self.bot.models.XP.xp > 0)
+            .where(self.bot.models.XP.guild_id == str(interaction.guild.id))
+            .gino.all()
+        )[:10]
+
+        if not top_xp:
+            embed = auxiliary.prepare_deny_embed(
+                "No users currently have XP in this guild"
+            )
+            await interaction.followup.send(embed=embed)
+            return
+
+        embed = discord.Embed(title=f"Top {len(top_xp)} users in this server:")
+        description = ""
+        index = 1
+        for database_entry in top_xp:
+            # 1 - DisplayName (username), @XP, xp
+            xp_user: discord.Member = await interaction.guild.fetch_member(
+                database_entry.user_id
+            )
+            user_str = f"Unkown user ({database_entry.user_id})"
+            xp_role_str = "No role yet"
+
+            if xp_user:
+                user_str = f"{xp_user.mention} ({xp_user.name})"
+                xp_role = await get_current_XP_role(self.bot, xp_user)
+                if xp_role:
+                    xp_role_str = xp_role.mention
+
+            description += f"{index} - {user_str}, {xp_role_str}, {database_entry.xp}\n"
+            index += 1
+
+        embed.description = description
+        embed.color = discord.Color.dark_gold()
+
+        await interaction.followup.send(embed=embed)
 
     async def match(
         self: Self, config: munch.Munch, ctx: commands.Context, _: str
@@ -226,3 +291,37 @@ async def update_current_XP(
         await current_XP.create()
     else:
         await current_XP.update(xp=xp).apply()
+
+
+async def get_current_XP_role(bot: object, user: discord.Member) -> discord.Role:
+    """_summary_
+
+    Args:
+        bot (object): The TS bot object to use for fetching information
+        user (discord.Member): The member to lookup info on
+
+    Returns:
+        discord.Role: The XP role that the user currently has
+    """
+
+    config = bot.guild_configs[str(user.guild.id)]
+    levels = config.extensions.xp.level_roles.value
+
+    if len(levels) == 0:
+        return None
+
+    configured_levels = [
+        (int(xp_threshold), int(role_id)) for xp_threshold, role_id in levels.items()
+    ]
+    configured_role_ids = {role_id for _, role_id in configured_levels}
+
+    user_level_roles_ids = [
+        role.id for role in user.roles if role.id in configured_role_ids
+    ]
+
+    if not user_level_roles_ids:
+        return None
+
+    role_object = await user.guild.fetch_role(user_level_roles_ids[0])
+
+    return role_object
