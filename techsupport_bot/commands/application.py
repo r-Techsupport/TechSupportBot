@@ -602,7 +602,6 @@ class ApplicationManager(cogs.LoopCog):
         await application.create()
 
         # Find the channel to send to
-        config = self.bot.guild_configs[str(applicant.guild.id)]
         channel = applicant.guild.get_channel(
             int(configuration.get_config_entry(applicant.guild.id, "application_management_channel"))
         )
@@ -749,7 +748,6 @@ class ApplicationManager(cogs.LoopCog):
 
         await interaction.response.send_message(embed=embed)
 
-        config = self.bot.guild_configs[str(interaction.guild.id)]
         management_channel = interaction.guild.get_channel(
             int(configuration.get_config_entry(interaction.guild.id, "application_management_channel"))
         )
