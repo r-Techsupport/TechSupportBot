@@ -96,7 +96,9 @@ class ApplicationNotifier(cogs.LoopCog):
             config (munch.Munch): The guild config for the executing loop
             guild (discord.Guild): The guild the loop is executing for
         """
-        channels = configuration.get_config_entry(guild.id, "application_notification_channels")
+        channels = configuration.get_config_entry(
+            guild.id, "application_notification_channels"
+        )
         for channel in channels:
             channel = guild.get_channel(int(channel))
             if not channel:
@@ -117,7 +119,9 @@ class ApplicationNotifier(cogs.LoopCog):
             guild (discord.Guild): The guild the loop is executing for
         """
         await aiocron.crontab(
-            configuration.get_config_entry(guild.id, "application_notification_cron_config")
+            configuration.get_config_entry(
+                guild.id, "application_notification_cron_config"
+            )
         ).next()
 
 
@@ -603,12 +607,20 @@ class ApplicationManager(cogs.LoopCog):
 
         # Find the channel to send to
         channel = applicant.guild.get_channel(
-            int(configuration.get_config_entry(applicant.guild.id, "application_management_channel"))
+            int(
+                configuration.get_config_entry(
+                    applicant.guild.id, "application_management_channel"
+                )
+            )
         )
 
         # Send notice to staff channel
         role = applicant.guild.get_role(
-            int(configuration.get_config_entry(applicant.guild.id, "application_ping_role"))
+            int(
+                configuration.get_config_entry(
+                    applicant.guild.id, "application_ping_role"
+                )
+            )
         )
         content_string = ""
         if role:
@@ -749,7 +761,11 @@ class ApplicationManager(cogs.LoopCog):
         await interaction.response.send_message(embed=embed)
 
         management_channel = interaction.guild.get_channel(
-            int(configuration.get_config_entry(interaction.guild.id, "application_management_channel"))
+            int(
+                configuration.get_config_entry(
+                    interaction.guild.id, "application_management_channel"
+                )
+            )
         )
 
         embed.description = confirm_message + f"\n{message}"
@@ -846,7 +862,11 @@ class ApplicationManager(cogs.LoopCog):
             guild (discord.Guild): The guild the loop is executing for
         """
         channel = guild.get_channel(
-            int(configuration.get_config_entry(guild.id, "application_management_channel"))
+            int(
+                configuration.get_config_entry(
+                    guild.id, "application_management_channel"
+                )
+            )
         )
         if not channel:
             return
@@ -875,7 +895,9 @@ class ApplicationManager(cogs.LoopCog):
                 continue
 
             # Application has been pending for max_age days
-            max_age_config = configuration.get_config_entry(guild.id, "application_max_age")
+            max_age_config = configuration.get_config_entry(
+                guild.id, "application_max_age"
+            )
             if app.application_time < datetime.datetime.now() - datetime.timedelta(
                 days=max_age_config
             ):
