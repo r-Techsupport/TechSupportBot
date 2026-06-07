@@ -189,7 +189,8 @@ class ExtensionControl(cogs.BaseCog):
         )
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.command(
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @extension_commands.command(
         name="register",
         description="Uploads an extension from Discord to be saved on the bot",
         extras={
@@ -197,20 +198,18 @@ class ExtensionControl(cogs.BaseCog):
             "usage": "[extension-name] [python-file-upload]",
         },
     )
-    @app_commands.check(auxiliary.bot_admin_check_interaction)
     async def register_extension(
         self: Self,
         interaction: discord.Interaction,
         extension_name: str,
         extension_file: discord.Attachment,
     ) -> None:
-        """Unloads an extension by filename.
-
-        This is a command and should be accessed via Discord.
+        """Registers an extension by filename.
 
         Args:
             ctx (commands.Context): the context object for the message
             extension_name (str): the name of the extension
+            extension_file (discord.Attachement): The python file of the extension
         """
         if not extension_file.filename.endswith(".py"):
             embed = auxiliary.prepare_deny_embed(
