@@ -13,6 +13,7 @@ import re
 import string
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import munch
 from botlogging import LogContext, LogLevel
@@ -152,7 +153,7 @@ class AutoNickName(cogs.MatchCog):
         config = self.bot.guild_configs[str(member.guild.id)]
 
         # Don't do anything if the filter is off for the guild
-        if not config.get("nickname_filter", False):
+        if not configuration.get_config_entry(member.guild.id, "core_nickname_filter"):
             return
 
         modified_name = format_username(member.display_name)

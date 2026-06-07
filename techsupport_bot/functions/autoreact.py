@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import munch
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -18,24 +19,14 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="react_map",
-        datatype="dict",
-        title="Mapping of phrases",
-        description="Lowercase phrase to reaction wanted",
-        default={"hello": "👋"},
-    )
-
     await bot.add_cog(AutoReact(bot=bot, extension_name="autoreact"))
-    bot.add_extension_config("autoreact", config)
 
 
 class AutoReact(cogs.MatchCog):
     """Class for the autoreact to make it to discord."""
 
     async def match(
-        self: Self, config: munch.Munch, _: commands.Context, content: str
+        self: Self, config: munch.Munch, ctx: commands.Context, content: str
     ) -> bool:
         """A match function to determine if somehting should be reacted to
 
@@ -48,7 +39,7 @@ class AutoReact(cogs.MatchCog):
         """
         search_content = f" {content} "
         search_content = search_content.lower()
-        for word in config.extensions.autoreact.react_map.value:
+        for word in configuration.get_config_entry(ctx.guild.id, "autoreact_react_map"):
             if f" {word.lower()} " in search_content:
                 return True
         return False
@@ -66,11 +57,12 @@ class AutoReact(cogs.MatchCog):
         search_content = f" {content} "
         search_content = search_content.lower()
         reactions = []
-        for word in config.extensions.autoreact.react_map.value:
+        reaction_map = configuration.get_config_entry(
+            ctx.guild.id, "autoreact_react_map"
+        )
+        for word in reaction_map:
             if f" {word.lower()} " in search_content:
-                reaction = config.extensions.autoreact.react_map.value.get(word)
+                reaction = reaction_map.get(word)
                 if reaction not in reactions:
-                    reactions.append(
-                        config.extensions.autoreact.react_map.value.get(word)
-                    )
+                    reactions.append(reaction_map.value.get(word))
         await auxiliary.add_list_of_reactions(message=ctx.message, reactions=reactions)

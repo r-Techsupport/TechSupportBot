@@ -13,6 +13,7 @@ import threading
 from typing import Self
 
 import botlogging
+import configuration
 import discord
 import expiringdict
 import gino
@@ -845,10 +846,7 @@ class TechSupportBot(commands.Bot):
         Returns:
             str: The string of the command prefix by the bot, for the given guild
         """
-        guild_config = self.guild_configs[str(message.guild.id)]
-        return getattr(
-            guild_config, "command_prefix", self.file_config.bot_config.default_prefix
-        )
+        return configuration.get_config_entry(message.guild.id, "core_command_prefix")
 
     # Can run command checks
 

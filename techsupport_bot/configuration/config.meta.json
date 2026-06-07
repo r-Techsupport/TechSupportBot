@@ -38,7 +38,32 @@
     "automod_alert_channel": {
         "datatype": "discord.TextChannel",
         "description": "The channel to send auto-protect alerts to"
+    },
+    "autoreact_react_map": {
+        "datatype": "dict[str, str]",
+        "description": "Lowercase phrase to reaction wanted"
+    },
+    "core_command_prefix": {
+        "datatype": "str",
+        "description": "The prefix to use for legacy commands"
+    },
+    "core_enable_logging": {
+        "datatype": "bool",
+        "description": "Whether the botlogging module should be enabled. When disabled, core logs will all be turned off"
+    },
+    "core_nickname_filter": {
+        "datatype": "bool",
+        "description": "Whether to run the nickname filter or not"
+    },
+    "core_private_channels": {
+        "datatype": "list[discord.TextChannel]",
+        "description": "A list of channels to exclude from logging events"
+    },
+    "core_guild_id": {
+        "datatype": "discord.Guild",
+        "description": "This is used as a validation tool, the guild ID that this config belongs to"
     }
+
 }
 
 

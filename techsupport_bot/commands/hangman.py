@@ -6,6 +6,7 @@ import datetime
 import uuid
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import ui
 from core import auxiliary, cogs, extensionconfig
@@ -489,18 +490,10 @@ class HangmanCog(cogs.BaseCog):
         """
         hangman_drawing = game.draw_hang_state()
         hangman_word = game.draw_word_state()
-        # Determine the guild ID
-        guild_id = None
-        if isinstance(ctx_or_interaction, commands.Context):
-            guild_id = ctx_or_interaction.guild.id if ctx_or_interaction.guild else None
-        elif isinstance(ctx_or_interaction, discord.Interaction):
-            guild_id = ctx_or_interaction.guild_id
+        guild_id = ctx_or_interaction.guild.id
 
         # Fetch the prefix manually since get_prefix expects a Message
-        if guild_id and str(guild_id) in self.bot.guild_configs:
-            prefix = self.bot.guild_configs[str(guild_id)].command_prefix
-        else:
-            prefix = self.file_config.bot_config.default_prefix
+        prefix = configuration.get_config_entry(guild_id, "core_command_prefix")
 
         embed = discord.Embed(
             title=f"`{hangman_word}`",
