@@ -207,7 +207,7 @@ class ExtensionControl(cogs.BaseCog):
         """Registers an extension by filename.
 
         Args:
-            ctx (commands.Context): the context object for the message
+            interaction (discord.Interaction): the interaction that called this command
             extension_name (str): the name of the extension
             extension_file (discord.Attachement): The python file of the extension
         """

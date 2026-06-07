@@ -28,7 +28,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class ConfigControl(cogs.BaseCog):
-    """Cog object for per-guild config control."""
+    """
+    Cog object for per-guild config control.
+
+    Attributes:
+        config_commands (app_commands.Group): The group for the /config commands
+        config_extension_commands (app_commands.Group): The sub-group for /config extension
+    """
 
     config_commands: app_commands.Group = app_commands.Group(
         name="config", description="...", extras={"module": "config"}
@@ -209,7 +215,7 @@ class ConfigControl(cogs.BaseCog):
         description="This gets the guild config json file and sends it as a response",
         extras={"module": "config"},
     )
-    async def config_json(self: Self, interaction: discord.Interaction):
+    async def config_json(self: Self, interaction: discord.Interaction) -> None:
         """This pulls the guild json config and send it to the caller
 
         Args:
@@ -242,6 +248,7 @@ class ConfigControl(cogs.BaseCog):
 
         Args:
             interaction (discord.Interaction): The interaction that triggered the slash command
+            config_json (discord.Attachment): The json file of the new guild config
         """
         await interaction.response.defer()
 
