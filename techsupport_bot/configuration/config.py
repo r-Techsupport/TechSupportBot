@@ -1,17 +1,5 @@
 """
-Normal usage:
-get_config_entry(guild, key)
-get_default_config_entry(key)
-
-
-/config commands:
-get_json_config(guild)
-update_json_config(guild, config_json)
-
-Backend commands:
-generate_blank_config_file()
-check_key_valid(key)
-
+This file contains all the functions needed to manage the guild config system
 """
 
 import json
