@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Self
 
 import configuration
 import discord
-import munch
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs
 from discord.ext import commands
