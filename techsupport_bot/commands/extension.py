@@ -209,7 +209,7 @@ class ExtensionControl(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): the interaction that called this command
             extension_name (str): the name of the extension
-            extension_file (discord.Attachement): The python file of the extension
+            extension_file (discord.Attachment): The python file of the extension
         """
         if not extension_file.filename.endswith(".py"):
             embed = auxiliary.prepare_deny_embed(
