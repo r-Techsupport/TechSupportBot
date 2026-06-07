@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Self
 
 import configuration
 import discord
-from core import cogs, extensionconfig
+from core import cogs
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -20,16 +20,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="channels",
-        datatype="list",
-        title="Honeypot channels",
-        description=("The list of channel ID's that are honeypots"),
-        default=[],
-    )
     await bot.add_cog(HoneyPot(bot=bot, extension_name="honeypot"))
-    bot.add_extension_config("honeypot", config)
 
 
 class HoneyPot(cogs.MatchCog):

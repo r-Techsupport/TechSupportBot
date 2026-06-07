@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Self
 import configuration
 import discord
 import munch
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -21,26 +21,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
 
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="blacklisted_filters",
-        datatype="list[str]",
-        title="Enable filter",
-        description=(
-            "Filters all categories listed"
-            "(nsfw,religious,political,racist,sexist,explicit)"
-        ),
-        default=["nsfw", "explicit"],
-    )
-    config.add(
-        key="apply_in_nsfw_channels",
-        datatype="bool",
-        title="Apply in NSFW Channels",
-        description=("Toggles whether or not filters are applies in NSFW channels"),
-        default=False,
-    )
     await bot.add_cog(Joker(bot=bot))
-    bot.add_extension_config("joke", config)
 
 
 class Joker(cogs.BaseCog):
