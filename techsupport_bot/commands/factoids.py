@@ -947,13 +947,17 @@ class FactoidManager(cogs.MatchCog):
         },
     )
     async def factoid_call_command(
-        self: Self, interaction: discord.Interaction, factoid_name: str
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+        member_to_ping: discord.Member = None,
     ) -> None:
         """This is an app command version of typing {prefix}call
 
         Args:
             interaction (discord.Interaction): The interaction that triggered this command
             factoid_name (str): The factoid name to search for and print
+            member_to_ping (discord.Member): A member to ping in the output
 
         Raises:
             TooLongFactoidMessageError: If the plaintext exceed 2000 characters
@@ -1022,6 +1026,9 @@ class FactoidManager(cogs.MatchCog):
         except ValueError:
             # The not embed causes a ValueError in certain cases. This ensures fallback works
             content = factoid.message
+
+        if member_to_ping:
+            content = f"{member_to_ping.mention} {content}".strip()
 
         if content and len(content) > 2000:
             embed = auxiliary.prepare_deny_embed(
