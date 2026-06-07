@@ -7,9 +7,10 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import ui
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -23,24 +24,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
 
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="per_page",
-        datatype="int",
-        title="Grabs per page",
-        description="The number of grabs per page when retrieving all grabs",
-        default=3,
-    )
-    config.add(
-        key="allowed_channels",
-        datatype="list",
-        title="List of allowed channels",
-        description="The list of channels to enable the grabs plugin",
-        default=[],
-    )
-
     await bot.add_cog(Grabber(bot=bot))
-    bot.add_extension_config("grab", config)
 
 
 async def invalid_channel(ctx: commands.Context) -> bool:
@@ -57,13 +41,14 @@ async def invalid_channel(ctx: commands.Context) -> bool:
     Returns:
         bool: If the grabs are allowed in the channel the command was run in
     """
-
-    config = ctx.bot.guild_configs[str(ctx.guild.id)]
+    allowed_channels = configuration.get_config_entry(
+        ctx.guild.id, "grab_allowed_channels"
+    )
     # Check if list is empty. If it is, allow all channels
-    if not config.extensions.grab.allowed_channels.value:
+    if not allowed_channels:
         return True
     # If this list is not empty, it is a strict whitelist
-    if str(ctx.channel.id) in config.extensions.grab.allowed_channels.value:
+    if str(ctx.channel.id) in allowed_channels:
         return True
     raise commands.CommandError("Grabs are disabled for this channel")
 
@@ -181,9 +166,6 @@ class Grabber(cogs.BaseCog):
             user_to_grab (discord.Member): The user to get all the grabs from
         """
         is_nsfw = ctx.channel.is_nsfw()
-
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-
         if user_to_grab.bot:
             await auxiliary.send_deny_embed(
                 message="Ain't gonna catch me slipping!", channel=ctx.channel
@@ -228,7 +210,8 @@ class Grabber(cogs.BaseCog):
                 inline=False,
             )
             if (
-                field_counter == config.extensions.grab.per_page.value
+                field_counter
+                == configuration.get_config_entry(ctx.guild.id, "grab_per_page")
                 or index == len(list(grabs)) - 1
             ):
                 embed.set_thumbnail(url=user_to_grab.display_avatar.url)

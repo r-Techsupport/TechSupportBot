@@ -5,8 +5,9 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
-from core import auxiliary, cogs, extensionconfig, moderation
+from core import auxiliary, cogs, moderation
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -19,16 +20,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="max_purge_amount",
-        datatype="int",
-        title="Max Purge Amount",
-        description="The max amount of messages allowed to be purged in one command",
-        default=50,
-    )
     await bot.add_cog(Purger(bot=bot, extension_name="purge"))
-    bot.add_extension_config("purge", config)
 
 
 class Purger(cogs.BaseCog):
@@ -54,13 +46,14 @@ class Purger(cogs.BaseCog):
             amount (int): The max amount of messages to purge
             duration_minutes (int, optional): The max age of a message to purge. Defaults to None.
         """
-        config = self.bot.guild_configs[str(interaction.guild.id)]
+        max_purge_amount = configuration.get_config_entry(
+            interaction.guild.id, "purge_max_purge_amount"
+        )
 
-        if amount <= 0 or amount > config.extensions.purge.max_purge_amount.value:
+        if amount <= 0 or amount > max_purge_amount:
             embed = auxiliary.prepare_deny_embed(
                 message=(
-                    "Messages to purge must be between 1 "
-                    f"and {config.extensions.purge.max_purge_amount.value}"
+                    "Messages to purge must be between 1 " f"and {max_purge_amount}"
                 ),
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)

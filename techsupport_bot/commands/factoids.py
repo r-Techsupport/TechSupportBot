@@ -24,6 +24,7 @@ from socket import gaierror
 from typing import TYPE_CHECKING, Self
 
 import aiocron
+import configuration
 import discord
 import expiringdict
 import munch
@@ -31,7 +32,7 @@ import ui
 import yaml
 from aiohttp.client_exceptions import InvalidURL
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, custom_errors, extensionconfig
+from core import auxiliary, cogs, custom_errors
 from discord import app_commands
 from discord.ext import commands
 from functions import logger as function_logger
@@ -46,52 +47,12 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-
-    # Sets up the config
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="manage_roles",
-        datatype="list",
-        title="Manage factoids roles",
-        description="The roles required to manage factoids",
-        default=["Factoids"],
-    )
-    config.add(
-        key="admin_roles",
-        datatype="list",
-        title="Admin factoids roles",
-        description="The roles required to administrate factoids",
-        default=["Admin"],
-    )
-    config.add(
-        key="prefix",
-        datatype="str",
-        title="Factoid prefix",
-        description="Prefix for calling factoids",
-        default="?",
-    )
-    config.add(
-        key="restricted_list",
-        datatype="list",
-        title="Restricted channels list",
-        description="List of channel IDs that restricted factoids are allowed to be used in",
-        default=[],
-    )
-    config.add(
-        key="disable_embeds",
-        datatype="bool",
-        title="Force disable embeds, for debug purposes",
-        description="This will force all factoids to not use embeds.",
-        default=False,
-    )
-
     await bot.add_cog(
         FactoidManager(
             bot=bot,
             extension_name="factoids",
         )
     )
-    bot.add_extension_config("factoids", config)
 
 
 async def has_manage_factoids_role(ctx: commands.Context) -> bool:
@@ -103,9 +64,10 @@ async def has_manage_factoids_role(ctx: commands.Context) -> bool:
     Returns:
         bool: True if the command can be run, False if it can't
     """
-    config = ctx.bot.guild_configs[str(ctx.guild.id)]
     return await has_given_factoids_role(
-        ctx.guild, ctx.author, config.extensions.factoids.manage_roles.value
+        ctx.guild,
+        ctx.author,
+        configuration.get_config_entry(ctx.guild.id, "factoids_manage_roles"),
     )
 
 
@@ -118,9 +80,10 @@ async def has_admin_factoids_role(ctx: commands.Context) -> bool:
     Returns:
         bool: True if the command can be run, False if it can't
     """
-    config = ctx.bot.guild_configs[str(ctx.guild.id)]
     return await has_given_factoids_role(
-        ctx.guild, ctx.author, config.extensions.factoids.admin_roles.value
+        ctx.guild,
+        ctx.author,
+        configuration.get_config_entry(ctx.guild.id, "factoids_admin_roles"),
     )
 
 
@@ -778,23 +741,24 @@ class FactoidManager(cogs.MatchCog):
         return True
 
     # -- Getting and responding with a factoid --
-    async def match(
-        self: Self, config: munch.Munch, _: commands.Context, message_contents: str
-    ) -> bool:
+    async def match(self: Self, ctx: commands.Context, message_contents: str) -> bool:
         """Checks if a message started with the prefix from the config
 
         Args:
-            config (munch.Munch): The config to get the prefix from
+            ctx (commands.Context): The context of which the message was sent
             message_contents (str): The message to check
 
         Returns:
             bool: Whether the message starts with the prefix or not
         """
-        return message_contents.startswith(config.extensions.factoids.prefix.value)
+        if not ctx.guild:
+            return
+        return message_contents.startswith(
+            configuration.get_config_entry(ctx.guild.id, "factoids_prefix")
+        )
 
     async def response(
         self: Self,
-        config: munch.Munch,
         ctx: commands.Context,
         message_content: str,
         _: bool,
@@ -802,7 +766,6 @@ class FactoidManager(cogs.MatchCog):
         """Responds to a factoid call
 
         Args:
-            config (munch.Munch): The server config
             ctx (commands.Context): Context of the call
             message_content (str): Content of the call
 
@@ -814,7 +777,7 @@ class FactoidManager(cogs.MatchCog):
             return
         # Checks if the first word of the content after the prefix is a valid factoid
         # Replaces \n with spaces so factoid can be called even with newlines
-        prefix = config.extensions.factoids.prefix.value
+        prefix = configuration.get_config_entry(ctx.guild.id, "factoids_prefix")
         query = message_content[len(prefix) :].replace("\n", " ").split(" ")[0].lower()
         try:
             factoid = await self.get_factoid(query, str(ctx.guild.id))
@@ -831,20 +794,22 @@ class FactoidManager(cogs.MatchCog):
         if factoid.disabled:
             return
 
-        if (
-            factoid.restricted
-            and str(ctx.channel.id)
-            not in config.extensions.factoids.restricted_list.value
+        if factoid.restricted and str(
+            ctx.channel.id
+        ) not in configuration.get_config_entry(
+            ctx.guild.id, "factoids_restricted_list"
         ):
             return
 
-        if config.extensions.factoids.disable_embeds.value:
+        if configuration.get_config_entry(ctx.guild.id, "factoids_disable_embeds"):
             embed = None
         else:
             try:
                 embed = self.get_embed_from_factoid(factoid)
             except TypeError as exception:
-                log_channel = config.get("logging_channel")
+                log_channel = configuration.get_config_entry(
+                    ctx.guild.id, "core_logging_channel"
+                )
                 await self.bot.logger.send_log(
                     message=f"Unable to make embed for factoid `{factoid.name}`, sending fallback.",
                     level=LogLevel.ERROR,
@@ -878,8 +843,9 @@ class FactoidManager(cogs.MatchCog):
                 content=content, embed=embed, mention_author=not mentions
             )
             # log it in the logging channel with type info and generic content
-            config = self.bot.guild_configs[str(ctx.guild.id)]
-            log_channel = config.get("logging_channel")
+            log_channel = configuration.get_config_entry(
+                ctx.guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message=(
                     f"Sending factoid: {query} (triggered by {ctx.author} in"
@@ -891,8 +857,9 @@ class FactoidManager(cogs.MatchCog):
             )
         # If something breaks, also log it
         except discord.errors.HTTPException as exception:
-            config = self.bot.guild_configs[str(ctx.guild.id)]
-            log_channel = config.get("logging_channel")
+            log_channel = configuration.get_config_entry(
+                ctx.guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message="Could not send factoid",
                 level=LogLevel.ERROR,
@@ -951,15 +918,13 @@ class FactoidManager(cogs.MatchCog):
                 factoid was sent in
             factoid_message (str): The plaintext message content of the factoid
         """
-        config = self.bot.guild_configs[str(channel.guild.id)]
-
         # Don't allow logging if extension is disabled
-        if "logger" not in config.enabled_extensions:
+        if "logger" not in configuration.get_config_entry(
+            factoid_caller.guild.id, "core_enabled_extensions"
+        ):
             return
 
-        target_logging_channel = await function_logger.pre_log_checks(
-            self.bot, config, channel
-        )
+        target_logging_channel = await function_logger.pre_log_checks(self.bot, channel)
         if not target_logging_channel:
             return
 
@@ -982,19 +947,22 @@ class FactoidManager(cogs.MatchCog):
         },
     )
     async def factoid_call_command(
-        self: Self, interaction: discord.Interaction, factoid_name: str
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+        member_to_ping: discord.Member = None,
     ) -> None:
         """This is an app command version of typing {prefix}call
 
         Args:
             interaction (discord.Interaction): The interaction that triggered this command
             factoid_name (str): The factoid name to search for and print
+            member_to_ping (discord.Member): A member to ping in the output
 
         Raises:
             TooLongFactoidMessageError: If the plaintext exceed 2000 characters
         """
         query = factoid_name.replace("\n", " ").split(" ")[0].lower()
-        config = self.bot.guild_configs[str(interaction.guild.id)]
         try:
             factoid = await self.get_factoid(query, str(interaction.guild.id))
 
@@ -1020,23 +988,27 @@ class FactoidManager(cogs.MatchCog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        if (
-            factoid.restricted
-            and str(interaction.channel.id)
-            not in config.extensions.factoids.restricted_list.value
+        if factoid.restricted and str(
+            interaction.channel.id
+        ) not in configuration.get_config_entry(
+            interaction.guild.id, "factoids_restricted_list"
         ):
             embed = auxiliary.prepare_deny_embed(
                 message=f"The factoid {factoid_name} is restricted and not allowed in this channel."
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
-        if config.extensions.factoids.disable_embeds.value:
+        if configuration.get_config_entry(
+            interaction.guild.id, "factoids_disable_embeds"
+        ):
             embed = None
         else:
             try:
                 embed = self.get_embed_from_factoid(factoid)
             except TypeError as exception:
-                log_channel = config.get("logging_channel")
+                log_channel = configuration.get_config_entry(
+                    interaction.guild.id, "core_logging_channel"
+                )
                 await self.bot.logger.send_log(
                     message=f"Unable to make embed for factoid `{factoid.name}`, sending fallback.",
                     level=LogLevel.ERROR,
@@ -1055,6 +1027,9 @@ class FactoidManager(cogs.MatchCog):
             # The not embed causes a ValueError in certain cases. This ensures fallback works
             content = factoid.message
 
+        if member_to_ping:
+            content = f"{member_to_ping.mention} {content}".strip()
+
         if content and len(content) > 2000:
             embed = auxiliary.prepare_deny_embed(
                 message="I ran into an error sending that factoid: "
@@ -1068,7 +1043,9 @@ class FactoidManager(cogs.MatchCog):
             # define the message and send it
             await interaction.response.send_message(content=content, embed=embed)
             # log it in the logging channel with type info and generic content
-            log_channel = config.get("logging_channel")
+            log_channel = configuration.get_config_entry(
+                interaction.guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message=(
                     f"Sending factoid: {query} (triggered by {interaction.user} in"
@@ -1082,7 +1059,9 @@ class FactoidManager(cogs.MatchCog):
             )
         # If something breaks, also log it
         except discord.errors.HTTPException as exception:
-            log_channel = config.get("logging_channel")
+            log_channel = configuration.get_config_entry(
+                interaction.guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message="Could not send factoid",
                 level=LogLevel.ERROR,
@@ -1140,8 +1119,9 @@ class FactoidManager(cogs.MatchCog):
                     channel = None
 
                     if ctx:
-                        config = self.bot.guild_configs[str(ctx.guild.id)]
-                        channel = config.get("logging_channel")
+                        channel = configuration.get_config_entry(
+                            ctx.guild.id, "core_logging_channel"
+                        )
                         log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
 
                     await self.bot.logger.send_log(
@@ -1166,8 +1146,9 @@ class FactoidManager(cogs.MatchCog):
                 log_context = None
 
                 if ctx:
-                    config = self.bot.guild_configs[str(ctx.guild.id)]
-                    channel = config.get("logging_channel")
+                    channel = configuration.get_config_entry(
+                        ctx.guild.id, "core_logging_channel"
+                    )
                     log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
 
                 await self.bot.logger.send_log(
@@ -1188,8 +1169,9 @@ class FactoidManager(cogs.MatchCog):
                 log_context = None
 
                 if ctx:
-                    config = self.bot.guild_configs[str(ctx.guild.id)]
-                    channel = config.get("logging_channel")
+                    channel = configuration.get_config_entry(
+                        ctx.guild.id, "core_logging_channel"
+                    )
                     log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
 
                 await self.bot.logger.send_log(
@@ -1209,8 +1191,9 @@ class FactoidManager(cogs.MatchCog):
                 log_context = None
 
                 if ctx:
-                    config = self.bot.guild_configs[str(ctx.guild.id)]
-                    channel = config.get("logging_channel")
+                    channel = configuration.get_config_entry(
+                        ctx.guild.id, "core_logging_channel"
+                    )
                     log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
 
                 await self.bot.logger.send_log(
@@ -1223,28 +1206,27 @@ class FactoidManager(cogs.MatchCog):
                     context=log_context,
                 )
                 continue
-
-            config = self.bot.guild_configs[str(channel.guild.id)]
-
             # Checking for disabled or restricted
             if factoid.disabled:
                 return
 
-            if (
-                factoid.restricted
-                and str(channel.id)
-                not in config.extensions.factoids.restricted_list.value
+            if factoid.restricted and str(
+                channel.id
+            ) not in configuration.get_config_entry(
+                ctx.guild.id, "factoids_restricted_list"
             ):
                 return
 
             # Get_embed accepts job as a factoid object
-            if config.extensions.factoids.disable_embeds.value:
+            if configuration.get_config_entry(ctx.guild.id, "factoids_disable_embeds"):
                 embed = None
             else:
                 try:
                     embed = self.get_embed_from_factoid(factoid)
                 except TypeError as exception:
-                    log_channel = config.get("logging_channel")
+                    log_channel = configuration.get_config_entry(
+                        ctx.guild.id, "core_logging_channel"
+                    )
                     await self.bot.logger.send_log(
                         message=(
                             f"Unable to make embed for factoid `{factoid.name}`, sending fallback."
@@ -1266,8 +1248,9 @@ class FactoidManager(cogs.MatchCog):
                 message = await channel.send(content=content, embed=embed)
 
             except discord.errors.HTTPException as exception:
-                config = self.bot.guild_configs[str(ctx.guild.id)]
-                log_channel = config.get("logging_channel")
+                log_channel = configuration.get_config_entry(
+                    ctx.guild.id, "core_logging_channel"
+                )
                 await self.bot.logger.send_log(
                     message="Could not send looped factoid",
                     level=LogLevel.ERROR,
@@ -1409,7 +1392,6 @@ class FactoidManager(cogs.MatchCog):
             channel (discord.TextChannel): The channel to loop the factoid in
             cron_config (str): The cron config of the loop
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
 
         if factoid.protected:
@@ -1426,9 +1408,8 @@ class FactoidManager(cogs.MatchCog):
             )
             return
 
-        if (
-            factoid.restricted
-            and str(channel.id) not in config.extensions.factoids.restricted_list.value
+        if factoid.restricted and str(channel.id) not in configuration.get_config_entry(
+            ctx.guild.id, "factoids_restricted_list"
         ):
             await auxiliary.send_deny_embed(
                 message=(
@@ -1779,11 +1760,12 @@ class FactoidManager(cogs.MatchCog):
         guild = str(interaction.guild.id)
         # Check for admin roles if ignoring hidden
         if true_all or show_hidden:
-            config = self.bot.guild_configs[str(interaction.guild.id)]
             await has_given_factoids_role(
                 interaction.guild,
                 interaction.user,
-                config.extensions.factoids.admin_roles.value,
+                configuration.get_config_entry(
+                    interaction.guild.id, "factoids_admin_roles"
+                ),
             )
 
         if true_all:
@@ -1950,8 +1932,9 @@ class FactoidManager(cogs.MatchCog):
 
         # If an error happened while calling the api
         except (gaierror, InvalidURL) as exception:
-            config = self.bot.guild_configs[str(guild.id)]
-            log_channel = config.get("logging_channel")
+            log_channel = configuration.get_config_entry(
+                guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message="Could not render/send all-factoid HTML",
                 level=LogLevel.ERROR,
@@ -2473,8 +2456,9 @@ class FactoidManager(cogs.MatchCog):
         )
 
         # Logs the new parent change
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-        log_channel = config.get("logging_channel")
+        log_channel = configuration.get_config_entry(
+            ctx.guild.id, "core_logging_channel"
+        )
         await self.bot.logger.send_log(
             message=(
                 f"Factoid dealias: Deleted the alias `{factoid_name}`, new"

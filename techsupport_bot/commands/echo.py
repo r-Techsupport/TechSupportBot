@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import configuration
 from core import auxiliary, cogs
 from discord.ext import commands
 from functions import logger as function_logger
@@ -74,16 +75,13 @@ class MessageEcho(cogs.BaseCog):
         sent_message = await channel.send(content=message)
 
         await auxiliary.send_confirm_embed(message="Message sent", channel=ctx.channel)
-
-        config = self.bot.guild_configs[str(channel.guild.id)]
-
         # Don't allow logging if extension is disabled
-        if "logger" not in config.enabled_extensions:
+        if "logger" not in configuration.get_config_entry(
+            channel.guild.id, "core_enabled_extensions"
+        ):
             return
 
-        target_logging_channel = await function_logger.pre_log_checks(
-            self.bot, config, channel
-        )
+        target_logging_channel = await function_logger.pre_log_checks(self.bot, channel)
         if not target_logging_channel:
             return
 

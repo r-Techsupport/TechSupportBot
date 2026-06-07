@@ -8,6 +8,7 @@ import traceback
 from typing import TYPE_CHECKING, Self
 
 import botlogging.embed as embed_lib
+import configuration
 import discord
 
 from .common import LogContext, LogLevel
@@ -140,15 +141,14 @@ class BotLogger:
         if not context.guild:
             return True
 
-        # Get the guilds config
-        config = self.bot.guild_configs[str(context.guild.id)]
-
         # Checking to see if guild logging is enabled
-        if not config.enable_logging:
+        if not configuration.get_config_entry(context.guild.id, "core_enable_logging"):
             return False
 
         # Checking to see if log occured in private channels
-        if context.channel and str(context.channel.id) in config.private_channels:
+        if context.channel and str(
+            context.channel.id
+        ) in configuration.get_config_entry(context.guild.id, "core_private_channels"):
             return False
 
         return True
