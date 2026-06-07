@@ -7,8 +7,9 @@ import random
 from typing import TYPE_CHECKING, Self
 
 import discord
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord.ext import commands
+import configuration
 
 if TYPE_CHECKING:
     import bot
@@ -20,32 +21,8 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="channel",
-        datatype="int",
-        title="Kanye Channel ID",
-        description="The ID of the channel the Kanye West quote should appear in",
-        default=None,
-    )
-    config.add(
-        key="min_wait",
-        datatype="int",
-        title="Min wait (hours)",
-        description="The minimum number of hours to wait between Kanye events",
-        default=24,
-    )
-    config.add(
-        key="max_wait",
-        datatype="int",
-        title="Max wait (hours)",
-        description="The minimum number of hours to wait between Kanye events",
-        default=48,
-    )
 
     await bot.add_cog(KanyeQuotes(bot=bot, extension_name="kanye"))
-    bot.add_extension_config("kanye", config)
-
 
 class KanyeQuotes(cogs.LoopCog):
     """Class to get the Kanye quotes from the api.
@@ -102,7 +79,7 @@ class KanyeQuotes(cogs.LoopCog):
         quote = await self.get_quote()
         embed = self.generate_themed_embed(quote=quote)
 
-        channel = guild.get_channel(int(config.extensions.kanye.channel.value))
+        channel = guild.get_channel(int(configuration.get_config_entry(guild.id, "kanye_channel")))
         if not channel:
             return
 
@@ -117,8 +94,8 @@ class KanyeQuotes(cogs.LoopCog):
         config = self.bot.guild_configs[str(guild.id)]
         await asyncio.sleep(
             random.randint(
-                config.extensions.kanye.min_wait.value * 3600,
-                config.extensions.kanye.max_wait.value * 3600,
+                configuration.get_config_entry(guild.id, "kanye_min_wait") * 3600,
+                configuration.get_config_entry(guild.id, "kanye_max_wait") * 3600,
             )
         )
 

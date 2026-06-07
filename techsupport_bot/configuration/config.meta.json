@@ -298,6 +298,46 @@
     "factoids_restricted_list": {
         "datatype": "list[discord.TextChannel]",
         "description": "List of channel IDs that restricted factoids are allowed to be used in"
+    },
+    "kanye_channel": {
+        "datatype": "discord.TextChannel",
+        "description": "The ID of the channel the Kanye West quote should appear in"
+    },
+    "kanye_max_wait": {
+        "datatype": "int",
+        "description": "The maximum number of hours to wait between Kanye events"
+    },
+    "kanye_min_wait": {
+        "datatype": "int",
+        "description": "The minimum number of hours to wait between Kanye events"
+    },
+    "moderator_immune_roles": {
+        "datatype": "list[discord.Role]",
+        "description": "The list of role names that are immune to protect commands"
+    },
+    "modlog_alert_channel": {
+        "datatype": "discord.TextChannel",
+        "description": "The ID of the channel to send auto-protect alerts to"
+    },
+    "modmail_aliases": {
+        "datatype": "dict[str, str]",
+        "description": "Custom modmail commands to send message slices"
+    },
+    "modmail_automatic_rejections": {
+        "datatype": "dict[str, str]",
+        "description": "If someone sends a message matching regex, blocks thread creation"
+    },
+    "modmail_automatic_responses": {
+        "datatype": "dict[str, str]",
+        "description": "If someone sends a message containing a key, sends its value"
+    },
+    "modmail_roles_to_ping": {
+        "datatype": "list[discord.Role]",
+        "description": "Roles to ping on thread creation"
+    },
+    "modmail_thread_creation_message": {
+        "datatype": "str",
+        "description": "The message sent to the user when confirming a thread creation."
     }
 }
 

@@ -73,5 +73,15 @@
     "factoids_disable_embeds": false,
     "factoids_manage_roles": [],
     "factoids_prefix": "?",
-    "factoids_restricted_list": []
+    "factoids_restricted_list": [],
+    "kanye_channel": "",
+    "kanye_max_wait": 48,
+    "kanye_min_wait": 24,
+    "moderator_immune_roles": [],
+    "modlog_alert_channel": "",
+    "modmail_aliases": {},
+    "modmail_automatic_rejections": {},
+    "modmail_automatic_responses": {},
+    "modmail_roles_to_ping": [],
+    "modmail_thread_creation_message": "Create modmail thread?"
 }

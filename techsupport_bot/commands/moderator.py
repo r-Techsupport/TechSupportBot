@@ -11,7 +11,7 @@ import discord
 import ui
 from botlogging import LogContext, LogLevel
 from commands import modlog
-from core import auxiliary, cogs, extensionconfig, moderation
+from core import auxiliary, cogs, moderation
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -24,25 +24,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="immune_roles",
-        datatype="list",
-        title="Immune role names",
-        description="The list of role names that are immune to protect commands",
-        default=[],
-    )
-    config.add(
-        key="ban_delete_duration",
-        datatype="int",
-        title="Ban delete duration (days)",
-        description=(
-            "The default amount of days to delete messages for a user after they are banned"
-        ),
-        default=7,
-    )
     await bot.add_cog(ProtectCommands(bot=bot, extension_name="moderator"))
-    bot.add_extension_config("moderator", config)
 
 
 class ProtectCommands(cogs.BaseCog):
@@ -773,7 +755,7 @@ class ProtectCommands(cogs.BaseCog):
 
         # Check to see if target has any immune roles
         try:
-            for name in config.extensions.moderator.immune_roles.value:
+            for name in configuration.get_config_entry(target.guild.id, "moderator_immune_roles"):
                 role_check = discord.utils.get(target.guild.roles, name=name)
                 if role_check and role_check in getattr(target, "roles", []):
                     return (

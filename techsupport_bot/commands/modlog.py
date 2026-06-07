@@ -10,7 +10,7 @@ import configuration
 import discord
 import munch
 import ui
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord import app_commands
 from discord.ext import commands
 
@@ -24,17 +24,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="alert_channel",
-        datatype="int",
-        title="Alert channel ID",
-        description="The ID of the channel to send auto-protect alerts to",
-        default=None,
-    )
     await bot.add_cog(BanLogger(bot=bot, extension_name="modlog"))
-    bot.add_extension_config("modlog", config)
-
 
 class BanLogger(cogs.BaseCog):
     """The class that holds the /modlog commands
@@ -312,11 +302,9 @@ async def log_ban(
     embed.timestamp = datetime.datetime.utcnow()
     embed.color = discord.Color.red()
 
-    config = bot.guild_configs[str(guild.id)]
-
     try:
         alert_channel = guild.get_channel(
-            int(config.extensions.modlog.alert_channel.value)
+            int(configuration.get_config_entry(guild.id, "modlog_alert_channel"))
         )
     except TypeError:
         alert_channel = None
@@ -361,11 +349,9 @@ async def log_unban(
     embed.timestamp = datetime.datetime.utcnow()
     embed.color = discord.Color.green()
 
-    config = bot.guild_configs[str(guild.id)]
-
     try:
         alert_channel = guild.get_channel(
-            int(config.extensions.modlog.alert_channel.value)
+            int(configuration.get_config_entry(guild.id, "modlog_alert_channel"))
         )
     except TypeError:
         alert_channel = None
