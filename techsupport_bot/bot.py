@@ -7,12 +7,12 @@ import asyncio
 import datetime
 import glob
 import io
-import json
 import os
 import threading
 from typing import Self
 
 import botlogging
+import configuration
 import discord
 import expiringdict
 import gino
@@ -21,7 +21,7 @@ import munch
 import ui
 import yaml
 from botlogging import LogContext, LogLevel
-from core import auxiliary, custom_errors, databases, extensionconfig, http
+from core import auxiliary, custom_errors, databases, http
 from discord import app_commands
 from discord.ext import commands
 
@@ -68,8 +68,6 @@ class TechSupportBot(commands.Bot):
         self.file_config = None
 
         # Sets up some dicts and arrays
-        self.guild_configs: dict[str, munch.Munch] = {}
-        self.extension_configs = munch.DefaultMunch(None)
         self.extension_states = munch.DefaultMunch(None)
         self.command_rate_limit_bans: expiringdict.ExpiringDict[str, bool] = (
             expiringdict.ExpiringDict(
@@ -177,13 +175,6 @@ class TechSupportBot(commands.Bot):
         databases.setup_models(self)
         await self.db.gino.create_all()
 
-        # Load all guild config objects into self.guild_configs object
-        all_config = await self.models.Config.query.gino.all()
-        for config in all_config:
-            self.guild_configs[config.guild_id] = munch.munchify(
-                json.loads(config.config)
-            )
-
         # Adds persistent views to the bot
         self.add_view(ui.VotingButtonPersistent())
 
@@ -202,7 +193,6 @@ class TechSupportBot(commands.Bot):
         Args:
             guild (discord.Guild): the guild that was joined
         """
-        self.register_new_guild_config(str(guild.id))
         for cog in self.cogs.values():
             if getattr(cog, "COG_TYPE", "").lower() == "loop":
                 try:
@@ -224,10 +214,6 @@ class TechSupportBot(commands.Bot):
             message="Bot online", level=LogLevel.INFO, console_only=True
         )
         await self.get_owner()
-
-        # Ensure all guilds have a config
-        for guild in self.guilds:
-            await self.register_new_guild_config(str(guild.id))
 
     # DM Logging
 
@@ -283,160 +269,6 @@ class TechSupportBot(commands.Bot):
             )
 
         await self.process_commands(message)
-
-    # Guild config management functions
-
-    async def register_new_guild_config(self: Self, guild_id: str) -> bool:
-        """This creates a config for a new guild if needed
-
-        Args:
-            guild_id (str): The id of the guild to create config for, in string form
-
-        Returns:
-            bool: True if a config was created, False if a config already existed
-        """
-        async with self.guild_config_lock:
-            try:
-                config = self.guild_configs[guild_id]
-            except KeyError:
-                config = None
-            if not config:
-                await self.create_new_context_config(guild_id)
-                return True
-            return False
-
-    async def create_new_context_config(self: Self, guild_id: str) -> munch.Munch:
-        """Creates a new guild config for a given guild.
-
-        Args:
-            guild_id (str): The guild ID the config will be for. Only used for storing the config
-
-        Returns:
-            munch.Munch: The new config object ready to use
-        """
-        extensions_config = munch.DefaultMunch(None)
-
-        for extension_name, extension_config in self.extension_configs.items():
-            if extension_config:
-                # don't attach to guild config if extension isn't configurable
-                extensions_config[extension_name] = munch.munchify(
-                    extension_config.data
-                )
-        self.extension_name_list.sort()
-
-        config_ = munch.DefaultMunch(None)
-
-        config_.guild_id = str(guild_id)
-        config_.command_prefix = self.file_config.bot_config.default_prefix
-        config_.logging_channel = None
-        config_.member_events_channel = None
-        config_.guild_events_channel = None
-        config_.private_channels = []
-        config_.enabled_extensions = self.extension_name_list
-        config_.nickname_filter = False
-        config_.enable_logging = True
-        config_.rate_limit = munch.DefaultMunch(None)
-        config_.rate_limit.enabled = False
-        config_.rate_limit.commands = 4
-        config_.rate_limit.time = 10
-        config_.moderation = munch.DefaultMunch(None)
-        config_.moderation.max_warnings = 3
-        config_.moderation.alert_channel = None
-
-        config_.extensions = extensions_config
-
-        try:
-            await self.logger.send_log(
-                message=f"Inserting new config for lookup key: {guild_id}",
-                level=LogLevel.DEBUG,
-                context=LogContext(guild=self.get_guild(guild_id)),
-                console_only=True,
-            )
-            # Modify the database
-            await self.write_new_config(str(guild_id), json.dumps(config_))
-
-            # Modify the local cache
-            self.guild_configs[guild_id] = config_
-
-        except Exception as exception:
-            # safely finish because the new config is still useful
-            await self.logger.send_log(
-                message="Could not insert guild config into Postgres",
-                level=LogLevel.ERROR,
-                context=LogContext(guild=self.get_guild(guild_id)),
-                exception=exception,
-            )
-
-        return config_
-
-    async def write_new_config(self: Self, guild_id: str, config: str) -> None:
-        """Takes a config and guild and updates the config in the database
-        This is only needed when a new guild is joined or the config is modifed
-
-        Args:
-            guild_id (str): The str ID of the guild the config belongs to
-            config (str): The str representation of the json config
-        """
-        database_config = await self.models.Config.query.where(
-            self.models.Config.guild_id == guild_id
-        ).gino.first()
-        if database_config:
-            await database_config.update(
-                config=str(config), update_time=datetime.datetime.utcnow()
-            ).apply()
-        else:
-            new_database_config = self.models.Config(
-                guild_id=str(guild_id),
-                config=str(config),
-            )
-            await new_database_config.create()
-
-    def add_extension_config(
-        self: Self, extension_name: str, config: extensionconfig.ExtensionConfig
-    ) -> None:
-        """Adds an extensions defined config to the guild config as a whole
-
-        Args:
-            extension_name (str): The name of the extension to add config for.
-                Will be the key in the config file
-            config (extensionconfig.ExtensionConfig): The config class with all
-                of the config keys to add
-
-        Raises:
-            ValueError: Will be raised if config is not an extensionconfig.ExtensionConfig
-        """
-        if not isinstance(config, extensionconfig.ExtensionConfig):
-            raise ValueError("config must be of type extensionconfig.ExtensionConfig")
-        self.extension_configs[extension_name] = config
-
-    async def get_log_channel_from_guild(
-        self: Self, guild: discord.Guild, key: str
-    ) -> str | None:
-        """Gets the log channel ID associated with the given guild.
-
-        This also checks if the channel exists in the correct guild.
-
-        Args:
-            guild (discord.Guild): the guild object to reference
-            key (str): the key to use when looking up the channel
-
-        Returns:
-            str | None: If the log channel exists, this will be the string of the ID
-                Otherwise it will be None
-        """
-        if not guild:
-            return None
-
-        config = self.guild_configs[str(guild.id)]
-        channel_id = config.get(key)
-
-        if not channel_id:
-            return None
-
-        if not guild.get_channel(int(channel_id)):
-            return None
-
-        return channel_id
 
     # File config loading functions
 
@@ -554,9 +386,7 @@ class TechSupportBot(commands.Bot):
 
         error_message = message_template.get_message(exception)
 
-        log_channel = await self.get_log_channel_from_guild(
-            guild=guild, key="logging_channel"
-        )
+        log_channel = configuration.get_config_entry(guild.id, "core_logging_channel")
 
         # Ensure that error messages aren't too long.
         # This ONLY changes the user facing error, the stack trace isn't impacted
@@ -845,10 +675,7 @@ class TechSupportBot(commands.Bot):
         Returns:
             str: The string of the command prefix by the bot, for the given guild
         """
-        guild_config = self.guild_configs[str(message.guild.id)]
-        return getattr(
-            guild_config, "command_prefix", self.file_config.bot_config.default_prefix
-        )
+        return configuration.get_config_entry(message.guild.id, "core_command_prefix")
 
     # Can run command checks
 
@@ -878,7 +705,6 @@ class TechSupportBot(commands.Bot):
             bool: True if the command should be run, False if under rate limit
         """
         # Assume this is only run if rate limit is enabled
-        config = self.guild_configs[str(guild.id)]
         identifier = f"{member.id}-{guild.id}"
 
         # If this person hasn't run a command in the rate_limit.time
@@ -886,7 +712,9 @@ class TechSupportBot(commands.Bot):
         if identifier not in self.command_execute_history:
             self.command_execute_history[identifier] = expiringdict.ExpiringDict(
                 max_len=20,
-                max_age_seconds=config.rate_limit.time,
+                max_age_seconds=configuration.get_config_entry(
+                    guild.id, "rate_limit_time"
+                ),
             )
 
         # Ensure that a single command is only ever counted once
@@ -894,7 +722,9 @@ class TechSupportBot(commands.Bot):
             self.command_execute_history[identifier][command_id] = True
 
         # Ban the person if they are over the rate limit
-        if len(self.command_execute_history[identifier]) > config.rate_limit.commands:
+        if len(
+            self.command_execute_history[identifier]
+        ) > configuration.get_config_entry(guild.id, "rate_limit_commands"):
             self.command_rate_limit_bans[identifier] = True
 
         # If this person is banned, raise an error
@@ -920,8 +750,9 @@ class TechSupportBot(commands.Bot):
         Returns:
             bool: False if disabled, True if enabled
         """
-        config = self.guild_configs[str(guild.id)]
-        if extension_name not in config.enabled_extensions:
+        if extension_name not in configuration.get_config_entry(
+            guild.id, "core_enabled_extensions"
+        ):
             return False
         return True
 
@@ -953,8 +784,6 @@ class TechSupportBot(commands.Bot):
             context=LogContext(guild=interaction.guild, channel=interaction.channel),
             console_only=True,
         )
-        config = self.guild_configs[str(interaction.guild.id)]
-
         # Check 1 - Ensure extension is enabled
         try:
             extension_name = interaction.command.extras["module"]
@@ -979,7 +808,7 @@ class TechSupportBot(commands.Bot):
 
         # Check 3 - If rate limiter is enabled, run through the rate limiter
         # If the user is under a rate limit, raise an error to show it and block execution
-        if config.rate_limit.get("enabled", False):
+        if configuration.get_config_entry(interaction.guild.id, "rate_limit_enabled"):
             if not self.command_run_rate_limit_check(
                 member=interaction.user,
                 guild=interaction.guild,
@@ -1008,8 +837,8 @@ class TechSupportBot(commands.Bot):
         for parameter in interaction.namespace:
             parameters.append(f"{parameter[0]}: {parameter[1]}")
 
-        log_channel = await self.get_log_channel_from_guild(
-            interaction.guild, key="logging_channel"
+        log_channel = configuration.get_config_entry(
+            interaction.guild.id, "core_logging_channel"
         )
 
         sliced_content = interaction.command.qualified_name[:100]
@@ -1052,8 +881,6 @@ class TechSupportBot(commands.Bot):
             context=LogContext(guild=ctx.guild, channel=ctx.channel),
             console_only=True,
         )
-        config = self.guild_configs[str(ctx.guild.id)]
-
         # Check 1 - Ensure extension is enabled
         extension_name = self.get_command_extension_name(ctx.command)
         if extension_name:
@@ -1067,7 +894,7 @@ class TechSupportBot(commands.Bot):
             return result
 
         # Check 3 - If rate limiter is enabled, run through the rate limiter
-        if config.rate_limit.get("enabled", False):
+        if configuration.get_config_entry(ctx.guild.id, "rate_limit_enabled"):
             # If the user is under a rate limit, raise an error to show it and block execution
             if not self.command_run_rate_limit_check(
                 member=ctx.author, guild=ctx.guild, command_id=ctx.message.id

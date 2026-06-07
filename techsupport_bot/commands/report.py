@@ -6,8 +6,9 @@ import datetime
 import re
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -20,30 +21,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="alert_channel",
-        datatype="int",
-        title="Alert channel ID",
-        description="The ID of the channel to send auto-protect alerts to",
-        default=None,
-    )
-    config.add(
-        key="anonymous",
-        datatype="bool",
-        title="If reports are anonymous",
-        description="Whether reports are anonymous",
-        default=False,
-    )
-    config.add(
-        key="ping_role",
-        datatype="int",
-        title="New report ping role",
-        description="The ID of the role to ping when a new report is created",
-        default=None,
-    )
     await bot.add_cog(Report(bot=bot, extension_name="report"))
-    bot.add_extension_config("report", config)
 
 
 class Report(cogs.BaseCog):
@@ -55,28 +33,28 @@ class Report(cogs.BaseCog):
         extras={"module": "report", "suppress_logs": True},
     )
     async def report_command(
-        self: Self, interaction: discord.Interaction, report_str: str
+        self: Self, interaction: discord.Interaction, reason: str
     ) -> None:
         """This is the core of the /report command
         Allows users to report potential moderation issues to staff
 
         Args:
             interaction (discord.Interaction): The interaction that called this command
-            report_str (str): The report string that the user submitted
+            reason (str): The report string that the user submitted
         """
-        if len(report_str) > 2000:
+        if len(reason) > 2000:
             embed = auxiliary.prepare_deny_embed(
                 "Your report cannot be longer than 2000 characters."
             )
             await interaction.response.send_message(embed=embed)
             return
 
-        embed = discord.Embed(title="New Report", description=report_str)
+        embed = discord.Embed(title="New Report", description=reason)
         embed.color = discord.Color.red()
 
-        config = self.bot.guild_configs[str(interaction.guild.id)]
-
-        is_anonymous = config.extensions.report.anonymous.value
+        is_anonymous = configuration.get_config_entry(
+            interaction.guild.id, "report_anonymous"
+        )
 
         if is_anonymous:
             embed.set_author(name="Anonymous")
@@ -105,7 +83,7 @@ class Report(cogs.BaseCog):
         )
 
         mention_pattern = re.compile(r"<@!?(\d+)>")
-        mentioned_user_ids = mention_pattern.findall(report_str)
+        mentioned_user_ids = mention_pattern.findall(reason)
 
         mentioned_users = []
         for user_id in mentioned_user_ids:
@@ -135,7 +113,11 @@ class Report(cogs.BaseCog):
 
         try:
             alert_channel = interaction.guild.get_channel(
-                int(config.extensions.report.alert_channel.value)
+                int(
+                    configuration.get_config_entry(
+                        interaction.guild.id, "report_alert_channel"
+                    )
+                )
             )
         except TypeError:
             alert_channel = None
@@ -147,7 +129,11 @@ class Report(cogs.BaseCog):
             await interaction.response.send_message(embed=user_embed, ephemeral=True)
             return
 
-        role = interaction.guild.get_role(int(config.extensions.report.ping_role.value))
+        role = interaction.guild.get_role(
+            int(
+                configuration.get_config_entry(interaction.guild.id, "report_ping_role")
+            )
+        )
 
         await alert_channel.send(
             content=role.mention,

@@ -5,9 +5,10 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -31,17 +32,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     except AttributeError as exc:
         raise AttributeError("Dumpdbg was not loaded due to missing API key") from exc
 
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="roles",
-        datatype="list",
-        title="Permitted roles",
-        description="Roles permitted to use this command",
-        default=["super op"],
-    )
-
     await bot.add_cog(Dumpdbg(bot=bot))
-    bot.add_extension_config("dumpdbg", config)
 
 
 class Dumpdbg(cogs.BaseCog):
@@ -66,9 +57,8 @@ class Dumpdbg(cogs.BaseCog):
             ctx (commands.Context): The context in which the command was run
         """
 
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         api_endpoint = self.bot.file_config.api.api_url.dumpdbg
-        permitted_roles = config.extensions.dumpdbg.roles.value
+        permitted_roles = configuration.get_config_entry(ctx.guild.id, "dumpdbg_roles")
 
         if not permitted_roles:
             await auxiliary.send_deny_embed(
@@ -139,7 +129,9 @@ class Dumpdbg(cogs.BaseCog):
                     + f"Api response: `{response['error']}`",
                     channel=ctx.channel,
                 )
-                channel = config.get("logging_channel")
+                channel = configuration.get_config_entry(
+                    ctx.guild.id, "core_logging_channel"
+                )
                 await self.bot.logger.send_log(
                     message=(
                         f"Dumpdbg API responded with the error `{response['error']}`"

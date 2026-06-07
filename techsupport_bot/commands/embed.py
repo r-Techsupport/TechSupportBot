@@ -14,9 +14,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import munch
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -29,16 +30,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="embed_roles",
-        datatype="list",
-        title="Allowed embed roles",
-        description="The list of role names able to use the embed commands",
-        default=[],
-    )
     await bot.add_cog(Embedder(bot=bot))
-    bot.add_extension_config("embed", config)
 
 
 async def has_embed_role(ctx: commands.Context) -> bool:
@@ -55,10 +47,9 @@ async def has_embed_role(ctx: commands.Context) -> bool:
     Returns:
         bool: Whether the invoker has the role
     """
-    config = ctx.bot.guild_configs[str(ctx.guild.id)]
     embed_roles = []
     # Gets the embed roles from the config if they exist
-    for name in config.extensions.embed.embed_roles.value:
+    for name in configuration.get_config_entry(ctx.guild.id, "embed_embed_roles"):
         embed_role = discord.utils.get(ctx.guild.roles, name=name)
         if not embed_role:
             continue

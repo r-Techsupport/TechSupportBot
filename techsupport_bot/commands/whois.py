@@ -5,12 +5,12 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import ui
-from commands import application, moderator, notes
+from commands import application, moderator, notes, xp
 from core import auxiliary, cogs, moderation
 from discord import app_commands
-from functions import xp
 
 if TYPE_CHECKING:
     import bot
@@ -64,19 +64,24 @@ class Whois(cogs.BaseCog):
         )
         embed.add_field(name="Nickname", value=member.display_name)
 
-        role_string = ", ".join(role.name for role in member.roles[1:])
+        role_list = member.roles[1:]
+        role_list.reverse()
+
+        role_string = ", ".join(role.mention for role in role_list)
         embed.add_field(name="Roles", value=role_string or "No roles")
 
-        config = self.bot.guild_configs[str(interaction.guild.id)]
+        enabled_extensions = configuration.get_config_entry(
+            interaction.guild.id, "core_enabled_extensions"
+        )
 
-        if "application" in config.enabled_extensions:
+        if "application" in enabled_extensions:
             try:
                 await application.command_permission_check(interaction)
                 embed = await add_application_info_field(interaction, member, embed)
             except (app_commands.MissingAnyRole, app_commands.AppCommandError):
                 pass
 
-        if "xp" in config.enabled_extensions:
+        if "xp" in enabled_extensions:
             current_XP = await xp.get_current_XP(self.bot, member, interaction.guild)
             embed.add_field(name="XP", value=current_XP)
 
@@ -110,7 +115,7 @@ class Whois(cogs.BaseCog):
 
         embeds = [embed]
 
-        if "notes" in config.enabled_extensions:
+        if "notes" in enabled_extensions:
             try:
                 await notes.is_reader(interaction)
                 all_notes = await moderation.get_all_notes(
@@ -126,10 +131,7 @@ class Whois(cogs.BaseCog):
             except (app_commands.MissingAnyRole, app_commands.AppCommandError):
                 pass
 
-        if (
-            "moderator" in config.enabled_extensions
-            and interaction.permissions.kick_members
-        ):
+        if "moderator" in enabled_extensions and interaction.permissions.kick_members:
             all_warnings = await moderation.get_all_warnings(
                 self.bot, member, interaction.guild
             )

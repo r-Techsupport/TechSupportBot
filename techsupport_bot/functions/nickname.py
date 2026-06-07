@@ -13,8 +13,8 @@ import re
 import string
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
-import munch
 from botlogging import LogContext, LogLevel
 from core import cogs
 from discord.ext import commands
@@ -82,13 +82,10 @@ class AutoNickName(cogs.MatchCog):
     The class that holds the listener and functions to auto change peoples nicknames
     """
 
-    async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str
-    ) -> bool:
+    async def match(self: Self, ctx: commands.Context, content: str) -> bool:
         """On every message, check if the authors nickname should be changed
 
         Args:
-            config (munch.Munch): The guild config
             ctx (commands.Context): The context that sent the message
             content (str): The content of the message
 
@@ -104,7 +101,6 @@ class AutoNickName(cogs.MatchCog):
 
     async def response(
         self: Self,
-        config: munch.Munch,
         ctx: commands.Context,
         content: str,
         result: bool,
@@ -112,7 +108,6 @@ class AutoNickName(cogs.MatchCog):
         """Changes the nickname of a given user, on message
 
         Args:
-            config (munch.Munch): The guild config
             ctx (commands.Context): The context that sent the message
             content (str): The content of the message
             result (bool): The return value of the match function
@@ -132,7 +127,9 @@ class AutoNickName(cogs.MatchCog):
                     f" ping your name. Your new nickname is {modified_name}."
                 )
             except discord.Forbidden:
-                channel = config.get("logging_channel")
+                channel = configuration.get_config_entry(
+                    ctx.guild.id, "core_logging_channel"
+                )
                 await self.bot.logger.send_log(
                     message=f"Could not DM {ctx.author.name} about nickname changes",
                     level=LogLevel.WARNING,
@@ -149,10 +146,8 @@ class AutoNickName(cogs.MatchCog):
         Args:
             member (discord.Member): The member who joined
         """
-        config = self.bot.guild_configs[str(member.guild.id)]
-
         # Don't do anything if the filter is off for the guild
-        if not config.get("nickname_filter", False):
+        if not configuration.get_config_entry(member.guild.id, "core_nickname_filter"):
             return
 
         modified_name = format_username(member.display_name)
@@ -168,7 +163,9 @@ class AutoNickName(cogs.MatchCog):
                 f" ping your name. Your new nickname is {modified_name}."
             )
         except discord.Forbidden:
-            channel = config.get("logging_channel")
+            channel = configuration.get_config_entry(
+                member.guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message=f"Could not DM {member.name} about nickname changes",
                 level=LogLevel.WARNING,

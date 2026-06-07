@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
-import munch
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -20,90 +20,34 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="channel",
-        datatype="int",
-        title="Server Gate Channel ID",
-        description="The ID of the channel the gate is in",
-        default=None,
-    )
-    config.add(
-        key="roles",
-        datatype="list",
-        title="Roles to add",
-        description="The list of roles to add after user is verified",
-        default=[],
-    )
-    config.add(
-        key="intro_message",
-        datatype="str",
-        title="Server Gate intro message",
-        description="The message that's sent when running the intro message command",
-        default=(
-            "Welcome to our server! 👋 Please read the rules then type agree below to"
-            " verify yourself"
-        ),
-    )
-    config.add(
-        key="welcome_message",
-        datatype="str",
-        title="Server Gate welcome message",
-        description="The message to send to the user after they are verified",
-        default="You are now verified! Welcome to the server!",
-    )
-    config.add(
-        key="delete_wait",
-        datatype="int",
-        title="Welcome message delete time",
-        description=(
-            "The amount of time to wait (in seconds) before deleting the welcome"
-            " message"
-        ),
-        default=60,
-    )
-    config.add(
-        key="verify_text",
-        datatype="str",
-        title="Verification text",
-        description=(
-            "The case-insensitive text the user should type to verify themselves"
-        ),
-        default="agree",
-    )
-
     await bot.add_cog(ServerGate(bot=bot, extension_name="gate"))
-    bot.add_extension_config("gate", config)
 
 
 class ServerGate(cogs.MatchCog):
     """Class to get the server gate from config."""
 
-    async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, _: str
-    ) -> bool:
+    async def match(self: Self, ctx: commands.Context, _: str) -> bool:
         """Matches any message and checks if it is in the gate channel
 
         Args:
-            config (munch.Munch): The config for the guild where the message was sent
             ctx (commands.Context): The context of the original message
 
         Returns:
             bool: Whether the message should be subject to the gate policy or not
         """
-        if not config.extensions.gate.channel.value:
+        channel = configuration.get_config_entry(ctx.guild.id, "gate_channel")
+        if not channel:
             return False
 
-        return ctx.channel.id == int(config.extensions.gate.channel.value)
+        return ctx.channel.id == int(channel)
 
     async def response(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str, _: bool
+        self: Self, ctx: commands.Context, content: str, _: bool
     ) -> None:
         """Prepares a response to the gate policy,
             deleting the message and assigning roles if needed
 
         Args:
-            config (munch.Munch): The config of the guild with the gate
             ctx (commands.Context): The context of the message that triggered the gate
             content (str): The string contents of the message from the gate channel
         """
@@ -114,11 +58,14 @@ class ServerGate(cogs.MatchCog):
 
         await ctx.message.delete()
 
-        if content.lower() == config.extensions.gate.verify_text.value:
-            roles = await self.get_roles(config, ctx)
+        if content.lower() == configuration.get_config_entry(
+            ctx.guild.id, "gate_verify_text"
+        ):
+            roles = await self.get_roles(ctx)
             if not roles:
-                config = self.bot.guild_configs[str(ctx.guild.id)]
-                log_channel = config.get("logging_channel")
+                log_channel = configuration.get_config_entry(
+                    ctx.guild.id, "core_logging_channel"
+                )
                 await self.bot.logger.send_log(
                     message=(
                         "No roles to give user in gate plugin channel - ignoring"
@@ -132,8 +79,12 @@ class ServerGate(cogs.MatchCog):
 
             await ctx.author.add_roles(*roles, reason="Gate passed successfully")
 
-            welcome_message = config.extensions.gate.welcome_message.value
-            delete_wait = config.extensions.gate.delete_wait.value
+            welcome_message = configuration.get_config_entry(
+                ctx.guild.id, "gate_welcome_message"
+            )
+            delete_wait = configuration.get_config_entry(
+                ctx.guild.id, "gate_delete_wait"
+            )
 
             embed = auxiliary.generate_basic_embed(
                 title="Server Gate",
@@ -148,21 +99,18 @@ class ServerGate(cogs.MatchCog):
                 delete_after=float(delete_wait),
             )
 
-    async def get_roles(
-        self: Self, config: munch.Munch, ctx: commands.Context
-    ) -> list[discord.Role]:
+    async def get_roles(self: Self, ctx: commands.Context) -> list[discord.Role]:
         """Builds a list of roles that the user in ctx doesn't have,
             but are listed in the gate config roles to be applied
 
         Args:
-            config (munch.Munch): The config of the guild
             ctx (commands.Context): The context of the message that triggered the gate
 
         Returns:
             list[discord.Role]: A list of all the roles that should be given to the user
         """
         roles = []
-        for role_name in config.extensions.gate.roles.value:
+        for role_name in configuration.get_config_entry(ctx.guild.id, "gate_roles"):
             role = discord.utils.get(ctx.guild.roles, name=role_name)
 
             if role in ctx.author.roles:
@@ -200,13 +148,15 @@ class ServerGate(cogs.MatchCog):
         Args:
             ctx (commands.Context): The context in which the command occured
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-
-        if ctx.channel.id != int(config.extensions.gate.channel.value):
+        if ctx.channel.id != int(
+            configuration.get_config_entry(ctx.guild.id, "gate_channel")
+        ):
             await auxiliary.send_deny_embed(
                 message="That command is only usable in the gate channel",
                 channel=ctx.channel,
             )
             return
 
-        await ctx.channel.send(config.extensions.gate.intro_message.value)
+        await ctx.channel.send(
+            configuration.get_config_entry(ctx.guild.id, "gate_intro_message")
+        )

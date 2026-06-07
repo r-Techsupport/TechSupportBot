@@ -40,12 +40,12 @@ api:
         dumpdbg:
         giphy:
         google:
-        google_cse:
         news:
         open_weather:
         openai:
         spotify_client:
         spotify_key:
+        tavily:
         wolfram:
     api_url:
         dumpdbg:

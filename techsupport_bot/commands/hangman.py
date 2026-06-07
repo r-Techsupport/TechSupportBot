@@ -6,9 +6,10 @@ import datetime
 import uuid
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import ui
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord import app_commands
 from discord.ext import commands
 
@@ -22,17 +23,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="hangman_roles",
-        datatype="list",
-        title="Hangman admin roles",
-        description="The list of role names able to control hangman games",
-        default=[],
-    )
-
     await bot.add_cog(HangmanCog(bot=bot))
-    bot.add_extension_config("hangman", config)
 
 
 class HangmanGame:
@@ -289,9 +280,10 @@ async def can_stop_game(ctx: commands.Context) -> bool:
     if getattr(user, "id", 0) == ctx.author.id:
         return True
 
-    config = ctx.bot.guild_configs[str(ctx.guild.id)]
     roles = []
-    for role_name in config.extensions.hangman.hangman_roles.value:
+    for role_name in configuration.get_config_entry(
+        ctx.guild.id, "hangman_hangman_roles"
+    ):
         role = discord.utils.get(ctx.guild.roles, name=role_name)
         if not role:
             continue
@@ -341,7 +333,7 @@ class HangmanCog(cogs.BaseCog):
     @hangman_app_group.command(
         name="start",
         description="Start a Hangman game in the current channel.",
-        extras={"module": "hangman"},
+        extras={"module": "hangman", "suppress_logs": True},
     )
     async def start_game(
         self: Self, interaction: discord.Interaction, word: str
@@ -489,18 +481,10 @@ class HangmanCog(cogs.BaseCog):
         """
         hangman_drawing = game.draw_hang_state()
         hangman_word = game.draw_word_state()
-        # Determine the guild ID
-        guild_id = None
-        if isinstance(ctx_or_interaction, commands.Context):
-            guild_id = ctx_or_interaction.guild.id if ctx_or_interaction.guild else None
-        elif isinstance(ctx_or_interaction, discord.Interaction):
-            guild_id = ctx_or_interaction.guild_id
+        guild_id = ctx_or_interaction.guild.id
 
         # Fetch the prefix manually since get_prefix expects a Message
-        if guild_id and str(guild_id) in self.bot.guild_configs:
-            prefix = self.bot.guild_configs[str(guild_id)].command_prefix
-        else:
-            prefix = self.file_config.bot_config.default_prefix
+        prefix = configuration.get_config_entry(guild_id, "core_command_prefix")
 
         embed = discord.Embed(
             title=f"`{hangman_word}`",

@@ -3,6 +3,7 @@ Do the proper moderative action and return true if successful, false if not."""
 
 import datetime
 
+import configuration
 import discord
 import munch
 
@@ -222,10 +223,10 @@ async def send_command_usage_alert(
         "https://www.iconarchive.com/download/i76061/martz90/circle-addon2/warning.512.png"
     )
 
-    config = bot_object.guild_configs[str(guild.id)]
-
     try:
-        alert_channel = guild.get_channel(int(config.moderation.alert_channel))
+        alert_channel = guild.get_channel(
+            int(configuration.get_config_entry(guild.id, "moderation_alert_channel"))
+        )
     except TypeError:
         alert_channel = None
 
