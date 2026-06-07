@@ -29,5 +29,18 @@
     "core_logging_channel": "",
     "modmail_modmail_roles": [],
     "duck_hunt_channels": [],
-    "duck_success_rate": 50
+    "duck_success_rate": 50,
+    "forum_abandoned_message": "thread abandoned",
+    "forum_body_regex_list": [],
+    "forum_close_message": "thread closed",
+    "forum_delete_message": "thread deleted",
+    "forum_duplicate_message": "thread duplicated",
+    "forum_forum_channel_id": "",
+    "forum_left_message": "thread left",
+    "forum_max_age_minutes": 1440,
+    "forum_reject_message": "thread rejected",
+    "forum_solve_message": "thread solved",
+    "forum_staff_role_ids": [],
+    "forum_title_regex_list": [],
+    "forum_welcome_message": "thread welcome"
 }

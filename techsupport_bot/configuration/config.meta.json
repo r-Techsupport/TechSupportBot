@@ -122,10 +122,59 @@
     "duck_success_rate": {
         "datatype": "int",
         "description": "The success rate of bef/bang messages"
+    },
+    "forum_abandoned_message": {
+        "datatype": "str",
+        "description": "The message displayed on abandoned threads"
+    },
+    "forum_body_regex_list": {
+        "datatype": "list[str]",
+        "description": "List of regex to ban in bodies"
+    },
+    "forum_close_message": {
+        "datatype": "str",
+        "description": "The message displayed on closed threads"
+    },
+    "forum_delete_message": {
+        "datatype": "str",
+        "description": "The message displayed on deleted threads"
+    },
+    "forum_duplicate_message": {
+        "datatype": "str",
+        "description": "The message displayed on duplicated threads"
+    },
+    "forum_forum_channel_id": {
+        "datatype": "discord.ForumChannel",
+        "description": "The forum channel to manage threads in"
+    },
+    "forum_left_message": {
+        "datatype": "str",
+        "description": "The message displayed on left threads"
+    },
+    "forum_max_age_minutes": {
+        "datatype": "int",
+        "description": "The max age of a thread before it times out"
+    },
+    "forum_reject_message": {
+        "datatype": "str",
+        "description": "The message displayed on rejected threads"
+    },
+    "forum_solve_message": {
+        "datatype": "str",
+        "description": "The message displayed on solved threads"
+    },
+    "forum_staff_role_ids": {
+        "datatype": "list[discord.Role]",
+        "description": "Staff roles able to mark threads solved/abandoned/rejected"
+    },
+    "forum_title_regex_list": {
+        "datatype": "list[str]",
+        "description": "List of regex to ban in titles"
+    },
+    "forum_welcome_message": {
+        "datatype": "str",
+        "description": "The message displayed on new threads"
     }
-
-
-
 }
 
 
