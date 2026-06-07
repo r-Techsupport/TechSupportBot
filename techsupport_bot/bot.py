@@ -193,7 +193,6 @@ class TechSupportBot(commands.Bot):
         Args:
             guild (discord.Guild): the guild that was joined
         """
-        self.register_new_guild_config(str(guild.id))
         for cog in self.cogs.values():
             if getattr(cog, "COG_TYPE", "").lower() == "loop":
                 try:
@@ -215,10 +214,6 @@ class TechSupportBot(commands.Bot):
             message="Bot online", level=LogLevel.INFO, console_only=True
         )
         await self.get_owner()
-
-        # Ensure all guilds have a config
-        for guild in self.guilds:
-            await self.register_new_guild_config(str(guild.id))
 
     # DM Logging
 

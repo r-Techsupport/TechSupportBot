@@ -377,7 +377,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.ModmailBan = ModmailBan
     bot.models.UserNote = UserNote
     bot.models.Warning = Warning
-    bot.models.Config = Config
     bot.models.Listener = Listener
     bot.models.Rule = Rule
     bot.models.Votes = Votes
