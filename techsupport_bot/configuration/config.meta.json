@@ -98,6 +98,10 @@
     "dumpdbg_roles": {
         "datatype": "list[discord.Role]",
         "description": "Roles permitted to use the dump debug command"
+    },
+    "embed_embed_roles": {
+        "datatype": "list[discord.Role]",
+        "description": "Roles permitted to use the embed command"
     }
 
 

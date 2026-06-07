@@ -22,5 +22,6 @@
     "duck_spawn_user": [],
     "duck_timeout": 60,
     "duck_use_category": false,
-    "dumpdbg_roles": []
+    "dumpdbg_roles": [],
+    "embed_embed_roles": []
 }
