@@ -646,7 +646,6 @@ class ApplicationManager(cogs.LoopCog):
         Returns:
             bool: True if they can apply, False if they cannot apply
         """
-        config = self.bot.guild_configs[str(applicant.guild.id)]
         role = applicant.guild.get_role(
             int(
                 configuration.get_config_entry(
@@ -655,7 +654,9 @@ class ApplicationManager(cogs.LoopCog):
             )
         )
         # Don't allow applications if extension is disabled
-        if "application" not in config.enabled_extensions:
+        if "application" not in configuration.get_config_entry(
+            applicant.guild.id, "core_enabled_extensions"
+        ):
             return False
 
         # Don't allow people to apply if they already have the role

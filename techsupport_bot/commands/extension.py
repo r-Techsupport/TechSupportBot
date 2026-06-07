@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import ui
 from core import auxiliary, cogs
@@ -58,11 +59,13 @@ class ExtensionControl(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that triggered the slash command
         """
-        config = self.bot.guild_configs[str(interaction.guild.id)]
         missing_extensions = [
             item
             for item in self.bot.extension_name_list
-            if item not in config.enabled_extensions
+            if item
+            not in configuration.get_config_entry(
+                interaction.guild.id, "core_enabled_extensions"
+            )
         ]
         if len(missing_extensions) == 0:
             embed = auxiliary.prepare_confirm_embed(
@@ -88,10 +91,11 @@ class ExtensionControl(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that triggered the slash command
         """
         config = self.bot.guild_configs[str(interaction.guild.id)]
+        extension_list = configuration.get_config_entry(
+            interaction.guild.id, "core_enabled_extensions"
+        )
         missing_extensions = [
-            item
-            for item in self.bot.extension_name_list
-            if item not in config.enabled_extensions
+            item for item in self.bot.extension_name_list if item not in extension_list
         ]
         if len(missing_extensions) == 0:
             embed = auxiliary.prepare_confirm_embed(
@@ -99,9 +103,9 @@ class ExtensionControl(cogs.BaseCog):
             )
         else:
             for extension in missing_extensions:
-                config.enabled_extensions.append(extension)
+                extension_list(extension)
 
-            config.enabled_extensions.sort()
+            extension_list.sort()
             # Modify the database
             await self.bot.write_new_config(
                 str(interaction.guild.id), json.dumps(config)

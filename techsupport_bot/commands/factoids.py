@@ -24,6 +24,7 @@ from socket import gaierror
 from typing import TYPE_CHECKING, Self
 
 import aiocron
+import configuration
 import discord
 import expiringdict
 import munch
@@ -954,7 +955,9 @@ class FactoidManager(cogs.MatchCog):
         config = self.bot.guild_configs[str(channel.guild.id)]
 
         # Don't allow logging if extension is disabled
-        if "logger" not in config.enabled_extensions:
+        if "logger" not in configuration.get_config_entry(
+            factoid_caller.guild.id, "core_enabled_extensions"
+        ):
             return
 
         target_logging_channel = await function_logger.pre_log_checks(

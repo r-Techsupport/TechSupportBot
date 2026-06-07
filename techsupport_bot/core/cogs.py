@@ -6,6 +6,7 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any, Self
 
+import configuration
 import discord
 import munch
 from botlogging import LogContext, LogLevel
@@ -369,8 +370,12 @@ class LoopCog(BaseCog):
                     # exit task if the channel is no longer configured
                     break
 
-                if guild is None or self.extension_name in getattr(
-                    config, "enabled_extensions", []
+                if (
+                    guild is None
+                    or self.extension_name
+                    in configuration.get_config_entry(
+                        guild.id, "core_enabled_extensions"
+                    )
                 ):
                     try:
                         if target_channel:

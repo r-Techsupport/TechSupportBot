@@ -102,6 +102,10 @@
     "embed_embed_roles": {
         "datatype": "list[discord.Role]",
         "description": "Roles permitted to use the embed command"
+    },
+    "core_enabled_extensions": {
+        "datatype": "list[str]",
+        "description": "A list of all extensions enabled in the guild"
     }
 
 

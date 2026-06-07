@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import munch
 from botlogging import LogContext, LogLevel
@@ -115,7 +116,9 @@ class Paster(cogs.MatchCog):
         if len(content) > config.extensions.paste.length_limit.value or content.count(
             "\n"
         ) > self.max_newlines(config.extensions.paste.length_limit.value):
-            if "automod" in config.get("enabled_extensions", []):
+            if "automod" in configuration.get_config_entry(
+                ctx.guild.id, "core_enabled_extensions"
+            ):
                 automod_actions = await automod.run_all_checks(config, ctx.message)
                 automod_final = automod.process_automod_violations(automod_actions)
                 if automod_final and automod_final.delete_message:

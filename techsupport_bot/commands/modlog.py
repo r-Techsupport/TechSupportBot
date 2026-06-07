@@ -6,6 +6,7 @@ import datetime
 from collections import Counter
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import munch
 import ui
@@ -287,8 +288,9 @@ async def log_ban(
         guild (discord.Guild): The guild the member was banned from
         reason (str): The reason for the ban
     """
-    config = bot.guild_configs[str(guild.id)]
-    if "modlog" not in config.get("enabled_extensions", []):
+    if "modlog" not in configuration.get_config_entry(
+        guild.id, "core_enabled_extensions"
+    ):
         return
 
     if not reason:
@@ -343,8 +345,9 @@ async def log_unban(
         guild (discord.Guild): The guild the member was unbanned from
         reason (str): The reason for the unban
     """
-    config = bot.guild_configs[str(guild.id)]
-    if "modlog" not in config.get("enabled_extensions", []):
+    if "modlog" not in configuration.get_config_entry(
+        guild.id, "core_enabled_extensions"
+    ):
         return
 
     if not reason:

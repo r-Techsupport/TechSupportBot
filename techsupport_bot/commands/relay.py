@@ -416,7 +416,9 @@ class DiscordToIRC(cogs.MatchCog):
         )
 
         config = self.bot.guild_configs[str(discord_channel.guild.id)]
-        if "automod" in config.get("enabled_extensions", []):
+        if "automod" in configuration.get_config_entry(
+            discord_channel.guild.id, "core_enabled_extensions"
+        ):
             automod_actions = automod.run_only_string_checks(
                 config, split_message["content"]
             )
@@ -457,7 +459,9 @@ class DiscordToIRC(cogs.MatchCog):
 
         config = self.bot.guild_configs[str(discord_channel.guild.id)]
         # Don't allow logging if extension is disabled
-        if "logger" not in config.enabled_extensions:
+        if "logger" not in configuration.get_config_entry(
+            discord_channel.guild.id, "core_enabled_extensions"
+        ):
             return
         target_logging_channel = await function_logger.pre_log_checks(
             self.bot, config, discord_channel

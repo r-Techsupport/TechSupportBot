@@ -23,5 +23,6 @@
     "duck_timeout": 60,
     "duck_use_category": false,
     "dumpdbg_roles": [],
-    "embed_embed_roles": []
+    "embed_embed_roles": [],
+    "core_enabled_extensions": ["config", "extension"]
 }

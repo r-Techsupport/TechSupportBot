@@ -5,6 +5,7 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import expiringdict
 import munch
@@ -97,7 +98,9 @@ class LevelXP(cogs.MatchCog):
             return False
 
         # Ignore messages that are factoid calls
-        if "factoids" in config.enabled_extensions:
+        if "factoids" in configuration.get_config_entry(
+            ctx.guild.id, "core_enabled_extensions"
+        ):
             factoid_prefix = config.extensions.factoids.prefix.value
             if ctx.message.clean_content.startswith(factoid_prefix):
                 return False
