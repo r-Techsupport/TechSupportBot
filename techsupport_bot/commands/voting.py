@@ -130,7 +130,6 @@ class Voting(cogs.LoopCog):
         if not self.user_can_use_vote_channel(
             member=interaction.user,
             channel=channel,
-            config=config,
         ):
             embed = auxiliary.prepare_deny_embed(
                 "You do not have rights to start that vote!"
@@ -233,7 +232,6 @@ class Voting(cogs.LoopCog):
             if not self.user_can_use_vote_channel(
                 member=member,
                 channel=channel,
-                config=config,
             ):
                 continue
 
@@ -250,18 +248,17 @@ class Voting(cogs.LoopCog):
         self: Self,
         member: discord.Member,
         channel: discord.abc.GuildChannel,
-        config: munch.Munch,
     ) -> bool:
         """This checks if the user can start a vote in a given channel
 
         Args:
             member (discord.Member): The member that is trying to start a vote
             channel (discord.abc.GuildChannel): The channel the vote is going to be started in
-            config (munch.Munch): The guild config for the current guild
 
         Returns:
             bool: True if the channel is valid, false if its not
         """
+        config = self.bot.guild_configs[str(member.guild.id)]
         if not isinstance(channel, discord.ForumChannel):
             return False
 
@@ -668,7 +665,7 @@ class Voting(cogs.LoopCog):
 
             # End expired votes
             if end_time <= timestamp_now:
-                await self.end_vote(vote, guild, config)
+                await self.end_vote(vote, guild)
                 continue
 
             # Reminder checks
@@ -680,13 +677,12 @@ class Voting(cogs.LoopCog):
                 )
 
                 if abs(timestamp_now - reminder_timestamp) <= 300:
-                    await self.remind_vote(vote, guild, config, reminder_hour)
+                    await self.remind_vote(vote, guild, reminder_hour)
 
     async def remind_vote(
         self: Self,
         vote: munch.Munch,
         guild: discord.Guild,
-        config: munch.Munch,
         reminder_hour: int,
     ) -> None:
         """This sends a reminder to vote, based on who hasn't voted in the current vote
@@ -695,9 +691,9 @@ class Voting(cogs.LoopCog):
         Args:
             vote (munch.Munch): The vote object we are reminding for
             guild (discord.Guild): The guild the vote is in
-            config (munch.Munch): The guild config
             reminder_hour (int): The hours remining until the vote closes
         """
+        config = self.bot.guild_configs[str(guild.id)]
         # Get all eligible voters
         eligible_voters = [v for v in vote.vote_ids_eligible.split(",") if v]
         # Get all voted voters
@@ -721,17 +717,15 @@ class Voting(cogs.LoopCog):
 
         await channel.send(content=mention_string, embed=embed)
 
-    async def end_vote(
-        self: Self, vote: munch.Munch, guild: discord.Guild, config: munch.Munch
-    ) -> None:
+    async def end_vote(self: Self, vote: munch.Munch, guild: discord.Guild) -> None:
         """This ends a vote, and if it was anonymous purges who voted for what from the database
         This will edit the vote message and remove the buttons, and mention the vote owner
 
         Args:
             vote (munch.Munch): The vote database object that needs to be ended
             guild (discord.Guild): The guild that vote belongs to
-            config (munch.Munch): The guild config for the guild of the vote
         """
+        config = self.bot.guild_configs[str(guild.id)]
         await vote.update(vote_active=False).apply()
         embed = await self.build_vote_embed(vote.vote_id, guild)
         pass_embed = self.build_vote_pass_embed(vote, config)

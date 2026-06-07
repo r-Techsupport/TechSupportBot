@@ -120,7 +120,7 @@ class Paster(cogs.MatchCog):
                 automod_final = automod.process_automod_violations(automod_actions)
                 if automod_final and automod_final.delete_message:
                     return
-            await self.paste_message(config, ctx, content)
+            await self.paste_message(ctx, content)
 
     def max_newlines(self: Self, max_length: int) -> int:
         """Gets a theoretical maximum number of new lines in a given message
@@ -169,9 +169,7 @@ class Paster(cogs.MatchCog):
 
         await self.response(ctx, message.content, None)
 
-    async def paste_message(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str
-    ) -> None:
+    async def paste_message(self: Self, ctx: commands.Context, content: str) -> None:
         """Moves message into a linx paste if it's too long
 
         Args:
@@ -179,6 +177,7 @@ class Paster(cogs.MatchCog):
             ctx (commands.Context): The context where the original message was sent
             content (str): The string content of the flagged message
         """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         log_channel = config.get("logging_channel")
         if not self.bot.file_config.api.api_url.linx:
             await self.bot.logger.send_log(
@@ -192,7 +191,7 @@ class Paster(cogs.MatchCog):
             )
             return
 
-        linx_embed = await self.create_linx_embed(config, ctx, content)
+        linx_embed = await self.create_linx_embed(ctx, content)
 
         if not linx_embed:
             await self.bot.logger.send_log(
@@ -232,19 +231,19 @@ class Paster(cogs.MatchCog):
             await ctx.message.delete()
 
     async def create_linx_embed(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str
+        self: Self, ctx: commands.Context, content: str
     ) -> discord.Embed | None:
         """This function sends a message to the linx url and puts the result in
         an embed to be sent to the user
 
         Args:
-            config (munch.Munch): The guild config where the message was sent
             ctx (commands.Context): The context that generated the need for a paste
             content (str): The context of the message to be pasted
 
         Returns:
             discord.Embed | None: The formatted embed, or None if there was an API error
         """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         if not content:
             return None
 

@@ -114,7 +114,7 @@ class ServerGate(cogs.MatchCog):
         config = self.bot.guild_configs[str(ctx.guild.id)]
 
         if content.lower() == config.extensions.gate.verify_text.value:
-            roles = await self.get_roles(config, ctx)
+            roles = await self.get_roles(ctx)
             if not roles:
                 config = self.bot.guild_configs[str(ctx.guild.id)]
                 log_channel = config.get("logging_channel")
@@ -147,19 +147,17 @@ class ServerGate(cogs.MatchCog):
                 delete_after=float(delete_wait),
             )
 
-    async def get_roles(
-        self: Self, config: munch.Munch, ctx: commands.Context
-    ) -> list[discord.Role]:
+    async def get_roles(self: Self, ctx: commands.Context) -> list[discord.Role]:
         """Builds a list of roles that the user in ctx doesn't have,
             but are listed in the gate config roles to be applied
 
         Args:
-            config (munch.Munch): The config of the guild
             ctx (commands.Context): The context of the message that triggered the gate
 
         Returns:
             list[discord.Role]: A list of all the roles that should be given to the user
         """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         roles = []
         for role_name in config.extensions.gate.roles.value:
             role = discord.utils.get(ctx.guild.roles, name=role_name)

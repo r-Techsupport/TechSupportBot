@@ -52,36 +52,33 @@ class Joker(cogs.BaseCog):
 
     API_URL: str = "https://v2.jokeapi.dev/joke/Any"
 
-    async def call_api(
-        self: Self, ctx: commands.Context, config: munch.Munch
-    ) -> munch.Munch:
+    async def call_api(self: Self, ctx: commands.Context) -> munch.Munch:
         """Calls the joke API and returns the raw response
 
         Args:
             ctx (commands.Context): The context in which the joke command was run in
-            config (munch.Munch): The guild config for the guild where the joke command was run
 
         Returns:
             munch.Munch: The reply from the API
         """
-        url = self.build_url(ctx, config)
+        url = self.build_url(ctx)
         response = await self.bot.http_functions.http_call(
             "get", url, get_raw_response=True
         )
         return response
 
-    def build_url(self: Self, ctx: commands.Context, config: munch.Munch) -> str:
+    def build_url(self: Self, ctx: commands.Context) -> str:
         """Builds the API URL based on exclusions of categories
         Will exclude NSFW jokes if the channel isn't NSFW
         Will exclude offensive jokes if the PC jokes config is enabled
 
         Args:
             ctx (commands.Context): The context in which the original joke command was run in
-            config (munch.Munch): The config for the guild where the original command was run
 
         Returns:
             str: The URL, properly formatted and ready to be called
         """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         blacklist_flags = []
         if (
             config.extensions.joke.apply_in_nsfw_channels.value
@@ -122,8 +119,7 @@ class Joker(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-        response = await self.call_api(ctx, config)
+        response = await self.call_api(ctx)
         text = response["text"]
         embed = self.generate_embed(text)
         await ctx.send(embed=embed)
