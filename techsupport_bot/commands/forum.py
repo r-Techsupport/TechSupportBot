@@ -429,7 +429,6 @@ class ForumChannel(cogs.LoopCog):
         if any(pattern.search(body) for pattern in disallowed_body_patterns):
             await mark_thread(
                 thread,
-                config,
                 self.thread_ID_closed,
                 "rejected",
                 reason=(
@@ -443,7 +442,6 @@ class ForumChannel(cogs.LoopCog):
         ):
             await mark_thread(
                 thread,
-                config,
                 self.thread_ID_closed,
                 "rejected",
                 reason=(
