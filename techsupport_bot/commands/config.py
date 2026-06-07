@@ -154,6 +154,7 @@ class ConfigControl(cogs.BaseCog):
         missing_extensions = [
             item for item in self.bot.extension_name_list if item not in extensions_list
         ]
+        missing_extensions.sort()
         if len(missing_extensions) == 0:
             embed = auxiliary.prepare_confirm_embed(
                 message="No currently loaded extensions are disabled"
