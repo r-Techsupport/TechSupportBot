@@ -14,5 +14,13 @@
     "core_enable_logging": true,
     "core_nickname_filter": false,
     "core_private_channels": [],
-    "core_guild_id": ""
+    "core_guild_id": "",
+    "duck_allow_manipulation": true,
+    "duck_cooldown": 5,
+    "duck_max_wait": 4,
+    "duck_mute_for_cooldown": true,
+    "duck_spawn_user": [],
+    "duck_timeout": 60,
+    "duck_use_category": false,
+    "dumpdbg_roles": []
 }

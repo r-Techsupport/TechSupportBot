@@ -62,7 +62,45 @@
     "core_guild_id": {
         "datatype": "discord.Guild",
         "description": "This is used as a validation tool, the guild ID that this config belongs to"
+    },
+    "duck_allow_manipulation": {
+        "datatype": "bool",
+        "description": "Controls whether release, donate, or kill commands are enabled"
+    },
+    "duck_cooldown": {
+        "datatype": "int",
+        "description": "The amount of time in seconds to wait between bef/bang messages"
+    },
+    "duck_max_wait": {
+        "datatype": "int",
+        "description": "The maximum number of hours to wait between duck events"
+    },
+    "duck_min_wait": {
+        "datatype": "int",
+        "description": "The minimum number of hours to wait between duck events"
+    },
+    "duck_mute_for_cooldown": {
+        "datatype": "bool",
+        "description": "If enabled, users who miss will be timed out for the cooldown seconds"
+    },
+    "duck_spawn_user": {
+        "datatype": "list[discord.Member]",
+        "description": "A list of users allowed to use thje .duck spawn command"
+    },
+    "duck_timeout": {
+        "datatype": "int",
+        "description": "The amount of time in seconds before the duck disappears"
+    },
+    "duck_use_category": {
+        "datatype": "bool",
+        "description": "Whether to use the whole category for ducks"
+    },
+    "dumpdbg_roles": {
+        "datatype": "list[discord.Role]",
+        "description": "Roles permitted to use the dump debug command"
     }
+
+
 
 }
 
