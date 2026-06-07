@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import munch
 from core import auxiliary, cogs, extensionconfig
@@ -78,13 +79,14 @@ class Joker(cogs.BaseCog):
         Returns:
             str: The URL, properly formatted and ready to be called
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         blacklist_flags = []
         if (
-            config.extensions.joke.apply_in_nsfw_channels.value
+            configuration.get_config_entry(ctx.guild.id, "joke_apply_in_nsfw_channels")
             or not ctx.channel.is_nsfw()
         ):
-            blacklist_flags = config.extensions.joke.blacklisted_filters.value
+            blacklist_flags = configuration.get_config_entry(
+                ctx.guild.id, "joke_blacklisted_filters"
+            )
         blacklists = ",".join(blacklist_flags)
 
         url = f"{self.API_URL}?blacklistFlags={blacklists}&format=txt"

@@ -226,6 +226,58 @@
     "logger_channel_map": {
         "datatype": "dict[discord.TextChannel, discord.TextChannel]",
         "description": "Input Channel to Logging Channel mapping"
+    },
+    "gate_channel": {
+        "datatype": "discord.TextChannel",
+        "description": "The channel the gate is in"
+    },
+    "gate_delete_wait": {
+        "datatype": "int",
+        "description": "The amount of time to wait (in seconds) before deleting the welcome message"
+    },
+    "gate_intro_message": {
+        "datatype": "str",
+        "description": "The message that's sent when running the intro message command"
+    },
+    "gate_roles": {
+        "datatype": "list[discord.Role]",
+        "description": "The list of roles to add after user is verified"
+    },
+    "gate_verify_text": {
+        "datatype": "str",
+        "description": "The case-insensitive text the user should type to verify themselves"
+    },
+    "gate_welcome_message": {
+        "datatype": "str",
+        "description": "The message to send to the user after they are verified"
+    },
+    "grab_allowed_channels": {
+        "datatype": "list[discord.TextChannel]",
+        "description": "The list of channels to enable the grabs plugin"
+    },
+    "grab_per_page": {
+        "datatype": "int",
+        "description": "The number of grabs per page when retrieving all grabs"
+    },
+    "hangman_hangman_roles": {
+        "datatype": "list[discord.Role]",
+        "description": "The list of role names able to control hangman games"
+    },
+    "honeypot_channels": {
+        "datatype": "list[discord.TextChannel]",
+        "description": "The list of channels that are honeypots"
+    },
+    "moderation_alert_channel": {
+        "datatype": "discord.TextChannel",
+        "description": "The channel to send moderation and honeypot alerts to"
+    },
+    "joke_apply_in_nsfw_channels": {
+        "datatype": "bool",
+        "description": "Toggles whether or not filters are applies in NSFW channels"
+    },
+    "joke_blacklisted_filters": {
+        "datatype": "list[str]",
+        "description": "Filters all categories listed (nsfw,religious,political,racist,sexist,explicit)"
     }
 }
 

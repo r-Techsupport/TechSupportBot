@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Self
 import configuration
 import discord
 import ui
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord import app_commands
 from discord.ext import commands
 
@@ -23,17 +23,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="hangman_roles",
-        datatype="list",
-        title="Hangman admin roles",
-        description="The list of role names able to control hangman games",
-        default=[],
-    )
-
     await bot.add_cog(HangmanCog(bot=bot))
-    bot.add_extension_config("hangman", config)
 
 
 class HangmanGame:
@@ -292,7 +282,9 @@ async def can_stop_game(ctx: commands.Context) -> bool:
 
     config = ctx.bot.guild_configs[str(ctx.guild.id)]
     roles = []
-    for role_name in config.extensions.hangman.hangman_roles.value:
+    for role_name in configuration.get_config_entry(
+        ctx.guild.id, "hangman_hangman_roles"
+    ):
         role = discord.utils.get(ctx.guild.roles, name=role_name)
         if not role:
             continue

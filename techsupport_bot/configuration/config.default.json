@@ -55,5 +55,18 @@
     "automod_string_map": {},
     "moderation_max_warnings": 3,
     "moderator_ban_delete_duration": 7,
-    "logger_channel_map": {}
+    "logger_channel_map": {},
+    "gate_channel": "",
+    "gate_delete_wait": 60,
+    "gate_intro_message": "Welcome to our server! 👋 Please read the rules then type agree below to verify yourself",
+    "gate_roles": [],
+    "gate_verify_text": "agree",
+    "gate_welcome_message": "You are now verified! Welcome to the server!",
+    "grab_allowed_channels": [],
+    "grab_per_page": 3,
+    "hangman_hangman_roles": [],
+    "honeypot_channels": [],
+    "moderation_alert_channel": "",
+    "joke_apply_in_nsfw_channels": false,
+    "joke_blacklisted_filters": ["nsfw", "explicit"]
 }

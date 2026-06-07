@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 from core import cogs, extensionconfig
 from discord.ext import commands
@@ -44,9 +45,10 @@ class HoneyPot(cogs.MatchCog):
         Returns:
             bool: Whether the author sent in a honeypot channel
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         # If the channel isn't a honeypot, do nothing.
-        if not str(ctx.channel.id) in config.extensions.honeypot.channels.value:
+        if not str(ctx.channel.id) in configuration.get_config_entry(
+            ctx.guild.id, "honeypot_channels"
+        ):
             return False
         return True
 
@@ -67,12 +69,11 @@ class HoneyPot(cogs.MatchCog):
         # This should be replaced with a guild wide purge when discord.py can be updated.
         await ctx.author.ban(delete_message_days=1, reason="triggered honeypot")
         await ctx.guild.unban(ctx.author, reason="triggered honeypot")
-
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-
         # Send an alert in the alert channel, if its configured
         try:
-            alert_channel = ctx.guild.get_channel(int(config.moderation.alert_channel))
+            alert_channel = ctx.guild.get_channel(
+                configuration.get_config_entry(ctx.guild.id, "moderation_alert_channel")
+            )
         except TypeError:
             alert_channel = None
 
