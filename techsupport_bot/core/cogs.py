@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, Self
 
 import configuration
 import discord
-import munch
 from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
@@ -349,7 +348,7 @@ class LoopCog(BaseCog):
                 if not channels_list:
                     channels_list = []
 
-                if target_channel and not str(target_channel.id) in channels_list:
+                if target_channel and str(target_channel.id) not in channels_list:
                     # exit task if the channel is no longer configured
                     break
 

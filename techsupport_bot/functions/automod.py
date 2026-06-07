@@ -336,11 +336,11 @@ class AutoMod(cogs.MatchCog):
             return
 
         ctx = await self.bot.get_context(message)
-        matched = await self.match(config, ctx, message.content)
+        matched = await self.match(ctx, message.content)
         if not matched:
             return
 
-        await self.response(config, ctx, message.content, matched)
+        await self.response(ctx, message.content, matched)
 
 
 def process_automod_violations(

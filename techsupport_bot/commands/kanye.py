@@ -7,7 +7,6 @@ import random
 from typing import TYPE_CHECKING, Self
 
 import discord
-import munch
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
 

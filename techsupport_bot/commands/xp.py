@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Self
 import configuration
 import discord
 import expiringdict
-import munch
 from core import auxiliary, cogs, extensionconfig
 from discord import app_commands
 from discord.ext import commands
@@ -189,7 +188,6 @@ class LevelXP(cogs.MatchCog):
             ctx (commands.Context): The context in which the message was sent in
             content (str): The string content of the message
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         current_XP = await get_current_XP(self.bot, ctx.author, ctx.guild)
         new_XP = random.randint(10, 20)
 

@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Self
 
 import configuration
-import munch
 from core import auxiliary, cogs
 from discord.ext import commands
 

@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Self
 import configuration
 import discord
 import irc.client
-import munch
 import ui
 from bidict import bidict
 from core import auxiliary, cogs

@@ -215,7 +215,6 @@ class BanLogger(cogs.BaseCog):
             discord.utils.utcnow() + datetime.timedelta(seconds=2)
         )
 
-        config = self.bot.guild_configs[str(guild.id)]
         if not self.extension_enabled(guild):
             return
 
@@ -251,7 +250,6 @@ class BanLogger(cogs.BaseCog):
             discord.utils.utcnow() + datetime.timedelta(seconds=2)
         )
 
-        config = self.bot.guild_configs[str(guild.id)]
         if not self.extension_enabled(guild):
             return
 

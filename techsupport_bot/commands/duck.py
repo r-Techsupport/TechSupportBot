@@ -333,12 +333,15 @@ class DuckHunt(cogs.LoopCog):
         if not choice:
             time = message.created_at - duck_message.created_at
             duration_exact = float(str(time.seconds) + "." + str(time.microseconds))
+            pause_time = configuration.get_config_entry(
+                message.guild.id, "duck_cooldown"
+            )
             cooldowns[message.author.id] = datetime.datetime.now()
             quote = self.pick_quote()
             embed = auxiliary.prepare_deny_embed(message=quote)
             embed.set_footer(
                 text=(
-                    f"You missed. Try again in {configuration.get_config_entry(message.guild.id, 'duck_cooldown')} "
+                    f"You missed. Try again in {pause_time} "
                     f"seconds. Time would have been {duration_exact} seconds"
                 )
             )
@@ -689,7 +692,6 @@ class DuckHunt(cogs.LoopCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         if not configuration.get_config_entry(ctx.guild.id, "duck_allow_manipulation"):
             await auxiliary.send_deny_embed(
                 channel=ctx.channel, message="This command is disabled in this server"
@@ -717,7 +719,7 @@ class DuckHunt(cogs.LoopCog):
             channel=ctx.channel,
         )
 
-        await self.execute(config, ctx.guild, ctx.channel, banned_user=ctx.author)
+        await self.execute(ctx.guild, ctx.channel, banned_user=ctx.author)
 
     @auxiliary.with_typing
     @commands.guild_only()
@@ -911,11 +913,10 @@ class DuckHunt(cogs.LoopCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         spawn_user = configuration.get_config_entry(ctx.guild.id, "duck_spawn_user")
         for person in spawn_user:
             if ctx.author.id == int(person):
-                await self.execute(config, ctx.guild, ctx.channel)
+                await self.execute(ctx.guild, ctx.channel)
                 return
         await auxiliary.send_deny_embed(
             message="It looks like you don't have permissions to spawn a duck",

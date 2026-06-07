@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Self
 import aiocron
 import configuration
 import discord
-import munch
 import ui
 from core import auxiliary, cogs
 from discord import app_commands

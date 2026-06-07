@@ -21,7 +21,6 @@ from typing import TYPE_CHECKING, Self
 import configuration
 import discord
 import expiringdict
-import munch
 import ui
 from core import auxiliary, cogs, extensionconfig
 from discord.ext import commands
