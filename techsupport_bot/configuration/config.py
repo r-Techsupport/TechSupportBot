@@ -30,7 +30,7 @@ def get_config_entry(guild_id: int, key: str) -> Any:  # noqa: ANN401
     if not _check_key_valid(key):
         raise AttributeError(f"Key {key} is invalid")
 
-    default_entry = get_default_config_entry(key)
+    default_entry = _get_default_config_entry(key)
 
     if not _does_guild_config_exist(guild_id):
         return default_entry
@@ -40,26 +40,6 @@ def get_config_entry(guild_id: int, key: str) -> Any:  # noqa: ANN401
     if key in guild_config:
         return guild_config[key]
     return default_entry
-
-
-def get_default_config_entry(key: str) -> Any:  # noqa: ANN401
-    """This gets the value from the default config file for the passed key
-
-    Args:
-        key (str): The key to search the config file for
-
-    Returns:
-        Any: The value from the default config file
-
-    Raises:
-        AttributeError: Raised if the passed key is not valid
-    """
-    if not _check_key_valid(key):
-        raise AttributeError(f"Key {key} is invalid")
-
-    default_config = _read_json_file("config.default.json")
-
-    return default_config[key]
 
 
 def get_default_config_json() -> munch.Munch:
@@ -114,20 +94,11 @@ def edit_config_entry(guild_id: int, key: str, new_value: Any) -> None:  # noqa:
         raise AttributeError(f"Key {key} is invalid")
 
     if not _does_guild_config_exist(guild_id):
-        write_blank_guild_config(guild_id)
+        _write_blank_guild_config(guild_id)
 
     guild_config = _read_guild_json(guild_id)
     guild_config[key] = new_value
     _write_guild_json_file(guild_id, guild_config)
-
-
-def write_blank_guild_config(guild_id: int) -> None:
-    """Creates a blank guild configuration file.
-
-    Args:
-        guild_id (int): The ID of the guild whose configuration should be created.
-    """
-    _write_guild_json_file(guild_id, munch.Munch(core_guild_id=guild_id))
 
 
 # Internal functions only
@@ -213,3 +184,32 @@ def _write_guild_json_file(guild_id: int, json_data: munch.Munch) -> None:
             indent=4,
             ensure_ascii=False,
         )
+
+
+def _write_blank_guild_config(guild_id: int) -> None:
+    """Creates a blank guild configuration file.
+
+    Args:
+        guild_id (int): The ID of the guild whose configuration should be created.
+    """
+    _write_guild_json_file(guild_id, munch.Munch(core_guild_id=guild_id))
+
+
+def _get_default_config_entry(key: str) -> Any:  # noqa: ANN401
+    """This gets the value from the default config file for the passed key
+
+    Args:
+        key (str): The key to search the config file for
+
+    Returns:
+        Any: The value from the default config file
+
+    Raises:
+        AttributeError: Raised if the passed key is not valid
+    """
+    if not _check_key_valid(key):
+        raise AttributeError(f"Key {key} is invalid")
+
+    default_config = _read_json_file("config.default.json")
+
+    return default_config[key]
