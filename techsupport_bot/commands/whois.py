@@ -8,10 +8,9 @@ from typing import TYPE_CHECKING, Self
 import configuration
 import discord
 import ui
-from commands import application, moderator, notes
+from commands import application, moderator, notes, xp
 from core import auxiliary, cogs, moderation
 from discord import app_commands
-from functions import xp
 
 if TYPE_CHECKING:
     import bot
