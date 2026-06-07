@@ -268,26 +268,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
         invoker_id = bot.db.Column(bot.db.String)
 
-    class Config(bot.db.Model):
-        """The postgres table for guild config
-        Currently used nearly everywhere
-
-        Attributes:
-            pk (int): The primary key for the database
-            guild_id (str): The ID of the guild this config is for
-            config (str): The config text
-            update_time (datetime.datetime): The time the config was last updated
-        """
-
-        __tablename__ = "guild_config"
-
-        pk: int = bot.db.Column(bot.db.Integer, primary_key=True)
-        guild_id: str = bot.db.Column(bot.db.String)
-        config: str = bot.db.Column(bot.db.String)
-        update_time: datetime.datetime = bot.db.Column(
-            bot.db.DateTime, default=datetime.datetime.utcnow
-        )
-
     class Listener(bot.db.Model):
         """The postgres table for listeners
         Currently used in listen.py

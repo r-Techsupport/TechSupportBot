@@ -7,7 +7,6 @@ import asyncio
 import datetime
 import glob
 import io
-import json
 import os
 import threading
 from typing import Self
@@ -69,8 +68,6 @@ class TechSupportBot(commands.Bot):
         self.file_config = None
 
         # Sets up some dicts and arrays
-        self.guild_configs: dict[str, munch.Munch] = {}
-        self.extension_configs = munch.DefaultMunch(None)
         self.extension_states = munch.DefaultMunch(None)
         self.command_rate_limit_bans: expiringdict.ExpiringDict[str, bool] = (
             expiringdict.ExpiringDict(
@@ -178,13 +175,6 @@ class TechSupportBot(commands.Bot):
         databases.setup_models(self)
         await self.db.gino.create_all()
 
-        # Load all guild config objects into self.guild_configs object
-        all_config = await self.models.Config.query.gino.all()
-        for config in all_config:
-            self.guild_configs[config.guild_id] = munch.munchify(
-                json.loads(config.config)
-            )
-
         # Adds persistent views to the bot
         self.add_view(ui.VotingButtonPersistent())
 
@@ -284,113 +274,6 @@ class TechSupportBot(commands.Bot):
             )
 
         await self.process_commands(message)
-
-    # Guild config management functions
-
-    async def register_new_guild_config(self: Self, guild_id: str) -> bool:
-        """This creates a config for a new guild if needed
-
-        Args:
-            guild_id (str): The id of the guild to create config for, in string form
-
-        Returns:
-            bool: True if a config was created, False if a config already existed
-        """
-        async with self.guild_config_lock:
-            try:
-                config = self.guild_configs[guild_id]
-            except KeyError:
-                config = None
-            if not config:
-                await self.create_new_context_config(guild_id)
-                return True
-            return False
-
-    async def create_new_context_config(self: Self, guild_id: str) -> munch.Munch:
-        """Creates a new guild config for a given guild.
-
-        Args:
-            guild_id (str): The guild ID the config will be for. Only used for storing the config
-
-        Returns:
-            munch.Munch: The new config object ready to use
-        """
-        extensions_config = munch.DefaultMunch(None)
-
-        for extension_name, extension_config in self.extension_configs.items():
-            if extension_config:
-                # don't attach to guild config if extension isn't configurable
-                extensions_config[extension_name] = munch.munchify(
-                    extension_config.data
-                )
-        self.extension_name_list.sort()
-
-        config_ = munch.DefaultMunch(None)
-
-        config_.guild_id = str(guild_id)
-        config_.command_prefix = self.file_config.bot_config.default_prefix
-        config_.logging_channel = None
-        config_.member_events_channel = None
-        config_.guild_events_channel = None
-        config_.private_channels = []
-        config_.enabled_extensions = self.extension_name_list
-        config_.nickname_filter = False
-        config_.enable_logging = True
-        config_.rate_limit = munch.DefaultMunch(None)
-        config_.rate_limit.enabled = False
-        config_.rate_limit.commands = 4
-        config_.rate_limit.time = 10
-        config_.moderation = munch.DefaultMunch(None)
-        config_.moderation.max_warnings = 3
-        config_.moderation.alert_channel = None
-
-        config_.extensions = extensions_config
-
-        try:
-            await self.logger.send_log(
-                message=f"Inserting new config for lookup key: {guild_id}",
-                level=LogLevel.DEBUG,
-                context=LogContext(guild=self.get_guild(guild_id)),
-                console_only=True,
-            )
-            # Modify the database
-            await self.write_new_config(str(guild_id), json.dumps(config_))
-
-            # Modify the local cache
-            self.guild_configs[guild_id] = config_
-
-        except Exception as exception:
-            # safely finish because the new config is still useful
-            await self.logger.send_log(
-                message="Could not insert guild config into Postgres",
-                level=LogLevel.ERROR,
-                context=LogContext(guild=self.get_guild(guild_id)),
-                exception=exception,
-            )
-
-        return config_
-
-    async def write_new_config(self: Self, guild_id: str, config: str) -> None:
-        """Takes a config and guild and updates the config in the database
-        This is only needed when a new guild is joined or the config is modifed
-
-        Args:
-            guild_id (str): The str ID of the guild the config belongs to
-            config (str): The str representation of the json config
-        """
-        database_config = await self.models.Config.query.where(
-            self.models.Config.guild_id == guild_id
-        ).gino.first()
-        if database_config:
-            await database_config.update(
-                config=str(config), update_time=datetime.datetime.utcnow()
-            ).apply()
-        else:
-            new_database_config = self.models.Config(
-                guild_id=str(guild_id),
-                config=str(config),
-            )
-            await new_database_config.create()
 
     # File config loading functions
 
