@@ -624,6 +624,43 @@ class ProtectCommands(cogs.BaseCog):
         embed = generate_response_embed(user=target, action="unwarn", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
+    @handle_unwarn_user.autocomplete("warning")
+    async def unwarn_warning_autocomplete(
+        self: Self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        """This runs autocomplete for the unwarn function
+        This will show options where current is a valid substring
+
+        Args:
+            interaction (discord.Interaction): The interaction creating the command
+            current (str): The current text in the warning field
+
+        Returns:
+            list[app_commands.Choice[str]]: The list of options proposed to the user
+        """
+        if not interaction.permissions.kick_members:
+            return []
+
+        target = interaction.namespace.target
+
+        if target is None:
+            return []
+
+        all_warnings = await moderation.get_all_warnings(
+            self.bot, target, interaction.guild
+        )
+
+        if not all_warnings:
+            return []
+
+        return [
+            app_commands.Choice(name=warning.reason, value=warning.reason)
+            for warning in all_warnings
+            if current.lower() in warning.reason.lower()
+        ][:10]
+
     @app_commands.checks.has_permissions(kick_members=True)
     @app_commands.checks.bot_has_permissions(kick_members=True)
     @warnings_group.command(
