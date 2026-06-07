@@ -46,7 +46,7 @@ def get_mapped_channel_object(
     Will return none if the channel doesn't exist in the config
 
     Args:
-        guildd (discord.Guild): The guild where the src_channel is
+        guild (discord.Guild): The guild where the src_channel is
         src_channel (int): The ID of the source channel
 
     Returns:
