@@ -899,7 +899,7 @@ class DuckHunt(cogs.LoopCog):
         spawn_user = configuration.get_config_entry(ctx.guild.id, "duck_spawn_user")
         for person in spawn_user:
             if ctx.author.id == int(person):
-                await self.execute(ctx.guild, ctx.channel)
+                await self.execute(ctx.guild, ctx.channel, ctx.author)
                 return
         await auxiliary.send_deny_embed(
             message="It looks like you don't have permissions to spawn a duck",
