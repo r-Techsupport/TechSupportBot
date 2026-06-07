@@ -72,18 +72,18 @@ class DuckHunt(cogs.LoopCog):
         "https://www.iconarchive.com/download/i97188/iconsmind/outline/Target.512.png"
     )
     ON_START: bool = False
-    CHANNELS_KEY: str = "hunt_channels"
+    CHANNELS_KEY: str = "duck_hunt_channels"
 
     async def loop_preconfig(self: Self) -> None:
         """Preconfig for cooldowns"""
         self.cooldowns = {}
 
-    async def wait(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
+    async def wait(self: Self, guild: discord.Guild) -> None:
         """Waits a random amount of time before sending another duck
         This function shouldn't be manually called
 
         Args:
-            config (munch.Munch): The guild config to use to determine the min and max wait times
+            guild (discord.Guild): The guild where the duck is running
         """
         await asyncio.sleep(
             random.randint(
@@ -94,7 +94,6 @@ class DuckHunt(cogs.LoopCog):
 
     async def execute(
         self: Self,
-        config: munch.Munch,
         guild: discord.Guild,
         channel: discord.TextChannel,
         banned_user: discord.User = None,
@@ -103,12 +102,12 @@ class DuckHunt(cogs.LoopCog):
         Can be manually called, and will be called automatically after wait()
 
         Args:
-            config (munch.Munch): The config of the guild where the duck is going
             guild (discord.Guild): The guild where the duck is going
             channel (discord.TextChannel): The channel to spawn the duck in
             banned_user (discord.User, optional): A user that is not allowed to claim the duck.
                 Defaults to None.
         """
+        config = self.bot.guild_configs[str(guild.id)]
         if not channel:
             log_channel = config.get("logging_channel")
             await self.bot.logger.send_log(
@@ -339,7 +338,7 @@ class DuckHunt(cogs.LoopCog):
             embed = auxiliary.prepare_deny_embed(message=quote)
             embed.set_footer(
                 text=(
-                    f"You missed. Try again in {configuration.get_config_entry(message.guild.id, "duck_cooldown")} "
+                    f"You missed. Try again in {configuration.get_config_entry(message.guild.id, 'duck_cooldown')} "
                     f"seconds. Time would have been {duration_exact} seconds"
                 )
             )

@@ -634,22 +634,18 @@ class Voting(cogs.LoopCog):
 
         return db_entry
 
-    async def wait(self: Self, config: munch.Munch, _: discord.Guild) -> None:
-        """Makes a check every hour for if any votes have concluded
-
-        Args:
-            config (munch.Munch): The guild config where the vote was started
-        """
+    async def wait(self: Self, _: discord.Guild) -> None:
+        """Makes a check every hour for if any votes have concluded"""
         # We check every hour on the hour for completed votes
         await aiocron.crontab("0 * * * *").next()
 
-    async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
+    async def execute(self: Self, guild: discord.Guild) -> None:
         """This looks for completed votes and ends then
 
         Args:
-            config (munch.Munch): The guild config for the guild with the vote
             guild (discord.Guild): The guild the vote is being run in
         """
+        config = self.bot.guild_configs[str(guild.id)]
         # pylint: disable=C0121
         active_votes = (
             await self.bot.models.Votes.query.where(

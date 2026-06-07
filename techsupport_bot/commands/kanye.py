@@ -92,7 +92,7 @@ class KanyeQuotes(cogs.LoopCog):
         response = await self.bot.http_functions.http_call("get", self.API_URL)
         return response.get("quote")
 
-    async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
+    async def execute(self: Self, guild: discord.Guild) -> None:
         """The main entry point for the loop for kanye
         This is executed automatically and shouldn't be called manually
 
@@ -100,6 +100,7 @@ class KanyeQuotes(cogs.LoopCog):
             config (munch.Munch): The guild config where the loop is taking place
             guild (discord.Guild): The guild where the loop is taking place
         """
+        config = self.bot.guild_configs[str(guild.id)]
         quote = await self.get_quote()
         embed = self.generate_themed_embed(quote=quote)
 
@@ -109,12 +110,13 @@ class KanyeQuotes(cogs.LoopCog):
 
         await channel.send(embed=embed)
 
-    async def wait(self: Self, config: munch.Munch, _: discord.Guild) -> None:
+    async def wait(self: Self, guild: discord.Guild) -> None:
         """This sleeps a random amount of time between Kanye quotes
 
         Args:
             config (munch.Munch): The guild config where the loop is taking place
         """
+        config = self.bot.guild_configs[str(guild.id)]
         await asyncio.sleep(
             random.randint(
                 config.extensions.kanye.min_wait.value * 3600,

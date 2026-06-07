@@ -89,11 +89,10 @@ class ApplicationNotifier(cogs.LoopCog):
     """This cog is soley tasked with looping the application reminder for users
     Everything else is handled in ApplicationManager"""
 
-    async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
+    async def execute(self: Self, guild: discord.Guild) -> None:
         """The function that executes the from the LoopCog structure
 
         Args:
-            config (munch.Munch): The guild config for the executing loop
             guild (discord.Guild): The guild the loop is executing for
         """
         channels = configuration.get_config_entry(
@@ -111,11 +110,10 @@ class ApplicationNotifier(cogs.LoopCog):
                 ),
             )
 
-    async def wait(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
+    async def wait(self: Self, guild: discord.Guild) -> None:
         """The function that causes the sleep/delay the from the LoopCog structure
 
         Args:
-            config (munch.Munch): The guild config for the executing loop
             guild (discord.Guild): The guild the loop is executing for
         """
         await aiocron.crontab(
@@ -855,11 +853,10 @@ class ApplicationManager(cogs.LoopCog):
 
     # Loop stuff
 
-    async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
+    async def execute(self: Self, guild: discord.Guild) -> None:
         """The executes the reminder of pending applications
 
         Args:
-            config (munch.Munch): The guild config for the executing loop
             guild (discord.Guild): The guild the loop is executing for
         """
         channel = guild.get_channel(
@@ -966,11 +963,10 @@ class ApplicationManager(cogs.LoopCog):
 
         await channel.send(embed=embed)
 
-    async def wait(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
+    async def wait(self: Self, guild: discord.Guild) -> None:
         """The queues the pending application reminder based on the cron config
 
         Args:
-            config (munch.Munch): The guild config for the executing loop
             guild (discord.Guild): The guild the loop is executing for
         """
         await aiocron.crontab(

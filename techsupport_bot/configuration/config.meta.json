@@ -114,6 +114,10 @@
     "modmail_modmail_roles": {
         "datatype": "list[discord.Role]",
         "description": "Roles that can access modmail and its commands"
+    },
+    "duck_hunt_channels": {
+        "datatype": "list[discord.TextChannel]",
+        "description": "The list of channels the duck should appear in"
     }
 
 

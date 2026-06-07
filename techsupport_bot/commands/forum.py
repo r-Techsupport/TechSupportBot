@@ -641,13 +641,14 @@ class ForumChannel(cogs.LoopCog):
             reason=("It appears the original post for this thread was deleted."),
         )
 
-    async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
+    async def execute(self: Self, guild: discord.Guild) -> None:
         """This is what closes threads after inactivity
 
         Args:
             config (munch.Munch): The guild config where the loop is taking place
             guild (discord.Guild): The guild where the loop is taking place
         """
+        config = self.bot.guild_configs[str(guild.id)]
         channel = await guild.fetch_channel(
             int(config.extensions.forum.forum_channel_id.value)
         )
@@ -673,12 +674,8 @@ class ForumChannel(cogs.LoopCog):
                         "Threads are automatically closed after periods of no activity",
                     )
 
-    async def wait(self: Self, config: munch.Munch, _: discord.Guild) -> None:
-        """This waits and rechecks every 5 minutes to search for old threads
-
-        Args:
-            config (munch.Munch): The guild config where the loop is taking place
-        """
+    async def wait(self: Self, _: discord.Guild) -> None:
+        """This waits and rechecks every 5 minutes to search for old threads"""
         await asyncio.sleep(300)
 
 

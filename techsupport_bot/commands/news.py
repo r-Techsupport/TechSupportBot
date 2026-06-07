@@ -172,7 +172,7 @@ class News(cogs.LoopCog):
         # Choose a random article from the filtered list
         return random.choice(filtered_articles)
 
-    async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
+    async def execute(self: Self, guild: discord.Guild) -> None:
         """Loop entry point for the news command
         If a channel is configured to loop news headlines, this will execute that
 
@@ -180,6 +180,7 @@ class News(cogs.LoopCog):
             config (munch.Munch): The guild config for the guild looping
             guild (discord.Guild): The guild where the loop is running
         """
+        config = self.bot.guild_configs[str(guild.id)]
         channel = guild.get_channel(int(config.extensions.news.channel.value))
         if not channel:
             return
@@ -206,12 +207,13 @@ class News(cogs.LoopCog):
             url = url[:-1]
         await channel.send(url)
 
-    async def wait(self: Self, config: munch.Munch, _: discord.Guild) -> None:
+    async def wait(self: Self, guild: discord.Guild) -> None:
         """Waits the defined time set for the loop, based on the cronjob
 
         Args:
             config (munch.Munch): The guild config where the loop will occur
         """
+        config = self.bot.guild_configs[str(guild.id)]
         await aiocron.crontab(config.extensions.news.cron_config.value).next()
 
     @app_commands.command(
