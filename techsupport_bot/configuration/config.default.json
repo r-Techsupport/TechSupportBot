@@ -7,5 +7,6 @@
     "application_notification_channels": [],
     "application_notification_cron_config": "0 */3 * * *",
     "application_ping_role": "",
-    "application_reminder_cron_config": "0 17 * * *"
+    "application_reminder_cron_config": "0 17 * * *",
+    "automod_alert_channel": ""
 }

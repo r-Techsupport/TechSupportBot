@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import irc.client
 import munch
@@ -432,7 +433,11 @@ class DiscordToIRC(cogs.MatchCog):
                 embed.color = discord.Color.red()
                 try:
                     alert_channel = discord_channel.guild.get_channel(
-                        int(config.extensions.automod.alert_channel.value)
+                        int(
+                            configuration.get_config_entry(
+                                discord_channel.guild.id, "automod_alert_channel"
+                            )
+                        )
                     )
                 except TypeError:
                     alert_channel = None

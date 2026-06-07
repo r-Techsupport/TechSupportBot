@@ -34,6 +34,10 @@
     "application_reminder_cron_config": {
         "datatype": "CronTab",
         "description": "Crontab for executing pending reminder events"
+    },
+    "automod_alert_channel": {
+        "datatype": "discord.TextChannel",
+        "description": "The channel to send auto-protect alerts to"
     }
 }
 

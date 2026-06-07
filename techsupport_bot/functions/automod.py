@@ -7,6 +7,7 @@ import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import munch
 from botlogging import LogContext, LogLevel
@@ -61,13 +62,6 @@ async def setup(bot: bot.TechSupportBot) -> None:
             "A list of all file extensions to be blocked and have a auto warning issued"
         ),
         default=[],
-    )
-    config.add(
-        key="alert_channel",
-        datatype="int",
-        title="Alert channel ID",
-        description="The ID of the channel to send auto-protect alerts to",
-        default=None,
     )
     config.add(
         key="max_mentions",
@@ -300,7 +294,11 @@ class AutoMod(cogs.MatchCog):
 
         try:
             alert_channel = ctx.guild.get_channel(
-                int(config.extensions.automod.alert_channel.value)
+                int(
+                    configuration.get_config_entry(
+                        ctx.guild.id, "automod_alert_channel"
+                    )
+                )
             )
         except TypeError:
             alert_channel = None
