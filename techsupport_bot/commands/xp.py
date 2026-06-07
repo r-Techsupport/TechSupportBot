@@ -163,7 +163,9 @@ class LevelXP(cogs.MatchCog):
         if "factoids" in configuration.get_config_entry(
             ctx.guild.id, "core_enabled_extensions"
         ):
-            factoid_prefix = config.extensions.factoids.prefix.value
+            factoid_prefix = configuration.get_config_entry(
+                ctx.guild.id, "factoids_prefix"
+            )
             if ctx.message.clean_content.startswith(factoid_prefix):
                 return False
 

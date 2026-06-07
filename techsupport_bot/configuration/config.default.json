@@ -68,5 +68,10 @@
     "honeypot_channels": [],
     "moderation_alert_channel": "",
     "joke_apply_in_nsfw_channels": false,
-    "joke_blacklisted_filters": ["nsfw", "explicit"]
+    "joke_blacklisted_filters": ["nsfw", "explicit"],
+    "factoids_admin_roles": [],
+    "factoids_disable_embeds": false,
+    "factoids_manage_roles": [],
+    "factoids_prefix": "?",
+    "factoids_restricted_list": []
 }

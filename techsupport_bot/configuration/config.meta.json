@@ -278,6 +278,26 @@
     "joke_blacklisted_filters": {
         "datatype": "list[str]",
         "description": "Filters all categories listed (nsfw,religious,political,racist,sexist,explicit)"
+    },
+    "factoids_admin_roles": {
+        "datatype": "list[discord.Role]",
+        "description": "The roles required to administrate factoids"
+    },
+    "factoids_disable_embeds": {
+        "datatype": "bool",
+        "description": "This will force all factoids to not use embeds."
+    },
+    "factoids_manage_roles": {
+        "datatype": "list[discord.Role]",
+        "description": "The roles required to manage factoids"
+    },
+    "factoids_prefix": {
+        "datatype": "str",
+        "description": "Prefix for calling factoids"
+    },
+    "factoids_restricted_list": {
+        "datatype": "list[discord.TextChannel]",
+        "description": "List of channel IDs that restricted factoids are allowed to be used in"
     }
 }
 

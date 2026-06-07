@@ -1102,7 +1102,9 @@ class Modmail(cogs.BaseCog):
                 if factoid.disabled or (
                     factoid.restricted
                     and str(self.modmail_forum.id)
-                    not in config.extensions.factoids.restricted_list.value
+                    not in configuration.get_config_entry(
+                        message.guild.id, "factoids_restricted_list"
+                    )
                 ):
                     return
 
