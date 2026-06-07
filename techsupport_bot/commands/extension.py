@@ -211,11 +211,12 @@ class ExtensionControl(cogs.BaseCog):
             extension_name (str): the name of the extension
             extension_file (discord.Attachment): The python file of the extension
         """
+        await interaction.response.defer()
         if not extension_file.filename.endswith(".py"):
             embed = auxiliary.prepare_deny_embed(
                 message="I don't recognize your upload as a Python file",
             )
-            await interaction.response.send_message(embed=embed)
+            await interaction.followup.send(embed=embed)
             return
 
         if extension_name.lower() in await self.bot.get_potential_extensions():

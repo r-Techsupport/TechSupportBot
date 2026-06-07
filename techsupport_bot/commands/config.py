@@ -279,9 +279,11 @@ class ConfigControl(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that triggered the slash command
         """
+        await interaction.response.defer()
         view = ui.Confirm()
         await view.send(
             message=f"Are you sure you want to reset the config for {interaction.guild.name}?",
+            channel=interaction.channel,
             author=interaction.user,
             interaction=interaction,
         )
@@ -303,4 +305,4 @@ class ConfigControl(cogs.BaseCog):
         embed = auxiliary.prepare_confirm_embed(
             message="I've reset the config for this guild"
         )
-        view.followup.send(embed=embed)
+        await view.followup.send(embed=embed)
