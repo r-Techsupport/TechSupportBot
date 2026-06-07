@@ -28,5 +28,6 @@
     "core_enabled_extensions": ["config", "extension"],
     "core_logging_channel": "",
     "modmail_modmail_roles": [],
-    "duck_hunt_channels": []
+    "duck_hunt_channels": [],
+    "duck_success_rate": 50
 }

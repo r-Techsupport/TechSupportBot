@@ -11,10 +11,9 @@ from typing import TYPE_CHECKING, Self
 
 import configuration
 import discord
-import munch
 import ui
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, extensionconfig, moderation
+from core import auxiliary, cogs, moderation
 from discord import Color as embed_colors
 from discord.ext import commands
 
@@ -28,25 +27,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="hunt_channels",
-        datatype="list",
-        title="DuckHunt Channel IDs",
-        description="The IDs of the channels the duck should appear in",
-        default=[],
-    )
-    config.add(
-        key="success_rate",
-        datatype="int",
-        title="Success rate (percent %)",
-        description="The success rate of bef/bang messages",
-        default=50,
-    )
-
     await bot.add_cog(DuckHunt(bot=bot, extension_name="duck"))
-    bot.add_extension_config("duck", config)
 
 
 class DuckHunt(cogs.LoopCog):
@@ -107,9 +88,10 @@ class DuckHunt(cogs.LoopCog):
             banned_user (discord.User, optional): A user that is not allowed to claim the duck.
                 Defaults to None.
         """
-        config = self.bot.guild_configs[str(guild.id)]
         if not channel:
-            log_channel = config.get("logging_channel")
+            log_channel = configuration.get_config_entry(
+                guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message="Channel not found for Duckhunt loop - continuing",
                 level=LogLevel.WARNING,
@@ -143,14 +125,15 @@ class DuckHunt(cogs.LoopCog):
                 timeout=configuration.get_config_entry(guild.id, "duck_timeout"),
                 # can't pull the config in a non-coroutine
                 check=functools.partial(
-                    self.message_check, config, use_channel, duck_message, banned_user
+                    self.message_check, use_channel, duck_message, banned_user
                 ),
             )
         except asyncio.TimeoutError:
             pass
         except Exception as exception:
-            config = self.bot.guild_configs[str(guild.id)]
-            log_channel = config.get("logging_channel")
+            log_channel = configuration.get_config_entry(
+                guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message="Exception thrown waiting for duckhunt input",
                 level=LogLevel.ERROR,
@@ -204,8 +187,7 @@ class DuckHunt(cogs.LoopCog):
             channel (discord.abc.Messageable): The channel in which the duck game happened in
         """
 
-        config_ = self.bot.guild_configs[str(guild.id)]
-        log_channel = config_.get("logging_channel")
+        log_channel = configuration.get_config_entry(guild.id, "core_logging_channel")
         await self.bot.logger.send_log(
             message=f"Duck {action} by {winner} in #{channel.name}",
             level=LogLevel.INFO,
@@ -277,7 +259,6 @@ class DuckHunt(cogs.LoopCog):
 
     def message_check(
         self: Self,
-        config: munch.Munch,
         channel: discord.abc.GuildChannel,
         duck_message: discord.Message,
         banned_user: discord.User,
@@ -286,7 +267,6 @@ class DuckHunt(cogs.LoopCog):
         """Checks if a message after the duck is a valid call to own the duck
 
         Args:
-            config (munch.Munch): The config of the guild where the duck is
             channel (discord.abc.GuildChannel): The channel that the duck is in
             duck_message (discord.Message): The message object of the duck embed
             banned_user (discord.User): A user who is banned from claiming the duck
@@ -329,7 +309,7 @@ class DuckHunt(cogs.LoopCog):
             return False
 
         # Check to see if random failure
-        choice = self.random_choice(config)
+        choice = self.random_choice(message.guild)
         if not choice:
             time = message.created_at - duck_message.created_at
             duration_exact = float(str(time.seconds) + "." + str(time.microseconds))
@@ -737,7 +717,6 @@ class DuckHunt(cogs.LoopCog):
         Args:
             ctx (commands.Context): The context in which the command was run
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         if not configuration.get_config_entry(ctx.guild.id, "duck_allow_manipulation"):
             await auxiliary.send_deny_embed(
                 channel=ctx.channel, message="This command is disabled in this server"
@@ -761,7 +740,7 @@ class DuckHunt(cogs.LoopCog):
 
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
 
-        passed = self.random_choice(config)
+        passed = self.random_choice(ctx.guild)
         if not passed:
             await auxiliary.send_deny_embed(
                 message="The duck got away before you could kill it.",
@@ -792,7 +771,6 @@ class DuckHunt(cogs.LoopCog):
             ctx (commands.Context): The context in which the command was run
             user (discord.Member): The user to donate a duck to
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         if not configuration.get_config_entry(ctx.guild.id, "duck_allow_manipulation"):
             await auxiliary.send_deny_embed(
                 channel=ctx.channel, message="This command is disabled in this server"
@@ -834,7 +812,7 @@ class DuckHunt(cogs.LoopCog):
 
         await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
 
-        passed = self.random_choice(config)
+        passed = self.random_choice(ctx.guild)
         if not passed:
             await auxiliary.send_deny_embed(
                 message="The duck got away before you could donate it.",
@@ -923,7 +901,7 @@ class DuckHunt(cogs.LoopCog):
             channel=ctx.channel,
         )
 
-    def random_choice(self: Self, config: munch.Munch) -> bool:
+    def random_choice(self: Self, guild: discord.Guild) -> bool:
         """A function to pick true or false randomly based on the success_rate in the config
 
         Args:
@@ -934,8 +912,8 @@ class DuckHunt(cogs.LoopCog):
         """
 
         weights = (
-            config.extensions.duck.success_rate.value,
-            100 - config.extensions.duck.success_rate.value,
+            configuration.get_config_entry(guild.id, "duck_success_rate"),
+            100 - configuration.get_config_entry(guild.id, "duck_success_rate"),
         )
 
         # Check to see if random failure

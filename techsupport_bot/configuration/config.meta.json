@@ -118,6 +118,10 @@
     "duck_hunt_channels": {
         "datatype": "list[discord.TextChannel]",
         "description": "The list of channels the duck should appear in"
+    },
+    "duck_success_rate": {
+        "datatype": "int",
+        "description": "The success rate of bef/bang messages"
     }
 
 
