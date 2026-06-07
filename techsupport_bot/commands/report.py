@@ -52,8 +52,6 @@ class Report(cogs.BaseCog):
         embed = discord.Embed(title="New Report", description=report_str)
         embed.color = discord.Color.red()
 
-        config = self.bot.guild_configs[str(interaction.guild.id)]
-
         is_anonymous = configuration.get_config_entry(
             interaction.guild.id, "report_anonymous"
         )

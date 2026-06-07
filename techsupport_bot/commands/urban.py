@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import ui
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -19,17 +20,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="max_responses",
-        datatype="int",
-        title="Max Responses",
-        description="The max amount of responses per embed page",
-        default=1,
-    )
-
     await bot.add_cog(UrbanDictionary(bot=bot))
-    bot.add_extension_config("urban", config)
 
 
 class UrbanDictionary(cogs.BaseCog):
@@ -68,8 +59,6 @@ class UrbanDictionary(cogs.BaseCog):
         )
         definitions = response.get("list")
 
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-
         if not definitions:
             await auxiliary.send_deny_embed(
                 message=f"No results found for: *{query}*", channel=ctx.channel
@@ -100,7 +89,8 @@ class UrbanDictionary(cogs.BaseCog):
                 inline=False,
             )
             if (
-                field_counter == config.extensions.urban.max_responses.value
+                field_counter
+                == configuration.get_config_entry(ctx.guild.id, "urban_max_responses")
                 or index == len(definitions) - 1
             ):
                 embed.set_thumbnail(url=self.ICON_URL)

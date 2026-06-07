@@ -22,7 +22,7 @@ import munch
 import ui
 import yaml
 from botlogging import LogContext, LogLevel
-from core import auxiliary, custom_errors, databases, extensionconfig, http
+from core import auxiliary, custom_errors, databases, http
 from discord import app_commands
 from discord.ext import commands
 
@@ -391,53 +391,6 @@ class TechSupportBot(commands.Bot):
                 config=str(config),
             )
             await new_database_config.create()
-
-    def add_extension_config(
-        self: Self, extension_name: str, config: extensionconfig.ExtensionConfig
-    ) -> None:
-        """Adds an extensions defined config to the guild config as a whole
-
-        Args:
-            extension_name (str): The name of the extension to add config for.
-                Will be the key in the config file
-            config (extensionconfig.ExtensionConfig): The config class with all
-                of the config keys to add
-
-        Raises:
-            ValueError: Will be raised if config is not an extensionconfig.ExtensionConfig
-        """
-        if not isinstance(config, extensionconfig.ExtensionConfig):
-            raise ValueError("config must be of type extensionconfig.ExtensionConfig")
-        self.extension_configs[extension_name] = config
-
-    async def get_log_channel_from_guild(
-        self: Self, guild: discord.Guild, key: str
-    ) -> str | None:
-        """Gets the log channel ID associated with the given guild.
-
-        This also checks if the channel exists in the correct guild.
-
-        Args:
-            guild (discord.Guild): the guild object to reference
-            key (str): the key to use when looking up the channel
-
-        Returns:
-            str | None: If the log channel exists, this will be the string of the ID
-                Otherwise it will be None
-        """
-        if not guild:
-            return None
-
-        config = self.guild_configs[str(guild.id)]
-        channel_id = config.get(key)
-
-        if not channel_id:
-            return None
-
-        if not guild.get_channel(int(channel_id)):
-            return None
-
-        return channel_id
 
     # File config loading functions
 
@@ -874,7 +827,6 @@ class TechSupportBot(commands.Bot):
             bool: True if the command should be run, False if under rate limit
         """
         # Assume this is only run if rate limit is enabled
-        config = self.guild_configs[str(guild.id)]
         identifier = f"{member.id}-{guild.id}"
 
         # If this person hasn't run a command in the rate_limit.time
@@ -882,7 +834,9 @@ class TechSupportBot(commands.Bot):
         if identifier not in self.command_execute_history:
             self.command_execute_history[identifier] = expiringdict.ExpiringDict(
                 max_len=20,
-                max_age_seconds=config.rate_limit.time,
+                max_age_seconds=configuration.get_config_entry(
+                    guild.id, "rate_limit_time"
+                ),
             )
 
         # Ensure that a single command is only ever counted once
@@ -890,7 +844,9 @@ class TechSupportBot(commands.Bot):
             self.command_execute_history[identifier][command_id] = True
 
         # Ban the person if they are over the rate limit
-        if len(self.command_execute_history[identifier]) > config.rate_limit.commands:
+        if len(
+            self.command_execute_history[identifier]
+        ) > configuration.get_config_entry(guild.id, "rate_limit_commands"):
             self.command_rate_limit_bans[identifier] = True
 
         # If this person is banned, raise an error
@@ -916,8 +872,9 @@ class TechSupportBot(commands.Bot):
         Returns:
             bool: False if disabled, True if enabled
         """
-        config = self.guild_configs[str(guild.id)]
-        if extension_name not in config.enabled_extensions:
+        if extension_name not in configuration.get_config_entry(
+            guild.id, "core_enabled_extensions"
+        ):
             return False
         return True
 
@@ -949,8 +906,6 @@ class TechSupportBot(commands.Bot):
             context=LogContext(guild=interaction.guild, channel=interaction.channel),
             console_only=True,
         )
-        config = self.guild_configs[str(interaction.guild.id)]
-
         # Check 1 - Ensure extension is enabled
         try:
             extension_name = interaction.command.extras["module"]
@@ -975,7 +930,7 @@ class TechSupportBot(commands.Bot):
 
         # Check 3 - If rate limiter is enabled, run through the rate limiter
         # If the user is under a rate limit, raise an error to show it and block execution
-        if config.rate_limit.get("enabled", False):
+        if configuration.get_config_entry(interaction.guild.id, "rate_limit_enabled"):
             if not self.command_run_rate_limit_check(
                 member=interaction.user,
                 guild=interaction.guild,
@@ -1048,8 +1003,6 @@ class TechSupportBot(commands.Bot):
             context=LogContext(guild=ctx.guild, channel=ctx.channel),
             console_only=True,
         )
-        config = self.guild_configs[str(ctx.guild.id)]
-
         # Check 1 - Ensure extension is enabled
         extension_name = self.get_command_extension_name(ctx.command)
         if extension_name:
@@ -1063,7 +1016,7 @@ class TechSupportBot(commands.Bot):
             return result
 
         # Check 3 - If rate limiter is enabled, run through the rate limiter
-        if config.rate_limit.get("enabled", False):
+        if configuration.get_config_entry(ctx.guild.id, "rate_limit_enabled"):
             # If the user is under a rate limit, raise an error to show it and block execution
             if not self.command_run_rate_limit_check(
                 member=ctx.author, guild=ctx.guild, command_id=ctx.message.id

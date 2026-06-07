@@ -10,44 +10,12 @@ async def setup(bot):
 ```
 This code is run when loading the extension, is used to add model classes and config entries.
 
-## Config entries
-
-```py
-from core import extensionconfig
-config = extensionconfig.ExtensionConfig()
-config.add(
-    key="<key>",
-    datatype="<datatype",
-    title="<title>",
-    description="<description>",
-    default="<default-value>",
-)
-```
-This defines the config, then defines its values.
-The config.json returned by `.config patch` will have the following value added to it:
-```json
-"<extension-name>": {
-    "<key>": {
-        "datatype": "<datatype>",
-        "title": "<title>",
-        "description": "<description>",
-        "default": "<default>",
-        "value": "<default>"
-        }
-}
-```
-NOTE: The entry might not automatically get added to the file and will have to be added in manually according to the template above.
-
-
 ## Registering the extension
 
 ```py
 await bot.add_cog(extension-name(bot=bot))
-bot.add_extension_config("extension-name", config)
 ```
 This registers the extension, assumes the extension name is the filename if the `extension_name` argument wasn't supplied.
-
-The second line adds the extension to the config .json file.
 
 ## Optional: Postgres
 

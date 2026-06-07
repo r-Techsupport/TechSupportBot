@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Self
 import configuration
 import discord
 import expiringdict
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord import app_commands
 from discord.ext import commands
 
@@ -22,31 +22,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="categories_counted",
-        datatype="list",
-        title="List of category IDs to count for XP",
-        description="List of category IDs to count for XP",
-        default=[],
-    )
-    config.add(
-        key="excluded_channels",
-        datatype="list",
-        title="List of channel IDs to exclude for XP",
-        description="List of channel IDs to exclude for XP",
-        default=[],
-    )
-    config.add(
-        key="level_roles",
-        datatype="dict",
-        title="Dict of levels in XP:Role ID.",
-        description="Dict of levels in XP:Role ID",
-        default={},
-    )
-
     await bot.add_cog(LevelXP(bot=bot, extension_name="xp"))
-    bot.add_extension_config("xp", config)
 
 
 class LevelXP(cogs.MatchCog):
@@ -132,7 +108,6 @@ class LevelXP(cogs.MatchCog):
         Returns:
             bool: True if XP should be granted, False if it shouldn't be.
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         # Ignore all bot messages
         if ctx.message.author.bot:
             return False
@@ -142,11 +117,15 @@ class LevelXP(cogs.MatchCog):
             return False
 
         # Ignore messages outside of tracked categories
-        if ctx.channel.category_id not in config.extensions.xp.categories_counted.value:
+        if ctx.channel.category_id not in configuration.get_config_entry(
+            ctx.guild.id, "xp_categories_counted"
+        ):
             return False
 
         # Ignore messages in exlucded channels
-        if ctx.channel.id in config.extensions.xp.excluded_channels.value:
+        if ctx.channel.id in configuration.get_config_entry(
+            ctx.guild.id, "xp_excluded_channels"
+        ):
             return False
 
         # Ignore messages that are too short
@@ -206,8 +185,7 @@ class LevelXP(cogs.MatchCog):
             user (discord.Member): The user who just gained XP
             new_xp (int): The new amount of XP the user has
         """
-        config = self.bot.guild_configs[str(user.guild.id)]
-        levels = config.extensions.xp.level_roles.value
+        levels = configuration.get_config_entry(user.guild.id, "xp_level_roles")
 
         if len(levels) == 0:
             return
@@ -304,9 +282,7 @@ async def get_current_XP_role(bot: object, user: discord.Member) -> discord.Role
     Returns:
         discord.Role: The XP role that the user currently has
     """
-
-    config = bot.guild_configs[str(user.guild.id)]
-    levels = config.extensions.xp.level_roles.value
+    levels = configuration.get_config_entry(user.guild.id, "xp_level_roles")
 
     if len(levels) == 0:
         return None

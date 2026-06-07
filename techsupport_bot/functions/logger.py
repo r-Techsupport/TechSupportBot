@@ -9,7 +9,7 @@ import configuration
 import discord
 import munch
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -22,17 +22,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="channel_map",
-        datatype="dict",
-        title="Mapping of channel ID's",
-        description="Input Channel ID to Logging Channel ID mapping",
-        default={},
-    )
-
     await bot.add_cog(Logger(bot=bot, extension_name="logger"))
-    bot.add_extension_config("logger", config)
 
 
 def get_channel_id(channel: discord.abc.GuildChannel | discord.Thread) -> int:

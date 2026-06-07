@@ -32,7 +32,7 @@ import ui
 import yaml
 from aiohttp.client_exceptions import InvalidURL
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, custom_errors, extensionconfig
+from core import auxiliary, cogs, custom_errors
 from discord import app_commands
 from discord.ext import commands
 from functions import logger as function_logger
@@ -47,52 +47,12 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-
-    # Sets up the config
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="manage_roles",
-        datatype="list",
-        title="Manage factoids roles",
-        description="The roles required to manage factoids",
-        default=["Factoids"],
-    )
-    config.add(
-        key="admin_roles",
-        datatype="list",
-        title="Admin factoids roles",
-        description="The roles required to administrate factoids",
-        default=["Admin"],
-    )
-    config.add(
-        key="prefix",
-        datatype="str",
-        title="Factoid prefix",
-        description="Prefix for calling factoids",
-        default="?",
-    )
-    config.add(
-        key="restricted_list",
-        datatype="list",
-        title="Restricted channels list",
-        description="List of channel IDs that restricted factoids are allowed to be used in",
-        default=[],
-    )
-    config.add(
-        key="disable_embeds",
-        datatype="bool",
-        title="Force disable embeds, for debug purposes",
-        description="This will force all factoids to not use embeds.",
-        default=False,
-    )
-
     await bot.add_cog(
         FactoidManager(
             bot=bot,
             extension_name="factoids",
         )
     )
-    bot.add_extension_config("factoids", config)
 
 
 async def has_manage_factoids_role(ctx: commands.Context) -> bool:

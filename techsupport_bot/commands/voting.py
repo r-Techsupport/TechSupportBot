@@ -18,7 +18,7 @@ import configuration
 import discord
 import munch
 import ui
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -31,44 +31,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot to register the cog to
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="votes_channel_roles",
-        datatype="dict[str, list[str]]",
-        title="Votes channels → allowed roles",
-        description=(
-            "Map of forum channel IDs to a list of role IDs. "
-            "User must have at least one role from the list."
-        ),
-        default={},
-    )
-    config.add(
-        key="active_role_id",
-        datatype="str",
-        title="Active voter role",
-        description="User must have this role to start or participate in votes",
-        default="",
-    )
-    config.add(
-        key="voting_thresholds",
-        datatype="list[int]",
-        title="The 3 percentage thresholds for voting pass/fail",
-        description=(
-            "1, % of eligible voters who must vote yes"
-            "2, % of yes/no voters who must have voted yes"
-            "3, % of eligible voters who must have voted anything at all"
-        ),
-        default=[50, 67, 75],
-    )
-    config.add(
-        key="reminders_at",
-        datatype="list[int]",
-        title="The list of hours remaining in vote to remind non voters",
-        description="The list of hours remaining in vote to remind non voters",
-        default=[36, 6],
-    )
     await bot.add_cog(Voting(bot=bot, extension_name="voting"))
-    bot.add_extension_config("voting", config)
 
 
 class Voting(cogs.LoopCog):

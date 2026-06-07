@@ -12,7 +12,7 @@ import discord
 import munch
 from botlogging import LogContext, LogLevel
 from commands import moderator, modlog
-from core import auxiliary, cogs, extensionconfig, moderation
+from core import auxiliary, cogs, moderation
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -25,55 +25,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="channels",
-        datatype="list",
-        title="Protected channels",
-        description=(
-            "The list of channel ID's associated with the channels to auto-protect"
-        ),
-        default=[],
-    )
-    config.add(
-        key="bypass_roles",
-        datatype="list",
-        title="Bypassed role names",
-        description=(
-            "The list of role names associated with bypassed roles by the auto-protect"
-        ),
-        default=[],
-    )
-    config.add(
-        key="string_map",
-        datatype="dict",
-        title="Keyword string map",
-        description=(
-            "Mapping of keyword strings to data defining the action taken by"
-            " auto-protect"
-        ),
-        default={},
-    )
-    config.add(
-        key="banned_file_extensions",
-        datatype="dict",
-        title="List of banned file types",
-        description=(
-            "A list of all file extensions to be blocked and have a auto warning issued"
-        ),
-        default=[],
-    )
-    config.add(
-        key="max_mentions",
-        datatype="int",
-        title="Max message mentions",
-        description=(
-            "Max number of mentions allowed in a message before triggering auto-protect"
-        ),
-        default=3,
-    )
     await bot.add_cog(AutoMod(bot=bot, extension_name="automod"))
-    bot.add_extension_config("automod", config)
 
 
 @dataclass

@@ -27,10 +27,6 @@ The bot.py file is the primary file of the program. It contains all of the core 
 
 ### write_new_config
 
-### add_extension_config
-
-### get_log_channel_from_guild
-
 ## File config loading functions
 
 ### load_file_config

@@ -63,8 +63,8 @@ class EventLogger(cogs.BaseCog):
         )
         embed.set_footer(text=f"Author ID: {before.author.id}")
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            before.author.id, "core_guild_events_channel"
         )
 
         await self.bot.logger.send_log(
@@ -104,9 +104,10 @@ class EventLogger(cogs.BaseCog):
         embed.add_field(name="Server", value=getattr(guild, "name", "None"))
         embed.set_footer(text=f"Author ID: {message.author.id}")
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            message.author.id, "core_guild_events_channel"
         )
+
         await self.bot.logger.send_log(
             message=f"Message with ID {message.id} deleted",
             level=LogLevel.INFO,
@@ -139,8 +140,8 @@ class EventLogger(cogs.BaseCog):
         embed.add_field(name="Channels", value=",".join(unique_channels))
         embed.add_field(name="Servers", value=",".join(unique_servers))
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            guild.id, "core_guild_events_channel"
         )
         await self.bot.logger.send_log(
             message=f"{len(messages)} messages bulk deleted!",
@@ -184,8 +185,8 @@ class EventLogger(cogs.BaseCog):
         )
         embed.add_field(name="Server", value=guild.name)
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            guild.id, "core_guild_events_channel"
         )
 
         await self.bot.logger.send_log(
@@ -233,8 +234,8 @@ class EventLogger(cogs.BaseCog):
         )
         embed.add_field(name="Server", value=guild.name)
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            guild.id, "core_guild_events_channel"
         )
 
         await self.bot.logger.send_log(
@@ -274,8 +275,8 @@ class EventLogger(cogs.BaseCog):
         embed.add_field(name="Channel", value=getattr(message.channel, "name", "DM"))
         embed.add_field(name="Server", value=guild.name)
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            guild.id, "core_guild_events_channel"
         )
 
         await self.bot.logger.send_log(
@@ -300,8 +301,8 @@ class EventLogger(cogs.BaseCog):
         embed.add_field(name="Channel Name", value=channel.name)
         embed.add_field(name="Server", value=channel.guild.name)
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            channel.guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            channel.guild.id, "core_guild_events_channel"
         )
 
         await self.bot.logger.send_log(
@@ -328,8 +329,8 @@ class EventLogger(cogs.BaseCog):
         embed = discord.Embed()
         embed.add_field(name="Channel Name", value=channel.name)
         embed.add_field(name="Server", value=channel.guild.name)
-        log_channel = await self.bot.get_log_channel_from_guild(
-            getattr(channel, "guild", None), key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            channel.guild.id, "core_guild_events_channel"
         )
         await self.bot.logger.send_log(
             message=(
@@ -368,8 +369,8 @@ class EventLogger(cogs.BaseCog):
         embed.add_field(name="Channel Name", value=before.name)
         embed.add_field(name="Server", value=before.guild.name)
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            before.guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            before.guild.id, "core_guild_events_channel"
         )
         await self.bot.logger.send_log(
             message=(
@@ -402,8 +403,8 @@ class EventLogger(cogs.BaseCog):
         embed.add_field(name="Channel Name", value=channel.name)
         embed.add_field(name="Server", value=channel.guild)
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            channel.guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            channel.guild.id, "core_guild_events_channel"
         )
 
         await self.bot.logger.send_log(
@@ -428,8 +429,8 @@ class EventLogger(cogs.BaseCog):
         """
         embed = discord.Embed()
         embed.add_field(name="Server", value=guild)
-        log_channel = await self.bot.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            guild.id, "core_guild_events_channel"
         )
         await self.bot.logger.send_log(
             message=f"Integrations updated in guild with ID {guild.id}",
@@ -450,8 +451,8 @@ class EventLogger(cogs.BaseCog):
         embed.add_field(name="Channel", value=channel.name)
         embed.add_field(name="Server", value=channel.guild)
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            channel.guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            channel.guild.id, "core_guild_events_channel"
         )
 
         await self.bot.logger.send_log(
@@ -486,8 +487,8 @@ class EventLogger(cogs.BaseCog):
                 embed.add_field(name="Roles lost", value=next(iter(changed_role)))
                 embed.add_field(name="Server", value=before.guild.name)
 
-            log_channel = await self.bot.get_log_channel_from_guild(
-                getattr(before, "guild", None), key="member_events_channel"
+            log_channel = configuration.get_config_entry(
+                before.guild.id, "core_member_events_channel"
             )
 
             await self.bot.logger.send_log(
@@ -511,8 +512,8 @@ class EventLogger(cogs.BaseCog):
         embed = discord.Embed()
         embed.add_field(name="Member", value=member)
         embed.add_field(name="Server", value=member.guild.name)
-        log_channel = await self.bot.get_log_channel_from_guild(
-            getattr(member, "guild", None), key="member_events_channel"
+        log_channel = configuration.get_config_entry(
+            member.guild.id, "core_member_events_channel"
         )
 
         await self.bot.logger.send_log(
@@ -551,8 +552,8 @@ class EventLogger(cogs.BaseCog):
         embed = discord.Embed()
         embed.add_field(name="Server", value=guild.name)
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            guild.id, "core_guild_events_channel"
         )
 
         await self.bot.logger.send_log(
@@ -605,8 +606,8 @@ class EventLogger(cogs.BaseCog):
         embed = auxiliary.add_diff_fields(embed, diff)
         embed.add_field(name="Server", value=before.name)
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            before, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            before.guild.id, "core_guild_events_channel"
         )
         await self.bot.logger.send_log(
             message=f"Guild with ID {before.id} updated",
@@ -625,8 +626,8 @@ class EventLogger(cogs.BaseCog):
         """
         embed = discord.Embed()
         embed.add_field(name="Server", value=role.guild.name)
-        log_channel = await self.bot.get_log_channel_from_guild(
-            role.guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            role.guild.id, "core_guild_events_channel"
         )
 
         await self.bot.logger.send_log(
@@ -648,8 +649,8 @@ class EventLogger(cogs.BaseCog):
         """
         embed = discord.Embed()
         embed.add_field(name="Server", value=role.guild.name)
-        log_channel = await self.bot.get_log_channel_from_guild(
-            role.guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            role.guild.id, "core_guild_events_channel"
         )
         await self.bot.logger.send_log(
             message=(
@@ -678,8 +679,8 @@ class EventLogger(cogs.BaseCog):
         embed = auxiliary.add_diff_fields(embed, diff)
         embed.add_field(name="Server", value=before.name)
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            before.guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            before.guild.id, "core_guild_events_channel"
         )
 
         await self.bot.logger.send_log(
@@ -709,8 +710,8 @@ class EventLogger(cogs.BaseCog):
         embed = discord.Embed()
         embed.add_field(name="Server", value=guild.name)
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            guild, key="guild_events_channel"
+        log_channel = configuration.get_config_entry(
+            guild.id, "core_guild_events_channel"
         )
         await self.bot.logger.send_log(
             message=f"Emojis updated in guild with ID {guild.id}",
@@ -735,8 +736,8 @@ class EventLogger(cogs.BaseCog):
         embed.add_field(name="User", value=user)
         embed.add_field(name="Server", value=guild.name)
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            guild, key="member_events_channel"
+        log_channel = configuration.get_config_entry(
+            guild.id, "core_member_events_channel"
         )
 
         await self.bot.logger.send_log(
@@ -761,8 +762,8 @@ class EventLogger(cogs.BaseCog):
         embed.add_field(name="User", value=user)
         embed.add_field(name="Server", value=guild.name)
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            guild, key="member_events_channel"
+        log_channel = configuration.get_config_entry(
+            guild.id, "core_member_events_channel"
         )
 
         await self.bot.logger.send_log(
@@ -783,8 +784,8 @@ class EventLogger(cogs.BaseCog):
         embed = discord.Embed()
         embed.add_field(name="Member", value=member)
         embed.add_field(name="Server", value=member.guild.name)
-        log_channel = await self.bot.get_log_channel_from_guild(
-            getattr(member, "guild", None), key="member_events_channel"
+        log_channel = configuration.get_config_entry(
+            member.guild.id, "core_member_events_channel"
         )
 
         await self.bot.logger.send_log(
