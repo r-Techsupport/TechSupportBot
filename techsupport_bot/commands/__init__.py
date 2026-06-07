@@ -22,5 +22,6 @@ from .modlog import *
 from .notes import *
 from .relay import *
 from .roll import *
+from .rules import *
 from .wyr import *
 from .xp import *
