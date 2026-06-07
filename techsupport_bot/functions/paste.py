@@ -147,7 +147,6 @@ class Paster(cogs.MatchCog):
         if not guild:
             return
 
-        config = self.bot.guild_configs[str(guild.id)]
         if not self.extension_enabled(guild):
             return
 
