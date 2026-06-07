@@ -7,10 +7,11 @@ import random
 from typing import TYPE_CHECKING, Self
 
 import aiocron
+import configuration
 import discord
 import munch
 from botlogging import LogContext, LogLevel
-from core import cogs, extensionconfig
+from core import cogs
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -34,38 +35,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     except AttributeError as exc:
         raise AttributeError("News was not loaded due to missing API key") from exc
 
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="channel",
-        datatype="int",
-        title="Daily News Channel ID",
-        description="The ID of the channel the news should appear in",
-        default=None,
-    )
-    config.add(
-        key="cron_config",
-        datatype="string",
-        title="Cronjob config for news",
-        description="Crontab syntax for executing news events (example: 0 17 * * *)",
-        default="0 17 * * *",
-    )
-    config.add(
-        key="country",
-        datatype="string",
-        title="Country code",
-        description="Country code to receive news for (example: US)",
-        default="US",
-    )
-    config.add(
-        key="category",
-        datatype="str",
-        title="Category",
-        description="The category to use when receiving cronjob headlines",
-        default=None,
-    )
-
     await bot.add_cog(News(bot=bot, extension_name="news"))
-    bot.add_extension_config("news", config)
 
 
 class Category(enum.Enum):
@@ -172,30 +142,33 @@ class News(cogs.LoopCog):
         # Choose a random article from the filtered list
         return random.choice(filtered_articles)
 
-    async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
+    async def execute(self: Self, guild: discord.Guild) -> None:
         """Loop entry point for the news command
         If a channel is configured to loop news headlines, this will execute that
 
         Args:
-            config (munch.Munch): The guild config for the guild looping
             guild (discord.Guild): The guild where the loop is running
         """
-        channel = guild.get_channel(int(config.extensions.news.channel.value))
+        channel = guild.get_channel(
+            int(configuration.get_config_entry(guild.id, "news_channel"))
+        )
         if not channel:
             return
 
         url = None
         while not url:
             article = await self.get_random_headline(
-                config.extensions.news.country.value,
-                Category(config.extensions.news.category.value).value,
+                configuration.get_config_entry(guild.id, "news_country"),
+                Category(
+                    configuration.get_config_entry(guild.id, "news_category")
+                ).value,
             )
             url = article.get("url")
 
         if article is None:
             return
 
-        log_channel = config.get("logging_channel")
+        log_channel = configuration.get_config_entry(guild.id, "core_logging_channel")
         await self.bot.logger.send_log(
             message=f"Sending news headline to #{channel.name}",
             level=LogLevel.INFO,
@@ -206,13 +179,15 @@ class News(cogs.LoopCog):
             url = url[:-1]
         await channel.send(url)
 
-    async def wait(self: Self, config: munch.Munch, _: discord.Guild) -> None:
+    async def wait(self: Self, guild: discord.Guild) -> None:
         """Waits the defined time set for the loop, based on the cronjob
 
         Args:
-            config (munch.Munch): The guild config where the loop will occur
+            guild (discord.Guild): The guild where the loop will occur
         """
-        await aiocron.crontab(config.extensions.news.cron_config.value).next()
+        await aiocron.crontab(
+            configuration.get_config_entry(guild.id, "news_cron_config")
+        ).next()
 
     @app_commands.command(
         name="news",
@@ -236,12 +211,12 @@ class News(cogs.LoopCog):
         else:
             category.lower()
 
-        config = self.bot.guild_configs[str(interaction.guild.id)]
-
         url = None
         while not url:
             article = await self.get_random_headline(
-                config.extensions.news.country.value, category, True
+                configuration.get_config_entry(interaction.guild.id, "news_country"),
+                category,
+                True,
             )
             url = article.get("url")
 
@@ -254,7 +229,9 @@ class News(cogs.LoopCog):
         await interaction.response.send_message(content=url)
 
         # Log the command execution
-        log_channel = config.get("logging_channel")
+        log_channel = configuration.get_config_entry(
+            interaction.guild.id, "core_logging_channel"
+        )
         if log_channel:
             await self.bot.logger.send_log(
                 message=(

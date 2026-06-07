@@ -6,8 +6,8 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Any, Self
 
+import configuration
 import discord
-import munch
 from botlogging import LogContext, LogLevel
 from discord.ext import commands
 
@@ -74,19 +74,19 @@ class BaseCog(commands.Cog):
     async def preconfig(self: Self) -> None:
         """Preconfigures the environment before starting the cog."""
 
-    def extension_enabled(self: Self, config: munch.Munch) -> bool:
-        """Checks if an extension is currently enabled for a given config.
+    def extension_enabled(self: Self, guild: discord.Guild) -> bool:
+        """Checks if an extension is currently enabled for a given guild.
 
         Args:
-            config (munch.Munch): the context/guild config
+            guild (discord.Guild): The guild to lookup extension status for
 
         Returns:
             bool: True if the extension is enabled for the context
                 False if it isn't
         """
-        if config is None:
-            config = {}
-        if self.no_guild or self.extension_name in config.get("enabled_extensions", []):
+        if self.no_guild or self.extension_name in configuration.get_config_entry(
+            guild.id, "core_enabled_extensions"
+        ):
             return True
         return False
 
@@ -115,11 +115,7 @@ class MatchCog(BaseCog):
 
         ctx = await self.bot.get_context(message)
 
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-        if not config:
-            return
-
-        if not self.extension_enabled(config):
+        if not self.extension_enabled(message.guild):
             return
 
         if (
@@ -128,20 +124,21 @@ class MatchCog(BaseCog):
         ):
             message.content = message.message_snapshots[0].content
 
-        result = await self.match(config, ctx, message.content)
+        result = await self.match(ctx, message.content)
         if not result:
             return
 
         try:
-            await self.response(config, ctx, message.content, result)
+            await self.response(ctx, message.content, result)
         except Exception as exception:
             await self.bot.logger.send_log(
                 message="Checking config for log channel",
                 level=LogLevel.DEBUG,
                 context=LogContext(guild=ctx.guild, channel=ctx.channel),
             )
-            config = self.bot.guild_configs[str(ctx.guild.id)]
-            bot_logging_channel = config.get("logging_channel")
+            bot_logging_channel = configuration.get_config_entry(
+                message.guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message=f"Match cog error: {self.__class__.__name__} {exception}!",
                 level=LogLevel.ERROR,
@@ -150,13 +147,10 @@ class MatchCog(BaseCog):
                 exception=exception,
             )
 
-    async def match(
-        self: Self, _config: munch.Munch, _ctx: commands.Context, _content: str
-    ) -> bool:
+    async def match(self: Self, _ctx: commands.Context, _content: str) -> bool:
         """Runs a boolean check on message content.
 
         Args:
-            _config (munch.Munch): the config associated with the context
             _ctx (commands.Context): the context object
             _content (str): the message content
 
@@ -168,7 +162,6 @@ class MatchCog(BaseCog):
 
     async def response(
         self: Self,
-        _config: munch.Munch,
         _ctx: commands.Context,
         _content: str,
         _result: bool,
@@ -176,7 +169,6 @@ class MatchCog(BaseCog):
         """Performs a response if the match is valid.
 
         Args:
-            _config (munch.Munch): the config associated with the context
             _ctx (commands.Context): the context object
             _content (str): the message content
             _result (bool): the boolean result from match()
@@ -217,12 +209,11 @@ class LoopCog(BaseCog):
         Args:
             guild (discord.Guild): the guild to add the tasks for
         """
-        config = self.bot.guild_configs[str(guild.id)]
-        channels = (
-            config.extensions.get(self.extension_name, {})
-            .get(self.CHANNELS_KEY, {})
-            .get("value")
-        )
+        try:
+            channels = configuration.get_config_entry(guild.id, self.CHANNELS_KEY)
+        except AttributeError:
+            channels = None
+
         if channels is not None:
             channels = sorted(set(channels))
             self.channels[guild.id] = [
@@ -281,12 +272,9 @@ class LoopCog(BaseCog):
                 level=LogLevel.DEBUG,
             )
             for guild_id, registered_channels in self.channels.items():
-                guild = self.bot.get_guild(guild_id)
-                config = self.bot.guild_configs[str(guild.id)]
-                configured_channels = (
-                    config.extensions.get(self.extension_name, {})
-                    .get(self.CHANNELS_KEY, {})
-                    .get("value")
+                guild: discord.Guild = self.bot.get_guild(guild_id)
+                configured_channels = configuration.get_config_entry(
+                    guild.id, self.CHANNELS_KEY
                 )
                 if not isinstance(configured_channels, list):
                     await self.bot.logger.send_log(
@@ -346,53 +334,57 @@ class LoopCog(BaseCog):
             target_channel (discord.abc.Messageable): The channel to run the loop in,
                 if the loop is channel specific
         """
-        config = self.bot.guild_configs[str(guild.id)]
-
         if not self.ON_START:
-            await self.wait(config, guild)
+            await self.wait(guild)
 
         for folder_dir in [self.bot.EXTENSIONS_DIR_NAME, self.bot.FUNCTIONS_DIR_NAME]:
             while self.bot.extensions.get(f"{folder_dir}.{self.extension_name}"):
                 if guild and guild not in self.bot.guilds:
                     break
 
-                # refresh the config on every loop step
-                config = self.bot.guild_configs[str(guild.id)]
+                channels_list = configuration.get_config_entry(
+                    guild.id, self.CHANNELS_KEY
+                )
+                if not channels_list:
+                    channels_list = []
 
-                if target_channel and not str(
-                    target_channel.id
-                ) in config.extensions.get(self.extension_name, {}).get(
-                    self.CHANNELS_KEY, {}
-                ).get(
-                    "value", []
-                ):
+                if target_channel and str(target_channel.id) not in channels_list:
                     # exit task if the channel is no longer configured
                     break
 
-                if guild is None or self.extension_name in getattr(
-                    config, "enabled_extensions", []
+                if (
+                    guild is None
+                    or self.extension_name
+                    in configuration.get_config_entry(
+                        guild.id, "core_enabled_extensions"
+                    )
                 ):
                     try:
                         if target_channel:
-                            await self.execute(config, guild, target_channel)
+                            await self.execute(guild, target_channel)
                         else:
-                            await self.execute(config, guild)
+                            await self.execute(guild)
                     except Exception as exception:
                         # always try to wait even when execute fails
                         await self.bot.logger.send_log(
                             message=f"Loop cog execute error: {self.__class__.__name__}!",
                             level=LogLevel.ERROR,
-                            channel=getattr(config, "logging_channel", None),
+                            channel=configuration.get_config_entry(
+                                guild.id, "core_logging_channel"
+                            ),
                             context=LogContext(guild=guild),
                             exception=exception,
                         )
 
                 try:
-                    await self.wait(config, guild)
+                    await self.wait(guild)
                 except Exception as exception:
                     await self.bot.logger.send_log(
                         message=f"Loop wait cog error: {self.__class__.__name__}!",
                         level=LogLevel.ERROR,
+                        channel=configuration.get_config_entry(
+                            guild.id, "core_logging_channel"
+                        ),
                         context=LogContext(guild=guild),
                         exception=exception,
                     )
@@ -401,14 +393,12 @@ class LoopCog(BaseCog):
 
     async def execute(
         self: Self,
-        _config: munch.Munch,
         _guild: discord.Guild,
         _target_channel: discord.abc.Messageable = None,
     ) -> None:
         """Runs sequentially after each wait method.
 
         Args:
-            _config (munch.Munch): the config object for the guild
             _guild (discord.Guild): the guild associated with the execution
             _target_channel (discord.abc.Messageable): the channel object to use
         """
@@ -417,11 +407,10 @@ class LoopCog(BaseCog):
         """The default method used for waiting."""
         await asyncio.sleep(self.DEFAULT_WAIT)
 
-    async def wait(self: Self, _config: munch.Munch, _guild: discord.Guild) -> None:
+    async def wait(self: Self, _guild: discord.Guild) -> None:
         """The default wait method.
 
         Args:
-            _config (munch.Munch): the config object for the guild
             _guild (discord.Guild): the guild associated with the execution
         """
         await self._default_wait()

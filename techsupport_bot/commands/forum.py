@@ -8,10 +8,10 @@ import random
 import re
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
-import munch
 import ui
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord import app_commands
 from discord.ext import commands
 
@@ -25,100 +25,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot to register the cog to
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="forum_channel_id",
-        datatype="str",
-        title="forum channel",
-        description="The forum channel id as a string to manage threads in",
-        default="",
-    )
-    config.add(
-        key="max_age_minutes",
-        datatype="int",
-        title="Max age in minutes",
-        description="The max age of a thread before it times out",
-        default=1440,
-    )
-    config.add(
-        key="title_regex_list",
-        datatype="list[str]",
-        title="List of regex to ban in titles",
-        description="List of regex to ban in titles",
-        default=[""],
-    )
-    config.add(
-        key="body_regex_list",
-        datatype="list[str]",
-        title="List of regex to ban in bodies",
-        description="List of regex to ban in bodies",
-        default=[""],
-    )
-    config.add(
-        key="reject_message",
-        datatype="str",
-        title="The message displayed on rejected threads",
-        description="The message displayed on rejected threads",
-        default="thread rejected",
-    )
-    config.add(
-        key="duplicate_message",
-        datatype="str",
-        title="The message displayed on duplicated threads",
-        description="The message displayed on duplicated threads",
-        default="thread duplicated",
-    )
-    config.add(
-        key="solve_message",
-        datatype="str",
-        title="The message displayed on solved threads",
-        description="The message displayed on solved threads",
-        default="thread solved",
-    )
-    config.add(
-        key="close_message",
-        datatype="str",
-        title="The message displayed on closed threads",
-        description="The message displayed on closed threads",
-        default="thread closed",
-    )
-    config.add(
-        key="left_message",
-        datatype="str",
-        title="The message displayed on left threads",
-        description="The message displayed on left threads",
-        default="thread left",
-    )
-    config.add(
-        key="delete_message",
-        datatype="str",
-        title="The message displayed on deleted threads",
-        description="The message displayed on deleted threads",
-        default="thread deleted",
-    )
-    config.add(
-        key="abandoned_message",
-        datatype="str",
-        title="The message displayed on abandoned threads",
-        description="The message displayed on abandoned threads",
-        default="thread abandoned",
-    )
-    config.add(
-        key="staff_role_ids",
-        datatype="list[int]",
-        title="Staff role ids as ints able to mark threads solved/abandoned/rejected",
-        description="Staff role ids as ints able to mark threads solved/abandoned/rejected",
-        default=[],
-    )
-    config.add(
-        key="welcome_message",
-        datatype="str",
-        title="The message displayed on new threads",
-        description="The message displayed on new threads",
-        default="thread welcome",
-    )
     await bot.add_cog(ForumChannel(bot=bot, extension_name="forum"))
-    bot.add_extension_config("forum", config)
 
 
 STATUS_CONFIG = {
@@ -126,43 +33,43 @@ STATUS_CONFIG = {
         "title": "Thread marked as solved",
         "prefix": "[SOLVED]",
         "color": discord.Color.green(),
-        "message_key": "solve_message",
+        "message_key": "forum_solve_message",
     },
     "closed": {
         "title": "Thread marked as closed",
         "prefix": "[CLOSED]",
         "color": discord.Color.red(),
-        "message_key": "close_message",
+        "message_key": "forum_close_message",
     },
     "left": {
         "title": "OP has left the server",
         "prefix": "[LEFT]",
         "color": discord.Color.red(),
-        "message_key": "left_message",
+        "message_key": "forum_left_message",
     },
     "deleted": {
         "title": "Thread message was deleted",
         "prefix": "[DELETED]",
         "color": discord.Color.red(),
-        "message_key": "delete_message",
+        "message_key": "forum_delete_message",
     },
     "rejected": {
         "title": "Thread rejected",
         "prefix": "[REJECTED]",
         "color": discord.Color.red(),
-        "message_key": "reject_message",
+        "message_key": "forum_reject_message",
     },
     "duplicate": {
         "title": "Duplicate thread detected",
         "prefix": "[DUPLICATE]",
         "color": discord.Color.orange(),
-        "message_key": "duplicate_message",
+        "message_key": "forum_duplicate_message",
     },
     "abandoned": {
         "title": "Abandoned thread archived",
         "prefix": "[ABANDONED]",
         "color": discord.Color.blurple(),
-        "message_key": "abandoned_message",
+        "message_key": "forum_abandoned_message",
     },
 }
 
@@ -201,9 +108,12 @@ class ForumChannel(cogs.LoopCog):
         status = status.lower()
         await interaction.response.defer(ephemeral=True)
 
-        config = self.bot.guild_configs[str(interaction.guild.id)]
         forum_channel = await interaction.guild.fetch_channel(
-            int(config.extensions.forum.forum_channel_id.value)
+            int(
+                configuration.get_config_entry(
+                    interaction.guild.id, "forum_forum_channel_id"
+                )
+            )
         )
 
         invalid_embed = discord.Embed(
@@ -220,7 +130,7 @@ class ForumChannel(cogs.LoopCog):
             await interaction.followup.send(embed=invalid_embed, ephemeral=True)
             return
 
-        is_staff = is_thread_staff(interaction.user, interaction.guild, config)
+        is_staff = is_thread_staff(interaction.user, interaction.guild)
         is_owner = interaction.user == interaction.channel.owner
 
         # Check 2: Ensure status is valid
@@ -255,7 +165,6 @@ class ForumChannel(cogs.LoopCog):
 
         await mark_thread(
             interaction.channel,
-            config,
             self.thread_ID_closed,
             status,
             reason,
@@ -279,10 +188,7 @@ class ForumChannel(cogs.LoopCog):
             list[app_commands.Choice[str]]: The list of all valid choices
                 that fit with the users current selection
         """
-
-        config = self.bot.guild_configs[str(interaction.guild.id)]
-
-        is_staff = is_thread_staff(interaction.user, interaction.guild, config)
+        is_staff = is_thread_staff(interaction.user, interaction.guild)
         is_owner = (
             hasattr(interaction.channel, "owner")
             and interaction.user == interaction.channel.owner
@@ -327,9 +233,12 @@ class ForumChannel(cogs.LoopCog):
             interaction (discord.Interaction): The interaction that called the command
         """
         await interaction.response.defer(ephemeral=True)
-        config = self.bot.guild_configs[str(interaction.guild.id)]
         channel = await interaction.guild.fetch_channel(
-            int(config.extensions.forum.forum_channel_id.value)
+            int(
+                configuration.get_config_entry(
+                    interaction.guild.id, "forum_forum_channel_id"
+                )
+            )
         )
         mention_threads: list[discord.Thread] = channel.threads
         if len(mention_threads) == 0:
@@ -375,10 +284,12 @@ class ForumChannel(cogs.LoopCog):
             interaction (discord.Interaction): The interaction calling the command
         """
         await interaction.response.defer(ephemeral=True)
-
-        config = self.bot.guild_configs[str(interaction.guild.id)]
         forum_channel = await interaction.guild.fetch_channel(
-            int(config.extensions.forum.forum_channel_id.value)
+            int(
+                configuration.get_config_entry(
+                    interaction.guild.id, "forum_forum_channel_id"
+                )
+            )
         )
 
         invalid_embed = discord.Embed(
@@ -395,7 +306,7 @@ class ForumChannel(cogs.LoopCog):
             await interaction.followup.send(embed=invalid_embed, ephemeral=True)
             return
 
-        is_staff = is_thread_staff(interaction.user, interaction.guild, config)
+        is_staff = is_thread_staff(interaction.user, interaction.guild)
 
         # Check 2: Called must be staff:
         if not is_staff:
@@ -438,9 +349,12 @@ class ForumChannel(cogs.LoopCog):
             before (discord.Thread): The original thread
             after (discord.Thread): The thread after the update
         """
-        config = self.bot.guild_configs[str(before.guild.id)]
         channel = await before.guild.fetch_channel(
-            int(config.extensions.forum.forum_channel_id.value)
+            int(
+                configuration.get_config_entry(
+                    before.guild.id, "forum_forum_channel_id"
+                )
+            )
         )
         if before.parent != channel:
             return
@@ -476,22 +390,24 @@ class ForumChannel(cogs.LoopCog):
         """
         # Fuck if I know what causes this bug
         await asyncio.sleep(5)
-        config = self.bot.guild_configs[str(thread.guild.id)]
         channel = await thread.guild.fetch_channel(
-            int(config.extensions.forum.forum_channel_id.value)
+            int(
+                configuration.get_config_entry(
+                    thread.guild.id, "forum_forum_channel_id"
+                )
+            )
         )
         if thread.parent != channel:
             return
 
         disallowed_title_patterns = create_regex_list(
-            config.extensions.forum.title_regex_list.value
+            configuration.get_config_entry(thread.guild.id, "forum_title_regex_list")
         )
 
         # Check if the thread title is disallowed
         if any(pattern.search(thread.name) for pattern in disallowed_title_patterns):
             await mark_thread(
                 thread,
-                config,
                 self.thread_ID_closed,
                 "rejected",
                 reason=(
@@ -506,12 +422,11 @@ class ForumChannel(cogs.LoopCog):
         if messages:
             body = messages[-1].content
             disallowed_body_patterns = create_regex_list(
-                config.extensions.forum.body_regex_list.value
+                configuration.get_config_entry(thread.guild.id, "forum_body_regex_list")
             )
             if any(pattern.search(body) for pattern in disallowed_body_patterns):
                 await mark_thread(
                     thread,
-                    config,
                     self.thread_ID_closed,
                     "rejected",
                     reason=(
@@ -525,7 +440,6 @@ class ForumChannel(cogs.LoopCog):
             ):
                 await mark_thread(
                     thread,
-                    config,
                     self.thread_ID_closed,
                     "rejected",
                     reason=(
@@ -544,7 +458,6 @@ class ForumChannel(cogs.LoopCog):
             ):
                 await mark_thread(
                     thread,
-                    config,
                     self.thread_ID_closed,
                     "duplicate",
                     reason=(
@@ -556,7 +469,9 @@ class ForumChannel(cogs.LoopCog):
 
         embed = discord.Embed(
             title="Welcome!",
-            description=config.extensions.forum.welcome_message.value,
+            description=configuration.get_config_entry(
+                thread.guild.id, "forum_welcome_message"
+            ),
             color=discord.Color.blue(),
         )
         await thread.send(embed=embed)
@@ -568,9 +483,12 @@ class ForumChannel(cogs.LoopCog):
         Args:
             member (discord.Member): The member who has left the server
         """
-        config = self.bot.guild_configs[str(member.guild.id)]
         channel = await member.guild.fetch_channel(
-            int(config.extensions.forum.forum_channel_id.value)
+            int(
+                configuration.get_config_entry(
+                    member.guild.id, "forum_forum_channel_id"
+                )
+            )
         )
         for thread in channel.threads:
             if thread.archived:
@@ -583,7 +501,6 @@ class ForumChannel(cogs.LoopCog):
             # Mark the thread as left
             await mark_thread(
                 thread,
-                config,
                 self.thread_ID_closed,
                 "left",
                 reason=(
@@ -617,9 +534,12 @@ class ForumChannel(cogs.LoopCog):
         if not isinstance(thread, discord.Thread):
             return
 
-        config = self.bot.guild_configs[str(thread.guild.id)]
         channel = await thread.guild.fetch_channel(
-            int(config.extensions.forum.forum_channel_id.value)
+            int(
+                configuration.get_config_entry(
+                    thread.guild.id, "forum_forum_channel_id"
+                )
+            )
         )
         if thread.parent != channel:
             return
@@ -635,21 +555,19 @@ class ForumChannel(cogs.LoopCog):
         # Mark the thread as deleted
         await mark_thread(
             thread,
-            config,
             self.thread_ID_closed,
             "deleted",
             reason=("It appears the original post for this thread was deleted."),
         )
 
-    async def execute(self: Self, config: munch.Munch, guild: discord.Guild) -> None:
+    async def execute(self: Self, guild: discord.Guild) -> None:
         """This is what closes threads after inactivity
 
         Args:
-            config (munch.Munch): The guild config where the loop is taking place
             guild (discord.Guild): The guild where the loop is taking place
         """
         channel = await guild.fetch_channel(
-            int(config.extensions.forum.forum_channel_id.value)
+            int(configuration.get_config_entry(guild.id, "forum_forum_channel_id"))
         )
         for existing_thread in channel.threads:
             if not existing_thread.archived and not existing_thread.locked:
@@ -663,22 +581,19 @@ class ForumChannel(cogs.LoopCog):
                     datetime.datetime.now(datetime.timezone.utc) - message_timestamp
                 )
                 if timestamp_delta > datetime.timedelta(
-                    minutes=config.extensions.forum.max_age_minutes.value
+                    minutes=configuration.get_config_entry(
+                        guild.id, "forum_max_age_minutes"
+                    )
                 ):
                     await mark_thread(
                         existing_thread,
-                        config,
                         self.thread_ID_closed,
                         "abandoned",
                         "Threads are automatically closed after periods of no activity",
                     )
 
-    async def wait(self: Self, config: munch.Munch, _: discord.Guild) -> None:
-        """This waits and rechecks every 5 minutes to search for old threads
-
-        Args:
-            config (munch.Munch): The guild config where the loop is taking place
-        """
+    async def wait(self: Self, _: discord.Guild) -> None:
+        """This waits and rechecks every 5 minutes to search for old threads"""
         await asyncio.sleep(300)
 
 
@@ -694,21 +609,18 @@ def create_regex_list(str_list: list[str]) -> list[re.Pattern[str]]:
     return [re.compile(p, re.IGNORECASE) for p in str_list]
 
 
-def is_thread_staff(
-    user: discord.Member, guild: discord.Guild, config: munch.Munch
-) -> bool:
+def is_thread_staff(user: discord.Member, guild: discord.Guild) -> bool:
     """This checks if a user is staff in a given thread
     This uses the staff roles config
 
     Args:
         user (discord.Member): The user to check
         guild (discord.Guild): The guild this thread is in
-        config (munch.Munch): The config of the guild
 
     Returns:
         bool: Whether the user is staff or not
     """
-    if staff_roles := config.extensions.forum.staff_role_ids.value:
+    if staff_roles := configuration.get_config_entry(guild.id, "forum_staff_role_ids"):
         roles = (discord.utils.get(guild.roles, id=int(role)) for role in staff_roles)
         status = any((role in user.roles for role in roles))
         if status:
@@ -718,7 +630,6 @@ def is_thread_staff(
 
 async def mark_thread(
     thread: discord.Thread,
-    config: munch.Munch,
     closed_list: list[int],
     status: str,
     reason: str,
@@ -729,7 +640,6 @@ async def mark_thread(
 
     Args:
         thread (discord.Thread): The thread to modify
-        config (munch.Munch): The guild config
         closed_list (list[int]): The list of threads closed by TS
         status (str): The status to modify the thread with
         reason (str): The reason the thread was changed
@@ -741,7 +651,9 @@ async def mark_thread(
 
     embed = discord.Embed(
         title=data["title"],
-        description=getattr(config.extensions.forum, data["message_key"]).value,
+        description=configuration.get_config_entry(
+            thread.guild.id, data["message_key"]
+        ),
         color=data["color"],
     )
     # If there is a reason, add the reason to the embed

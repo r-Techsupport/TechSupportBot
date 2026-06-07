@@ -5,12 +5,13 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import dateparser
 import discord
 import ui
 from botlogging import LogContext, LogLevel
 from commands import modlog
-from core import auxiliary, cogs, extensionconfig, moderation
+from core import auxiliary, cogs, moderation
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -23,25 +24,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="immune_roles",
-        datatype="list",
-        title="Immune role names",
-        description="The list of role names that are immune to protect commands",
-        default=[],
-    )
-    config.add(
-        key="ban_delete_duration",
-        datatype="int",
-        title="Ban delete duration (days)",
-        description=(
-            "The default amount of days to delete messages for a user after they are banned"
-        ),
-        default=7,
-    )
     await bot.add_cog(ProtectCommands(bot=bot, extension_name="moderator"))
-    bot.add_extension_config("moderator", config)
 
 
 class ProtectCommands(cogs.BaseCog):
@@ -105,8 +88,9 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         if not delete_days:
-            config = self.bot.guild_configs[str(interaction.guild.id)]
-            delete_days = config.extensions.moderator.ban_delete_duration.value
+            delete_days = configuration.get_config_entry(
+                interaction.guild.id, "moderator_ban_delete_duration"
+            )
 
         # Ban the user using the core moderation cog
         result = await moderation.ban_user(
@@ -476,20 +460,21 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        config = self.bot.guild_configs[str(interaction.guild.id)]
-
         new_count_of_warnings = (
             len(await moderation.get_all_warnings(self.bot, target, interaction.guild))
             + 1
         )
 
         should_ban = False
-        if new_count_of_warnings >= config.moderation.max_warnings:
+        max_warnings = configuration.get_config_entry(
+            interaction.guild.id, "moderation_max_warnings"
+        )
+        if new_count_of_warnings >= max_warnings:
             await interaction.response.defer(ephemeral=False)
             view = ui.Confirm()
             await view.send(
                 message="This user has exceeded the max warnings of "
-                + f"{config.moderation.max_warnings}. Would "
+                + f"{max_warnings}. Would "
                 + "you like to ban them instead?",
                 channel=interaction.channel,
                 author=interaction.user,
@@ -508,11 +493,14 @@ class ProtectCommands(cogs.BaseCog):
                 guild=interaction.guild,
                 user=target,
                 delete_seconds=(
-                    config.extensions.moderator.ban_delete_duration.value * 86400
+                    configuration.get_config_entry(
+                        interaction.guild.id, "moderator_ban_delete_duration"
+                    )
+                    * 86400
                 ),
                 reason=(
                     f"Over max warning count {new_count_of_warnings} out of"
-                    f" {config.moderation.max_warnings} (final warning:"
+                    f" {max_warnings} (final warning:"
                     f" {reason}) - banned by {interaction.user}"
                 ),
             )
@@ -560,7 +548,9 @@ class ProtectCommands(cogs.BaseCog):
         try:
             await target.send(embed=embed)
         except (discord.HTTPException, discord.Forbidden):
-            channel = config.get("logging_channel")
+            channel = configuration.get_config_entry(
+                interaction.guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message=f"Failed to DM warning to {target}",
                 level=LogLevel.WARNING,
@@ -750,7 +740,6 @@ class ProtectCommands(cogs.BaseCog):
         Returns:
             str: The rejection string, if one exists. Otherwise, None is returned
         """
-        config = self.bot.guild_configs[str(invoker.guild.id)]
         # Check to see if executed on author
         if invoker == target:
             return f"You cannot {action_name} yourself"
@@ -765,7 +754,9 @@ class ProtectCommands(cogs.BaseCog):
 
         # Check to see if target has any immune roles
         try:
-            for name in config.extensions.moderator.immune_roles.value:
+            for name in configuration.get_config_entry(
+                target.guild.id, "moderator_immune_roles"
+            ):
                 role_check = discord.utils.get(target.guild.roles, name=name)
                 if role_check and role_check in getattr(target, "roles", []):
                     return (

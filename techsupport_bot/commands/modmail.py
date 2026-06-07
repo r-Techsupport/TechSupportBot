@@ -18,26 +18,23 @@ import re
 from datetime import datetime
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import expiringdict
-import munch
 import ui
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord.ext import commands
 
 if TYPE_CHECKING:
     import bot
 
 
-async def has_modmail_management_role(
-    ctx: commands.Context, config: munch.Munch = None
-) -> bool:
+async def has_modmail_management_role(ctx: commands.Context | discord.Message) -> bool:
     """-COMMAND CHECK-
     Checks if the invoker has a modmail management role
 
     Args:
-        ctx (commands.Context): Context used for getting the config file
-        config (munch.Munch): Can be defined manually to run this without providing actual ctx
+        ctx (commands.Context | discord.Message): Context used for getting the config file
 
     Raises:
         CommandError: No modmail management roles were assigned in the config
@@ -48,10 +45,10 @@ async def has_modmail_management_role(
     """
     # Only running this line of code if config isn't manually defined allows the use of
     # a discord.Message object in place of ctx
-    if not config:
-        config = ctx.bot.guild_configs[str(ctx.guild.id)]
     user_roles = getattr(ctx.author, "roles", [])
-    unparsed_roles = config.extensions.modmail.modmail_roles.value
+    unparsed_roles = configuration.get_config_entry(
+        ctx.guild.id, "modmail_modmail_roles"
+    )
     modmail_roles = []
 
     if not unparsed_roles:
@@ -62,7 +59,9 @@ async def has_modmail_management_role(
 
     # Two for loops are needed, because an array containing all modmail roles is needed for
     # the error thrown when the user doesn't have any relevant roles.
-    for role_id in config.extensions.modmail.modmail_roles.value:
+    for role_id in configuration.get_config_entry(
+        ctx.guild.id, "modmail_modmail_roles"
+    ):
         role = discord.utils.get(ctx.guild.roles, id=int(role_id))
 
         if not role:
@@ -302,9 +301,6 @@ async def handle_dm(message: discord.Message, guild_id: int, forum_id: int) -> N
             )
         )
         return
-
-    config = Ts_client.guild_configs[str(guild_id)]
-
     # The user already has an open thread
     if message.author.id in active_threads:
         thread = Ts_client.get_channel(active_threads[message.author.id])
@@ -350,7 +346,9 @@ async def handle_dm(message: discord.Message, guild_id: int, forum_id: int) -> N
 
     # - No thread was found, create one -
 
-    auto_rejections = config.extensions.modmail.automatic_rejections.value
+    auto_rejections = configuration.get_config_entry(
+        guild_id, "modmail_automatic_rejections"
+    )
     for regex in auto_rejections:
         if re.match(regex, message.content):
             await auxiliary.send_deny_embed(
@@ -370,7 +368,9 @@ async def handle_dm(message: discord.Message, guild_id: int, forum_id: int) -> N
 
     confirmation = ui.Confirm()
     await confirmation.send(
-        message=config.extensions.modmail.thread_creation_message.value,
+        message=configuration.get_config_entry(
+            guild_id, "modmail_thread_creation_message"
+        ),
         channel=message.channel,
         author=message.author,
     )
@@ -426,7 +426,6 @@ async def create_thread(
     Returns:
         bool: Whether the thread was created succesfully
     """
-    config = Ts_client.guild_configs[str(channel.guild.id)]
     # --> CHECKS <--
 
     # These checks can be triggered on both the users and server side using .contact
@@ -506,7 +505,11 @@ async def create_thread(
 
     # Handling for roles to ping, not performed if the func was invoked by the contact command
     role_string = ""
-    roles_to_ping = list(dict.fromkeys(config.extensions.modmail.roles_to_ping.value))
+    roles_to_ping = list(
+        dict.fromkeys(
+            configuration.get_config_entry(channel.guild.id, "modmail_roles_to_ping")
+        )
+    )
     if message and roles_to_ping:
         for role_id in roles_to_ping:
             role_string += f"<@&{role_id}> "
@@ -553,7 +556,9 @@ async def create_thread(
         await message.author.send(embed=embed)
 
         # - Auto responses -
-        automatic_responses = config.extensions.modmail.automatic_responses.value
+        automatic_responses = configuration.get_config_entry(
+            channel.guild.id, "modmail_automatic_responses"
+        )
         for regex in automatic_responses:
             if re.match(regex, message.content):
                 await reply_to_thread(
@@ -842,57 +847,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
         # the most reliable way to ensure the modmail bot or code doesn't run
         raise AttributeError("Modmail was not loaded because it's disabled")
 
-    config = extensionconfig.ExtensionConfig()
-
-    config.add(
-        key="aliases",
-        datatype="dict",
-        title="Aliases for modmail messages",
-        description="Custom modmail commands to send message slices",
-        default={},
-    )
-
-    config.add(
-        key="automatic_responses",
-        datatype="dict",
-        title="Modmail autoresponses",
-        description="If someone sends a message containing a key, sends its value",
-        default={},
-    )
-
-    config.add(
-        key="automatic_rejections",
-        datatype="dict",
-        title="Modmail auto-rejections",
-        description="If someone sends a message matching regex, blocks thread creation",
-        default={},
-    )
-
-    config.add(
-        key="modmail_roles",
-        datatype="list",
-        title="Roles that can access modmail and its commands",
-        description="Roles that can access modmail and its commands",
-        default=[],
-    )
-
-    config.add(
-        key="roles_to_ping",
-        datatype="list",
-        title="Roles to ping on thread creation",
-        description="Roles to ping on thread creation",
-        default=[],
-    )
-
-    config.add(
-        key="thread_creation_message",
-        datatype="str",
-        title="Thread creation message",
-        description="The message sent to the user when confirming a thread creation.",
-        default="Create modmail thread?",
-    )
     await bot.add_cog(Modmail(bot=bot))
-    bot.add_extension_config("modmail", config)
 
 
 class Modmail(cogs.BaseCog):
@@ -959,9 +914,8 @@ class Modmail(cogs.BaseCog):
             return
 
         # Makes sure the person is actually allowed to run modmail commands
-        config = self.bot.guild_configs[str(message.guild.id)]
         try:
-            await has_modmail_management_role(message, config)
+            await has_modmail_management_role(message)
         except commands.MissingAnyRole as e:
             await auxiliary.send_deny_embed(message=f"{e}", channel=message.channel)
             return
@@ -1098,12 +1052,12 @@ class Modmail(cogs.BaseCog):
                     return
 
                 # Checks for restricted and disabled factoids
-                config = self.bot.guild_configs[str(message.guild.id)]
-
                 if factoid.disabled or (
                     factoid.restricted
                     and str(self.modmail_forum.id)
-                    not in config.extensions.factoids.restricted_list.value
+                    not in configuration.get_config_entry(
+                        message.guild.id, "factoids_restricted_list"
+                    )
                 ):
                     return
 
@@ -1115,7 +1069,7 @@ class Modmail(cogs.BaseCog):
                 )
 
         # Checks if the command was an alias
-        aliases = config.extensions.modmail.aliases.value
+        aliases = configuration.get_config_entry(message.guild.id, "modmail_aliases")
 
         for alias in aliases:
             if alias != content.split()[0]:
@@ -1358,11 +1312,8 @@ class Modmail(cogs.BaseCog):
         Args:
             ctx (commands.context): Context of the command execution
         """
-
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-
         # Checks if the command was an alias
-        aliases = config.extensions.modmail.aliases.value
+        aliases = configuration.get_config_entry(ctx.guild.id, "modmail_aliases")
         if not aliases:
             embed = auxiliary.prepare_deny_embed(
                 message="There are no aliases registered for this guild",
@@ -1404,16 +1355,17 @@ class Modmail(cogs.BaseCog):
             return
 
         # Checking against the user to see if they have the roles specified in the config
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         user_roles = getattr(user, "roles", [])
-        unparsed_roles = config.extensions.modmail.modmail_roles.value
+        unparsed_roles = configuration.get_config_entry(
+            ctx.guild.id, "modmail_modmail_roles"
+        )
         modmail_roles = list(dict.fromkeys(unparsed_roles))
 
         # No error has to be thrown if unparsed_roles is None, it's already checked in
         # has_modmail_management_role
 
         # Gets permitted roles
-        for role_id in config.extensions.modmail.modmail_roles.value:
+        for role_id in unparsed_roles:
             modmail_role = discord.utils.get(ctx.guild.roles, id=int(role_id))
             if not modmail_role:
                 continue

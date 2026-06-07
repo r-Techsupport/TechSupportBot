@@ -5,9 +5,9 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
-import munch
-from core import cogs, extensionconfig
+from core import cogs
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -20,28 +20,16 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="channels",
-        datatype="list",
-        title="Honeypot channels",
-        description=("The list of channel ID's that are honeypots"),
-        default=[],
-    )
     await bot.add_cog(HoneyPot(bot=bot, extension_name="honeypot"))
-    bot.add_extension_config("honeypot", config)
 
 
 class HoneyPot(cogs.MatchCog):
     """The pasting module"""
 
-    async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str
-    ) -> bool:
+    async def match(self: Self, ctx: commands.Context, content: str) -> bool:
         """Checks to see if a message was sent in a honeypot channel
 
         Args:
-            config (munch.Munch): The config of the guild to check
             ctx (commands.Context): The context of the original message
             content (str): The string representation of the message
 
@@ -49,13 +37,14 @@ class HoneyPot(cogs.MatchCog):
             bool: Whether the author sent in a honeypot channel
         """
         # If the channel isn't a honeypot, do nothing.
-        if not str(ctx.channel.id) in config.extensions.honeypot.channels.value:
+        if not str(ctx.channel.id) in configuration.get_config_entry(
+            ctx.guild.id, "honeypot_channels"
+        ):
             return False
         return True
 
     async def response(
         self: Self,
-        config: munch.Munch,
         ctx: commands.Context,
         content: str,
         result: bool,
@@ -63,7 +52,6 @@ class HoneyPot(cogs.MatchCog):
         """Handles a honeypot check
 
         Args:
-            config (munch.Munch): The config of the guild where the message was sent
             ctx (commands.Context): The context the message was sent in
             content (str): The string content of the message
             result (bool): What the match() function returned
@@ -72,10 +60,11 @@ class HoneyPot(cogs.MatchCog):
         # This should be replaced with a guild wide purge when discord.py can be updated.
         await ctx.author.ban(delete_message_days=1, reason="triggered honeypot")
         await ctx.guild.unban(ctx.author, reason="triggered honeypot")
-
         # Send an alert in the alert channel, if its configured
         try:
-            alert_channel = ctx.guild.get_channel(int(config.moderation.alert_channel))
+            alert_channel = ctx.guild.get_channel(
+                configuration.get_config_entry(ctx.guild.id, "moderation_alert_channel")
+            )
         except TypeError:
             alert_channel = None
 

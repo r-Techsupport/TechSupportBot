@@ -5,9 +5,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import ui
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -20,37 +21,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="allow_self_assign",
-        datatype="list",
-        title="List of roles allowed to use /role self",
-        description="The list of roles that are allowed to assign themselves roles",
-        default=[],
-    )
-    config.add(
-        key="all_assignable_roles",
-        datatype="list",
-        title="Roles moderators can assign",
-        description="The list of roles by name that moderators can assign to people",
-        default=[],
-    )
-    config.add(
-        key="allow_all_assign",
-        datatype="list",
-        title="List of roles allowed to use /role manage",
-        description="The list of roles that are allowed to assign others roles",
-        default=[],
-    )
-    config.add(
-        key="self_assign_map",
-        datatype="dict",
-        title="Map of all the roles allowed in self assign",
-        description="A map in the format target: [use, use]",
-        default={},
-    )
     await bot.add_cog(RoleGiver(bot=bot))
-    bot.add_extension_config("role", config)
 
 
 class RoleGiver(cogs.BaseCog):
@@ -89,14 +60,13 @@ class RoleGiver(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that called this command
         """
-        # Pull config
-        config = self.bot.guild_configs[str(interaction.guild.id)]
-
         # Interaction user roles
         current_roles = getattr(interaction.user, "roles", [])
 
         # Get the roles map
-        roles_map = config.extensions.role.self_assign_map.value
+        roles_map = configuration.get_config_entry(
+            interaction.guild.id, "role_self_assign_map"
+        )
 
         allowed_roles_list = []
 
@@ -118,7 +88,9 @@ class RoleGiver(cogs.BaseCog):
             return
 
         # Get needed config items
-        allowed_to_execute = config.extensions.role.allow_self_assign.value
+        allowed_to_execute = configuration.get_config_entry(
+            interaction.guild.id, "role_allow_self_assign"
+        )
 
         # Call the base function
         await self.role_command_base(
@@ -151,12 +123,13 @@ class RoleGiver(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that triggered this
             member (discord.Member): The member to modify roles of
         """
-        # Pull config
-        config = self.bot.guild_configs[str(interaction.guild.id)]
-
         # Get needed config items
-        roles = config.extensions.role.all_assignable_roles.value
-        allowed_to_execute = config.extensions.role.allow_all_assign.value
+        roles = configuration.get_config_entry(
+            interaction.guild.id, "role_all_assignable_roles"
+        )
+        allowed_to_execute = configuration.get_config_entry(
+            interaction.guild.id, "role_allow_all_assign"
+        )
 
         # Call the base function
         await self.role_command_base(interaction, roles, allowed_to_execute, member)
