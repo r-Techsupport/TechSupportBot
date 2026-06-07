@@ -64,7 +64,10 @@ class Whois(cogs.BaseCog):
         )
         embed.add_field(name="Nickname", value=member.display_name)
 
-        role_string = ", ".join(role.name for role in member.roles[1:])
+        role_list = member.roles[1:]
+        role_list.reverse()
+
+        role_string = ", ".join(role.mention for role in role_list)
         embed.add_field(name="Roles", value=role_string or "No roles")
 
         enabled_extensions = configuration.get_config_entry(
