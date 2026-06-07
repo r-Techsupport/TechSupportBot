@@ -46,7 +46,7 @@ def get_mapped_channel_object(
     Will return none if the channel doesn't exist in the config
 
     Args:
-        config (munch.Munch): The guild config where the src_channel is
+        guildd (discord.Guild): The guild where the src_channel is
         src_channel (int): The ID of the source channel
 
     Returns:
@@ -77,7 +77,6 @@ async def pre_log_checks(
 
     Args:
         bot (bot.TechSupportBot): The bot object
-        config (munch.Munch): The config in the guild where the src channel is
         src_channel (discord.abc.GuildChannel | discord.Thread): The src channel object
 
     Returns:
@@ -312,7 +311,6 @@ async def build_attachments(
 
     Args:
         bot (bot.TechSupportBot): the bot object
-        config (munch.Munch): The config from the guild
         message (discord.Message): The message object to log
 
     Returns:

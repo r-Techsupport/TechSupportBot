@@ -412,7 +412,6 @@ async def run_all_checks(message: discord.Message) -> list[AutoModPunishment]:
     handle_regex_string
 
     Args:
-        config (munch.Munch): The guild config to check with
         message (discord.Message): The message object to use to search
 
     Returns:
@@ -437,7 +436,7 @@ def run_only_string_checks(
     handle_regex_string
 
     Args:
-        config (munch.Munch): The guild config to check with
+        guild (discord.Guild): The guild the message was sent in
         content (str): The content of the message to search
 
     Returns:

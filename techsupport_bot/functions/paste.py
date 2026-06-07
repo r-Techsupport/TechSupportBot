@@ -140,7 +140,6 @@ class Paster(cogs.MatchCog):
         """Moves message into a linx paste if it's too long
 
         Args:
-            config (munch.Munch): The guild config where the too long message was sent
             ctx (commands.Context): The context where the original message was sent
             content (str): The string content of the flagged message
         """

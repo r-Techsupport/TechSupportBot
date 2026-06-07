@@ -712,7 +712,7 @@ class Voting(cogs.LoopCog):
 
         Args:
             vote (munch.Munch): The vote that has ended and needs an embed
-            config (munch.Munch): The guild config for the guild
+            guild (discord.Guild): The guild this vote is in
 
         Returns:
             discord.Embed: The embed in a ready to send state
