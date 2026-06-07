@@ -110,6 +110,10 @@
     "core_logging_channel": {
         "datatype": "discord.TextChannel",
         "description": "This is the bot events logging channel"
+    },
+    "modmail_modmail_roles": {
+        "datatype": "list[discord.Role]",
+        "description": "Roles that can access modmail and its commands"
     }
 
 

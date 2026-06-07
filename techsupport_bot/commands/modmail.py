@@ -18,6 +18,7 @@ import re
 from datetime import datetime
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import expiringdict
 import munch
@@ -29,15 +30,12 @@ if TYPE_CHECKING:
     import bot
 
 
-async def has_modmail_management_role(
-    ctx: commands.Context, config: munch.Munch = None
-) -> bool:
+async def has_modmail_management_role(ctx: commands.Context | discord.Message) -> bool:
     """-COMMAND CHECK-
     Checks if the invoker has a modmail management role
 
     Args:
-        ctx (commands.Context): Context used for getting the config file
-        config (munch.Munch): Can be defined manually to run this without providing actual ctx
+        ctx (commands.Context | discord.Message): Context used for getting the config file
 
     Raises:
         CommandError: No modmail management roles were assigned in the config
@@ -48,10 +46,10 @@ async def has_modmail_management_role(
     """
     # Only running this line of code if config isn't manually defined allows the use of
     # a discord.Message object in place of ctx
-    if not config:
-        config = ctx.bot.guild_configs[str(ctx.guild.id)]
     user_roles = getattr(ctx.author, "roles", [])
-    unparsed_roles = config.extensions.modmail.modmail_roles.value
+    unparsed_roles = configuration.get_config_entry(
+        ctx.guild.id, "modmail_modmail_roles"
+    )
     modmail_roles = []
 
     if not unparsed_roles:
@@ -62,7 +60,9 @@ async def has_modmail_management_role(
 
     # Two for loops are needed, because an array containing all modmail roles is needed for
     # the error thrown when the user doesn't have any relevant roles.
-    for role_id in config.extensions.modmail.modmail_roles.value:
+    for role_id in configuration.get_config_entry(
+        ctx.guild.id, "modmail_modmail_roles"
+    ):
         role = discord.utils.get(ctx.guild.roles, id=int(role_id))
 
         if not role:
@@ -961,7 +961,7 @@ class Modmail(cogs.BaseCog):
         # Makes sure the person is actually allowed to run modmail commands
         config = self.bot.guild_configs[str(message.guild.id)]
         try:
-            await has_modmail_management_role(message, config)
+            await has_modmail_management_role(message)
         except commands.MissingAnyRole as e:
             await auxiliary.send_deny_embed(message=f"{e}", channel=message.channel)
             return
