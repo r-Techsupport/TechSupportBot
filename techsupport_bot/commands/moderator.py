@@ -640,6 +640,9 @@ class ProtectCommands(cogs.BaseCog):
         Returns:
             list[app_commands.Choice[str]]: The list of options proposed to the user
         """
+        if not interaction.permissions.kick_members:
+            return []
+
         target = interaction.namespace.target
 
         if target is None:
