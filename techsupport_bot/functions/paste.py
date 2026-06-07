@@ -66,19 +66,17 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Paster(cogs.MatchCog):
     """The pasting module"""
 
-    async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str
-    ) -> bool:
+    async def match(self: Self, ctx: commands.Context, content: str) -> bool:
         """Checks to see if a message should be considered for a paste
 
         Args:
-            config (munch.Munch): The config of the guild to check
             ctx (commands.Context): The context of the original message
             content (str): The string representation of the message
 
         Returns:
             bool: Whether the message should be inspected for a paste
         """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         # exit the match based on exclusion parameters
         if not str(ctx.channel.id) in config.extensions.paste.channels.value:
             await self.bot.logger.send_log(
@@ -100,7 +98,6 @@ class Paster(cogs.MatchCog):
 
     async def response(
         self: Self,
-        config: munch.Munch,
         ctx: commands.Context,
         content: str,
         result: bool,
@@ -108,11 +105,11 @@ class Paster(cogs.MatchCog):
         """Handles a paste check
 
         Args:
-            config (munch.Munch): The config of the guild where the message was sent
             ctx (commands.Context): The context the message was sent in
             content (str): The string content of the message
             result (bool): What the match() function returned
         """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         if len(content) > config.extensions.paste.length_limit.value or content.count(
             "\n"
         ) > self.max_newlines(config.extensions.paste.length_limit.value):
@@ -151,7 +148,7 @@ class Paster(cogs.MatchCog):
             return
 
         config = self.bot.guild_configs[str(guild.id)]
-        if not self.extension_enabled(config):
+        if not self.extension_enabled(guild):
             return
 
         channel = self.bot.get_channel(payload.channel_id)

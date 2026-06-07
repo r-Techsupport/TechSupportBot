@@ -311,7 +311,7 @@ class Notes(cogs.BaseCog):
             member (discord.Member): The member who has just joined
         """
         config = self.bot.guild_configs[str(member.guild.id)]
-        if not self.extension_enabled(config):
+        if not self.extension_enabled(member.guild):
             return
 
         role = discord.utils.get(

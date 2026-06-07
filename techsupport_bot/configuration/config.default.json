@@ -24,5 +24,6 @@
     "duck_use_category": false,
     "dumpdbg_roles": [],
     "embed_embed_roles": [],
-    "core_enabled_extensions": ["config", "extension"]
+    "core_enabled_extensions": ["config", "extension"],
+    "core_logging_channel": ""
 }

@@ -779,23 +779,22 @@ class FactoidManager(cogs.MatchCog):
         return True
 
     # -- Getting and responding with a factoid --
-    async def match(
-        self: Self, config: munch.Munch, _: commands.Context, message_contents: str
-    ) -> bool:
+    async def match(self: Self, ctx: commands.Context, message_contents: str) -> bool:
         """Checks if a message started with the prefix from the config
 
         Args:
-            config (munch.Munch): The config to get the prefix from
             message_contents (str): The message to check
 
         Returns:
             bool: Whether the message starts with the prefix or not
         """
+        if not ctx.guild:
+            return
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         return message_contents.startswith(config.extensions.factoids.prefix.value)
 
     async def response(
         self: Self,
-        config: munch.Munch,
         ctx: commands.Context,
         message_content: str,
         _: bool,
@@ -803,7 +802,6 @@ class FactoidManager(cogs.MatchCog):
         """Responds to a factoid call
 
         Args:
-            config (munch.Munch): The server config
             ctx (commands.Context): Context of the call
             message_content (str): Content of the call
 
@@ -815,6 +813,7 @@ class FactoidManager(cogs.MatchCog):
             return
         # Checks if the first word of the content after the prefix is a valid factoid
         # Replaces \n with spaces so factoid can be called even with newlines
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         prefix = config.extensions.factoids.prefix.value
         query = message_content[len(prefix) :].replace("\n", " ").split(" ")[0].lower()
         try:

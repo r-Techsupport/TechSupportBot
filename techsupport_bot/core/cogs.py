@@ -75,7 +75,7 @@ class BaseCog(commands.Cog):
     async def preconfig(self: Self) -> None:
         """Preconfigures the environment before starting the cog."""
 
-    def extension_enabled(self: Self, config: munch.Munch) -> bool:
+    def extension_enabled(self: Self, guild: discord.Guild) -> bool:
         """Checks if an extension is currently enabled for a given config.
 
         Args:
@@ -85,9 +85,9 @@ class BaseCog(commands.Cog):
             bool: True if the extension is enabled for the context
                 False if it isn't
         """
-        if config is None:
-            config = {}
-        if self.no_guild or self.extension_name in config.get("enabled_extensions", []):
+        if self.no_guild or self.extension_name in configuration.get_config_entry(
+            guild.id, "core_enabled_extensions"
+        ):
             return True
         return False
 
@@ -116,11 +116,7 @@ class MatchCog(BaseCog):
 
         ctx = await self.bot.get_context(message)
 
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-        if not config:
-            return
-
-        if not self.extension_enabled(config):
+        if not self.extension_enabled(message.guild):
             return
 
         if (
@@ -129,20 +125,21 @@ class MatchCog(BaseCog):
         ):
             message.content = message.message_snapshots[0].content
 
-        result = await self.match(config, ctx, message.content)
+        result = await self.match(ctx, message.content)
         if not result:
             return
 
         try:
-            await self.response(config, ctx, message.content, result)
+            await self.response(ctx, message.content, result)
         except Exception as exception:
             await self.bot.logger.send_log(
                 message="Checking config for log channel",
                 level=LogLevel.DEBUG,
                 context=LogContext(guild=ctx.guild, channel=ctx.channel),
             )
-            config = self.bot.guild_configs[str(ctx.guild.id)]
-            bot_logging_channel = config.get("logging_channel")
+            bot_logging_channel = configuration.get_config_entry(
+                message.guild, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message=f"Match cog error: {self.__class__.__name__} {exception}!",
                 level=LogLevel.ERROR,
@@ -151,13 +148,10 @@ class MatchCog(BaseCog):
                 exception=exception,
             )
 
-    async def match(
-        self: Self, _config: munch.Munch, _ctx: commands.Context, _content: str
-    ) -> bool:
+    async def match(self: Self, _ctx: commands.Context, _content: str) -> bool:
         """Runs a boolean check on message content.
 
         Args:
-            _config (munch.Munch): the config associated with the context
             _ctx (commands.Context): the context object
             _content (str): the message content
 
@@ -169,7 +163,6 @@ class MatchCog(BaseCog):
 
     async def response(
         self: Self,
-        _config: munch.Munch,
         _ctx: commands.Context,
         _content: str,
         _result: bool,
@@ -177,7 +170,6 @@ class MatchCog(BaseCog):
         """Performs a response if the match is valid.
 
         Args:
-            _config (munch.Munch): the config associated with the context
             _ctx (commands.Context): the context object
             _content (str): the message content
             _result (bool): the boolean result from match()

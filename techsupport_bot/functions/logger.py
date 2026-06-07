@@ -121,33 +121,29 @@ async def pre_log_checks(
 class Logger(cogs.MatchCog):
     """Class for the logger to make it to discord."""
 
-    async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, _: str
-    ) -> bool:
+    async def match(self: Self, ctx: commands.Context, _: str) -> bool:
         """Matches any message and checks if it is in a channel with a logger rule
 
         Args:
-            config (munch.Munch): The config for the guild where the message was sent
             ctx (commands.Context): The context of the original message
 
         Returns:
             bool: Whether the message should be logged or not
         """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         channel_id = get_channel_id(ctx.channel)
         if not str(channel_id) in config.extensions.logger.channel_map.value:
             return False
 
         return True
 
-    async def response(
-        self: Self, config: munch.Munch, ctx: commands.Context, _: str, __: bool
-    ) -> None:
+    async def response(self: Self, ctx: commands.Context, _: str, __: bool) -> None:
         """If a message should be logged, this logs the message
 
         Args:
-            config (munch.Munch): The guild config where the message was sent
             ctx (commands.Context): The context that was generated when the message was sent
         """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         target_logging_channel = await pre_log_checks(self.bot, config, ctx.channel)
 
         await send_message(

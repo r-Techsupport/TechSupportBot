@@ -79,31 +79,28 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class ServerGate(cogs.MatchCog):
     """Class to get the server gate from config."""
 
-    async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, _: str
-    ) -> bool:
+    async def match(self: Self, ctx: commands.Context, _: str) -> bool:
         """Matches any message and checks if it is in the gate channel
 
         Args:
-            config (munch.Munch): The config for the guild where the message was sent
             ctx (commands.Context): The context of the original message
 
         Returns:
             bool: Whether the message should be subject to the gate policy or not
         """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         if not config.extensions.gate.channel.value:
             return False
 
         return ctx.channel.id == int(config.extensions.gate.channel.value)
 
     async def response(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str, _: bool
+        self: Self, ctx: commands.Context, content: str, _: bool
     ) -> None:
         """Prepares a response to the gate policy,
             deleting the message and assigning roles if needed
 
         Args:
-            config (munch.Munch): The config of the guild with the gate
             ctx (commands.Context): The context of the message that triggered the gate
             content (str): The string contents of the message from the gate channel
         """
@@ -113,6 +110,8 @@ class ServerGate(cogs.MatchCog):
             return
 
         await ctx.message.delete()
+
+        config = self.bot.guild_configs[str(ctx.guild.id)]
 
         if content.lower() == config.extensions.gate.verify_text.value:
             roles = await self.get_roles(config, ctx)

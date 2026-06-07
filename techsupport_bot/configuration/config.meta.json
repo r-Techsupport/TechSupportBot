@@ -106,6 +106,10 @@
     "core_enabled_extensions": {
         "datatype": "list[str]",
         "description": "A list of all extensions enabled in the guild"
+    },
+    "core_logging_channel": {
+        "datatype": "discord.TextChannel",
+        "description": "This is the bot events logging channel"
     }
 
 

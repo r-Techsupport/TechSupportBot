@@ -25,13 +25,10 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class AutoReact(cogs.MatchCog):
     """Class for the autoreact to make it to discord."""
 
-    async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str
-    ) -> bool:
+    async def match(self: Self, ctx: commands.Context, content: str) -> bool:
         """A match function to determine if somehting should be reacted to
 
         Args:
-            config (munch.Munch): The guild config for the running bot
             content (str): The string content of the message
 
         Returns:
@@ -45,12 +42,11 @@ class AutoReact(cogs.MatchCog):
         return False
 
     async def response(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str, _: bool
+        self: Self, ctx: commands.Context, content: str, _: bool
     ) -> None:
         """The function to generate and add reactions
 
         Args:
-            config (munch.Munch): The guild config for the running bot
             ctx (commands.Context): The context in which the message was sent in
             content (str): The string content of the message
         """

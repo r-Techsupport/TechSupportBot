@@ -59,18 +59,16 @@ class LevelXP(cogs.MatchCog):
             max_age_seconds=60,
         )
 
-    async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, _: str
-    ) -> bool:
+    async def match(self: Self, ctx: commands.Context, _: str) -> bool:
         """Checks a given message to determine if XP should be applied
 
         Args:
-            config (munch.Munch): The guild config for the running bot
             ctx (commands.Context): The context that the original message was sent in
 
         Returns:
             bool: True if XP should be granted, False if it shouldn't be.
         """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         # Ignore all bot messages
         if ctx.message.author.bot:
             return False
@@ -117,16 +115,16 @@ class LevelXP(cogs.MatchCog):
         return True
 
     async def response(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str, _: bool
+        self: Self, ctx: commands.Context, content: str, _: bool
     ) -> None:
         """Updates XP for the given user.
         Message has already been validated when you reach this function.
 
         Args:
-            config (munch.Munch): The guild config for the running bot
             ctx (commands.Context): The context in which the message was sent in
             content (str): The string content of the message
         """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         current_XP = await get_current_XP(self.bot, ctx.author, ctx.guild)
         new_XP = random.randint(10, 20)
 

@@ -63,13 +63,10 @@ class DiscordToIRC(cogs.MatchCog):
                 irc_discord_map.discord_channel_id, irc_discord_map.irc_channel_id
             )
 
-    async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str
-    ) -> str:
+    async def match(self: Self, ctx: commands.Context, content: str) -> str:
         """Checks to see if the message should be sent to discord
 
         Args:
-            config (munch.Munch): The config of the guild where the message was sent
             ctx (commands.Context): The context the message was sent in
             content (str): The string content of the message
 
@@ -98,7 +95,6 @@ class DiscordToIRC(cogs.MatchCog):
 
     async def response(
         self: Self,
-        config: munch.Munch,
         ctx: commands.Context,
         content: str,
         result: str,
@@ -106,7 +102,6 @@ class DiscordToIRC(cogs.MatchCog):
         """Send the message to IRC
 
         Args:
-            config (munch.Munch): The config of the guild where the message was sent
             ctx (commands.Context): The context the message was sent in
             content (str): The string content of the message
             result (str): The string representation of the IRC channel

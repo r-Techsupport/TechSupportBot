@@ -148,19 +148,17 @@ class AutoMod(cogs.MatchCog):
     """Holds all of the discord message specific automod functions
     Most of the automod is a class function"""
 
-    async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str
-    ) -> bool:
+    async def match(self: Self, ctx: commands.Context, content: str) -> bool:
         """Checks to see if a message should be considered for automod violations
 
         Args:
-            config (munch.Munch): The config of the guild to check
             ctx (commands.Context): The context of the original message
             content (str): The string representation of the message
 
         Returns:
             bool: Whether the message should be inspected for automod violations
         """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         if not str(ctx.channel.id) in config.extensions.automod.channels.value:
             await self.bot.logger.send_log(
                 message="Channel not in automod channels - ignoring automod check",
@@ -181,7 +179,6 @@ class AutoMod(cogs.MatchCog):
 
     async def response(
         self: Self,
-        config: munch.Munch,
         ctx: commands.Context,
         content: str,
         result: bool,
@@ -189,11 +186,11 @@ class AutoMod(cogs.MatchCog):
         """Handles a discord automod violation
 
         Args:
-            config (munch.Munch): The config of the guild where the message was sent
             ctx (commands.Context): The context the message was sent in
             content (str): The string content of the message
             result (bool): What the match() function returned
         """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
 
         # If user outranks bot, do nothing
         if ctx.message.author.top_role >= ctx.channel.guild.me.top_role:
@@ -323,7 +320,7 @@ class AutoMod(cogs.MatchCog):
             return
 
         config = self.bot.guild_configs[str(guild.id)]
-        if not self.extension_enabled(config):
+        if not self.extension_enabled(guild):
             return
 
         channel = self.bot.get_channel(payload.channel_id)

@@ -83,9 +83,7 @@ class AutoNickName(cogs.MatchCog):
     The class that holds the listener and functions to auto change peoples nicknames
     """
 
-    async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str
-    ) -> bool:
+    async def match(self: Self, ctx: commands.Context, content: str) -> bool:
         """On every message, check if the authors nickname should be changed
 
         Args:
@@ -105,7 +103,6 @@ class AutoNickName(cogs.MatchCog):
 
     async def response(
         self: Self,
-        config: munch.Munch,
         ctx: commands.Context,
         content: str,
         result: bool,
@@ -113,11 +110,11 @@ class AutoNickName(cogs.MatchCog):
         """Changes the nickname of a given user, on message
 
         Args:
-            config (munch.Munch): The guild config
             ctx (commands.Context): The context that sent the message
             content (str): The content of the message
             result (bool): The return value of the match function
         """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         # If user outranks bot, do nothing
         if ctx.message.author.top_role >= ctx.channel.guild.me.top_role:
             return

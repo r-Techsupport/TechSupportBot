@@ -216,7 +216,7 @@ class BanLogger(cogs.BaseCog):
         )
 
         config = self.bot.guild_configs[str(guild.id)]
-        if not self.extension_enabled(config):
+        if not self.extension_enabled(guild):
             return
 
         entry = None
@@ -252,7 +252,7 @@ class BanLogger(cogs.BaseCog):
         )
 
         config = self.bot.guild_configs[str(guild.id)]
-        if not self.extension_enabled(config):
+        if not self.extension_enabled(guild):
             return
 
         entry = None

@@ -35,19 +35,17 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class HoneyPot(cogs.MatchCog):
     """The pasting module"""
 
-    async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str
-    ) -> bool:
+    async def match(self: Self, ctx: commands.Context, content: str) -> bool:
         """Checks to see if a message was sent in a honeypot channel
 
         Args:
-            config (munch.Munch): The config of the guild to check
             ctx (commands.Context): The context of the original message
             content (str): The string representation of the message
 
         Returns:
             bool: Whether the author sent in a honeypot channel
         """
+        config = self.bot.guild_configs[str(ctx.guild.id)]
         # If the channel isn't a honeypot, do nothing.
         if not str(ctx.channel.id) in config.extensions.honeypot.channels.value:
             return False
@@ -55,7 +53,6 @@ class HoneyPot(cogs.MatchCog):
 
     async def response(
         self: Self,
-        config: munch.Munch,
         ctx: commands.Context,
         content: str,
         result: bool,
@@ -63,7 +60,6 @@ class HoneyPot(cogs.MatchCog):
         """Handles a honeypot check
 
         Args:
-            config (munch.Munch): The config of the guild where the message was sent
             ctx (commands.Context): The context the message was sent in
             content (str): The string content of the message
             result (bool): What the match() function returned
@@ -72,6 +68,8 @@ class HoneyPot(cogs.MatchCog):
         # This should be replaced with a guild wide purge when discord.py can be updated.
         await ctx.author.ban(delete_message_days=1, reason="triggered honeypot")
         await ctx.guild.unban(ctx.author, reason="triggered honeypot")
+
+        config = self.bot.guild_configs[str(ctx.guild.id)]
 
         # Send an alert in the alert channel, if its configured
         try:
