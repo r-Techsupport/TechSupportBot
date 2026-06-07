@@ -5,10 +5,10 @@ from __future__ import annotations
 import io
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
-import munch
 from botlogging import LogContext, LogLevel
-from core import cogs, extensionconfig
+from core import cogs
 from discord.ext import commands
 from functions import automod
 
@@ -22,56 +22,16 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="channels",
-        datatype="list",
-        title="Protected channels",
-        description=(
-            "The list of channel ID's associated with the channels to auto-protect"
-        ),
-        default=[],
-    )
-    config.add(
-        key="bypass_roles",
-        datatype="list",
-        title="Bypassed role names",
-        description=(
-            "The list of role names associated with bypassed roles by the auto-protect"
-        ),
-        default=[],
-    )
-    config.add(
-        key="length_limit",
-        datatype="int",
-        title="Max length limit",
-        description=(
-            "The max char limit on messages before they trigger an action by"
-            " auto-protect"
-        ),
-        default=500,
-    )
-    config.add(
-        key="paste_footer_message",
-        datatype="str",
-        title="The linx embed footer",
-        description="The message used on the footer of the large message paste URL",
-        default="Note: Long messages are automatically pasted",
-    )
     await bot.add_cog(Paster(bot=bot, extension_name="paste"))
-    bot.add_extension_config("paste", config)
 
 
 class Paster(cogs.MatchCog):
     """The pasting module"""
 
-    async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str
-    ) -> bool:
+    async def match(self: Self, ctx: commands.Context, content: str) -> bool:
         """Checks to see if a message should be considered for a paste
 
         Args:
-            config (munch.Munch): The config of the guild to check
             ctx (commands.Context): The context of the original message
             content (str): The string representation of the message
 
@@ -79,7 +39,9 @@ class Paster(cogs.MatchCog):
             bool: Whether the message should be inspected for a paste
         """
         # exit the match based on exclusion parameters
-        if not str(ctx.channel.id) in config.extensions.paste.channels.value:
+        if not str(ctx.channel.id) in configuration.get_config_entry(
+            ctx.guild.id, "paste_channels"
+        ):
             await self.bot.logger.send_log(
                 message="Channel not in protected channels - ignoring protect check",
                 level=LogLevel.DEBUG,
@@ -91,7 +53,9 @@ class Paster(cogs.MatchCog):
 
         if any(
             role_name.lower() in role_names
-            for role_name in config.extensions.paste.bypass_roles.value
+            for role_name in configuration.get_config_entry(
+                ctx.guild.id, "paste_bypass_roles"
+            )
         ):
             return False
 
@@ -99,7 +63,6 @@ class Paster(cogs.MatchCog):
 
     async def response(
         self: Self,
-        config: munch.Munch,
         ctx: commands.Context,
         content: str,
         result: bool,
@@ -107,20 +70,24 @@ class Paster(cogs.MatchCog):
         """Handles a paste check
 
         Args:
-            config (munch.Munch): The config of the guild where the message was sent
             ctx (commands.Context): The context the message was sent in
             content (str): The string content of the message
             result (bool): What the match() function returned
         """
-        if len(content) > config.extensions.paste.length_limit.value or content.count(
-            "\n"
-        ) > self.max_newlines(config.extensions.paste.length_limit.value):
-            if "automod" in config.get("enabled_extensions", []):
-                automod_actions = await automod.run_all_checks(config, ctx.message)
+        length_limit = configuration.get_config_entry(
+            ctx.guild.id, "paste_length_limit"
+        )
+        if len(content) > length_limit or content.count("\n") > self.max_newlines(
+            length_limit
+        ):
+            if "automod" in configuration.get_config_entry(
+                ctx.guild.id, "core_enabled_extensions"
+            ):
+                automod_actions = await automod.run_all_checks(ctx.message)
                 automod_final = automod.process_automod_violations(automod_actions)
                 if automod_final and automod_final.delete_message:
                     return
-            await self.paste_message(config, ctx, content)
+            await self.paste_message(ctx, content)
 
     def max_newlines(self: Self, max_length: int) -> int:
         """Gets a theoretical maximum number of new lines in a given message
@@ -147,8 +114,7 @@ class Paster(cogs.MatchCog):
         if not guild:
             return
 
-        config = self.bot.guild_configs[str(guild.id)]
-        if not self.extension_enabled(config):
+        if not self.extension_enabled(guild):
             return
 
         channel = self.bot.get_channel(payload.channel_id)
@@ -164,23 +130,22 @@ class Paster(cogs.MatchCog):
             return
 
         ctx = await self.bot.get_context(message)
-        matched = await self.match(config, ctx, message.content)
+        matched = await self.match(ctx, message.content)
         if not matched:
             return
 
-        await self.response(config, ctx, message.content, None)
+        await self.response(ctx, message.content, None)
 
-    async def paste_message(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str
-    ) -> None:
+    async def paste_message(self: Self, ctx: commands.Context, content: str) -> None:
         """Moves message into a linx paste if it's too long
 
         Args:
-            config (munch.Munch): The guild config where the too long message was sent
             ctx (commands.Context): The context where the original message was sent
             content (str): The string content of the flagged message
         """
-        log_channel = config.get("logging_channel")
+        log_channel = configuration.get_config_entry(
+            ctx.guild.id, "core_logging_channel"
+        )
         if not self.bot.file_config.api.api_url.linx:
             await self.bot.logger.send_log(
                 message=(
@@ -193,7 +158,7 @@ class Paster(cogs.MatchCog):
             )
             return
 
-        linx_embed = await self.create_linx_embed(config, ctx, content)
+        linx_embed = await self.create_linx_embed(ctx, content)
 
         if not linx_embed:
             await self.bot.logger.send_log(
@@ -233,13 +198,12 @@ class Paster(cogs.MatchCog):
             await ctx.message.delete()
 
     async def create_linx_embed(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str
+        self: Self, ctx: commands.Context, content: str
     ) -> discord.Embed | None:
         """This function sends a message to the linx url and puts the result in
         an embed to be sent to the user
 
         Args:
-            config (munch.Munch): The guild config where the message was sent
             ctx (commands.Context): The context that generated the need for a paste
             content (str): The context of the message to be pasted
 
@@ -273,7 +237,11 @@ class Paster(cogs.MatchCog):
         embed.set_author(
             name=f"Paste by {ctx.author}", icon_url=ctx.author.display_avatar.url
         )
-        embed.set_footer(text=config.extensions.paste.paste_footer_message.value)
+        embed.set_footer(
+            text=configuration.get_config_entry(
+                ctx.guild.id, "paste_paste_footer_message"
+            )
+        )
         embed.color = discord.Color.blue()
 
         return embed

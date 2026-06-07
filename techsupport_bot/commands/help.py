@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from itertools import product
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import ui
 from core import auxiliary, cogs
@@ -83,8 +84,9 @@ class Helper(cogs.BaseCog):
 
             # Check if extension is enabled
             extension_name = self.bot.get_command_extension_name(command)
-            config = self.bot.guild_configs[str(ctx.guild.id)]
-            if extension_name not in config.enabled_extensions:
+            if extension_name not in configuration.get_config_entry(
+                ctx.guild.id, "core_enabled_extensions"
+            ):
                 continue
 
             # Deal with aliases by looping through all parent groups and alises
@@ -122,8 +124,9 @@ class Helper(cogs.BaseCog):
 
             # Check if extension is enabled
             extension_name = command.extras["module"]
-            config = self.bot.guild_configs[str(ctx.guild.id)]
-            if extension_name not in config.enabled_extensions:
+            if extension_name not in configuration.get_config_entry(
+                ctx.guild.id, "core_enabled_extensions"
+            ):
                 continue
 
             # We have to manually build a string representation of the usage

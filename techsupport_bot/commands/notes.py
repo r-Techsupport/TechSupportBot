@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import ui
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, extensionconfig, moderation
+from core import auxiliary, cogs, moderation
 from discord import app_commands
 from discord.ext import commands
 
@@ -21,41 +22,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="note_role",
-        datatype="str",
-        title="Note role",
-        description="The name of the role to be added when a note is added to a user",
-        default=None,
-    )
-    config.add(
-        key="note_bypass",
-        datatype="list",
-        title="Note bypass list",
-        description=(
-            "A list of roles that shouldn't have notes set or the note role assigned"
-        ),
-        default=["Moderator"],
-    )
-    config.add(
-        key="note_readers",
-        datatype="list",
-        title="Note Reader Roles",
-        description="Users with roles in this list will be able to use whois",
-        default=[],
-    )
-    config.add(
-        key="note_writers",
-        datatype="list",
-        title="Note Writer Roles",
-        description="Users with roles in this list will be able to create or delete notes",
-        default=[],
-    )
-
     await bot.add_cog(Notes(bot=bot, extension_name="notes"))
-    bot.add_extension_config("notes", config)
 
 
 async def is_reader(interaction: discord.Interaction) -> bool:
@@ -74,8 +41,9 @@ async def is_reader(interaction: discord.Interaction) -> bool:
         bool: True if the user can run, False if they cannot
     """
 
-    config = interaction.client.guild_configs[str(interaction.guild.id)]
-    if reader_roles := config.extensions.notes.note_readers.value:
+    if reader_roles := configuration.get_config_entry(
+        interaction.guild.id, "notes_note_readers"
+    ):
         roles = (
             discord.utils.get(interaction.guild.roles, name=role)
             for role in reader_roles
@@ -106,8 +74,9 @@ async def is_writer(interaction: discord.Interaction) -> bool:
     Returns:
         bool: True if the user can run, False if they cannot
     """
-    config = interaction.client.guild_configs[str(interaction.guild.id)]
-    if writer_roles := config.extensions.notes.note_writers.value:
+    if writer_roles := configuration.get_config_entry(
+        interaction.guild.id, "notes_note_writers"
+    ):
         roles = (
             discord.utils.get(interaction.guild.roles, name=role)
             for role in writer_roles
@@ -171,10 +140,10 @@ class Notes(cogs.BaseCog):
             body=body,
         )
 
-        config = self.bot.guild_configs[str(interaction.guild.id)]
-
         # Check to make sure notes are allowed to be assigned
-        for name in config.extensions.notes.note_bypass.value:
+        for name in configuration.get_config_entry(
+            interaction.guild.id, "notes_note_bypass"
+        ):
             role_check = discord.utils.get(interaction.guild.roles, name=name)
             if not role_check:
                 continue
@@ -189,7 +158,10 @@ class Notes(cogs.BaseCog):
         await note.create()
 
         role = discord.utils.get(
-            interaction.guild.roles, name=config.extensions.notes.note_role.value
+            interaction.guild.roles,
+            name=configuration.get_config_entry(
+                interaction.guild.id, "notes_note_role"
+            ),
         )
 
         if not role:
@@ -259,9 +231,11 @@ class Notes(cogs.BaseCog):
         for note in notes:
             await note.delete()
 
-        config = self.bot.guild_configs[str(interaction.guild.id)]
         role = discord.utils.get(
-            interaction.guild.roles, name=config.extensions.notes.note_role.value
+            interaction.guild.roles,
+            name=configuration.get_config_entry(
+                interaction.guild.id, "notes_note_role"
+            ),
         )
         if role:
             await user.remove_roles(
@@ -310,12 +284,12 @@ class Notes(cogs.BaseCog):
         Args:
             member (discord.Member): The member who has just joined
         """
-        config = self.bot.guild_configs[str(member.guild.id)]
-        if not self.extension_enabled(config):
+        if not self.extension_enabled(member.guild):
             return
 
         role = discord.utils.get(
-            member.guild.roles, name=config.extensions.notes.note_role.value
+            member.guild.roles,
+            name=configuration.get_config_entry(member.guild.id, "notes_note_role"),
         )
         if not role:
             return
@@ -326,7 +300,9 @@ class Notes(cogs.BaseCog):
 
         await member.add_roles(role, reason="Noted user has joined the guild")
 
-        log_channel = config.get("logging_channel")
+        log_channel = configuration.get_config_entry(
+            member.guild.id, "core_logging_channel"
+        )
         await self.bot.logger.send_log(
             message=f"Found noted user with ID {member.id} joining - re-adding role",
             level=LogLevel.INFO,

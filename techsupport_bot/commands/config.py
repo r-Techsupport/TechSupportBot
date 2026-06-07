@@ -7,10 +7,12 @@ import io
 import json
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
+import munch
 import ui
 from core import auxiliary, cogs
-from discord.ext import commands
+from discord import app_commands
 
 if TYPE_CHECKING:
     import bot
@@ -26,230 +28,279 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class ConfigControl(cogs.BaseCog):
-    """Cog object for per-guild config control."""
+    """
+    Cog object for per-guild config control.
 
-    @commands.group(
-        name="config",
-        brief="Issues a config command",
-        description="Issues a config command",
+    Attributes:
+        config_commands (app_commands.Group): The group for the /config commands
+        config_extension_commands (app_commands.Group): The sub-group for /config extension
+    """
+
+    config_commands: app_commands.Group = app_commands.Group(
+        name="config", description="...", extras={"module": "config"}
     )
-    async def config_command(self: Self, ctx: commands.Context) -> None:
-        """The parent config command.
 
-        This is a command and should be accessed via Discord.
-
-        Args:
-            ctx (commands.Context): the context object for the message
-        """
-        return
-
-    @commands.has_permissions(administrator=True)
-    @commands.guild_only()
-    @config_command.command(
-        name="patch",
-        brief="Edits guild config",
-        description="Edits guild config by uploading JSON",
-        usage="|uploaded-json|",
+    config_extension_commands: app_commands.Group = app_commands.Group(
+        name="extension",
+        description="...",
+        extras={"module": "config"},
+        parent=config_commands,
     )
-    async def patch_config(self: Self, ctx: commands.Context) -> None:
-        """Displays the current config to the user.
 
-        This is a command and should be accessed via Discord.
-
-        Args:
-            ctx (commands.Context): the context object for the message
-        """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-
-        uploaded_data = await auxiliary.get_json_from_attachments(ctx.message)
-        if uploaded_data:
-            # server-side check of guild
-            if str(ctx.guild.id) != str(uploaded_data["guild_id"]):
-                await auxiliary.send_deny_embed(
-                    message="This config file is not for this guild",
-                    channel=ctx.channel,
-                )
-                return
-            uploaded_data["guild_id"] = str(ctx.guild.id)
-            config_difference = auxiliary.config_schema_matches(uploaded_data, config)
-            if config_difference:
-                view = ui.Confirm()
-                await view.send(
-                    message=f"Accept {config_difference} changes to the guild config?",
-                    channel=ctx.channel,
-                    author=ctx.author,
-                )
-                await view.wait()
-                if view.value is ui.ConfirmResponse.DENIED:
-                    await auxiliary.send_deny_embed(
-                        message="Config was not changed",
-                        channel=ctx.channel,
-                    )
-                if view.value is not ui.ConfirmResponse.CONFIRMED:
-                    return
-
-            # Modify the database
-            await self.bot.write_new_config(
-                str(ctx.guild.id), json.dumps(uploaded_data)
-            )
-
-            # Modify the local cache
-            self.bot.guild_configs[str(ctx.guild.id)] = uploaded_data
-
-            await auxiliary.send_confirm_embed(
-                message="I've updated that config", channel=ctx.channel
-            )
-            return
-
-        json_config = config.copy()
-
-        json_config.pop("_id", None)
-
-        json_file = discord.File(
-            io.StringIO(json.dumps(json_config, indent=4)),
-            filename=f"{ctx.guild.id}-config-{datetime.datetime.utcnow()}.json",
-        )
-
-        await ctx.send(file=json_file)
-
-    @commands.has_permissions(administrator=True)
-    @commands.guild_only()
-    @config_command.command(
-        name="enable-extension",
-        brief="Enables an extension",
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.guild_only()
+    @config_extension_commands.command(
+        name="enable",
         description="Enables an extension for the guild by name",
-        usage="[extension-name]",
+        extras={"module": "config", "usage": "[extension-name]"},
     )
     async def enable_extension(
-        self: Self, ctx: commands.Context, extension_name: str
+        self: Self, interaction: discord.Interaction, extension_name: str
     ) -> None:
         """Enables an extension for the guild.
 
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (commands.Context): the context object for the message
+            interaction (discord.Interaction): The interaction that called this command
             extension_name (str): the extension subname to enable
         """
-        if not (
-            f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}" in self.bot.extensions
-            or f"{self.bot.FUNCTIONS_DIR_NAME}.{extension_name}" in self.bot.extensions
-        ):
-            await auxiliary.send_deny_embed(
-                message="I could not find that extension, or it's not loaded",
-                channel=ctx.channel,
+        if extension_name not in self.bot.extension_name_list:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"I could not find the extension {extension_name}",
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-        if extension_name in config.enabled_extensions:
-            await auxiliary.send_deny_embed(
-                message="That extension is already enabled for this guild",
-                channel=ctx.channel,
+        extensions_list: list[str] = configuration.get_config_entry(
+            interaction.guild.id, "core_enabled_extensions"
+        )
+        if extension_name in extensions_list:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The extension {extension_name} is already enabled for this guild",
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        config.enabled_extensions.append(extension_name)
-        config.enabled_extensions.sort()
+        extensions_list.append(extension_name)
+        extensions_list.sort()
 
-        # Modify the database
-        await self.bot.write_new_config(str(ctx.guild.id), json.dumps(config))
-
-        # Modify the local cache
-        self.bot.guild_configs[str(ctx.guild.id)] = config
-
-        await auxiliary.send_confirm_embed(
-            message="I've enabled that extension for this guild", channel=ctx.channel
+        configuration.edit_config_entry(
+            interaction.guild.id, "core_enabled_extensions", extensions_list
         )
 
-    @commands.has_permissions(administrator=True)
-    @commands.guild_only()
-    @config_command.command(
-        name="disable-extension",
-        brief="Disables an extension",
+        embed = auxiliary.prepare_confirm_embed(
+            message="I've enabled that extension for this guild"
+        )
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.guild_only()
+    @config_extension_commands.command(
+        name="disable",
         description="Disables an extension for the guild by name",
-        usage="[extension-name]",
+        extras={"module": "config", "usage": "[extension-name]"},
     )
     async def disable_extension(
-        self: Self, ctx: commands.Context, extension_name: str
+        self: Self, interaction: discord.Interaction, extension_name: str
     ) -> None:
         """Disables an extension for the guild.
 
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (commands.Context): the context object for the message
+            interaction (discord.Interaction): The interaction that called this command
             extension_name (str): the extension subname to disable
         """
-        if not (
-            f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}" in self.bot.extensions
-            or f"{self.bot.FUNCTIONS_DIR_NAME}.{extension_name}" in self.bot.extensions
-        ):
-            await auxiliary.send_deny_embed(
-                message="I could not find that extension, or it's not loaded",
-                channel=ctx.channel,
+        if extension_name not in self.bot.extension_name_list:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"I could not find the extension {extension_name}",
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-        if extension_name not in config.enabled_extensions:
-            await auxiliary.send_deny_embed(
-                message="That extension is already disabled for this guild",
-                channel=ctx.channel,
+        extensions_list: list[str] = configuration.get_config_entry(
+            interaction.guild.id, "core_enabled_extensions"
+        )
+        if extension_name not in extensions_list:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The extension {extension_name} is already disabled for this guild",
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        config.enabled_extensions = [
-            extension
-            for extension in config.enabled_extensions
-            if extension != extension_name
-        ]
+        extensions_list.remove(extension_name)
+        extensions_list.sort()
 
-        # Modify the database
-        await self.bot.write_new_config(str(ctx.guild.id), json.dumps(config))
-
-        # Modify the local cache
-        self.bot.guild_configs[str(ctx.guild.id)] = config
-
-        await auxiliary.send_confirm_embed(
-            message="I've disabled that extension for this guild", channel=ctx.channel
+        configuration.edit_config_entry(
+            interaction.guild.id, "core_enabled_extensions", extensions_list
         )
 
-    @commands.has_permissions(administrator=True)
-    @commands.guild_only()
-    @config_command.command(
-        name="reset",
-        brief="Resets current guild config",
-        description="Resets config to default for the current guild",
+        embed = auxiliary.prepare_confirm_embed(
+            message="I've disabled that extension for this guild"
+        )
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.checks.has_permissions(administrator=True)
+    @config_extension_commands.command(
+        name="list-disabled",
+        description="Lists all disabled extensions in the current server",
+        extras={"module": "config"},
     )
-    async def reset_config(self: Self, ctx: commands.Context) -> None:
+    async def list_disabled(self: Self, interaction: discord.Interaction) -> None:
+        """This will read the current guild config and list all the
+        extensions that are currently disabled
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered the slash command
+        """
+        extensions_list: list[str] = configuration.get_config_entry(
+            interaction.guild.id, "core_enabled_extensions"
+        )
+        missing_extensions = [
+            item for item in self.bot.extension_name_list if item not in extensions_list
+        ]
+        missing_extensions.sort()
+        if len(missing_extensions) == 0:
+            embed = auxiliary.prepare_confirm_embed(
+                message="No currently loaded extensions are disabled"
+            )
+        else:
+            embed = auxiliary.prepare_confirm_embed(
+                message=f"Disabled extensions: {missing_extensions}"
+            )
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.checks.has_permissions(administrator=True)
+    @config_extension_commands.command(
+        name="enable-all",
+        description="Enables all loaded but disabled extensions in the guild",
+        extras={"module": "config"},
+    )
+    async def enable_everything(self: Self, interaction: discord.Interaction) -> None:
+        """This will get all the disabled extensions and enable them for the current
+        guild.
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered the slash command
+        """
+        extensions_list: list[str] = configuration.get_config_entry(
+            interaction.guild.id, "core_enabled_extensions"
+        )
+        missing_extensions = [
+            item for item in self.bot.extension_name_list if item not in extensions_list
+        ]
+        if len(missing_extensions) == 0:
+            embed = auxiliary.prepare_confirm_embed(
+                message="No currently loaded extensions are disabled"
+            )
+        else:
+            for extension in missing_extensions:
+                extensions_list.append(extension)
+
+            extensions_list.sort()
+            # Modify the config
+            configuration.edit_config_entry(
+                interaction.guild.id, "core_enabled_extensions", extensions_list
+            )
+
+            embed = auxiliary.prepare_confirm_embed(
+                f"I have enabled {len(missing_extensions)} extension(s) for this guild."
+            )
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.checks.has_permissions(administrator=True)
+    @config_commands.command(
+        name="json",
+        description="This gets the guild config json file and sends it as a response",
+        extras={"module": "config"},
+    )
+    async def config_json(self: Self, interaction: discord.Interaction) -> None:
+        """This pulls the guild json config and send it to the caller
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered the slash command
+        """
+        try:
+            json_config = configuration.get_guild_config_json(interaction.guild.id)
+        except AttributeError:
+            embed = auxiliary.prepare_deny_embed(
+                "This guild has no current configuration"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
+        json_file = discord.File(
+            io.StringIO(json.dumps(json_config, indent=4)),
+            filename=f"{interaction.guild.id}-config-{datetime.datetime.utcnow()}.json",
+        )
+        await interaction.response.send_message(file=json_file)
+
+    @app_commands.checks.has_permissions(administrator=True)
+    @config_commands.command(
+        name="patch",
+        description="Edits guild config by uploading JSON",
+        extras={"module": "config", "usage": "[uploaded-json]"},
+    )
+    async def patch_config(
+        self: Self, interaction: discord.Interaction, config_json: discord.Attachment
+    ) -> None:
+        """Takes the uploaded json file and writes it to disk
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered the slash command
+            config_json (discord.Attachment): The json file of the new guild config
+        """
+        await interaction.response.defer()
+
+        if not config_json.filename.endswith(".json"):
+            embed = auxiliary.prepare_deny_embed(
+                message="I don't recognize your upload as a json file",
+            )
+            await interaction.followup.send(embed=embed)
+            return
+
+        json_bytes: bytes = await config_json.read()
+        json_data: munch.Munch = munch.munchify(json.loads(json_bytes.decode("utf-8")))
+
+        configuration.write_guild_config_json(interaction.guild.id, json_data)
+
+        embed = auxiliary.prepare_confirm_embed("I have updated this guilds config")
+        await interaction.followup.send(embed=embed)
+
+    @app_commands.checks.has_permissions(administrator=True)
+    @config_commands.command(
+        name="reset",
+        description="Resets config to default for the current guild",
+        extras={"module": "config"},
+    )
+    async def reset_config(self: Self, interaction: discord.Interaction) -> None:
         """A function to reset the current guild config to stock
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that triggered the slash command
         """
         view = ui.Confirm()
         await view.send(
-            message=f"Are you sure you want to reset the config for {ctx.guild.name}?",
-            channel=ctx.channel,
-            author=ctx.author,
+            message=f"Are you sure you want to reset the config for {interaction.guild.name}?",
+            author=interaction.user,
+            interaction=interaction,
         )
         await view.wait()
         if view.value == ui.ConfirmResponse.DENIED:
-            await auxiliary.send_deny_embed(
+            embed = auxiliary.prepare_deny_embed(
                 message="The config was not reset",
-                channel=ctx.channel,
             )
+            await view.followup.send(embed=embed)
             return
         if view.value == ui.ConfirmResponse.TIMEOUT:
             return
 
-        # Modify the database
-        await self.bot.write_new_config(str(ctx.guild.id), "false")
+        default_config = configuration.get_default_config_json()
+        default_config.core_guild_id = interaction.guild.id
 
-        # Modify the local cache
-        self.bot.guild_configs[str(ctx.guild.id)] = False
-        await self.bot.create_new_context_config(guild_id=str(ctx.guild.id))
-        await auxiliary.send_confirm_embed(
-            message="I've reset the config for this guild", channel=ctx.channel
+        configuration.write_guild_config_json(interaction.guild.id, default_config)
+
+        embed = auxiliary.prepare_confirm_embed(
+            message="I've reset the config for this guild"
         )
+        view.followup.send(embed=embed)

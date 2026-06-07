@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import irc.client
-import munch
 import ui
 from bidict import bidict
 from core import auxiliary, cogs
@@ -62,13 +62,10 @@ class DiscordToIRC(cogs.MatchCog):
                 irc_discord_map.discord_channel_id, irc_discord_map.irc_channel_id
             )
 
-    async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str
-    ) -> str:
+    async def match(self: Self, ctx: commands.Context, content: str) -> str:
         """Checks to see if the message should be sent to discord
 
         Args:
-            config (munch.Munch): The config of the guild where the message was sent
             ctx (commands.Context): The context the message was sent in
             content (str): The string content of the message
 
@@ -97,7 +94,6 @@ class DiscordToIRC(cogs.MatchCog):
 
     async def response(
         self: Self,
-        config: munch.Munch,
         ctx: commands.Context,
         content: str,
         result: str,
@@ -105,7 +101,6 @@ class DiscordToIRC(cogs.MatchCog):
         """Send the message to IRC
 
         Args:
-            config (munch.Munch): The config of the guild where the message was sent
             ctx (commands.Context): The context the message was sent in
             content (str): The string content of the message
             result (str): The string representation of the IRC channel
@@ -414,10 +409,11 @@ class DiscordToIRC(cogs.MatchCog):
             message=split_message["content"], channel=discord_channel
         )
 
-        config = self.bot.guild_configs[str(discord_channel.guild.id)]
-        if "automod" in config.get("enabled_extensions", []):
+        if "automod" in configuration.get_config_entry(
+            discord_channel.guild.id, "core_enabled_extensions"
+        ):
             automod_actions = automod.run_only_string_checks(
-                config, split_message["content"]
+                discord_channel.guild, split_message["content"]
             )
             automod_final = automod.process_automod_violations(automod_actions)
             if automod_final and automod_final.delete_message:
@@ -432,7 +428,11 @@ class DiscordToIRC(cogs.MatchCog):
                 embed.color = discord.Color.red()
                 try:
                     alert_channel = discord_channel.guild.get_channel(
-                        int(config.extensions.automod.alert_channel.value)
+                        int(
+                            configuration.get_config_entry(
+                                discord_channel.guild.id, "automod_alert_channel"
+                            )
+                        )
                     )
                 except TypeError:
                     alert_channel = None
@@ -450,12 +450,13 @@ class DiscordToIRC(cogs.MatchCog):
 
         sent_message = await discord_channel.send(content=mentions_string, embed=embed)
 
-        config = self.bot.guild_configs[str(discord_channel.guild.id)]
         # Don't allow logging if extension is disabled
-        if "logger" not in config.enabled_extensions:
+        if "logger" not in configuration.get_config_entry(
+            discord_channel.guild.id, "core_enabled_extensions"
+        ):
             return
         target_logging_channel = await function_logger.pre_log_checks(
-            self.bot, config, discord_channel
+            self.bot, discord_channel
         )
         if not target_logging_channel:
             return

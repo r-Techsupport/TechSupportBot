@@ -110,7 +110,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         updated: datetime.datetime = bot.db.Column(
             bot.db.DateTime, default=datetime.datetime.utcnow
         )
-        speed_record: float = bot.db.Column(bot.db.Float, default=80.0)
+        speed_record: float = bot.db.Column(bot.db.Float, default=-1.0)
 
     class Factoid(bot.db.Model):
         """The postgres table for factoids
@@ -268,26 +268,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
         invoker_id = bot.db.Column(bot.db.String)
 
-    class Config(bot.db.Model):
-        """The postgres table for guild config
-        Currently used nearly everywhere
-
-        Attributes:
-            pk (int): The primary key for the database
-            guild_id (str): The ID of the guild this config is for
-            config (str): The config text
-            update_time (datetime.datetime): The time the config was last updated
-        """
-
-        __tablename__ = "guild_config"
-
-        pk: int = bot.db.Column(bot.db.Integer, primary_key=True)
-        guild_id: str = bot.db.Column(bot.db.String)
-        config: str = bot.db.Column(bot.db.String)
-        update_time: datetime.datetime = bot.db.Column(
-            bot.db.DateTime, default=datetime.datetime.utcnow
-        )
-
     class Listener(bot.db.Model):
         """The postgres table for listeners
         Currently used in listen.py
@@ -397,7 +377,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.ModmailBan = ModmailBan
     bot.models.UserNote = UserNote
     bot.models.Warning = Warning
-    bot.models.Config = Config
     bot.models.Listener = Listener
     bot.models.Rule = Rule
     bot.models.Votes = Votes

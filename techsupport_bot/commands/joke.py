@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import munch
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -20,26 +21,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
 
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="blacklisted_filters",
-        datatype="list[str]",
-        title="Enable filter",
-        description=(
-            "Filters all categories listed"
-            "(nsfw,religious,political,racist,sexist,explicit)"
-        ),
-        default=["nsfw", "explicit"],
-    )
-    config.add(
-        key="apply_in_nsfw_channels",
-        datatype="bool",
-        title="Apply in NSFW Channels",
-        description=("Toggles whether or not filters are applies in NSFW channels"),
-        default=False,
-    )
     await bot.add_cog(Joker(bot=bot))
-    bot.add_extension_config("joke", config)
 
 
 class Joker(cogs.BaseCog):
@@ -52,42 +34,40 @@ class Joker(cogs.BaseCog):
 
     API_URL: str = "https://v2.jokeapi.dev/joke/Any"
 
-    async def call_api(
-        self: Self, ctx: commands.Context, config: munch.Munch
-    ) -> munch.Munch:
+    async def call_api(self: Self, ctx: commands.Context) -> munch.Munch:
         """Calls the joke API and returns the raw response
 
         Args:
             ctx (commands.Context): The context in which the joke command was run in
-            config (munch.Munch): The guild config for the guild where the joke command was run
 
         Returns:
             munch.Munch: The reply from the API
         """
-        url = self.build_url(ctx, config)
+        url = self.build_url(ctx)
         response = await self.bot.http_functions.http_call(
             "get", url, get_raw_response=True
         )
         return response
 
-    def build_url(self: Self, ctx: commands.Context, config: munch.Munch) -> str:
+    def build_url(self: Self, ctx: commands.Context) -> str:
         """Builds the API URL based on exclusions of categories
         Will exclude NSFW jokes if the channel isn't NSFW
         Will exclude offensive jokes if the PC jokes config is enabled
 
         Args:
             ctx (commands.Context): The context in which the original joke command was run in
-            config (munch.Munch): The config for the guild where the original command was run
 
         Returns:
             str: The URL, properly formatted and ready to be called
         """
         blacklist_flags = []
         if (
-            config.extensions.joke.apply_in_nsfw_channels.value
+            configuration.get_config_entry(ctx.guild.id, "joke_apply_in_nsfw_channels")
             or not ctx.channel.is_nsfw()
         ):
-            blacklist_flags = config.extensions.joke.blacklisted_filters.value
+            blacklist_flags = configuration.get_config_entry(
+                ctx.guild.id, "joke_blacklisted_filters"
+            )
         blacklists = ",".join(blacklist_flags)
 
         url = f"{self.API_URL}?blacklistFlags={blacklists}&format=txt"
@@ -122,8 +102,7 @@ class Joker(cogs.BaseCog):
         Args:
             ctx (commands.Context): The context in which the command was run in
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-        response = await self.call_api(ctx, config)
+        response = await self.call_api(ctx)
         text = response["text"]
         embed = self.generate_embed(text)
         await ctx.send(embed=embed)

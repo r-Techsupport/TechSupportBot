@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import expiringdict
 import ui
@@ -133,12 +134,13 @@ class ChatGPT(cogs.BaseCog):
         response = await self.call_api(ctx, api_key, prompt)
 
         # -> Response processing <-
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         choices = response.get("choices", [])
         if not choices:
             # Tries to figure out what error happened
             if error := response.get("error", []):
-                channel = config.get("logging_channel")
+                channel = configuration.get_config_entry(
+                    ctx.guild.id, "core_logging_channel"
+                )
                 await self.bot.logger.send_log(
                     message=(
                         "OpenAI API responded with an error! Contents:"

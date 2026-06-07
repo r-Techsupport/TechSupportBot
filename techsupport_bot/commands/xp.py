@@ -5,10 +5,11 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import expiringdict
-import munch
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
+from discord import app_commands
 from discord.ext import commands
 
 if TYPE_CHECKING:
@@ -21,35 +22,20 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="categories_counted",
-        datatype="list",
-        title="List of category IDs to count for XP",
-        description="List of category IDs to count for XP",
-        default=[],
-    )
-    config.add(
-        key="excluded_channels",
-        datatype="list",
-        title="List of channel IDs to exclude for XP",
-        description="List of channel IDs to exclude for XP",
-        default=[],
-    )
-    config.add(
-        key="level_roles",
-        datatype="dict",
-        title="Dict of levels in XP:Role ID.",
-        description="Dict of levels in XP:Role ID",
-        default={},
-    )
-
     await bot.add_cog(LevelXP(bot=bot, extension_name="xp"))
-    bot.add_extension_config("xp", config)
 
 
 class LevelXP(cogs.MatchCog):
-    """Class for the LevelXP to make it to discord."""
+    """Class for the LevelXP to make it to discord.
+
+    Attributes:
+        xp (app_commands.Group): The group for the /xp commands
+
+    """
+
+    xp: app_commands.Group = app_commands.Group(
+        name="xp", description="Command Group for the XP Extension"
+    )
 
     async def preconfig(self: Self) -> None:
         """Sets up the dict"""
@@ -58,13 +44,65 @@ class LevelXP(cogs.MatchCog):
             max_age_seconds=60,
         )
 
-    async def match(
-        self: Self, config: munch.Munch, ctx: commands.Context, _: str
-    ) -> bool:
+    @xp.command(
+        name="top",
+        description="Shows the top 10 XP users in the server",
+        extras={
+            "usage": "",
+            "module": "xp",
+        },
+    )
+    async def top_xp_command(self: Self, interaction: discord.Interaction) -> None:
+        """This command will display an embed of the top 10 users with XP
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+        """
+        await interaction.response.defer()
+
+        top_xp = (
+            await self.bot.models.XP.query.order_by(-self.bot.models.XP.xp)
+            .where(self.bot.models.XP.xp > 0)
+            .where(self.bot.models.XP.guild_id == str(interaction.guild.id))
+            .gino.all()
+        )[:10]
+
+        if not top_xp:
+            embed = auxiliary.prepare_deny_embed(
+                "No users currently have XP in this guild"
+            )
+            await interaction.followup.send(embed=embed)
+            return
+
+        embed = discord.Embed(title=f"Top {len(top_xp)} users in this server:")
+        description = ""
+        index = 1
+        for database_entry in top_xp:
+            # 1 - DisplayName (username), @XP, xp
+            xp_user: discord.Member = await interaction.guild.fetch_member(
+                database_entry.user_id
+            )
+            user_str = f"Unkown user ({database_entry.user_id})"
+            xp_role_str = "No role yet"
+
+            if xp_user:
+                user_str = f"{xp_user.mention} ({xp_user.name})"
+                xp_role = await get_current_XP_role(self.bot, xp_user)
+                if xp_role:
+                    xp_role_str = xp_role.mention
+
+            description += f"{index} - {user_str}, {xp_role_str}, {database_entry.xp}\n"
+            index += 1
+
+        embed.description = description
+        embed.color = discord.Color.dark_gold()
+
+        await interaction.followup.send(embed=embed)
+
+    async def match(self: Self, ctx: commands.Context, _: str) -> bool:
         """Checks a given message to determine if XP should be applied
 
         Args:
-            config (munch.Munch): The guild config for the running bot
             ctx (commands.Context): The context that the original message was sent in
 
         Returns:
@@ -79,11 +117,15 @@ class LevelXP(cogs.MatchCog):
             return False
 
         # Ignore messages outside of tracked categories
-        if ctx.channel.category_id not in config.extensions.xp.categories_counted.value:
+        if ctx.channel.category_id not in configuration.get_config_entry(
+            ctx.guild.id, "xp_categories_counted"
+        ):
             return False
 
         # Ignore messages in exlucded channels
-        if ctx.channel.id in config.extensions.xp.excluded_channels.value:
+        if ctx.channel.id in configuration.get_config_entry(
+            ctx.guild.id, "xp_excluded_channels"
+        ):
             return False
 
         # Ignore messages that are too short
@@ -97,8 +139,12 @@ class LevelXP(cogs.MatchCog):
             return False
 
         # Ignore messages that are factoid calls
-        if "factoids" in config.enabled_extensions:
-            factoid_prefix = config.extensions.factoids.prefix.value
+        if "factoids" in configuration.get_config_entry(
+            ctx.guild.id, "core_enabled_extensions"
+        ):
+            factoid_prefix = configuration.get_config_entry(
+                ctx.guild.id, "factoids_prefix"
+            )
             if ctx.message.clean_content.startswith(factoid_prefix):
                 return False
 
@@ -114,13 +160,12 @@ class LevelXP(cogs.MatchCog):
         return True
 
     async def response(
-        self: Self, config: munch.Munch, ctx: commands.Context, content: str, _: bool
+        self: Self, ctx: commands.Context, content: str, _: bool
     ) -> None:
         """Updates XP for the given user.
         Message has already been validated when you reach this function.
 
         Args:
-            config (munch.Munch): The guild config for the running bot
             ctx (commands.Context): The context in which the message was sent in
             content (str): The string content of the message
         """
@@ -140,8 +185,7 @@ class LevelXP(cogs.MatchCog):
             user (discord.Member): The user who just gained XP
             new_xp (int): The new amount of XP the user has
         """
-        config = self.bot.guild_configs[str(user.guild.id)]
-        levels = config.extensions.xp.level_roles.value
+        levels = configuration.get_config_entry(user.guild.id, "xp_level_roles")
 
         if len(levels) == 0:
             return
@@ -226,3 +270,35 @@ async def update_current_XP(
         await current_XP.create()
     else:
         await current_XP.update(xp=xp).apply()
+
+
+async def get_current_XP_role(bot: object, user: discord.Member) -> discord.Role:
+    """_summary_
+
+    Args:
+        bot (object): The TS bot object to use for fetching information
+        user (discord.Member): The member to lookup info on
+
+    Returns:
+        discord.Role: The XP role that the user currently has
+    """
+    levels = configuration.get_config_entry(user.guild.id, "xp_level_roles")
+
+    if len(levels) == 0:
+        return None
+
+    configured_levels = [
+        (int(xp_threshold), int(role_id)) for xp_threshold, role_id in levels.items()
+    ]
+    configured_role_ids = {role_id for _, role_id in configured_levels}
+
+    user_level_roles_ids = [
+        role.id for role in user.roles if role.id in configured_role_ids
+    ]
+
+    if not user_level_roles_ids:
+        return None
+
+    role_object = await user.guild.fetch_role(user_level_roles_ids[0])
+
+    return role_object

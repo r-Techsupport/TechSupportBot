@@ -45,6 +45,7 @@ class HTTPCalls:
             "api.urbandictionary.com": (2, 60),
             "api.openai.com": (3, 60),
             "www.googleapis.com": (5, 60),
+            "api.tavily.com": (5, 60),
             "ipinfo.io": (1, 30),
             "api.open-notify.org": (1, 60),
             "geocode.xyz": (1, 60),
