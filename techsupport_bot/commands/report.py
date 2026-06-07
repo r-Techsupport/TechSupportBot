@@ -33,23 +33,23 @@ class Report(cogs.BaseCog):
         extras={"module": "report", "suppress_logs": True},
     )
     async def report_command(
-        self: Self, interaction: discord.Interaction, report_str: str
+        self: Self, interaction: discord.Interaction, reason: str
     ) -> None:
         """This is the core of the /report command
         Allows users to report potential moderation issues to staff
 
         Args:
             interaction (discord.Interaction): The interaction that called this command
-            report_str (str): The report string that the user submitted
+            reason (str): The report string that the user submitted
         """
-        if len(report_str) > 2000:
+        if len(reason) > 2000:
             embed = auxiliary.prepare_deny_embed(
                 "Your report cannot be longer than 2000 characters."
             )
             await interaction.response.send_message(embed=embed)
             return
 
-        embed = discord.Embed(title="New Report", description=report_str)
+        embed = discord.Embed(title="New Report", description=reason)
         embed.color = discord.Color.red()
 
         is_anonymous = configuration.get_config_entry(
@@ -83,7 +83,7 @@ class Report(cogs.BaseCog):
         )
 
         mention_pattern = re.compile(r"<@!?(\d+)>")
-        mentioned_user_ids = mention_pattern.findall(report_str)
+        mentioned_user_ids = mention_pattern.findall(reason)
 
         mentioned_users = []
         for user_id in mentioned_user_ids:
