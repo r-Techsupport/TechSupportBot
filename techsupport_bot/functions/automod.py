@@ -158,8 +158,9 @@ class AutoMod(cogs.MatchCog):
         Returns:
             bool: Whether the message should be inspected for automod violations
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-        if not str(ctx.channel.id) in config.extensions.automod.channels.value:
+        if not str(ctx.channel.id) in configuration.get_config_entry(
+            ctx.guild.id, "automod_channels"
+        ):
             await self.bot.logger.send_log(
                 message="Channel not in automod channels - ignoring automod check",
                 level=LogLevel.DEBUG,
@@ -171,7 +172,9 @@ class AutoMod(cogs.MatchCog):
 
         if any(
             role_name.lower() in role_names
-            for role_name in config.extensions.automod.bypass_roles.value
+            for role_name in configuration.get_config_entry(
+                ctx.guild.id, "automod_bypass_roles"
+            )
         ):
             return False
 
@@ -190,13 +193,11 @@ class AutoMod(cogs.MatchCog):
             content (str): The string content of the message
             result (bool): What the match() function returned
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-
         # If user outranks bot, do nothing
         if ctx.message.author.top_role >= ctx.channel.guild.me.top_role:
             return
 
-        all_punishments = await run_all_checks(config, ctx.message)
+        all_punishments = await run_all_checks(ctx.message)
 
         if len(all_punishments) == 0:
             return
@@ -227,13 +228,16 @@ class AutoMod(cogs.MatchCog):
                 ctx.channel.guild.me,
                 total_punishment.violation_string,
             )
-            if count_of_warnings >= config.moderation.max_warnings:
+            max_warnings = configuration.get_config_entry(
+                ctx.guild.id, "moderation_max_warnings"
+            )
+            if count_of_warnings >= max_warnings:
                 ban_embed = moderator.generate_response_embed(
                     ctx.author,
                     "ban",
                     reason=(
                         f"Over max warning count {count_of_warnings} out of"
-                        f" {config.moderation.max_warnings} (final warning:"
+                        f" {max_warnings} (final warning:"
                         f" {total_punishment.violation_string}) - banned by automod"
                     ),
                 )
@@ -252,7 +256,10 @@ class AutoMod(cogs.MatchCog):
                     ctx.guild,
                     ctx.author,
                     delete_seconds=(
-                        config.extensions.moderator.ban_delete_duration.value * 86400
+                        configuration.get_config_entry(
+                            ctx.guild.id, "moderator_ban_delete_duration"
+                        )
+                        * 86400
                     ),
                     reason=total_punishment.violation_string,
                 )
@@ -286,9 +293,6 @@ class AutoMod(cogs.MatchCog):
         alert_channel_embed = generate_automod_alert_embed(
             ctx, total_punishment.total_punishments, total_punishment.action_string
         )
-
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-
         try:
             alert_channel = ctx.guild.get_channel(
                 int(
@@ -449,9 +453,7 @@ def generate_automod_alert_embed(
 # All checks will return a list of AutoModPunishment, which may be nothing
 
 
-async def run_all_checks(
-    config: munch.Munch, message: discord.Message
-) -> list[AutoModPunishment]:
+async def run_all_checks(message: discord.Message) -> list[AutoModPunishment]:
     """This runs all 4 checks on a given discord.Message
     handle_file_extensions
     handle_mentions
@@ -465,17 +467,19 @@ async def run_all_checks(
     Returns:
         list[AutoModPunishment]: The automod violations that the given message violated
     """
+    guild = message.guild
     all_violations = (
-        run_only_string_checks(config, message.clean_content)
-        + handle_file_extensions(config, message.attachments)
-        + handle_mentions(config, message)
-        + await handle_file_hashes(config, message.attachments)
+        run_only_string_checks(guild, message.clean_content)
+        + handle_file_extensions(guild, message.attachments)
+        + handle_mentions(guild, message)
+        + await handle_file_hashes(guild, message.attachments)
     )
     return all_violations
 
 
 def run_only_string_checks(
-    config: munch.Munch, content: str
+    guild: discord.Guild,
+    content: str,
 ) -> list[AutoModPunishment]:
     """This runs the plaintext string texts and returns the combined list of violations
     handle_exact_string
@@ -488,19 +492,19 @@ def run_only_string_checks(
     Returns:
         list[AutoModPunishment]: The automod violations that the given message violated
     """
-    all_violations = handle_exact_string(config, content) + handle_regex_string(
-        config, content
+    all_violations = handle_exact_string(guild, content) + handle_regex_string(
+        guild, content
     )
     return all_violations
 
 
 def handle_file_extensions(
-    config: munch.Munch, attachments: list[discord.Attachment]
+    guild: discord.Guild, attachments: list[discord.Attachment]
 ) -> list[AutoModPunishment]:
     """This checks a list of attachments for attachments that violate the automod rules
 
     Args:
-        config (munch.Munch): The guild config to check with
+        guild (discord.Guild): The guild to check with
         attachments (list[discord.Attachment]): The list of attachments to search
 
     Returns:
@@ -508,9 +512,8 @@ def handle_file_extensions(
     """
     violations = []
     for attachment in attachments:
-        if (
-            attachment.filename.split(".")[-1]
-            in config.extensions.automod.banned_file_extensions.value
+        if attachment.filename.split(".")[-1] in configuration.get_config_entry(
+            guild.id, "automod_banned_file_extensions"
         ):
             violations.append(
                 AutoModPunishment(
@@ -524,12 +527,12 @@ def handle_file_extensions(
 
 
 async def handle_file_hashes(
-    config: munch.Munch, attachments: list[discord.Attachment]
+    guild: discord.Guild, attachments: list[discord.Attachment]
 ) -> list[AutoModPunishment]:
     """This checks a list of attachments for attachments that match the configured list of hashes
 
     Args:
-        config (munch.Munch): The guild config to check with
+        guild (discord.Guild): The guild to check with
         attachments (list[discord.Attachment]): The list of attachments to search
 
     Returns:
@@ -539,7 +542,9 @@ async def handle_file_hashes(
 
     for attachment in attachments:
         file_hash = await auxiliary.get_attachment_hash(attachment)
-        if file_hash in config.extensions.automod.banned_file_hashes.value:
+        if file_hash in configuration.get_config_entry(
+            guild.id, "automod_banned_file_hashes"
+        ):
             violations.append(
                 AutoModPunishment(
                     f"{attachment.filename} matches a banned file hash",
@@ -553,18 +558,20 @@ async def handle_file_hashes(
 
 
 def handle_mentions(
-    config: munch.Munch, message: discord.Message
+    guild: discord.Guild, message: discord.Message
 ) -> list[AutoModPunishment]:
     """This checks a given discord message to make sure it doesn't violate the mentions maximum
 
     Args:
-        config (munch.Munch): The guild config to check with
+        guild (discord.Guild): The guild to check with
         message (discord.Message): The message to check for mentions with
 
     Returns:
         list[AutoModPunishment]: The automod violations that the given message violated
     """
-    if len(message.mentions) > config.extensions.automod.max_mentions.value:
+    if len(message.mentions) > configuration.get_config_entry(
+        guild.id, "automod_max_mentions"
+    ):
         return [
             AutoModPunishment(
                 "Mass Mentions",
@@ -576,12 +583,12 @@ def handle_mentions(
     return []
 
 
-def handle_exact_string(config: munch.Munch, content: str) -> list[AutoModPunishment]:
+def handle_exact_string(guild: discord.Guild, content: str) -> list[AutoModPunishment]:
     """This checks the configued automod exact string blocks
     If the content matches the string, it's added to a list
 
     Args:
-        config (munch.Munch): The guild config to check with
+        guild (discord.Guild): The guild to check with
         content (str): The content of the message to search
 
     Returns:
@@ -591,7 +598,7 @@ def handle_exact_string(config: munch.Munch, content: str) -> list[AutoModPunish
     for (
         keyword,
         filter_config,
-    ) in config.extensions.automod.string_map.value.items():
+    ) in configuration.get_config_entry(guild.id, "automod_string_map").items():
         if keyword.lower() in content.lower():
             violations.append(
                 AutoModPunishment(
@@ -605,12 +612,12 @@ def handle_exact_string(config: munch.Munch, content: str) -> list[AutoModPunish
     return violations
 
 
-def handle_regex_string(config: munch.Munch, content: str) -> list[AutoModPunishment]:
+def handle_regex_string(guild: discord.Guild, content: str) -> list[AutoModPunishment]:
     """This checks the configued automod regex blocks
     If the content matches the regex, it's added to a list
 
     Args:
-        config (munch.Munch): The guild config to check with
+        guild (discord.Guild): The guild to check with
         content (str): The content of the message to search
 
     Returns:
@@ -620,7 +627,7 @@ def handle_regex_string(config: munch.Munch, content: str) -> list[AutoModPunish
     for (
         _,
         filter_config,
-    ) in config.extensions.automod.string_map.value.items():
+    ) in configuration.get_config_entry(guild.id, "automod_string_map").items():
         regex = filter_config.get("regex")
         if regex:
             try:

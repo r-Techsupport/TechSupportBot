@@ -845,7 +845,9 @@ class FactoidManager(cogs.MatchCog):
             try:
                 embed = self.get_embed_from_factoid(factoid)
             except TypeError as exception:
-                log_channel = config.get("logging_channel")
+                log_channel = configuration.get_config_entry(
+                    ctx.guild.id, "core_logging_channel"
+                )
                 await self.bot.logger.send_log(
                     message=f"Unable to make embed for factoid `{factoid.name}`, sending fallback.",
                     level=LogLevel.ERROR,
@@ -880,7 +882,9 @@ class FactoidManager(cogs.MatchCog):
             )
             # log it in the logging channel with type info and generic content
             config = self.bot.guild_configs[str(ctx.guild.id)]
-            log_channel = config.get("logging_channel")
+            log_channel = configuration.get_config_entry(
+                ctx.guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message=(
                     f"Sending factoid: {query} (triggered by {ctx.author} in"
@@ -893,7 +897,9 @@ class FactoidManager(cogs.MatchCog):
         # If something breaks, also log it
         except discord.errors.HTTPException as exception:
             config = self.bot.guild_configs[str(ctx.guild.id)]
-            log_channel = config.get("logging_channel")
+            log_channel = configuration.get_config_entry(
+                ctx.guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message="Could not send factoid",
                 level=LogLevel.ERROR,
@@ -960,9 +966,7 @@ class FactoidManager(cogs.MatchCog):
         ):
             return
 
-        target_logging_channel = await function_logger.pre_log_checks(
-            self.bot, config, channel
-        )
+        target_logging_channel = await function_logger.pre_log_checks(self.bot, channel)
         if not target_logging_channel:
             return
 
@@ -1039,7 +1043,9 @@ class FactoidManager(cogs.MatchCog):
             try:
                 embed = self.get_embed_from_factoid(factoid)
             except TypeError as exception:
-                log_channel = config.get("logging_channel")
+                log_channel = configuration.get_config_entry(
+                    interaction.guild.id, "core_logging_channel"
+                )
                 await self.bot.logger.send_log(
                     message=f"Unable to make embed for factoid `{factoid.name}`, sending fallback.",
                     level=LogLevel.ERROR,
@@ -1071,7 +1077,9 @@ class FactoidManager(cogs.MatchCog):
             # define the message and send it
             await interaction.response.send_message(content=content, embed=embed)
             # log it in the logging channel with type info and generic content
-            log_channel = config.get("logging_channel")
+            log_channel = configuration.get_config_entry(
+                interaction.guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message=(
                     f"Sending factoid: {query} (triggered by {interaction.user} in"
@@ -1085,7 +1093,9 @@ class FactoidManager(cogs.MatchCog):
             )
         # If something breaks, also log it
         except discord.errors.HTTPException as exception:
-            log_channel = config.get("logging_channel")
+            log_channel = configuration.get_config_entry(
+                interaction.guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message="Could not send factoid",
                 level=LogLevel.ERROR,
@@ -1144,7 +1154,9 @@ class FactoidManager(cogs.MatchCog):
 
                     if ctx:
                         config = self.bot.guild_configs[str(ctx.guild.id)]
-                        channel = config.get("logging_channel")
+                        channel = configuration.get_config_entry(
+                            ctx.guild.id, "core_logging_channel"
+                        )
                         log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
 
                     await self.bot.logger.send_log(
@@ -1170,7 +1182,9 @@ class FactoidManager(cogs.MatchCog):
 
                 if ctx:
                     config = self.bot.guild_configs[str(ctx.guild.id)]
-                    channel = config.get("logging_channel")
+                    channel = configuration.get_config_entry(
+                        ctx.guild.id, "core_logging_channel"
+                    )
                     log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
 
                 await self.bot.logger.send_log(
@@ -1192,7 +1206,9 @@ class FactoidManager(cogs.MatchCog):
 
                 if ctx:
                     config = self.bot.guild_configs[str(ctx.guild.id)]
-                    channel = config.get("logging_channel")
+                    channel = configuration.get_config_entry(
+                        ctx.guild.id, "core_logging_channel"
+                    )
                     log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
 
                 await self.bot.logger.send_log(
@@ -1213,7 +1229,9 @@ class FactoidManager(cogs.MatchCog):
 
                 if ctx:
                     config = self.bot.guild_configs[str(ctx.guild.id)]
-                    channel = config.get("logging_channel")
+                    channel = configuration.get_config_entry(
+                        ctx.guild.id, "core_logging_channel"
+                    )
                     log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
 
                 await self.bot.logger.send_log(
@@ -1247,7 +1265,9 @@ class FactoidManager(cogs.MatchCog):
                 try:
                     embed = self.get_embed_from_factoid(factoid)
                 except TypeError as exception:
-                    log_channel = config.get("logging_channel")
+                    log_channel = configuration.get_config_entry(
+                        ctx.guild.id, "core_logging_channel"
+                    )
                     await self.bot.logger.send_log(
                         message=(
                             f"Unable to make embed for factoid `{factoid.name}`, sending fallback."
@@ -1270,7 +1290,9 @@ class FactoidManager(cogs.MatchCog):
 
             except discord.errors.HTTPException as exception:
                 config = self.bot.guild_configs[str(ctx.guild.id)]
-                log_channel = config.get("logging_channel")
+                log_channel = configuration.get_config_entry(
+                    ctx.guild.id, "core_logging_channel"
+                )
                 await self.bot.logger.send_log(
                     message="Could not send looped factoid",
                     level=LogLevel.ERROR,
@@ -1954,7 +1976,9 @@ class FactoidManager(cogs.MatchCog):
         # If an error happened while calling the api
         except (gaierror, InvalidURL) as exception:
             config = self.bot.guild_configs[str(guild.id)]
-            log_channel = config.get("logging_channel")
+            log_channel = configuration.get_config_entry(
+                guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message="Could not render/send all-factoid HTML",
                 level=LogLevel.ERROR,
@@ -2477,7 +2501,9 @@ class FactoidManager(cogs.MatchCog):
 
         # Logs the new parent change
         config = self.bot.guild_configs[str(ctx.guild.id)]
-        log_channel = config.get("logging_channel")
+        log_channel = configuration.get_config_entry(
+            ctx.guild.id, "core_logging_channel"
+        )
         await self.bot.logger.send_log(
             message=(
                 f"Factoid dealias: Deleted the alias `{factoid_name}`, new"

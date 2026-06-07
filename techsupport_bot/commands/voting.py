@@ -14,6 +14,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Self
 
 import aiocron
+import configuration
 import discord
 import munch
 import ui
@@ -124,7 +125,6 @@ class Voting(cogs.LoopCog):
                 This also hides who voted for what forever, and triggers it to be deleted
                 from the database upon completion of the vote
         """
-        config = self.bot.guild_configs[str(interaction.guild.id)]
         channel = await interaction.guild.fetch_channel(int(channel))
 
         if not self.user_can_use_vote_channel(
@@ -145,8 +145,8 @@ class Voting(cogs.LoopCog):
         roles = await interaction.guild.fetch_roles()
 
         # Get the allowed role IDs for this channel from the config
-        channel_role_map: dict[str, list[str]] = (
-            config.extensions.voting.votes_channel_roles.value
+        channel_role_map: dict[str, list[str]] = configuration.get_config_entry(
+            interaction.guild.id, "voting_votes_channel_roles"
         )
         allowed_role_ids = channel_role_map.get(str(channel.id), [])
 
@@ -208,15 +208,13 @@ class Voting(cogs.LoopCog):
         Returns:
             list[app_commands.Choice[str]]: The list of channels that match the current string
         """
-        config = self.bot.guild_configs.get(str(interaction.guild.id))
-        if not config:
-            return []
-
         member = interaction.user
         if not isinstance(member, discord.Member):
             return []
 
-        channel_role_map = config.extensions.voting.votes_channel_roles.value
+        channel_role_map = configuration.get_config_entry(
+            interaction.guild.id, "voting_votes_channel_roles"
+        )
 
         choices: list[app_commands.Choice[str]] = []
 
@@ -258,14 +256,15 @@ class Voting(cogs.LoopCog):
         Returns:
             bool: True if the channel is valid, false if its not
         """
-        config = self.bot.guild_configs[str(member.guild.id)]
         if not isinstance(channel, discord.ForumChannel):
             return False
 
-        voting_config = config.extensions.voting
-
-        active_role_id: str = voting_config.active_role_id.value
-        channel_role_map: dict[str, list[str]] = voting_config.votes_channel_roles.value
+        active_role_id: str = configuration.get_config_entry(
+            member.guild.id, "voting_active_role_id"
+        )
+        channel_role_map: dict[str, list[str]] = configuration.get_config_entry(
+            member.guild.id, "voting_votes_channel_roles"
+        )
 
         # Channel must be configured
         allowed_role_ids = channel_role_map.get(str(channel.id))
@@ -324,11 +323,12 @@ class Voting(cogs.LoopCog):
         Returns:
             list[discord.Member]: The list of eligible voters
         """
-        config = self.bot.guild_configs[str(guild.id)]
-        voting_config = config.extensions.voting
-
-        channel_role_map: dict[str, list[str]] = voting_config.votes_channel_roles.value
-        active_role_id: str = voting_config.active_role_id.value
+        channel_role_map: dict[str, list[str]] = configuration.get_config_entry(
+            guild.id, "voting_votes_channel_roles"
+        )
+        active_role_id: str = configuration.get_config_entry(
+            guild.id, "voting_active_role_id"
+        )
 
         active_role = guild.get_role(int(active_role_id))
         if not active_role:
@@ -642,7 +642,6 @@ class Voting(cogs.LoopCog):
         Args:
             guild (discord.Guild): The guild the vote is being run in
         """
-        config = self.bot.guild_configs[str(guild.id)]
         # pylint: disable=C0121
         active_votes = (
             await self.bot.models.Votes.query.where(
@@ -651,7 +650,7 @@ class Voting(cogs.LoopCog):
             .where(self.bot.models.Votes.guild_id == str(guild.id))
             .gino.all()
         )
-        reminder_times = config.extensions.voting.reminders_at.value
+        reminder_times = configuration.get_config_entry(guild.id, "voting_reminders_at")
 
         timestamp_now = int(datetime.datetime.utcnow().timestamp())
 
@@ -693,7 +692,6 @@ class Voting(cogs.LoopCog):
             guild (discord.Guild): The guild the vote is in
             reminder_hour (int): The hours remining until the vote closes
         """
-        config = self.bot.guild_configs[str(guild.id)]
         # Get all eligible voters
         eligible_voters = [v for v in vote.vote_ids_eligible.split(",") if v]
         # Get all voted voters
@@ -725,10 +723,9 @@ class Voting(cogs.LoopCog):
             vote (munch.Munch): The vote database object that needs to be ended
             guild (discord.Guild): The guild that vote belongs to
         """
-        config = self.bot.guild_configs[str(guild.id)]
         await vote.update(vote_active=False).apply()
         embed = await self.build_vote_embed(vote.vote_id, guild)
-        pass_embed = self.build_vote_pass_embed(vote, config)
+        pass_embed = self.build_vote_pass_embed(vote, guild)
         # If the vote is anonymous, at this point we need to clear the vote record forever
         if vote.anonymous:
             await vote.update(
@@ -745,7 +742,7 @@ class Voting(cogs.LoopCog):
         )
 
     def build_vote_pass_embed(
-        self: Self, vote: munch.Munch, config: munch.Munch
+        self: Self, vote: munch.Munch, guild: discord.Guild
     ) -> discord.Embed:
         """This builds an embed that shows if the vote passed or failed,
             based on configurable thresholds
@@ -765,7 +762,9 @@ class Voting(cogs.LoopCog):
         no_voters = vote.votes_no
         abstain_voters = vote.votes_abstain
 
-        thresholds = config.extensions.voting.voting_thresholds.value
+        thresholds = configuration.get_config_entry(
+            guild.id, "voting_voting_thresholds"
+        )
 
         # Percentages
         percent_eligible_yes = (yes_voters / eligible_voters) * 100

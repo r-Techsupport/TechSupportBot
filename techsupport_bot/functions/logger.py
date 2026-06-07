@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import munch
 from botlogging import LogContext, LogLevel
@@ -50,7 +51,7 @@ def get_channel_id(channel: discord.abc.GuildChannel | discord.Thread) -> int:
 
 
 def get_mapped_channel_object(
-    config: munch.Munch, src_channel: int
+    guild: discord.Guild, src_channel: int
 ) -> discord.TextChannel:
     """Gets the destination channel object from the integer ID of the source channel
     Will return none if the channel doesn't exist in the config
@@ -63,7 +64,7 @@ def get_mapped_channel_object(
         discord.TextChannel: The logging channel object
     """
     # Get the ID of the channel, or parent channel in the case of threads
-    mapped_id = config.extensions.logger.channel_map.value.get(
+    mapped_id = configuration.get_config_entry(guild.id, "logger_channel_map").get(
         str(get_channel_id(src_channel))
     )
     if not mapped_id:
@@ -79,7 +80,6 @@ def get_mapped_channel_object(
 
 async def pre_log_checks(
     bot: bot.TechSupportBot,
-    config: munch.Munch,
     src_channel: discord.abc.GuildChannel | discord.Thread,
 ) -> discord.TextChannel:
     """This does checks that are needed to pre log.
@@ -96,17 +96,20 @@ async def pre_log_checks(
     """
     channel_id = get_channel_id(src_channel)
 
-    if not str(channel_id) in config.extensions.logger.channel_map.value:
+    if not str(channel_id) in configuration.get_config_entry(
+        src_channel.guild.id, "logger_channel_map"
+    ):
         return None
 
-    target_logging_channel = get_mapped_channel_object(config, src_channel)
+    target_logging_channel = get_mapped_channel_object(src_channel.guild, src_channel)
     if not target_logging_channel:
         return None
 
     # Don't log stuff cross-guild
     if target_logging_channel.guild.id != src_channel.guild.id:
-        config = bot.guild_configs[str(src_channel.guild.id)]
-        log_channel = config.get("logging_channel")
+        log_channel = configuration.get_config_entry(
+            src_channel.guild.id, "logger_channel_map"
+        )
         await bot.logger.send_log(
             message="Configured channel not in associated guild - aborting log",
             level=LogLevel.WARNING,
@@ -130,9 +133,10 @@ class Logger(cogs.MatchCog):
         Returns:
             bool: Whether the message should be logged or not
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         channel_id = get_channel_id(ctx.channel)
-        if not str(channel_id) in config.extensions.logger.channel_map.value:
+        if not str(channel_id) in configuration.get_config_entry(
+            ctx.guild.id, "logger_channel_map"
+        ):
             return False
 
         return True
@@ -143,8 +147,7 @@ class Logger(cogs.MatchCog):
         Args:
             ctx (commands.Context): The context that was generated when the message was sent
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-        target_logging_channel = await pre_log_checks(self.bot, config, ctx.channel)
+        target_logging_channel = await pre_log_checks(self.bot, ctx.channel)
 
         await send_message(
             self.bot,
@@ -180,10 +183,8 @@ async def send_message(
         special_flags (list[str], optional): If supplied, a new field on the embed will be
             added that shows this. Defaults to [].
     """
-    config = bot.guild_configs[str(message.guild.id)]
-
     # Ensure we have attachments re-uploaded
-    attachments = await build_attachments(bot, config, message)
+    attachments = await build_attachments(bot, message)
 
     # Add avatar to attachments to all it to be added to the embed
     try:
@@ -316,7 +317,7 @@ def generate_role_list(author: discord.Member) -> list[str]:
 
 
 async def build_attachments(
-    bot: bot.TechSupportBot, config: munch.Munch, message: discord.Message
+    bot: bot.TechSupportBot, message: discord.Message
 ) -> list[discord.File]:
     """Reuploads and builds a list of attachments to send along side the embed
 
@@ -337,7 +338,9 @@ async def build_attachments(
             ) <= message.guild.filesize_limit:
                 attachments.append(await attch.to_file())
         if (lf := len(message.attachments) - len(attachments)) != 0:
-            log_channel = config.get("logging_channel")
+            log_channel = configuration.get_config_entry(
+                message.guild.id, "logger_channel_map"
+            )
             await bot.logger.send_log(
                 message=(
                     f"Logger did not reupload {lf} file(s) due to file size limit"

@@ -555,9 +555,7 @@ class TechSupportBot(commands.Bot):
 
         error_message = message_template.get_message(exception)
 
-        log_channel = await self.get_log_channel_from_guild(
-            guild=guild, key="logging_channel"
-        )
+        log_channel = configuration.get_config_entry(guild.id, "core_logging_channel")
 
         # Ensure that error messages aren't too long.
         # This ONLY changes the user facing error, the stack trace isn't impacted
@@ -1006,8 +1004,8 @@ class TechSupportBot(commands.Bot):
         for parameter in interaction.namespace:
             parameters.append(f"{parameter[0]}: {parameter[1]}")
 
-        log_channel = await self.get_log_channel_from_guild(
-            interaction.guild, key="logging_channel"
+        log_channel = configuration.get_config_entry(
+            interaction.guild.id, "core_logging_channel"
         )
 
         sliced_content = interaction.command.qualified_name[:100]

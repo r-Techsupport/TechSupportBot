@@ -116,7 +116,7 @@ class Paster(cogs.MatchCog):
             if "automod" in configuration.get_config_entry(
                 ctx.guild.id, "core_enabled_extensions"
             ):
-                automod_actions = await automod.run_all_checks(config, ctx.message)
+                automod_actions = await automod.run_all_checks(ctx.message)
                 automod_final = automod.process_automod_violations(automod_actions)
                 if automod_final and automod_final.delete_message:
                     return
@@ -177,8 +177,9 @@ class Paster(cogs.MatchCog):
             ctx (commands.Context): The context where the original message was sent
             content (str): The string content of the flagged message
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-        log_channel = config.get("logging_channel")
+        log_channel = configuration.get_config_entry(
+            ctx.guild.id, "core_logging_channel"
+        )
         if not self.bot.file_config.api.api_url.linx:
             await self.bot.logger.send_log(
                 message=(

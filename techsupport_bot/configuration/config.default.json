@@ -42,5 +42,18 @@
     "forum_solve_message": "thread solved",
     "forum_staff_role_ids": [],
     "forum_title_regex_list": [],
-    "forum_welcome_message": "thread welcome"
+    "forum_welcome_message": "thread welcome",
+    "voting_active_role_id": "",
+    "voting_reminders_at": [36, 6],
+    "voting_votes_channel_roles": {},
+    "voting_voting_thresholds": [50, 67, 75],
+    "automod_banned_file_extensions": ["exe"],
+    "automod_banned_file_hashes": [],
+    "automod_bypass_roles": [],
+    "automod_channels": [],
+    "automod_max_mentions": 3,
+    "automod_string_map": {},
+    "moderation_max_warnings": 3,
+    "moderator_ban_delete_duration": 7,
+    "logger_channel_map": {}
 }

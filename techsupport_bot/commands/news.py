@@ -7,6 +7,7 @@ import random
 from typing import TYPE_CHECKING, Self
 
 import aiocron
+import configuration
 import discord
 import munch
 from botlogging import LogContext, LogLevel
@@ -195,7 +196,7 @@ class News(cogs.LoopCog):
         if article is None:
             return
 
-        log_channel = config.get("logging_channel")
+        log_channel = configuration.get_config_entry(guild.id, "core_logging_channel")
         await self.bot.logger.send_log(
             message=f"Sending news headline to #{channel.name}",
             level=LogLevel.INFO,
@@ -255,7 +256,9 @@ class News(cogs.LoopCog):
         await interaction.response.send_message(content=url)
 
         # Log the command execution
-        log_channel = config.get("logging_channel")
+        log_channel = configuration.get_config_entry(
+            interaction.guild.id, "core_logging_channel"
+        )
         if log_channel:
             await self.bot.logger.send_log(
                 message=(

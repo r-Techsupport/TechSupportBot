@@ -7,6 +7,7 @@ import sys
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs
@@ -811,8 +812,8 @@ class EventLogger(cogs.BaseCog):
         embed.add_field(name="Channel", value=getattr(ctx.channel, "name", "DM"))
         embed.add_field(name="Server", value=getattr(ctx.guild, "name", "None"))
 
-        log_channel = await self.bot.get_log_channel_from_guild(
-            ctx.guild, key="logging_channel"
+        log_channel = configuration.get_config_entry(
+            ctx.guild.id, "core_logging_channel"
         )
 
         sliced_content = ctx.message.content[:100]

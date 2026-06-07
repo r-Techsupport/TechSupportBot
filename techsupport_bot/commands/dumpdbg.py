@@ -130,7 +130,9 @@ class Dumpdbg(cogs.BaseCog):
                     + f"Api response: `{response['error']}`",
                     channel=ctx.channel,
                 )
-                channel = config.get("logging_channel")
+                channel = configuration.get_config_entry(
+                    ctx.guild.id, "core_logging_channel"
+                )
                 await self.bot.logger.send_log(
                     message=(
                         f"Dumpdbg API responded with the error `{response['error']}`"

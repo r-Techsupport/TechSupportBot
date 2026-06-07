@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import dateparser
 import discord
 import ui
@@ -106,7 +107,9 @@ class ProtectCommands(cogs.BaseCog):
 
         if not delete_days:
             config = self.bot.guild_configs[str(interaction.guild.id)]
-            delete_days = config.extensions.moderator.ban_delete_duration.value
+            delete_days = configuration.get_config_entry(
+                interaction.guild.id, "moderator_ban_delete_duration"
+            )
 
         # Ban the user using the core moderation cog
         result = await moderation.ban_user(
@@ -484,12 +487,15 @@ class ProtectCommands(cogs.BaseCog):
         )
 
         should_ban = False
-        if new_count_of_warnings >= config.moderation.max_warnings:
+        max_warnings = configuration.get_config_entry(
+            interaction.guild.id, "moderation_max_warnings"
+        )
+        if new_count_of_warnings >= max_warnings:
             await interaction.response.defer(ephemeral=False)
             view = ui.Confirm()
             await view.send(
                 message="This user has exceeded the max warnings of "
-                + f"{config.moderation.max_warnings}. Would "
+                + f"{max_warnings}. Would "
                 + "you like to ban them instead?",
                 channel=interaction.channel,
                 author=interaction.user,
@@ -508,11 +514,14 @@ class ProtectCommands(cogs.BaseCog):
                 guild=interaction.guild,
                 user=target,
                 delete_seconds=(
-                    config.extensions.moderator.ban_delete_duration.value * 86400
+                    configuration.get_config_entry(
+                        interaction.guild.id, "moderator_ban_delete_duration"
+                    )
+                    * 86400
                 ),
                 reason=(
                     f"Over max warning count {new_count_of_warnings} out of"
-                    f" {config.moderation.max_warnings} (final warning:"
+                    f" {max_warnings} (final warning:"
                     f" {reason}) - banned by {interaction.user}"
                 ),
             )
@@ -560,7 +569,9 @@ class ProtectCommands(cogs.BaseCog):
         try:
             await target.send(embed=embed)
         except (discord.HTTPException, discord.Forbidden):
-            channel = config.get("logging_channel")
+            channel = configuration.get_config_entry(
+                interaction.guild.id, "core_logging_channel"
+            )
             await self.bot.logger.send_log(
                 message=f"Failed to DM warning to {target}",
                 level=LogLevel.WARNING,

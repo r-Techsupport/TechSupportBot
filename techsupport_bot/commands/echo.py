@@ -84,9 +84,7 @@ class MessageEcho(cogs.BaseCog):
         ):
             return
 
-        target_logging_channel = await function_logger.pre_log_checks(
-            self.bot, config, channel
-        )
+        target_logging_channel = await function_logger.pre_log_checks(self.bot, channel)
         if not target_logging_channel:
             return
 

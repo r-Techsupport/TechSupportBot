@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import ui
 from botlogging import LogContext, LogLevel
@@ -326,7 +327,9 @@ class Notes(cogs.BaseCog):
 
         await member.add_roles(role, reason="Noted user has joined the guild")
 
-        log_channel = config.get("logging_channel")
+        log_channel = configuration.get_config_entry(
+            member.guild.id, "core_logging_channel"
+        )
         await self.bot.logger.send_log(
             message=f"Found noted user with ID {member.id} joining - re-adding role",
             level=LogLevel.INFO,

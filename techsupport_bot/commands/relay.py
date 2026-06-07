@@ -414,7 +414,7 @@ class DiscordToIRC(cogs.MatchCog):
             discord_channel.guild.id, "core_enabled_extensions"
         ):
             automod_actions = automod.run_only_string_checks(
-                config, split_message["content"]
+                discord_channel.guild, split_message["content"]
             )
             automod_final = automod.process_automod_violations(automod_actions)
             if automod_final and automod_final.delete_message:
@@ -458,7 +458,7 @@ class DiscordToIRC(cogs.MatchCog):
         ):
             return
         target_logging_channel = await function_logger.pre_log_checks(
-            self.bot, config, discord_channel
+            self.bot, discord_channel
         )
         if not target_logging_channel:
             return

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 import munch
 from botlogging import LogContext, LogLevel
@@ -117,7 +118,9 @@ class ServerGate(cogs.MatchCog):
             roles = await self.get_roles(ctx)
             if not roles:
                 config = self.bot.guild_configs[str(ctx.guild.id)]
-                log_channel = config.get("logging_channel")
+                log_channel = configuration.get_config_entry(
+                    ctx.guild.id, "core_logging_channel"
+                )
                 await self.bot.logger.send_log(
                     message=(
                         "No roles to give user in gate plugin channel - ignoring"
