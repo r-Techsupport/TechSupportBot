@@ -86,7 +86,6 @@ class AutoNickName(cogs.MatchCog):
         """On every message, check if the authors nickname should be changed
 
         Args:
-            config (munch.Munch): The guild config
             ctx (commands.Context): The context that sent the message
             content (str): The content of the message
 

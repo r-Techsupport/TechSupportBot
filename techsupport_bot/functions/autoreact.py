@@ -28,6 +28,7 @@ class AutoReact(cogs.MatchCog):
         """A match function to determine if somehting should be reacted to
 
         Args:
+            ctx (commands.Context): The context in which the message was sent
             content (str): The string content of the message
 
         Returns:

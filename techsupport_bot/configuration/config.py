@@ -23,7 +23,7 @@ import munch
 BASE_PATH = "configuration/"
 
 
-def get_config_entry(guild_id: int, key: str) -> Any:
+def get_config_entry(guild_id: int, key: str) -> Any:  # noqa: ANN401
     """This searches for a guild specific config entry
 
     Args:
@@ -32,6 +32,9 @@ def get_config_entry(guild_id: int, key: str) -> Any:
 
     Returns:
         Any: The value of the config, which may be of many types
+
+    Raises:
+        AttributeError: Raised if the passed key is not valid
     """
 
     if not check_key_valid(key):
@@ -49,7 +52,7 @@ def get_config_entry(guild_id: int, key: str) -> Any:
     return default_entry
 
 
-def get_default_config_entry(key: str) -> Any:
+def get_default_config_entry(key: str) -> Any:  # noqa: ANN401
     """This gets the value from the default config file for the passed key
 
     Args:
@@ -57,6 +60,9 @@ def get_default_config_entry(key: str) -> Any:
 
     Returns:
         Any: The value from the default config file
+
+    Raises:
+        AttributeError: Raised if the passed key is not valid
     """
     if not check_key_valid(key):
         raise AttributeError(f"Key {key} is invalid")

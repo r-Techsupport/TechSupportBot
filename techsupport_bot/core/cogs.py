@@ -75,10 +75,10 @@ class BaseCog(commands.Cog):
         """Preconfigures the environment before starting the cog."""
 
     def extension_enabled(self: Self, guild: discord.Guild) -> bool:
-        """Checks if an extension is currently enabled for a given config.
+        """Checks if an extension is currently enabled for a given guild.
 
         Args:
-            config (munch.Munch): the context/guild config
+            guild (discord.Guild): The guild to lookup extension status for
 
         Returns:
             bool: True if the extension is enabled for the context

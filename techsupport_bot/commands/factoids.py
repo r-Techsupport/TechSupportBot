@@ -783,6 +783,7 @@ class FactoidManager(cogs.MatchCog):
         """Checks if a message started with the prefix from the config
 
         Args:
+            ctx (commands.Context): The context of which the message was sent
             message_contents (str): The message to check
 
         Returns:

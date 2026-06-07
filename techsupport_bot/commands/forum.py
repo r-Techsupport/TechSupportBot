@@ -645,7 +645,6 @@ class ForumChannel(cogs.LoopCog):
         """This is what closes threads after inactivity
 
         Args:
-            config (munch.Munch): The guild config where the loop is taking place
             guild (discord.Guild): The guild where the loop is taking place
         """
         config = self.bot.guild_configs[str(guild.id)]

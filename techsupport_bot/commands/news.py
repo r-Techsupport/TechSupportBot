@@ -177,7 +177,6 @@ class News(cogs.LoopCog):
         If a channel is configured to loop news headlines, this will execute that
 
         Args:
-            config (munch.Munch): The guild config for the guild looping
             guild (discord.Guild): The guild where the loop is running
         """
         config = self.bot.guild_configs[str(guild.id)]
@@ -211,7 +210,7 @@ class News(cogs.LoopCog):
         """Waits the defined time set for the loop, based on the cronjob
 
         Args:
-            config (munch.Munch): The guild config where the loop will occur
+            guild (discord.Guild): The guild where the loop will occur
         """
         config = self.bot.guild_configs[str(guild.id)]
         await aiocron.crontab(config.extensions.news.cron_config.value).next()
