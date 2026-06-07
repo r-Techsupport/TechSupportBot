@@ -126,11 +126,20 @@ def edit_config_entry(guild_id: int, key: str, new_value: Any) -> None:  # noqa:
         raise AttributeError(f"Key {key} is invalid")
 
     if not _does_guild_config_exist(guild_id):
-        _write_blank_guild_config(guild_id)
+        write_blank_guild_config(guild_id)
 
     guild_config = _read_guild_json(guild_id)
     guild_config[key] = new_value
     _write_guild_json_file(guild_id, guild_config)
+
+
+def write_blank_guild_config(guild_id: int) -> None:
+    """Creates a blank guild configuration file.
+
+    Args:
+        guild_id (int): The ID of the guild whose configuration should be created.
+    """
+    _write_guild_json_file(guild_id, munch.Munch(core_guild_id=guild_id))
 
 
 # Internal functions only
@@ -199,9 +208,15 @@ def _write_guild_json_file(guild_id: int, json_data: munch.Munch) -> None:
     Args:
         guild_id (int): The ID of the guild whose configuration should be written.
         json_data (munch.Munch): The configuration data to write.
+
+    Raises:
+        AttributeError: If the guild for the passed json data does not equal the passed guild_id
     """
     path = f"{BASE_PATH}/guild_configs/{guild_id}.json"
     os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    if json_data.core_guild_id != guild_id:
+        raise AttributeError("Guild config for incorrect guild")
 
     with open(path, "w", encoding="utf-8") as file:
         json.dump(
@@ -210,12 +225,3 @@ def _write_guild_json_file(guild_id: int, json_data: munch.Munch) -> None:
             indent=4,
             ensure_ascii=False,
         )
-
-
-def _write_blank_guild_config(guild_id: int) -> None:
-    """Creates a blank guild configuration file.
-
-    Args:
-        guild_id (int): The ID of the guild whose configuration should be created.
-    """
-    _write_guild_json_file(guild_id, munch.Munch())

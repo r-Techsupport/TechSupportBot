@@ -234,7 +234,7 @@ class ExtensionControl(cogs.BaseCog):
                 embed = auxiliary.send_deny_embed(
                     message=f"{extension_name}.py was not replaced"
                 )
-                await interaction.response.send_message(embed=embed)
+                await view.followup.send(embed=embed)
                 return
 
         fp = await extension_file.read()
@@ -242,14 +242,13 @@ class ExtensionControl(cogs.BaseCog):
         embed = auxiliary.send_confirm_embed(
             message="I've registered that extension. You can now try loading it",
         )
-        await interaction.response.send_message(embed=embed)
+        await view.followup.send(embed=embed)
         return
 
     async def does_extension_exist(self: Self, extension_name: str) -> bool:
         """Checks if a specific extension by name exists
 
         Args:
-            self (Self): _description_
             extension_name (str): The name of the extension to check
 
         Returns:
