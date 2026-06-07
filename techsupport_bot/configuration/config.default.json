@@ -83,5 +83,21 @@
     "modmail_automatic_rejections": {},
     "modmail_automatic_responses": {},
     "modmail_roles_to_ping": [],
-    "modmail_thread_creation_message": "Create modmail thread?"
+    "modmail_thread_creation_message": "Create modmail thread?",
+    "news_category": "",
+    "news_channel": "",
+    "news_country": "US",
+    "news_cron_config": "0 17 * * *",
+    "notes_note_bypass": "",
+    "notes_note_readers": [],
+    "notes_note_role": [],
+    "notes_note_writers": [],
+    "paste_bypass_roles": [],
+    "paste_channels": [],
+    "paste_length_limit": 500,
+    "paste_paste_footer_message": "Note: Long messages are automatically pasted",
+    "purge_max_purge_amount": 50,
+    "report_alert_channel": "",
+    "report_anonymous": false,
+    "report_ping_role": ""
 }

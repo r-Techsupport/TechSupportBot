@@ -338,6 +338,70 @@
     "modmail_thread_creation_message": {
         "datatype": "str",
         "description": "The message sent to the user when confirming a thread creation."
+    },
+    "news_category": {
+        "datatype": "str",
+        "description": "The category to use when receiving cronjob headlines"
+    },
+    "news_channel": {
+        "datatype": "discord.TextChannel",
+        "description": "The ID of the channel the news should appear in"
+    },
+    "news_country": {
+        "datatype": "str",
+        "description": "Country code to receive news for (example: US)"
+    },
+    "news_cron_config": {
+        "datatype": "CronTab",
+        "description": "Crontab syntax for executing news events"
+    },
+    "notes_note_bypass": {
+        "datatype": "list[discord.Role]",
+        "description": "A list of roles that shouldn't have notes set or the note role assigned"
+    },
+    "notes_note_readers": {
+        "datatype": "list[discord.Role]",
+        "description": "Users with roles in this list will be able to use whois"
+    },
+    "notes_note_role": {
+        "datatype": "discord.Role",
+        "description": "The name of the role to be added when a note is added to a user"
+    },
+    "notes_note_writers": {
+        "datatype": "list[discord.Role]",
+        "description": "Users with roles in this list will be able to create or delete notes"
+    },
+    "paste_bypass_roles": {
+        "datatype": "list[discord.Role]",
+        "description": "The list of role names that will bypass the paste system"
+    },
+    "paste_channels": {
+        "datatype": "list[discord.TextChannel]",
+        "description": "The list of channel ID's that will have the paste service enabled"
+    },
+    "paste_length_limit": {
+        "datatype": "int",
+        "description": "The max char limit on messages before they trigger a paste"
+    },
+    "paste_paste_footer_message": {
+        "datatype": "str",
+        "description": "The message used on the footer of the large message paste embed"
+    },
+    "purge_max_purge_amount": {
+        "datatype": "int",
+        "description": "The max amount of messages allowed to be purged in one command"
+    },
+    "report_alert_channel": {
+        "datatype": "discord.TextChannel",
+        "description": "The ID of the channel to send reports to"
+    },
+    "report_anonymous": {
+        "datatype": "bool",
+        "description": "Whether reports are anonymous"
+    },
+    "report_ping_role": {
+        "datatype": "discord.Role",
+        "description": "The ID of the role to ping when a new report is created"
     }
 }
 

@@ -7,9 +7,8 @@ from typing import TYPE_CHECKING, Self
 
 import configuration
 import discord
-import munch
 from botlogging import LogContext, LogLevel
-from core import cogs, extensionconfig
+from core import cogs
 from discord.ext import commands
 from functions import automod
 
@@ -23,44 +22,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="channels",
-        datatype="list",
-        title="Protected channels",
-        description=(
-            "The list of channel ID's associated with the channels to auto-protect"
-        ),
-        default=[],
-    )
-    config.add(
-        key="bypass_roles",
-        datatype="list",
-        title="Bypassed role names",
-        description=(
-            "The list of role names associated with bypassed roles by the auto-protect"
-        ),
-        default=[],
-    )
-    config.add(
-        key="length_limit",
-        datatype="int",
-        title="Max length limit",
-        description=(
-            "The max char limit on messages before they trigger an action by"
-            " auto-protect"
-        ),
-        default=500,
-    )
-    config.add(
-        key="paste_footer_message",
-        datatype="str",
-        title="The linx embed footer",
-        description="The message used on the footer of the large message paste URL",
-        default="Note: Long messages are automatically pasted",
-    )
     await bot.add_cog(Paster(bot=bot, extension_name="paste"))
-    bot.add_extension_config("paste", config)
 
 
 class Paster(cogs.MatchCog):
@@ -76,9 +38,10 @@ class Paster(cogs.MatchCog):
         Returns:
             bool: Whether the message should be inspected for a paste
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         # exit the match based on exclusion parameters
-        if not str(ctx.channel.id) in config.extensions.paste.channels.value:
+        if not str(ctx.channel.id) in configuration.get_config_entry(
+            ctx.guild.id, "paste_channels"
+        ):
             await self.bot.logger.send_log(
                 message="Channel not in protected channels - ignoring protect check",
                 level=LogLevel.DEBUG,
@@ -90,7 +53,9 @@ class Paster(cogs.MatchCog):
 
         if any(
             role_name.lower() in role_names
-            for role_name in config.extensions.paste.bypass_roles.value
+            for role_name in configuration.get_config_entry(
+                ctx.guild.id, "paste_bypass_roles"
+            )
         ):
             return False
 
@@ -109,10 +74,12 @@ class Paster(cogs.MatchCog):
             content (str): The string content of the message
             result (bool): What the match() function returned
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
-        if len(content) > config.extensions.paste.length_limit.value or content.count(
-            "\n"
-        ) > self.max_newlines(config.extensions.paste.length_limit.value):
+        length_limit = configuration.get_config_entry(
+            ctx.guild.id, "paste_length_limit"
+        )
+        if len(content) > length_limit or content.count("\n") > self.max_newlines(
+            length_limit
+        ):
             if "automod" in configuration.get_config_entry(
                 ctx.guild.id, "core_enabled_extensions"
             ):
@@ -244,7 +211,6 @@ class Paster(cogs.MatchCog):
         Returns:
             discord.Embed | None: The formatted embed, or None if there was an API error
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         if not content:
             return None
 
@@ -272,7 +238,11 @@ class Paster(cogs.MatchCog):
         embed.set_author(
             name=f"Paste by {ctx.author}", icon_url=ctx.author.display_avatar.url
         )
-        embed.set_footer(text=config.extensions.paste.paste_footer_message.value)
+        embed.set_footer(
+            text=configuration.get_config_entry(
+                ctx.guild.id, "paste_paste_footer_message"
+            )
+        )
         embed.color = discord.Color.blue()
 
         return embed

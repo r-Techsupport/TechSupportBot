@@ -6,10 +6,10 @@ import asyncio
 import random
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
 from core import auxiliary, cogs
 from discord.ext import commands
-import configuration
 
 if TYPE_CHECKING:
     import bot
@@ -23,6 +23,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     """
 
     await bot.add_cog(KanyeQuotes(bot=bot, extension_name="kanye"))
+
 
 class KanyeQuotes(cogs.LoopCog):
     """Class to get the Kanye quotes from the api.
@@ -75,11 +76,12 @@ class KanyeQuotes(cogs.LoopCog):
         Args:
             guild (discord.Guild): The guild where the loop is taking place
         """
-        config = self.bot.guild_configs[str(guild.id)]
         quote = await self.get_quote()
         embed = self.generate_themed_embed(quote=quote)
 
-        channel = guild.get_channel(int(configuration.get_config_entry(guild.id, "kanye_channel")))
+        channel = guild.get_channel(
+            int(configuration.get_config_entry(guild.id, "kanye_channel"))
+        )
         if not channel:
             return
 
@@ -91,7 +93,6 @@ class KanyeQuotes(cogs.LoopCog):
         Args:
             guild (discord.Guild): The guild config where the loop is taking place
         """
-        config = self.bot.guild_configs[str(guild.id)]
         await asyncio.sleep(
             random.randint(
                 configuration.get_config_entry(guild.id, "kanye_min_wait") * 3600,

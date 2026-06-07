@@ -740,7 +740,6 @@ class ProtectCommands(cogs.BaseCog):
         Returns:
             str: The rejection string, if one exists. Otherwise, None is returned
         """
-        config = self.bot.guild_configs[str(invoker.guild.id)]
         # Check to see if executed on author
         if invoker == target:
             return f"You cannot {action_name} yourself"
@@ -755,7 +754,9 @@ class ProtectCommands(cogs.BaseCog):
 
         # Check to see if target has any immune roles
         try:
-            for name in configuration.get_config_entry(target.guild.id, "moderator_immune_roles"):
+            for name in configuration.get_config_entry(
+                target.guild.id, "moderator_immune_roles"
+            ):
                 role_check = discord.utils.get(target.guild.roles, name=name)
                 if role_check and role_check in getattr(target, "roles", []):
                     return (

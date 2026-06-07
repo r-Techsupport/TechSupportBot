@@ -26,6 +26,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     """
     await bot.add_cog(BanLogger(bot=bot, extension_name="modlog"))
 
+
 class BanLogger(cogs.BaseCog):
     """The class that holds the /modlog commands
 

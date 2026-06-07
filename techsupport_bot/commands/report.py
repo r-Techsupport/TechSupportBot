@@ -6,8 +6,9 @@ import datetime
 import re
 from typing import TYPE_CHECKING, Self
 
+import configuration
 import discord
-from core import auxiliary, cogs, extensionconfig
+from core import auxiliary, cogs
 from discord import app_commands
 
 if TYPE_CHECKING:
@@ -20,30 +21,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    config = extensionconfig.ExtensionConfig()
-    config.add(
-        key="alert_channel",
-        datatype="int",
-        title="Alert channel ID",
-        description="The ID of the channel to send auto-protect alerts to",
-        default=None,
-    )
-    config.add(
-        key="anonymous",
-        datatype="bool",
-        title="If reports are anonymous",
-        description="Whether reports are anonymous",
-        default=False,
-    )
-    config.add(
-        key="ping_role",
-        datatype="int",
-        title="New report ping role",
-        description="The ID of the role to ping when a new report is created",
-        default=None,
-    )
     await bot.add_cog(Report(bot=bot, extension_name="report"))
-    bot.add_extension_config("report", config)
 
 
 class Report(cogs.BaseCog):
@@ -76,7 +54,9 @@ class Report(cogs.BaseCog):
 
         config = self.bot.guild_configs[str(interaction.guild.id)]
 
-        is_anonymous = config.extensions.report.anonymous.value
+        is_anonymous = configuration.get_config_entry(
+            interaction.guild.id, "report_anonymous"
+        )
 
         if is_anonymous:
             embed.set_author(name="Anonymous")
@@ -135,7 +115,11 @@ class Report(cogs.BaseCog):
 
         try:
             alert_channel = interaction.guild.get_channel(
-                int(config.extensions.report.alert_channel.value)
+                int(
+                    configuration.get_config_entry(
+                        interaction.guild.id, "report_alert_channel"
+                    )
+                )
             )
         except TypeError:
             alert_channel = None
@@ -147,7 +131,11 @@ class Report(cogs.BaseCog):
             await interaction.response.send_message(embed=user_embed, ephemeral=True)
             return
 
-        role = interaction.guild.get_role(int(config.extensions.report.ping_role.value))
+        role = interaction.guild.get_role(
+            int(
+                configuration.get_config_entry(interaction.guild.id, "report_ping_role")
+            )
+        )
 
         await alert_channel.send(
             content=role.mention,

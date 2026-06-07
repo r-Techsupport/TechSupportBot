@@ -346,7 +346,9 @@ async def handle_dm(message: discord.Message, guild_id: int, forum_id: int) -> N
 
     # - No thread was found, create one -
 
-    auto_rejections = configuration.get_config_entry(guild_id, "modmail_automatic_rejections")
+    auto_rejections = configuration.get_config_entry(
+        guild_id, "modmail_automatic_rejections"
+    )
     for regex in auto_rejections:
         if re.match(regex, message.content):
             await auxiliary.send_deny_embed(
@@ -366,7 +368,9 @@ async def handle_dm(message: discord.Message, guild_id: int, forum_id: int) -> N
 
     confirmation = ui.Confirm()
     await confirmation.send(
-        message=configuration.get_config_entry(guild_id, "modmail_thread_creation_message"),
+        message=configuration.get_config_entry(
+            guild_id, "modmail_thread_creation_message"
+        ),
         channel=message.channel,
         author=message.author,
     )
@@ -501,7 +505,11 @@ async def create_thread(
 
     # Handling for roles to ping, not performed if the func was invoked by the contact command
     role_string = ""
-    roles_to_ping = list(dict.fromkeys(configuration.get_config_entry(channel.guild.id, "modmail_roles_to_ping")))
+    roles_to_ping = list(
+        dict.fromkeys(
+            configuration.get_config_entry(channel.guild.id, "modmail_roles_to_ping")
+        )
+    )
     if message and roles_to_ping:
         for role_id in roles_to_ping:
             role_string += f"<@&{role_id}> "
@@ -548,7 +556,9 @@ async def create_thread(
         await message.author.send(embed=embed)
 
         # - Auto responses -
-        automatic_responses = configuration.get_config_entry(channel.guild.id, "modmail_automatic_responses")
+        automatic_responses = configuration.get_config_entry(
+            channel.guild.id, "modmail_automatic_responses"
+        )
         for regex in automatic_responses:
             if re.match(regex, message.content):
                 await reply_to_thread(
@@ -1346,7 +1356,9 @@ class Modmail(cogs.BaseCog):
 
         # Checking against the user to see if they have the roles specified in the config
         user_roles = getattr(user, "roles", [])
-        unparsed_roles = configuration.get_config_entry(ctx.guild.id, "modmail_modmail_roles")
+        unparsed_roles = configuration.get_config_entry(
+            ctx.guild.id, "modmail_modmail_roles"
+        )
         modmail_roles = list(dict.fromkeys(unparsed_roles))
 
         # No error has to be thrown if unparsed_roles is None, it's already checked in
