@@ -262,14 +262,10 @@ To access the values, you can use the following:
 self.bot.file_config.group.subgroup.key
 ```
 ---
-To access the json config, you can add the following line of code, which loads the guild config file:
+To access the config for a given guild, use the "get_config_entry" in the configuration module:
 ```py
-config = self.bot.guild_configs[guild_id]
-```
-
-Afterwards you can access the values with 
-```py
-config.extensions.<Ext-name>.<Value-name>.value
+import configuration
+value = configuration.get_config_entry(guild.id, "config_key")
 ```
 
 ## Calling an API

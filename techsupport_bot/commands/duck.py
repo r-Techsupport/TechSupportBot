@@ -905,7 +905,7 @@ class DuckHunt(cogs.LoopCog):
         """A function to pick true or false randomly based on the success_rate in the config
 
         Args:
-            config (munch.Munch): The config for the guild
+            guild (discord.Guild): The guild the duck was bang/bef'd in
 
         Returns:
             bool: Whether the random choice should succeed or not
