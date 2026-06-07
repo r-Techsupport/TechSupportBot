@@ -425,13 +425,13 @@ class DuckHunt(cogs.LoopCog):
         usage="@user (defaults to yourself)",
     )
     async def stats(
-        self: Self, ctx: commands.Context, *, user: discord.Member = None
+        self: Self, ctx: commands.Context, *, user: discord.User = None
     ) -> None:
         """Discord command for getting duck stats for a given user
 
         Args:
             ctx (commands.Context): The context in which the command was run
-            user (discord.Member, optional): The member to lookup stats for.
+            user (discord.User, optional): The user to lookup stats for.
                 Defaults to ctx.message.author.
         """
         if not user:
@@ -452,7 +452,9 @@ class DuckHunt(cogs.LoopCog):
             )
             return
 
-        embed = discord.Embed(title="Duck Stats", description=user.mention)
+        embed = discord.Embed(
+            title="Duck Stats", description=f"{user.display_name} (<@{user.id}>)"
+        )
         embed.color = embed_colors.green()
         embed.add_field(name="Friends", value=duck_user.befriend_count)
         embed.add_field(name="Kills", value=duck_user.kill_count)
