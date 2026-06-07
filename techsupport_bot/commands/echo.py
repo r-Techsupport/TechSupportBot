@@ -75,9 +75,6 @@ class MessageEcho(cogs.BaseCog):
         sent_message = await channel.send(content=message)
 
         await auxiliary.send_confirm_embed(message="Message sent", channel=ctx.channel)
-
-        config = self.bot.guild_configs[str(channel.guild.id)]
-
         # Don't allow logging if extension is disabled
         if "logger" not in configuration.get_config_entry(
             channel.guild.id, "core_enabled_extensions"

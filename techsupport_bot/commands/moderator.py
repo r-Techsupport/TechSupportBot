@@ -106,7 +106,6 @@ class ProtectCommands(cogs.BaseCog):
             return
 
         if not delete_days:
-            config = self.bot.guild_configs[str(interaction.guild.id)]
             delete_days = configuration.get_config_entry(
                 interaction.guild.id, "moderator_ban_delete_duration"
             )
@@ -478,8 +477,6 @@ class ProtectCommands(cogs.BaseCog):
             )
             await interaction.response.send_message(embed=embed)
             return
-
-        config = self.bot.guild_configs[str(interaction.guild.id)]
 
         new_count_of_warnings = (
             len(await moderation.get_all_warnings(self.bot, target, interaction.guild))

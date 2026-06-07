@@ -280,7 +280,6 @@ async def can_stop_game(ctx: commands.Context) -> bool:
     if getattr(user, "id", 0) == ctx.author.id:
         return True
 
-    config = ctx.bot.guild_configs[str(ctx.guild.id)]
     roles = []
     for role_name in configuration.get_config_entry(
         ctx.guild.id, "hangman_hangman_roles"

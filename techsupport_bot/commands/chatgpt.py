@@ -134,7 +134,6 @@ class ChatGPT(cogs.BaseCog):
         response = await self.call_api(ctx, api_key, prompt)
 
         # -> Response processing <-
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         choices = response.get("choices", [])
         if not choices:
             # Tries to figure out what error happened

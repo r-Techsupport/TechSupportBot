@@ -57,7 +57,6 @@ class Dumpdbg(cogs.BaseCog):
             ctx (commands.Context): The context in which the command was run
         """
 
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         api_endpoint = self.bot.file_config.api.api_url.dumpdbg
         permitted_roles = configuration.get_config_entry(ctx.guild.id, "dumpdbg_roles")
 

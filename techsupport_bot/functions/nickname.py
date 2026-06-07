@@ -112,7 +112,6 @@ class AutoNickName(cogs.MatchCog):
             content (str): The content of the message
             result (bool): The return value of the match function
         """
-        config = self.bot.guild_configs[str(ctx.guild.id)]
         # If user outranks bot, do nothing
         if ctx.message.author.top_role >= ctx.channel.guild.me.top_role:
             return
@@ -147,8 +146,6 @@ class AutoNickName(cogs.MatchCog):
         Args:
             member (discord.Member): The member who joined
         """
-        config = self.bot.guild_configs[str(member.guild.id)]
-
         # Don't do anything if the filter is off for the guild
         if not configuration.get_config_entry(member.guild.id, "core_nickname_filter"):
             return
