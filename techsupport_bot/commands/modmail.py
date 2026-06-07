@@ -1070,7 +1070,9 @@ class Modmail(cogs.BaseCog):
                 )
 
             case "rule":
-                if "rules" not in config.enabled_extensions:
+                if "rules" not in configuration.get_config_entry(
+                    message.guild.id, "core_enabled_extensions"
+                ):
                     await auxiliary.send_deny_embed(
                         message="Rules are not enabled in this guild",
                         channel=message.channel,
