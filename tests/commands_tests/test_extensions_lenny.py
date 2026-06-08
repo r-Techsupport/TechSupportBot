@@ -34,7 +34,8 @@ class Test_Lenny:
     def test_line_length(self: Self) -> None:
         """A test to ensure we never exceed the 2000 allowed characters"""
         # Step 1 - Setup env
-        lenny_test = setup_local_extension()
+        discord_env = config_for_tests.FakeDiscordEnv()
+        lenny_test = setup_local_extension(discord_env.bot)
 
         # Step 2 - Call the function
         faces = lenny_test.LENNYS_SELECTION

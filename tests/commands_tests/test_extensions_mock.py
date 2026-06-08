@@ -172,7 +172,8 @@ class Test_PrepareMockMessage:
     def test_with_set_string(self: Self) -> None:
         """A test to ensure that upper/lower works"""
         # Step 1 - Setup env
-        mocker = setup_local_extension()
+        discord_env = config_for_tests.FakeDiscordEnv()
+        mocker = setup_local_extension(discord_env.bot)
 
         # Step 2 - Call the function
         result = mocker.prepare_mock_message(message="abcd")
@@ -188,7 +189,8 @@ class Test_PrepareMockMessage:
             input_message (str): A random message to to prepare_mock_message with
         """
         # Step 1 - Setup env
-        mocker = setup_local_extension()
+        discord_env = config_for_tests.FakeDiscordEnv()
+        mocker = setup_local_extension(discord_env.bot)
 
         # Step 2 - Call the function
         result = mocker.prepare_mock_message(message=input_message)

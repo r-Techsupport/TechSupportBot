@@ -92,7 +92,8 @@ class Test_RandomNumber:
             max_value (int): Another random int to test roll bounds with
         """
         # Step 1 - Setup env
-        roller = setup_local_extension()
+        discord_env = config_for_tests.FakeDiscordEnv()
+        roller = setup_local_extension(discord_env.bot)
         if min_value > max_value:
             temp = min_value
             max_value = min_value
