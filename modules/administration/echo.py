@@ -77,7 +77,7 @@ class MessageEcho(cogs.BaseCog):
 
         await auxiliary.send_confirm_embed(message="Message sent", channel=ctx.channel)
         # Don't allow logging if extension is disabled
-        if "logger" not in configuration.get_config_entry(
+        if "moderation.logger" not in configuration.get_config_entry(
             channel.guild.id, "core_enabled_extensions"
         ):
             return

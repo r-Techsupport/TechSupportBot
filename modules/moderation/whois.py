@@ -74,14 +74,14 @@ class Whois(cogs.BaseCog):
             interaction.guild.id, "core_enabled_extensions"
         )
 
-        if "application" in enabled_extensions:
+        if "operation.application" in enabled_extensions:
             try:
                 await application.command_permission_check(interaction)
                 embed = await add_application_info_field(interaction, member, embed)
             except (app_commands.MissingAnyRole, app_commands.AppCommandError):
                 pass
 
-        if "xp" in enabled_extensions:
+        if "operation.xp" in enabled_extensions:
             current_XP = await xp.get_current_XP(self.bot, member, interaction.guild)
             embed.add_field(name="XP", value=current_XP)
 
@@ -115,7 +115,7 @@ class Whois(cogs.BaseCog):
 
         embeds = [embed]
 
-        if "notes" in enabled_extensions:
+        if "moderation.notes" in enabled_extensions:
             try:
                 await notes.is_reader(interaction)
                 all_notes = await moderation.get_all_notes(
@@ -131,7 +131,7 @@ class Whois(cogs.BaseCog):
             except (app_commands.MissingAnyRole, app_commands.AppCommandError):
                 pass
 
-        if "moderator" in enabled_extensions and interaction.permissions.kick_members:
+        if "moderation.moderator" in enabled_extensions and interaction.permissions.kick_members:
             all_warnings = await moderation.get_all_warnings(
                 self.bot, member, interaction.guild
             )

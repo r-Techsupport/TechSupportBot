@@ -81,7 +81,7 @@ class Paster(cogs.MatchCog):
         if len(content) > length_limit or content.count("\n") > self.max_newlines(
             length_limit
         ):
-            if "automod" in configuration.get_config_entry(
+            if "moderation.automod" in configuration.get_config_entry(
                 ctx.guild.id, "core_enabled_extensions"
             ):
                 automod_actions = await automod.run_all_checks(ctx.message)

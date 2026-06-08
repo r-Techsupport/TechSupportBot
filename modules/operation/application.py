@@ -645,7 +645,7 @@ class ApplicationManager(cogs.LoopCog):
             )
         )
         # Don't allow applications if extension is disabled
-        if "application" not in configuration.get_config_entry(
+        if "operation.application" not in configuration.get_config_entry(
             applicant.guild.id, "core_enabled_extensions"
         ):
             return False

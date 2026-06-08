@@ -919,7 +919,7 @@ class FactoidManager(cogs.MatchCog):
             factoid_message (str): The plaintext message content of the factoid
         """
         # Don't allow logging if extension is disabled
-        if "logger" not in configuration.get_config_entry(
+        if "moderation.logger" not in configuration.get_config_entry(
             factoid_caller.guild.id, "core_enabled_extensions"
         ):
             return
