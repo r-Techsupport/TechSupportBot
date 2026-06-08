@@ -1028,6 +1028,8 @@ class FactoidManager(cogs.MatchCog):
             content = factoid.message
 
         if member_to_ping:
+            if not content:
+                content = ""
             content = f"{member_to_ping.mention} {content}".strip()
 
         if content and len(content) > 2000:
