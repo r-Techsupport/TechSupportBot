@@ -25,7 +25,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
     The class to start the entire IRC bot
 
     Attributes:
-        irc_cog (commands.relay.DiscordToIRC): The discord cog for the relay,
+        irc_cog (modules.operation.relay.DiscordToIRC): The discord cog for the relay,
             to allow communication between
         loop (asyncio.AbstractEventLoop): The discord bots event loop
         console (logging.Logger): The console to print errors to
