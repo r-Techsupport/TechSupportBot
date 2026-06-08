@@ -18,7 +18,7 @@
     "autoreact_react_map": {"hello": "👋"},
     "core_command_prefix": ".",
     "core_enable_logging": true,
-    "core_enabled_extensions": ["config", "extension"],
+    "core_enabled_extensions": ["administration.config", "administration.extension"],
     "core_guild_events_channel": "",
     "core_guild_id": "",
     "core_logging_channel": "",
