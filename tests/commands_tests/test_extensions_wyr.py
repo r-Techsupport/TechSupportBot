@@ -12,9 +12,9 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import discord
 import pytest
-from commands import wyr
 
 from core import auxiliary
+from modules.fun import wyr
 from tests import config_for_tests, helpers
 
 

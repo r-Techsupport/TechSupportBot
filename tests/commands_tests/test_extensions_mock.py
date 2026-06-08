@@ -10,11 +10,11 @@ from typing import Self
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from commands import mock
 from hypothesis import given
 from hypothesis.strategies import text
 
 from core import auxiliary
+from modules.fun import mock
 from tests import config_for_tests, helpers
 
 
