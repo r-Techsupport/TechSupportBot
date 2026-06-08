@@ -49,7 +49,7 @@ class TechSupportBot(commands.Bot):
     """
 
     CONFIG_PATH: str = os.environ.get("CONFIG_YML", "./config.yml")
-    EXTENSIONS_DIR_NAME: str = "commands"
+    EXTENSIONS_DIR_NAME: str = "modules"
     EXTENSIONS_DIR: str = (
         f"{os.path.join(os.path.dirname(__file__))}/{EXTENSIONS_DIR_NAME}"
     )
@@ -482,7 +482,6 @@ class TechSupportBot(commands.Bot):
 
     async def get_potential_extensions(self: Self) -> list[str]:
         """Gets the current list of extensions in the defined directory.
-        This ONLY gets commands, not functions
 
         Returns:
             list[str]: Gets a list of the string names of every python file
@@ -490,27 +489,29 @@ class TechSupportBot(commands.Bot):
         """
 
         self.logger.console.info(f"Searching {self.EXTENSIONS_DIR} for extensions")
-        extensions_list = [
-            os.path.basename(f)[:-3]
-            for f in glob.glob(f"{self.EXTENSIONS_DIR}/*.py")
-            if os.path.isfile(f) and not f.endswith("__init__.py")
-        ]
-        return extensions_list
+        pattern = os.path.join(self.EXTENSIONS_DIR, "**", "*.py")
 
-    async def get_potential_function_extensions(self: Self) -> list[str]:
-        """Gets the current list of extensions in the defined directory.
-        This ONLY gets functions, not commands
+        extensions_list = []
 
-        Returns:
-            list[str]: Gets a list of the string names of every python file
-                in the functions folder
-        """
-        self.logger.console.info(f"Searching {self.FUNCTIONS_DIR} for extensions")
-        extensions_list = [
-            os.path.basename(f)[:-3]
-            for f in glob.glob(f"{self.FUNCTIONS_DIR}/*.py")
-            if os.path.isfile(f) and not f.endswith("__init__.py")
-        ]
+        for file_path in glob.glob(pattern, recursive=True):
+            if not os.path.isfile(file_path):
+                continue
+
+            if file_path.endswith("__init__.py"):
+                continue
+
+            # strip root dir
+            rel_path = os.path.relpath(file_path, self.EXTENSIONS_DIR)
+
+            # remove .py
+            rel_path = rel_path[:-3]
+
+            # convert folder separators into dots
+            dotted = rel_path.replace(os.sep, ".")
+
+            extensions_list.append(dotted)
+
+        print(extensions_list)
         return extensions_list
 
     async def load_extensions(self: Self, graceful: bool = True) -> None:
@@ -545,27 +546,8 @@ class TechSupportBot(commands.Bot):
                 if not graceful:
                     raise exception
 
-        self.logger.console.debug("Retrieving functions")
-        for extension_name in await self.get_potential_function_extensions():
-            if extension_name in self.file_config.bot_config.disabled_extensions:
-                self.logger.console.debug(
-                    f"{extension_name} is disabled on startup - ignoring load"
-                )
-                continue
-
-            try:
-                await self.load_extension(f"{self.FUNCTIONS_DIR_NAME}.{extension_name}")
-                self.extension_name_list.append(extension_name)
-            except Exception as exception:
-                self.logger.console.error(
-                    f"Failed to load extension {extension_name}: {exception}"
-                )
-                if not graceful:
-                    raise exception
-
     def get_command_extension_name(self: Self, command: commands.Command) -> str:
-        """Gets the subname of an extension from a command.
-        Used only for commands, should never be run for a function
+        """Gets the subname of an module from a command.
 
         Args:
             command (commands.Command): the command to reference
@@ -575,7 +557,7 @@ class TechSupportBot(commands.Bot):
         """
         if not command.module.startswith(f"{self.EXTENSIONS_DIR_NAME}."):
             return None
-        extension_name = command.module.split(".")[1]
+        extension_name = ".".join(command.module.split(".")[1:]).replace(".py", "")
         return extension_name
 
     async def register_file_extension(

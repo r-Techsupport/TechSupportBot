@@ -24,8 +24,8 @@ from discord.ext import commands
 
 import configuration
 import ui
-from commands import rules
 from core import auxiliary, cogs
+from modules.moderation import rules
 
 if TYPE_CHECKING:
     import bot

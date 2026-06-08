@@ -12,8 +12,8 @@ from discord.ext import commands
 
 import configuration
 from botlogging import LogContext, LogLevel
-from commands import moderator, modlog
 from core import auxiliary, cogs, moderation
+from modules.moderation import moderator, modlog
 
 if TYPE_CHECKING:
     import bot

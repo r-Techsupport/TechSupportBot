@@ -36,7 +36,7 @@ import configuration
 import ui
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, custom_errors
-from functions import logger as function_logger
+from modules.moderation import logger as function_logger
 
 if TYPE_CHECKING:
     import bot

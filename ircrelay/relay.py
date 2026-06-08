@@ -16,7 +16,7 @@ import irc.bot
 import irc.client
 import irc.connection
 
-import commands
+import modules.operation
 from ircrelay import formatting
 
 
@@ -43,7 +43,7 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         password (str): The password of the IRC bot account
     """
 
-    irc_cog: commands.relay.DiscordToIRC = None
+    irc_cog: modules.operation.relay.DiscordToIRC = None
     loop: asyncio.AbstractEventLoop = None
     console: logging.Logger = logging.getLogger("root")
     IRC_BOLD: str = ""

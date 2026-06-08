@@ -12,8 +12,8 @@ from discord.ext import commands
 import configuration
 import ui
 from core import auxiliary, cogs
-from functions import automod
-from functions import logger as function_logger
+from modules.moderation import automod
+from modules.moderation import logger as function_logger
 
 if TYPE_CHECKING:
     import bot

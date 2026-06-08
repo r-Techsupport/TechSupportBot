@@ -10,8 +10,9 @@ from discord import app_commands
 
 import configuration
 import ui
-from commands import application, moderator, notes, xp
 from core import auxiliary, cogs, moderation
+from modules.moderation import moderator, notes
+from modules.operation import application, xp
 
 if TYPE_CHECKING:
     import bot

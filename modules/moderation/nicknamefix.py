@@ -9,7 +9,7 @@ import discord
 from discord import app_commands
 
 from core import auxiliary, cogs
-from functions import nickname
+from modules.moderation import nickname
 
 if TYPE_CHECKING:
     import bot
