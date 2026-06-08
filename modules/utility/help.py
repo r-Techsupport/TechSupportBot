@@ -232,12 +232,13 @@ class Helper(cogs.BaseCog):
 
 
 def build_command_mentions(
-    commands: list[app_commands.AppCommand],
+    fetched_commands_list: list[app_commands.AppCommand],
 ) -> dict[str, str]:
     """Build a mapping of command names to mentions.
 
     Args:
-        commands (list[app_commands.AppCommand]): The list of commands fetched from the bot.
+        fetched_commands_list (list[app_commands.AppCommand]):
+            The list of commands fetched from the bot.
 
     Returns:
         dict[str, str]: A dictionary mapping full names to mentions.
@@ -267,7 +268,7 @@ def build_command_mentions(
             ):
                 walk(option, root_id, qualified_name)
 
-    for command in commands:
+    for command in fetched_commands_list:
         walk(command, command.id)
 
     return mentions
