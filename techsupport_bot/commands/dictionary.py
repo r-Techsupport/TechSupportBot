@@ -66,15 +66,21 @@ class Dictionary(cogs.BaseCog):
         response = await self.bot.http_functions.http_call("get", url)
         if not response:
             embed = auxiliary.prepare_deny_embed(
-                f"I could not find any definition for `{word}`"
+                f"I could not find any information for `{word}`"
             )
             await interaction.followup.send(embed=embed)
             return
 
-        definition = response[0].shortdef
-
-        embed = discord.Embed(title=f"Definition of `{word}`")
-        embed.color = discord.Color.orange()
-        embed.description = "\n".join(f"- {string}" for string in definition)
+        try:
+            definition = response[0].shortdef
+            embed = discord.Embed(title=f"Definition of `{word}`")
+            embed.color = discord.Color.orange()
+            embed.description = "\n".join(f"- {string}" for string in definition)
+        except AttributeError:
+            embed = discord.Embed(
+                title=f"The word `{word}` was not found. Did you mean:"
+            )
+            embed.description = ", ".join(response)
+            embed.color = discord.Color.orange()
 
         await interaction.followup.send(embed=embed)

@@ -211,11 +211,12 @@ class ExtensionControl(cogs.BaseCog):
             extension_name (str): the name of the extension
             extension_file (discord.Attachment): The python file of the extension
         """
+        await interaction.response.defer()
         if not extension_file.filename.endswith(".py"):
             embed = auxiliary.prepare_deny_embed(
                 message="I don't recognize your upload as a Python file",
             )
-            await interaction.response.send_message(embed=embed)
+            await interaction.followup.send(embed=embed)
             return
 
         if extension_name.lower() in await self.bot.get_potential_extensions():
@@ -223,6 +224,7 @@ class ExtensionControl(cogs.BaseCog):
             await view.send(
                 message=f"Warning! This will replace the current `{extension_name}.py` "
                 + "extension! Are you SURE?",
+                channel=interaction.channel,
                 author=interaction.user,
                 interaction=interaction,
             )
@@ -239,10 +241,10 @@ class ExtensionControl(cogs.BaseCog):
 
         fp = await extension_file.read()
         await self.bot.register_file_extension(extension_name, fp)
-        embed = auxiliary.send_confirm_embed(
+        embed = auxiliary.prepare_confirm_embed(
             message="I've registered that extension. You can now try loading it",
         )
-        await view.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed)
         return
 
     async def does_extension_exist(self: Self, extension_name: str) -> bool:

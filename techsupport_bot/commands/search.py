@@ -46,7 +46,7 @@ class WebSearcher(cogs.BaseCog):
         name="search", description="Command Group for the Search Extension"
     )
 
-    async def make_reqest(self: Self, query: str) -> munch.Munch:
+    async def make_request(self: Self, query: str) -> munch.Munch:
         """This functions make a request to the Tavily API
         This pulls the API key from the config and returns a munch.Munch result
 
@@ -94,7 +94,7 @@ class WebSearcher(cogs.BaseCog):
             query (str): The string query passed in by the user
         """
         await interaction.response.defer()
-        response = self.make_request(query)
+        response = await self.make_request(query)
 
         embeds = []
 
@@ -134,7 +134,7 @@ class WebSearcher(cogs.BaseCog):
             query (str): The string query passed in by the user
         """
         await interaction.response.defer()
-        response = self.make_request(query)
+        response = await self.make_request(query)
 
         embeds = []
 

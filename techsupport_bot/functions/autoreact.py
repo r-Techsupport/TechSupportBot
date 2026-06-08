@@ -60,5 +60,5 @@ class AutoReact(cogs.MatchCog):
             if f" {word.lower()} " in search_content:
                 reaction = reaction_map.get(word)
                 if reaction not in reactions:
-                    reactions.append(reaction_map.value.get(word))
+                    reactions.append(reaction_map.get(word))
         await auxiliary.add_list_of_reactions(message=ctx.message, reactions=reactions)

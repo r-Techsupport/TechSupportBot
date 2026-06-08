@@ -342,10 +342,11 @@ class LoopCog(BaseCog):
                 if guild and guild not in self.bot.guilds:
                     break
 
-                channels_list = configuration.get_config_entry(
-                    guild.id, self.CHANNELS_KEY
-                )
-                if not channels_list:
+                try:
+                    channels_list = configuration.get_config_entry(
+                        guild.id, self.CHANNELS_KEY
+                    )
+                except AttributeError:
                     channels_list = []
 
                 if target_channel and str(target_channel.id) not in channels_list:

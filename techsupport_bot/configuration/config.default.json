@@ -82,7 +82,7 @@
     "modmail_modmail_roles": [],
     "modmail_roles_to_ping": [],
     "modmail_thread_creation_message": "Create modmail thread?",
-    "news_category": "",
+    "news_category": "general",
     "news_channel": "",
     "news_country": "US",
     "news_cron_config": "0 17 * * *",
