@@ -110,10 +110,6 @@ class Notes(cogs.BaseCog):
     @notes.command(
         name="set",
         description="Adds a note to a given user.",
-        extras={
-            "brief": "Sets a note for a user",
-            "usage": "@user [note]",
-        },
     )
     async def set_note(
         self: Self, interaction: discord.Interaction, user: discord.Member, body: str
@@ -182,10 +178,6 @@ class Notes(cogs.BaseCog):
     @notes.command(
         name="clear",
         description="Clears all existing notes for a user",
-        extras={
-            "brief": "Clears all notes for a user",
-            "usage": "@user",
-        },
     )
     async def clear_notes(
         self: Self, interaction: discord.Interaction, user: discord.Member
@@ -248,10 +240,6 @@ class Notes(cogs.BaseCog):
     @notes.command(
         name="all",
         description="Gets all notes for a user instead of just new ones",
-        extras={
-            "brief": "Gets all notes for a user",
-            "usage": "@user",
-        },
     )
     async def all_notes(
         self: Self, interaction: discord.Interaction, member: discord.Member

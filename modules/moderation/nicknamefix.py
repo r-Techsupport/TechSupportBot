@@ -31,9 +31,6 @@ class NicknameFixer(cogs.BaseCog):
     @app_commands.command(
         name="nicknamefix",
         description="Auto adjusts a nickname of the given member",
-        extras={
-            "usage": "member",
-        },
     )
     async def fixnickname(
         self: Self, interaction: discord.Interaction, member: discord.Member

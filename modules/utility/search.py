@@ -80,9 +80,6 @@ class WebSearcher(cogs.BaseCog):
     @search.command(
         name="text",
         description="Returns the top Web search result",
-        extras={
-            "usage": "[query]",
-        },
     )
     async def websearch_text(
         self: Self, interaction: discord.Interaction, query: str
@@ -119,9 +116,6 @@ class WebSearcher(cogs.BaseCog):
     @search.command(
         name="images",
         description="Returns the top Web search image result",
-        extras={
-            "usage": "[query]",
-        },
     )
     async def websearch_image(
         self: Self, interaction: discord.Interaction, query: str
