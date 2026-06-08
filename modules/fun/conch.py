@@ -10,7 +10,7 @@ import random
 from typing import TYPE_CHECKING, Self
 
 import discord
-from discord.ext import commands
+from discord import app_commands
 
 from core import auxiliary, cogs
 
@@ -60,59 +60,40 @@ class MagicConch(cogs.BaseCog):
     ]
     PIC_URL: str = "https://i.imgur.com/vdvGrsR.png"
 
-    def format_question(self: Self, question: str) -> str:
-        """This formats a question properly. It will crop it if needed, and add a "?" to the end
-
-        Args:
-            question (str): The original question passed from the user
-
-        Returns:
-            str: The final formatted questions. Will always be 256 or less in length,
-                and end with a "?"
-        """
-        question = question[:255]
-        if not question.endswith("?"):
-            question += "?"
-        return question
-
+    @app_commands.command(
+        name="conch",
+        description="Asks the Magic Conch (8ball) a question",
+    )
     async def conch_command(
-        self: Self, ctx: commands.Context, question: str = ""
+        self: Self, interaction: discord.Interaction, question: str
     ) -> None:
         """Method for the core logic of the conch command
 
         Args:
-            ctx (commands.Context): The context in which the command was run it
-            question (str, optional): The question asked. Defaults to "".
+            interaction (discord.Interaction): The interaction that called this command
+            question (str): The question asked.
         """
-        if question == "":
-            await auxiliary.send_deny_embed(
-                message="You need to add a question", channel=ctx.channel
-            )
-            return
-        formatted_question = self.format_question(question)
+        formatted_question = format_question(question)
         embed = auxiliary.generate_basic_embed(
             title=formatted_question,
             description=random.choice(self.RESPONSES),
             color=discord.Color.blurple(),
             url=self.PIC_URL,
         )
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
-    @commands.command(
-        name="conch",
-        aliases=["8ball", "8b"],
-        brief="Asks the Magic Conch",
-        description="Asks the Magic Conch (8ball) a question",
-        usage="[question]",
-    )
-    async def ask_question(
-        self: Self, ctx: commands.Context, *, question: str = ""
-    ) -> None:
-        """Method for how the conch command works for the bot.
-        This is a command and should be run via discord
 
-        Args:
-            ctx (commands.Context): The context in which the command was run
-            question (str, optional): The question to ask the magic conch. Defaults to "".
-        """
-        await self.conch_command(ctx, question)
+def format_question(question: str) -> str:
+    """This formats a question properly. It will crop it if needed, and add a "?" to the end
+
+    Args:
+        question (str): The original question passed from the user
+
+    Returns:
+        str: The final formatted questions. Will always be 256 or less in length,
+            and end with a "?"
+    """
+    question = question[:255]
+    if not question.endswith("?"):
+        question += "?"
+    return question
