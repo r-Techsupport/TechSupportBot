@@ -253,7 +253,8 @@ def build_command_mentions(
         """Recursively walk command groups.
 
         Args:
-            command: The current command/group being processed.
+            command (app_commands.AppCommand | app_commands.AppCommandGroup):
+                The current command/group being processed.
             root_id (int): The ID of the top-level command.
             prefix (str): The accumulated command path.
         """
