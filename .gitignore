@@ -9,4 +9,4 @@ __pycache__
 .coverage
 .hypothesis
 .idea/
-techsupport_bot/configuration/guild_configs
+configuration/guild_configs

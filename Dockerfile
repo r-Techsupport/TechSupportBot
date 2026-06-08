@@ -24,7 +24,7 @@ RUN uv sync --frozen --no-dev
 COPY . .
 
 # Move into bot directory
-WORKDIR /var/TechSupportBot/techsupport_bot
+WORKDIR /var/TechSupportBot
 
 # Run bot
 CMD ["uv", "run", "--", "python3", "-u", "main.py"]
