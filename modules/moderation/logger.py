@@ -22,7 +22,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    await bot.add_cog(Logger(bot=bot, extension_name="logger"))
+    await bot.add_cog(Logger(bot=bot))
 
 
 def get_channel_id(channel: discord.abc.GuildChannel | discord.Thread) -> int:

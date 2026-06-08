@@ -23,7 +23,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    await bot.add_cog(Paster(bot=bot, extension_name="paste"))
+    await bot.add_cog(Paster(bot=bot))
 
 
 class Paster(cogs.MatchCog):

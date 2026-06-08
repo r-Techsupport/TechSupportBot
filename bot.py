@@ -44,18 +44,12 @@ class TechSupportBot(commands.Bot):
         CONFIG_PATH (str): The hard coded path to the yaml config file
         EXTENSIONS_DIR_NAME (str): The hardcoded folder for commands
         EXTENSIONS_DIR (str): The list of all files in the EXTENSIONS_DIR_NAME folder
-        FUNCTIONS_DIR_NAME (str):The hardcoded folder for functions
-        FUNCTIONS_DIR (str):The list of all files in the FUNCTIONS_DIR_NAME folder
     """
 
     CONFIG_PATH: str = os.environ.get("CONFIG_YML", "./config.yml")
     EXTENSIONS_DIR_NAME: str = "modules"
     EXTENSIONS_DIR: str = (
         f"{os.path.join(os.path.dirname(__file__))}/{EXTENSIONS_DIR_NAME}"
-    )
-    FUNCTIONS_DIR_NAME: str = "functions"
-    FUNCTIONS_DIR: str = (
-        f"{os.path.join(os.path.dirname(__file__))}/{FUNCTIONS_DIR_NAME}"
     )
 
     def __init__(
@@ -769,7 +763,6 @@ class TechSupportBot(commands.Bot):
         # Check 1 - Ensure extension is enabled
         # removes "modules."
         extension_name = interaction.command.callback.__module__[8:]
-        print(extension_name)
         # If the extension is disabled, raise an error to show it and block execution
         if not self.command_run_extension_disabled_check(
             interaction.guild, extension_name

@@ -21,7 +21,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    await bot.add_cog(Purger(bot=bot, extension_name="purge"))
+    await bot.add_cog(Purger(bot=bot))
 
 
 class Purger(cogs.BaseCog):

@@ -36,7 +36,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     if not irc_config.enable_irc:
         raise AttributeError("Relay was not loaded due to IRC being disabled")
 
-    irc_cog = DiscordToIRC(bot=bot, extension_name="relay")
+    irc_cog = DiscordToIRC(bot=bot)
 
     await bot.add_cog(irc_cog)
     bot.irc.irc_cog = irc_cog

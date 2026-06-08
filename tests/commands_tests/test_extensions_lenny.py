@@ -9,8 +9,8 @@ from typing import Self
 from unittest.mock import AsyncMock, patch
 
 import pytest
-
 from commands import lenny
+
 from tests import config_for_tests, helpers
 
 

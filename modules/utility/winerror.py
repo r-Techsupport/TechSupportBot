@@ -24,7 +24,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
         bot (bot.TechSupportBot): The bot to register the extensions
     """
 
-    await bot.add_cog(WindowsError(bot=bot, extension_name="winerror"))
+    await bot.add_cog(WindowsError(bot=bot))
 
 
 @dataclass

@@ -23,7 +23,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    await bot.add_cog(LevelXP(bot=bot, extension_name="xp"))
+    await bot.add_cog(LevelXP(bot=bot))
 
 
 class LevelXP(cogs.MatchCog):

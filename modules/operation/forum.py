@@ -26,7 +26,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot to register the cog to
     """
-    await bot.add_cog(ForumChannel(bot=bot, extension_name="forum"))
+    await bot.add_cog(ForumChannel(bot=bot))
 
 
 STATUS_CONFIG = {

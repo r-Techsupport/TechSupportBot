@@ -26,8 +26,6 @@ class BaseCog(commands.Cog):
     Args:
         bot (bot.TechSupportBot): the bot object
         no_guild (bool): True if the extension should run globally
-        extension_name(str): The name of the extension
-            if it needs to be different than the file name
     """
 
     COG_TYPE: str = "Base"
@@ -37,11 +35,10 @@ class BaseCog(commands.Cog):
         self: Self,
         bot: bot.TechSupportBot,
         no_guild: bool = False,
-        extension_name: str = None,
     ) -> None:
         self.bot = bot
         self.no_guild = no_guild
-        self.extension_name = extension_name
+        self.extension_name = self.get_extension_name()
 
         asyncio.create_task(self._preconfig())
 
@@ -90,6 +87,21 @@ class BaseCog(commands.Cog):
         ):
             return True
         return False
+
+    def get_extension_name(self: Self) -> str | None:
+        """Gets the full extension name for this cog.
+
+        Returns:
+            str | None: The dotted extension name without the root
+                extensions directory, or None if the cog is not
+                contained within the extensions directory.
+        """
+        module = self.__class__.__module__
+
+        if not module.startswith(f"{self.bot.EXTENSIONS_DIR_NAME}."):
+            return None
+
+        return ".".join(module.split(".")[1:]).replace(".py", "")
 
 
 class MatchCog(BaseCog):
@@ -338,7 +350,7 @@ class LoopCog(BaseCog):
         if not self.ON_START:
             await self.wait(guild)
 
-        for folder_dir in [self.bot.EXTENSIONS_DIR_NAME, self.bot.FUNCTIONS_DIR_NAME]:
+        for folder_dir in [self.bot.EXTENSIONS_DIR_NAME]:
             while self.bot.extensions.get(f"{folder_dir}.{self.extension_name}"):
                 if guild and guild not in self.bot.guilds:
                     break

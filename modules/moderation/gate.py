@@ -21,7 +21,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    await bot.add_cog(ServerGate(bot=bot, extension_name="gate"))
+    await bot.add_cog(ServerGate(bot=bot))
 
 
 class ServerGate(cogs.MatchCog):

@@ -21,7 +21,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    await bot.add_cog(HoneyPot(bot=bot, extension_name="honeypot"))
+    await bot.add_cog(HoneyPot(bot=bot))
 
 
 class HoneyPot(cogs.MatchCog):

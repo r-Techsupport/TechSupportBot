@@ -71,20 +71,13 @@ class ExtensionControl(cogs.BaseCog):
             )
             else "unloaded"
         )
-        functions_status = (
-            "loaded"
-            if self.bot.extensions.get(
-                f"{self.bot.FUNCTIONS_DIR_NAME}.{extension_name}"
-            )
-            else "unloaded"
-        )
 
         embed = discord.Embed(
             title=f"Extension status for `{extension_name}`",
-            description=f"Extension: {extensions_status}\nFunction: {functions_status}",
+            description=f"{extensions_status}",
         )
 
-        if functions_status == "loaded" or extensions_status == "loaded":
+        if extensions_status == "loaded":
             embed.color = discord.Color.green()
         else:
             embed.color = discord.Color.gold()

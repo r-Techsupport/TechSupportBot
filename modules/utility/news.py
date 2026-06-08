@@ -36,7 +36,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     except AttributeError as exc:
         raise AttributeError("News was not loaded due to missing API key") from exc
 
-    await bot.add_cog(News(bot=bot, extension_name="news"))
+    await bot.add_cog(News(bot=bot))
 
 
 class Category(enum.Enum):
@@ -203,9 +203,6 @@ class News(cogs.LoopCog):
             interaction (discord.Interaction): The interaction in which the command was run
             category (str, optional): The category to get news headlines from. Defaults to None.
         """
-
-        # Debug statement
-        print("Executing news command")
         if category is None or category.lower() not in self.valid_category:
             category = random.choice(list(Category)).value
         else:
@@ -258,8 +255,6 @@ class News(cogs.LoopCog):
         Returns:
             list: The list of autocomplete for the news command.
         """
-        # Debug statement
-        print("Autocomplete interaction")
         news_category = []
         for category in Category:
             if current.lower() in category.value.lower():

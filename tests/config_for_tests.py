@@ -14,14 +14,13 @@ from collections.abc import Callable  # pylint: disable=W0611
 from typing import Self
 from unittest.mock import patch
 
+from commands import Burn, Corrector, Emojis, Greeter, MagicConch
 from hypothesis.strategies import (  # pylint: disable=W0611
     SearchStrategy,
     composite,
     integers,
     text,
 )
-
-from commands import Burn, Corrector, Emojis, Greeter, MagicConch
 
 from .helpers import (
     MockAsset,

@@ -32,7 +32,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot to register the cog to
     """
-    await bot.add_cog(Voting(bot=bot, extension_name="voting"))
+    await bot.add_cog(Voting(bot=bot))
 
 
 class Voting(cogs.LoopCog):

@@ -8,7 +8,6 @@ from __future__ import annotations
 from typing import Self
 
 import pytest
-
 from commands import htd
 
 

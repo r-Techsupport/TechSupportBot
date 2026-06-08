@@ -28,7 +28,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    await bot.add_cog(DuckHunt(bot=bot, extension_name="duck"))
+    await bot.add_cog(DuckHunt(bot=bot))
 
 
 class DuckHunt(cogs.LoopCog):

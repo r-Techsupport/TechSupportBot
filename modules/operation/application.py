@@ -41,8 +41,8 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    await bot.add_cog(ApplicationManager(bot=bot, extension_name="application"))
-    await bot.add_cog(ApplicationNotifier(bot=bot, extension_name="application"))
+    await bot.add_cog(ApplicationManager(bot=bot))
+    await bot.add_cog(ApplicationNotifier(bot=bot))
 
 
 async def command_permission_check(interaction: discord.Interaction) -> bool:

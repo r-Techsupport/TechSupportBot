@@ -51,7 +51,6 @@ async def setup(bot: bot.TechSupportBot) -> None:
     await bot.add_cog(
         FactoidManager(
             bot=bot,
-            extension_name="factoids",
         )
     )
 

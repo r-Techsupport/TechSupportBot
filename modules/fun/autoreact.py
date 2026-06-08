@@ -19,7 +19,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    await bot.add_cog(AutoReact(bot=bot, extension_name="autoreact"))
+    await bot.add_cog(AutoReact(bot=bot))
 
 
 class AutoReact(cogs.MatchCog):

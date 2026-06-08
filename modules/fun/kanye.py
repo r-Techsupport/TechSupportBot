@@ -23,7 +23,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
 
-    await bot.add_cog(KanyeQuotes(bot=bot, extension_name="kanye"))
+    await bot.add_cog(KanyeQuotes(bot=bot))
 
 
 class KanyeQuotes(cogs.LoopCog):

@@ -11,10 +11,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import discord
 import pytest
+from commands import roll
 from hypothesis import given
 from hypothesis.strategies import integers
 
-from commands import roll
 from core import auxiliary
 from tests import config_for_tests, helpers
 

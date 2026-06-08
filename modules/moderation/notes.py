@@ -23,7 +23,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
-    await bot.add_cog(Notes(bot=bot, extension_name="notes"))
+    await bot.add_cog(Notes(bot=bot))
 
 
 async def is_reader(interaction: discord.Interaction) -> bool:

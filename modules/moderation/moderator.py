@@ -25,7 +25,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     Args:
         bot (bot.TechSupportBot): The bot object to register the cog with
     """
-    await bot.add_cog(ProtectCommands(bot=bot, extension_name="moderator"))
+    await bot.add_cog(ProtectCommands(bot=bot))
 
 
 class ProtectCommands(cogs.BaseCog):
