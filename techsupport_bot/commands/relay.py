@@ -411,6 +411,8 @@ class DiscordToIRC(cogs.MatchCog):
 
         if "automod" in configuration.get_config_entry(
             discord_channel.guild.id, "core_enabled_extensions"
+        ) and str(discord_channel.id) in configuration.get_config_entry(
+            discord_channel.guild.id, "automod_channels"
         ):
             automod_actions = automod.run_only_string_checks(
                 discord_channel.guild, split_message["content"]
