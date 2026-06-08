@@ -1,5 +1,6 @@
 image = rtechsupport/techsupport-bot
 full-image = $(image):prod
+main_dir = techsupport_bot
 
 ifeq ($(shell docker-compose -v > /dev/null 2>&1; echo $$?), 0)
 	DOCKER_COMPOSE_CMD := docker-compose
@@ -23,7 +24,7 @@ lint:
 	pylint $(shell git ls-files '*.py')
 
 test:
-	PYTHONPATH=./ pytest ./tests/ -p no:warnings
+	PYTHONPATH=./techsupport_bot pytest techsupport_bot/tests/ -p no:warnings
 
 build:
 	make establish_config

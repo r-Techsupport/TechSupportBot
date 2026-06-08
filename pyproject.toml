@@ -41,4 +41,4 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["./tests"]
+testpaths = ["techsupport_bot/tests"]
