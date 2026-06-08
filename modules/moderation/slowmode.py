@@ -30,10 +30,6 @@ class SlowmodeManager(cogs.BaseCog):
     @app_commands.command(
         name="slowmode",
         description="Modifies slowmode on a given channel",
-        extras={
-            "brief": "Changes time for slowmode",
-            "usage": "seconds, [optional] channel",
-        },
     )
     async def slowmode(
         self: Self,

@@ -52,7 +52,6 @@ class ConfigControl(cogs.BaseCog):
     @config_extension_commands.command(
         name="enable",
         description="Enables an extension for the guild by name",
-        extras={"usage": "[extension-name]"},
     )
     async def enable_extension(
         self: Self, interaction: discord.Interaction, extension_name: str
@@ -99,7 +98,6 @@ class ConfigControl(cogs.BaseCog):
     @config_extension_commands.command(
         name="disable",
         description="Disables an extension for the guild by name",
-        extras={"usage": "[extension-name]"},
     )
     async def disable_extension(
         self: Self, interaction: discord.Interaction, extension_name: str
@@ -236,7 +234,6 @@ class ConfigControl(cogs.BaseCog):
     @config_commands.command(
         name="patch",
         description="Edits guild config by uploading JSON",
-        extras={"usage": "[uploaded-json]"},
     )
     async def patch_config(
         self: Self, interaction: discord.Interaction, config_json: discord.Attachment

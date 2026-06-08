@@ -116,7 +116,6 @@ class XKCD(cogs.BaseCog):
     @xkcd.command(
         name="specific",
         description="Gets an XKCD comic by number.",
-        extras={"usage": "[comic_number]"},
     )
     async def xkcd_specific(
         self: Self, interaction: discord.Interaction, comic_number: int

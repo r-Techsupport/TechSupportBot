@@ -48,9 +48,6 @@ class LevelXP(cogs.MatchCog):
     @xp.command(
         name="top",
         description="Shows the top 10 XP users in the server",
-        extras={
-            "usage": "",
-        },
     )
     async def top_xp_command(self: Self, interaction: discord.Interaction) -> None:
         """This command will display an embed of the top 10 users with XP
