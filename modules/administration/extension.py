@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, Self
 
 import discord
 from discord import app_commands
-from discord.ext import commands
 
 import ui
 from core import auxiliary, cogs
