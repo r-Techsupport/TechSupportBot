@@ -69,9 +69,6 @@ class YoutubeSearcher(cogs.BaseCog):
     @app_commands.command(
         name="youtube",
         description="Returns the top YouTube search result",
-        extras={
-            "usage": "[query]",
-        },
     )
     async def youtube(self: Self, interaction: discord.Interaction, query: str) -> None:
         """The entry point for the youtube search command

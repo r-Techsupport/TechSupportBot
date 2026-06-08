@@ -50,7 +50,6 @@ class ExtensionControl(cogs.BaseCog):
     @extension_commands.command(
         name="status",
         description="Gets the status of an extension by name",
-        extras={"usage": "[extension-name]"},
     )
     async def extension_status(
         self: Self, interaction: discord.Interaction, extension_name: str
@@ -87,7 +86,6 @@ class ExtensionControl(cogs.BaseCog):
     @extension_commands.command(
         name="load",
         description="Loads an extension by name",
-        extras={"usage": "[extension-name]"},
     )
     async def load_extension(
         self: Self, interaction: discord.Interaction, extension_name: str
@@ -118,7 +116,6 @@ class ExtensionControl(cogs.BaseCog):
     @extension_commands.command(
         name="unload",
         description="Unloads an extension by name",
-        extras={"usage": "[extension-name]"},
     )
     async def unload_extension(
         self: Self, interaction: discord.Interaction, extension_name: str
@@ -149,7 +146,6 @@ class ExtensionControl(cogs.BaseCog):
     @extension_commands.command(
         name="reload",
         description="Reloads an extension by name",
-        extras={"usage": "[extension-name]"},
     )
     async def reload_extension(
         self: Self, interaction: discord.Interaction, extension_name: str
@@ -183,9 +179,6 @@ class ExtensionControl(cogs.BaseCog):
     @extension_commands.command(
         name="register",
         description="Uploads an extension from Discord to be saved on the bot",
-        extras={
-            "usage": "[extension-name] [python-file-upload]",
-        },
     )
     async def register_extension(
         self: Self,

@@ -28,6 +28,7 @@ class PrintableCommand:
         name (str): The command name
         usage (str): The usage hints for the command
         description (str): The description of the command
+        mention (str): A mention string for the command, only for application commands
 
     """
 
@@ -35,6 +36,7 @@ class PrintableCommand:
     name: str
     usage: str
     description: str
+    mention: str = None
 
 
 async def setup(bot: bot.TechSupportBot) -> None:
@@ -70,6 +72,9 @@ class Helper(cogs.BaseCog):
         # Build raw lists of commands
         prefix_command_list = list(self.bot.walk_commands())
         app_command_list = list(self.bot.tree.walk_commands())
+        fetched_commands = await self.bot.tree.fetch_commands()
+
+        command_mentions = build_command_mentions(fetched_commands)
 
         command_prefix = await self.bot.get_prefix(ctx.message)
 
@@ -132,9 +137,14 @@ class Helper(cogs.BaseCog):
 
             # We have to manually build a string representation of the usage
             # We are given it in a list
-            command_usage = ""
-            for param in command.parameters:
-                command_usage += f"[{param.name}] "
+            command_usage = "".join(
+                (
+                    f"[{param.name}: {param.type.name}] "
+                    if param.required
+                    else f"({param.name}: {param.type.name}) "
+                )
+                for param in command.parameters
+            )
 
             # Append the app commands.
             # App commands cannot have aliases, so no need to think about that
@@ -144,6 +154,7 @@ class Helper(cogs.BaseCog):
                     name=command.qualified_name,
                     usage=command_usage.strip(),
                     description=command.description,
+                    mention=command_mentions.get(command.qualified_name),
                 )
             )
 
@@ -206,10 +217,57 @@ class Helper(cogs.BaseCog):
         for command_list in sublists:
             embed = discord.Embed(title=title, color=discord.Color.green())
             for command in command_list:
+                display_name = (
+                    command.mention
+                    if command.mention
+                    else f"{command.prefix}{command.name}"
+                )
                 embed.add_field(
-                    name=f"{command.prefix}{command.name} {command.usage}",
+                    name=f"{display_name} {command.usage}",
                     value=command.description,
                     inline=False,
                 )
             final_embeds.append(embed)
         return final_embeds
+
+
+def build_command_mentions(
+    commands: list[app_commands.AppCommand],
+) -> dict[str, str]:
+    """Build a mapping of command names to mentions.
+
+    Args:
+        commands (list[app_commands.AppCommand]): The list of commands fetched from the bot.
+
+    Returns:
+        dict[str, str]: A dictionary mapping full names to mentions.
+    """
+    mentions: dict[str, str] = {}
+
+    def walk(
+        command: app_commands.AppCommand | app_commands.AppCommandGroup,
+        root_id: int,
+        prefix: str = "",
+    ) -> None:
+        """Recursively walk command groups.
+
+        Args:
+            command: The current command/group being processed.
+            root_id (int): The ID of the top-level command.
+            prefix (str): The accumulated command path.
+        """
+        qualified_name = f"{prefix} {command.name}".strip()
+
+        mentions[qualified_name] = f"</{qualified_name}:{root_id}>"
+
+        for option in command.options:
+            if option.type in (
+                discord.AppCommandOptionType.subcommand,
+                discord.AppCommandOptionType.subcommand_group,
+            ):
+                walk(option, root_id, qualified_name)
+
+    for command in commands:
+        walk(command, command.id)
+
+    return mentions
