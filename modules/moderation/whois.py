@@ -131,7 +131,10 @@ class Whois(cogs.BaseCog):
             except (app_commands.MissingAnyRole, app_commands.AppCommandError):
                 pass
 
-        if "moderation.moderator" in enabled_extensions and interaction.permissions.kick_members:
+        if (
+            "moderation.moderator" in enabled_extensions
+            and interaction.permissions.kick_members
+        ):
             all_warnings = await moderation.get_all_warnings(
                 self.bot, member, interaction.guild
             )
