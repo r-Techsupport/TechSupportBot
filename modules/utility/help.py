@@ -256,7 +256,7 @@ def build_command_mentions(
             command (app_commands.AppCommand | app_commands.AppCommandGroup):
                 The current command/group being processed.
             root_id (int): The ID of the top-level command.
-            prefix (str): The accumulated command path.
+            prefix (str): The accumulated command path. Defaults to ""
         """
         qualified_name = f"{prefix} {command.name}".strip()
 
