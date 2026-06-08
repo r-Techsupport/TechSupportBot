@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Self
 
 import discord
 import git
-from discord.ext import commands
+from discord import app_commands
 
 from core import auxiliary, cogs
 
@@ -36,15 +36,18 @@ class BotInfo(cogs.BaseCog):
     The class that holds the bot command
     """
 
-    @commands.check(auxiliary.bot_admin_check_context)
-    @commands.command(name="bot", description="Provides bot info")
-    async def get_bot_data(self: Self, ctx: commands.Context) -> None:
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @app_commands.command(
+        name="bot",
+        description="Provides bot info",
+    )
+    async def get_bot_data(self: Self, interaction: discord.Interaction) -> None:
         """Gets various data about the bot.
 
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (commands.Context): the context object for the calling message
+            interaction (discord.Interaction): the interaction that called this command
         """
         embed = discord.Embed(title=self.bot.user.name, color=discord.Color.blurple())
 
@@ -122,4 +125,4 @@ class BotInfo(cogs.BaseCog):
 
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
