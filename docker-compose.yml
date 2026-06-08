@@ -11,8 +11,8 @@ services:
         restart: unless-stopped
         stop_signal: SIGINT
         volumes:
-            - ./config.yml:/var/TechSupportBot/techsupport_bot/config.yml
-            - ./techsupport_bot/configuration/guild_configs:/var/TechSupportBot/techsupport_bot/configuration/guild_configs
+            - ./config.yml:/var/TechSupportBot/config.yml
+            - ./configuration/guild_configs:/var/TechSupportBot/configuration/guild_configs
         networks:
             - all
         depends_on:
