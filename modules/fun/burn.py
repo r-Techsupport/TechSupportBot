@@ -50,7 +50,7 @@ class Burn(cogs.BaseCog):
     )
     async def burn(
         self: Self, interaction: discord.Interaction, user_to_burn: discord.Member
-    ):
+    ) -> None:
         """The only purpose of this function is to accept input from discord
 
         Args:
