@@ -9,8 +9,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Self
 
 import discord
-from discord.ext import commands
+from discord import app_commands
 
+import configuration
 from core import auxiliary, cogs
 
 if TYPE_CHECKING:
@@ -29,28 +30,36 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class Corrector(cogs.BaseCog):
     """Class for the correct command for the discord bot."""
 
+    @app_commands.command(
+        name="correct",
+        description="Replaces the text matching to_replace in the most recent matching message",
+    )
     async def correct_command(
-        self: Self, ctx: commands.Context, to_replace: str, replacement: str
+        self: Self, interaction: discord.Interaction, to_replace: str, replacement: str
     ) -> None:
         """This is the main processing for the correct command
 
         Args:
-            ctx (commands.Context): The context where the command was run
+            interaction (discord.Interaction): The interaction that called this command
             to_replace (str): What substring is being asked to find a message with
             replacement (str): If a message with to_replace is found,
                 this is what it will be replaced with
         """
-        prefix = await self.bot.get_prefix(ctx.message)
+
+        prefix = configuration.get_config_entry(
+            interaction.guild.id, "core_command_prefix"
+        )
         message_to_correct = await auxiliary.search_channel_for_message(
-            channel=ctx.channel,
+            channel=interaction.channel,
             prefix=prefix,
             content_to_match=to_replace,
             allow_bot=False,
         )
         if not message_to_correct:
-            await auxiliary.send_deny_embed(
-                message="I couldn't find any message to correct", channel=ctx.channel
+            embed = auxiliary.prepare_deny_embed(
+                message="I couldn't find any message to correct"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         updated_message = self.prepare_message(
@@ -60,16 +69,17 @@ class Corrector(cogs.BaseCog):
         updated_message += " :white_check_mark:"
 
         if len(updated_message) > 4096:
-            await auxiliary.send_deny_embed(
-                message="The corrected message is too long to send", channel=ctx.channel
+            embed = auxiliary.prepare_deny_embed(
+                message="The corrected message is too long to send"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         if updated_message.count("\n") > 15:
-            await auxiliary.send_deny_embed(
+            embed = auxiliary.prepare_deny_embed(
                 message="The corrected message has too many lines to send",
-                channel=ctx.channel,
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         embed = auxiliary.generate_basic_embed(
@@ -77,7 +87,7 @@ class Corrector(cogs.BaseCog):
             description=updated_message,
             color=discord.Color.green(),
         )
-        await ctx.send(
+        await interaction.response.send_message(
             embed=embed,
             content=auxiliary.construct_mention_string([message_to_correct.author]),
         )
@@ -96,23 +106,3 @@ class Corrector(cogs.BaseCog):
             str: The corrected content
         """
         return old_content.replace(to_replace, f"**{replacement}**")
-
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @commands.command(
-        aliases=["c"],
-        brief="Corrects a message",
-        description="Replaces the most recent text with your text",
-        usage="[to_replace] [replacement]",
-    )
-    async def correct(
-        self: Self, ctx: commands.Context, to_replace: str, replacement: str
-    ) -> None:
-        """Discord entry point into the correct command
-
-        Args:
-            ctx (commands.Context): The context in which the command was run
-            to_replace (str): What is being searched for to replace
-            replacement (str): What to replace to_replace with
-        """
-        await self.correct_command(ctx, to_replace, replacement)
