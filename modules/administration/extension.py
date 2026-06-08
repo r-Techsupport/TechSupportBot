@@ -106,10 +106,9 @@ class ExtensionControl(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        try:
-            await self.bot.load_extension(f"functions.{extension_name}")
-        except (ModuleNotFoundError, commands.errors.ExtensionNotFound):
-            await self.bot.load_extension(f"commands.{extension_name}")
+        await self.bot.load_extension(
+            f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}"
+        )
 
         embed = auxiliary.prepare_confirm_embed(
             message=f"I've loaded the {extension_name} extension"
@@ -137,10 +136,10 @@ class ExtensionControl(cogs.BaseCog):
             embed = auxiliary.prepare_deny_embed(f"I could not find {extension_name}")
             await interaction.response.send_message(embed=embed)
             return
-        try:
-            await self.bot.unload_extension(f"functions.{extension_name}")
-        except commands.errors.ExtensionNotLoaded:
-            await self.bot.unload_extension(f"commands.{extension_name}")
+
+        await self.bot.unload_extension(
+            f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}"
+        )
 
         embed = auxiliary.prepare_confirm_embed(
             message=f"I've unloaded the {extension_name} extension"
@@ -168,16 +167,13 @@ class ExtensionControl(cogs.BaseCog):
             embed = auxiliary.prepare_deny_embed(f"I could not find {extension_name}")
             await interaction.response.send_message(embed=embed)
             return
-        try:
-            await self.bot.unload_extension(f"functions.{extension_name}")
-            await self.bot.load_extension(f"functions.{extension_name}")
-        except (
-            ModuleNotFoundError,
-            commands.errors.ExtensionNotFound,
-            commands.errors.ExtensionNotLoaded,
-        ):
-            await self.bot.unload_extension(f"commands.{extension_name}")
-            await self.bot.load_extension(f"commands.{extension_name}")
+
+        await self.bot.unload_extension(
+            f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}"
+        )
+        await self.bot.load_extension(
+            f"{self.bot.EXTENSIONS_DIR_NAME}.{extension_name}"
+        )
 
         embed = auxiliary.prepare_confirm_embed(
             message=f"I've reloaded the {extension_name} extension"
