@@ -41,23 +41,23 @@ class Animals(cogs.BaseCog):
         description="Gets an animal of a given type and sends it in the channel",
     )
     async def get_animal(
-        self: Self, interaction: discord.Interaction, type: str
+        self: Self, interaction: discord.Interaction, type_of_animal: str
     ) -> None:
         """The get animal function, allowing any type of configured animal to be called
 
         Args:
             interaction (discord.Interaction): The interaction that called this command
-            type (str): The type of animal to get
+            type_of_animal (str): The type of animal to get
         """
-        type = type.lower()
-        if not self.is_animal_valid(type):
+        type_of_animal = type_of_animal.lower()
+        if not self.is_animal_valid(type_of_animal):
             embed = auxiliary.prepare_deny_embed(
-                f"It appears {type} is not a valid animal type for this command"
+                f"It appears {type_of_animal} is not a valid animal type for this command"
             )
             await interaction.response.send_message(embed=embed)
             return
         await interaction.response.defer()
-        function_reference = self.VALID_ANIMALS.get(type)
+        function_reference = self.VALID_ANIMALS.get(type_of_animal)
         image_url = await function_reference()
         await interaction.followup.send(image_url)
 
@@ -86,7 +86,6 @@ class Animals(cogs.BaseCog):
         """Checks if the passed animal parameter is valid
 
         Args:
-            self (Self): _description_
             animal (str): The animal parameter to check
 
         Returns:
