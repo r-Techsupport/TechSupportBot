@@ -49,7 +49,6 @@ class Dictionary(cogs.BaseCog):
     @app_commands.command(
         name="dictionary",
         description="Looks up a word in the dictionary",
-        extras={"module": "dictionary"},
     )
     async def dictionary_lookup(
         self: Self, interaction: discord.Interaction, word: str

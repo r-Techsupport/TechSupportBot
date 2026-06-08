@@ -33,7 +33,6 @@ class SlowmodeManager(cogs.BaseCog):
         extras={
             "brief": "Changes time for slowmode",
             "usage": "seconds, [optional] channel",
-            "module": "slowmode",
         },
     )
     async def slowmode(

@@ -40,7 +40,6 @@ class RoleGiver(cogs.BaseCog):
         self.ctx_menu = app_commands.ContextMenu(
             name="Manage roles",
             callback=self.assign_role_command,
-            extras={"module": "role"},
         )
         self.bot.tree.add_command(self.ctx_menu)
 
@@ -53,7 +52,6 @@ class RoleGiver(cogs.BaseCog):
     @role_group.command(
         name="self",
         description="Assign or remove roles from yourself",
-        extras={"module": "role"},
     )
     async def self_role(self: Self, interaction: discord.Interaction) -> None:
         """The base of the self role command
@@ -101,7 +99,6 @@ class RoleGiver(cogs.BaseCog):
     @role_group.command(
         name="manage",
         description="Modify roles on a given user",
-        extras={"module": "role"},
     )
     async def assign_role(
         self: Self, interaction: discord.Interaction, member: discord.Member

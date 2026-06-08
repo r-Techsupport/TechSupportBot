@@ -69,7 +69,6 @@ class WindowsError(cogs.BaseCog):
     @app_commands.command(
         name="winerror",
         description="Searches the windows error database based on input",
-        extras={"module": "winerror"},
     )
     async def winerror(
         self: Self, interaction: discord.Interaction, search_term: str

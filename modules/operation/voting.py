@@ -67,9 +67,6 @@ class Voting(cogs.LoopCog):
     @app_commands.command(
         name="vote",
         description="Starts a yes/no vote that runs for 72 hours",
-        extras={
-            "module": "voting",
-        },
     )
     async def votingbutton(
         self: Self,

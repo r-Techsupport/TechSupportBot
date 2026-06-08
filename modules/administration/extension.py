@@ -43,14 +43,15 @@ class ExtensionControl(cogs.BaseCog):
     """
 
     extension_commands: app_commands.Group = app_commands.Group(
-        name="extension", description="...", extras={"module": "extension"}
+        name="extension",
+        description="...",
     )
 
     @app_commands.check(auxiliary.bot_admin_check_interaction)
     @extension_commands.command(
         name="status",
         description="Gets the status of an extension by name",
-        extras={"module": "extension", "usage": "[extension-name]"},
+        extras={"usage": "[extension-name]"},
     )
     async def extension_status(
         self: Self, interaction: discord.Interaction, extension_name: str
@@ -94,7 +95,7 @@ class ExtensionControl(cogs.BaseCog):
     @extension_commands.command(
         name="load",
         description="Loads an extension by name",
-        extras={"module": "extension", "usage": "[extension-name]"},
+        extras={"usage": "[extension-name]"},
     )
     async def load_extension(
         self: Self, interaction: discord.Interaction, extension_name: str
@@ -126,7 +127,7 @@ class ExtensionControl(cogs.BaseCog):
     @extension_commands.command(
         name="unload",
         description="Unloads an extension by name",
-        extras={"module": "extension", "usage": "[extension-name]"},
+        extras={"usage": "[extension-name]"},
     )
     async def unload_extension(
         self: Self, interaction: discord.Interaction, extension_name: str
@@ -157,7 +158,7 @@ class ExtensionControl(cogs.BaseCog):
     @extension_commands.command(
         name="reload",
         description="Reloads an extension by name",
-        extras={"module": "extension", "usage": "[extension-name]"},
+        extras={"usage": "[extension-name]"},
     )
     async def reload_extension(
         self: Self, interaction: discord.Interaction, extension_name: str
@@ -195,7 +196,6 @@ class ExtensionControl(cogs.BaseCog):
         name="register",
         description="Uploads an extension from Discord to be saved on the bot",
         extras={
-            "module": "extension",
             "usage": "[extension-name] [python-file-upload]",
         },
     )

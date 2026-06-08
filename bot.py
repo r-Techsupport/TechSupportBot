@@ -511,7 +511,6 @@ class TechSupportBot(commands.Bot):
 
             extensions_list.append(dotted)
 
-        print(extensions_list)
         return extensions_list
 
     async def load_extensions(self: Self, graceful: bool = True) -> None:
@@ -768,21 +767,14 @@ class TechSupportBot(commands.Bot):
             console_only=True,
         )
         # Check 1 - Ensure extension is enabled
-        try:
-            extension_name = interaction.command.extras["module"]
-        except KeyError:
-            # Skip extension enabled check if no extras module has been defined
-            self.logger.console.warning(
-                "No module has been defined, skipping extension enabled check"
-            )
-            extension_name = None
-
-        if extension_name:
-            # If the extension is disabled, raise an error to show it and block execution
-            if not self.command_run_extension_disabled_check(
-                interaction.guild, extension_name
-            ):
-                raise custom_errors.AppCommandExtensionDisabled
+        # removes "modules."
+        extension_name = interaction.command.callback.__module__[8:]
+        print(extension_name)
+        # If the extension is disabled, raise an error to show it and block execution
+        if not self.command_run_extension_disabled_check(
+            interaction.guild, extension_name
+        ):
+            raise custom_errors.AppCommandExtensionDisabled
 
         # Check 2 - Approve if invoker is bot admin
         result = await self.command_run_admin_check(interaction.user)

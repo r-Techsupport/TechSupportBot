@@ -35,7 +35,6 @@ class Whois(cogs.BaseCog):
         description="Gets Discord user information",
         extras={
             "usage": "@user",
-            "module": "whois",
             "ephemeral_error": True,
         },
     )

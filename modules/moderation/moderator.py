@@ -37,7 +37,7 @@ class ProtectCommands(cogs.BaseCog):
     """
 
     warnings_group: app_commands.Group = app_commands.Group(
-        name="warning", description="...", extras={"module": "moderator"}
+        name="warning", description="..."
     )
 
     # Commands
@@ -47,7 +47,6 @@ class ProtectCommands(cogs.BaseCog):
     @app_commands.command(
         name="ban",
         description="Bans a user from the guild",
-        extras={"module": "moderator"},
     )
     async def handle_ban_user(
         self: Self,
@@ -129,7 +128,6 @@ class ProtectCommands(cogs.BaseCog):
     @app_commands.command(
         name="unban",
         description="Unbans a user from the guild",
-        extras={"module": "moderator"},
     )
     async def handle_unban_user(
         self: Self, interaction: discord.Interaction, target: discord.User, reason: str
@@ -194,7 +192,6 @@ class ProtectCommands(cogs.BaseCog):
     @app_commands.command(
         name="kick",
         description="Kicks a user from the guild",
-        extras={"module": "moderator"},
     )
     async def handle_kick_user(
         self: Self,
@@ -249,7 +246,8 @@ class ProtectCommands(cogs.BaseCog):
     @app_commands.checks.has_permissions(moderate_members=True)
     @app_commands.checks.bot_has_permissions(moderate_members=True)
     @app_commands.command(
-        name="mute", description="Times out a user", extras={"module": "moderator"}
+        name="mute",
+        description="Times out a user",
     )
     async def handle_mute_user(
         self: Self,
@@ -363,7 +361,6 @@ class ProtectCommands(cogs.BaseCog):
     @app_commands.command(
         name="unmute",
         description="Removes timeout from a user",
-        extras={"module": "moderator"},
     )
     async def handle_unmute_user(
         self: Self,
@@ -424,7 +421,8 @@ class ProtectCommands(cogs.BaseCog):
     @app_commands.checks.has_permissions(kick_members=True)
     @app_commands.checks.bot_has_permissions(kick_members=True)
     @app_commands.command(
-        name="warn", description="Warns a user", extras={"module": "moderator"}
+        name="warn",
+        description="Warns a user",
     )
     async def handle_warn_user(
         self: Self,
@@ -564,7 +562,8 @@ class ProtectCommands(cogs.BaseCog):
     @app_commands.checks.has_permissions(kick_members=True)
     @app_commands.checks.bot_has_permissions(kick_members=True)
     @app_commands.command(
-        name="unwarn", description="Unwarns a user", extras={"module": "moderator"}
+        name="unwarn",
+        description="Unwarns a user",
     )
     async def handle_unwarn_user(
         self: Self,
@@ -667,7 +666,6 @@ class ProtectCommands(cogs.BaseCog):
     @warnings_group.command(
         name="clear",
         description="clears all warnings from a user",
-        extras={"module": "moderator"},
     )
     async def handle_warning_clear(
         self: Self,
@@ -727,7 +725,6 @@ class ProtectCommands(cogs.BaseCog):
     @warnings_group.command(
         name="all",
         description="Shows all warnings to the invoker",
-        extras={"module": "moderator"},
     )
     async def handle_warning_all(
         self: Self,

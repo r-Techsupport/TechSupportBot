@@ -32,7 +32,6 @@ class Purger(cogs.BaseCog):
     @app_commands.command(
         name="purge",
         description="Purge by pure duration of messages",
-        extras={"module": "purge"},
     )
     async def purge_command(
         self: Self,

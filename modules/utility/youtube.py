@@ -71,7 +71,6 @@ class YoutubeSearcher(cogs.BaseCog):
         description="Returns the top YouTube search result",
         extras={
             "usage": "[query]",
-            "module": "youtube",
         },
     )
     async def youtube(self: Self, interaction: discord.Interaction, query: str) -> None:

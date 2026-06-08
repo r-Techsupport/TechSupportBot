@@ -82,7 +82,6 @@ class WebSearcher(cogs.BaseCog):
         description="Returns the top Web search result",
         extras={
             "usage": "[query]",
-            "module": "search",
         },
     )
     async def websearch_text(
@@ -122,7 +121,6 @@ class WebSearcher(cogs.BaseCog):
         description="Returns the top Web search image result",
         extras={
             "usage": "[query]",
-            "module": "search",
         },
     )
     async def websearch_image(

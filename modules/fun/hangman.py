@@ -334,7 +334,7 @@ class HangmanCog(cogs.BaseCog):
     @hangman_app_group.command(
         name="start",
         description="Start a Hangman game in the current channel.",
-        extras={"module": "hangman", "suppress_logs": True},
+        extras={"suppress_logs": True},
     )
     async def start_game(
         self: Self, interaction: discord.Interaction, word: str

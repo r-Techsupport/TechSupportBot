@@ -113,7 +113,6 @@ class Notes(cogs.BaseCog):
         extras={
             "brief": "Sets a note for a user",
             "usage": "@user [note]",
-            "module": "notes",
         },
     )
     async def set_note(
@@ -186,7 +185,6 @@ class Notes(cogs.BaseCog):
         extras={
             "brief": "Clears all notes for a user",
             "usage": "@user",
-            "module": "notes",
         },
     )
     async def clear_notes(
@@ -253,7 +251,6 @@ class Notes(cogs.BaseCog):
         extras={
             "brief": "Gets all notes for a user",
             "usage": "@user",
-            "module": "notes",
         },
     )
     async def all_notes(

@@ -124,7 +124,7 @@ class Helper(cogs.BaseCog):
                 continue
 
             # Check if extension is enabled
-            extension_name = command.extras["module"]
+            extension_name = command.callback.__module__[8:]
             if extension_name not in configuration.get_config_entry(
                 ctx.guild.id, "core_enabled_extensions"
             ):

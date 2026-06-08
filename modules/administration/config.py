@@ -38,13 +38,12 @@ class ConfigControl(cogs.BaseCog):
     """
 
     config_commands: app_commands.Group = app_commands.Group(
-        name="config", description="...", extras={"module": "config"}
+        name="config", description="..."
     )
 
     config_extension_commands: app_commands.Group = app_commands.Group(
         name="extension",
         description="...",
-        extras={"module": "config"},
         parent=config_commands,
     )
 
@@ -53,7 +52,7 @@ class ConfigControl(cogs.BaseCog):
     @config_extension_commands.command(
         name="enable",
         description="Enables an extension for the guild by name",
-        extras={"module": "config", "usage": "[extension-name]"},
+        extras={"usage": "[extension-name]"},
     )
     async def enable_extension(
         self: Self, interaction: discord.Interaction, extension_name: str
@@ -100,7 +99,7 @@ class ConfigControl(cogs.BaseCog):
     @config_extension_commands.command(
         name="disable",
         description="Disables an extension for the guild by name",
-        extras={"module": "config", "usage": "[extension-name]"},
+        extras={"usage": "[extension-name]"},
     )
     async def disable_extension(
         self: Self, interaction: discord.Interaction, extension_name: str
@@ -146,7 +145,6 @@ class ConfigControl(cogs.BaseCog):
     @config_extension_commands.command(
         name="list-disabled",
         description="Lists all disabled extensions in the current server",
-        extras={"module": "config"},
     )
     async def list_disabled(self: Self, interaction: discord.Interaction) -> None:
         """This will read the current guild config and list all the
@@ -176,7 +174,6 @@ class ConfigControl(cogs.BaseCog):
     @config_extension_commands.command(
         name="enable-all",
         description="Enables all loaded but disabled extensions in the guild",
-        extras={"module": "config"},
     )
     async def enable_everything(self: Self, interaction: discord.Interaction) -> None:
         """This will get all the disabled extensions and enable them for the current
@@ -214,7 +211,6 @@ class ConfigControl(cogs.BaseCog):
     @config_commands.command(
         name="json",
         description="This gets the guild config json file and sends it as a response",
-        extras={"module": "config"},
     )
     async def config_json(self: Self, interaction: discord.Interaction) -> None:
         """This pulls the guild json config and send it to the caller
@@ -240,7 +236,7 @@ class ConfigControl(cogs.BaseCog):
     @config_commands.command(
         name="patch",
         description="Edits guild config by uploading JSON",
-        extras={"module": "config", "usage": "[uploaded-json]"},
+        extras={"usage": "[uploaded-json]"},
     )
     async def patch_config(
         self: Self, interaction: discord.Interaction, config_json: discord.Attachment
@@ -272,7 +268,6 @@ class ConfigControl(cogs.BaseCog):
     @config_commands.command(
         name="reset",
         description="Resets config to default for the current guild",
-        extras={"module": "config"},
     )
     async def reset_config(self: Self, interaction: discord.Interaction) -> None:
         """A function to reset the current guild config to stock

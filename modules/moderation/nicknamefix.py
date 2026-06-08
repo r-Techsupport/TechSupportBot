@@ -33,7 +33,6 @@ class NicknameFixer(cogs.BaseCog):
         description="Auto adjusts a nickname of the given member",
         extras={
             "usage": "member",
-            "module": "nicknamefix",
         },
     )
     async def fixnickname(

@@ -83,7 +83,7 @@ class ForumChannel(cogs.LoopCog):
     """
 
     forum_group: app_commands.Group = app_commands.Group(
-        name="forum", description="...", extras={"module": "forum"}
+        name="forum", description="..."
     )
 
     async def preconfig(self: Self) -> None:
@@ -93,7 +93,6 @@ class ForumChannel(cogs.LoopCog):
     @forum_group.command(
         name="mark",
         description="Mark a support forum thread",
-        extras={"module": "forum"},
     )
     async def mark_thread_command(
         self: Self, interaction: discord.Interaction, status: str, reason: str = ""
@@ -224,7 +223,6 @@ class ForumChannel(cogs.LoopCog):
     @forum_group.command(
         name="unsolved",
         description="Gets a collection of unsolved issues",
-        extras={"module": "forum"},
     )
     async def showUnsolved(self: Self, interaction: discord.Interaction) -> None:
         """A command to mark the thread as abandoned
@@ -276,7 +274,6 @@ class ForumChannel(cogs.LoopCog):
     @forum_group.command(
         name="reopen",
         description="Reopens a support thread",
-        extras={"module": "forum"},
     )
     async def reopen_thread(self: Self, interaction: discord.Interaction) -> None:
         """This command reopens a closed and locked thread

@@ -50,7 +50,6 @@ class LevelXP(cogs.MatchCog):
         description="Shows the top 10 XP users in the server",
         extras={
             "usage": "",
-            "module": "xp",
         },
     )
     async def top_xp_command(self: Self, interaction: discord.Interaction) -> None:

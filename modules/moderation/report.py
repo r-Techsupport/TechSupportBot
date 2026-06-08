@@ -31,7 +31,7 @@ class Report(cogs.BaseCog):
     @app_commands.command(
         name="report",
         description="Reports something to the moderators",
-        extras={"module": "report", "suppress_logs": True},
+        extras={"suppress_logs": True},
     )
     async def report_command(
         self: Self, interaction: discord.Interaction, reason: str

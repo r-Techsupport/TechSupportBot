@@ -33,9 +33,6 @@ class BackupCommand(cogs.BaseCog):
     @app_commands.command(
         name="backup",
         description="Backs up data into a zip file",
-        extras={
-            "module": "backup",
-        },
     )
     async def backup(
         self: Self, interaction: discord.Interaction, config_file: bool = False

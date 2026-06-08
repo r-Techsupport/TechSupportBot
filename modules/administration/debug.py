@@ -35,16 +35,13 @@ class Debugger(cogs.BaseCog):
     """
 
     debug_group: app_commands.Group = app_commands.Group(
-        name="debug", description="...", extras={"module": "debug"}
+        name="debug", description="..."
     )
 
     @app_commands.check(auxiliary.bot_admin_check_interaction)
     @debug_group.command(
         name="message",
         description="Searches and displays all the message properties",
-        extras={
-            "module": "debug",
-        },
     )
     async def debug_message(
         self: Self,
@@ -70,9 +67,6 @@ class Debugger(cogs.BaseCog):
     @debug_group.command(
         name="member",
         description="Searches and displays all the member properties",
-        extras={
-            "module": "debug",
-        },
     )
     async def debug_member(
         self: Self, interaction: discord.Interaction, member: discord.Member
@@ -92,9 +86,6 @@ class Debugger(cogs.BaseCog):
     @debug_group.command(
         name="channel",
         description="Searches and displays all the channel properties",
-        extras={
-            "module": "debug",
-        },
     )
     async def debug_channel(
         self: Self, interaction: discord.Interaction, channel: discord.abc.GuildChannel

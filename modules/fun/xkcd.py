@@ -44,9 +44,6 @@ class XKCD(cogs.BaseCog):
     @xkcd.command(
         name="latest",
         description="Gets the latest XKCD comic.",
-        extras={
-            "module": "xkcd",
-        },
     )
     async def xkcd_latest(self: Self, interaction: discord.Interaction) -> None:
         """This calls the XKCD API and gets the latest comic
@@ -74,9 +71,6 @@ class XKCD(cogs.BaseCog):
     @xkcd.command(
         name="random",
         description="Gets a random XKCD comic.",
-        extras={
-            "module": "xkcd",
-        },
     )
     async def xkcd_random(self: Self, interaction: discord.Interaction) -> None:
         """This calls the XKCD API and gets a random comic
@@ -122,7 +116,7 @@ class XKCD(cogs.BaseCog):
     @xkcd.command(
         name="specific",
         description="Gets an XKCD comic by number.",
-        extras={"module": "xkcd", "usage": "[comic_number]"},
+        extras={"usage": "[comic_number]"},
     )
     async def xkcd_specific(
         self: Self, interaction: discord.Interaction, comic_number: int

@@ -944,7 +944,6 @@ class FactoidManager(cogs.MatchCog):
         description="Calls a factoid from the database and sends it publicy in the channel.",
         extras={
             "usage": "[factoid_name]",
-            "module": "factoids",
         },
     )
     async def factoid_call_command(
@@ -1737,7 +1736,6 @@ class FactoidManager(cogs.MatchCog):
         extras={
             "brief": "Sets a note for a user",
             "usage": "[file] [property] [true_all] [ignore_hidden]",
-            "module": "factoids",
         },
     )
     async def app_command_all(

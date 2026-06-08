@@ -193,7 +193,6 @@ class News(cogs.LoopCog):
     @app_commands.command(
         name="news",
         description="Gets a random news headline",
-        extras={"module": "news"},
     )
     async def news_command(
         self: Self, interaction: discord.Interaction, category: str = ""
