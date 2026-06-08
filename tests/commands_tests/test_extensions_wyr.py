@@ -13,8 +13,8 @@ from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 import discord
 import pytest
 
-from commands import wyr
 from core import auxiliary
+from modules.fun import wyr
 from tests import config_for_tests, helpers
 
 
@@ -39,7 +39,8 @@ class Test_Preconfig:
     async def test_preconfig(self: Self) -> None:
         """A test to ensure that preconfig sets the last variable correctly"""
         # Step 1 - Setup env
-        wyr_test = setup_local_extension()
+        discord_env = config_for_tests.FakeDiscordEnv()
+        wyr_test = setup_local_extension(discord_env.bot)
 
         # Step 2 - Call the function
         await wyr_test.preconfig()
@@ -106,7 +107,8 @@ class Test_Get_Question:
     def test_any_question(self: Self) -> None:
         """Ensure that get_question gets any question"""
         # Step 1 - Setup env
-        wyr_test = setup_local_extension()
+        discord_env = config_for_tests.FakeDiscordEnv()
+        wyr_test = setup_local_extension(discord_env.bot)
         wyr_test.last = None
 
         # Step 2 - Call the function
@@ -120,7 +122,8 @@ class Test_Get_Question:
     def test_resource_read(self: Self) -> None:
         """A test to ensure that the resource file is parsed correctly"""
         # Step 1 - Setup env
-        wyr_test = setup_local_extension()
+        discord_env = config_for_tests.FakeDiscordEnv()
+        wyr_test = setup_local_extension(discord_env.bot)
         wyr_test.last = None
 
         # Step 2 - Call the function
@@ -136,7 +139,8 @@ class Test_Get_Question:
     def test_non_repeat_question(self: Self) -> None:
         """A test to ensure that a random question can never occur twice"""
         # Step 1 - Setup env
-        wyr_test = setup_local_extension()
+        discord_env = config_for_tests.FakeDiscordEnv()
+        wyr_test = setup_local_extension(discord_env.bot)
         wyr_test.last = '"q1o1" || "q1o2"'
 
         # Step 2 - Call the function
@@ -152,7 +156,8 @@ class Test_Get_Question:
     def test_last_set(self: Self) -> None:
         """Ensure that the last variable is properly set"""
         # Step 1 - Setup env
-        wyr_test = setup_local_extension()
+        discord_env = config_for_tests.FakeDiscordEnv()
+        wyr_test = setup_local_extension(discord_env.bot)
         wyr_test.last = None
 
         # Step 2 - Call the function
@@ -166,7 +171,8 @@ class Test_Get_Question:
         """Ensure that the string is properly turned into
         a question"""
         # Step 1 - Setup env
-        wyr_test = setup_local_extension()
+        discord_env = config_for_tests.FakeDiscordEnv()
+        wyr_test = setup_local_extension(discord_env.bot)
 
         # Step 2 - Call the function
         resource_string = wyr_test.create_question_string('"q1o1" || "q1o2"')

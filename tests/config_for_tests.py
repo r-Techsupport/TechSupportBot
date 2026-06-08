@@ -21,7 +21,7 @@ from hypothesis.strategies import (  # pylint: disable=W0611
     text,
 )
 
-from commands import Burn, Corrector, Emojis, Greeter, MagicConch
+from modules.fun import Burn, Corrector, Emojis, Greeter, MagicConch
 
 from .helpers import (
     MockAsset,

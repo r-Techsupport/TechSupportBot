@@ -9,7 +9,7 @@ from typing import Self
 
 import pytest
 
-from commands import htd
+from modules.utility import htd
 
 
 class Test_SplitNicely:

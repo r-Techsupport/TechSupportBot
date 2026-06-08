@@ -23,6 +23,7 @@ class MockBot:
     """
 
     def __init__(self: Self, input_id: int = None) -> None:
+        self.EXTENSIONS_DIR_NAME = "modules"
         self.id = input_id
 
     async def get_prefix(self: Self, message: helpers.MockMessage = None) -> str:

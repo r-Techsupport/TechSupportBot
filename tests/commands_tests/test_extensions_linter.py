@@ -12,8 +12,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from commands import linter
 from core import auxiliary
+from modules.utility import linter
 from tests import config_for_tests, helpers
 
 
