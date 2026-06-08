@@ -410,7 +410,7 @@ class DiscordToIRC(cogs.MatchCog):
             message=split_message["content"], channel=discord_channel
         )
 
-        if "automod" in configuration.get_config_entry(
+        if "moderation.automod" in configuration.get_config_entry(
             discord_channel.guild.id, "core_enabled_extensions"
         ) and str(discord_channel.id) in configuration.get_config_entry(
             discord_channel.guild.id, "automod_channels"
@@ -454,7 +454,7 @@ class DiscordToIRC(cogs.MatchCog):
         sent_message = await discord_channel.send(content=mentions_string, embed=embed)
 
         # Don't allow logging if extension is disabled
-        if "logger" not in configuration.get_config_entry(
+        if "moderation.logger" not in configuration.get_config_entry(
             discord_channel.guild.id, "core_enabled_extensions"
         ):
             return

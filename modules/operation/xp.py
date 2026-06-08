@@ -136,7 +136,7 @@ class LevelXP(cogs.MatchCog):
             return False
 
         # Ignore messages that are factoid calls
-        if "factoids" in configuration.get_config_entry(
+        if "operation.factoids" in configuration.get_config_entry(
             ctx.guild.id, "core_enabled_extensions"
         ):
             factoid_prefix = configuration.get_config_entry(
