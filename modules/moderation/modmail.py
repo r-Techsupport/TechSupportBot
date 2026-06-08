@@ -37,10 +37,10 @@ async def has_modmail_management_role(interaction: discord.Interaction) -> bool:
     Checks if the invoker has a modmail management role
 
     Args:
-        interaction: The interaction calling the modmail command
+        interaction (discord.Interaction): The interaction calling the modmail command
 
     Raises:
-        CommandError: No modmail management roles were assigned in the config
+        AppCommandError: No modmail management roles were assigned in the config
         MissingAnyRole: Invoker doesn't have a modmail role
 
     Returns:
