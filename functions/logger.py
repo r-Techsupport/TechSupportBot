@@ -1,0 +1,341 @@
+"""Module for the logger extension for the discord bot."""
+
+from __future__ import annotations
+
+import datetime
+from typing import TYPE_CHECKING, Self
+
+import discord
+from discord.ext import commands
+
+import configuration
+from botlogging import LogContext, LogLevel
+from core import auxiliary, cogs
+
+if TYPE_CHECKING:
+    import bot
+
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Logger plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
+    await bot.add_cog(Logger(bot=bot, extension_name="logger"))
+
+
+def get_channel_id(channel: discord.abc.GuildChannel | discord.Thread) -> int:
+    """A function to get the ID of the channel that should be logged
+    Will pull the parent ID if a thread is used
+
+    Args:
+        channel (discord.abc.GuildChannel | discord.Thread): The channel object
+
+    Returns:
+        int: The ID of the channel that the message was sent in
+    """
+    if isinstance(channel, discord.Thread):
+        return channel.parent_id
+    return channel.id
+
+
+def get_mapped_channel_object(
+    guild: discord.Guild, src_channel: int
+) -> discord.TextChannel:
+    """Gets the destination channel object from the integer ID of the source channel
+    Will return none if the channel doesn't exist in the config
+
+    Args:
+        guild (discord.Guild): The guild where the src_channel is
+        src_channel (int): The ID of the source channel
+
+    Returns:
+        discord.TextChannel: The logging channel object
+    """
+    # Get the ID of the channel, or parent channel in the case of threads
+    mapped_id = configuration.get_config_entry(guild.id, "logger_channel_map").get(
+        str(get_channel_id(src_channel))
+    )
+    if not mapped_id:
+        return None
+
+    # Get the channel object associated with the ID
+    target_logging_channel = src_channel.guild.get_channel(int(mapped_id))
+    if not target_logging_channel:
+        return None
+
+    return target_logging_channel
+
+
+async def pre_log_checks(
+    bot: bot.TechSupportBot,
+    src_channel: discord.abc.GuildChannel | discord.Thread,
+) -> discord.TextChannel:
+    """This does checks that are needed to pre log.
+    It pulls the ID of the dest channel from the config, makes sure the guilds match
+    And finds the TextChannel for the dest channel
+
+    Args:
+        bot (bot.TechSupportBot): The bot object
+        src_channel (discord.abc.GuildChannel | discord.Thread): The src channel object
+
+    Returns:
+        discord.TextChannel: The dest channel object, where the log should be sent
+    """
+    channel_id = get_channel_id(src_channel)
+
+    if not str(channel_id) in configuration.get_config_entry(
+        src_channel.guild.id, "logger_channel_map"
+    ):
+        return None
+
+    target_logging_channel = get_mapped_channel_object(src_channel.guild, src_channel)
+    if not target_logging_channel:
+        return None
+
+    # Don't log stuff cross-guild
+    if target_logging_channel.guild.id != src_channel.guild.id:
+        log_channel = configuration.get_config_entry(
+            src_channel.guild.id, "logger_channel_map"
+        )
+        await bot.logger.send_log(
+            message="Configured channel not in associated guild - aborting log",
+            level=LogLevel.WARNING,
+            context=LogContext(guild=src_channel.guild, channel=src_channel),
+            channel=log_channel,
+        )
+        return None
+
+    return target_logging_channel
+
+
+class Logger(cogs.MatchCog):
+    """Class for the logger to make it to discord."""
+
+    async def match(self: Self, ctx: commands.Context, _: str) -> bool:
+        """Matches any message and checks if it is in a channel with a logger rule
+
+        Args:
+            ctx (commands.Context): The context of the original message
+
+        Returns:
+            bool: Whether the message should be logged or not
+        """
+        channel_id = get_channel_id(ctx.channel)
+        if not str(channel_id) in configuration.get_config_entry(
+            ctx.guild.id, "logger_channel_map"
+        ):
+            return False
+
+        return True
+
+    async def response(self: Self, ctx: commands.Context, _: str, __: bool) -> None:
+        """If a message should be logged, this logs the message
+
+        Args:
+            ctx (commands.Context): The context that was generated when the message was sent
+        """
+        target_logging_channel = await pre_log_checks(self.bot, ctx.channel)
+
+        await send_message(
+            self.bot,
+            ctx.message,
+            ctx.author,
+            ctx.channel,
+            target_logging_channel,
+        )
+
+
+async def send_message(
+    bot: bot.TechSupportBot,
+    message: discord.Message,
+    author: discord.Member,
+    src_channel: discord.abc.GuildChannel | discord.Thread,
+    dest_channel: discord.TextChannel,
+    content_override: str = None,
+    special_flags: list[str] = None,
+) -> None:
+    """Makes the embed, uploads the attachements, and send a message in the dest_channel
+    This will make zero checks
+
+    Args:
+        bot (bot.TechSupportBot): The bot object
+        message (discord.Message): The message object to log
+        author (discord.Member): The author of the message
+        src_channel (discord.abc.GuildChannel | discord.Thread): The source channel where
+            the initial message was sent to
+        dest_channel (discord.TextChannel): The destination channel where the
+            log embed will be sent
+        content_override (str, optional): If supplied, the content of the message will be
+            replaced with this. Defaults to None.
+        special_flags (list[str], optional): If supplied, a new field on the embed will be
+            added that shows this. Defaults to [].
+    """
+    # Ensure we have attachments re-uploaded
+    attachments = await build_attachments(bot, message)
+
+    # Add avatar to attachments to all it to be added to the embed
+    try:
+        attachments.insert(
+            0, await author.display_avatar.to_file(filename="avatar.png")
+        )
+    except discord.errors.HTTPException:
+        attachments.insert(
+            0, await author.default_avatar.to_file(filename="avatar.png")
+        )
+
+    # Make and send the embed and files
+    embed = await build_embed(
+        message, author, src_channel, content_override, special_flags=special_flags
+    )
+    await dest_channel.send(embed=embed, files=attachments[:11])
+
+
+async def build_embed(
+    message: discord.Message,
+    author: discord.Member,
+    src_channel: discord.abc.GuildChannel | discord.Thread,
+    content_override: str = None,
+    special_flags: list[str] = None,
+) -> discord.Embed:
+    """Builds the logged messag embed
+
+    Args:
+        message (discord.Message): The message object to log
+        author (discord.Member): The author of the message
+        src_channel (discord.abc.GuildChannel | discord.Thread): The source channel where
+            the initial message was sent to
+        content_override (str, optional): If supplied, the content of the message will be
+            replaced with this. Defaults to None.
+        special_flags (list[str], optional): If supplied, a new field on the embed will be
+            added that shows this. Defaults to [].
+
+    Returns:
+        discord.Embed: The prepared embed ready to send to the log channel
+    """
+    embed = discord.Embed()
+
+    # Set basic items
+    embed.color = discord.Color.greyple()
+    embed.timestamp = datetime.datetime.utcnow()
+
+    # Add the message content
+    embed.title = "Content"
+    print_content = content_override
+
+    if not content_override:
+        print_content = getattr(message, "clean_content", "No content")
+
+    embed.description = print_content
+    if len(embed.description) == 0:
+        embed.description = "No content"
+
+    # Add the channel/thread name
+    main_channel = getattr(src_channel, "parent", src_channel)
+    embed.add_field(
+        name="Channel",
+        value=f"{main_channel.name} ({main_channel.mention})",
+    )
+    if isinstance(src_channel, discord.Thread):
+        embed.add_field(
+            name="Thread",
+            value=f"{src_channel.name} ({src_channel.mention})",
+        )
+
+    # Add username, display name, and nickname
+    embed.add_field(
+        name="Display Name", value=getattr(author, "display_name", "Unknown")
+    )
+    if getattr(author, "nick", False):
+        embed.add_field(
+            name="Global Name", value=getattr(author, "global_name", "Unknown")
+        )
+    embed.add_field(name="Name", value=getattr(author, "name", "Unknown"))
+
+    # Add roles
+    embed.add_field(
+        name="Roles",
+        value=", ".join(generate_role_list(author)),
+    )
+
+    # Add file hashes, if relevant
+    file_hash_string = ""
+
+    if message.attachments:
+        parts = []
+        for attachment in message.attachments:
+            file_hash = await auxiliary.get_attachment_hash(attachment)
+            parts.append(f"{attachment.filename}: {file_hash}")
+
+        file_hash_string = ", ".join(parts)
+        embed.add_field(name="File Hashes", value=file_hash_string)
+
+    # Flags
+    if special_flags:
+        embed.add_field(name="Flags", value=", ".join(special_flags))
+
+    # Add avatar
+    embed.set_thumbnail(url="attachment://avatar.png")
+
+    # Add footer with IDs for better searchings
+    embed.set_footer(text=f"Author ID: {author.id} • Message ID: {message.id}")
+
+    return embed
+
+
+def generate_role_list(author: discord.Member) -> list[str]:
+    """Makes a list of role names from the passed member
+
+    Args:
+        author (discord.Member): The member to get roles from
+
+    Returns:
+        list[str]: The list of roles, highest role first
+    """
+    if not hasattr(author, "roles"):
+        return ["None"]
+
+    roles = [role.mention for role in author.roles[1:]]
+    roles.reverse()
+
+    if len(roles) == 0:
+        roles = ["None"]
+
+    return roles
+
+
+async def build_attachments(
+    bot: bot.TechSupportBot, message: discord.Message
+) -> list[discord.File]:
+    """Reuploads and builds a list of attachments to send along side the embed
+
+    Args:
+        bot (bot.TechSupportBot): the bot object
+        message (discord.Message): The message object to log
+
+    Returns:
+        list[discord.File]: The list of file objects ready to be sent
+    """
+    attachments: list[discord.File] = []
+    if message.attachments:
+        total_attachment_size = 0
+        for attch in message.attachments:
+            if (
+                total_attachment_size := total_attachment_size + attch.size
+            ) <= message.guild.filesize_limit:
+                attachments.append(await attch.to_file())
+        if (lf := len(message.attachments) - len(attachments)) != 0:
+            log_channel = configuration.get_config_entry(
+                message.guild.id, "logger_channel_map"
+            )
+            await bot.logger.send_log(
+                message=(
+                    f"Logger did not reupload {lf} file(s) due to file size limit"
+                    f" on message {message.id} in channel {message.channel.name}."
+                ),
+                level=LogLevel.WARNING,
+                channel=log_channel,
+                context=LogContext(guild=message.guild, channel=message.channel),
+            )
+    return attachments
