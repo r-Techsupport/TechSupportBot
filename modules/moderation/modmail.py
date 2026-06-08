@@ -1164,7 +1164,10 @@ class Modmail(cogs.BaseCog):
         """
         if interaction.user.id in active_threads:
             embed = auxiliary.prepare_deny_embed(
-                message=f"You already have an open thread! <#{active_threads[interaction.user.id]}>",
+                message=(
+                    "You already have an open thread! "
+                    f"<#{active_threads[interaction.user.id]}>",
+                )
             )
             await interaction.response.send_message(embed=embed)
             return
@@ -1465,7 +1468,7 @@ class Modmail(cogs.BaseCog):
     @app_commands.check(has_modmail_management_role)
     @modmail_thread_commands.command(
         name="tsclose",
-        description="Closes a modmail thread after 5 minutes, and does not send a message to the user",
+        description="Silently closes a modmail thread after 5 minutes",
     )
     async def thread_tsclose(self: Self, interaction: discord.Interaction) -> None:
         """This close a modmail thread after 5 minutes, and does not send a message to the user
@@ -1526,7 +1529,8 @@ class Modmail(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that called this command
             message (str): The message to send to the user
-            attachment (discord.Attachment): If desired, an attachment to send to the user. Defaults to None
+            attachment (discord.Attachment): If desired, an attachment to send to the user.
+                Defaults to None
         """
         if not self.pre_thread_checks(interaction):
             embed = auxiliary.prepare_deny_embed(
@@ -1566,7 +1570,8 @@ class Modmail(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that called this command
             message (str): The message to send to the user
-            attachment (discord.Attachment): If desired, an attachment to send to the user. Defaults to None
+            attachment (discord.Attachment): If desired, an attachment to send to the user.
+                Defaults to None
         """
         if not self.pre_thread_checks(interaction):
             embed = auxiliary.prepare_deny_embed(
