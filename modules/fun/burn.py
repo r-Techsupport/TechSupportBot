@@ -10,8 +10,10 @@ import random
 from typing import TYPE_CHECKING, Self
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 
+import configuration
 from core import auxiliary, cogs
 
 if TYPE_CHECKING:
@@ -43,81 +45,44 @@ class Burn(cogs.BaseCog):
         "Was that message a hot pan? BECAUSE IT BURNS!",
     ]
 
-    async def handle_burn(
-        self: Self,
-        ctx: commands.Context,
-        user: discord.Member,
-        message: discord.Message,
-    ) -> None:
-        """The core logic to handle the burn command
+    @app_commands.command(
+        name="burn",
+        description="Declares mentioned user's message as a BURN!",
+    )
+    async def burn(
+        self: Self, interaction: discord.Interaction, user_to_burn: discord.Member
+    ):
+        """The only purpose of this function is to accept input from discord
 
         Args:
-            ctx (commands.Context): The context in which the command was run in
-            user (discord.Member): The user that was called in the burn command
-            message (discord.Message): The message to react to.
-                Will be None if no message could be found
+            interaction (discord.Interaction): The interaction which called this command
+            user_to_burn (discord.Member): The user in which to burn
         """
-        if not message:
-            await auxiliary.send_deny_embed(
-                message="I could not a find a message to reply to", channel=ctx.channel
-            )
-            return
-
-        await auxiliary.add_list_of_reactions(
-            message=message, reactions=["🔥", "🚒", "👨‍🚒"]
+        prefix = configuration.get_config_entry(
+            interaction.guild.id, "core_command_prefix"
         )
+        message = await auxiliary.search_channel_for_message(
+            channel=interaction.channel, prefix=prefix, member_to_match=user_to_burn
+        )
+
+        if not message:
+            embed = auxiliary.prepare_deny_embed(
+                message="I could not a find a message to reply to"
+            )
+            await interaction.response.send_message(embed=embed)
+            return
 
         embed = auxiliary.generate_basic_embed(
             title="Burn Alert!",
             description=f"🔥🔥🔥 {random.choice(self.PHRASES)} 🔥🔥🔥",
             color=discord.Color.red(),
         )
-        await ctx.send(embed=embed, content=auxiliary.construct_mention_string([user]))
+        await interaction.response.send_message(
+            content=auxiliary.construct_mention_string([user_to_burn]),
+            embed=embed,
+            ephemeral=False,
+        )
 
-    async def burn_command(
-        self: Self, ctx: commands.Context, user_to_match: discord.Member
-    ) -> None:
-        """This the core logic of the burn command
-        This is a command and should be accessed via discord
-
-        Args:
-            ctx (commands.Context): The context in which the command was run
-            user_to_match (discord.Member): The user in which to burn
-        """
-        if ctx.message.reference is None:
-            prefix = await self.bot.get_prefix(ctx.message)
-            message = await auxiliary.search_channel_for_message(
-                channel=ctx.channel, prefix=prefix, member_to_match=user_to_match
-            )
-        else:
-            message = ctx.message.reference.resolved
-
-        await self.handle_burn(ctx, user_to_match, message)
-
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @commands.command(
-        brief="Declares a BURN!",
-        description="Declares mentioned user's message as a BURN!",
-        usage="@user",
-    )
-    async def burn(
-        self: Self, ctx: commands.Context, user_to_match: discord.Member = None
-    ) -> None:
-        """The only purpose of this function is to accept input from discord
-
-        Args:
-            ctx (commands.Context): The context in which the command was run
-            user_to_match (discord.Member): The user in which to burn
-        """
-        if user_to_match is None:
-            if ctx.message.reference is None:
-                await auxiliary.send_deny_embed(
-                    message="You need to mention someone to declare a burn.",
-                    channel=ctx.channel,
-                )
-                return
-
-            user_to_match = ctx.message.reference.resolved.author
-
-        await self.burn_command(ctx, user_to_match)
+        await auxiliary.add_list_of_reactions(
+            message=message, reactions=["🔥", "🚒", "👨‍🚒"]
+        )
