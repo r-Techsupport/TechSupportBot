@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
-from discord.ext import commands
+import aiohttp
+import discord
+from discord import app_commands
 
 from core import auxiliary, cogs
 
@@ -23,70 +25,124 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class Animals(cogs.BaseCog):
-    """The class for the animals commands
+    """The class for the animals commands"""
 
-    Attributes:
-        CAT_API_URL (str): The URL for the cat API
-        DOG_API_URL (str): The URL for the dog API
-        FOX_API_URL (str): The URL for the fox API
-        FROG_API_URL (str): The URL for the frog API
-    """
+    async def preconfig(self: Self) -> None:
+        """This sets up the VALID_ANIMALS map to connect animal names to functions"""
+        self.VALID_ANIMALS: dict[str, callable] = {
+            "cat": self.get_cat,
+            "dog": self.get_dog,
+            "fox": self.get_fox,
+            "frog": self.get_frog,
+        }
 
-    CAT_API_URL: str = "https://api.thecatapi.com/v1/images/search?limit=1&api_key={}"
-    DOG_API_URL: str = "https://dog.ceo/api/breeds/image/random"
-    FOX_API_URL: str = "https://randomfox.ca/floof/"
-    FROG_API_URL: str = "https://frogs.media/api/random"
-
-    @auxiliary.with_typing
-    @commands.command(name="cat", brief="Gets a cat", description="Gets a cat")
-    async def cat(self: Self, ctx: commands.Context) -> None:
-        """Prints a cat to discord
+    @app_commands.command(
+        name="animal",
+        description="Gets an animal of a given type and sends it in the channel",
+    )
+    async def get_animal(
+        self: Self, interaction: discord.Interaction, type: str
+    ) -> None:
+        """The get animal function, allowing any type of configured animal to be called
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
+            type (str): The type of animal to get
         """
-        if not self.bot.file_config.api.api_keys.cat:
+        type = type.lower()
+        if not self.is_animal_valid(type):
             embed = auxiliary.prepare_deny_embed(
-                "No cat API key has been set, so not cat can be shown"
+                f"It appears {type} is not a valid animal type for this command"
             )
-            await ctx.send(embed=embed)
+            await interaction.response.send_message(embed=embed)
             return
+        await interaction.response.defer()
+        function_reference = self.VALID_ANIMALS.get(type)
+        image_url = await function_reference()
+        await interaction.followup.send(image_url)
 
-        url = self.CAT_API_URL.format(
+    @get_animal.autocomplete("type")
+    async def status_autocomplete(
+        self: Self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        """This builds a list of valid animal types and displays the choices to the user
+
+        Args:
+            interaction (discord.Interaction): The interaction that is calling the /animal command
+            current (str): The current string in the type parameter
+
+        Returns:
+            list[app_commands.Choice[str]]: A list of currently valid choices
+        """
+        return [
+            app_commands.Choice(name=animal, value=animal)
+            for animal in self.VALID_ANIMALS
+            if current.lower() in animal.lower()
+        ][:10]
+
+    def is_animal_valid(self: Self, animal: str) -> bool:
+        """Checks if the passed animal parameter is valid
+
+        Args:
+            self (Self): _description_
+            animal (str): The animal parameter to check
+
+        Returns:
+            bool: Whether its a valid animal paramter or not
+        """
+        return animal in self.VALID_ANIMALS
+
+    async def get_cat(self: Self) -> str:
+        """This gets the URL to an image of a cat
+
+        Returns:
+            str: The image of a cat of display
+        """
+        api_url: str = "https://api.thecatapi.com/v1/images/search?limit=1&api_key={}"
+        url = api_url.format(
             self.bot.file_config.api.api_keys.cat,
         )
         response = await self.bot.http_functions.http_call("get", url)
-        await ctx.send(response[0].url)
+        return response[0].url
 
-    @auxiliary.with_typing
-    @commands.command(name="dog", brief="Gets a dog", description="Gets a dog")
-    async def dog(self: Self, ctx: commands.Context) -> None:
-        """Prints a dog to discord
+    async def get_dog(self: Self) -> str:
+        """This gets the URL to an image of a dog
 
-        Args:
-            ctx (commands.Context): The context in which the command was run
+        Returns:
+            str: The image of a dog of display
         """
-        response = await self.bot.http_functions.http_call("get", self.DOG_API_URL)
-        await ctx.send(response.message)
+        api_url: str = "https://dog.ceo/api/breeds/image/random"
+        response = await self.bot.http_functions.http_call("get", api_url)
+        return response.message
 
-    @auxiliary.with_typing
-    @commands.command(name="frog", brief="Gets a frog", description="Gets a frog")
-    async def frog(self: Self, ctx: commands.Context) -> None:
-        """Prints a frog to discord
+    async def get_fox(self: Self) -> str:
+        """This gets the URL to an image of a fox
 
-        Args:
-            ctx (commands.Context): The context in which the command was run
+        Returns:
+            str: The image of a fox of display
         """
-        response = await self.bot.http_functions.http_call("get", self.FROG_API_URL)
-        await ctx.send(response.url)
+        api_url: str = "https://randomfox.ca/floof/"
+        response = await self.bot.http_functions.http_call("get", api_url)
+        return response.image
 
-    @auxiliary.with_typing
-    @commands.command(name="fox", brief="Gets a fox", description="Gets a fox")
-    async def fox(self: Self, ctx: commands.Context) -> None:
-        """Prints a fox to discord
+    async def get_frog(self: Self) -> str:
+        """This gets the URL to an image of a frog
 
-        Args:
-            ctx (commands.Context): The context in which the command was run
+        Returns:
+            str: The image of a frog of display
         """
-        response = await self.bot.http_functions.http_call("get", self.FOX_API_URL)
-        await ctx.send(response.image)
+        api_url = "https://frogs.media/api/random"
+
+        response = await self.bot.http_functions.http_call(
+            "get",
+            api_url,
+        )
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                response.url,
+                allow_redirects=False,
+            ) as response_two:
+                return response_two.headers.get("Location")
