@@ -1039,7 +1039,15 @@ class FactoidManager(cogs.MatchCog):
 
         try:
             # define the message and send it
-            await interaction.response.send_message(content=content, embed=embed)
+            view = DeleteView(interaction.user.id)
+
+            await interaction.response.send_message(
+                content=content,
+                embed=embed,
+                view=view,
+            )
+
+            view.message = await interaction.original_response()
             # log it in the logging channel with type info and generic content
             log_channel = configuration.get_config_entry(
                 interaction.guild.id, "core_logging_channel"
@@ -2834,3 +2842,39 @@ class FactoidManager(cogs.MatchCog):
         await auxiliary.send_confirm_embed(
             message=f"`{factoid_name}` is now enabled", channel=ctx.channel
         )
+
+
+class DeleteView(discord.ui.View):
+    def __init__(self: Self, author_id: int) -> None:
+        super().__init__(timeout=60)
+        self.author_id = author_id
+        self.message: discord.Message | None = None
+
+    async def on_timeout(self: Self) -> None:
+        """Is called after the timeout, with the goal of deleting the buttons from the message"""
+
+        if self.message:
+            await self.message.edit(view=None)
+
+    @discord.ui.button(label="Delete", style=discord.ButtonStyle.danger, emoji="🗑️")
+    async def delete_button(
+        self: Self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ) -> None:
+        """The function called when the delete button is pressed
+
+        Args:
+            interaction (discord.Interaction): The interaction that pressed the button
+            button (discord.ui.Button): The button object itself
+        """
+
+        if interaction.user.id != self.author_id:
+            await interaction.response.send_message(
+                "Only the original caller can delete this message.",
+                ephemeral=True,
+            )
+            return
+
+        if interaction.message:
+            await interaction.message.delete()
