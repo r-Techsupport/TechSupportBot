@@ -9,7 +9,6 @@ import discord
 from discord import app_commands
 
 import configuration
-import ui
 from core import auxiliary, cogs
 
 if TYPE_CHECKING:
@@ -182,13 +181,22 @@ class RoleGiver(cogs.BaseCog):
             return
         self.locked.add(identifier)
 
-        view = ui.SelectView(role_options)
+        view = RoleView(role_options)
         await interaction.response.send_message(
             content=f"Select what roles should be assigned to {member} below",
             ephemeral=True,
             view=view,
         )
         await view.wait()
+
+        # If we cancelled, assign no roles and release the lock
+        if view.select.cancelled:
+            embed = auxiliary.prepare_deny_embed(
+                "You cancelled editing roles. No changes were made"
+            )
+            await interaction.edit_original_response(embed=embed, view=None)
+            self.locked.remove(identifier)
+            return
 
         # In the event of a timeout, do not remove any roles, and release the lock
         if view.select.timeout:
@@ -312,3 +320,77 @@ class RoleGiver(cogs.BaseCog):
             if removed_roles:
                 embed.add_field(name="Removed roles:", value="\n".join(removed_roles))
         await interaction.edit_original_response(content=None, embed=embed, view=None)
+
+
+class RoleSelectView(discord.ui.Select):
+    """This holds the select object for a list of roles
+
+    Args:
+        role_list (list[str]): A list of SelectOption to be in the dropdown
+    """
+
+    def __init__(self: Self, role_list: list[str]) -> None:
+        super().__init__(
+            placeholder="Select roles...",
+            min_values=0,
+            max_values=len(role_list),
+            options=role_list,
+            row=0,
+        )
+        self.timeout = True
+        self.cancelled = False
+
+    async def callback(self: Self, interaction: discord.Interaction) -> None:
+        """What happens when the select menu has been used
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this select object
+        """
+        self.timeout = False
+        self.view.stop()
+
+    async def on_timeout(self: Self) -> None:
+        """What happens when the view timesout. This is to prevent all roles from being removed."""
+        self.values = None
+        self.view.stop()
+
+
+class RoleView(discord.ui.View):
+    """This is the view that will hold only the dropdown
+    Adds the dropdown and does nothing else
+    Args:
+        role_list (list[str]): The list of SelectOptions to add to the dropdown
+    """
+
+    def __init__(self: Self, role_list: list[str]) -> None:
+        super().__init__()
+        # Adds the dropdown to our view object.
+        self.select = RoleSelectView(role_list)
+        self.add_item(self.select)
+
+    async def on_timeout(self: Self) -> None:
+        """What happens when the view times out."""
+        self.select.values = None
+        self.stop()
+
+    @discord.ui.button(
+        label="Cancel",
+        style=discord.ButtonStyle.secondary,
+        emoji="❌",
+        row=1,
+    )
+    async def cancel_button(
+        self: Self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ) -> None:
+        """A button to instatly cancel the role assignment
+
+        Args:
+            self (Self): _description_
+            interaction (discord.Interaction): The interaction that pressed this button
+            button (discord.ui.Button): The button object
+        """
+
+        self.select.cancelled = True
+        self.stop()
