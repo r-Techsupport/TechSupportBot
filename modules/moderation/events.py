@@ -246,31 +246,64 @@ class EventLogger(cogs.BaseCog):
         Args:
             messages (list[discord.Message]): The messages that have been deleted
         """
-        guild = getattr(messages[0].channel, "guild", None)
+        channel = messages[0].channel
+        guild = channel.guild
 
-        unique_channels = set()
-        unique_servers = set()
-        for message in messages:
-            unique_channels.add(message.channel.name)
-            unique_servers.add(
-                f"{message.channel.guild.name} ({message.channel.guild.id})"
-            )
+        # Don't log stuff not in a guild
+        if not guild:
+            return
 
         embed = discord.Embed()
-        embed.add_field(name="Channels", value=",".join(unique_channels))
-        embed.add_field(name="Servers", value=",".join(unique_servers))
 
-        log_channel = configuration.get_config_entry(
-            guild.id, "core_guild_events_channel"
+        embed = discord.Embed(
+            title="Bulk Message Delete",
+            colour=discord.Colour.orange(),
+            timestamp=discord.utils.utcnow(),
         )
-        await self.bot.logger.send_log(
-            message=f"{len(messages)} messages bulk deleted!",
-            level=LogLevel.INFO,
-            context=LogContext(
-                guild=messages[0].channel.guild, channel=messages[0].channel
+
+        embed.add_field(
+            name="Channel",
+            value=(
+                f"**Channel:** {channel.mention}\n"
+                f"**Name:** #{channel.name}\n"
+                f"**ID:** {channel.id}"
             ),
-            channel=log_channel,
-            embed=embed,
+            inline=True,
+        )
+
+        description_prefix = f"{len(messages)} messages were deleted:\n"
+
+        max_embed_length = 4096
+        content_limit = 100
+
+        while True:
+            lines: list[str] = []
+
+            for message in messages:
+                clean_content = message.clean_content
+
+                if len(clean_content) > content_limit:
+                    clean_content = f"{clean_content[:content_limit]}..."
+
+                lines.append(f"{message.id}, {message.author.name}: {clean_content}")
+
+            description = description_prefix + "\n".join(lines)
+
+            if len(description) <= max_embed_length or content_limit <= 0:
+                break
+
+            content_limit -= 1
+
+        embed.description = description
+
+        console_message = f"Bulk message delete: Channel: {channel.name} ({channel.id}). Amount: {len(messages)}"
+
+        await self.send_event_log(
+            guild=guild,
+            log_location="message",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=channel,
         )
 
     @commands.Cog.listener()
