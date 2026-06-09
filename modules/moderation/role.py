@@ -387,7 +387,6 @@ class RoleView(discord.ui.View):
         """A button to instatly cancel the role assignment
 
         Args:
-            self (Self): _description_
             interaction (discord.Interaction): The interaction that pressed this button
             button (discord.ui.Button): The button object
         """
