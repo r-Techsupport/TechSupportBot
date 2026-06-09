@@ -153,7 +153,7 @@ class EventLogger(cogs.BaseCog):
 
         embed.set_footer(text=f"Message ID: {after.id}")
 
-        console_message = f"Message edit: ID: {after.id} in channel ({after.channel.name} ({after.channel.id})). Old: {old_content}, new {after.clean_content}"
+        console_message = f"Message edit: ID: {after.id} in channel: {after.channel.name} ({after.channel.id}). Old: {old_content}, new {after.clean_content}"
 
         await self.send_event_log(
             guild=after.guild,
@@ -170,38 +170,70 @@ class EventLogger(cogs.BaseCog):
         Args:
             message (discord.Message): The deleted message
         """
-        guild = getattr(message.channel, "guild", None)
+        guild = message.guild
+        channel = message.channel
 
         # Ignore ephemeral slash command messages
-        if not guild and message.type == discord.MessageType.chat_input_command:
+        if message.type == discord.MessageType.chat_input_command:
             return
 
-        embed = discord.Embed()
-        embed.add_field(name="Content", value=message.content[:1024] or "None")
-        if len(message.content) > 1024:
-            embed.add_field(name="\a", value=message.content[1025:2048])
-        if len(message.content) > 2048:
-            embed.add_field(name="\a", value=message.content[2049:3072])
-        if len(message.content) > 3072:
-            embed.add_field(name="\a", value=message.content[3073:4096])
-        embed.add_field(name="Author", value=message.author)
+        embed = discord.Embed(
+            title="Message Deleted",
+            description=f"[Jump to Message]({message.jump_url})",
+            colour=discord.Colour.orange(),
+            timestamp=discord.utils.utcnow(),
+        )
+
+        embed.set_author(
+            name=str(message.author),
+            icon_url=message.author.display_avatar.url,
+        )
+
+        embed.add_field(
+            name="Author",
+            value=(
+                f"**User:** {message.author.mention}\n"
+                f"**Name:** {message.author}\n"
+                f"**ID:** {message.author.id}"
+            ),
+            inline=True,
+        )
+
         embed.add_field(
             name="Channel",
-            value=getattr(message.channel, "name", "DM"),
+            value=(
+                f"**Channel:** {channel.mention}\n"
+                f"**Name:** #{channel.name}\n"
+                f"**ID:** {channel.id}"
+            ),
+            inline=True,
         )
-        embed.add_field(name="Server", value=getattr(guild, "name", "None"))
-        embed.set_footer(text=f"Author ID: {message.author.id}")
 
-        log_channel = configuration.get_config_entry(
-            message.author.id, "core_guild_events_channel"
+        embed.add_field(
+            name="Timestamps",
+            value=(
+                f"**Sent:** <t:{int(message.created_at.timestamp())}:F> "
+                f"(<t:{int(message.created_at.timestamp())}:R>)\n"
+            ),
+            inline=False,
         )
 
-        await self.bot.logger.send_log(
-            message=f"Message with ID {message.id} deleted",
-            level=LogLevel.INFO,
-            context=LogContext(guild=message.channel.guild, channel=message.channel),
-            channel=log_channel,
-            embed=embed,
+        embed.add_field(
+            name="Message Content",
+            value=message.content[:1024] if message.content else "*No content*",
+            inline=False,
+        )
+
+        embed.set_footer(text=f"Message ID: {message.id}")
+
+        console_message = f"Message delete: ID: {message.id} in channel: {channel.name} ({channel.id}). Content: {message.clean_content}"
+
+        await self.send_event_log(
+            guild=guild,
+            log_location="message",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=channel,
         )
 
     @commands.Cog.listener()
@@ -552,44 +584,6 @@ class EventLogger(cogs.BaseCog):
             ),
             level=LogLevel.INFO,
             context=LogContext(guild=channel.guild, channel=channel),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    @commands.Cog.listener()
-    async def on_guild_remove(self: Self, guild: discord.Guild) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_remove
-
-        Args:
-            guild (discord.Guild): The guild that got removed
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Server", value=guild.name)
-        await self.bot.logger.send_log(
-            message=f"Left guild with ID {guild.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=guild),
-            embed=embed,
-        )
-
-    @commands.Cog.listener()
-    async def on_guild_join(self: Self, guild: discord.Guild) -> None:
-        """Configures a new guild upon joining.
-
-        Args:
-            guild (discord.Guild): the guild that was joined
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Server", value=guild.name)
-
-        log_channel = configuration.get_config_entry(
-            guild.id, "core_guild_events_channel"
-        )
-
-        await self.bot.logger.send_log(
-            message=f"Joined guild with ID {guild.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=guild),
             channel=log_channel,
             embed=embed,
         )
@@ -963,4 +957,42 @@ class EventLogger(cogs.BaseCog):
             message="Disconnected from Discord",
             level=LogLevel.INFO,
             console_only=True,
+        )
+
+    @commands.Cog.listener()
+    async def on_guild_remove(self: Self, guild: discord.Guild) -> None:
+        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_remove
+
+        Args:
+            guild (discord.Guild): The guild that got removed
+        """
+        embed = discord.Embed()
+        embed.add_field(name="Server", value=guild.name)
+        await self.bot.logger.send_log(
+            message=f"Left guild with ID {guild.id}",
+            level=LogLevel.INFO,
+            context=LogContext(guild=guild),
+            embed=embed,
+        )
+
+    @commands.Cog.listener()
+    async def on_guild_join(self: Self, guild: discord.Guild) -> None:
+        """Configures a new guild upon joining.
+
+        Args:
+            guild (discord.Guild): the guild that was joined
+        """
+        embed = discord.Embed()
+        embed.add_field(name="Server", value=guild.name)
+
+        log_channel = configuration.get_config_entry(
+            guild.id, "core_guild_events_channel"
+        )
+
+        await self.bot.logger.send_log(
+            message=f"Joined guild with ID {guild.id}",
+            level=LogLevel.INFO,
+            context=LogContext(guild=guild),
+            channel=log_channel,
+            embed=embed,
         )
