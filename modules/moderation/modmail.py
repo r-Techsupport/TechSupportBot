@@ -870,17 +870,10 @@ class Modmail(cogs.BaseCog):
 
     Attributes:
         modmail_commands (app_commands.Group): The group for the /modmail commands
-        modmail_thread_commands (app_commands.Group): The sub-group for /modmail thread
     """
 
     modmail_commands: app_commands.Group = app_commands.Group(
         name="modmail", description="The group of modmail commands"
-    )
-
-    modmail_thread_commands: app_commands.Group = app_commands.Group(
-        name="thread",
-        description="Modmail commands specific to use in threads",
-        parent=modmail_commands,
     )
 
     def __init__(self: Self, bot: bot.TechSupportBot) -> None:
@@ -1282,7 +1275,7 @@ class Modmail(cogs.BaseCog):
         return True
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="alias",
         description="Sends a specified alias as an anonymous reply in the thread",
     )
@@ -1350,7 +1343,7 @@ class Modmail(cogs.BaseCog):
         ][:10]
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="close",
         description="Instantly closes a modmail thead",
     )
@@ -1383,7 +1376,7 @@ class Modmail(cogs.BaseCog):
         )
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="sclose",
         description="Instantly closes a modmail thead silently",
     )
@@ -1416,7 +1409,7 @@ class Modmail(cogs.BaseCog):
         )
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="tclose",
         description="Closes a modmail thread after 5 minutes, and sends a message to the user",
     )
@@ -1465,7 +1458,7 @@ class Modmail(cogs.BaseCog):
         )
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="tsclose",
         description="Silently closes a modmail thread after 5 minutes",
     )
@@ -1513,7 +1506,7 @@ class Modmail(cogs.BaseCog):
         )
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="areply",
         description="Replies to a modmail thread anonymously",
     )
@@ -1554,7 +1547,7 @@ class Modmail(cogs.BaseCog):
         )
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="reply",
         description="Replies to a modmail thread",
     )
@@ -1595,7 +1588,7 @@ class Modmail(cogs.BaseCog):
         )
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="factoid",
         description="Replies anonymously to a thread with the text of a given factoid",
     )
@@ -1679,7 +1672,7 @@ class Modmail(cogs.BaseCog):
         )
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="rule",
         description="Replies anonymously to a thread with the text of a given rule",
     )
