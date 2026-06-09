@@ -89,6 +89,10 @@ class EventLogger(cogs.BaseCog):
         before = payload.cached_message
         after = payload.message
 
+        # If for some reason there is no after message, log nothing
+        if not after:
+            return
+
         # Ignore message edit events for not content changes
         if before and before.content == after.content:
             return
@@ -513,28 +517,53 @@ class EventLogger(cogs.BaseCog):
             reactions (list[discord.Reaction]): The reactions that were removed
         """
         guild = getattr(message.channel, "guild", None)
+        channel = message.channel
 
-        unique_emojis = set()
+        # Don't log messages without a guild
+        if not guild:
+            return
+
+        emoji_str = ""
+        total_emoji = 0
         for reaction in reactions:
-            unique_emojis.add(reaction.emoji)
+            emoji_str += f"`{reaction.emoji}`: {reaction.count}\n"
+            total_emoji += reaction.count
 
-        embed = discord.Embed()
-        embed.add_field(name="Emojis", value=",".join(unique_emojis))
-        embed.add_field(name="Message", value=message.content or "None")
-        embed.add_field(name="Message Author", value=message.author)
-        embed.add_field(name="Channel", value=getattr(message.channel, "name", "DM"))
-        embed.add_field(name="Server", value=guild.name)
+        embed = discord.Embed(
+            title="Reactions Cleared",
+            description=f"[Jump to Message]({message.jump_url})",
+            colour=discord.Colour.orange(),
+            timestamp=discord.utils.utcnow(),
+        )
+        embed.add_field(name="Emojis", value=emoji_str)
 
-        log_channel = configuration.get_config_entry(
-            guild.id, "core_guild_events_channel"
+        embed.add_field(
+            name="Channel",
+            value=(
+                f"**Channel:** {channel.mention}\n"
+                f"**Name:** #{channel.name}\n"
+                f"**ID:** {channel.id}"
+            ),
+            inline=True,
         )
 
-        await self.bot.logger.send_log(
-            message=f"{len(reactions)} cleared from message with ID {message.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=message.channel.guild, channel=message.channel),
-            channel=log_channel,
-            embed=embed,
+        embed.add_field(
+            name="Message Info",
+            value=(
+                f"**Message Content:** {message.clean_content[:50]}\n"
+                f"**Message Author:** {message.author.name} ({message.author.mention})\n"
+                f"**Message ID:** {message.id}"
+            ),
+        )
+
+        console_message = f"{total_emoji} reactions cleared from message with ID: {message.id} in channel {channel.name} ({channel.id})"
+
+        await self.send_event_log(
+            guild=guild,
+            log_location="message",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=channel,
         )
 
     # Guild Events
