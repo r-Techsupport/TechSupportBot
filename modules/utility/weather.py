@@ -20,9 +20,6 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
     Args:
         bot (bot.TechSupportBot): The bot object to register the cogs to
-
-    Raises:
-        AttributeError: Raised if an API key is missing to prevent unusable commands from loading
     """
     await bot.add_cog(Weather(bot=bot))
 
