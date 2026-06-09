@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Self
 
 import discord
 import munch
+from discord import app_commands
 from discord.ext import commands
 
 from core import auxiliary, cogs
@@ -36,6 +37,57 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 class Weather(cogs.BaseCog):
     """Class to set up the weather extension for the discord bot."""
+
+    @app_commands.command(
+        name="weather",
+        description="Gets weather data for a specific location",
+    )
+    async def get_weather(
+        self: Self, interaction: discord.Interaction, city: str, country: str = None
+    ) -> None:
+        """This command gets weather from open-meteo and displays it in a fancy embed
+
+        Args:
+            self (Self): _description_
+            interaction (discord.Interaction): The interaction that called this command
+            city (str): The city to get weather for
+            country (str, optional): If desired, the country to search in.
+                Defaults to all countries.
+        """
+        geo_api_url = "https://geocoding-api.open-meteo.com/v1/search?name={}&count=1"
+        weather_api_url = "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current={}&daily={}&timezone=auto"
+
+        current_params = [
+            "temperature_2m",
+            "relative_humidity_2m",
+            "wind_speed_10m",
+            "precipitation",
+            "apparent_temperature",
+            "weather_code",
+            "wind_direction_10m",
+        ]
+        daily_params = ["temperature_2m_max", "temperature_2m_min"]
+        current_params_str = ",".join(current_params)
+        daily_params_str = ",".join(daily_params)
+
+        fill_str = f"{city}" + (f"&country={country}" if country else "")
+        filled_geo_url = geo_api_url.format(fill_str)
+        geo_response = await self.bot.http_functions.http_call("get", filled_geo_url)
+        city_name = geo_response.results[0].name
+        city_country = geo_response.results[0].country
+        latitude = geo_response.results[0].latitude
+        longitude = geo_response.results[0].longitude
+        filled_weather_url = weather_api_url.format(
+            latitude, longitude, current_params_str, daily_params_str
+        )
+        weather_response = await self.bot.http_functions.http_call(
+            "get", filled_weather_url
+        )
+        print(weather_response.current)
+        print(weather_response.daily)
+
+        # https://geocoding-api.open-meteo.com/v1/search?name=London&country=Canada&count=3
+        # https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current=temperature_2m,wind_speed_10m&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m
 
     def get_url(self: Self, args: list[str]) -> str:
         """Generates the url to fill in API keys and data
