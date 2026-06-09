@@ -61,7 +61,7 @@ class Animals(cogs.BaseCog):
         image_url = await function_reference()
         await interaction.followup.send(image_url)
 
-    @get_animal.autocomplete("type")
+    @get_animal.autocomplete("type_of_animal")
     async def status_autocomplete(
         self: Self,
         interaction: discord.Interaction,
