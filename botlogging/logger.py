@@ -199,6 +199,7 @@ class BotLogger:
         console_only: bool = False,
         embed: discord.Embed = None,
         exception: Exception = None,
+        embed_as_is: bool = False,
     ) -> None:
         """A comprehensive logging system
         This will log a message, embed, and/or exception to the console and discord
@@ -238,17 +239,18 @@ class BotLogger:
         if console_only or not self.send:
             return
 
-        # Ensure message is never too long
-        if len(message) > 4000:
-            message = f"{message[:4000]}..."
-
         # Get the appropriate target to send to on discord
         log_channel = await self.get_discord_target(channel)
 
-        if embed:
-            embed = log_level.embed(message).modify_embed(embed)
-        else:
-            embed = log_level.embed(message)
+        if not embed_as_is:
+            # Ensure message is never too long
+            if len(message) > 4000:
+                message = f"{message[:4000]}..."
+
+            if embed:
+                embed = log_level.embed(message).modify_embed(embed)
+            else:
+                embed = log_level.embed(message)
 
         try:
             await log_channel.send(embed=embed)

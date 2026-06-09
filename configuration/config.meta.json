@@ -81,7 +81,7 @@
   },
   "core_guild_events_channel": {
     "datatype": "discord.TextChannel",
-    "description": "The channel to log guild events to. This includes message events"
+    "description": "The channel to log guild events to."
   },
   "core_guild_id": {
     "datatype": "discord.Guild",
@@ -94,6 +94,10 @@
   "core_member_events_channel": {
     "datatype": "discord.TextChannel",
     "description": "The channel to log member events to."
+  },
+  "core_message_events_channel": {
+    "datatype": "discord.TextChannel",
+    "description": "The channel to log message events to."
   },
   "core_nickname_filter": {
     "datatype": "bool",

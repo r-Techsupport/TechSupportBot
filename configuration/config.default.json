@@ -23,6 +23,7 @@
     "core_guild_id": "",
     "core_logging_channel": "",
     "core_member_events_channel": "",
+    "core_message_events_channel": "",
     "core_nickname_filter": false,
     "core_private_channels": [],
     "duck_allow_manipulation": true,

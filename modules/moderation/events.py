@@ -32,48 +32,135 @@ class EventLogger(cogs.BaseCog):
     For the explicit purpose of logging, not taking further action
     """
 
-    @commands.Cog.listener()
-    async def on_message_edit(
-        self: Self, before: discord.Message, after: discord.Message
+    CONFIG_MAP: dict[str, str] = {
+        "guild": "core_guild_events_channel",
+        "member": "core_member_events_channel",
+        "message": "core_message_events_channel",
+    }
+
+    async def send_event_log(
+        self: Self,
+        guild: discord.Guild,
+        log_location: str,
+        string_message: str,
+        embed_message: discord.Embed,
+        channel_location: discord.abc.GuildChannel = None,
     ) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_edit
+        context = LogContext(guild=guild, channel=channel_location)
+        message_header = f"Events for {guild.name} ({guild.id}): "
+        log_channel = self.CONFIG_MAP[log_location]
+        log_channel_id = configuration.get_config_entry(guild.id, log_channel)
+        await self.bot.logger.send_log(
+            message=message_header + string_message,
+            level=LogLevel.INFO,
+            context=context,
+            channel=log_channel_id,
+            embed=embed_message,
+            embed_as_is=True,
+        )
+
+    # MESSAGE EVENTS
+
+    @commands.Cog.listener()
+    async def on_raw_message_edit(
+        self: Self, payload: discord.RawMessageUpdateEvent
+    ) -> None:
+        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_raw_message_edit
 
         Args:
             before (discord.Message): The previous version of the message
             after (discord.Message): The current version of the message
         """
-        # this seems to spam, not sure why
-        if before.content == after.content:
+        before = payload.cached_message
+        after = payload.message
+
+        # Ignore message edit events for not content changes
+        if before and before.content == after.content:
             return
 
-        guild = getattr(before.channel, "guild", None)
+        guild = getattr(after.channel, "guild", None)
+
+        # Ignore all message edit events in DMs
+        if not guild:
+            return
 
         # Ignore ephemeral slash command messages
-        if not guild and before.type == discord.MessageType.chat_input_command:
+        if after.type == discord.MessageType.chat_input_command:
             return
 
-        attrs = ["content", "embeds"]
-        diff = auxiliary.get_object_diff(before, after, attrs)
-        embed = discord.Embed()
-        embed = auxiliary.add_diff_fields(embed, diff)
-        embed.add_field(name="Author", value=before.author)
-        embed.add_field(name="Channel", value=getattr(before.channel, "name", "DM"))
+        embed = discord.Embed(
+            title="Message Edited",
+            description=f"[Jump to Message]({after.jump_url})",
+            colour=discord.Colour.orange(),
+            timestamp=discord.utils.utcnow(),
+        )
+
+        embed.set_author(
+            name=str(after.author),
+            icon_url=after.author.display_avatar.url,
+        )
+
         embed.add_field(
-            name="Server",
-            value=guild,
+            name="Author",
+            value=(
+                f"**User:** {after.author.mention}\n"
+                f"**Name:** {after.author}\n"
+                f"**ID:** {after.author.id}"
+            ),
+            inline=True,
         )
-        embed.set_footer(text=f"Author ID: {before.author.id}")
 
-        log_channel = configuration.get_config_entry(
-            before.author.id, "core_guild_events_channel"
+        embed.add_field(
+            name="Channel",
+            value=(
+                f"**Channel:** {after.channel.mention}\n"
+                f"**Name:** #{after.channel.name}\n"
+                f"**ID:** {after.channel.id}"
+            ),
+            inline=True,
         )
 
-        await self.bot.logger.send_log(
-            message=f"Message edit detected on message with ID {before.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=before.channel.guild, channel=before.channel),
-            channel=log_channel,
-            embed=embed,
+        embed.add_field(
+            name="Timestamps",
+            value=(
+                f"**Sent:** <t:{int(after.created_at.timestamp())}:F> "
+                f"(<t:{int(after.created_at.timestamp())}:R>)\n"
+                f"**Edited:** <t:{int(after.edited_at.timestamp())}:F> "
+                f"(<t:{int(after.edited_at.timestamp())}:R>)"
+            ),
+            inline=False,
+        )
+        if before:
+            old_content = before.clean_content
+            embed.add_field(
+                name="Original Content",
+                value=before.content[:1024] if before.content else "*No content*",
+                inline=False,
+            )
+        else:
+            old_content = "**Unknown. Perhaps this message was too old?**"
+            embed.add_field(
+                name="Original Content",
+                value=old_content,
+                inline=False,
+            )
+
+        embed.add_field(
+            name="New Content",
+            value=after.content[:1024] if after.content else "*No content*",
+            inline=False,
+        )
+
+        embed.set_footer(text=f"Message ID: {after.id}")
+
+        console_message = f"Message edit: ID: {after.id} in channel ({after.channel.name} ({after.channel.id})). Old: {old_content}, new {after.clean_content}"
+
+        await self.send_event_log(
+            guild=after.guild,
+            log_location="message",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=after.channel,
         )
 
     @commands.Cog.listener()
