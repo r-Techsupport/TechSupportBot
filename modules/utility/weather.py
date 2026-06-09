@@ -53,7 +53,10 @@ class Weather(cogs.BaseCog):
         """
         await interaction.response.defer()
         geo_api_url = "https://geocoding-api.open-meteo.com/v1/search?name={}&count=10"
-        weather_api_url = "https://api.open-meteo.com/v1/forecast?latitude={}&longitude={}&current={}&daily={}&timezone=auto"
+        weather_api_url = (
+            "https://api.open-meteo.com/v1/forecast?"
+            "latitude={}&longitude={}&current={}&daily={}&timezone=auto"
+        )
 
         current_params = [
             "temperature_2m",
@@ -185,9 +188,12 @@ class Weather(cogs.BaseCog):
                 value=f"{weather_response.current.relative_humidity_2m}%",
             )
 
+            wind_direction = format_wind_direction(
+                weather_response.current.wind_direction_10m
+            )
             embed.add_field(
                 name="Wind",
-                value=f"{format_speed(weather_response.current.wind_speed_10m)} {format_wind_direction(weather_response.current.wind_direction_10m)}",
+                value=f"{format_speed(weather_response.current.wind_speed_10m)} {wind_direction}",
             )
 
         except AttributeError:
