@@ -68,8 +68,7 @@ class EventLogger(cogs.BaseCog):
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_raw_message_edit
 
         Args:
-            before (discord.Message): The previous version of the message
-            after (discord.Message): The current version of the message
+            payload (discord.RawMessageUpdateEvent): The raw payload object for the message edit events
         """
         before = payload.cached_message
         after = payload.message
