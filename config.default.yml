@@ -41,7 +41,6 @@ api:
         giphy:
         google:
         news:
-        open_weather:
         openai:
         spotify_client:
         spotify_key:
