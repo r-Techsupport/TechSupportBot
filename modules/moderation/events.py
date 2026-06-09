@@ -47,6 +47,21 @@ class EventLogger(cogs.BaseCog):
         embed_message: discord.Embed,
         channel_location: discord.abc.GuildChannel = None,
     ) -> None:
+        """This sends a log to discord and the console for the event
+
+        Args:
+            guild (discord.Guild): The guild the event happened in
+            log_location (str): The location to log, string in CONFIG_MAP
+            string_message (str): The string message to send to the console
+            embed_message (discord.Embed): The embed to send to the configured log channel
+            channel_location (discord.abc.GuildChannel, optional):
+                The channel the event happened in, if applicable. Defaults to None.
+        """
+
+        # Do nothing if events is disabled in current guild
+        if not self.extension_enabled(guild):
+            return
+
         context = LogContext(guild=guild, channel=channel_location)
         message_header = f"Events for {guild.name} ({guild.id}): "
         log_channel = self.CONFIG_MAP[log_location]
@@ -316,43 +331,84 @@ class EventLogger(cogs.BaseCog):
             reaction (discord.Reaction): The current state of the reaction
             user (discord.Member | discord.User): The user who added the reaction
         """
-        guild = getattr(reaction.message.channel, "guild", None)
+        message = reaction.message
+        channel = message.channel
+        guild = getattr(channel, "guild", None)
 
-        if isinstance(reaction.message.channel, discord.DMChannel):
+        if isinstance(channel, discord.DMChannel):
             await self.bot.logger.send_log(
                 message=(
                     f"PM from `{user}`: added {reaction.emoji} reaction to message"
-                    f" {reaction.message.content} in DMs"
+                    f" {message.content} in DMs"
                 ),
                 level=LogLevel.INFO,
             )
             return
 
-        embed = discord.Embed()
-        embed.add_field(name="Emoji", value=reaction.emoji)
-        embed.add_field(name="User", value=user)
-        embed.add_field(name="Message", value=reaction.message.content or "None")
-        embed.add_field(name="Message Author", value=reaction.message.author)
+        if not guild:
+            return
+
+        embed = discord.Embed(
+            title="Reaction Added",
+            description=f"[Jump to Message]({message.jump_url})",
+            colour=discord.Colour.orange(),
+            timestamp=discord.utils.utcnow(),
+        )
+
+        embed.set_author(
+            name=str(user),
+            icon_url=user.display_avatar.url,
+        )
+
+        # Do a better job at handling custom emotes
+        if isinstance(reaction.emoji, (discord.Emoji, discord.PartialEmoji)):
+            emoji_value = (
+                f"**Emoji:** {reaction.emoji}\n"
+                f"**Name:** {reaction.emoji.name}\n"
+                f"**ID:** {reaction.emoji.id}"
+            )
+        else:
+            emoji_value = reaction.emoji
+
+        embed.add_field(name="Emoji", value=emoji_value)
+
         embed.add_field(
-            name="Channel", value=getattr(reaction.message.channel, "name", "DM")
-        )
-        embed.add_field(name="Server", value=guild.name)
-
-        log_channel = configuration.get_config_entry(
-            guild.id, "core_guild_events_channel"
-        )
-
-        await self.bot.logger.send_log(
-            message=(
-                f"Reaction added to message with ID {reaction.message.id} by user with"
-                f" ID {user.id}"
+            name="User",
+            value=(
+                f"**User:** {user.mention}\n"
+                f"**Name:** {user.name}\n"
+                f"**ID:** {user.id}"
             ),
-            level=LogLevel.INFO,
-            context=LogContext(
-                guild=reaction.message.channel.guild, channel=reaction.message.channel
+            inline=True,
+        )
+
+        embed.add_field(
+            name="Channel",
+            value=(
+                f"**Channel:** {channel.mention}\n"
+                f"**Name:** #{channel.name}\n"
+                f"**ID:** {channel.id}"
             ),
-            channel=log_channel,
-            embed=embed,
+            inline=True,
+        )
+
+        embed.add_field(
+            name="Message Info",
+            value=(
+                f"**Message Content:** {message.clean_content[:50]}\n"
+                f"**Message Author:** {message.author.name} ({message.author.mention})\n"
+                f"**Message ID:** {message.id}"
+            ),
+        )
+
+        console_message = f"Reaction {reaction.emoji} added to message with ID: {message.id} by user {user.name} ({user.id})"
+
+        await self.send_event_log(
+            guild=guild,
+            log_location="message",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=channel,
         )
 
     @commands.Cog.listener()
@@ -365,43 +421,84 @@ class EventLogger(cogs.BaseCog):
             reaction (discord.Reaction): The current state of the reaction
             user (discord.Member | discord.User): The user whose reaction was removed
         """
-        guild = getattr(reaction.message.channel, "guild", None)
+        message = reaction.message
+        channel = message.channel
+        guild = getattr(channel, "guild", None)
 
-        if isinstance(reaction.message.channel, discord.DMChannel):
+        if isinstance(channel, discord.DMChannel):
             await self.bot.logger.send_log(
                 message=(
-                    f"PM from `{user}`: removed {reaction.emoji} reaction to message"
-                    f" {reaction.message.content} in DMs"
+                    f"PM from `{user}`: added {reaction.emoji} reaction to message"
+                    f" {message.content} in DMs"
                 ),
                 level=LogLevel.INFO,
             )
             return
 
-        embed = discord.Embed()
-        embed.add_field(name="Emoji", value=reaction.emoji)
-        embed.add_field(name="User", value=user)
-        embed.add_field(name="Message", value=reaction.message.content or "None")
-        embed.add_field(name="Message Author", value=reaction.message.author)
+        if not guild:
+            return
+
+        embed = discord.Embed(
+            title="Reaction Removed",
+            description=f"[Jump to Message]({message.jump_url})",
+            colour=discord.Colour.orange(),
+            timestamp=discord.utils.utcnow(),
+        )
+
+        embed.set_author(
+            name=str(user),
+            icon_url=user.display_avatar.url,
+        )
+
+        # Do a better job at handling custom emotes
+        if isinstance(reaction.emoji, (discord.Emoji, discord.PartialEmoji)):
+            emoji_value = (
+                f"**Emoji:** {reaction.emoji}\n"
+                f"**Name:** {reaction.emoji.name}\n"
+                f"**ID:** {reaction.emoji.id}"
+            )
+        else:
+            emoji_value = reaction.emoji
+
+        embed.add_field(name="Emoji", value=emoji_value)
+
         embed.add_field(
-            name="Channel", value=getattr(reaction.message.channel, "name", "DM")
-        )
-        embed.add_field(name="Server", value=guild.name)
-
-        log_channel = configuration.get_config_entry(
-            guild.id, "core_guild_events_channel"
-        )
-
-        await self.bot.logger.send_log(
-            message=(
-                f"Reaction removed from message with ID {reaction.message.id} by user"
-                f" with ID {user.id}"
+            name="User",
+            value=(
+                f"**User:** {user.mention}\n"
+                f"**Name:** {user.name}\n"
+                f"**ID:** {user.id}"
             ),
-            level=LogLevel.INFO,
-            context=LogContext(
-                guild=reaction.message.channel.guild, channel=reaction.message.channel
+            inline=True,
+        )
+
+        embed.add_field(
+            name="Channel",
+            value=(
+                f"**Channel:** {channel.mention}\n"
+                f"**Name:** #{channel.name}\n"
+                f"**ID:** {channel.id}"
             ),
-            channel=log_channel,
-            embed=embed,
+            inline=True,
+        )
+
+        embed.add_field(
+            name="Message Info",
+            value=(
+                f"**Message Content:** {message.clean_content[:50]}\n"
+                f"**Message Author:** {message.author.name} ({message.author.mention})\n"
+                f"**Message ID:** {message.id}"
+            ),
+        )
+
+        console_message = f"Reaction {reaction.emoji} removed from message with ID: {message.id} by user {user.name} ({user.id})"
+
+        await self.send_event_log(
+            guild=guild,
+            log_location="message",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=channel,
         )
 
     @commands.Cog.listener()
