@@ -2845,6 +2845,12 @@ class FactoidManager(cogs.MatchCog):
 
 
 class DeleteView(discord.ui.View):
+    """The class to hold the view for the delete button on /factoid call
+
+    Args:
+        author_id (int): The ID of the author of the factoid
+    """
+
     def __init__(self: Self, author_id: int) -> None:
         super().__init__(timeout=60)
         self.author_id = author_id
