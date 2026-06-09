@@ -11,7 +11,6 @@ modmail_config:
     enable_modmail: False
     disable_thread_creation: False
     modmail_auth_token:
-    modmail_prefix:
     modmail_guild:
     modmail_forum_channel:
     modmail_log_channel:

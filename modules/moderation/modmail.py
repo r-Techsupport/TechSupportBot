@@ -2,7 +2,7 @@
 Runs a bot that can be messaged to create modmail threads
 Unit tests: False
 Config:
-    File: enable_modmail, disable_thread_creation, modmail_auth_token, modmail_prefix,
+    File: enable_modmail, disable_thread_creation, modmail_auth_token,
           modmail_guild, modmail_forum_channel, modmail_log_channel
     Command: aliases, automatic_responses, modmail_roles, roles_to_ping, thread_creation_message
 API: None
@@ -903,7 +903,6 @@ class Modmail(cogs.BaseCog):
         )
 
         # Finally, makes the TS client available from within the Modmail extension class once again
-        self.prefix = bot.file_config.modmail_config.modmail_prefix
         self.bot = bot
 
     async def handle_reboot(self: Self) -> None:
@@ -949,7 +948,7 @@ class Modmail(cogs.BaseCog):
             color=discord.Color.green(), title="Registered aliases for this guild:"
         )
         for alias in aliases:
-            embed.add_field(name=f"{self.prefix}{alias}", value=aliases[alias])
+            embed.add_field(name=f"{alias}", value=aliases[alias])
 
         await interaction.response.send_message(embed=embed)
 
