@@ -33,6 +33,7 @@ class EventLogger(cogs.BaseCog):
     """
 
     CONFIG_MAP: dict[str, str] = {
+        "bot": "core_logging_channel",
         "guild": "core_guild_events_channel",
         "member": "core_member_events_channel",
         "message": "core_message_events_channel",
@@ -374,6 +375,8 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
+    # Guild Events
+
     @commands.Cog.listener()
     async def on_guild_channel_delete(
         self: Self, channel: discord.abc.GuildChannel
@@ -549,66 +552,6 @@ class EventLogger(cogs.BaseCog):
             ),
             level=LogLevel.INFO,
             context=LogContext(guild=channel.guild, channel=channel),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    @commands.Cog.listener()
-    async def on_member_update(
-        self: Self, before: discord.Member, after: discord.Member
-    ) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update
-
-        Args:
-            before (discord.Member): The updated member's old info
-            after (discord.Member): Teh updated member's new info
-        """
-        changed_role = set(before.roles) ^ set(after.roles)
-        if changed_role:
-            if len(before.roles) < len(after.roles):
-                embed = discord.Embed()
-                embed.add_field(name="Roles added", value=next(iter(changed_role)))
-                embed.add_field(name="Server", value=before.guild.name)
-            else:
-                embed = discord.Embed()
-                embed.add_field(name="Roles lost", value=next(iter(changed_role)))
-                embed.add_field(name="Server", value=before.guild.name)
-
-            log_channel = configuration.get_config_entry(
-                before.guild.id, "core_member_events_channel"
-            )
-
-            await self.bot.logger.send_log(
-                message=(
-                    f"Member with ID {before.id} has changed status in guild with ID"
-                    f" {before.guild.id}"
-                ),
-                level=LogLevel.INFO,
-                context=LogContext(guild=before.guild),
-                channel=log_channel,
-                embed=embed,
-            )
-
-    @commands.Cog.listener()
-    async def on_member_remove(self: Self, member: discord.Member) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_remove
-
-        Args:
-            member (discord.Member): The member who left
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Member", value=member)
-        embed.add_field(name="Server", value=member.guild.name)
-        log_channel = configuration.get_config_entry(
-            member.guild.id, "core_member_events_channel"
-        )
-
-        await self.bot.logger.send_log(
-            message=(
-                f"Member with ID {member.id} has left guild with ID {member.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=member.guild),
             channel=log_channel,
             embed=embed,
         )
@@ -808,6 +751,68 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
+    # Member Events
+
+    @commands.Cog.listener()
+    async def on_member_update(
+        self: Self, before: discord.Member, after: discord.Member
+    ) -> None:
+        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update
+
+        Args:
+            before (discord.Member): The updated member's old info
+            after (discord.Member): Teh updated member's new info
+        """
+        changed_role = set(before.roles) ^ set(after.roles)
+        if changed_role:
+            if len(before.roles) < len(after.roles):
+                embed = discord.Embed()
+                embed.add_field(name="Roles added", value=next(iter(changed_role)))
+                embed.add_field(name="Server", value=before.guild.name)
+            else:
+                embed = discord.Embed()
+                embed.add_field(name="Roles lost", value=next(iter(changed_role)))
+                embed.add_field(name="Server", value=before.guild.name)
+
+            log_channel = configuration.get_config_entry(
+                before.guild.id, "core_member_events_channel"
+            )
+
+            await self.bot.logger.send_log(
+                message=(
+                    f"Member with ID {before.id} has changed status in guild with ID"
+                    f" {before.guild.id}"
+                ),
+                level=LogLevel.INFO,
+                context=LogContext(guild=before.guild),
+                channel=log_channel,
+                embed=embed,
+            )
+
+    @commands.Cog.listener()
+    async def on_member_remove(self: Self, member: discord.Member) -> None:
+        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_remove
+
+        Args:
+            member (discord.Member): The member who left
+        """
+        embed = discord.Embed()
+        embed.add_field(name="Member", value=member)
+        embed.add_field(name="Server", value=member.guild.name)
+        log_channel = configuration.get_config_entry(
+            member.guild.id, "core_member_events_channel"
+        )
+
+        await self.bot.logger.send_log(
+            message=(
+                f"Member with ID {member.id} has left guild with ID {member.guild.id}"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(guild=member.guild),
+            channel=log_channel,
+            embed=embed,
+        )
+
     @commands.Cog.listener()
     async def on_member_ban(
         self: Self, guild: discord.Guild, user: discord.User | discord.Member
@@ -885,6 +890,8 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
+    # Bot Events
+
     @commands.Cog.listener()
     async def on_command(self: Self, ctx: commands.Context) -> None:
         """
@@ -914,6 +921,8 @@ class EventLogger(cogs.BaseCog):
             channel=log_channel,
             embed=embed,
         )
+
+    # CONSOLE ONLY STUFF
 
     @commands.Cog.listener()
     async def on_error(self: Self, event_method: str) -> None:
