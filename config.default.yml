@@ -3,7 +3,7 @@ bot_config:
     admins:
         ids: []
         roles: []
-    disabled_extensions: ["kanye"]
+    disabled_extensions: ["fun.kanye"]
     default_prefix: "."
     global_alerts_channel: ""
     override_owner: ""
