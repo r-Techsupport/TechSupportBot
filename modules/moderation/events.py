@@ -78,23 +78,16 @@ class EventLogger(cogs.BaseCog):
     # MESSAGE EVENTS
 
     @commands.Cog.listener()
-    async def on_raw_message_edit(
-        self: Self, payload: discord.RawMessageUpdateEvent
+    async def on_message_edit(
+        self: Self, before: discord.Message, after: discord.Message
     ) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_raw_message_edit
+        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message_edit
 
         Args:
             payload (discord.RawMessageUpdateEvent): The raw payload object for the message edit events
         """
-        before = payload.cached_message
-        after = payload.message
-
-        # If for some reason there is no after message, log nothing
-        if not after:
-            return
-
-        # Ignore message edit events for not content changes
-        if before and before.content == after.content:
+        # If for some reason there is no message object, log nothing
+        if not after or not before:
             return
 
         guild = getattr(after.channel, "guild", None)
@@ -107,80 +100,136 @@ class EventLogger(cogs.BaseCog):
         if after.type == discord.MessageType.chat_input_command:
             return
 
-        embed = discord.Embed(
-            title="Message Edited",
-            description=f"[Jump to Message]({after.jump_url})",
-            colour=discord.Colour.orange(),
-            timestamp=discord.utils.utcnow(),
-        )
-
-        embed.set_author(
-            name=str(after.author),
-            icon_url=after.author.display_avatar.url,
-        )
-
-        embed.add_field(
-            name="Author",
-            value=(
-                f"**User:** {after.author.mention}\n"
-                f"**Name:** {after.author}\n"
-                f"**ID:** {after.author.id}"
-            ),
-            inline=True,
-        )
-
-        embed.add_field(
-            name="Channel",
-            value=(
-                f"**Channel:** {after.channel.mention}\n"
-                f"**Name:** #{after.channel.name}\n"
-                f"**ID:** {after.channel.id}"
-            ),
-            inline=True,
-        )
-
-        embed.add_field(
-            name="Timestamps",
-            value=(
-                f"**Sent:** <t:{int(after.created_at.timestamp())}:F> "
-                f"(<t:{int(after.created_at.timestamp())}:R>)\n"
-                f"**Edited:** <t:{int(after.edited_at.timestamp())}:F> "
-                f"(<t:{int(after.edited_at.timestamp())}:R>)"
-            ),
-            inline=False,
-        )
-        if before:
-            old_content = before.clean_content
-            embed.add_field(
-                name="Original Content",
-                value=before.content[:1024] if before.content else "*No content*",
-                inline=False,
-            )
-        else:
-            old_content = "**Unknown. Perhaps this message was too old?**"
-            embed.add_field(
-                name="Original Content",
-                value=old_content,
-                inline=False,
+        # Message edits for content edit:
+        if before.content != after.content:
+            embed = discord.Embed(
+                title="Message Edited",
+                description=f"[Jump to Message]({after.jump_url})",
+                colour=discord.Colour.orange(),
+                timestamp=discord.utils.utcnow(),
             )
 
-        embed.add_field(
-            name="New Content",
-            value=after.content[:1024] if after.content else "*No content*",
-            inline=False,
-        )
+            embed.set_author(
+                name=str(after.author),
+                icon_url=after.author.display_avatar.url,
+            )
 
-        embed.set_footer(text=f"Message ID: {after.id}")
+            embed.add_field(
+                name="Author",
+                value=(
+                    f"**User:** {after.author.mention}\n"
+                    f"**Name:** {after.author}\n"
+                    f"**ID:** {after.author.id}"
+                ),
+                inline=True,
+            )
 
-        console_message = f"Message edit: ID: {after.id} in channel: {after.channel.name} ({after.channel.id}). Old: {old_content}, new {after.clean_content}"
+            embed.add_field(
+                name="Channel",
+                value=(
+                    f"**Channel:** {after.channel.mention}\n"
+                    f"**Name:** #{after.channel.name}\n"
+                    f"**ID:** {after.channel.id}"
+                ),
+                inline=True,
+            )
 
-        await self.send_event_log(
-            guild=after.guild,
-            log_location="message",
-            string_message=console_message,
-            embed_message=embed,
-            channel_location=after.channel,
-        )
+            embed.add_field(
+                name="Timestamps",
+                value=(
+                    f"**Sent:** <t:{int(after.created_at.timestamp())}:F> "
+                    f"(<t:{int(after.created_at.timestamp())}:R>)\n"
+                    f"**Edited:** <t:{int(after.edited_at.timestamp())}:F> "
+                    f"(<t:{int(after.edited_at.timestamp())}:R>)"
+                ),
+                inline=False,
+            )
+            if before:
+                old_content = before.clean_content
+                embed.add_field(
+                    name="Original Content",
+                    value=before.content[:1024] if before.content else "*No content*",
+                    inline=False,
+                )
+            else:
+                old_content = "**Unknown. Perhaps this message was too old?**"
+                embed.add_field(
+                    name="Original Content",
+                    value=old_content,
+                    inline=False,
+                )
+
+            embed.add_field(
+                name="New Content",
+                value=after.content[:1024] if after.content else "*No content*",
+                inline=False,
+            )
+
+            embed.set_footer(text=f"Message ID: {after.id}")
+
+            console_message = f"Message edit: ID: {after.id} in channel: {after.channel.name} ({after.channel.id}). Old: {old_content}, new {after.clean_content}"
+
+            await self.send_event_log(
+                guild=after.guild,
+                log_location="message",
+                string_message=console_message,
+                embed_message=embed,
+                channel_location=after.channel,
+            )
+
+        # Message edits for pin update:
+        if before.pinned != after.pinned:
+
+            title = "Message pinned" if after.pinned else "Message unpinned"
+            embed = discord.Embed(
+                title=title,
+                description=f"[Jump to Message]({after.jump_url})",
+                colour=discord.Colour.orange(),
+                timestamp=discord.utils.utcnow(),
+            )
+
+            embed.set_author(
+                name=str(after.author),
+                icon_url=after.author.display_avatar.url,
+            )
+
+            embed.add_field(
+                name="Message Author",
+                value=(
+                    f"**User:** {after.author.mention}\n"
+                    f"**Name:** {after.author.name}\n"
+                    f"**ID:** {after.author.id}"
+                ),
+                inline=True,
+            )
+
+            embed.add_field(
+                name="Channel",
+                value=(
+                    f"**Channel:** {after.channel.mention}\n"
+                    f"**Name:** #{after.channel.name}\n"
+                    f"**ID:** {after.channel.id}"
+                ),
+                inline=True,
+            )
+
+            embed.add_field(
+                name="Content",
+                value=after.content[:1024] if after.content else "*No content*",
+                inline=False,
+            )
+
+            embed.set_footer(text=f"Message ID: {after.id}")
+
+            console_message = f"Message pins changed: ID: {after.id} in channel: {after.channel.name} ({after.channel.id}). Pinned status: {after.pinned}"
+
+            await self.send_event_log(
+                guild=after.guild,
+                log_location="message",
+                string_message=console_message,
+                embed_message=embed,
+                channel_location=after.channel,
+            )
 
     @commands.Cog.listener()
     async def on_message_delete(self: Self, message: discord.Message) -> None:
@@ -568,6 +617,7 @@ class EventLogger(cogs.BaseCog):
 
     # Guild Events
 
+    # Useful
     @commands.Cog.listener()
     async def on_guild_channel_delete(
         self: Self, channel: discord.abc.GuildChannel
@@ -597,6 +647,7 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
+    # Useful
     @commands.Cog.listener()
     async def on_guild_channel_create(
         self: Self, channel: discord.abc.GuildChannel
@@ -624,6 +675,7 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
+    # Useful
     @commands.Cog.listener()
     async def on_guild_channel_update(
         self: Self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel
@@ -664,41 +716,7 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
-    @commands.Cog.listener()
-    async def on_guild_channel_pins_update(
-        self: Self,
-        channel: discord.abc.GuildChannel | discord.Thread,
-        _last_pin: datetime.datetime | None,
-    ) -> None:
-        """
-        See:
-        https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_pins_update
-
-        Args:
-            channel (discord.abc.GuildChannel | discord.Thread): The guild channel
-                that had its pins updated.
-            _last_pin (datetime.datetime | None): The latest message that was pinned as an
-                aware datetime in UTC. Could be None.
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Channel Name", value=channel.name)
-        embed.add_field(name="Server", value=channel.guild)
-
-        log_channel = configuration.get_config_entry(
-            channel.guild.id, "core_guild_events_channel"
-        )
-
-        await self.bot.logger.send_log(
-            message=(
-                f"Channel pins updated in channel with ID {channel.id} in guild with ID"
-                f" {channel.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=channel.guild, channel=channel),
-            channel=log_channel,
-            embed=embed,
-        )
-
+    # Useless
     @commands.Cog.listener()
     async def on_guild_integrations_update(self: Self, guild: discord.Guild) -> None:
         """
@@ -721,6 +739,7 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
+    # Useless
     @commands.Cog.listener()
     async def on_webhooks_update(self: Self, channel: discord.abc.GuildChannel) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_webhooks_update
@@ -747,6 +766,7 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
+    # Useful
     @commands.Cog.listener()
     async def on_guild_update(
         self: Self, before: discord.Guild, after: discord.Guild
@@ -800,6 +820,7 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
+    # Useful
     @commands.Cog.listener()
     async def on_guild_role_create(self: Self, role: discord.Role) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_create
@@ -823,6 +844,7 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
+    # Useful
     @commands.Cog.listener()
     async def on_guild_role_delete(self: Self, role: discord.Role) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_delete
@@ -845,6 +867,7 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
+    # Useful
     @commands.Cog.listener()
     async def on_guild_role_update(
         self: Self, before: discord.Role, after: discord.Role
@@ -877,6 +900,7 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
+    # Useful
     @commands.Cog.listener()
     async def on_guild_emojis_update(
         self: Self,
@@ -906,6 +930,8 @@ class EventLogger(cogs.BaseCog):
 
     # Member Events
 
+    # Useful
+    # This will have a lot of potential things to log in it, such as roles and nickname
     @commands.Cog.listener()
     async def on_member_update(
         self: Self, before: discord.Member, after: discord.Member
@@ -942,6 +968,7 @@ class EventLogger(cogs.BaseCog):
                 embed=embed,
             )
 
+    # Useful. Should probably be turned into raw
     @commands.Cog.listener()
     async def on_member_remove(self: Self, member: discord.Member) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_remove
@@ -966,6 +993,7 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
+    # Maybe leave this to modlog and member remove?
     @commands.Cog.listener()
     async def on_member_ban(
         self: Self, guild: discord.Guild, user: discord.User | discord.Member
@@ -993,6 +1021,7 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
+    # Maybe leave this to modlog?
     @commands.Cog.listener()
     async def on_member_unban(
         self: Self, guild: discord.Guild, user: discord.User
@@ -1019,6 +1048,7 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
+    # Useful
     @commands.Cog.listener()
     async def on_member_join(self: Self, member: discord.Member) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join
@@ -1155,3 +1185,16 @@ class EventLogger(cogs.BaseCog):
             channel=log_channel,
             embed=embed,
         )
+
+
+
+# Should probably log:
+"""
+Server deafen/mute (Member?)
+Polls creation (Message)
+Thread creation/delete (guild) - MAYBE
+Automod stuff (guild)
+Soundboard & stickers (guild)
+Integrations (guild)
+user_update (modifications to global name/username?) (member)
+"""
