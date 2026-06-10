@@ -59,7 +59,7 @@ class EventEmbed(discord.Embed):
         self: Self, title: str, message: discord.Message
     ) -> None:
         if not message.clean_content:
-            content = "*Non content*"
+            content = "*No content*"
         elif len(message.clean_content) > 1024:
             content = message.clean_content[:1021] + "..."
         else:
@@ -76,7 +76,9 @@ class EventEmbed(discord.Embed):
             value=(
                 f"**Message Content:** {message.clean_content[:50]}\n"
                 f"**Message Author:** {message.author.name} ({message.author.mention})\n"
-                f"**Message ID:** {message.id}"
+                f"**Message ID:** {message.id}\n"
+                f"**Sent:** <t:{int(message.created_at.timestamp())}:F> "
+                f"(<t:{int(message.created_at.timestamp())}:R>)"
             ),
         )
 
@@ -107,6 +109,24 @@ class EventEmbed(discord.Embed):
             emoji_value = f"**Emoji:** {emoji}"
 
         self.add_field(name=title, value=emoji_value)
+
+    def addPollField(self: Self, title: str, poll: discord.Poll) -> None:
+        self.add_field(
+            name=title,
+            value=(
+                f"**Question:** {poll.question}\n"
+                f"**Duration:** {poll.duration}\n"
+                f"**Answers:** {', '.join([answer.text for answer in poll.answers])}"
+            ),
+            inline=True,
+        )
+
+    def addPollAnswerField(self: Self, title: str, answer: discord.PollAnswer) -> None:
+        self.add_field(
+            name=title,
+            value=(f"**Answer:** {answer.text}\n**ID:** {answer.id}"),
+            inline=True,
+        )
 
 
 class EventLogger(cogs.BaseCog):
@@ -272,10 +292,10 @@ class EventLogger(cogs.BaseCog):
         embed.addMessageContentField("Content", message)
 
         embed.add_field(
-            name="Timestamps",
+            name="Message Sent",
             value=(
-                f"**Sent:** <t:{int(message.created_at.timestamp())}:F> "
-                f"(<t:{int(message.created_at.timestamp())}:R>)\n"
+                f"<t:{int(message.created_at.timestamp())}:F> "
+                f"(<t:{int(message.created_at.timestamp())}:R>)"
             ),
             inline=False,
         )
@@ -481,6 +501,72 @@ class EventLogger(cogs.BaseCog):
         embed.addMessageInfoField("Message Info", message)
 
         console_message = f"{total_emoji} reactions cleared from message with ID: {message.id} in channel {channel.name} ({channel.id})"
+
+        await self.send_event_log(
+            guild=guild,
+            log_location="message",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=channel,
+        )
+
+    @commands.Cog.listener()
+    async def on_poll_vote_add(
+        self: Self, user: discord.Member, answer: discord.PollAnswer
+    ) -> None:
+        if not user.guild:
+            return
+
+        guild = user.guild
+        message = answer.poll.message
+        channel = message.channel
+
+        embed = EventEmbed(
+            title="Poll Answered",
+            description=f"[Jump to Message]({message.jump_url})",
+        )
+
+        embed.setEventAuthor(user)
+        embed.addPollField("Poll", answer.poll)
+        embed.addPollAnswerField("Answer", answer)
+        embed.addChannelField("Channel", channel)
+        embed.addMemberField("Member", user)
+        embed.addMessageInfoField("Message", message)
+
+        console_message = f"User {user.name} ({user.id}) voted {answer.text} to poll message {message.id} in channel {channel.name} ({channel.id})"
+
+        await self.send_event_log(
+            guild=guild,
+            log_location="message",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=channel,
+        )
+
+    @commands.Cog.listener()
+    async def on_poll_vote_remove(
+        self: Self, user: discord.Member, answer: discord.PollAnswer
+    ) -> None:
+        if not user.guild:
+            return
+
+        guild = user.guild
+        message = answer.poll.message
+        channel = message.channel
+
+        embed = EventEmbed(
+            title="Poll Answer Removed",
+            description=f"[Jump to Message]({message.jump_url})",
+        )
+
+        embed.setEventAuthor(user)
+        embed.addPollField("Poll", answer.poll)
+        embed.addPollAnswerField("Answer", answer)
+        embed.addChannelField("Channel", channel)
+        embed.addMemberField("Member", user)
+        embed.addMessageInfoField("Message", message)
+
+        console_message = f"User {user.name} ({user.id}) removed vote {answer.text} from a poll message {message.id} in channel {channel.name} ({channel.id})"
 
         await self.send_event_log(
             guild=guild,
