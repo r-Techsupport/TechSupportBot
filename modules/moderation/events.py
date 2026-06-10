@@ -27,6 +27,88 @@ async def setup(bot: bot.TechSupportBot) -> None:
     await bot.add_cog(EventLogger(bot=bot))
 
 
+class EventEmbed(discord.Embed):
+    """This subclass of embed contains several functions to create consistent fields for displaying various types of data in the event logs"""
+
+    def __init__(self, *, title, description) -> None:
+        super().__init__(
+            title=title,
+            description=description,
+            colour=discord.Colour.orange(),
+            timestamp=discord.utils.utcnow(),
+        )
+
+    def setEventAuthor(self, author: discord.Member) -> None:
+        self.set_author(
+            name=str(author.display_name),
+            icon_url=author.display_avatar.url,
+        )
+
+    def addMemberField(self: Self, title: str, member: discord.Member) -> None:
+        self.add_field(
+            name=title,
+            value=(
+                f"**User:** {member.mention}\n"
+                f"**Name:** {member.name}\n"
+                f"**ID:** {member.id}"
+            ),
+            inline=True,
+        )
+
+    def addMessageContentField(
+        self: Self, title: str, message: discord.Message
+    ) -> None:
+        if not message.clean_content:
+            content = "*Non content*"
+        elif len(message.clean_content) > 1024:
+            content = message.clean_content[:1021] + "..."
+        else:
+            content = message.clean_content
+        self.add_field(
+            name=title,
+            value=content,
+            inline=True,
+        )
+
+    def addMessageInfoField(self: Self, title: str, message: discord.Message) -> None:
+        self.add_field(
+            name=title,
+            value=(
+                f"**Message Content:** {message.clean_content[:50]}\n"
+                f"**Message Author:** {message.author.name} ({message.author.mention})\n"
+                f"**Message ID:** {message.id}"
+            ),
+        )
+
+    def addChannelField(
+        self: Self, title: str, channel: discord.abc.GuildChannel
+    ) -> None:
+        self.add_field(
+            name=title,
+            value=(
+                f"**Channel:** {channel.mention}\n"
+                f"**Name:** #{channel.name}\n"
+                f"**ID:** {channel.id}"
+            ),
+            inline=True,
+        )
+
+    def addEmojiField(
+        self: Self, title: str, emoji: discord.Emoji | discord.PartialEmoji | str
+    ) -> None:
+        # This is to better display custom emotes
+        if isinstance(emoji, (discord.Emoji, discord.PartialEmoji)):
+            emoji_value = (
+                f"**Emoji:** {emoji}\n"
+                f"**Name:** {emoji.name}\n"
+                f"**ID:** {emoji.id}"
+            )
+        else:
+            emoji_value = f"**Emoji:** {emoji}"
+
+        self.add_field(name=title, value=emoji_value)
+
+
 class EventLogger(cogs.BaseCog):
     """This is the cog that holds all of the discord event listeners
     For the explicit purpose of logging, not taking further action
@@ -102,38 +184,20 @@ class EventLogger(cogs.BaseCog):
 
         # Message edits for content edit:
         if before.content != after.content:
-            embed = discord.Embed(
+            embed = EventEmbed(
                 title="Message Edited",
                 description=f"[Jump to Message]({after.jump_url})",
-                colour=discord.Colour.orange(),
-                timestamp=discord.utils.utcnow(),
             )
 
-            embed.set_author(
-                name=str(after.author),
-                icon_url=after.author.display_avatar.url,
-            )
+            embed.setEventAuthor(after.author)
+            embed.addMemberField("Message Author", after.author)
+            embed.addChannelField("Channel", after.channel)
 
-            embed.add_field(
-                name="Author",
-                value=(
-                    f"**User:** {after.author.mention}\n"
-                    f"**Name:** {after.author}\n"
-                    f"**ID:** {after.author.id}"
-                ),
-                inline=True,
-            )
+            old_content = before.clean_content
+            embed.addMessageContentField("Old Content", before)
+            embed.addMessageContentField("New Content", after)
 
-            embed.add_field(
-                name="Channel",
-                value=(
-                    f"**Channel:** {after.channel.mention}\n"
-                    f"**Name:** #{after.channel.name}\n"
-                    f"**ID:** {after.channel.id}"
-                ),
-                inline=True,
-            )
-
+            # Custom field for this event
             embed.add_field(
                 name="Timestamps",
                 value=(
@@ -142,26 +206,6 @@ class EventLogger(cogs.BaseCog):
                     f"**Edited:** <t:{int(after.edited_at.timestamp())}:F> "
                     f"(<t:{int(after.edited_at.timestamp())}:R>)"
                 ),
-                inline=False,
-            )
-            if before:
-                old_content = before.clean_content
-                embed.add_field(
-                    name="Original Content",
-                    value=before.content[:1024] if before.content else "*No content*",
-                    inline=False,
-                )
-            else:
-                old_content = "**Unknown. Perhaps this message was too old?**"
-                embed.add_field(
-                    name="Original Content",
-                    value=old_content,
-                    inline=False,
-                )
-
-            embed.add_field(
-                name="New Content",
-                value=after.content[:1024] if after.content else "*No content*",
                 inline=False,
             )
 
@@ -181,43 +225,15 @@ class EventLogger(cogs.BaseCog):
         if before.pinned != after.pinned:
 
             title = "Message pinned" if after.pinned else "Message unpinned"
-            embed = discord.Embed(
+            embed = EventEmbed(
                 title=title,
                 description=f"[Jump to Message]({after.jump_url})",
-                colour=discord.Colour.orange(),
-                timestamp=discord.utils.utcnow(),
             )
 
-            embed.set_author(
-                name=str(after.author),
-                icon_url=after.author.display_avatar.url,
-            )
-
-            embed.add_field(
-                name="Message Author",
-                value=(
-                    f"**User:** {after.author.mention}\n"
-                    f"**Name:** {after.author.name}\n"
-                    f"**ID:** {after.author.id}"
-                ),
-                inline=True,
-            )
-
-            embed.add_field(
-                name="Channel",
-                value=(
-                    f"**Channel:** {after.channel.mention}\n"
-                    f"**Name:** #{after.channel.name}\n"
-                    f"**ID:** {after.channel.id}"
-                ),
-                inline=True,
-            )
-
-            embed.add_field(
-                name="Content",
-                value=after.content[:1024] if after.content else "*No content*",
-                inline=False,
-            )
+            embed.setEventAuthor(after.author)
+            embed.addMemberField("Message Author", after.author)
+            embed.addChannelField("Channel", after.channel)
+            embed.addMessageContentField("Content", after)
 
             embed.set_footer(text=f"Message ID: {after.id}")
 
@@ -245,37 +261,15 @@ class EventLogger(cogs.BaseCog):
         if message.type == discord.MessageType.chat_input_command:
             return
 
-        embed = discord.Embed(
+        embed = EventEmbed(
             title="Message Deleted",
             description=f"[Jump to Message]({message.jump_url})",
-            colour=discord.Colour.orange(),
-            timestamp=discord.utils.utcnow(),
         )
 
-        embed.set_author(
-            name=str(message.author),
-            icon_url=message.author.display_avatar.url,
-        )
-
-        embed.add_field(
-            name="Author",
-            value=(
-                f"**User:** {message.author.mention}\n"
-                f"**Name:** {message.author}\n"
-                f"**ID:** {message.author.id}"
-            ),
-            inline=True,
-        )
-
-        embed.add_field(
-            name="Channel",
-            value=(
-                f"**Channel:** {channel.mention}\n"
-                f"**Name:** #{channel.name}\n"
-                f"**ID:** {channel.id}"
-            ),
-            inline=True,
-        )
+        embed.setEventAuthor(message.author)
+        embed.addMemberField("Message Author", message.author)
+        embed.addChannelField("Channel", message.channel)
+        embed.addMessageContentField("Content", message)
 
         embed.add_field(
             name="Timestamps",
@@ -283,12 +277,6 @@ class EventLogger(cogs.BaseCog):
                 f"**Sent:** <t:{int(message.created_at.timestamp())}:F> "
                 f"(<t:{int(message.created_at.timestamp())}:R>)\n"
             ),
-            inline=False,
-        )
-
-        embed.add_field(
-            name="Message Content",
-            value=message.content[:1024] if message.content else "*No content*",
             inline=False,
         )
 
@@ -321,23 +309,11 @@ class EventLogger(cogs.BaseCog):
         if not guild:
             return
 
-        embed = discord.Embed()
-
-        embed = discord.Embed(
+        embed = EventEmbed(
             title="Bulk Message Delete",
-            colour=discord.Colour.orange(),
-            timestamp=discord.utils.utcnow(),
+            description="",
         )
-
-        embed.add_field(
-            name="Channel",
-            value=(
-                f"**Channel:** {channel.mention}\n"
-                f"**Name:** #{channel.name}\n"
-                f"**ID:** {channel.id}"
-            ),
-            inline=True,
-        )
+        embed.addChannelField("Channel", channel)
 
         description_prefix = f"{len(messages)} messages were deleted:\n"
 
@@ -401,58 +377,16 @@ class EventLogger(cogs.BaseCog):
         if not guild:
             return
 
-        embed = discord.Embed(
+        embed = EventEmbed(
             title="Reaction Added",
             description=f"[Jump to Message]({message.jump_url})",
-            colour=discord.Colour.orange(),
-            timestamp=discord.utils.utcnow(),
         )
 
-        embed.set_author(
-            name=str(user),
-            icon_url=user.display_avatar.url,
-        )
-
-        # Do a better job at handling custom emotes
-        if isinstance(reaction.emoji, (discord.Emoji, discord.PartialEmoji)):
-            emoji_value = (
-                f"**Emoji:** {reaction.emoji}\n"
-                f"**Name:** {reaction.emoji.name}\n"
-                f"**ID:** {reaction.emoji.id}"
-            )
-        else:
-            emoji_value = reaction.emoji
-
-        embed.add_field(name="Emoji", value=emoji_value)
-
-        embed.add_field(
-            name="User",
-            value=(
-                f"**User:** {user.mention}\n"
-                f"**Name:** {user.name}\n"
-                f"**ID:** {user.id}"
-            ),
-            inline=True,
-        )
-
-        embed.add_field(
-            name="Channel",
-            value=(
-                f"**Channel:** {channel.mention}\n"
-                f"**Name:** #{channel.name}\n"
-                f"**ID:** {channel.id}"
-            ),
-            inline=True,
-        )
-
-        embed.add_field(
-            name="Message Info",
-            value=(
-                f"**Message Content:** {message.clean_content[:50]}\n"
-                f"**Message Author:** {message.author.name} ({message.author.mention})\n"
-                f"**Message ID:** {message.id}"
-            ),
-        )
+        embed.setEventAuthor(user)
+        embed.addEmojiField("Emoji", reaction.emoji)
+        embed.addMemberField("Message Author", user)
+        embed.addChannelField("Channel", message.channel)
+        embed.addMessageInfoField("Message Info", message)
 
         console_message = f"Reaction {reaction.emoji} added to message with ID: {message.id} by user {user.name} ({user.id})"
 
@@ -491,58 +425,16 @@ class EventLogger(cogs.BaseCog):
         if not guild:
             return
 
-        embed = discord.Embed(
+        embed = EventEmbed(
             title="Reaction Removed",
             description=f"[Jump to Message]({message.jump_url})",
-            colour=discord.Colour.orange(),
-            timestamp=discord.utils.utcnow(),
         )
 
-        embed.set_author(
-            name=str(user),
-            icon_url=user.display_avatar.url,
-        )
-
-        # Do a better job at handling custom emotes
-        if isinstance(reaction.emoji, (discord.Emoji, discord.PartialEmoji)):
-            emoji_value = (
-                f"**Emoji:** {reaction.emoji}\n"
-                f"**Name:** {reaction.emoji.name}\n"
-                f"**ID:** {reaction.emoji.id}"
-            )
-        else:
-            emoji_value = reaction.emoji
-
-        embed.add_field(name="Emoji", value=emoji_value)
-
-        embed.add_field(
-            name="User",
-            value=(
-                f"**User:** {user.mention}\n"
-                f"**Name:** {user.name}\n"
-                f"**ID:** {user.id}"
-            ),
-            inline=True,
-        )
-
-        embed.add_field(
-            name="Channel",
-            value=(
-                f"**Channel:** {channel.mention}\n"
-                f"**Name:** #{channel.name}\n"
-                f"**ID:** {channel.id}"
-            ),
-            inline=True,
-        )
-
-        embed.add_field(
-            name="Message Info",
-            value=(
-                f"**Message Content:** {message.clean_content[:50]}\n"
-                f"**Message Author:** {message.author.name} ({message.author.mention})\n"
-                f"**Message ID:** {message.id}"
-            ),
-        )
+        embed.setEventAuthor(user)
+        embed.addEmojiField("Emoji", reaction.emoji)
+        embed.addMemberField("Message Author", user)
+        embed.addChannelField("Channel", message.channel)
+        embed.addMessageInfoField("Message Info", message)
 
         console_message = f"Reaction {reaction.emoji} removed from message with ID: {message.id} by user {user.name} ({user.id})"
 
@@ -578,32 +470,15 @@ class EventLogger(cogs.BaseCog):
             emoji_str += f"`{reaction.emoji}`: {reaction.count}\n"
             total_emoji += reaction.count
 
-        embed = discord.Embed(
+        embed = EventEmbed(
             title="Reactions Cleared",
             description=f"[Jump to Message]({message.jump_url})",
-            colour=discord.Colour.orange(),
-            timestamp=discord.utils.utcnow(),
         )
+
         embed.add_field(name="Emojis", value=emoji_str)
 
-        embed.add_field(
-            name="Channel",
-            value=(
-                f"**Channel:** {channel.mention}\n"
-                f"**Name:** #{channel.name}\n"
-                f"**ID:** {channel.id}"
-            ),
-            inline=True,
-        )
-
-        embed.add_field(
-            name="Message Info",
-            value=(
-                f"**Message Content:** {message.clean_content[:50]}\n"
-                f"**Message Author:** {message.author.name} ({message.author.mention})\n"
-                f"**Message ID:** {message.id}"
-            ),
-        )
+        embed.addChannelField("Channel", message.channel)
+        embed.addMessageInfoField("Message Info", message)
 
         console_message = f"{total_emoji} reactions cleared from message with ID: {message.id} in channel {channel.name} ({channel.id})"
 
@@ -1187,14 +1062,38 @@ class EventLogger(cogs.BaseCog):
         )
 
 
-
 # Should probably log:
 """
-Server deafen/mute (Member?)
 Polls creation (Message)
+    discord.on_poll_vote_add
+    discord.on_poll_vote_remove
+    
+Server deafen/mute (Member?)
+    discord.on_voice_state_update
+user_update (modifications to global name/username?) (member) (maybe?)
+    discord.on_user_update
+
 Thread creation/delete (guild) - MAYBE
+    discord.on_thread_create
+    discord.on_thread_update
+    discord.on_thread_delete
 Automod stuff (guild)
+    discord.on_automod_rule_create
+    discord.on_automod_rule_update
+    discord.on_automod_rule_delete
 Soundboard & stickers (guild)
+    discord.on_soundboard_sound_create
+    discord.on_soundboard_sound_delete
+    discord.on_soundboard_sound_update
+    discord.on_guild_stickers_update
 Integrations (guild)
-user_update (modifications to global name/username?) (member)
+    discord.on_integration_create
+    discord.on_integration_update
+Invites (Guild)
+    discord.on_invite_create
+    discord.on_invite_delete
+Scheduled Events (guild)
+    discord.on_scheduled_event_create
+    discord.on_scheduled_event_delete
+    discord.on_scheduled_event_update
 """
