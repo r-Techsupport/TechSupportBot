@@ -13,6 +13,7 @@ from discord.ext import commands
 import configuration
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs
+from modules.moderation import logger
 
 if TYPE_CHECKING:
     import bot
@@ -177,7 +178,7 @@ class EventLogger(cogs.BaseCog):
             embed_as_is=True,
         )
 
-    # MESSAGE EVENTS
+    # Message events
 
     @commands.Cog.listener()
     async def on_message_edit(
@@ -205,7 +206,7 @@ class EventLogger(cogs.BaseCog):
         # Message edits for content edit:
         if before.content != after.content:
             embed = EventEmbed(
-                title="Message Edited",
+                title="Message edited",
                 description=f"[Jump to Message]({after.jump_url})",
             )
 
@@ -282,7 +283,7 @@ class EventLogger(cogs.BaseCog):
             return
 
         embed = EventEmbed(
-            title="Message Deleted",
+            title="Message deleted",
             description=f"[Jump to Message]({message.jump_url})",
         )
 
@@ -330,7 +331,7 @@ class EventLogger(cogs.BaseCog):
             return
 
         embed = EventEmbed(
-            title="Bulk Message Delete",
+            title="Bulk message delete",
             description="",
         )
         embed.addChannelField("Channel", channel)
@@ -398,7 +399,7 @@ class EventLogger(cogs.BaseCog):
             return
 
         embed = EventEmbed(
-            title="Reaction Added",
+            title="Reaction added",
             description=f"[Jump to Message]({message.jump_url})",
         )
 
@@ -446,7 +447,7 @@ class EventLogger(cogs.BaseCog):
             return
 
         embed = EventEmbed(
-            title="Reaction Removed",
+            title="Reaction removed",
             description=f"[Jump to Message]({message.jump_url})",
         )
 
@@ -491,7 +492,7 @@ class EventLogger(cogs.BaseCog):
             total_emoji += reaction.count
 
         embed = EventEmbed(
-            title="Reactions Cleared",
+            title="Reactions cleared",
             description=f"[Jump to Message]({message.jump_url})",
         )
 
@@ -522,7 +523,7 @@ class EventLogger(cogs.BaseCog):
         channel = message.channel
 
         embed = EventEmbed(
-            title="Poll Answered",
+            title="Poll answered",
             description=f"[Jump to Message]({message.jump_url})",
         )
 
@@ -555,7 +556,7 @@ class EventLogger(cogs.BaseCog):
         channel = message.channel
 
         embed = EventEmbed(
-            title="Poll Answer Removed",
+            title="Poll answer removed",
             description=f"[Jump to Message]({message.jump_url})",
         )
 
@@ -576,7 +577,246 @@ class EventLogger(cogs.BaseCog):
             channel_location=channel,
         )
 
-    # Guild Events
+    # Member events
+
+    @commands.Cog.listener()
+    async def on_member_join(self: Self, member: discord.Member) -> None:
+        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join
+
+        Args:
+            member (discord.Member): The member who joined
+        """
+        embed = EventEmbed(
+            title="Member joined",
+            description="",
+        )
+
+        embed.setEventAuthor(member)
+        embed.addMemberField("New Member", member)
+
+        if member.flags.did_rejoin:
+            embed.set_footer(text="This user has joined this server before")
+
+        console_message = f"Member joined: {member.name} ({member.id})"
+
+        await self.send_event_log(
+            guild=member.guild,
+            log_location="member",
+            string_message=console_message,
+            embed_message=embed,
+        )
+
+    @commands.Cog.listener()
+    async def on_raw_member_remove(
+        self: Self, payload: discord.RawMemberRemoveEvent
+    ) -> None:
+        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_remove
+
+        Args:
+            member (discord.Member): The member who left
+        """
+        member = payload.user
+        embed = EventEmbed(
+            title="Member left",
+            description="",
+        )
+
+        embed.setEventAuthor(member)
+        embed.addMemberField("Member", member)
+
+        if isinstance(member, discord.Member):
+            embed.add_field(
+                name="Joined at",
+                value=(
+                    f"<t:{int(member.joined_at.timestamp())}:F> "
+                    f"(<t:{int(member.joined_at.timestamp())}:R>)"
+                ),
+            )
+            embed.add_field(
+                name="Roles",
+                value=", ".join(logger.generate_role_list(member)),
+            )
+
+        # If member object, show roles and date joined?
+
+        console_message = f"Member left: {member.name} ({member.id})"
+
+        await self.send_event_log(
+            guild=member.guild,
+            log_location="member",
+            string_message=console_message,
+            embed_message=embed,
+        )
+
+    @commands.Cog.listener()
+    async def on_voice_state_update(
+        self: Self,
+        member: discord.Member,
+        before: discord.VoiceState,
+        after: discord.VoiceState,
+    ) -> None:
+        # We need to handle server deafen and server mute
+        if before.mute != after.mute:
+            embed = EventEmbed(
+                title=f"Member Server {'un' if before.mute else ''}muted",
+                description="",
+            )
+
+            embed.setEventAuthor(member)
+            embed.addMemberField("Member", member)
+
+            if after.channel:
+                embed.addChannelField("Current Channel", after.channel)
+
+            console_message = f"{embed.title}: {member.name} ({member.id})"
+
+            await self.send_event_log(
+                guild=member.guild,
+                log_location="member",
+                string_message=console_message,
+                embed_message=embed,
+            )
+
+        if before.deaf != after.deaf:
+            embed = EventEmbed(
+                title=f"Member Server {'un' if before.deaf else ''}deafened",
+                description="",
+            )
+
+            embed.setEventAuthor(member)
+            embed.addMemberField("Member", member)
+
+            if after.channel:
+                embed.addChannelField("Current Channel", after.channel)
+
+            console_message = f"{embed.title}: {member.name} ({member.id})"
+
+            await self.send_event_log(
+                guild=member.guild,
+                log_location="member",
+                string_message=console_message,
+                embed_message=embed,
+            )
+
+    @commands.Cog.listener()
+    async def on_user_update(
+        self: Self, before: discord.User, after: discord.User
+    ) -> None:
+        # We want to track name and global name changes
+        if before.name != after.name:
+            embed = EventEmbed(
+                title="Member username changed",
+                description="",
+            )
+
+            embed.setEventAuthor(after)
+            embed.addMemberField("Member", after)
+            embed.add_field(
+                name="name:", value=f"**Old:** {before.name}\n**New:** {after.name}"
+            )
+
+            console_message = f"Member changed their name: {after.name} ({after.id})"
+
+            for guild in after.mutual_guilds:
+                await self.send_event_log(
+                    guild=guild,
+                    log_location="member",
+                    string_message=console_message,
+                    embed_message=embed,
+                )
+
+        if before.global_name != after.global_name:
+            embed = EventEmbed(
+                title="Member global name changed",
+                description="",
+            )
+
+            embed.setEventAuthor(after)
+            embed.addMemberField("Member", after)
+            embed.add_field(
+                name="global_name:",
+                value=f"**Old:** {before.global_name}\n**New:** {after.global_name}",
+            )
+
+            console_message = (
+                f"Member changed their global_name: {after.name} ({after.id})"
+            )
+
+            for guild in after.mutual_guilds:
+                await self.send_event_log(
+                    guild=guild,
+                    log_location="member",
+                    string_message=console_message,
+                    embed_message=embed,
+                )
+
+    @commands.Cog.listener()
+    async def on_member_update(
+        self: Self, before: discord.Member, after: discord.Member
+    ) -> None:
+        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update
+
+        Args:
+            before (discord.Member): The updated member's old info
+            after (discord.Member): Teh updated member's new info
+        """
+        # We want to track role and nickname changes
+
+        if before.nick != after.nick:
+            embed = EventEmbed(
+                title="Member nickname changed",
+                description="",
+            )
+
+            embed.setEventAuthor(after)
+            embed.addMemberField("Member", after)
+            embed.add_field(
+                name="nick:",
+                value=f"**Old:** {before.nick}\n**New:** {after.nick}",
+            )
+
+            console_message = f"Member changed their nick: {after.name} ({after.id})"
+
+            await self.send_event_log(
+                guild=after.guild,
+                log_location="member",
+                string_message=console_message,
+                embed_message=embed,
+            )
+
+        roles_lost = set(before.roles) - set(after.roles)
+        roles_gained = set(after.roles) - set(before.roles)
+        changed_role = set(before.roles) ^ set(after.roles)
+        if changed_role:
+            embed = EventEmbed(
+                title="Member roles updated",
+                description="",
+            )
+            embed.setEventAuthor(after)
+            embed.addMemberField("Member", after)
+
+            if roles_gained:
+                embed.add_field(
+                    name="Roles added",
+                    value=", ".join([role.mention for role in roles_gained]),
+                )
+
+            if roles_lost:
+                embed.add_field(
+                    name="Roles removed",
+                    value=", ".join([role.mention for role in roles_lost]),
+                )
+
+            console_message = f"Member roles updated: {after.name} ({after.id}). Roles changed {', '.join(role.name for role in changed_role)}"
+
+            await self.send_event_log(
+                guild=after.guild,
+                log_location="member",
+                string_message=console_message,
+                embed_message=embed,
+            )
+
+    # Guild events
 
     # Useful
     @commands.Cog.listener()
@@ -889,151 +1129,6 @@ class EventLogger(cogs.BaseCog):
             embed=embed,
         )
 
-    # Member Events
-
-    # Useful
-    # This will have a lot of potential things to log in it, such as roles and nickname
-    @commands.Cog.listener()
-    async def on_member_update(
-        self: Self, before: discord.Member, after: discord.Member
-    ) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update
-
-        Args:
-            before (discord.Member): The updated member's old info
-            after (discord.Member): Teh updated member's new info
-        """
-        changed_role = set(before.roles) ^ set(after.roles)
-        if changed_role:
-            if len(before.roles) < len(after.roles):
-                embed = discord.Embed()
-                embed.add_field(name="Roles added", value=next(iter(changed_role)))
-                embed.add_field(name="Server", value=before.guild.name)
-            else:
-                embed = discord.Embed()
-                embed.add_field(name="Roles lost", value=next(iter(changed_role)))
-                embed.add_field(name="Server", value=before.guild.name)
-
-            log_channel = configuration.get_config_entry(
-                before.guild.id, "core_member_events_channel"
-            )
-
-            await self.bot.logger.send_log(
-                message=(
-                    f"Member with ID {before.id} has changed status in guild with ID"
-                    f" {before.guild.id}"
-                ),
-                level=LogLevel.INFO,
-                context=LogContext(guild=before.guild),
-                channel=log_channel,
-                embed=embed,
-            )
-
-    # Useful. Should probably be turned into raw
-    @commands.Cog.listener()
-    async def on_member_remove(self: Self, member: discord.Member) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_remove
-
-        Args:
-            member (discord.Member): The member who left
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Member", value=member)
-        embed.add_field(name="Server", value=member.guild.name)
-        log_channel = configuration.get_config_entry(
-            member.guild.id, "core_member_events_channel"
-        )
-
-        await self.bot.logger.send_log(
-            message=(
-                f"Member with ID {member.id} has left guild with ID {member.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=member.guild),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    # Maybe leave this to modlog and member remove?
-    @commands.Cog.listener()
-    async def on_member_ban(
-        self: Self, guild: discord.Guild, user: discord.User | discord.Member
-    ) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_ban
-
-        Args:
-            guild (discord.Guild): The guild the user got banned from
-            user (discord.User | discord.Member): The user that got banned. Can be either User
-                or Member depending if the user was in the guild or not at the time of removal.
-        """
-        embed = discord.Embed()
-        embed.add_field(name="User", value=user)
-        embed.add_field(name="Server", value=guild.name)
-
-        log_channel = configuration.get_config_entry(
-            guild.id, "core_member_events_channel"
-        )
-
-        await self.bot.logger.send_log(
-            message=f"User with ID {user.id} banned from guild with ID {guild.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=guild),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    # Maybe leave this to modlog?
-    @commands.Cog.listener()
-    async def on_member_unban(
-        self: Self, guild: discord.Guild, user: discord.User
-    ) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_unban
-
-        Args:
-            guild (discord.Guild): The guild the user got unbanned from
-            user (discord.User): The user that got unbanned
-        """
-        embed = discord.Embed()
-        embed.add_field(name="User", value=user)
-        embed.add_field(name="Server", value=guild.name)
-
-        log_channel = configuration.get_config_entry(
-            guild.id, "core_member_events_channel"
-        )
-
-        await self.bot.logger.send_log(
-            message=f"User with ID {user.id} unbanned from guild with ID {guild.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=guild),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    # Useful
-    @commands.Cog.listener()
-    async def on_member_join(self: Self, member: discord.Member) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_join
-
-        Args:
-            member (discord.Member): The member who joined
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Member", value=member)
-        embed.add_field(name="Server", value=member.guild.name)
-        log_channel = configuration.get_config_entry(
-            member.guild.id, "core_member_events_channel"
-        )
-
-        await self.bot.logger.send_log(
-            message=(
-                f"Member with ID {member.id} has joined guild with ID {member.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=member.guild),
-            channel=log_channel,
-            embed=embed,
-        )
-
     # Bot Events
 
     @commands.Cog.listener()
@@ -1150,15 +1245,6 @@ class EventLogger(cogs.BaseCog):
 
 # Should probably log:
 """
-Polls creation (Message)
-    discord.on_poll_vote_add
-    discord.on_poll_vote_remove
-    
-Server deafen/mute (Member?)
-    discord.on_voice_state_update
-user_update (modifications to global name/username?) (member) (maybe?)
-    discord.on_user_update
-
 Thread creation/delete (guild) - MAYBE
     discord.on_thread_create
     discord.on_thread_update
