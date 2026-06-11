@@ -1,31 +1,58 @@
 This bot will use the Guild Members intent for the following reasons
 
-moderation.events
-    The bot monitors member who leave and join for logging purposes, supporting moderation efforts.
+# moderation.events
+## Usage
+This module tracks and logs a handful of events across the server, including member joins, edits, and leaves.
+Logs that include privileged member info include, but are not limited to: member joins, nickname edits, and member remove.
+## Purpose
+These logs are designed to enhance moderation efforts. Many logs that our moderators rely on will not be able to be sent.
+## Data Handling
+A message containing the member intent data may be sent to an arbitrary channel in the same guild, which may or may not be the same channel the message was originally sent.
+The bot does not store any data related to this module permanently on disk, in any databases, or in any external services.
 
-    This module sends this information into a discord channel in the same guild, stores nothing on disk.
+# moderation.members
+## Usage
+A module desgined to enhance moderation efforts, this allows our moderators to get a yaml file of all members in the guild with a given role
+## Purpose
+In order to get all the members with a specific role, access to guild.members is requied
+## Data Handling
+A message containing the list of members, IDs, names and role list, will be sent in the channel the command is run in. This will be in the same guild the member data is relevant for.
+While nothing is stored on disk by the bot, as a file is sent with this data, the intention is to have our moderators download the file and parse it using external tooling.
+The bot does not store any data related to this module permanently on disk, in any databases, or in any external services.
 
-moderation.members
-    A command designed to enhance moderation efforts to get a yaml file of all members with a given role.
+# moderation.modmail
+## Usage
+This module alerts our staff if someone who has opened a modmail ticket with us has left or re-joined the server
+## Purpose
+In order to send these alerts, this module must track members joining and leaving
+## Data Handling
+A message containing information about the user join/leaving the guild will be sent in the configured modmail channel.
+The bot does not store any data related to this module permanently on disk, in any databases, or in any external services.
 
-    This module sends this information into a discord channel in the same guild, stores nothing on disk.
+# moderation.nickname
+## Usage
+This module is designed to enforce our nickname rules on members when they join our server.
+## Purpose
+In order to change nicknames on joining the server, the module member joins on the guild.
+## Data Handling
+In the event the nickname was changed, the bot will DM the user who joined the guild to inform them their nickname was changed. While this message doesn't contain proof the user joined a specific guild, it would be very easy to work out the information by virtue of having the message at all.
+In the further event that the user has DMs turned off, a message will be sent in a bot logging channel configured by the guild informing staff that the user couldn't be notified, which would log a member join event in those cases.
+The bot does not store any data related to this module permanently on disk, in any databases, or in any external services.
 
-moderation.modmail
-    The bot monitors members who leave and join if they have an open thread in modmail to notify moderators that the user has left or joined.
+# moderation.notes
+## Usage
+This module allows moderators to set notes on users that the whole team can view. A notes role is applied to users who have notes, to let the staff team who has notes when looking at messages sent.
+## Purpose
+The bot will attempt to make this role "sticky", to auto apply the role on member joining. When a member joins, the bot looks in the database to see if any notes were set by staff previously. If so, the notes role is re-applyed
+## Data Handling
+If the bot finds a user and re-applies the notes role, a log is sent in a configured log channel informing the staff such an action was taken. If no notes were found, this module will log nothing.
+The bot does not store any data related to this module permanently on disk, in any databases, or in any external services.
 
-    This module sends this information into a discord channel in the same guild, stores nothing on disk.
-
-moderation.nickname
-    The bot monitors members who join to enforce server nickname policies, modifying user nicknames to match our server rules should it be needed.
-
-    This module does not send this information anywhere, nor does it store any information on disk.
-
-moderation.notes
-    The bot monitors members who join to determine if they have user notes set by our moderators. If so, upon re-joining our server, they are given the notes role.
-
-    This module sends this information into a discord channel in the same guild, stores nothing on disk.
-
-operation.forum
-    The bot monitors members who leave to alert helpers in the thread the user has created that the individual who opened the thread has subsequently left the server.
-
-    This module sends this information into a discord channel in the same guild, stores nothing on disk.
+# operation.forum
+## Usage
+This modules auto closes any open threads in a configured forum channel if the OP of the thread leaves the guild.
+## Purpose
+The member remove is monitored to check if a member has an open thread at the time they left. Closing the thread upon leaving helps prevent our staff from wasting time helping users who have left our server.
+## Data Handling
+A message containing information showing the user has left will be sent in the thread they opened.
+The bot does not store any data related to this module permanently on disk, in any databases, or in any external services.
