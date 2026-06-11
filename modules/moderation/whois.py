@@ -59,9 +59,6 @@ class Whois(cogs.BaseCog):
             name="Created", value=f"<t:{int(member.created_at.timestamp())}>"
         )
         embed.add_field(name="Joined", value=f"<t:{int(member.joined_at.timestamp())}>")
-        embed.add_field(
-            name="Status", value=interaction.guild.get_member(member.id).status
-        )
         embed.add_field(name="Nickname", value=member.display_name)
 
         role_list = member.roles[1:]
