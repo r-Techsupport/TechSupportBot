@@ -1,5 +1,10 @@
 Ignoring prefix commands, which are still heavily used by this bot, the bot uses the Message Content intent for the following reasons:
 
+administration.listen
+    This is a module designed to bridge two channels together across different guilds, though it can be used to bridge two channels in the same guild as well.
+
+    This module sends this information into a discord channel in any guild, stores nothing on disk.
+
 fun.autoreact
     This module monitors messages for specific keywords and automatically adds silly reactions to them. This is for the pure purpose of fun.
 
@@ -37,7 +42,7 @@ moderation.automod
     
     This module sends this information into a discord channel in the same guild, stores nothing on disk.
 
-moderation.event
+moderation.events
     This module tracks events such as message edit and delete events, for the purposes of enhancing moderation efforts.
 
     This module sends this information into a discord channel in the same guild, stores nothing on disk.
@@ -52,23 +57,18 @@ moderation.honeypot
 
     This module sends this information into a discord channel in the same guild, stores nothing on disk.
 
-moderation.listen
-    This is a module designed to bridge two channels together across different guilds, though it can be used to bridge two channels in the same guild as well.
-
-    This module sends this information into a discord channel in any guild, stores nothing on disk.
-
 moderation.logger
     This module logs the content of all messages sent in given channels for the purposes of enhancing moderation efforts.
 
     This module sends this information into a discord channel in the same guild, stores nothing on disk.
 
-moderation.paste
-    This module automatically deletes long messages and instead sends a link in the channel to a pastebin service.
+operation.forum
+    This module monitors for new threads created and checks the inital message against a set of rules. The explicit purpose of this is to close and lock threads that violate our rules, so they can be unlocked by our moderators for a false positive. We do not wish to block them from being sent entirely.
 
     This module sends this information into a discord channel in the same guild, stores nothing on disk.
 
-operation.forum
-    This module monitors for new threads created and checks the inital message against a set of rules. The explicit purpose of this is to close and lock threads that violate our rules, so they can be unlocked by our moderators for a false positive. We do not wish to block them from being sent entirely.
+operation.paste
+    This module automatically deletes long messages and instead sends a link in the channel to a pastebin service.
 
     This module sends this information into a discord channel in the same guild, stores nothing on disk.
 
