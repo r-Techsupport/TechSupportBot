@@ -5,6 +5,11 @@ moderation.events
 
     This module sends this information into a discord channel in the same guild, stores nothing on disk.
 
+moderation.members
+    A command designed to enhance moderation efforts to get a yaml file of all members with a given role.
+
+    This module sends this information into a discord channel in the same guild, stores nothing on disk.
+
 moderation.modmail
     The bot monitors members who leave and join if they have an open thread in modmail to notify moderators that the user has left or joined.
 
@@ -22,5 +27,5 @@ moderation.notes
 
 operation.forum
     The bot monitors members who leave to alert helpers in the thread the user has created that the individual who opened the thread has subsequently left the server.
-    
+
     This module sends this information into a discord channel in the same guild, stores nothing on disk.
