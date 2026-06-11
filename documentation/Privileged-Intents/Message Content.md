@@ -31,6 +31,9 @@ moderation.automod
     This is a full automod implementation. Features strongly mirror those avaiable by the native discord automod, and those features will not be re-explained here. The following additional features are implemented:
         - The ability to send a publicly visible message in a channel when a message is sent matching content or regex. This is for the purposes of automatically warning our users of potentially malicious advice being given.
         - The ability to filter attachments based on file hash and/or file extension.
+        - The ability to interact with our bots warning system
+        - The ability to automatically kick or ban offending users
+        - The ability to delete messages without user notification
     
     This module sends this information into a discord channel in the same guild, stores nothing on disk.
 
