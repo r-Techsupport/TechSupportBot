@@ -87,9 +87,8 @@ class Modmail_bot(discord.Client):
         self.guild_id: int = None
         self.forum_channel_id: int = None
 
-        # Setup all intents and call the discord.Client init call to start the bot
-        intents = discord.Intents.all()
-        intents.members = True
+        # Setup default intents and call the discord.Client init call to start the bot
+        intents = discord.Intents.default()
         super().__init__(intents=intents)
 
     @commands.Cog.listener()
@@ -201,37 +200,18 @@ class Modmail_bot(discord.Client):
 
             await thread.send(embed=embed)
 
-    @commands.Cog.listener()
-    async def on_member_remove(self: Self, member: discord.Member) -> None:
-        """Sends a message into a thread if the addressee left
+    async def get_member_object(self: Self, user_id: int) -> discord.Member:
+        """This uses the modmail bot to fetch a given member by ID
+        This always uses the configured modmail guild
 
         Args:
-            member (discord.Member): The member who left
-        """
-        if member.id in active_threads:
-            thread = self.get_channel(active_threads[member.id])
-            embed = discord.Embed(
-                color=discord.Color.red(),
-                title="Member left",
-                description=f"{member.mention} has left the guild.",
-            )
-            await thread.send(embed=embed)
+            user_id (int): The user ID to fetch the member of
 
-    @commands.Cog.listener()
-    async def on_member_join(self: Self, member: discord.Member) -> None:
-        """Sends a message into a thread if the addressee joined the guild with an active thread
-
-        Args:
-            member (discord.Member): The member who joined
+        Returns:
+            discord.Member: The member object obtained
         """
-        if member.id in active_threads:
-            thread = self.get_channel(active_threads[member.id])
-            embed = discord.Embed(
-                color=discord.Color.blue(),
-                title="Member joined",
-                description=f"{member.mention} has rejoined the guild.",
-            )
-            await thread.send(embed=embed)
+        guild = await self.fetch_guild(self.guild_id)
+        return await guild.fetch_member(user_id)
 
 
 # Makes the Ts_client variable a global variable
@@ -690,7 +670,7 @@ async def reply_to_thread(
         )
 
     # Refetches the user from modmails client so it can reply to it instead of TS
-    user = Modmail_client.get_user(target_member.id)
+    user = await Modmail_client.get_member_object(target_member.id)
 
     # Attachments is either None or a list of files, discord can handle either
     await user.send(embed=embed, files=user_attachments)
@@ -1734,3 +1714,35 @@ class Modmail(cogs.BaseCog):
             thread=interaction.channel,
             anonymous=True,
         )
+
+    @commands.Cog.listener()
+    async def on_member_remove(self: Self, member: discord.Member) -> None:
+        """Sends a message into a thread if the addressee left
+
+        Args:
+            member (discord.Member): The member who left
+        """
+        if member.id in active_threads:
+            thread = self.bot.get_channel(active_threads[member.id])
+            embed = discord.Embed(
+                color=discord.Color.red(),
+                title="Member left",
+                description=f"{member.mention} has left the guild.",
+            )
+            await thread.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_member_join(self: Self, member: discord.Member) -> None:
+        """Sends a message into a thread if the addressee joined the guild with an active thread
+
+        Args:
+            member (discord.Member): The member who joined
+        """
+        if member.id in active_threads:
+            thread = self.bot.get_channel(active_threads[member.id])
+            embed = discord.Embed(
+                color=discord.Color.blue(),
+                title="Member joined",
+                description=f"{member.mention} has rejoined the guild.",
+            )
+            await thread.send(embed=embed)
