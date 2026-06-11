@@ -6,7 +6,7 @@ This module has a command to fetch and display every property of a collection of
 ## Purpose
 The purpose of this module is to debug issues that happen with this bot, other bots, or native discord feature (like automod) when they happen in production
 ## Data Handling
-This module is capable of accessing data across guilds, and will send a message containing the message content in the guild the command was run in.
+This module is capable of accessing data across guilds, and will send a message containing the message content in the guild the command was run in.<br>
 The bot does not store any data related to this module permanently on disk, in any databases, or in any external services.
 
 # administration.listen
