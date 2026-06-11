@@ -79,6 +79,8 @@ This module is a fully featured automod setup. It mirrors every feature the nati
 - The ability to delete an offending message without any notice to the user
 - The ability to block based on pinging specific roles and/or users
 - The ability to exempt nobody from the filters
+- The ability to apply our bots warnings to users
+- The ability to mute users for an arbitrary amount of time (or at least 1 second to 28 days, as restricted by the API)
 ## Purpose
 In order to run the automod capabilites as described above, the bot needs to be able to read the message content to determine what rule(s) to run
 ## Data Handling
