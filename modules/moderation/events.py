@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 import sys
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Any, Self
 
 import discord
 from discord.ext import commands
@@ -91,6 +91,7 @@ class EventEmbed(discord.Embed):
             value=(
                 f"**Channel:** {channel.mention}\n"
                 f"**Name:** #{channel.name}\n"
+                f"**Type:** {channel.type.name}\n"
                 f"**ID:** {channel.id}"
             ),
             inline=True,
@@ -128,6 +129,51 @@ class EventEmbed(discord.Embed):
             value=(f"**Answer:** {answer.text}\n**ID:** {answer.id}"),
             inline=True,
         )
+
+    def addPropertyChangeFields(
+        self: Self, properties: list[str], before: Any, after: Any
+    ) -> bool:
+        changes = []
+
+        for attr in properties:
+            old_value = getattr(before, attr, None)
+            new_value = getattr(after, attr, None)
+
+            # If both are lists, sort them before comparing
+            if isinstance(old_value, list) and isinstance(new_value, list):
+                old_compare = sorted(old_value, key=str)
+                new_compare = sorted(new_value, key=str)
+            else:
+                old_compare = old_value
+                new_compare = new_value
+
+            if old_compare != new_compare:
+                changes.append((attr, old_value, new_value))
+
+        if changes:
+            for attr, old_value, new_value in changes:
+                # Make the property name prettier
+                field_name = attr.replace("_", " ").title()
+
+                # Special formatting for categories
+                if attr == "category":
+                    old_value = old_value.mention if old_value else "None"
+                    new_value = new_value.mention if new_value else "None"
+
+                # Better formatting for booleans
+                elif isinstance(old_value, bool):
+                    old_value = "Yes" if old_value else "No"
+                    new_value = "Yes" if new_value else "No"
+
+                self.add_field(
+                    name=field_name,
+                    value=f"**Old:** {old_value}\n**New:** {new_value}",
+                    inline=True,
+                )
+
+            return True
+
+        return False
 
 
 class EventLogger(cogs.BaseCog):
@@ -818,37 +864,6 @@ class EventLogger(cogs.BaseCog):
 
     # Guild events
 
-    # Useful
-    @commands.Cog.listener()
-    async def on_guild_channel_delete(
-        self: Self, channel: discord.abc.GuildChannel
-    ) -> None:
-        """
-        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_delete
-
-        Args:
-            channel (discord.abc.GuildChannel): The channel that got deleted
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Channel Name", value=channel.name)
-        embed.add_field(name="Server", value=channel.guild.name)
-
-        log_channel = configuration.get_config_entry(
-            channel.guild.id, "core_guild_events_channel"
-        )
-
-        await self.bot.logger.send_log(
-            message=(
-                f"Channel with ID {channel.id} deleted in guild with ID"
-                f" {channel.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=channel.guild, channel=channel),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    # Useful
     @commands.Cog.listener()
     async def on_guild_channel_create(
         self: Self, channel: discord.abc.GuildChannel
@@ -859,21 +874,49 @@ class EventLogger(cogs.BaseCog):
         Args:
             channel (discord.abc.GuildChannel): The channel that got created
         """
-        embed = discord.Embed()
-        embed.add_field(name="Channel Name", value=channel.name)
-        embed.add_field(name="Server", value=channel.guild.name)
-        log_channel = configuration.get_config_entry(
-            channel.guild.id, "core_guild_events_channel"
+
+        embed = EventEmbed(
+            title="Channel created",
+            description=f"",
         )
-        await self.bot.logger.send_log(
-            message=(
-                f"Channel with ID {channel.id} created in guild with ID"
-                f" {channel.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=channel.guild, channel=channel),
-            channel=log_channel,
-            embed=embed,
+
+        embed.addChannelField("Channel", channel)
+
+        console_message = f"Channel {channel.name} ({channel.id}) was created"
+
+        await self.send_event_log(
+            guild=channel.guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=channel,
+        )
+
+    @commands.Cog.listener()
+    async def on_guild_channel_delete(
+        self: Self, channel: discord.abc.GuildChannel
+    ) -> None:
+        """
+        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_delete
+
+        Args:
+            channel (discord.abc.GuildChannel): The channel that got deleted
+        """
+        embed = EventEmbed(
+            title="Channel deleted",
+            description=f"",
+        )
+
+        embed.addChannelField("Channel", channel)
+
+        console_message = f"Channel {channel.name} ({channel.id}) was deleted"
+
+        await self.send_event_log(
+            guild=channel.guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=channel,
         )
 
     # Useful
@@ -888,84 +931,143 @@ class EventLogger(cogs.BaseCog):
             before (discord.abc.GuildChannel): The updated guild channel's old info
             after (discord.abc.GuildChannel): The updated guild channel's new info
         """
-        attrs = [
+
+        # This is hell. Thanks claude
+        if before.overwrites != after.overwrites:
+            embed = EventEmbed(
+                title="Channel permissions updated",
+                description="",
+            )
+
+            embed.addChannelField("Channel", after)
+
+            console_changes: list[str] = []
+
+            all_targets = set(before.overwrites) | set(after.overwrites)
+
+            for target in all_targets:
+                before_overwrite = before.overwrites.get(
+                    target, discord.PermissionOverwrite()
+                )
+                after_overwrite = after.overwrites.get(
+                    target, discord.PermissionOverwrite()
+                )
+
+                before_perms = dict(before_overwrite)
+                after_perms = dict(after_overwrite)
+
+                added: list[str] = []
+                removed: list[str] = []
+                changed: list[str] = []
+
+                all_permissions = set(before_perms) | set(after_perms)
+
+                for permission in sorted(all_permissions):
+                    old = before_perms.get(permission)
+                    new = after_perms.get(permission)
+
+                    if old == new:
+                        continue
+
+                    if old is None:
+                        added.append(
+                            f"✅ `{permission.replace('_', ' ').title()}` → {new}"
+                        )
+                    elif new is None:
+                        removed.append(
+                            f"❌ `{permission.replace('_', ' ').title()}` (was {old})"
+                        )
+                    else:
+                        old_emoji = "✅" if old else "❌"
+                        new_emoji = "✅" if new else "❌"
+
+                        changed.append(
+                            f"➖ `{permission.replace('_', ' ').title()}` "
+                            f"{old_emoji} → {new_emoji}"
+                        )
+
+                if not (added or removed or changed):
+                    continue
+
+                value_parts = []
+
+                if isinstance(target, discord.Role):
+                    target_name = f"Role:"
+                    value_parts.append(f"{target.mention}")
+                elif isinstance(target, discord.Member):
+                    target_name = f"Member:"
+                    value_parts.append(f"{target.mention}")
+                else:
+                    target_name = f"Unknown:"
+                    value_parts.append(f"{target.id}")
+
+                if added:
+                    value_parts.append("**Added**\n" + "\n".join(added))
+
+                if removed:
+                    value_parts.append("**Removed**\n" + "\n".join(removed))
+
+                if changed:
+                    value_parts.append("**Changed**\n" + "\n".join(changed))
+
+                value = "\n\n".join(value_parts)
+
+                # Discord field value limit
+                if len(value) > 1024:
+                    value = value[:1021] + "..."
+
+                embed.add_field(
+                    name=target_name,
+                    value=value,
+                    inline=False,
+                )
+
+                console_changes.append(target_name)
+
+            if not console_changes:
+                return
+
+            console_message = (
+                f"Permission overwrites updated for channel "
+                f"{after.name} ({after.id})"
+            )
+
+            await self.send_event_log(
+                guild=after.guild,
+                log_location="guild",
+                string_message=console_message,
+                embed_message=embed,
+                channel_location=after,
+            )
+
+        properties_to_track = [
             "category",
-            "changed_roles",
             "name",
-            "overwrites",
             "permissions_synced",
             "position",
+            "topic",
+            "slowmode_delay",
+            "bitrate",
+            "user_limit",
+            "nsfw",
+            "rtc_region",
+            "type",
         ]
-        diff = auxiliary.get_object_diff(before, after, attrs)
+        embed = EventEmbed(title="Channel properties updated", description="")
+        embed.addChannelField("Channel", after)
 
-        embed = discord.Embed()
-        embed = auxiliary.add_diff_fields(embed, diff)
-        embed.add_field(name="Channel Name", value=before.name)
-        embed.add_field(name="Server", value=before.guild.name)
+        if embed.addPropertyChangeFields(properties_to_track, before, after):
+            console_message = (
+                f"Channel properties updated for channel " f"{after.name} ({after.id})"
+            )
 
-        log_channel = configuration.get_config_entry(
-            before.guild.id, "core_guild_events_channel"
-        )
-        await self.bot.logger.send_log(
-            message=(
-                f"Channel with ID {before.id} modified in guild with ID"
-                f" {before.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=before.guild, channel=before),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    # Useless
-    @commands.Cog.listener()
-    async def on_guild_integrations_update(self: Self, guild: discord.Guild) -> None:
-        """
-        See:
-        https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_integrations_update
-
-        Args:
-            guild (discord.Guild): The guild that had its integrations updated.
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Server", value=guild)
-        log_channel = configuration.get_config_entry(
-            guild.id, "core_guild_events_channel"
-        )
-        await self.bot.logger.send_log(
-            message=f"Integrations updated in guild with ID {guild.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=guild),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    # Useless
-    @commands.Cog.listener()
-    async def on_webhooks_update(self: Self, channel: discord.abc.GuildChannel) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_webhooks_update
-
-        Args:
-            channel (discord.abc.GuildChannel): The channel that had its webhooks updated.
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Channel", value=channel.name)
-        embed.add_field(name="Server", value=channel.guild)
-
-        log_channel = configuration.get_config_entry(
-            channel.guild.id, "core_guild_events_channel"
-        )
-
-        await self.bot.logger.send_log(
-            message=(
-                f"Webooks updated for channel with ID {channel.id} in guild with ID"
-                f" {channel.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=channel.guild, channel=channel),
-            channel=log_channel,
-            embed=embed,
-        )
+            await self.send_event_log(
+                guild=after.guild,
+                log_location="guild",
+                string_message=console_message,
+                embed_message=embed,
+                channel_location=after,
+            )
 
     # Useful
     @commands.Cog.listener()
@@ -1006,20 +1108,46 @@ class EventLogger(cogs.BaseCog):
             ],
         )
 
-        embed = discord.Embed()
-        embed = auxiliary.add_diff_fields(embed, diff)
-        embed.add_field(name="Server", value=before.name)
+        properties_to_track = [
+            "afk_channel",
+            "afk_timeout",
+            "banner",
+            "bitrate_limit",
+            "categories",
+            "description",
+            "default_notifications",
+            "dms_paused_until",
+            "discovery_splash",
+            "emoji_limit",
+            "explicit_content_filter",
+            "features",
+            "filesize_limit",
+            "icon",
+            "invites_paused_until",
+            "mfa_level",
+            "name",
+            "nsfw_level",
+            "owner",
+            "preferred_locale",
+            "premium_tier",
+            "public_updates_channel",
+            "rules_channel",
+            "safety_alerts_channel",
+            "splash",
+            "system_channel",
+            "verification_level",
+        ]
+        embed = EventEmbed(title="Guild properties updated", description="")
 
-        log_channel = configuration.get_config_entry(
-            before.guild.id, "core_guild_events_channel"
-        )
-        await self.bot.logger.send_log(
-            message=f"Guild with ID {before.id} updated",
-            level=LogLevel.INFO,
-            context=LogContext(guild=before),
-            channel=log_channel,
-            embed=embed,
-        )
+        if embed.addPropertyChangeFields(properties_to_track, before, after):
+            console_message = f"Guild properties updated."
+
+            await self.send_event_log(
+                guild=after,
+                log_location="guild",
+                string_message=console_message,
+                embed_message=embed,
+            )
 
     # Useful
     @commands.Cog.listener()
@@ -1080,6 +1208,12 @@ class EventLogger(cogs.BaseCog):
             after (discord.Role): The updated role's updated info.
         """
         attrs = ["color", "mentionable", "name", "permissions", "position", "tags"]
+        # Tags cannot change, so doesn't matter
+        # Probably want to do better with color changes, with 2nd/3rd color
+        # Probably want to do display_icon changes
+        # Probably want to do hoist changes
+
+        # We probably want properties (everything but permissions) and permissions as 2 different logs
         diff = auxiliary.get_object_diff(before, after, attrs)
 
         embed = discord.Embed()
