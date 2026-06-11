@@ -57,7 +57,7 @@ This module has to read the message content of the message being grabbed in orde
 ## Data Handling
 Upon running the command, the bot will send a message containing the content in the same channel the command was run in. This will also be the same channel the message was sent in.<br>
 The bot does not store any data related to this module permanently on disk, or in any external services.<br>
-Message content will be stored in the datbase. Message content in the database may be accessed in any channel in the same guild, and by any user capable of running the relevant commands.<br>
+Message content will be stored in the database. Message content in the database may be accessed in any channel in the same guild, and by any user capable of running the relevant commands.<br>
 The data stored in the database by this module is capable of being deleted by the user, if desired.
 
 # fun.mock
