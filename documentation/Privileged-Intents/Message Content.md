@@ -66,13 +66,14 @@ This module has a command which finds the most recent message and sends in back 
 ## Purpose
 In order to show the mocked message, this module must be able to read the content of the message
 ## Data Handling
-A message containing the edited content of the original message is sent in the same channel the original message was sent in. This is not capable of sending cross-guild messages.<br>
+A message containing the edited content of the original message is sent in the same channel the original message was sent in.<br>
 The bot does not store any data related to this module permanently on disk, in any databases, or in any external services.
 
 # moderation.automod
 ## Usage
 This module is a fully featured automod setup. It mirrors every feature the native discord automod has, which will not be re-detailed here. The additional features in which this module can do are as follows:
-- Rules based on attachments, including file extension and file hash based filter
+- The ability to filter attachments based on file extension
+- The ability to filter attachments based on file hash
 - The ability to send a message in the same channel the filtered message was detected in, visible to everyone.
 - The ability to kick and/or ban users who violate the automod rules
 - The ability to delete an offending message without any notice to the user
