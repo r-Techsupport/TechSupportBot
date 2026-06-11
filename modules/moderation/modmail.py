@@ -87,9 +87,8 @@ class Modmail_bot(discord.Client):
         self.guild_id: int = None
         self.forum_channel_id: int = None
 
-        # Setup all intents and call the discord.Client init call to start the bot
-        intents = discord.Intents.all()
-        intents.members = True
+        # Setup default intents and call the discord.Client init call to start the bot
+        intents = discord.Intents.default()
         super().__init__(intents=intents)
 
     @commands.Cog.listener()
@@ -201,37 +200,18 @@ class Modmail_bot(discord.Client):
 
             await thread.send(embed=embed)
 
-    @commands.Cog.listener()
-    async def on_member_remove(self: Self, member: discord.Member) -> None:
-        """Sends a message into a thread if the addressee left
+    async def get_member_object(self: Self, user_id: int) -> discord.Member:
+        """This uses the modmail bot to fetch a given member by ID
+        This always uses the configured modmail guild
 
         Args:
-            member (discord.Member): The member who left
-        """
-        if member.id in active_threads:
-            thread = self.get_channel(active_threads[member.id])
-            embed = discord.Embed(
-                color=discord.Color.red(),
-                title="Member left",
-                description=f"{member.mention} has left the guild.",
-            )
-            await thread.send(embed=embed)
+            user_id (int): The user ID to fetch the member of
 
-    @commands.Cog.listener()
-    async def on_member_join(self: Self, member: discord.Member) -> None:
-        """Sends a message into a thread if the addressee joined the guild with an active thread
-
-        Args:
-            member (discord.Member): The member who joined
+        Returns:
+            discord.Member: The member object obtained
         """
-        if member.id in active_threads:
-            thread = self.get_channel(active_threads[member.id])
-            embed = discord.Embed(
-                color=discord.Color.blue(),
-                title="Member joined",
-                description=f"{member.mention} has rejoined the guild.",
-            )
-            await thread.send(embed=embed)
+        guild = await self.fetch_guild(self.guild_id)
+        return await guild.fetch_member(user_id)
 
 
 # Makes the Ts_client variable a global variable
@@ -690,7 +670,7 @@ async def reply_to_thread(
         )
 
     # Refetches the user from modmails client so it can reply to it instead of TS
-    user = Modmail_client.get_user(target_member.id)
+    user = await Modmail_client.get_member_object(target_member.id)
 
     # Attachments is either None or a list of files, discord can handle either
     await user.send(embed=embed, files=user_attachments)
@@ -870,17 +850,10 @@ class Modmail(cogs.BaseCog):
 
     Attributes:
         modmail_commands (app_commands.Group): The group for the /modmail commands
-        modmail_thread_commands (app_commands.Group): The sub-group for /modmail thread
     """
 
     modmail_commands: app_commands.Group = app_commands.Group(
         name="modmail", description="The group of modmail commands"
-    )
-
-    modmail_thread_commands: app_commands.Group = app_commands.Group(
-        name="thread",
-        description="Modmail commands specific to use in threads",
-        parent=modmail_commands,
     )
 
     def __init__(self: Self, bot: bot.TechSupportBot) -> None:
@@ -1282,7 +1255,7 @@ class Modmail(cogs.BaseCog):
         return True
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="alias",
         description="Sends a specified alias as an anonymous reply in the thread",
     )
@@ -1350,7 +1323,7 @@ class Modmail(cogs.BaseCog):
         ][:10]
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="close",
         description="Instantly closes a modmail thead",
     )
@@ -1383,7 +1356,7 @@ class Modmail(cogs.BaseCog):
         )
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="sclose",
         description="Instantly closes a modmail thead silently",
     )
@@ -1416,7 +1389,7 @@ class Modmail(cogs.BaseCog):
         )
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="tclose",
         description="Closes a modmail thread after 5 minutes, and sends a message to the user",
     )
@@ -1465,7 +1438,7 @@ class Modmail(cogs.BaseCog):
         )
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="tsclose",
         description="Silently closes a modmail thread after 5 minutes",
     )
@@ -1513,7 +1486,7 @@ class Modmail(cogs.BaseCog):
         )
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="areply",
         description="Replies to a modmail thread anonymously",
     )
@@ -1554,7 +1527,7 @@ class Modmail(cogs.BaseCog):
         )
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="reply",
         description="Replies to a modmail thread",
     )
@@ -1595,7 +1568,7 @@ class Modmail(cogs.BaseCog):
         )
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="factoid",
         description="Replies anonymously to a thread with the text of a given factoid",
     )
@@ -1679,7 +1652,7 @@ class Modmail(cogs.BaseCog):
         )
 
     @app_commands.check(has_modmail_management_role)
-    @modmail_thread_commands.command(
+    @modmail_commands.command(
         name="rule",
         description="Replies anonymously to a thread with the text of a given rule",
     )
@@ -1734,3 +1707,35 @@ class Modmail(cogs.BaseCog):
             thread=interaction.channel,
             anonymous=True,
         )
+
+    @commands.Cog.listener()
+    async def on_member_remove(self: Self, member: discord.Member) -> None:
+        """Sends a message into a thread if the addressee left
+
+        Args:
+            member (discord.Member): The member who left
+        """
+        if member.id in active_threads:
+            thread = self.bot.get_channel(active_threads[member.id])
+            embed = discord.Embed(
+                color=discord.Color.red(),
+                title="Member left",
+                description=f"{member.mention} has left the guild.",
+            )
+            await thread.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_member_join(self: Self, member: discord.Member) -> None:
+        """Sends a message into a thread if the addressee joined the guild with an active thread
+
+        Args:
+            member (discord.Member): The member who joined
+        """
+        if member.id in active_threads:
+            thread = self.bot.get_channel(active_threads[member.id])
+            embed = discord.Embed(
+                color=discord.Color.blue(),
+                title="Member joined",
+                description=f"{member.mention} has rejoined the guild.",
+            )
+            await thread.send(embed=embed)
