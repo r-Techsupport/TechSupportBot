@@ -34,7 +34,7 @@ This module contains a command that allows other users to "correct" a different 
 ## Purpose
 This module searches the channel the command was run in for a message containing the passed substring
 ## Data Handling
-A message containing the partial content of the original message is sent in the same channel the original message was sent in. This is not capable of sending cross-guild messages.<br>
+A message containing the partial content of the original message is sent in the same channel the original message was sent in.<br>
 The bot does not store any data related to this module permanently on disk, in any databases, or in any external services.
 
 # fun.duck
@@ -170,7 +170,7 @@ XP data is stored in our database, though message content or any way of determin
 The data stored in the database by this module is capable of being deleted by the user, if desired.
 
 
-# For complete documentation, the following modules are currently using prefix commands:
+# For complete documentation, the following modules are currently using prefix commands, and subsequently require message content until migration is complete:
 - Administration: administration.commandcontrol, administration.echo, administration.embed, administration.github, administration.leave, administration.listen, administration.restart, administration.set, administration.sync
 - Moderation: moderation.gate, moderation.members, moderation.rules
 - Fun: fun.duck, fun.emoji, fun.giphy, fun.grab, fun.hangman, fun.hug, fun.kanye, fun.joke, fun.lenny, fun.mock, fun.roll, fun.wyr
