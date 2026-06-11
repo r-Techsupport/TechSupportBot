@@ -66,7 +66,7 @@ class DataDeleter(cogs.BaseCog):
         if view.value is ui.ConfirmResponse.TIMEOUT:
             return
         if view.value is ui.ConfirmResponse.DENIED:
-            embed = auxiliary.prepare_deny_embed(message=f"Your data was not deleted")
+            embed = auxiliary.prepare_deny_embed(message="Your data was not deleted")
             await view.followup.send(embed=embed, ephemeral=True)
             return
 
