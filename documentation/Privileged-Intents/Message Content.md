@@ -1,5 +1,11 @@
 Ignoring prefix commands, which are still heavily used by this bot, the bot uses the Message Content intent for the following reasons:
 
+administration.debug
+    This is a command designed to help fix unexpected bugs that happen outside of my development environment.
+    On demand it is capable of displaying all properties of a given message object, including the content
+
+    This module sends this information into a discord channel in the same guild, stores nothing on disk.
+
 administration.listen
     This is a module designed to bridge two channels together across different guilds, though it can be used to bridge two channels in the same guild as well.
 
