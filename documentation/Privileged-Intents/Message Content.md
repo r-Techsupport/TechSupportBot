@@ -71,7 +71,7 @@ The bot does not store any data related to this module permanently on disk, in a
 
 # moderation.automod
 ## Usage
-This module is a fully featured automod setup. It mirrors every feature the native discord automod has, which will not be re-detailed here. The additional features in which this module can do are as follows:
+This module is a fully featured automod setup. It mirrors every feature the native discord automod has, which will not be re-detailed here. The additional features which this module implements are as follows:
 - The ability to filter attachments based on file extension
 - The ability to filter attachments based on file hash
 - The ability to send a message in the same channel the filtered message was detected in, visible to everyone.
