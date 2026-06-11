@@ -80,7 +80,7 @@ This module is a fully featured automod setup. It mirrors every feature the nati
 - The ability to block based on pinging specific roles and/or users
 - The ability to exempt nobody from the filters
 ## Purpose
-In order to run the additional automod capabilites as described above, the bot of course needs to be able to read the message content to determine what rule(s) to run
+In order to run the automod capabilites as described above, the bot needs to be able to read the message content to determine what rule(s) to run
 ## Data Handling
 A message containing the original message content may be sent to an arbitrary channel in the same guild, which may or may not be the same channel the message was originally sent.<br>
 The bot does not store any data related to this module permanently on disk or in any external services.<br>
