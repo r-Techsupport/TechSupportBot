@@ -26,8 +26,9 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-intents = discord.Intents.all()
+intents = discord.Intents.default()
 intents.members = True
+intents.message_content = True
 
 bot_ = bot.TechSupportBot(
     intents=intents,
