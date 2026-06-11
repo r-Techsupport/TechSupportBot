@@ -15,6 +15,7 @@ This module is designed to bridge two differnet discord channels to each other, 
 ## Purpose
 The purpose of this module is to enable gross guild communication, to promote interactions with users that don't share a guild
 ## Data Handling
+Full message content of all messages sent in configured channels will be copied to the other channel, which may be in an arbitrary guild.<br>
 This module is capable of accessing data across guilds, and is designed to mirror message content from one guild to another, depending on setup and configuration.<br>
 The bot does not store any data related to this module permanently on disk, in any databases, or in any external services.
 
@@ -24,7 +25,7 @@ This module reacts configured reactions based on the given substring to search f
 ## Purpose
 We search messages sent in the guild for any matching specific substrings as configured and add the relevant reactions to the message
 ## Data Handling
-This data is not used in any permanent capacity. No messages are sent in any guild related to this module.<br>
+The message content data used by this module is entirely processed in memory.<br>
 The bot does not store any data related to this module permanently on disk, in any databases, or in any external services.
 
 # fun.correct
