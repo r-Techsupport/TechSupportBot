@@ -45,6 +45,9 @@ Changes since 2026.06.04
 
 ## Moderation
 
+### Events
+- Complete overhaul of events logging system. A huge number of additional events are now tracked, and information is displayed in a more readable way
+
 ### Logger
 - Now mentions roles instead of listing text names
 
