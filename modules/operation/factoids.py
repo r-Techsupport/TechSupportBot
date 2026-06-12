@@ -233,6 +233,7 @@ class FactoidManager(cogs.MatchCog):
         message: str,
         embed_config: str,
         alias: str = None,
+        properties: list[bool] = None,
     ) -> None:
         """Calls the DB to create a factoid
 
@@ -242,11 +243,16 @@ class FactoidManager(cogs.MatchCog):
             message (str): Message the factoid should send
             embed_config (str): Whether the factoid has an embed set up
             alias (str, optional): The parent factoid. Defaults to None.
+            properties (list[bool]): A list of true/false for properties. Defaults to None.
+                0: Disabled, 1: Hidden, 2: Protected, 3: Restricted
 
         Raises:
             TooLongFactoidMessageError:
                 When the message argument is over 2k chars, discords limit
         """
+        if not properties:
+            properties = [False, False, False, False]
+
         if len(message) > 2000:
             raise custom_errors.TooLongFactoidMessageError
 
@@ -260,6 +266,10 @@ class FactoidManager(cogs.MatchCog):
             message=message,
             embed_config=embed_config,
             alias=alias,
+            disabled=properties[0],
+            hidden=properties[1],
+            protected=properties[2],
+            restricted=properties[3],
         )
 
         await factoid.create()
@@ -299,13 +309,18 @@ class FactoidManager(cogs.MatchCog):
 
     # -- Utility --
     async def confirm_factoid_deletion(
-        self: Self, factoid_name: str, ctx: commands.Context, fmt: str
+        self: Self,
+        factoid_name: str,
+        channel: discord.abc.GuildChannel,
+        author: discord.Member,
+        fmt: str,
     ) -> bool:
         """Confirms if a factoid should be deleted/modified
 
         Args:
             factoid_name (str): The factoid that is being prompted for deletion
-            ctx (commands.Context): Used to return the message
+            channel (discord.abc.GuildChannel): The channel the factoid is being deleted in
+            author (discord.Member): The member deleting the factoid
             fmt (str): Formatting for the returned message
 
         Returns:
@@ -317,8 +332,8 @@ class FactoidManager(cogs.MatchCog):
             message=(
                 f"The factoid `{factoid_name}` already exists. Should I overwrite it?"
             ),
-            channel=ctx.channel,
-            author=ctx.author,
+            channel=channel,
+            author=author,
         )
 
         await view.wait()
@@ -328,7 +343,7 @@ class FactoidManager(cogs.MatchCog):
         if view.value is ui.ConfirmResponse.DENIED:
             await auxiliary.send_deny_embed(
                 message=f"The factoid `{factoid_name}` was not {fmt}.",
-                channel=ctx.channel,
+                channel=channel,
             )
             return False
 
@@ -608,7 +623,8 @@ class FactoidManager(cogs.MatchCog):
 
     async def add_factoid(
         self: Self,
-        ctx: commands.Context,
+        channel: discord.abc.Messageable,
+        author: discord.Member,
         factoid_name: str,
         guild: str,
         message: str,
@@ -619,6 +635,8 @@ class FactoidManager(cogs.MatchCog):
 
         Args:
             ctx (commands.Context): The context used for the confirmation message
+            channel (discord.abc.Messageable): The channel the factoid was added from
+            author (discord.Member): The member who created this factoid
             factoid_name (str): The name of the factoid
             guild (str): The guild of the factoid
             message (str): The message of the factoid
@@ -634,7 +652,7 @@ class FactoidManager(cogs.MatchCog):
             if factoid.protected:
                 await auxiliary.send_deny_embed(
                     message=f"`{factoid.name}` is protected and cannot be modified",
-                    channel=ctx.channel,
+                    channel=channel,
                 )
                 return
             name = factoid.name.lower()  # Name of the parent
@@ -645,7 +663,7 @@ class FactoidManager(cogs.MatchCog):
             if not message:
                 await auxiliary.send_deny_embed(
                     message="You did not provide the factoid message!",
-                    channel=ctx.channel,
+                    channel=channel,
                 )
                 return
 
@@ -661,11 +679,14 @@ class FactoidManager(cogs.MatchCog):
         else:
             fmt = "modified"
             # Confirms modification
-            if await self.confirm_factoid_deletion(factoid_name, ctx, fmt) is False:
+            if (
+                await self.confirm_factoid_deletion(factoid_name, channel, author, fmt)
+                is False
+            ):
                 return
 
             # Modifies the old entry
-            factoid = await self.get_raw_factoid_entry(name, str(ctx.guild.id))
+            factoid = await self.get_raw_factoid_entry(name, str(channel.guild.id))
             factoid.name = name
             # if no message was supplied, keep the original factoid's message.
             if message:
@@ -678,7 +699,7 @@ class FactoidManager(cogs.MatchCog):
         await self.handle_cache(guild, name)
         await auxiliary.send_confirm_embed(
             message=f"Successfully {fmt} the factoid `{factoid_name}`",
-            channel=ctx.channel,
+            channel=channel,
         )
 
     async def delete_factoid(
@@ -1088,6 +1109,71 @@ class FactoidManager(cogs.MatchCog):
             sent_message, interaction.user, interaction.channel, factoid.message
         )
 
+    @factoid_app_group.command(
+        name="add",
+        description="Creates a new factoid.",
+    )
+    async def factoid_add_command(
+        self: Self, interaction: discord.Interaction, factoid_name: str
+    ) -> None:
+        query = factoid_name.replace("\n", " ").split(" ")[0].lower()
+        try:
+            await self.get_factoid(query, str(interaction.guild.id))
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` already exists"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        except custom_errors.FactoidNotFoundError:
+            ...
+
+        form = NewFactoid(factoid_name)
+        await interaction.response.send_modal(form)
+        await form.wait()
+
+        embed_json_string = ""
+
+        if form.embed.component.values:
+            embed_file: discord.Attachment = form.embed.component.values[0]
+            if not embed_file.filename.endswith(".json"):
+                embed = auxiliary.prepare_deny_embed(
+                    message="I don't recognize your upload as a json file",
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            try:
+                json_bytes = await embed_file.read()
+                attachment_json = json.loads(json_bytes.decode("UTF-8"))
+                embed_json_string = json.dumps(attachment_json)
+            except Exception:
+                embed = auxiliary.prepare_deny_embed(
+                    message="I couldn't parse the uploaded JSON file.",
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+        selected = set(form.properties.component.values)
+        properties = [
+            "disabled" in selected,
+            "hidden" in selected,
+            "protected" in selected,
+            "restricted" in selected,
+        ]
+
+        await self.create_factoid_call(
+            factoid_name=factoid_name,
+            guild=str(interaction.guild.id),
+            message=form.plaintext.component.value,
+            embed_config=embed_json_string if embed_json_string else "",
+            properties=properties,
+        )
+        embed = auxiliary.prepare_confirm_embed(
+            message=f"Your factoid `{factoid_name}` was successfully created!",
+        )
+        await interaction.followup.send(embed=embed)
+
     # -- Factoid job related functions --
     async def kickoff_jobs(self: Self) -> None:
         """Gets a list of cron jobs and starts them"""
@@ -1323,7 +1409,8 @@ class FactoidManager(cogs.MatchCog):
             message = None
 
         await self.add_factoid(
-            ctx,
+            ctx.channel,
+            ctx.author,
             factoid_name=factoid_name,
             guild=str(ctx.guild.id),
             message=message,
@@ -2309,7 +2396,9 @@ class FactoidManager(cogs.MatchCog):
                 return
 
             # Confirms deletion of old entry
-            if not await self.confirm_factoid_deletion(alias_name, ctx, "replaced"):
+            if not await self.confirm_factoid_deletion(
+                alias_name, ctx.channel, ctx.author, "replaced"
+            ):
                 return
 
             # If the target entry is the parent
@@ -2884,3 +2973,59 @@ class DeleteView(discord.ui.View):
 
         if interaction.message:
             await interaction.message.delete()
+
+
+class NewFactoid(discord.ui.Modal):
+    """A Modal that contains information to make a new factoid
+    This has the user fill in plaintext content, upload an embed json file
+    And select default properties for the factoid
+
+    Args:
+        factoid (str): The name of the factoid, to display in the title
+
+    Attributes:
+        plaintext (discord.ui.Label): The plaintext representation of the factoid
+        embed (discord.ui.Label): The json file attachment of the factoid
+        properties (discord.ui.Label): The properties of the factoid, such as hidden or disabled
+    """
+
+    def __init__(self: Self, factoid: str) -> None:
+        super().__init__(title=f"Creating factoid {factoid}")
+
+    plaintext: discord.ui.Label = discord.ui.Label(
+        text="Plaintext:",
+        component=discord.ui.TextInput(style=discord.TextStyle.long, required=True),
+    )
+    embed: discord.ui.Label = discord.ui.Label(
+        text="Embed json:", component=discord.ui.FileUpload(required=False)
+    )
+    properties: discord.ui.Label = discord.ui.Label(
+        text="Properties:",
+        component=discord.ui.CheckboxGroup(
+            max_values=4,
+            required=False,
+            options=[
+                discord.CheckboxGroupOption(
+                    default=False, label="Disabled", value="disabled"
+                ),
+                discord.CheckboxGroupOption(
+                    default=False, label="Hidden", value="hidden"
+                ),
+                discord.CheckboxGroupOption(
+                    default=False, label="Protected", value="protected"
+                ),
+                discord.CheckboxGroupOption(
+                    default=False, label="Restricted", value="restricted"
+                ),
+            ],
+        ),
+    )
+
+    async def on_submit(self: Self, interaction: discord.Interaction) -> None:
+        """What happens when the form has been successfully submitted
+
+        Args:
+            interaction (discord.Interaction): The interaction that caused the form to be show
+        """
+        await interaction.response.defer()
+        return
