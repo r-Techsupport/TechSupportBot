@@ -160,7 +160,8 @@ class EventEmbed(discord.Embed):
 
         Args:
             title (str): The title of the field
-            emoji (discord.Emoji | discord.PartialEmoji | str): The emoji object to get information from
+            emoji (discord.Emoji | discord.PartialEmoji | str):
+                The emoji object to get information from
         """
         # This is to better display custom emotes
         if isinstance(emoji, (discord.Emoji, discord.PartialEmoji)):
