@@ -25,10 +25,18 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class DataDeleter(cogs.BaseCog):
-    """The cog that holds the data delete commands and helper functions"""
+    """The cog that holds the data delete commands and helper functions
 
-    @app_commands.command(
-        name="data_delete",
+    Attributes:
+        data_group (app_commands.Group): The group for the /data commands
+    """
+
+    data_group: app_commands.Group = app_commands.Group(
+        name="data", description="Command Group for individual data management"
+    )
+
+    @data_group.command(
+        name="delete",
         description="Deletes your data from the databases in the bot",
         extras={"ephemeral_error": True, "always_enabled": True},
     )
