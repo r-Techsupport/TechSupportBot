@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Self
 
 import discord
 from discord.ext import commands
@@ -28,9 +29,13 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class EventEmbed(discord.Embed):
     """This subclass of embed contains several functions to create consistent fields
     for displaying various types of data in the event logs
+
+    Args:
+        title (str): The title of the embed to be applied
+        description (str): The body of the embed to be applied
     """
 
-    def __init__(self, *, title, description) -> None:
+    def __init__(self: Self, *, title: str, description: str) -> None:
         super().__init__(
             title=title,
             description=description,
@@ -441,7 +446,7 @@ class EventEmbed(discord.Embed):
         return True
 
     def addPropertyChangeFields(
-        self: Self, properties: list[str], before: Any, after: Any
+        self: Self, properties: list[str], before: Any, after: Any  # noqa: ANN401
     ) -> bool:
         """Adds fields to the embed for an arbitrary list of string properties
             to compare betweeen two objects
@@ -500,6 +505,10 @@ class EventEmbed(discord.Embed):
 class EventLogger(cogs.BaseCog):
     """This is the cog that holds all of the discord event listeners
     For the explicit purpose of logging, not taking further action
+
+    Attrs:
+        CONFIG_MAP (dict[str, str]): A mpa of types of logs to the config names
+            of their respective logging channel
     """
 
     CONFIG_MAP: dict[str, str] = {
@@ -1191,7 +1200,6 @@ class EventLogger(cogs.BaseCog):
         https://discordpy.readthedocs.io/en/latest/api.html#discord.on_member_update
 
         Args:
-            self (Self): _description_
             before (discord.Member): The old member object, pre changes
             after (discord.Member): The new member object, post changes
         """
@@ -1319,7 +1327,6 @@ class EventLogger(cogs.BaseCog):
         https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_channel_update
 
         Args:
-            self (Self): _description_
             before (discord.abc.GuildChannel): The previous channel, before any changes
             after (discord.abc.GuildChannel): The new channel, after any changes
         """
@@ -1573,7 +1580,6 @@ class EventLogger(cogs.BaseCog):
         https://discordpy.readthedocs.io/en/latest/api.html#discord.on_thread_update
 
         Args:
-            self (Self): _description_
             before (discord.Thread): The previous thread, before any property changes
             after (discord.Thread): The new thread, after any property changes
         """
@@ -2094,7 +2100,6 @@ class EventLogger(cogs.BaseCog):
         https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_update
 
         Args:
-            self (Self): _description_
             before (discord.Role): The old role, before any changes
             after (discord.Role): The new role, after any changes
         """

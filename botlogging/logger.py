@@ -217,6 +217,8 @@ class BotLogger:
             exception (Exception, optional): The exception item if you wish to
                 log an exception with this log.
                 Exceptions will be logged in plain text. Defaults to None.
+            embed_as_is (bool, optional): If the passed embed should be sent without any edits
+                Defaults to False
         """
         log_level = self.convert_level(level)
 
