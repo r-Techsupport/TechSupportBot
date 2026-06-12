@@ -244,7 +244,7 @@ class FactoidManager(cogs.MatchCog):
             embed_config (str): Whether the factoid has an embed set up
             alias (str, optional): The parent factoid. Defaults to None.
             properties (list[bool]): A list of true/false for properties. Defaults to None.
-                0: Disabled, 1: Hidden, 2: Protected, 3: Restricted
+                0 Disabled, 1 Hidden, 2 Protected, 3 Restricted
 
         Raises:
             TooLongFactoidMessageError:
@@ -634,7 +634,6 @@ class FactoidManager(cogs.MatchCog):
         """Adds a factoid with confirmation, modifies it if it already exists
 
         Args:
-            ctx (commands.Context): The context used for the confirmation message
             channel (discord.abc.Messageable): The channel the factoid was added from
             author (discord.Member): The member who created this factoid
             factoid_name (str): The name of the factoid
