@@ -1116,6 +1116,12 @@ class FactoidManager(cogs.MatchCog):
     async def factoid_add_command(
         self: Self, interaction: discord.Interaction, factoid_name: str
     ) -> None:
+        """A /factoid add command, to add a factoid using a Modal
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            factoid_name (str): The name of the factoid to add
+        """
         query = factoid_name.replace("\n", " ").split(" ")[0].lower()
         try:
             await self.get_factoid(query, str(interaction.guild.id))
