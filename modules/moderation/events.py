@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import datetime
-import sys
-from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Self
 
 import discord
@@ -12,7 +9,7 @@ from discord.ext import commands
 
 import configuration
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs
+from core import cogs
 from modules.moderation import logger
 
 if TYPE_CHECKING:
@@ -1258,87 +1255,6 @@ class EventLogger(cogs.BaseCog):
             message=message,
             level=LogLevel.INFO,
             context=LogContext(guild=ctx.guild, channel=ctx.channel),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    # CONSOLE ONLY STUFF
-
-    @commands.Cog.listener()
-    async def on_error(self: Self, event_method: str) -> None:
-        """Catches non-command errors and sends them to the error logger for processing.
-
-        Args:
-            event_method (str): the event method name associated with the error (eg. on_message)
-        """
-        _, exception, _ = sys.exc_info()
-        await self.bot.logger.send_log(
-            message=f"Bot error in {event_method}: {exception}",
-            level=LogLevel.ERROR,
-            exception=exception,
-        )
-
-    @commands.Cog.listener()
-    async def on_connect(self: Self) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_connect"""
-        await self.bot.logger.send_log(
-            message="Connected to Discord",
-            level=LogLevel.INFO,
-            console_only=True,
-        )
-
-    @commands.Cog.listener()
-    async def on_resumed(self: Self) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_resumed"""
-        await self.bot.logger.send_log(
-            message="Resume event",
-            level=LogLevel.INFO,
-            console_only=True,
-        )
-
-    @commands.Cog.listener()
-    async def on_disconnect(self: Self) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_disconnect"""
-        await self.bot.logger.send_log(
-            message="Disconnected from Discord",
-            level=LogLevel.INFO,
-            console_only=True,
-        )
-
-    @commands.Cog.listener()
-    async def on_guild_remove(self: Self, guild: discord.Guild) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_remove
-
-        Args:
-            guild (discord.Guild): The guild that got removed
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Server", value=guild.name)
-        await self.bot.logger.send_log(
-            message=f"Left guild with ID {guild.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=guild),
-            embed=embed,
-        )
-
-    @commands.Cog.listener()
-    async def on_guild_join(self: Self, guild: discord.Guild) -> None:
-        """Configures a new guild upon joining.
-
-        Args:
-            guild (discord.Guild): the guild that was joined
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Server", value=guild.name)
-
-        log_channel = configuration.get_config_entry(
-            guild.id, "core_guild_events_channel"
-        )
-
-        await self.bot.logger.send_log(
-            message=f"Joined guild with ID {guild.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=guild),
             channel=log_channel,
             embed=embed,
         )
