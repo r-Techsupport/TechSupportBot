@@ -11,19 +11,6 @@ In the video administration.debug-message_content_1.mov, you can see the command
 This module is capable of accessing data across guilds, and will send a message containing the message content in the guild the command was run in.<br>
 The bot does not store any data related to this module permanently on disk, in any databases, or in any external services.
 
-# administration.listen
-## Module Explanation
-This module is designed to bridge two differnet discord channels to each other, independent of the guild. All messages sent in any one channel are mirrored to the second channel. The goal of this module is to enable cross-guild interactions
-## Intent Usage
-This module uses the Message Content intent when forwarding messages between channels. In order to forward the messages between channels access to the message content is essential.
-## Video Demonstration
-In the video administration.listen-message_content_1.mov, you can see me sending a message in the channel, and then later the bot sending a message from the #dev-only channel in a differnet guild.<br>
-In the screenshot administration.listen-message_content_2.png, you can see the other end of this link, having recieved the first message from the original guild, and having send the second message in that guild.
-## Data Handling
-Full message content of all messages sent in configured channels will be copied to the other channel, which may be in an arbitrary guild.<br>
-This module is capable of accessing data across guilds, and is designed to mirror message content from one guild to another, depending on setup and configuration.<br>
-The bot does not store any data related to this module permanently on disk, in any databases, or in any external services.
-
 # fun.autoreact
 ## Module Explanation
 This module searches for substrings having been sent in a configured guild. If those substrings have been detected in a sent message, the bot will add a configured reaction automatically.
@@ -163,6 +150,19 @@ The message content of the original message of new threads is the only times mes
 In the video operation.forum-message_content_1.mov, you can see me creating a new thread and having the bot automatically reject it based on the word "banned" being filtered. You can then watch me run the reopen command to unlock and rename the thread.
 ## Data Handling
 A message is sent to the same thread the original message was sent in explaing the thread violated our rules, but no part of the message content is sent there, or anywhere.<br>
+The bot does not store any data related to this module permanently on disk, in any databases, or in any external services.
+
+# operation.listen
+## Module Explanation
+This module is designed to bridge two differnet discord channels to each other, independent of the guild. All messages sent in any one channel are mirrored to the second channel. The goal of this module is to enable cross-guild interactions
+## Intent Usage
+This module uses the Message Content intent when forwarding messages between channels. In order to forward the messages between channels access to the message content is essential.
+## Video Demonstration
+In the video operation.listen-message_content_1.mov, you can see me sending a message in the channel, and then later the bot sending a message from the #dev-only channel in a differnet guild.<br>
+In the screenshot operation.listen-message_content_2.png, you can see the other end of this link, having recieved the first message from the original guild, and having send the second message in that guild.
+## Data Handling
+Full message content of all messages sent in configured channels will be copied to the other channel, which may be in an arbitrary guild.<br>
+This module is capable of accessing data across guilds, and is designed to mirror message content from one guild to another, depending on setup and configuration.<br>
 The bot does not store any data related to this module permanently on disk, in any databases, or in any external services.
 
 # operation.paste
