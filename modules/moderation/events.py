@@ -43,7 +43,7 @@ class EventEmbed(discord.Embed):
             timestamp=discord.utils.utcnow(),
         )
 
-    def setEventAuthor(self, author: discord.Member) -> None:
+    def setEventAuthor(self: Self, author: discord.Member) -> None:
         """This sets an author object of an embed to be stylized as a passed member object
         This shows the display_name and display_avatar
 
@@ -506,7 +506,7 @@ class EventLogger(cogs.BaseCog):
     """This is the cog that holds all of the discord event listeners
     For the explicit purpose of logging, not taking further action
 
-    Attrs:
+    Attributes:
         CONFIG_MAP (dict[str, str]): A mpa of types of logs to the config names
             of their respective logging channel
     """
