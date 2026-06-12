@@ -10,20 +10,20 @@ The Bot is self-hosted and operates exclusively within Discord in compliance wit
 ## 2. What Data We Collect
 The Bot collects and stores the following categories of data in its PostgreSQL database and internal logs:
 
-#### Moderation Records*
+### Moderation Records
 - **User IDs** of users who are warned, banned, kicked, muted, or unbanned
 - **Warning records**: The warning reason, the issuing moderator's User ID, and the timestamp
 - **Moderator notes**: free-text notes attached to a user by moderators, including the note body, the author's User ID, and timestamp
 - **Ban logs**: the banned user's ID, the responsible moderator's ID, the ban reason, and the timestamp
 - **Modmail ban records**: User IDs of users banned from using modmail
 
-#### Modmail (Direct Message Relay)
+### Modmail (Direct Message Relay)
 - **All DMs sent to the modmail bot** are logged and relayed to a private moderation forum thread
 - **Message contents and attachments** sent in modmail DMs are stored within forum threads
 - **Thread metadata**: username, User ID, account creation date, join date, server nickname, roles, and past thread count are recorded on thread creation
 - **Message edit history** in active modmail threads is logged
 
-#### Activity and Event Logs
+### Activity and Event Logs
 The bot logs the following Discord events internally to designated log channels:
 - Message edits (before and after content, author, channel)
 - Message deletions (message content, author, channel)
@@ -36,16 +36,16 @@ The bot logs the following Discord events internally to designated log channels:
 - Role creation, deletion, and modification
 - Command usage (author, channel, content up to 100 characters)
 
-#### XP System
+### XP System
 - **User ID** and **guild ID** paired with an integer XP value, updated whenever a qualifying message is sent
 
-#### Applications
+### Applications
 - **Application submissions** are stored in the database tied to the applicant's User ID
 
-#### Duck Hunt (Fun Module)
+### Duck Hunt (Fun Module)
 - **User ID** and duck hunt statistics (kill/friend counts, speed records) stored per user
 
-#### Grabs
+### Grabs
 - **User ID** and content of messages "grabbed" by moderators or other users
 
 ## 3. How We Use Your Data
