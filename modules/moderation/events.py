@@ -26,7 +26,9 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class EventEmbed(discord.Embed):
-    """This subclass of embed contains several functions to create consistent fields for displaying various types of data in the event logs"""
+    """This subclass of embed contains several functions to create consistent fields
+    for displaying various types of data in the event logs
+    """
 
     def __init__(self, *, title, description) -> None:
         super().__init__(
@@ -49,7 +51,8 @@ class EventEmbed(discord.Embed):
         )
 
     def addMemberField(self: Self, title: str, member: discord.Member) -> None:
-        """This adds a member info field to the embed. A mention, username, and id are shown here.
+        """This adds a member info field to the embed.
+        A mention, username, and id are shown here.
 
         Args:
             title (str): The title of the field
@@ -68,7 +71,8 @@ class EventEmbed(discord.Embed):
     def addMessageContentField(
         self: Self, title: str, message: discord.Message
     ) -> None:
-        """This adds a message content info field to the embed. Clean content, trimmed to 1024 in size, is what is used.
+        """This adds a message content info field to the embed.
+        Clean content, trimmed to 1024 in size, is what is used.
 
         Args:
             title (str): The title of the field
@@ -87,7 +91,8 @@ class EventEmbed(discord.Embed):
         )
 
     def addMessageInfoField(self: Self, title: str, message: discord.Message) -> None:
-        """This adds a message info field to the embed. Clean content, trimmed to 50, the author, the ID, and the sent at time are all displayed
+        """This adds a message info field to the embed.
+        Clean content, trimmed to 50, the author, the ID, and the sent at time are all displayed
 
         Args:
             title (str): The title of the field
@@ -107,7 +112,8 @@ class EventEmbed(discord.Embed):
     def addChannelField(
         self: Self, title: str, channel: discord.abc.GuildChannel
     ) -> None:
-        """This adds a channel info field into the embed. Channel link, name, type and ID are all displayed.
+        """This adds a channel info field into the embed.
+        Channel link, name, type and ID are all displayed.
 
         Args:
             title (str): The title of the field
@@ -127,7 +133,8 @@ class EventEmbed(discord.Embed):
     def addSoundboardField(
         self: Self, title: str, soundboard: discord.SoundboardSound
     ) -> None:
-        """This adds a soundboard info field into the embed. Name, volume, emoji and ID are all displayed.
+        """This adds a soundboard info field into the embed.
+        Name, volume, emoji and ID are all displayed.
 
         Args:
             title (str): The title of the field
@@ -147,7 +154,8 @@ class EventEmbed(discord.Embed):
     def addEmojiField(
         self: Self, title: str, emoji: discord.Emoji | discord.PartialEmoji | str
     ) -> None:
-        """This adds an emoji info field into the embed. For standard reactions, just the emoji is displayed.
+        """This adds an emoji info field into the embed.
+        For standard reactions, just the emoji is displayed.
         For custom emojis, the emoji will attempt to be displayed, as well as the name and ID
 
         Args:
@@ -171,7 +179,8 @@ class EventEmbed(discord.Embed):
         title: str,
         sticker: discord.GuildSticker,
     ) -> None:
-        """This adds a sticker info field into the embed. Name, ID, description and emoji are all displayed.
+        """This adds a sticker info field into the embed.
+        Name, ID, description and emoji are all displayed.
 
         Args:
             title (str): The title of the field
@@ -192,7 +201,8 @@ class EventEmbed(discord.Embed):
         title: str,
         integration: discord.Integration,
     ) -> None:
-        """This adds an integration info field into the embed. Name, type, scope and ID are all displayed
+        """This adds an integration info field into the embed.
+        Name, type, scope and ID are all displayed
 
         Args:
             title (str): The title of the field
@@ -209,7 +219,8 @@ class EventEmbed(discord.Embed):
         )
 
     def addPollField(self: Self, title: str, poll: discord.Poll) -> None:
-        """This adds a poll info field into the embed. Question, duration, and answers are all displayed.
+        """This adds a poll info field into the embed.
+        Question, duration, and answers are all displayed.
 
         Args:
             title (str): The title of the field
@@ -239,7 +250,8 @@ class EventEmbed(discord.Embed):
         )
 
     def addRoleField(self: Self, title: str, role: discord.Role) -> None:
-        """This adds a role info field into the embed. Mention, name, ID, position, hoisted and mentionable status are all displayed.
+        """This adds a role info field into the embed.
+        Mention, name, ID, position, hoisted and mentionable status are all displayed.
 
         Args:
             title (str): The title of the field
@@ -259,7 +271,8 @@ class EventEmbed(discord.Embed):
         )
 
     def addRoleMetadataField(self: Self, title: str, role: discord.Role) -> None:
-        """This adds a role metadata field into the embed. Timestamp, tags, flags, and icon are displayed
+        """This adds a role metadata field into the embed.
+        Timestamp, tags, flags, and icon are displayed
 
         Args:
             title (str): The title of the field
@@ -279,7 +292,8 @@ class EventEmbed(discord.Embed):
         )
 
     def addRoleColorField(self: Self, title: str, role: discord.Role) -> None:
-        """This adds a role color field into the embed. Primary, secondary, and tertiary colors are all displayed.
+        """This adds a role color field into the embed.
+        Primary, secondary, and tertiary colors are all displayed.
 
         Args:
             title (str): The title of the field
@@ -298,7 +312,8 @@ class EventEmbed(discord.Embed):
     def addScheduledEventField(
         self: Self, title: str, event: discord.ScheduledEvent
     ) -> None:
-        """This adds a scheduled event field into the embed. Time, ID, status, location are all included.
+        """This adds a scheduled event field into the embed.
+        Time, ID, status, location are all included.
 
         Args:
             title (str): The title of the field
@@ -333,7 +348,8 @@ class EventEmbed(discord.Embed):
         )
 
     def addAutoModRuleField(self: Self, title: str, rule: discord.AutoModRule) -> None:
-        """This adds an automod rule info field into the embed. Name, ID, status, type, triggers, actions, and exempt info are all displayed
+        """This adds an automod rule info field into the embed.
+        Name, ID, status, type, triggers, actions, and exempt info are all displayed
 
         Args:
             title (str): The title of the field
@@ -426,7 +442,8 @@ class EventEmbed(discord.Embed):
     def addPropertyChangeFields(
         self: Self, properties: list[str], before: Any, after: Any
     ) -> bool:
-        """Adds fields to the embed for an arbitrary list of string properties to compare betweeen two objects
+        """Adds fields to the embed for an arbitrary list of string properties
+            to compare betweeen two objects
 
         Args:
             properties (list[str]): A list of properties to get and compared
@@ -583,7 +600,10 @@ class EventLogger(cogs.BaseCog):
 
             embed.set_footer(text=f"Message ID: {after.id}")
 
-            console_message = f"Message edit: ID: {after.id} in channel: {after.channel.name} ({after.channel.id}). Old: {old_content}, new {after.clean_content}"
+            console_message = (
+                f"Message edit: ID: {after.id} in channel: {after.channel.name} "
+                f"({after.channel.id}). Old: {old_content}, new {after.clean_content}"
+            )
 
             await self.send_event_log(
                 guild=after.guild,
@@ -609,7 +629,10 @@ class EventLogger(cogs.BaseCog):
 
             embed.set_footer(text=f"Message ID: {after.id}")
 
-            console_message = f"Message pins changed: ID: {after.id} in channel: {after.channel.name} ({after.channel.id}). Pinned status: {after.pinned}"
+            console_message = (
+                f"Message pins changed: ID: {after.id} in channel: "
+                f"{after.channel.name} ({after.channel.id}). Pinned status: {after.pinned}"
+            )
 
             await self.send_event_log(
                 guild=after.guild,
@@ -655,7 +678,10 @@ class EventLogger(cogs.BaseCog):
 
         embed.set_footer(text=f"Message ID: {message.id}")
 
-        console_message = f"Message delete: ID: {message.id} in channel: {channel.name} ({channel.id}). Content: {message.clean_content}"
+        console_message = (
+            f"Message delete: ID: {message.id} in channel: "
+            f"{channel.name} ({channel.id}). Content: {message.clean_content}"
+        )
 
         await self.send_event_log(
             guild=guild,
@@ -713,7 +739,10 @@ class EventLogger(cogs.BaseCog):
 
         embed.description = description
 
-        console_message = f"Bulk message delete: Channel: {channel.name} ({channel.id}). Amount: {len(messages)}"
+        console_message = (
+            f"Bulk message delete: Channel: {channel.name} "
+            f"({channel.id}). Amount: {len(messages)}"
+        )
 
         await self.send_event_log(
             guild=guild,
@@ -762,7 +791,10 @@ class EventLogger(cogs.BaseCog):
         embed.addChannelField("Channel", message.channel)
         embed.addMessageInfoField("Message Info", message)
 
-        console_message = f"Reaction {reaction.emoji} added to message with ID: {message.id} by user {user.name} ({user.id})"
+        console_message = (
+            f"Reaction {reaction.emoji} added to message with "
+            f"ID: {message.id} by user {user.name} ({user.id})"
+        )
 
         await self.send_event_log(
             guild=guild,
@@ -811,7 +843,10 @@ class EventLogger(cogs.BaseCog):
         embed.addChannelField("Channel", message.channel)
         embed.addMessageInfoField("Message Info", message)
 
-        console_message = f"Reaction {reaction.emoji} removed from message with ID: {message.id} by user {user.name} ({user.id})"
+        console_message = (
+            f"Reaction {reaction.emoji} removed from message "
+            f"with ID: {message.id} by user {user.name} ({user.id})"
+        )
 
         await self.send_event_log(
             guild=guild,
@@ -825,7 +860,8 @@ class EventLogger(cogs.BaseCog):
     async def on_reaction_clear(
         self: Self, message: discord.Message, reactions: list[discord.Reaction]
     ) -> None:
-        """This logs events where all reactions, or all of a specific reaction, were cleared from a message
+        """This logs events where all reactions or all of a specific reaction
+            were cleared from a message
         https://discordpy.readthedocs.io/en/latest/api.html#discord.on_reaction_clear
 
         Args:
@@ -855,7 +891,10 @@ class EventLogger(cogs.BaseCog):
         embed.addChannelField("Channel", message.channel)
         embed.addMessageInfoField("Message Info", message)
 
-        console_message = f"{total_emoji} reactions cleared from message with ID: {message.id} in channel {channel.name} ({channel.id})"
+        console_message = (
+            f"{total_emoji} reactions cleared from message with "
+            f"ID: {message.id} in channel {channel.name} ({channel.id})"
+        )
 
         await self.send_event_log(
             guild=guild,
@@ -895,7 +934,10 @@ class EventLogger(cogs.BaseCog):
         embed.addMemberField("Member", user)
         embed.addMessageInfoField("Message", message)
 
-        console_message = f"User {user.name} ({user.id}) voted {answer.text} to poll message {message.id} in channel {channel.name} ({channel.id})"
+        console_message = (
+            f"User {user.name} ({user.id}) voted {answer.text} "
+            f"to poll message {message.id} in channel {channel.name} ({channel.id})"
+        )
 
         await self.send_event_log(
             guild=guild,
@@ -935,7 +977,10 @@ class EventLogger(cogs.BaseCog):
         embed.addMemberField("Member", user)
         embed.addMessageInfoField("Message", message)
 
-        console_message = f"User {user.name} ({user.id}) removed vote {answer.text} from a poll message {message.id} in channel {channel.name} ({channel.id})"
+        console_message = (
+            f"User {user.name} ({user.id}) removed vote {answer.text} "
+            f"from a poll message {message.id} in channel {channel.name} ({channel.id})"
+        )
 
         await self.send_event_log(
             guild=guild,
@@ -1196,7 +1241,10 @@ class EventLogger(cogs.BaseCog):
                     value=", ".join([role.mention for role in roles_lost]),
                 )
 
-            console_message = f"Member roles updated: {after.name} ({after.id}). Roles changed {', '.join(role.name for role in changed_role)}"
+            console_message = (
+                f"Member roles updated: {after.name} ({after.id}). "
+                f"Roles changed {', '.join(role.name for role in changed_role)}"
+            )
 
             await self.send_event_log(
                 guild=after.guild,
@@ -1219,7 +1267,7 @@ class EventLogger(cogs.BaseCog):
         """
         embed = EventEmbed(
             title="Channel created",
-            description=f"",
+            description="",
         )
 
         embed.addChannelField("Channel", channel)
@@ -1246,7 +1294,7 @@ class EventLogger(cogs.BaseCog):
         """
         embed = EventEmbed(
             title="Channel deleted",
-            description=f"",
+            description="",
         )
 
         embed.addChannelField("Channel", channel)
@@ -1335,13 +1383,13 @@ class EventLogger(cogs.BaseCog):
                 value_parts = []
 
                 if isinstance(target, discord.Role):
-                    target_name = f"Role:"
+                    target_name = "Role:"
                     value_parts.append(f"{target.mention}")
                 elif isinstance(target, discord.Member):
-                    target_name = f"Member:"
+                    target_name = "Member:"
                     value_parts.append(f"{target.mention}")
                 else:
-                    target_name = f"Unknown:"
+                    target_name = "Unknown:"
                     value_parts.append(f"{target.id}")
 
                 if added:
@@ -1371,7 +1419,7 @@ class EventLogger(cogs.BaseCog):
                 return
 
             console_message = (
-                f"Permission overwrites updated for channel "
+                "Permission overwrites updated for channel "
                 f"{after.name} ({after.id})"
             )
 
@@ -1455,7 +1503,7 @@ class EventLogger(cogs.BaseCog):
         embed = EventEmbed(title="Guild properties updated", description="")
 
         if embed.addPropertyChangeFields(properties_to_track, before, after):
-            console_message = f"Guild properties updated."
+            console_message = "Guild properties updated."
 
             await self.send_event_log(
                 guild=after,
@@ -1474,7 +1522,7 @@ class EventLogger(cogs.BaseCog):
         """
         embed = EventEmbed(
             title="Thread created",
-            description=f"",
+            description="",
         )
 
         embed.addChannelField("Thread", thread)
@@ -1500,7 +1548,7 @@ class EventLogger(cogs.BaseCog):
         """
         embed = EventEmbed(
             title="Thread deleted",
-            description=f"",
+            description="",
         )
 
         embed.addChannelField("Thread", thread)
@@ -2138,7 +2186,8 @@ class EventLogger(cogs.BaseCog):
     @commands.Cog.listener()
     async def on_automod_rule_update(self: Self, rule: discord.AutoModRule) -> None:
         """This logs events related to updating an automod rule
-        As discord does not give the old rule before edits, we cannot log what has changed. Only that something has changed.
+        As discord does not give the old rule before edits, we cannot log what has changed.
+            Only that something has changed.
         https://discordpy.readthedocs.io/en/latest/api.html#discord.on_automod_rule_update
 
         Args:
