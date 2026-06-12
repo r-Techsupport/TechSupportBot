@@ -11,7 +11,7 @@ You will need to create a discord bot and get the token to be able to use this a
 2. Click on "New Application", name it, then click "Create"
 3. On the side menu, go to "Bot" and click "Add bot"
 4. Under bot, click "Reset Token", type in 2FA code if prompted, and write down the token. Keep this token secret, you should never share it.
-5. Make sure you turn on all the "Privileged Gateway Intents", which are currently "Presence", "Message Content", and "Server Members"
+5. The message content and server members privileged gateway intents are required for the functionality of this bot. Make sure you enable then in the developer portal.
 6. To have the bot join your server, go to "OAuth2", "URL Generator". Select "bot" under "Scopes", then select "Administrator". The link to join will be at the bottom of the page.
 ## Configuration setup
 You will need to create and config 2 files to get this system running.  
