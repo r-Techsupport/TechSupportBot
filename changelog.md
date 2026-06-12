@@ -45,6 +45,11 @@ Changes since 2026.06.04
 ### XKCD
 - Migrates to application commands
 
+## Internal
+
+### Data delete
+- New module that has a command that allows users to delete some of their own data from the bot
+
 ## Moderation
 
 ### Events
@@ -77,9 +82,6 @@ Changes since 2026.06.04
 
 ### Application
 - Application will now display discord timestamps instead of plain text for pending application reminder loops
-
-### Data delete
-- New module that has a command that allows users to delete some of their own data from the bot
 
 ### Factoid
 - The /factoid call command now has an optional parameter to ping a member in the factoid display
