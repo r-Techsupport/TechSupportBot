@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, Self, Sequence
 
 import discord
 from discord.ext import commands
@@ -122,6 +122,21 @@ class EventEmbed(discord.Embed):
             emoji_value = f"**Emoji:** {emoji}"
 
         self.add_field(name=title, value=emoji_value)
+
+    def addStickerField(
+        self: Self,
+        title: str,
+        sticker: discord.GuildSticker,
+    ) -> None:
+        self.add_field(
+            name=title,
+            value=(
+                f"**Name:** {sticker.name}\n"
+                f"**ID:** {sticker.id}\n"
+                f"**Description:** {sticker.description or 'None'}\n"
+                f"**Emoji:** {sticker.emoji or 'None'}"
+            ),
+        )
 
     def addPollField(self: Self, title: str, poll: discord.Poll) -> None:
         self.add_field(
@@ -1301,6 +1316,158 @@ class EventLogger(cogs.BaseCog):
                 embed_message=embed,
             )
 
+    @commands.Cog.listener()
+    async def on_guild_emojis_update(
+        self: Self,
+        guild: discord.Guild,
+        before: Sequence[discord.Emoji],
+        after: Sequence[discord.Emoji],
+    ) -> None:
+        before_emojis = {emoji.id: emoji for emoji in before}
+        after_emojis = {emoji.id: emoji for emoji in after}
+
+        # Created emojis
+        for emoji_id, emoji in after_emojis.items():
+            if emoji_id not in before_emojis:
+                embed = EventEmbed(title="Emoji created", description="")
+                embed.addEmojiField("Emoji", emoji)
+                if emoji.user:
+                    embed.addMemberField("Uploader", emoji.user)
+
+                console_message = f"Emoji created: {emoji.name}"
+
+                await self.send_event_log(
+                    guild=guild,
+                    log_location="guild",
+                    string_message=console_message,
+                    embed_message=embed,
+                )
+
+        # Deleted emojis
+        for emoji_id, emoji in before_emojis.items():
+            if emoji_id not in after_emojis:
+                embed = EventEmbed(title="Emoji deleted", description="")
+                embed.addEmojiField("Emoji", emoji)
+                if emoji.user:
+                    embed.addMemberField("Uploader", emoji.user)
+
+                console_message = f"Emoji deleted: {emoji.name}"
+
+                await self.send_event_log(
+                    guild=guild,
+                    log_location="guild",
+                    string_message=console_message,
+                    embed_message=embed,
+                )
+
+        # Modified emojis
+        # I honestly don't think this is possible to hit
+        properties_to_track = [
+            "animated",
+            "name",
+        ]
+
+        for emoji_id, after_emoji in after_emojis.items():
+            before_emoji = before_emojis.get(emoji_id)
+
+            if before_emoji is None:
+                continue
+
+            embed = EventEmbed(title="Emoji modified", description="")
+            embed.addEmojiField("Emoji", after_emoji)
+            if after_emoji.user:
+                embed.addMemberField("Uploader", after_emoji.user)
+
+            if embed.addPropertyChangeFields(
+                properties_to_track,
+                before_emoji,
+                after_emoji,
+            ):
+                console_message = f"Emoji modified: {after_emoji.name}"
+
+                await self.send_event_log(
+                    guild=guild,
+                    log_location="guild",
+                    string_message=console_message,
+                    embed_message=embed,
+                )
+
+    @commands.Cog.listener()
+    async def on_guild_stickers_update(
+        self: Self,
+        guild: discord.Guild,
+        before: Sequence[discord.GuildSticker],
+        after: Sequence[discord.GuildSticker],
+    ) -> None:
+        before_stickers = {sticker.id: sticker for sticker in before}
+        after_stickers = {sticker.id: sticker for sticker in after}
+
+        # Created stickers
+        for sticker_id, sticker in after_stickers.items():
+            if sticker_id not in before_stickers:
+                embed = EventEmbed(title="Sticker created", description="")
+                embed.addStickerField("Sticker", sticker)
+                if sticker.user:
+                    embed.addMemberField("Uploader", sticker.user)
+
+                console_message = f"Sticker created: {sticker.name}"
+
+                await self.send_event_log(
+                    guild=guild,
+                    log_location="guild",
+                    string_message=console_message,
+                    embed_message=embed,
+                )
+
+        # Deleted stickers
+        for sticker_id, sticker in before_stickers.items():
+            if sticker_id not in after_stickers:
+                embed = EventEmbed(title="Sticker deleted", description="")
+                embed.addStickerField("Sticker", sticker)
+                if sticker.user:
+                    embed.addMemberField("Uploader", sticker.user)
+
+                console_message = f"Sticker deleted: {sticker.name}"
+
+                await self.send_event_log(
+                    guild=guild,
+                    log_location="guild",
+                    string_message=console_message,
+                    embed_message=embed,
+                )
+
+        # Modified stickers
+        properties_to_track = [
+            "description",
+            "emoji",
+            "name",
+        ]
+
+        for sticker_id, after_sticker in after_stickers.items():
+            before_sticker = before_stickers.get(sticker_id)
+
+            if before_sticker is None:
+                continue
+
+            embed = EventEmbed(title="Sticker modified", description="")
+            embed.addStickerField("Sticker", after_sticker)
+            if after_sticker.user:
+                embed.addMemberField("Uploader", after_sticker.user)
+
+            if embed.addPropertyChangeFields(
+                properties_to_track,
+                before_sticker,
+                after_sticker,
+            ):
+                console_message = f"Sticker modified: {after_sticker.name}"
+
+                await self.send_event_log(
+                    guild=guild,
+                    log_location="guild",
+                    string_message=console_message,
+                    embed_message=embed,
+                )
+
     # Bot Events
 
     @commands.Cog.listener()
@@ -1337,11 +1504,8 @@ class EventLogger(cogs.BaseCog):
 # Should probably log:
 """
     @commands.Cog.listener()
-    async def on_soundboard_sound_create(self: Self) -> None:
+    async def on_guild_stickers_update(self: Self) -> None:
 
-Soundboard, stickers & emoji (guild)
-    discord.on_guild_stickers_update
-    discord.on_guild_emojis_update
 Integrations (guild)
     discord.on_integration_create
     discord.on_raw_integration_delete
