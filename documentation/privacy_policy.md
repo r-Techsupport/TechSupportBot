@@ -68,21 +68,19 @@ We do not sell, share or transfer your data to any third parties.
 - XP, application, duck hunt, and grab data are retained indefinitely until manually cleared or until you request deletion via `/data_delete` to the appropriate channel of communication
 
 ## 5. Your Rights and Data Deletion
-You have the right to request deletion of your personal data stored by the Bot. To submit a deletion request, contact the server moderation team via modmail (via the Discord modmail bot or via Reddit modmail on [r/techsupport](https://www.reddit.com/r/techsupport/)). The moderation/administration team will handle the removal of applicable records on your behalf.
-
-Upon a verified request, the following data can be deleted:
+You have the right to request deletion of certain personal data. The Bot provides a built-in `/data_delete` command that allows you to permanently and irreversibly delete:
 - All submitted applications and their history
 - Duck hunt participation records (speed records, kill/friend counts)
 - All grabbed messages associated with your account
 - Your XP data across all servers (including XP-based roles)
 
-Data that may not be eligible for deletion includes:
-- Moderation warnings, notes, and ban logs - these form part of the server's moderation record and are retained at the discretion of the administration team
-- Modmail thread content - retained as part of the official moderation record
+This action **cannot be undone**.
 
-Note: The Bot contains an internal `/data_delete` command that is restricted to use by the administration team only and not available to general users.
+Data that cannot be self-deleted via this command includes:
+- Moderation warnings, notes, and ban logs (these can be removed by a moderator upon reasonable request)
+- Modmail thread content (as it forms part of the moderation record)
 
-All deletion requests are handled at the reasonable discretion of the moderation team and are subject to any overriding moderation or safety considerations.
+To request deletion of data not covered by `/data_delete`, contact the server moderation team via modmail (via Discord server or Reddit modmail).
 
 ## 6. Data Security
 The Bot is self-hosted on infrastructure controlled by the r/TechSupport team. Data is stored in a PostgreSQL database accessible only to authorized server operators. No data is transmitted to external third-party services by the Bot itself, except as inherently required by Discord's API.
