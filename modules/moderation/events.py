@@ -138,6 +138,21 @@ class EventEmbed(discord.Embed):
             ),
         )
 
+    def addIntegrationField(
+        self: Self,
+        title: str,
+        integration: discord.Integration,
+    ) -> None:
+        self.add_field(
+            name=title,
+            value=(
+                f"**Name:** {integration.name}\n"
+                f"**Type:** {integration.type}\n"
+                f"**Scope:** {integration.scopes}\n"
+                f"**ID:** {integration.id}"
+            ),
+        )
+
     def addPollField(self: Self, title: str, poll: discord.Poll) -> None:
         self.add_field(
             name=title,
@@ -1468,6 +1483,43 @@ class EventLogger(cogs.BaseCog):
                     embed_message=embed,
                 )
 
+    @commands.Cog.listener()
+    async def on_integration_create(
+        self: Self, integration: discord.Integration
+    ) -> None:
+        embed = EventEmbed(title="Integration created", description="")
+        embed.addMemberField("Bot user", integration.account)
+        embed.addMemberField("Uploader", integration.user)
+        embed.addIntegrationField("Integration info", integration)
+
+        console_message = f"Integration created: {integration.name} ({integration.id})"
+
+        await self.send_event_log(
+            guild=integration.guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+        )
+
+    @commands.Cog.listener()
+    async def on_raw_integration_delete(
+        self: Self, payload: discord.RawIntegrationDeleteEvent
+    ) -> None:
+        guild = await self.bot.fetch_guild(payload.guild_id)
+        embed = EventEmbed(
+            title="Integration created",
+            description=f"Integration ID: payload.integration_id",
+        )
+
+        console_message = f"Integration created: ({payload.integration_id})"
+
+        await self.send_event_log(
+            guild=guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+        )
+
     # Bot Events
 
     @commands.Cog.listener()
@@ -1504,11 +1556,8 @@ class EventLogger(cogs.BaseCog):
 # Should probably log:
 """
     @commands.Cog.listener()
-    async def on_guild_stickers_update(self: Self) -> None:
+    async def on_integration_create(self: Self) -> None:
 
-Integrations (guild)
-    discord.on_integration_create
-    discord.on_raw_integration_delete
 Scheduled Events (guild)
     discord.on_scheduled_event_create
     discord.on_scheduled_event_delete
