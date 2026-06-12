@@ -94,6 +94,20 @@ class EventEmbed(discord.Embed):
             inline=True,
         )
 
+    def addSoundboardField(
+        self: Self, title: str, soundboard: discord.SoundboardSound
+    ) -> None:
+        self.add_field(
+            name=title,
+            value=(
+                f"**Name:** {soundboard.name}\n"
+                f"**Volume:** {soundboard.volume}\n"
+                f"**Emoji:** {soundboard.emoji}\n"
+                f"**ID:** {soundboard.id}"
+            ),
+            inline=True,
+        )
+
     def addEmojiField(
         self: Self, title: str, emoji: discord.Emoji | discord.PartialEmoji | str
     ) -> None:
@@ -1227,6 +1241,66 @@ class EventLogger(cogs.BaseCog):
             channel_location=invite.channel,
         )
 
+    @commands.Cog.listener()
+    async def on_soundboard_sound_create(
+        self: Self, sound: discord.SoundboardSound
+    ) -> None:
+        embed = EventEmbed(title="Soundboard sound created", description="")
+        embed.addSoundboardField("Sound", sound)
+        if sound.user:
+            embed.addMemberField("Uploader", sound.user)
+
+        console_message = f"Soundboard sound created: {sound.name}"
+
+        await self.send_event_log(
+            guild=sound.guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+        )
+
+    @commands.Cog.listener()
+    async def on_soundboard_sound_delete(
+        self: Self, sound: discord.SoundboardSound
+    ) -> None:
+        embed = EventEmbed(title="Soundboard sound deleted", description="")
+        embed.addSoundboardField("Sound", sound)
+        if sound.user:
+            embed.addMemberField("Uploader", sound.user)
+
+        console_message = f"Soundboard sound deleted: {sound.name}"
+
+        await self.send_event_log(
+            guild=sound.guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+        )
+
+    @commands.Cog.listener()
+    async def on_soundboard_sound_update(
+        self: Self, before: discord.SoundboardSound, after: discord.SoundboardSound
+    ) -> None:
+        embed = EventEmbed(title="Soundboard sound modified", description="")
+        embed.addSoundboardField("Sound", after)
+        if after.user:
+            embed.addMemberField("Uploader", after.user)
+
+        properties_to_track = [
+            "available",
+            "emoji",
+            "name",
+            "volume",
+        ]
+        if embed.addPropertyChangeFields(properties_to_track, before, after):
+            console_message = f"Soundboard sound modified: {after.name}"
+            await self.send_event_log(
+                guild=after.guild,
+                log_location="guild",
+                string_message=console_message,
+                embed_message=embed,
+            )
+
     # Bot Events
 
     @commands.Cog.listener()
@@ -1263,12 +1337,9 @@ class EventLogger(cogs.BaseCog):
 # Should probably log:
 """
     @commands.Cog.listener()
-    async def on(self: Self) -> None:
+    async def on_soundboard_sound_create(self: Self) -> None:
 
 Soundboard, stickers & emoji (guild)
-    discord.on_soundboard_sound_create
-    discord.on_soundboard_sound_delete
-    discord.on_soundboard_sound_update
     discord.on_guild_stickers_update
     discord.on_guild_emojis_update
 Integrations (guild)
