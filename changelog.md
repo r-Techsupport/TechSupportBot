@@ -6,6 +6,8 @@ Changes since 2026.06.04
 - Restructions the extensions storage in the bot to be "modules.category.extension" instead of "commands.extension" or "functions.extension"
 - Updates how module names are determined for application commands
 - The presence intent is no longer requested
+- Add property to make application commands always enabled regardless of guild config
+- Adds a docker ignore file to slim down the size of the docker container
 
 # Modules
 
@@ -126,3 +128,6 @@ Changes since 2026.06.04
 
 ## Dev
 - hypothesis -> 6.155.2
+
+# Documentation
+Add detailed documentation for privileged intents usage
