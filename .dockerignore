@@ -1,0 +1,29 @@
+# Temp files, cache files, etc that we do not need in the container
+.venv
+*.pyc
+.vscode
+__pycache__
+.pytest_cache
+.coverage
+.hypothesis
+.idea/
+
+# Folders that contain important information in the repo, but are not used to run the bot itself
+.github/
+DBs/
+documentation/
+tests/
+
+# Files that contain information not relevant to running the code itself
+.dockerignore
+.flake8
+.gitignore
+.pylintrc
+changelog.md
+config.default.yml
+default.env
+docker-compose.yml
+Dockerfile
+LICENSE
+Makefile
+README.md
