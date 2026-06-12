@@ -103,4 +103,4 @@ The Bot does not knowingly collect data from users under the age of 13, consiste
  This Privacy Policy may be updated as the bot's features change. The "Last Updated" date at the top will reflect any revisions. Continued use of servers where the Bot is active constitutes acceptance of the current policy.
 
 ## 10. Contact
-For questions, data requests, or concerns regarding this Privacy Policy, contact the r/TechSupport moderation team via the server or Reddit modmail system or through the project's [GitHub repository](https://github.com/r-Techsupport/TechSupportBot).
+For questions, data requests, or concerns regarding this Privacy Policy, contact the r/TechSupport moderation team via the [Discord server](https://discord.com/invite/2EDwzWa) or [Reddit modmail](https://www.reddit.com/message/compose?to=r/techsupport) system or through the project's [GitHub repository](https://github.com/r-Techsupport/TechSupportBot).
