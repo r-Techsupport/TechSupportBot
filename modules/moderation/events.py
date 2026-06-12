@@ -919,7 +919,6 @@ class EventLogger(cogs.BaseCog):
             channel_location=channel,
         )
 
-    # Useful
     @commands.Cog.listener()
     async def on_guild_channel_update(
         self: Self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel
@@ -1069,7 +1068,6 @@ class EventLogger(cogs.BaseCog):
                 channel_location=after,
             )
 
-    # Useful
     @commands.Cog.listener()
     async def on_guild_update(
         self: Self, before: discord.Guild, after: discord.Guild
@@ -1081,33 +1079,6 @@ class EventLogger(cogs.BaseCog):
             before (discord.Guild): The guild prior to being updated
             after (discord.Guild): The guild after being updated
         """
-        diff = auxiliary.get_object_diff(
-            before,
-            after,
-            [
-                "banner",
-                "banner_url",
-                "bitrate_limit",
-                "categories",
-                "default_role",
-                "description",
-                "discovery_splash",
-                "discovery_splash_url",
-                "emoji_limit",
-                "emojis",
-                "explicit_content_filter",
-                "features",
-                "icon",
-                "icon_url",
-                "name",
-                "owner",
-                "region",
-                "roles",
-                "rules_channel",
-                "verification_level",
-            ],
-        )
-
         properties_to_track = [
             "afk_channel",
             "afk_timeout",
@@ -1149,118 +1120,114 @@ class EventLogger(cogs.BaseCog):
                 embed_message=embed,
             )
 
-    # Useful
     @commands.Cog.listener()
-    async def on_guild_role_create(self: Self, role: discord.Role) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_create
-
-        Args:
-            role (discord.Role): The role that was created
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Server", value=role.guild.name)
-        log_channel = configuration.get_config_entry(
-            role.guild.id, "core_guild_events_channel"
+    async def on_thread_create(self: Self, thread: discord.Thread) -> None:
+        embed = EventEmbed(
+            title="Thread created",
+            description=f"",
         )
 
-        await self.bot.logger.send_log(
-            message=(
-                f"New role with name {role.name} added to guild with ID {role.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=role.guild),
-            channel=log_channel,
-            embed=embed,
+        embed.addChannelField("Thread", thread)
+        embed.addChannelField("Parent channel", thread.parent)
+
+        console_message = f"Thread {thread.name} ({thread.id}) was created"
+
+        await self.send_event_log(
+            guild=thread.guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=thread.parent,
         )
 
-    # Useful
     @commands.Cog.listener()
-    async def on_guild_role_delete(self: Self, role: discord.Role) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_delete
-
-        Args:
-            role (discord.Role): The role that was deleted
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Server", value=role.guild.name)
-        log_channel = configuration.get_config_entry(
-            role.guild.id, "core_guild_events_channel"
-        )
-        await self.bot.logger.send_log(
-            message=(
-                f"Role with name {role.name} deleted from guild with ID {role.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=role.guild),
-            channel=log_channel,
-            embed=embed,
+    async def on_thread_delete(self: Self, thread: discord.Thread) -> None:
+        embed = EventEmbed(
+            title="Thread deleted",
+            description=f"",
         )
 
-    # Useful
+        embed.addChannelField("Thread", thread)
+        embed.addChannelField("Parent channel", thread.parent)
+
+        console_message = f"Thread {thread.name} ({thread.id}) was deleted"
+
+        await self.send_event_log(
+            guild=thread.guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=thread.parent,
+        )
+
     @commands.Cog.listener()
-    async def on_guild_role_update(
-        self: Self, before: discord.Role, after: discord.Role
+    async def on_thread_update(
+        self: Self, before: discord.Thread, after: discord.Thread
     ) -> None:
-        """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_role_update
+        properties_to_track = [
+            "applied_tags",
+            "archived",
+            "invitable",
+            "locked",
+            "name",
+            "slowmode_delay",
+            "type",
+        ]
+        embed = EventEmbed(title="Thread properties updated", description="")
+        embed.addChannelField("Thread", after)
+        embed.addChannelField("Parent channel", after.parent)
 
-        Args:
-            before (discord.Role): The updated role's old info.
-            after (discord.Role): The updated role's updated info.
-        """
-        attrs = ["color", "mentionable", "name", "permissions", "position", "tags"]
-        # Tags cannot change, so doesn't matter
-        # Probably want to do better with color changes, with 2nd/3rd color
-        # Probably want to do display_icon changes
-        # Probably want to do hoist changes
+        if embed.addPropertyChangeFields(properties_to_track, before, after):
+            console_message = (
+                f"Thread properties updated for thread " f"{after.name} ({after.id})"
+            )
 
-        # We probably want properties (everything but permissions) and permissions as 2 different logs
-        diff = auxiliary.get_object_diff(before, after, attrs)
+            await self.send_event_log(
+                guild=after.guild,
+                log_location="guild",
+                string_message=console_message,
+                embed_message=embed,
+                channel_location=after,
+            )
 
-        embed = discord.Embed()
-        embed = auxiliary.add_diff_fields(embed, diff)
-        embed.add_field(name="Server", value=before.name)
-
-        log_channel = configuration.get_config_entry(
-            before.guild.id, "core_guild_events_channel"
-        )
-
-        await self.bot.logger.send_log(
-            message=(
-                f"Role with name {before.name} updated in guild with ID"
-                f" {before.guild.id}"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=before.guild),
-            channel=log_channel,
-            embed=embed,
-        )
-
-    # Useful
     @commands.Cog.listener()
-    async def on_guild_emojis_update(
-        self: Self,
-        guild: discord.Guild,
-        _: Sequence[discord.Emoji],
-        __: Sequence[discord.Emoji],
-    ) -> None:
-        """
-        See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_emojis_update
-
-        Args:
-            guild (discord.Guild): The guild who got their emojis updated.
-        """
-        embed = discord.Embed()
-        embed.add_field(name="Server", value=guild.name)
-
-        log_channel = configuration.get_config_entry(
-            guild.id, "core_guild_events_channel"
+    async def on_invite_create(self: Self, invite: discord.Invite) -> None:
+        embed = EventEmbed(
+            title="New invite created", description=f"https://discord.gg/{invite.code}"
         )
-        await self.bot.logger.send_log(
-            message=f"Emojis updated in guild with ID {guild.id}",
-            level=LogLevel.INFO,
-            context=LogContext(guild=guild),
-            channel=log_channel,
-            embed=embed,
+        if invite.channel:
+            embed.addChannelField("Channel", invite.channel)
+        if invite.inviter:
+            embed.addMemberField("Inviter", invite.inviter)
+
+        console_message = f"New invite created: {invite.code}"
+
+        await self.send_event_log(
+            guild=invite.guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=invite.channel,
+        )
+
+    @commands.Cog.listener()
+    async def on_invite_delete(self: Self, invite: discord.Invite) -> None:
+        embed = EventEmbed(
+            title="Invite deleted", description=f"https://discord.gg/{invite.code}"
+        )
+        if invite.channel:
+            embed.addChannelField("Channel", invite.channel)
+        if invite.inviter:
+            embed.addMemberField("Inviter", invite.inviter)
+
+        console_message = f"Invite deleted: {invite.code}"
+
+        await self.send_event_log(
+            guild=invite.guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=invite.channel,
         )
 
     # Bot Events
@@ -1379,27 +1346,28 @@ class EventLogger(cogs.BaseCog):
 
 # Should probably log:
 """
-Thread creation/delete (guild) - MAYBE
-    discord.on_thread_create
-    discord.on_thread_update
-    discord.on_thread_delete
-Automod stuff (guild)
-    discord.on_automod_rule_create
-    discord.on_automod_rule_update
-    discord.on_automod_rule_delete
-Soundboard & stickers (guild)
+    @commands.Cog.listener()
+    async def on(self: Self) -> None:
+
+Soundboard, stickers & emoji (guild)
     discord.on_soundboard_sound_create
     discord.on_soundboard_sound_delete
     discord.on_soundboard_sound_update
     discord.on_guild_stickers_update
+    discord.on_guild_emojis_update
 Integrations (guild)
     discord.on_integration_create
-    discord.on_integration_update
-Invites (Guild)
-    discord.on_invite_create
-    discord.on_invite_delete
+    discord.on_raw_integration_delete
 Scheduled Events (guild)
     discord.on_scheduled_event_create
     discord.on_scheduled_event_delete
     discord.on_scheduled_event_update
+Roles (guild)
+    discord.on_guild_role_create
+    discord.on_guild_role_delete
+    discord.on_guild_role_update
+Automod stuff (guild)
+    discord.on_automod_rule_create
+    discord.on_automod_rule_update
+    discord.on_automod_rule_delete
 """
