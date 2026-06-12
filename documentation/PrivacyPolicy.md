@@ -11,17 +11,17 @@ The Bot is self-hosted and operates exclusively within Discord in compliance wit
 The Bot collects and stores the following categories of data in its PostgreSQL database and internal logs:
 
 **Moderation Records**
-- User IDs of users who are warned, banned, kicked, muted, or unbanned
-- Warning records: The warning reason, the issuing moderator's User ID, and the timestamp
-- Moderator notes: free-text notes attached to a user by moderators, including the note body, the author's User ID, and timestamp
-- Ban logs: the banned user's ID, the responsible moderator's ID, the ban reason, and the timestamp
-- Modmail ban records: User IDs of users banned from using modmail
+- **User IDs** of users who are warned, banned, kicked, muted, or unbanned
+- **Warning records**: The warning reason, the issuing moderator's User ID, and the timestamp
+- **Moderator notes**: free-text notes attached to a user by moderators, including the note body, the author's User ID, and timestamp
+- **Ban logs**: the banned user's ID, the responsible moderator's ID, the ban reason, and the timestamp
+- **Modmail ban records**: User IDs of users banned from using modmail
 
 **Modmail (Direct Message Relay)**
-- All DMs sent to the modmail bot are logged and relayed to a private moderation forum thread
-- Message contents and attachments sent in modmail DMs are stored within forum threads
-- Thread metadata: username, User ID, account creation date, join date, server nickname, roles, and past thread count are recorded on thread creation
-- Message edit history in active modmail threads is logged
+- **All DMs sent to the modmail bot** are logged and relayed to a private moderation forum thread
+- **Message contents and attachments** sent in modmail DMs are stored within forum threads
+- **Thread metadata**: username, User ID, account creation date, join date, server nickname, roles, and past thread count are recorded on thread creation
+- **Message edit history** in active modmail threads is logged
 
 **Activity and Event Logs**
 The bot logs the following Discord events internally to designated log channels:
@@ -37,34 +37,34 @@ The bot logs the following Discord events internally to designated log channels:
 - Command usage (author, channel, content up to 100 characters)
 
 **XP System**
-- User ID and guild ID paired with an integer XP value, updated whenever a qualifying message is sent
+- **User ID** and **guild ID** paired with an integer XP value, updated whenever a qualifying message is sent
 
 **Applications**
-- Application submissions are stored in the database tied to the applicant's User ID
+- **Application submissions** are stored in the database tied to the applicant's User ID
 
 **Duck Hunt (Fun Module)**
-- User ID and duck hunt statistics (kill/friend counts, speed records) stored per user
+- **User ID** and duck hunt statistics (kill/friend counts, speed records) stored per user
 
 **Grabs**
-- User ID and content of messages "grabbed" by moderators or other users
+- **User ID** and content of messages "grabbed" by moderators or other users
 
 ## 3. How We Use Your Data
 Data is used solely for the legitimate operation of the server:
-- Moderation records (warnings, bans, notes) are used by server moderators to maintain community safety and accountability
-- Modmail threads allow users to privately contact the moderation team and allow staff to track conversation history
-- Event logs are used by administrators to audit server activity and investigate incidents
-- XP data is used to reward participation and assign XP-based roles
-- Application data is used to process membership or role applications
-- Fun module data (duck hunt, grabs) is used for community engagement features
+- **Moderation records** (warnings, bans, notes) are used by server moderators to maintain community safety and accountability
+- **Modmail threads** allow users to privately contact the moderation team and allow staff to track conversation history
+- **Event logs** are used by administrators to audit server activity and investigate incidents
+- **XP data** is used to reward participation and assign XP-based roles
+- **Application dat**a is used to process membership or role applications
+- **Fun module data** (duck hunt, grabs) is used for community engagement features
 
 We do not sell, share or transfer your data to any third parties.
 
 ## 4. Data Retention
-- Moderation records (warnings, bans, notes, modmail bans) are retained indefinitely unless manually removed by a moderator or deleted by you via the `/data_delete` command (if you have administrator access to the Bot, otherwise please see section 5)
-- Ban logs are retained indefinitely for moderation audit purposes
-- Modmail thread content is archived (not deleted) when a thread is closed and remains in the modmail forum channel
-- Event logs are sent to Discord log channels and subject to Discord's own message retention
-- XP, application, duck hunt, and grab data are retained indefinitely until manually cleared or until you request deletion via `/data_delete` to the appropriate channel of communication
+- **Moderation records** (warnings, bans, notes, modmail bans) are retained indefinitely unless manually removed by a moderator or deleted by you via the `/data_delete` command (if you have administrator access to the Bot, otherwise please see section 5)
+- **Ban logs** are retained indefinitely for moderation audit purposes
+- **Modmail thread content** is archived (not deleted) when a thread is closed and remains in the modmail forum channel
+- **Event logs** are sent to Discord log channels and subject to Discord's own message retention
+- **XP, application, duck hunt, and grab data** are retained indefinitely until manually cleared or until you request deletion via `/data_delete` to the appropriate channel of communication
 
 ## 5. Your Rights and Data Deletion
 You have the right to request deletion of certain personal data. The Bot provides a built-in `/data_delete` command that allows you to permanently and irreversibly delete:
@@ -91,7 +91,7 @@ While most Bot functionality operates entirely within Discord, certain modules a
 Outside of these specific features, no other data is transmitted to external third-party services beyond what is inherently required by Discord's API. Users should be aware that when interacting with these features, their content may leave Discord's infrastructure.
 
 ## 7. Data We Do Not Collect
-The Bot does not collect:
+The Bot does **not** collect:
 - Real names, email addresses, IP addresses, or any information outside of Discord
 - Messages that are not explicitly logged by the event system or passed through modmail
 - Payment or financial information of any kind
