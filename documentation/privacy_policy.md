@@ -4,7 +4,7 @@
 
 ## 1. Introduction
 
-This Privacy Policy explains how TechSupportBot ("the bot"), a self-hosted Discord bot operated by the r/TechSupport moderation team for the [r/TechSupport discord server](https://discord.com/invite/2EDwzWa), collects, uses, stores and deletes information about users who interact with it on Discord servers where the Bot is present. By using any server where TechSupportBot is active, you acknowledge the practices described here.
+This Privacy Policy explains how TechSupportBot ("the bot"), a self-hosted Discord bot operated by the r/TechSupport moderation team for the [r/TechSupport Discord server](https://discord.com/invite/2EDwzWa), collects, uses, stores and deletes information about users who interact with it on Discord servers where the Bot is present. By using any server where TechSupportBot is active, you acknowledge the practices described here.
 
 The Bot is self-hosted and operates exclusively within Discord in compliance with [Discord's Terms of Service](https://discord.com/terms) and [Developer Policy](https://support-dev.discord.com/hc/en-us/articles/8563934450327-Discord-Developer-Policy).
 
@@ -43,7 +43,7 @@ The bot logs the following Discord events internally to designated log channels:
 **Applications**
 - Application submissions are stored in the database tied to the applicant's User ID
 
-**Duck Hunt (Fun Module)
+**Duck Hunt (Fun Module)**
 - User ID and duck hunt statistics (kill/friend counts, speed records) stored per user
 
 **Grabs**
@@ -95,7 +95,7 @@ The Bot does not collect:
 The Bot does not knowingly collect data from users under the age of 13, consistent with Discord's minimum age requirement. If you believe a minor's data has been collected, please contact the moderation team (see section 5).
 
 ## 9. Changes to This Policy
-This Privacy Policy may be updated as the bot's features change. The "Last Updated' date at the top will reflect any revisions. Continued use of servers where the Bot is active constitutes acceptance of the current policy.
+ This Privacy Policy may be updated as the bot's features change. The "Last Updated" date at the top will reflect any revisions. Continued use of servers where the Bot is active constitutes acceptance of the current policy.
 
 ## 10. Contact
-For questions, data requests, or concerns regarding this Privacy Policy, contact the r/TechSupport moderation team via the server or reddit modmail system or through the project's [GitHub repository](https://github.com/r-Techsupport/TechSupportBot).
+For questions, data requests, or concerns regarding this Privacy Policy, contact the r/TechSupport moderation team via the server or Reddit modmail system or through the project's [GitHub repository](https://github.com/r-Techsupport/TechSupportBot).
