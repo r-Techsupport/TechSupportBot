@@ -85,7 +85,6 @@ To request deletion of data not covered by `/data_delete`, contact the server mo
 The Bot is self-hosted on infrastructure controlled by the r/TechSupport team. Data is stored in a PostgreSQL database accessible only to authorized server operators.
 
 While most Bot functionality operates entirely within Discord, certain modules are capable of transmitting content to external third-party services:
-
 - Paste module (currently active): May send message content to an external paste service when the `/paste` command is used
 - Relay module (currently active): May relay message content to external services as part of its relay functionality
 
