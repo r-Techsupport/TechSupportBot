@@ -171,6 +171,158 @@ class EventEmbed(discord.Embed):
             inline=True,
         )
 
+    def addRoleField(self: Self, title: str, role: discord.Role) -> None:
+        self.add_field(
+            name=title,
+            value=(
+                f"**Role:** {role.mention}\n"
+                f"**Name:** {role.name}\n"
+                f"**ID:** {role.id}\n"
+                f"**Position:** {role.position}\n"
+                f"**Members:** {len(role.members)}\n"
+                f"**Managed:** {'Yes' if role.managed else 'No'}\n"
+                f"**Hoisted:** {'Yes' if role.hoist else 'No'}\n"
+                f"**Mentionable:** {'Yes' if role.mentionable else 'No'}"
+            ),
+            inline=True,
+        )
+
+    def addRoleMetadataField(self: Self, title: str, role: discord.Role) -> None:
+        self.add_field(
+            name=title,
+            value=(
+                f"**Created:** <t:{int(role.created_at.timestamp())}:F> "
+                f"(<t:{int(role.created_at.timestamp())}:R>)\n"
+                f"**Tags:** {role.tags or 'None'}\n"
+                f"**Flags:** {role.flags}\n"
+                f"**Icon:** {role.icon or 'None'}\n"
+                f"**Display Icon:** {role.display_icon or 'None'}"
+            ),
+            inline=True,
+        )
+
+    def addRoleColorField(self: Self, title: str, role: discord.Role) -> None:
+        self.add_field(
+            name=title,
+            value=(
+                f"**Primary:** {role.colour}\n"
+                f"**Secondary:** {role.secondary_colour}\n"
+                f"**Tertiary:** {role.tertiary_colour}\n"
+                f"**Unicode Emoji:** {role.unicode_emoji or 'None'}\n"
+                f"**Display Icon:** {role.display_icon or 'None'}"
+            ),
+            inline=True,
+        )
+
+    def addScheduledEventField(
+        self: Self, title: str, event: discord.ScheduledEvent
+    ) -> None:
+        start_time = (
+            f"<t:{int(event.start_time.timestamp())}:F> "
+            f"(<t:{int(event.start_time.timestamp())}:R>)"
+            if event.start_time
+            else "None"
+        )
+        end_time = (
+            f"<t:{int(event.end_time.timestamp())}:F> "
+            f"(<t:{int(event.end_time.timestamp())}:R>)"
+            if event.end_time
+            else "None"
+        )
+        location = event.channel.mention if event.channel else event.location or "None"
+
+        self.add_field(
+            name=title,
+            value=(
+                f"**Name:** {event.name}\n"
+                f"**ID:** {event.id}\n"
+                f"**Status:** {event.status}\n"
+                f"**Entity Type:** {event.entity_type}\n"
+                f"**Location:** {location}\n"
+                f"**Start:** {start_time}\n"
+                f"**End:** {end_time}\n"
+                f"**Users:** {event.user_count or 0}"
+            ),
+            inline=True,
+        )
+
+    def addAutoModRuleField(self: Self, title: str, rule: discord.AutoModRule) -> None:
+        actions = ", ".join(str(action.type) for action in rule.actions) or "None"
+        if len(actions) > 200:
+            actions = actions[:197] + "..."
+
+        self.add_field(
+            name=title,
+            value=(
+                f"**Name:** {rule.name}\n"
+                f"**ID:** {rule.id}\n"
+                f"**Enabled:** {'Yes' if rule.enabled else 'No'}\n"
+                f"**Event Type:** {rule.event_type}\n"
+                f"**Trigger:** {rule.trigger.type}\n"
+                f"**Actions:** {actions}\n"
+                f"**Exempt Roles:** {len(rule.exempt_role_ids)}\n"
+                f"**Exempt Channels:** {len(rule.exempt_channel_ids)}\n"
+                f"**Creator ID:** {rule.creator_id or 'Unknown'}"
+            ),
+            inline=True,
+        )
+
+    def addRolePermissionChangeFields(
+        self: Self, before: discord.Permissions, after: discord.Permissions
+    ) -> bool:
+        added: list[str] = []
+        removed: list[str] = []
+        changed: list[str] = []
+
+        before_permissions = dict(iter(before))
+        after_permissions = dict(iter(after))
+        all_permissions = set(before_permissions) | set(after_permissions)
+
+        for permission in sorted(all_permissions):
+            old = before_permissions.get(permission)
+            new = after_permissions.get(permission)
+
+            if old == new:
+                continue
+
+            permission_name = permission.replace("_", " ").title()
+
+            if old is None:
+                added.append(f"✅ `{permission_name}` → {new}")
+            elif new is None:
+                removed.append(f"❌ `{permission_name}` (was {old})")
+            else:
+                old_emoji = "✅" if old else "❌"
+                new_emoji = "✅" if new else "❌"
+                changed.append(f"➖ `{permission_name}` {old_emoji} → {new_emoji}")
+
+        if not (added or removed or changed):
+            return False
+
+        value_parts = []
+
+        if added:
+            value_parts.append("**Added**\n" + "\n".join(added))
+
+        if removed:
+            value_parts.append("**Removed**\n" + "\n".join(removed))
+
+        if changed:
+            value_parts.append("**Changed**\n" + "\n".join(changed))
+
+        value = "\n\n".join(value_parts)
+
+        if len(value) > 1024:
+            value = value[:1021] + "..."
+
+        self.add_field(
+            name="Permissions",
+            value=value,
+            inline=False,
+        )
+
+        return True
+
     def addPropertyChangeFields(
         self: Self, properties: list[str], before: Any, after: Any
     ) -> bool:
@@ -1507,14 +1659,231 @@ class EventLogger(cogs.BaseCog):
     ) -> None:
         guild = await self.bot.fetch_guild(payload.guild_id)
         embed = EventEmbed(
-            title="Integration created",
-            description=f"Integration ID: payload.integration_id",
+            title="Integration deleted",
+            description=f"Integration ID: {payload.integration_id}",
         )
 
-        console_message = f"Integration created: ({payload.integration_id})"
+        console_message = f"Integration deleted: ({payload.integration_id})"
 
         await self.send_event_log(
             guild=guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+        )
+
+    @commands.Cog.listener()
+    async def on_scheduled_event_create(
+        self: Self, event: discord.ScheduledEvent
+    ) -> None:
+        embed = EventEmbed(title="Scheduled event created", description=event.url)
+        embed.addScheduledEventField("Scheduled Event", event)
+        if event.creator:
+            embed.addMemberField("Creator", event.creator)
+
+        console_message = f"Scheduled event created: {event.name} ({event.id})"
+
+        await self.send_event_log(
+            guild=event.guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=event.channel,
+        )
+
+    @commands.Cog.listener()
+    async def on_scheduled_event_delete(
+        self: Self, event: discord.ScheduledEvent
+    ) -> None:
+        embed = EventEmbed(title="Scheduled event deleted", description=event.url)
+        embed.addScheduledEventField("Scheduled Event", event)
+        if event.creator:
+            embed.addMemberField("Creator", event.creator)
+
+        console_message = f"Scheduled event deleted: {event.name} ({event.id})"
+
+        await self.send_event_log(
+            guild=event.guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+            channel_location=event.channel,
+        )
+
+    @commands.Cog.listener()
+    async def on_scheduled_event_update(
+        self: Self,
+        before: discord.ScheduledEvent,
+        after: discord.ScheduledEvent,
+    ) -> None:
+        properties_to_track = [
+            "channel_id",
+            "description",
+            "end_time",
+            "entity_type",
+            "location",
+            "name",
+            "privacy_level",
+            "start_time",
+            "status",
+        ]
+        embed = EventEmbed(title="Scheduled event updated", description=after.url)
+        embed.addScheduledEventField("Scheduled Event", after)
+
+        if embed.addPropertyChangeFields(properties_to_track, before, after):
+            console_message = f"Scheduled event updated: {after.name} ({after.id})"
+
+            await self.send_event_log(
+                guild=after.guild,
+                log_location="guild",
+                string_message=console_message,
+                embed_message=embed,
+                channel_location=after.channel,
+            )
+
+    @commands.Cog.listener()
+    async def on_guild_role_create(self: Self, role: discord.Role) -> None:
+        embed = EventEmbed(title="Role created", description="")
+        embed.addRoleField("Role", role)
+        embed.addRoleMetadataField("Role Metadata", role)
+        embed.addRoleColorField("Role Colors", role)
+
+        console_message = f"Role created: {role.name} ({role.id})"
+
+        await self.send_event_log(
+            guild=role.guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+        )
+
+    @commands.Cog.listener()
+    async def on_guild_role_delete(self: Self, role: discord.Role) -> None:
+        embed = EventEmbed(title="Role deleted", description="")
+        embed.addRoleField("Role", role)
+        embed.addRoleMetadataField("Role Metadata", role)
+        embed.addRoleColorField("Role Colors", role)
+
+        console_message = f"Role deleted: {role.name} ({role.id})"
+
+        await self.send_event_log(
+            guild=role.guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+        )
+
+    @commands.Cog.listener()
+    async def on_guild_role_update(
+        self: Self, before: discord.Role, after: discord.Role
+    ) -> None:
+        general_properties_to_track = [
+            "display_icon",
+            "flags",
+            "hoist",
+            "icon",
+            "managed",
+            "mentionable",
+            "name",
+            "position",
+            "tags",
+            "unicode_emoji",
+        ]
+
+        general_embed = EventEmbed(title="Role properties updated", description="")
+        general_embed.addRoleField("Role", after)
+
+        if general_embed.addPropertyChangeFields(
+            general_properties_to_track, before, after
+        ):
+            console_message = f"Role properties updated: {after.name} ({after.id})"
+
+            await self.send_event_log(
+                guild=after.guild,
+                log_location="guild",
+                string_message=console_message,
+                embed_message=general_embed,
+            )
+
+        permission_embed = EventEmbed(title="Role permissions updated", description="")
+        permission_embed.addRoleField("Role", after)
+
+        if permission_embed.addRolePermissionChangeFields(
+            before.permissions, after.permissions
+        ):
+            console_message = f"Role permissions updated: {after.name} ({after.id})"
+
+            await self.send_event_log(
+                guild=after.guild,
+                log_location="guild",
+                string_message=console_message,
+                embed_message=permission_embed,
+            )
+
+        color_properties_to_track = [
+            "colour",
+            "secondary_colour",
+            "tertiary_colour",
+        ]
+        color_embed = EventEmbed(title="Role colors updated", description="")
+        color_embed.addRoleField("Role", after)
+        color_embed.addRoleColorField("Role Colors", after)
+
+        if color_embed.addPropertyChangeFields(
+            color_properties_to_track, before, after
+        ):
+            console_message = f"Role colors updated: {after.name} ({after.id})"
+
+            await self.send_event_log(
+                guild=after.guild,
+                log_location="guild",
+                string_message=console_message,
+                embed_message=color_embed,
+            )
+
+    @commands.Cog.listener()
+    async def on_automod_rule_create(self: Self, rule: discord.AutoModRule) -> None:
+        embed = EventEmbed(title="AutoMod rule created", description="")
+        embed.addAutoModRuleField("AutoMod Rule", rule)
+        if rule.creator:
+            embed.addMemberField("Creator", rule.creator)
+
+        console_message = f"AutoMod rule created: {rule.name} ({rule.id})"
+
+        await self.send_event_log(
+            guild=rule.guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+        )
+
+    @commands.Cog.listener()
+    async def on_automod_rule_update(self: Self, rule: discord.AutoModRule) -> None:
+        embed = EventEmbed(title="AutoMod rule updated", description="")
+        embed.addAutoModRuleField("AutoMod Rule", rule)
+        if rule.creator:
+            embed.addMemberField("Creator", rule.creator)
+
+        console_message = f"AutoMod rule updated: {rule.name} ({rule.id})"
+
+        await self.send_event_log(
+            guild=rule.guild,
+            log_location="guild",
+            string_message=console_message,
+            embed_message=embed,
+        )
+
+    @commands.Cog.listener()
+    async def on_automod_rule_delete(self: Self, rule: discord.AutoModRule) -> None:
+        embed = EventEmbed(title="AutoMod rule deleted", description="")
+        embed.addAutoModRuleField("AutoMod Rule", rule)
+        if rule.creator:
+            embed.addMemberField("Creator", rule.creator)
+
+        console_message = f"AutoMod rule deleted: {rule.name} ({rule.id})"
+
+        await self.send_event_log(
+            guild=rule.guild,
             log_location="guild",
             string_message=console_message,
             embed_message=embed,
@@ -1551,23 +1920,3 @@ class EventLogger(cogs.BaseCog):
             channel=log_channel,
             embed=embed,
         )
-
-
-# Should probably log:
-"""
-    @commands.Cog.listener()
-    async def on_integration_create(self: Self) -> None:
-
-Scheduled Events (guild)
-    discord.on_scheduled_event_create
-    discord.on_scheduled_event_delete
-    discord.on_scheduled_event_update
-Roles (guild)
-    discord.on_guild_role_create
-    discord.on_guild_role_delete
-    discord.on_guild_role_update
-Automod stuff (guild)
-    discord.on_automod_rule_create
-    discord.on_automod_rule_update
-    discord.on_automod_rule_delete
-"""
