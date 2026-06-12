@@ -3,10 +3,9 @@
 **Last Updated: June 11, 2026**
 
 ## 1. Introduction
+This Privacy Policy explains how TechSupportBot ("the Bot"), a self-hosted Discord bot operated by the r/TechSupport moderation team for the [r/TechSupport Discord server](https://discord.com/invite/2EDwzWa), collects, uses, stores, and deletes information about users who interact with it on Discord servers where the Bot is present. By using any server where TechSupportBot is active, you acknowledge the practices described here.
 
-This Privacy Policy explains how TechSupportBot ("the bot"), a self-hosted Discord bot operated by the r/TechSupport moderation team for the [r/TechSupport Discord server](https://discord.com/invite/2EDwzWa), collects, uses, stores and deletes information about users who interact with it on Discord servers where the Bot is present. By using any server where TechSupportBot is active, you acknowledge the practices described here.
-
-The Bot is self-hosted and operates exclusively within Discord in compliance with [Discord's Terms of Service](https://discord.com/terms) and [Developer Policy](https://support-dev.discord.com/hc/en-us/articles/8563934450327-Discord-Developer-Policy).
+The Bot is self-hosted and operates exclusively within Discord in compliance with [Discord's Terms of Service](https://discord.com/terms), [Developer Policy](https://support-dev.discord.com/hc/en-us/articles/8563934450327-Discord-Developer-Policy), and [Community Guidelines](https://discord.com/guidelines).
 
 ## 2. What Data We Collect
 The Bot collects and stores the following categories of data in its PostgreSQL database and internal logs:
@@ -83,7 +82,14 @@ Data that cannot be self-deleted via this command includes:
 To request deletion of data not covered by `/data_delete`, contact the server moderation team via modmail (via Discord server or Reddit modmail).
 
 ## 6. Data Security
-The Bot is self-hosted on infrastructure controlled by the r/TechSupport team. Data is stored in a PostgreSQL database accessible only to authorized server operators. No data is transmitted to external third-party services by the Bot itself, except as inherently required by Discord's API.
+The Bot is self-hosted on infrastructure controlled by the r/TechSupport team. Data is stored in a PostgreSQL database accessible only to authorized server operators.
+
+While most Bot functionality operates entirely within Discord, certain modules are capable of transmitting content to external third-party services:
+
+- Paste module (currently active): May send message content to an external paste service when the `/paste` command is used
+- Relay module (currently active): May relay message content to external services as part of its relay functionality
+
+Outside of these specific features, no other data is transmitted to external third-party services beyond what is inherently required by Discord's API. Users should be aware that when interacting with these features, their content may leave Discord's infrastructure.
 
 ## 7. Data We Do Not Collect
 The Bot does not collect:
