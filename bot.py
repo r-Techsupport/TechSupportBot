@@ -763,10 +763,12 @@ class TechSupportBot(commands.Bot):
         # Check 1 - Ensure extension is enabled
         # removes "modules."
         extension_name = interaction.command.callback.__module__[8:]
-        # If the extension is disabled, raise an error to show it and block execution
-        if not self.command_run_extension_disabled_check(
+        always_enable_command = interaction.command.extras.get("always_enabled", False)
+        extension_enabled = self.command_run_extension_disabled_check(
             interaction.guild, extension_name
-        ):
+        )
+        # If the extension is disabled, raise an error to show it and block execution
+        if not always_enable_command and not extension_enabled:
             raise custom_errors.AppCommandExtensionDisabled
 
         # Check 2 - Approve if invoker is bot admin

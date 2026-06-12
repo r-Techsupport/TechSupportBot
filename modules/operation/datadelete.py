@@ -30,9 +30,7 @@ class DataDeleter(cogs.BaseCog):
     @app_commands.command(
         name="data_delete",
         description="Deletes your data from the databases in the bot",
-        extras={
-            "ephemeral_error": True,
-        },
+        extras={"ephemeral_error": True, "always_enabled": True},
     )
     async def dataDeleteCommand(
         self: Self,
