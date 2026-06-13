@@ -99,7 +99,7 @@ class Report(cogs.BaseCog):
 
         for index, user in enumerate(mentioned_users):
             embed.add_field(
-                name=f"Mentioned user #{index+1}",
+                name=f"Mentioned user #{index + 1}",
                 value=(
                     f"**Name:** {user.name} ({user.mention})\n"
                     f"**Joined:** <t:{int(user.joined_at.timestamp())}:R>\n"

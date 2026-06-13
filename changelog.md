@@ -8,6 +8,7 @@ Changes since 2026.06.04
 - The presence intent is no longer requested
 - Add property to make application commands always enabled regardless of guild config
 - Adds a docker ignore file to slim down the size of the docker container
+- Make the check-format make task run the same CI as is run on GitHub
 
 # Modules
 
@@ -140,6 +141,7 @@ Changes since 2026.06.04
 - Is now a seperate file, having been decouping from the google extension
 
 # Dependencies
+Bump python version to 3.13
 ## Core
 - aiohttp -> 3.14.1
 

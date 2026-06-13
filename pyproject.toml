@@ -1,7 +1,7 @@
 [project]
 name = "discord-bot"
 version = "0.1.0"
-requires-python = ">=3.11,<3.12"
+requires-python = ">=3.13,<3.14"
 dependencies = [
     "aiocron==2.1",
     "aiohttp==3.14.1", # Pinned to fix temporary problems
