@@ -52,6 +52,9 @@ Changes since 2026.06.04
 ### Data delete
 - New module that has a command that allows users to delete some of their own data from the bot
 
+### Privacy
+- New module that adds a command to display the bots privacy policy to the user
+
 ## Moderation
 
 ### Events
