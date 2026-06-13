@@ -168,7 +168,7 @@ class Rules(cogs.BaseCog):
 
         for index, rule in enumerate(rules_data.get("rules")):
             embed.add_field(
-                name=f"Rule {index+1}: {rule.get('name', '')}",
+                name=f"Rule {index + 1}: {rule.get('name', '')}",
                 value=rule.get("description", "None"),
                 inline=False,
             )

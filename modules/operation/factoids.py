@@ -894,7 +894,7 @@ class FactoidManager(cogs.MatchCog):
             )
             # Sends the raw factoid instead of the embed as fallback
             sent_message = await ctx.reply(
-                f"{mentions+' ' if mentions else ''}{factoid.message}",
+                f"{mentions + ' ' if mentions else ''}{factoid.message}",
                 mention_author=not mentions,
             )
 

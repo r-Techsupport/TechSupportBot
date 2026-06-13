@@ -62,7 +62,7 @@ class BotInfo(cogs.BaseCog):
         )
         embed.add_field(
             name="Latency",
-            value=f"{self.bot.latency*1000} ms" if self.bot.latency else "None",
+            value=f"{self.bot.latency * 1000} ms" if self.bot.latency else "None",
             inline=True,
         )
         embed.add_field(

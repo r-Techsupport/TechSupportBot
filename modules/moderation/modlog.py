@@ -68,11 +68,13 @@ class BanLogger(cogs.BaseCog):
                 moderator = None
             if moderator:
                 final_string += (
-                    f"{index+1}. {moderator.display_name} "
+                    f"{index + 1}. {moderator.display_name} "
                     f"{moderator.mention} ({moderator.id}) - {count}\n"
                 )
             else:
-                final_string += f"{index+1}. Moderator left: {moderator_id} - {count}\n"
+                final_string += (
+                    f"{index + 1}. Moderator left: {moderator_id} - {count}\n"
+                )
 
         embed.description = final_string
         embed.color = discord.Color.blue()

@@ -30,7 +30,7 @@ class PaginateView(discord.ui.View):
         """A simple function to add page numbers to embed footer"""
         for index, embed in enumerate(self.data):
             if isinstance(embed, discord.Embed):
-                embed.set_footer(text=f"Page {index+1} of {len(self.data)}")
+                embed.set_footer(text=f"Page {index + 1} of {len(self.data)}")
 
     async def send(
         self: Self,
