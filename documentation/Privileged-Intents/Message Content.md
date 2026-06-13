@@ -207,8 +207,8 @@ The data stored in the database by this module is capable of being deleted by th
 
 # Prefix commands
 For complete documentation, the following modules are currently using prefix commands, and subsequently require message content until migration is complete:
-- Administration: administration.commandcontrol, administration.embed, administration.github, administration.leave, administration.listen, administration.restart, administration.set, administration.sync
+- Administration: administration.commandcontrol, administration.embed, administration.github, administration.leave, administration.restart, administration.set, administration.sync
 - Moderation: moderation.gate, moderation.members, moderation.rules
 - Fun: fun.duck, fun.emoji, fun.giphy, fun.grab, fun.hangman, fun.hug, fun.kanye, fun.joke, fun.lenny, fun.mock, fun.roll, fun.wyr
-- Operation: operation.factoid, operation.relay
+- Operation: operation.factoid, operation.listen, operation.relay
 - Utility: utility.chatgpt, utility.dumpdbg, utility.help, utility.htd, utility.ipinfo, utility.iss, utility.linter, utility.poll, utility.spotify, utility.translate, utility.urban, utility.wolfram
