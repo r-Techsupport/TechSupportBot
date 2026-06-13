@@ -57,11 +57,12 @@ def perform_op_on_list(equation_list: list) -> int:
 
     Args:
         equation_list (list): The equation in a list form
-    Raises:
-        ValueError: If the operator is not valid, this is raised
 
     Returns:
         int: The integer value of the computed equation
+
+    Raises:
+        ValueError: If the operator is not valid, this is raised
     """
 
     running_value = equation_list[0]
@@ -115,6 +116,9 @@ def convert_list_to_ints(raw_list: list) -> list:
 
     Returns:
         list: The same list you passed in, but with only ints
+
+    Raises:
+        ValueError: If the conversion to an integer has failed, this will be raised
     """
     for index, value in enumerate(raw_list):
         if index % 2 == 1:
