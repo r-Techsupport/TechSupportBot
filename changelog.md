@@ -138,6 +138,7 @@ Changes since 2026.06.04
 - Is now a seperate file, having been decouping from the google extension
 
 # Dependencies
+Bump python version to 3.13
 ## Core
 - aiohttp -> 3.14.1
 
