@@ -7,6 +7,7 @@ bot_config:
     default_prefix: "."
     global_alerts_channel: ""
     override_owner: ""
+    privacy_policy: ""
 modmail_config:
     enable_modmail: False
     disable_thread_creation: False
