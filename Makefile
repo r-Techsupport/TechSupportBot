@@ -1,6 +1,5 @@
 image = rtechsupport/techsupport-bot
 full-image = $(image):prod
-main_dir = techsupport_bot
 
 ifeq ($(shell docker-compose -v > /dev/null 2>&1; echo $$?), 0)
 	DOCKER_COMPOSE_CMD := docker-compose
@@ -9,7 +8,8 @@ else
 endif
 
 make sync:
-	python3 -m pipenv sync -d
+	uv lock
+	uv sync --frozen
 
 check-format:
 	black --check ./
@@ -23,7 +23,7 @@ lint:
 	pylint $(shell git ls-files '*.py')
 
 test:
-	PYTHONPATH=./techsupport_bot pytest techsupport_bot/tests/ -p no:warnings
+	PYTHONPATH=./ pytest ./tests/ -p no:warnings
 
 build:
 	make establish_config

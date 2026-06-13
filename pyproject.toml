@@ -1,0 +1,44 @@
+[project]
+name = "discord-bot"
+version = "0.1.0"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "aiocron==2.1",
+    "aiohttp==3.14.1", # Pinned to fix temporary problems
+    "bidict==0.23.1",
+    "dateparser==1.4.0",
+    "discord.py==2.7.1",
+    "emoji==2.15.0",
+    "expiringdict==1.2.2",
+    "gino==1.0.1",
+    "gitpython==3.1.50",
+    "inflect==7.5.0",
+    "irc==20.5.0",
+    "munch==4.0.0",
+    "typing_extensions==4.15.0", # Pinned to fix temporary problems
+    "pip==26.1.2", # Pinned to fix temporary problems
+    "pydantic==2.13.4", # Pinned to fix temporary problems
+    "pyyaml==6.0.3",
+    "setuptools==80.9.0", # Added so gino/asyncpg/sqlalchemy doesn't break.
+    "unidecode==1.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black==26.5.1",
+    "flake8==7.3.0",
+    "flake8-annotations==3.2.0",
+    "flake8-bugbear==25.11.29",
+    "flake8-docstrings-complete==1.4.1",
+    "flake8-modern-annotations==1.6.0",
+    "flake8-variables-names==0.0.6",
+    "hypothesis==6.155.2",
+    "isort==8.0.1",
+    "pydoclint==0.8.6",
+    "pylint==4.0.5",
+    "pytest==9.0.3",
+    "pytest-asyncio==1.4.0"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["./tests"]

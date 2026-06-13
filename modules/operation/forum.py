@@ -1,0 +1,681 @@
+"""The support forum management features"""
+
+from __future__ import annotations
+
+import asyncio
+import datetime
+import random
+import re
+from typing import TYPE_CHECKING, Self
+
+import discord
+from discord import app_commands
+from discord.ext import commands
+
+import configuration
+import ui
+from core import auxiliary, cogs
+
+if TYPE_CHECKING:
+    import bot
+
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Registers the forum channel cog
+
+    Args:
+        bot (bot.TechSupportBot): The bot to register the cog to
+    """
+    await bot.add_cog(ForumChannel(bot=bot))
+
+
+STATUS_CONFIG = {
+    "solved": {
+        "title": "Thread marked as solved",
+        "prefix": "[SOLVED]",
+        "color": discord.Color.green(),
+        "message_key": "forum_solve_message",
+    },
+    "closed": {
+        "title": "Thread marked as closed",
+        "prefix": "[CLOSED]",
+        "color": discord.Color.red(),
+        "message_key": "forum_close_message",
+    },
+    "left": {
+        "title": "OP has left the server",
+        "prefix": "[LEFT]",
+        "color": discord.Color.red(),
+        "message_key": "forum_left_message",
+    },
+    "deleted": {
+        "title": "Thread message was deleted",
+        "prefix": "[DELETED]",
+        "color": discord.Color.red(),
+        "message_key": "forum_delete_message",
+    },
+    "rejected": {
+        "title": "Thread rejected",
+        "prefix": "[REJECTED]",
+        "color": discord.Color.red(),
+        "message_key": "forum_reject_message",
+    },
+    "duplicate": {
+        "title": "Duplicate thread detected",
+        "prefix": "[DUPLICATE]",
+        "color": discord.Color.orange(),
+        "message_key": "forum_duplicate_message",
+    },
+    "abandoned": {
+        "title": "Abandoned thread archived",
+        "prefix": "[ABANDONED]",
+        "color": discord.Color.blurple(),
+        "message_key": "forum_abandoned_message",
+    },
+}
+
+
+class ForumChannel(cogs.LoopCog):
+    """The cog that holds the forum channel commands and helper functions
+
+    Attributes:
+        forum_group (app_commands.Group): The group for the /forum commands
+    """
+
+    forum_group: app_commands.Group = app_commands.Group(
+        name="forum", description="..."
+    )
+
+    async def preconfig(self: Self) -> None:
+        """Sets up a small list of threads closed by TS"""
+        self.thread_ID_closed = []
+
+    @forum_group.command(
+        name="mark",
+        description="Mark a support forum thread",
+    )
+    async def mark_thread_command(
+        self: Self, interaction: discord.Interaction, status: str, reason: str = ""
+    ) -> None:
+        """This is the command to change the status of a thread
+        This has autofill for stauts and does permissions checks
+
+        Args:
+            interaction (discord.Interaction): The interaction calling the command
+            status (str): The status to change the command to
+            reason (str): The reason the status is being changed. Defaults to ""
+        """
+        status = status.lower()
+        await interaction.response.defer(ephemeral=True)
+
+        forum_channel = await interaction.guild.fetch_channel(
+            int(
+                configuration.get_config_entry(
+                    interaction.guild.id, "forum_forum_channel_id"
+                )
+            )
+        )
+
+        invalid_embed = discord.Embed(
+            title="Invalid location",
+            description="The location this was run isn't a valid support forum",
+            color=discord.Color.red(),
+        )
+
+        # Check 1: Ensure command was run in the forum channel
+        if (
+            not hasattr(interaction.channel, "parent")
+            or interaction.channel.parent != forum_channel
+        ):
+            await interaction.followup.send(embed=invalid_embed, ephemeral=True)
+            return
+
+        is_staff = is_thread_staff(interaction.user, interaction.guild)
+        is_owner = interaction.user == interaction.channel.owner
+
+        # Check 2: Ensure status is valid
+        if status not in ("solved", "closed", "rejected", "abandoned"):
+            embed = discord.Embed(
+                title="Invalid status",
+                description="That status is not valid",
+                color=discord.Color.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        if status in ("rejected", "abandoned") and not is_staff:
+            denied = True
+        elif status in ("solved", "closed") and not (is_staff or is_owner):
+            denied = True
+        else:
+            denied = False
+
+        # Check 3: Ensure permissions are valid
+        if denied:
+            embed = discord.Embed(
+                title="Permission denied",
+                description="You cannot do this",
+                color=discord.Color.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        confirm_embed = auxiliary.prepare_confirm_embed(f"Thread marked as {status}!")
+        await interaction.followup.send(embed=confirm_embed, ephemeral=True)
+
+        await mark_thread(
+            interaction.channel,
+            self.thread_ID_closed,
+            status,
+            reason,
+            interaction.user,
+        )
+
+    @mark_thread_command.autocomplete("status")
+    async def status_autocomplete(
+        self: Self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        """This is the autocomplete function for status on the thread mark command
+        This parses a list of valid statuses and shows the user the list they can actually use
+
+        Args:
+            interaction (discord.Interaction): The interaction that is calling the command
+            current (str): The current choice the user is typing
+
+        Returns:
+            list[app_commands.Choice[str]]: The list of all valid choices
+                that fit with the users current selection
+        """
+        is_staff = is_thread_staff(interaction.user, interaction.guild)
+        is_owner = (
+            hasattr(interaction.channel, "owner")
+            and interaction.user == interaction.channel.owner
+        )
+
+        choices = []
+
+        # Staff can do all 4 options
+        if is_staff:
+            choices.extend(
+                [
+                    app_commands.Choice(name="Rejected", value="rejected"),
+                    app_commands.Choice(name="Abandoned", value="abandoned"),
+                    app_commands.Choice(name="Closed", value="closed"),
+                    app_commands.Choice(name="Solved", value="solved"),
+                    app_commands.Choice(name="Deleted", value="deleted"),
+                ]
+            )
+
+        # The OP can mark their thread closed or solved, but not rejected or abandoned
+        elif is_owner:
+            choices.extend(
+                [
+                    app_commands.Choice(name="Closed", value="closed"),
+                    app_commands.Choice(name="Solved", value="solved"),
+                ]
+            )
+
+        # This just filters out anything not matching what the user is typing
+        return [choice for choice in choices if current.lower() in choice.name.lower()]
+
+    @forum_group.command(
+        name="unsolved",
+        description="Gets a collection of unsolved issues",
+    )
+    async def showUnsolved(self: Self, interaction: discord.Interaction) -> None:
+        """A command to mark the thread as abandoned
+        Usable by all
+
+        Args:
+            interaction (discord.Interaction): The interaction that called the command
+        """
+        await interaction.response.defer(ephemeral=True)
+        channel = await interaction.guild.fetch_channel(
+            int(
+                configuration.get_config_entry(
+                    interaction.guild.id, "forum_forum_channel_id"
+                )
+            )
+        )
+        mention_threads: list[discord.Thread] = channel.threads
+        if len(mention_threads) == 0:
+            embed = discord.Embed(
+                title="Unsolved",
+                description="No unsolved issues. Hopefully not a bug",
+                color=discord.Color.blurple(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+        # To prevent bias, we randomize the open threads
+        random.shuffle(mention_threads)
+        embeds = []
+        index = 1
+        running_desc = ""
+        embed = discord.Embed(title="Unsolved", color=discord.Color.blurple())
+        for thread in mention_threads:
+            if index % 10 == 0:
+                embed.description = running_desc
+                embeds.append(embed)
+                embed = discord.Embed(title="Unsolved", color=discord.Color.blurple())
+                running_desc = ""
+            running_desc += f"{thread.name}: {thread.mention}\n"
+            index += 1
+
+        embed.description = running_desc
+        embeds.append(embed)
+
+        view = ui.PaginateView()
+        await view.send(
+            interaction.channel, interaction.user, embeds, interaction, True
+        )
+
+    @forum_group.command(
+        name="reopen",
+        description="Reopens a support thread",
+    )
+    async def reopen_thread(self: Self, interaction: discord.Interaction) -> None:
+        """This command reopens a closed and locked thread
+
+        Args:
+            interaction (discord.Interaction): The interaction calling the command
+        """
+        await interaction.response.defer(ephemeral=True)
+        forum_channel = await interaction.guild.fetch_channel(
+            int(
+                configuration.get_config_entry(
+                    interaction.guild.id, "forum_forum_channel_id"
+                )
+            )
+        )
+
+        invalid_embed = discord.Embed(
+            title="Invalid location",
+            description="The location this was run isn't a valid support forum",
+            color=discord.Color.red(),
+        )
+
+        # Check 1: Ensure command was run in the forum channel
+        if (
+            not hasattr(interaction.channel, "parent")
+            or interaction.channel.parent != forum_channel
+        ):
+            await interaction.followup.send(embed=invalid_embed, ephemeral=True)
+            return
+
+        is_staff = is_thread_staff(interaction.user, interaction.guild)
+
+        # Check 2: Called must be staff:
+        if not is_staff:
+            embed = auxiliary.prepare_deny_embed(
+                "You must be thread staff to run this command"
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        # Check 3: Ensure thread is locked
+        # (we cannot use archived because running even an ephemeral command opens it)
+        if not interaction.channel.locked:
+            embed = auxiliary.prepare_deny_embed(
+                "It does not appear this thread is closed"
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        await interaction.channel.edit(
+            name=interaction.channel.name.split(" ", 1)[1],
+            archived=False,
+            locked=False,
+        )
+        embed = auxiliary.prepare_confirm_embed(
+            f"Thread was successfully re-opened by {interaction.user.name}"
+        )
+        await interaction.channel.send(embed=embed)
+        await interaction.followup.send(
+            "Successfully reopened the thread", ephemeral=True
+        )
+
+    @commands.Cog.listener()
+    async def on_thread_update(
+        self: Self, before: discord.Thread, after: discord.Thread
+    ) -> None:
+        """A listener for threads being update anywhere on the server
+        This is specifically to prevent people from closing their own threads
+
+        Args:
+            before (discord.Thread): The original thread
+            after (discord.Thread): The thread after the update
+        """
+        channel = await before.guild.fetch_channel(
+            int(
+                configuration.get_config_entry(
+                    before.guild.id, "forum_forum_channel_id"
+                )
+            )
+        )
+        if before.parent != channel:
+            return
+
+        # If the edit was not archiving it, we don't care
+        if not after.archived:
+            return
+
+        await asyncio.sleep(5)
+
+        # If TS closed
+        if after.id in self.thread_ID_closed:
+            self.thread_ID_closed.remove(after.id)
+            return
+
+        await after.edit(
+            archived=False,
+            locked=False,
+        )
+
+        embed = auxiliary.prepare_deny_embed(
+            "It appears this thread was closed without using our commands. "
+            "Please use the /forum mark command to close this thread."
+        )
+        await after.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_thread_create(self: Self, thread: discord.Thread) -> None:
+        """A listener for threads being created anywhere on the server
+
+        Args:
+            thread (discord.Thread): The thread that was created
+        """
+        # Fuck if I know what causes this bug
+        await asyncio.sleep(5)
+        channel = await thread.guild.fetch_channel(
+            int(
+                configuration.get_config_entry(
+                    thread.guild.id, "forum_forum_channel_id"
+                )
+            )
+        )
+        if thread.parent != channel:
+            return
+
+        disallowed_title_patterns = create_regex_list(
+            configuration.get_config_entry(thread.guild.id, "forum_title_regex_list")
+        )
+
+        # Check if the thread title is disallowed
+        if any(pattern.search(thread.name) for pattern in disallowed_title_patterns):
+            await mark_thread(
+                thread,
+                self.thread_ID_closed,
+                "rejected",
+                reason=(
+                    "Your thread doesn't meet our posting requirements. "
+                    "Please make sure you have a well written title and a detailed body."
+                ),
+            )
+            return
+
+        # Check if the thread body is disallowed
+        message = await thread.fetch_message(thread.id)
+        body = message.clean_content
+        if not body:
+            body = ""
+
+        disallowed_body_patterns = create_regex_list(
+            configuration.get_config_entry(thread.guild.id, "forum_body_regex_list")
+        )
+        if any(pattern.search(body) for pattern in disallowed_body_patterns):
+            await mark_thread(
+                thread,
+                self.thread_ID_closed,
+                "rejected",
+                reason=(
+                    "Your thread doesn't meet our posting requirements. "
+                    "Please make sure you have a well written title and a detailed body."
+                ),
+            )
+            return
+        if body.lower() == thread.name.lower() or len(body.lower()) < len(
+            thread.name.lower()
+        ):
+            await mark_thread(
+                thread,
+                self.thread_ID_closed,
+                "rejected",
+                reason=(
+                    "Your thread doesn't meet our posting requirements. "
+                    "Please make sure you have a well written title and a detailed body."
+                ),
+            )
+            return
+
+        # Check if the thread creator has an existing open thread
+        for existing_thread in channel.threads:
+            if (
+                existing_thread.owner_id == thread.owner_id
+                and not existing_thread.archived
+                and existing_thread.id != thread.id
+            ):
+                await mark_thread(
+                    thread,
+                    self.thread_ID_closed,
+                    "duplicate",
+                    reason=(
+                        "You are only allowed to have 1 open thread at any time. "
+                        f"You must use {existing_thread.mention}"
+                    ),
+                )
+                return
+
+        embed = discord.Embed(
+            title="Welcome!",
+            description=configuration.get_config_entry(
+                thread.guild.id, "forum_welcome_message"
+            ),
+            color=discord.Color.blue(),
+        )
+        await thread.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_member_remove(self: Self, member: discord.Member) -> None:
+        """Monitor for members leaving to mark [LEFT] on threads
+
+        Args:
+            member (discord.Member): The member who has left the server
+        """
+        channel = await member.guild.fetch_channel(
+            int(
+                configuration.get_config_entry(
+                    member.guild.id, "forum_forum_channel_id"
+                )
+            )
+        )
+        for thread in channel.threads:
+            if thread.archived:
+                continue
+
+            if thread.owner_id != member.id:
+                continue
+
+            # At this point we know for a fact that the the owner has left
+            # Mark the thread as left
+            await mark_thread(
+                thread,
+                self.thread_ID_closed,
+                "left",
+                reason=(
+                    "It appears you have left the server. "
+                    "You are welcome to create a new thread if you return."
+                ),
+            )
+
+    @commands.Cog.listener()
+    async def on_raw_message_delete(
+        self: Self,
+        payload: discord.RawMessageDeleteEvent,
+    ) -> None:
+        """Monitor for deleted thread starter messages to mark [DELETED]
+
+        Args:
+            payload (discord.RawMessageDeleteEvent): The delete event payload
+        """
+        if payload.guild_id is None:
+            return
+
+        guild = self.bot.get_guild(payload.guild_id)
+        if guild is None:
+            return
+
+        try:
+            thread = await guild.fetch_channel(payload.channel_id)
+        except (discord.NotFound, discord.Forbidden):
+            return
+
+        if not isinstance(thread, discord.Thread):
+            return
+
+        channel = await thread.guild.fetch_channel(
+            int(
+                configuration.get_config_entry(
+                    thread.guild.id, "forum_forum_channel_id"
+                )
+            )
+        )
+        if thread.parent != channel:
+            return
+
+        if thread.archived:
+            return
+
+        # For forum posts, the starter message ID is the same as the thread ID
+        if payload.message_id != thread.id:
+            return
+
+        # At this point we know for a fact that the original post was deleted
+        # Mark the thread as deleted
+        await mark_thread(
+            thread,
+            self.thread_ID_closed,
+            "deleted",
+            reason=("It appears the original post for this thread was deleted."),
+        )
+
+    async def execute(self: Self, guild: discord.Guild) -> None:
+        """This is what closes threads after inactivity
+
+        Args:
+            guild (discord.Guild): The guild where the loop is taking place
+        """
+        channel = await guild.fetch_channel(
+            int(configuration.get_config_entry(guild.id, "forum_forum_channel_id"))
+        )
+        for existing_thread in channel.threads:
+            if not existing_thread.archived and not existing_thread.locked:
+                most_recent_message_id = existing_thread.last_message_id
+                # If there are NO messages in the thread, use the thread creation timestamp instead
+                if not most_recent_message_id:
+                    most_recent_message_id = existing_thread.id
+
+                message_timestamp = discord.utils.snowflake_time(most_recent_message_id)
+                timestamp_delta = (
+                    datetime.datetime.now(datetime.timezone.utc) - message_timestamp
+                )
+                if timestamp_delta > datetime.timedelta(
+                    minutes=configuration.get_config_entry(
+                        guild.id, "forum_max_age_minutes"
+                    )
+                ):
+                    await mark_thread(
+                        existing_thread,
+                        self.thread_ID_closed,
+                        "abandoned",
+                        "Threads are automatically closed after periods of no activity",
+                    )
+
+    async def wait(self: Self, _: discord.Guild) -> None:
+        """This waits and rechecks every 5 minutes to search for old threads"""
+        await asyncio.sleep(300)
+
+
+def create_regex_list(str_list: list[str]) -> list[re.Pattern[str]]:
+    """This turns a list of strings into a list of complied regex
+
+    Args:
+        str_list (list[str]): The list of string versions of regexs
+
+    Returns:
+        list[re.Pattern[str]]: The compiled list of regex for later use
+    """
+    return [re.compile(p, re.IGNORECASE) for p in str_list]
+
+
+def is_thread_staff(user: discord.Member, guild: discord.Guild) -> bool:
+    """This checks if a user is staff in a given thread
+    This uses the staff roles config
+
+    Args:
+        user (discord.Member): The user to check
+        guild (discord.Guild): The guild this thread is in
+
+    Returns:
+        bool: Whether the user is staff or not
+    """
+    if staff_roles := configuration.get_config_entry(guild.id, "forum_staff_role_ids"):
+        roles = (discord.utils.get(guild.roles, id=int(role)) for role in staff_roles)
+        status = any((role in user.roles for role in roles))
+        if status:
+            return True
+    return False
+
+
+async def mark_thread(
+    thread: discord.Thread,
+    closed_list: list[int],
+    status: str,
+    reason: str,
+    editor: discord.Member | None = None,
+) -> None:
+    """This modifies a thread, can be marked as any of the options in STATUS_CONFIG
+    No validation is done, assuming data passed here is always valid
+
+    Args:
+        thread (discord.Thread): The thread to modify
+        closed_list (list[int]): The list of threads closed by TS
+        status (str): The status to modify the thread with
+        reason (str): The reason the thread was changed
+        editor (discord.Member | None): The user who edited the thread
+    """
+    closed_list.append(thread.id)
+
+    data = STATUS_CONFIG[status]
+
+    embed = discord.Embed(
+        title=data["title"],
+        description=configuration.get_config_entry(
+            thread.guild.id, data["message_key"]
+        ),
+        color=data["color"],
+    )
+    # If there is a reason, add the reason to the embed
+    if reason:
+        embed.add_field(name="Reason", value=reason)
+
+    # If an editor was passed, it was done by a human
+    # Otherwise, mark is as being done automatically
+    if editor:
+        embed.set_footer(text=f"Changed by {editor.display_name}")
+    else:
+        embed.set_footer(text="Changed automatically")
+
+    if thread.owner:
+        ping = thread.owner.mention
+    else:
+        ping = ""
+
+    await thread.send(content=ping, embed=embed)
+
+    await thread.edit(
+        name=f"{data['prefix']} {thread.name}"[:100],
+        archived=True,
+        locked=True,
+    )
