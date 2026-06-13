@@ -17,6 +17,9 @@ Changes since 2026.06.04
 ### Bot info
 - Full migration to application commands
 
+### Echo
+- Full migration to application commands
+
 ## Fun
 
 ### Animal
@@ -41,9 +44,6 @@ Changes since 2026.06.04
 - The caller of the .duck spawn command can no longer participate in the hunt
 - Adds a new /duck next command to show admins the next duck spawn time
 - Fuzzes duck spawn time to make it less predictable
-
-### Echo
-- Full migration to application commands
 
 ### Hangman
 - /hangman start is no longer logged in discord
