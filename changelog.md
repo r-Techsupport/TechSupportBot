@@ -142,8 +142,12 @@ Changes since 2026.06.04
 
 # Dependencies
 Bump python version to 3.13
+
 ## Core
-- aiohttp -> 3.14.1
+Unpinned aiohttp
+Unpinned pips
+Unpinned pydantic
+Unpinned typing_extensions
 
 ## Dev
 - hypothesis -> 6.155.2
