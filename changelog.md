@@ -62,6 +62,7 @@ Changes since 2026.06.04
 
 ### Moderator
 - Adds autocomplete for /unwarn command
+- Bans from max warnings will now show a ban in the text output
 
 ### Modmail
 - Full migration to application commands
