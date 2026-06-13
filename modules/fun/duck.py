@@ -74,7 +74,6 @@ class DuckHunt(cogs.LoopCog):
         This function shouldn't be manually called
 
         Args:
-            config (munch.Munch): The guild config to use to determine the min and max wait times
             guild (discord.Guild): The guild where the duck is going to appear
         """
         min_wait = configuration.get_config_entry(guild.id, "duck_min_wait") * 3600
