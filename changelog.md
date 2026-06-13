@@ -38,6 +38,8 @@ Changes since 2026.06.04
 - Changes the display of .duck stats to be a bit nicer
 - Bot accounts are no longer able to participate in the duck hunt
 - The caller of the .duck spawn command can no longer participate in the hunt
+- Adds a new /duck next command to show admins the next duck spawn time
+- Fuzzes duck spawn time to make it less predictable
 
 ### Hangman
 - /hangman start is no longer logged in discord

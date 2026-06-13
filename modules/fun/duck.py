@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Self
 
 import discord
 from discord import Color as embed_colors
+from discord import app_commands
 from discord.ext import commands
 
 import configuration
@@ -35,12 +36,17 @@ class DuckHunt(cogs.LoopCog):
     """Class for the actual duck commands
 
     Attributes:
+        duck_group (app_commands.Group): The group for the /duck commands
         DUCK_PIC_URL (str): The picture for the duck
         BEFRIEND_URL (str): The picture for the befriend target
         KILL_URL (str): The picture for the kill target
         ON_START (bool): ???
         CHANNELS_KEY (str): The config item for the channels that the duck hunt should run
     """
+
+    duck_group: app_commands.Group = app_commands.Group(
+        name="duck", description="...", extras={"module": "duck"}
+    )
 
     DUCK_PIC_URL: str = (
         "https://www.iconarchive.com/download/i107380/google/"
@@ -60,19 +66,32 @@ class DuckHunt(cogs.LoopCog):
         """Preconfig for cooldowns"""
         self.cooldowns = {}
 
+        # "guild_id": datetime
+        self.next_duck: dict[str, datetime.datetime] = {}
+
     async def wait(self: Self, guild: discord.Guild) -> None:
         """Waits a random amount of time before sending another duck
         This function shouldn't be manually called
 
         Args:
-            guild (discord.Guild): The guild where the duck is running
+            guild (discord.Guild): The guild where the duck is going to appear
         """
-        await asyncio.sleep(
-            random.randint(
-                configuration.get_config_entry(guild.id, "duck_min_wait") * 3600,
-                configuration.get_config_entry(guild.id, "duck_max_wait") * 3600,
-            )
+        min_wait = configuration.get_config_entry(guild.id, "duck_min_wait") * 3600
+        max_wait = configuration.get_config_entry(guild.id, "duck_max_wait") * 3600
+
+        fuzzed_min = int(min_wait * random.uniform(0.9, 1.1))
+        fuzzed_max = int(max_wait * random.uniform(0.9, 1.1))
+
+        if fuzzed_min > fuzzed_max:
+            fuzzed_min, fuzzed_max = fuzzed_max, fuzzed_min
+
+        wait_time = random.randint(fuzzed_min, fuzzed_max)
+
+        self.next_duck[str(guild.id)] = datetime.datetime.now() + datetime.timedelta(
+            seconds=wait_time
         )
+
+        await asyncio.sleep(wait_time)
 
     async def execute(
         self: Self,
@@ -108,6 +127,7 @@ class DuckHunt(cogs.LoopCog):
             use_channel = channel
 
         self.cooldowns[guild.id] = {}
+        del self.next_duck[str(guild.id)]
 
         embed = discord.Embed(
             title="*Quack Quack*",
@@ -408,6 +428,30 @@ class DuckHunt(cogs.LoopCog):
             return None
 
         return float(min(speed_records, key=float))
+
+    @app_commands.checks.has_permissions(administrator=True)
+    @duck_group.command(
+        name="next",
+        description="Displays the time for the next duck for this guild",
+    )
+    async def lookup_next_duck(self: Self, interaction: discord.Interaction) -> None:
+        """A simple command to show an admin when the next duck will be spawning
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+        """
+        if str(interaction.guild.id) not in self.next_duck:
+            embed = auxiliary.prepare_deny_embed(
+                "Couldn't find a future duck for this guild."
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        embed = auxiliary.prepare_confirm_embed(
+            "The next duck in this guild:"
+            f"<t:{int(self.next_duck[str(interaction.guild.id)].timestamp())}>"
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @commands.group(
         brief="Executes a duck command",
