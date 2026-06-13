@@ -8,6 +8,7 @@ Changes since 2026.06.04
 - The presence intent is no longer requested
 - Add property to make application commands always enabled regardless of guild config
 - Adds a docker ignore file to slim down the size of the docker container
+- Make the check-format make task run the same CI as is run on GitHub
 
 # Modules
 
