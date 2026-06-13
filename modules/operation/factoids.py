@@ -816,7 +816,9 @@ class FactoidManager(cogs.MatchCog):
 
         if factoid.restricted:
             channel = ctx.channel
-            restricted_list = configuration.get_config_entry(ctx.guild.id, "factoids_restricted_list")
+            restricted_list = configuration.get_config_entry(
+                ctx.guild.id, "factoids_restricted_list"
+            )
             if isinstance(channel, discord.Thread):
                 if str(channel.parent.id) not in restricted_list:
                     return
