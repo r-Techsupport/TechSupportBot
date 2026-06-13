@@ -41,6 +41,9 @@ Changes since 2026.06.04
 - Adds a new /duck next command to show admins the next duck spawn time
 - Fuzzes duck spawn time to make it less predictable
 
+### Echo
+- Full migration to application commands
+
 ### Hangman
 - /hangman start is no longer logged in discord
 
