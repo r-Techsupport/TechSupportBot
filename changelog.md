@@ -112,6 +112,10 @@ Changes since 2026.06.04
 - Reworks the way the help command displays usage info
 - Mentions applications commands in the output now
 
+### HTD
+- Is more clear on what errors were caused and why
+- Adds modulo as a valid operation
+
 ### Search
 - Now uses application commands
 - Now uses the Tavily API, to replace the deprcating google CSE API
