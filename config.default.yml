@@ -3,7 +3,7 @@ bot_config:
     admins:
         ids: []
         roles: []
-    disabled_extensions: ["kanye"]
+    disabled_extensions: ["fun.kanye"]
     default_prefix: "."
     global_alerts_channel: ""
     override_owner: ""
@@ -11,7 +11,6 @@ modmail_config:
     enable_modmail: False
     disable_thread_creation: False
     modmail_auth_token:
-    modmail_prefix:
     modmail_guild:
     modmail_forum_channel:
     modmail_log_channel:
@@ -36,15 +35,15 @@ api:
         password:
     api_keys:
         cat:
+        dictionary:
         dumpdbg:
         giphy:
         google:
-        google_cse:
         news:
-        open_weather:
         openai:
         spotify_client:
         spotify_key:
+        tavily:
         wolfram:
     api_url:
         dumpdbg:

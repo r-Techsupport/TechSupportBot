@@ -1,0 +1,462 @@
+{
+  "application_application_message": {
+    "datatype": "str",
+    "description": "The message to show users when they are prompted to apply in the notification_channels"
+  },
+  "application_application_role_id": {
+    "datatype": "discord.Role",
+    "description": "The role to give applicants when their application is approved"
+  },
+  "application_manage_role_ids": {
+    "datatype": "list[discord.Role]",
+    "description": "The roles required to manage the applications (not required to apply)"
+  },
+  "application_management_channel": {
+    "datatype": "discord.TextChannel",
+    "description": "The channel the application notifications and reminders should appear in"
+  },
+  "application_max_age": {
+    "datatype": "int",
+    "description": "After this many days, the system will auto reject the applications"
+  },
+  "application_notification_channels": {
+    "datatype": "list[discord.TextChannel]",
+    "description": "The channels that should receive periodic messages about the application, with a button to apply"
+  },
+  "application_notification_cron_config": {
+    "datatype": "CronTab",
+    "description": "CronTab for users being notified about the application"
+  },
+  "application_ping_role": {
+    "datatype": "discord.Role",
+    "description": "The role to ping when a new application is created"
+  },
+  "application_reminder_cron_config": {
+    "datatype": "CronTab",
+    "description": "Crontab for executing pending reminder events"
+  },
+  "automod_alert_channel": {
+    "datatype": "discord.TextChannel",
+    "description": "The channel to send auto-protect alerts to"
+  },
+  "automod_banned_file_extensions": {
+    "datatype": "list[str]",
+    "description": "A list of all file extensions to be blocked and have a auto warning issued"
+  },
+  "automod_banned_file_hashes": {
+    "datatype": "list[str]",
+    "description": "A list of all file hashes to be blocked and have a auto warning issued"
+  },
+  "automod_bypass_roles": {
+    "datatype": "list[discord.Role]",
+    "description": "The list of role names associated with bypassed roles by the auto-protect"
+  },
+  "automod_channels": {
+    "datatype": "list[discord.TextChannel]",
+    "description": "The list of channels to enable automod in"
+  },
+  "automod_max_mentions": {
+    "datatype": "int",
+    "description": "Max number of mentions allowed in a message before triggering auto-protect"
+  },
+  "automod_string_map": {
+    "datatype": "dict[str, dict[str, Any]]",
+    "description": "Mapping of keyword strings to data defining the action taken by auto-protect"
+  },
+  "autoreact_react_map": {
+    "datatype": "dict[str, str]",
+    "description": "Lowercase phrase to reaction wanted"
+  },
+  "core_command_prefix": {
+    "datatype": "str",
+    "description": "The prefix to use for legacy commands"
+  },
+  "core_enable_logging": {
+    "datatype": "bool",
+    "description": "Whether the botlogging module should be enabled. When disabled, core logs will all be turned off"
+  },
+  "core_enabled_extensions": {
+    "datatype": "list[str]",
+    "description": "A list of all extensions enabled in the guild"
+  },
+  "core_guild_events_channel": {
+    "datatype": "discord.TextChannel",
+    "description": "The channel to log guild events to."
+  },
+  "core_guild_id": {
+    "datatype": "discord.Guild",
+    "description": "This is used as a validation tool, the guild ID that this config belongs to"
+  },
+  "core_logging_channel": {
+    "datatype": "discord.TextChannel",
+    "description": "This is the bot events logging channel"
+  },
+  "core_member_events_channel": {
+    "datatype": "discord.TextChannel",
+    "description": "The channel to log member events to."
+  },
+  "core_message_events_channel": {
+    "datatype": "discord.TextChannel",
+    "description": "The channel to log message events to."
+  },
+  "core_nickname_filter": {
+    "datatype": "bool",
+    "description": "Whether to run the nickname filter or not"
+  },
+  "core_private_channels": {
+    "datatype": "list[discord.TextChannel]",
+    "description": "A list of channels to exclude from logging events"
+  },
+  "duck_allow_manipulation": {
+    "datatype": "bool",
+    "description": "Controls whether release, donate, or kill commands are enabled"
+  },
+  "duck_cooldown": {
+    "datatype": "int",
+    "description": "The amount of time in seconds to wait between bef/bang messages"
+  },
+  "duck_hunt_channels": {
+    "datatype": "list[discord.TextChannel]",
+    "description": "The list of channels the duck should appear in"
+  },
+  "duck_max_wait": {
+    "datatype": "int",
+    "description": "The maximum number of hours to wait between duck events"
+  },
+  "duck_min_wait": {
+    "datatype": "int",
+    "description": "The minimum number of hours to wait between duck events"
+  },
+  "duck_mute_for_cooldown": {
+    "datatype": "bool",
+    "description": "If enabled, users who miss will be timed out for the cooldown seconds"
+  },
+  "duck_spawn_user": {
+    "datatype": "list[discord.Member]",
+    "description": "A list of users allowed to use thje .duck spawn command"
+  },
+  "duck_success_rate": {
+    "datatype": "int",
+    "description": "The success rate of bef/bang messages"
+  },
+  "duck_timeout": {
+    "datatype": "int",
+    "description": "The amount of time in seconds before the duck disappears"
+  },
+  "duck_use_category": {
+    "datatype": "bool",
+    "description": "Whether to use the whole category for ducks"
+  },
+  "dumpdbg_roles": {
+    "datatype": "list[discord.Role]",
+    "description": "Roles permitted to use the dump debug command"
+  },
+  "embed_embed_roles": {
+    "datatype": "list[discord.Role]",
+    "description": "Roles permitted to use the embed command"
+  },
+  "factoids_admin_roles": {
+    "datatype": "list[discord.Role]",
+    "description": "The roles required to administrate factoids"
+  },
+  "factoids_disable_embeds": {
+    "datatype": "bool",
+    "description": "This will force all factoids to not use embeds."
+  },
+  "factoids_manage_roles": {
+    "datatype": "list[discord.Role]",
+    "description": "The roles required to manage factoids"
+  },
+  "factoids_prefix": {
+    "datatype": "str",
+    "description": "Prefix for calling factoids"
+  },
+  "factoids_restricted_list": {
+    "datatype": "list[discord.TextChannel]",
+    "description": "List of channel IDs that restricted factoids are allowed to be used in"
+  },
+  "forum_abandoned_message": {
+    "datatype": "str",
+    "description": "The message displayed on abandoned threads"
+  },
+  "forum_body_regex_list": {
+    "datatype": "list[str]",
+    "description": "List of regex to ban in bodies"
+  },
+  "forum_close_message": {
+    "datatype": "str",
+    "description": "The message displayed on closed threads"
+  },
+  "forum_delete_message": {
+    "datatype": "str",
+    "description": "The message displayed on deleted threads"
+  },
+  "forum_duplicate_message": {
+    "datatype": "str",
+    "description": "The message displayed on duplicated threads"
+  },
+  "forum_forum_channel_id": {
+    "datatype": "discord.ForumChannel",
+    "description": "The forum channel to manage threads in"
+  },
+  "forum_left_message": {
+    "datatype": "str",
+    "description": "The message displayed on left threads"
+  },
+  "forum_max_age_minutes": {
+    "datatype": "int",
+    "description": "The max age of a thread before it times out"
+  },
+  "forum_reject_message": {
+    "datatype": "str",
+    "description": "The message displayed on rejected threads"
+  },
+  "forum_solve_message": {
+    "datatype": "str",
+    "description": "The message displayed on solved threads"
+  },
+  "forum_staff_role_ids": {
+    "datatype": "list[discord.Role]",
+    "description": "Staff roles able to mark threads solved/abandoned/rejected"
+  },
+  "forum_title_regex_list": {
+    "datatype": "list[str]",
+    "description": "List of regex to ban in titles"
+  },
+  "forum_welcome_message": {
+    "datatype": "str",
+    "description": "The message displayed on new threads"
+  },
+  "gate_channel": {
+    "datatype": "discord.TextChannel",
+    "description": "The channel the gate is in"
+  },
+  "gate_delete_wait": {
+    "datatype": "int",
+    "description": "The amount of time to wait (in seconds) before deleting the welcome message"
+  },
+  "gate_intro_message": {
+    "datatype": "str",
+    "description": "The message that's sent when running the intro message command"
+  },
+  "gate_roles": {
+    "datatype": "list[discord.Role]",
+    "description": "The list of roles to add after user is verified"
+  },
+  "gate_verify_text": {
+    "datatype": "str",
+    "description": "The case-insensitive text the user should type to verify themselves"
+  },
+  "gate_welcome_message": {
+    "datatype": "str",
+    "description": "The message to send to the user after they are verified"
+  },
+  "grab_allowed_channels": {
+    "datatype": "list[discord.TextChannel]",
+    "description": "The list of channels to enable the grabs plugin"
+  },
+  "grab_per_page": {
+    "datatype": "int",
+    "description": "The number of grabs per page when retrieving all grabs"
+  },
+  "hangman_hangman_roles": {
+    "datatype": "list[discord.Role]",
+    "description": "The list of role names able to control hangman games"
+  },
+  "honeypot_channels": {
+    "datatype": "list[discord.TextChannel]",
+    "description": "The list of channels that are honeypots"
+  },
+  "joke_apply_in_nsfw_channels": {
+    "datatype": "bool",
+    "description": "Toggles whether or not filters are applies in NSFW channels"
+  },
+  "joke_blacklisted_filters": {
+    "datatype": "list[str]",
+    "description": "Filters all categories listed (nsfw,religious,political,racist,sexist,explicit)"
+  },
+  "kanye_channel": {
+    "datatype": "discord.TextChannel",
+    "description": "The ID of the channel the Kanye West quote should appear in"
+  },
+  "kanye_max_wait": {
+    "datatype": "int",
+    "description": "The maximum number of hours to wait between Kanye events"
+  },
+  "kanye_min_wait": {
+    "datatype": "int",
+    "description": "The minimum number of hours to wait between Kanye events"
+  },
+  "logger_channel_map": {
+    "datatype": "dict[discord.TextChannel, discord.TextChannel]",
+    "description": "Input Channel to Logging Channel mapping"
+  },
+  "moderation_alert_channel": {
+    "datatype": "discord.TextChannel",
+    "description": "The channel to send moderation and honeypot alerts to"
+  },
+  "moderation_max_warnings": {
+    "datatype": "int",
+    "description": "The maximum number of warnings before /warn prompts to ban, and automod autobans"
+  },
+  "moderator_ban_delete_duration": {
+    "datatype": "int",
+    "description": "The default amount of days to delete messages for a user after they are banned"
+  },
+  "moderator_immune_roles": {
+    "datatype": "list[discord.Role]",
+    "description": "The list of role names that are immune to protect commands"
+  },
+  "modlog_alert_channel": {
+    "datatype": "discord.TextChannel",
+    "description": "The ID of the channel to send auto-protect alerts to"
+  },
+  "modmail_aliases": {
+    "datatype": "dict[str, str]",
+    "description": "Custom modmail commands to send message slices"
+  },
+  "modmail_automatic_rejections": {
+    "datatype": "dict[str, str]",
+    "description": "If someone sends a message matching regex, blocks thread creation"
+  },
+  "modmail_automatic_responses": {
+    "datatype": "dict[str, str]",
+    "description": "If someone sends a message containing a key, sends its value"
+  },
+  "modmail_modmail_roles": {
+    "datatype": "list[discord.Role]",
+    "description": "Roles that can access modmail and its commands"
+  },
+  "modmail_roles_to_ping": {
+    "datatype": "list[discord.Role]",
+    "description": "Roles to ping on thread creation"
+  },
+  "modmail_thread_creation_message": {
+    "datatype": "str",
+    "description": "The message sent to the user when confirming a thread creation."
+  },
+  "news_category": {
+    "datatype": "str",
+    "description": "The category to use when receiving cronjob headlines"
+  },
+  "news_channel": {
+    "datatype": "discord.TextChannel",
+    "description": "The ID of the channel the news should appear in"
+  },
+  "news_country": {
+    "datatype": "str",
+    "description": "Country code to receive news for (example: US)"
+  },
+  "news_cron_config": {
+    "datatype": "CronTab",
+    "description": "Crontab syntax for executing news events"
+  },
+  "notes_note_bypass": {
+    "datatype": "list[discord.Role]",
+    "description": "A list of roles that shouldn't have notes set or the note role assigned"
+  },
+  "notes_note_readers": {
+    "datatype": "list[discord.Role]",
+    "description": "Users with roles in this list will be able to use whois"
+  },
+  "notes_note_role": {
+    "datatype": "discord.Role",
+    "description": "The name of the role to be added when a note is added to a user"
+  },
+  "notes_note_writers": {
+    "datatype": "list[discord.Role]",
+    "description": "Users with roles in this list will be able to create or delete notes"
+  },
+  "paste_bypass_roles": {
+    "datatype": "list[discord.Role]",
+    "description": "The list of role names that will bypass the paste system"
+  },
+  "paste_channels": {
+    "datatype": "list[discord.TextChannel]",
+    "description": "The list of channel ID's that will have the paste service enabled"
+  },
+  "paste_length_limit": {
+    "datatype": "int",
+    "description": "The max char limit on messages before they trigger a paste"
+  },
+  "paste_paste_footer_message": {
+    "datatype": "str",
+    "description": "The message used on the footer of the large message paste embed"
+  },
+  "purge_max_purge_amount": {
+    "datatype": "int",
+    "description": "The max amount of messages allowed to be purged in one command"
+  },
+  "rate_limit_commands": {
+    "datatype": "int",
+    "description": "The maximum number of commands run before rate limit triggers"
+  },
+  "rate_limit_enabled": {
+    "datatype": "bool",
+    "description": "Whether the rate limit feature is enabled or not"
+  },
+  "rate_limit_time": {
+    "datatype": "int",
+    "description": "The rolling time window to track for a rate limit"
+  },
+  "report_alert_channel": {
+    "datatype": "discord.TextChannel",
+    "description": "The ID of the channel to send reports to"
+  },
+  "report_anonymous": {
+    "datatype": "bool",
+    "description": "Whether reports are anonymous"
+  },
+  "report_ping_role": {
+    "datatype": "discord.Role",
+    "description": "The ID of the role to ping when a new report is created"
+  },
+  "role_all_assignable_roles": {
+    "datatype": "list[discord.Role]",
+    "description": "The list of roles by name that moderators can assign to people"
+  },
+  "role_allow_all_assign": {
+    "datatype": "list[discord.Role]",
+    "description": "The list of roles that are allowed to assign others roles"
+  },
+  "role_allow_self_assign": {
+    "datatype": "list[discord.Role]",
+    "description": "The list of roles that are allowed to assign themselves roles"
+  },
+  "role_self_assign_map": {
+    "datatype": "dict[discord.Role, list[discord.Role]]",
+    "description": "A map in the format target: [use, use]"
+  },
+  "urban_max_responses": {
+    "datatype": "int",
+    "description": "The max amount of responses per embed page"
+  },
+  "voting_active_role_id": {
+    "datatype": "discord.Role",
+    "description": "User must have this role to start or participate in votes"
+  },
+  "voting_reminders_at": {
+    "datatype": "list[int]",
+    "description": "The list of hours remaining in vote to remind non voters"
+  },
+  "voting_votes_channel_roles": {
+    "datatype": "dict[discord.ForumChannel, list[discord.Role]]",
+    "description": "Map of forum channel IDs to a list of role IDs. User must have at least one role from the list."
+  },
+  "voting_voting_thresholds": {
+    "datatype": "list[int]",
+    "description": "1, % of eligible voters who must vote yes, 2, % of yes/no voters who must have voted yes, 3, % of eligible voters who must have voted anything at all"
+  },
+  "xp_categories_counted": {
+    "datatype": "list[discord.CategoryChannel]",
+    "description": "List of category IDs to count for XP"
+  },
+  "xp_excluded_channels": {
+    "datatype": "list[discord.TextChannel]",
+    "description": "List of channel IDs to exclude for XP"
+  },
+  "xp_level_roles": {
+    "datatype": "dict[int, discord.Role]",
+    "description": "Dict of levels in XP:Role ID"
+  }
+}

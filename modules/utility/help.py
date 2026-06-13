@@ -1,0 +1,258 @@
+"""Module for custom help commands."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from itertools import product
+from typing import TYPE_CHECKING, Self
+
+import discord
+from discord import app_commands
+from discord.ext import commands
+
+import configuration
+import ui
+from core import auxiliary, cogs
+
+if TYPE_CHECKING:
+    import bot
+
+
+@dataclass
+class PrintableCommand:
+    """A custom class to store formatted information about a command
+    With a priority on being sortable and searchable
+
+    Attributes:
+        prefix (str): The prefix to call the command with
+        name (str): The command name
+        usage (str): The usage hints for the command
+        description (str): The description of the command
+        mention (str): A mention string for the command, only for application commands
+
+    """
+
+    prefix: str
+    name: str
+    usage: str
+    description: str
+    mention: str = None
+
+
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Helper plugin into the bot
+
+    Args:
+        bot (bot.TechSupportBot): The bot object to register the cogs to
+    """
+    await bot.add_cog(Helper(bot=bot))
+
+
+class Helper(cogs.BaseCog):
+    """Cog object for help commands."""
+
+    @commands.command(
+        name="help",
+        brief="Displays helpful infromation",
+        description="Searches commands for your query and dispays usage info",
+        usage="[search]",
+    )
+    async def help_command(
+        self: Self, ctx: commands.Context, search_term: str = ""
+    ) -> None:
+        """Main comand interface for getting help with bot commands.
+
+        This is a command and should be accessed via Discord.
+
+        Args:
+            ctx (commands.Context): the context object for the message
+            search_term (str, optional): The term to search command name and descriptions for.
+                Will default to empty string
+        """
+        # Build raw lists of commands
+        prefix_command_list = list(self.bot.walk_commands())
+        app_command_list = list(self.bot.tree.walk_commands())
+        fetched_commands = await self.bot.tree.fetch_commands()
+
+        command_mentions = build_command_mentions(fetched_commands)
+
+        command_prefix = await self.bot.get_prefix(ctx.message)
+
+        # Build a list of custom command objects from the lists
+        # Will include aliases and full command names
+        all_command_list: list[PrintableCommand] = []
+
+        # Looping through all the prefix commands
+        for command in prefix_command_list:
+            # If the command is a group, ignore it
+            if issubclass(command.__class__, commands.Group):
+                continue
+
+            # Check if extension is enabled
+            extension_name = self.bot.get_command_extension_name(command)
+            if extension_name not in configuration.get_config_entry(
+                ctx.guild.id, "core_enabled_extensions"
+            ):
+                continue
+
+            # Deal with aliases by looping through all parent groups and alises
+            # Then, make all permutations and get a string
+            # of all full command names (parents alias)
+            all_lists = []
+            # Loop through all parents
+            for parent in command.parents:
+                all_lists.append(parent.aliases + [parent.name])
+
+            # Since discord.py makes the parents array opposite of how you would call, reverse
+            all_lists.reverse()
+            all_lists.append(command.aliases + [command.name])
+
+            # Use itertools to get all permutations
+            all_permutations = list(product(*all_lists))
+            all_commands = [" ".join(map(str, perm)) for perm in all_permutations]
+
+            # Add all possible permutations to the help menu
+            for command_name in all_commands:
+                all_command_list.append(
+                    PrintableCommand(
+                        prefix=command_prefix,
+                        name=command_name,
+                        usage=command.usage if command.usage else "",
+                        description=command.description,
+                    )
+                )
+
+        # Loop through all the slash commands
+        for command in app_command_list:
+            # Ignore the command in a group
+            if issubclass(command.__class__, app_commands.Group):
+                continue
+
+            # Check if extension is enabled
+            extension_name = command.callback.__module__[8:]
+            if extension_name not in configuration.get_config_entry(
+                ctx.guild.id, "core_enabled_extensions"
+            ):
+                continue
+
+            # We have to manually build a string representation of the usage
+            # We are given it in a list
+            command_usage = "".join(
+                (
+                    f"[{param.name}: {param.type.name}] "
+                    if param.required
+                    else f"({param.name}: {param.type.name}) "
+                )
+                for param in command.parameters
+            )
+
+            # Append the app commands.
+            # App commands cannot have aliases, so no need to think about that
+            all_command_list.append(
+                PrintableCommand(
+                    prefix="/",
+                    name=command.qualified_name,
+                    usage=command_usage.strip(),
+                    description=command.description,
+                    mention=command_mentions.get(command.qualified_name),
+                )
+            )
+
+        # Sort and search the commands
+        sorted_commands = sorted(all_command_list, key=lambda x: x.name.lower())
+        filtered_commands = [
+            command
+            for command in sorted_commands
+            if search_term.lower() in command.name.lower()
+            or search_term.lower() in command.description.lower()
+        ]
+
+        # Ensure at least a single command was found
+        if not filtered_commands:
+            await auxiliary.send_deny_embed(
+                message=f"No commands matching `{search_term}` have been found",
+                channel=ctx.channel,
+            )
+            return
+
+        # Use pages to ensure we don't overflow the max embed size
+        embeds = self.build_embeds_from_list(filtered_commands, search_term)
+        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
+
+    def build_embeds_from_list(
+        self: Self, commands_list: list[PrintableCommand], search_term: str
+    ) -> list[discord.Embed]:
+        """Takes a list of commands and returns a list of embeds ready to be paginated
+
+        Args:
+            commands_list (list[PrintableCommand]): A list of the dataclass PrintableCommand
+            search_term (str): The string for the search term.
+
+        Returns:
+            list[discord.Embed]: The list of embeds always of at least size 1 ready
+                to be shown to the user
+        """
+        title = f"Commands matching `{search_term}`" if search_term else "All commands"
+        sublists: list[list[PrintableCommand]] = [
+            commands_list[i : i + 10] for i in range(0, len(commands_list), 10)
+        ]
+        final_embeds: list[discord.Embed] = []
+        for command_list in sublists:
+            embed = discord.Embed(title=title, color=discord.Color.green())
+            for command in command_list:
+                display_name = (
+                    command.mention
+                    if command.mention
+                    else f"{command.prefix}{command.name}"
+                )
+                embed.add_field(
+                    name=f"{display_name} {command.usage}",
+                    value=command.description,
+                    inline=False,
+                )
+            final_embeds.append(embed)
+        return final_embeds
+
+
+def build_command_mentions(
+    fetched_commands_list: list[app_commands.AppCommand],
+) -> dict[str, str]:
+    """Build a mapping of command names to mentions.
+
+    Args:
+        fetched_commands_list (list[app_commands.AppCommand]):
+            The list of commands fetched from the bot.
+
+    Returns:
+        dict[str, str]: A dictionary mapping full names to mentions.
+    """
+    mentions: dict[str, str] = {}
+
+    def walk(
+        command: app_commands.AppCommand | app_commands.AppCommandGroup,
+        root_id: int,
+        prefix: str = "",
+    ) -> None:
+        """Recursively walk command groups.
+
+        Args:
+            command (app_commands.AppCommand | app_commands.AppCommandGroup):
+                The current command/group being processed.
+            root_id (int): The ID of the top-level command.
+            prefix (str): The accumulated command path. Defaults to ""
+        """
+        qualified_name = f"{prefix} {command.name}".strip()
+
+        mentions[qualified_name] = f"</{qualified_name}:{root_id}>"
+
+        for option in command.options:
+            if option.type in (
+                discord.AppCommandOptionType.subcommand,
+                discord.AppCommandOptionType.subcommand_group,
+            ):
+                walk(option, root_id, qualified_name)
+
+    for command in fetched_commands_list:
+        walk(command, command.id)
+
+    return mentions
