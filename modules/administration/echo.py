@@ -4,15 +4,16 @@ The cog in the file is named:
     MessageEcho
 
 This file contains 2 commands:
-    .echo user
-    .echo channel
+    /echo user
+    /echo channel
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
-from discord.ext import commands
+import discord.abc
+from discord import app_commands
 
 import configuration
 from core import auxiliary, cogs
@@ -34,48 +35,42 @@ async def setup(bot: bot.TechSupportBot) -> None:
 class MessageEcho(cogs.BaseCog):
     """
     The class that holds the echo commands
+
+    Attributes:
+        echo_commands (app_commands.Group): The group for the /echo commands
     """
 
-    @commands.check(auxiliary.bot_admin_check_context)
-    @commands.group(
-        brief="Executes an echo bot command", description="Executes an echo bot command"
+    echo_commands: app_commands.Group = app_commands.Group(
+        name="echo",
+        description="...",
     )
-    async def echo(self: Self, ctx: commands.Context) -> None:
-        """The bare .echo command. This does nothing but generate the help message
 
-        Args:
-            ctx (commands.Context): The context in which the command was run in
-        """
-        return
-
-    @auxiliary.with_typing
-    @echo.command(
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @echo_commands.command(
         name="channel",
         description="Echos a message to a channel",
-        usage="[channel-id] [message]",
     )
     async def echo_channel(
-        self: Self, ctx: commands.Context, channel_id: int, *, message: str
+        self: Self,
+        interaction: discord.Interaction,
+        channel: discord.Thread | discord.TextChannel | discord.VoiceChannel,
+        message: str,
     ) -> None:
         """Sends a message to a specified channel.
 
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (commands.Context): the context object for the calling message
-            channel_id (int): the ID of the channel to send the echoed message
+            interaction (discord.Interaction): the context object for the calling message
+            channel (discord.Thread|discord.TextChannel|discord.VoiceChannel): the channel to send
+                the message in
             message (str): the message to echo
         """
-        channel = self.bot.get_channel(channel_id)
-        if not channel:
-            await auxiliary.send_deny_embed(
-                message="I couldn't find that channel", channel=ctx.channel
-            )
-            return
 
         sent_message = await channel.send(content=message)
 
-        await auxiliary.send_confirm_embed(message="Message sent", channel=ctx.channel)
+        embed = auxiliary.prepare_confirm_embed("Message sent")
+        await interaction.response.send_message(embed=embed)
         # Don't allow logging if extension is disabled
         if "moderation.logger" not in configuration.get_config_entry(
             channel.guild.id, "core_enabled_extensions"
@@ -89,38 +84,32 @@ class MessageEcho(cogs.BaseCog):
         await function_logger.send_message(
             self.bot,
             sent_message,
-            ctx.author,
+            interaction.user,
             channel,
             target_logging_channel,
             content_override=message,
             special_flags=["Echo command"],
         )
 
-    @auxiliary.with_typing
-    @echo.command(
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @echo_commands.command(
         name="user",
         description="Echos a message to a user",
-        usage="[user-id] [message]",
     )
     async def echo_user(
-        self: Self, ctx: commands.Context, user_id: int, *, message: str
+        self: Self, interaction: discord.Interaction, user: discord.User, message: str
     ) -> None:
         """Sends a message to a specified user.
 
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (commands.Context): the context object for the calling message
-            user_id (int): the ID of the user to send the echoed message
+            interaction (discord.Interaction): the context object for the calling message
+            user (discord.User): who the message should be sent to
             message (str): the message to echo
         """
-        user = await self.bot.fetch_user(int(user_id))
-        if not user:
-            await auxiliary.send_deny_embed(
-                message="I couldn't find that user", channel=ctx.channel
-            )
-            return
 
         await user.send(content=message)
 
-        await auxiliary.send_confirm_embed(message="Message sent", channel=ctx.channel)
+        embed = auxiliary.prepare_confirm_embed("Message sent")
+        await interaction.response.send_message(embed=embed)

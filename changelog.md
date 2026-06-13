@@ -17,6 +17,9 @@ Changes since 2026.06.04
 ### Bot info
 - Full migration to application commands
 
+### Echo
+- Full migration to application commands
+
 ## Fun
 
 ### Animal
