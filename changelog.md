@@ -90,6 +90,7 @@ Changes since 2026.06.04
 - The /factoid call command now has an optional parameter to ping a member in the factoid display
 - Factoids called using /factoid call will now have a button to allow the invoker to delete the factoid
 - A new /factoid add command has been added, using a modal to create new factoids
+- Fix restricted factoids not working in threads
 
 ### Forum
 - This changes the way the first message in a forum channel is obtained for initial post rejection detection
