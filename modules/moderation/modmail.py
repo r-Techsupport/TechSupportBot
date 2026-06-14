@@ -1780,6 +1780,13 @@ class EditView(discord.ui.View):
             interaction (discord.Interaction): The interaction that pressed the button
             button (discord.ui.Button): The button object itself
         """
+        # Protection against button being used on closed threads
+        if interaction.channel.locked:
+            await interaction.channel.edit(
+                archived=True,
+                locked=True,
+            )
+            return
 
         if interaction.user.id != self.author_id:
             await interaction.response.send_message(
@@ -1820,9 +1827,13 @@ class EditView(discord.ui.View):
 
 
 class EditMessageModal(discord.ui.Modal, title="Edit message"):
-    """A Modal that allows a user to edit a message."""
+    """A Modal that allows a user to edit a message.
 
-    def __init__(self, message: str) -> None:
+    Args:
+        message (str): The current content of the message being edited
+    """
+
+    def __init__(self: Self, message: str) -> None:
         super().__init__()
 
         self.message = discord.ui.TextInput(
