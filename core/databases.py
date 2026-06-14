@@ -191,6 +191,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             channel (str): The channel the message was grabbed from
             guild (str): The guild the message was grabbed from
             message (str): The string contents of the message
+            message_hash (str): A hash of the contents of the message
             time (datetime.datetime): The time the message was grabbed
             nsfw (bool): Whether the message was grabbed in an NSFW channel
         """
@@ -202,6 +203,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         channel: str = bot.db.Column(bot.db.String)
         guild: str = bot.db.Column(bot.db.String)
         message: str = bot.db.Column(bot.db.String)
+        message_hash: str = bot.db.Column(bot.db.String)
         time: datetime.datetime = bot.db.Column(
             bot.db.DateTime, default=datetime.datetime.utcnow
         )

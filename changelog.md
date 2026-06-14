@@ -45,6 +45,9 @@ Changes since 2026.06.04
 - Adds a new /duck next command to show admins the next duck spawn time
 - Fuzzes duck spawn time to make it less predictable
 
+### Grab
+- Message content is now encrypted in the database
+
 ### Hangman
 - /hangman start is no longer logged in discord
 
