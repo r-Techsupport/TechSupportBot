@@ -43,8 +43,8 @@ def encrypt(text: str) -> str:
     Returns:
         str: The encrypted text.
     """
-    f = Fernet(_get_key())
-    token = f.encrypt(text.encode("utf-8"))
+    fernet_processor = Fernet(_get_key())
+    token = fernet_processor.encrypt(text.encode("utf-8"))
     return token.decode("utf-8")
 
 
@@ -57,8 +57,8 @@ def decrypt(token: str) -> str:
     Returns:
         str: The decrypted plaintext.
     """
-    f = Fernet(_get_key())
-    return f.decrypt(token.encode("utf-8")).decode("utf-8")
+    fernet_processor = Fernet(_get_key())
+    return fernet_processor.decrypt(token.encode("utf-8")).decode("utf-8")
 
 
 def hash_text(text: str) -> str:
