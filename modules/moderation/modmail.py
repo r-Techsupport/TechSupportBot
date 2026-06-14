@@ -234,6 +234,10 @@ awaiting_confirmation = []
 # since it is used elsewhere
 Modmail_client = Modmail_bot()
 
+# This stores a message ID map from discord message ID : DM message ID
+# This is used for editing message
+message_id_map = {}
+
 
 async def build_attachments(
     thread: discord.Thread, attachments: list[discord.Attachment]
@@ -658,8 +662,12 @@ async def reply_to_thread(
     elif anonymous:
         embed.set_footer(text="[Anonymous] Response")
 
+    # Refetches the user from modmails client so it can reply to it instead of TS
+    user = await Modmail_client.get_member_object(target_member.id)
+
+    view = EditView(msg_author.id, target_member.id)
     # Attachments is either None or a list of files, discord can handle either
-    await thread.send(embed=embed, files=attachments)
+    discord_message = await thread.send(embed=embed, files=attachments, view=view)
 
     # - User side -
     embed.set_footer(text="Response")
@@ -669,11 +677,10 @@ async def reply_to_thread(
             name=f"{thread.guild.name} Moderator", icon_url=thread.guild.icon.url
         )
 
-    # Refetches the user from modmails client so it can reply to it instead of TS
-    user = await Modmail_client.get_member_object(target_member.id)
-
     # Attachments is either None or a list of files, discord can handle either
-    await user.send(embed=embed, files=user_attachments)
+    dm_message = await user.send(embed=embed, files=user_attachments)
+
+    message_id_map[discord_message.id] = dm_message.id
 
 
 async def close_thread(
@@ -1739,3 +1746,99 @@ class Modmail(cogs.BaseCog):
                 description=f"{member.mention} has rejoined the guild.",
             )
             await thread.send(embed=embed)
+
+
+class EditView(discord.ui.View):
+    """The class to hold the view for the edit button for mod posts
+
+    Args:
+        author_id (int): The ID of the author of the modmail essage
+        target_id (int): The user ID of the user whose modmail thread this is
+    """
+
+    def __init__(self: Self, author_id: int, target_id: int) -> None:
+        super().__init__()
+        self.author_id = author_id
+        self.target_id = target_id
+        self.message: discord.Message | None = None
+
+    async def on_timeout(self: Self) -> None:
+        """Is called after the timeout, with the goal of deleting the buttons from the message"""
+
+        if self.message:
+            await self.message.edit(view=None)
+
+    @discord.ui.button(label="Edit", style=discord.ButtonStyle.blurple, emoji="✏️")
+    async def edit_button(
+        self: Self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ) -> None:
+        """The function called when the edit button is pressed
+
+        Args:
+            interaction (discord.Interaction): The interaction that pressed the button
+            button (discord.ui.Button): The button object itself
+        """
+
+        if interaction.user.id != self.author_id:
+            await interaction.response.send_message(
+                "Only the original caller can edit this message.",
+                ephemeral=True,
+            )
+            return
+
+        original_content = interaction.message.embeds[0].description
+
+        modal = EditMessageModal(original_content)
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+
+        if modal.message.value == original_content:
+            await interaction.followup.send("No edits occured", ephemeral=True)
+            return
+
+        # Get the message in DMs
+        target_member = await Modmail_client.get_member_object(self.target_id)
+        dm_message_id = message_id_map[interaction.message.id]
+        dm_message = await target_member.fetch_message(dm_message_id)
+
+        # Actually edit messages
+        new_mod_embed = interaction.message.embeds[0]
+        new_mod_embed.description = modal.message.value
+        await interaction.message.edit(
+            embed=new_mod_embed, attachments=interaction.message.attachments, view=self
+        )
+
+        new_dm_embed = dm_message.embeds[0]
+        new_dm_embed.description = modal.message.value
+        await dm_message.edit(
+            embed=new_dm_embed, attachments=interaction.message.attachments
+        )
+
+        await interaction.followup.send("Message edited", ephemeral=True)
+
+
+class EditMessageModal(discord.ui.Modal, title="Edit message"):
+    """A Modal that allows a user to edit a message."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__()
+
+        self.message = discord.ui.TextInput(
+            label="Message:",
+            style=discord.TextStyle.long,
+            required=True,
+            default=message,
+        )
+
+        self.add_item(self.message)
+
+    async def on_submit(self: Self, interaction: discord.Interaction) -> None:
+        """What happens when the form has been successfully submitted
+
+        Args:
+            interaction (discord.Interaction): The interaction that caused the form to be shown
+        """
+        await interaction.response.defer()
+        return
