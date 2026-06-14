@@ -12,7 +12,7 @@ from discord.ext import commands
 
 import configuration
 import ui
-from core import auxiliary, cogs
+from core import auxiliary, cogs, cryptography
 
 if TYPE_CHECKING:
     import bot
@@ -109,11 +109,13 @@ class Grabber(cogs.BaseCog):
             )
             return
 
+        grab_hash = cryptography.hash_text(grab_message)
+
         grab = (
             await self.bot.models.Grab.query.where(
                 self.bot.models.Grab.author_id == str(user_to_grab.id),
             )
-            .where(self.bot.models.Grab.message == grab_message)
+            .where(self.bot.models.Grab.message_hash == grab_hash)
             .gino.first()
         )
 
@@ -127,7 +129,8 @@ class Grabber(cogs.BaseCog):
             author_id=str(user_to_grab.id),
             channel=str(ctx.channel.id),
             guild=str(ctx.guild.id),
-            message=grab_message,
+            message=cryptography.encrypt(grab_message),
+            message_hash=grab_hash,
             nsfw=ctx.channel.is_nsfw(),
         )
         await grab.create()
@@ -206,7 +209,7 @@ class Grabber(cogs.BaseCog):
                 else embed
             )
             embed.add_field(
-                name=f'"{grab_.message}"',
+                name=f'"{cryptography.decrypt(grab_.message)}"',
                 value=grab_.time.date(),
                 inline=False,
             )
@@ -278,7 +281,7 @@ class Grabber(cogs.BaseCog):
         grab = grabs[random_index]
 
         embed = discord.Embed(
-            title=f'"{grab.message}"',
+            title=f'"{cryptography.decrypt(grab.message)}"',
             description=f"{user_to_grab.name}, {grab.time.date()}",
         )
 
@@ -320,13 +323,15 @@ class Grabber(cogs.BaseCog):
                 channel=ctx.channel,
             )
             return
+
+        grab_hash = cryptography.hash_text(message)
         # Gets the target grab by the message
         grab = (
             await self.bot.models.Grab.query.where(
                 self.bot.models.Grab.author_id == str(target_user.id)
             )
             .where(self.bot.models.Grab.guild == str(ctx.guild.id))
-            .where(self.bot.models.Grab.message == message)
+            .where(self.bot.models.Grab.message_hash == grab_hash)
             .gino.all()
         )
 
