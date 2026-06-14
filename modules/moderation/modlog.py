@@ -376,7 +376,7 @@ class ModLogger(cogs.BaseCog):
         """
         # I hate everything about this
         rule = await execution.fetch_rule()
-        member = await self.bot.fetch_user(execution.user_id)
+        member = await rule.guild.fetch_member(execution.user_id)
         if any(
             action.type == discord.AutoModRuleActionType.timeout
             for action in rule.actions
@@ -402,14 +402,15 @@ class ModLogger(cogs.BaseCog):
                 execution.action.type
                 == discord.AutoModRuleActionType.block_member_interactions
             ):
-                await log_action(
-                    bot=self.bot,
-                    action_type="quarantine",
-                    guild=rule.guild,
-                    member=member,
-                    reason=rule.name,
-                    data=f"**Violating name:** {member.display_name}",
-                )
+                if member.flags.automod_quarantined_username:
+                    await log_action(
+                        bot=self.bot,
+                        action_type="quarantine",
+                        guild=rule.guild,
+                        member=member,
+                        reason=rule.name,
+                        data=f"**Violating name:** {member.display_name}",
+                    )
         elif any(
             action.type == discord.AutoModRuleActionType.block_message
             for action in rule.actions
