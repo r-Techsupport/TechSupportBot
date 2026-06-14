@@ -142,7 +142,7 @@ class Report(cogs.BaseCog):
             embed=embed,
             allowed_mentions=discord.AllowedMentions(roles=True),
         )
-        for index, user in enumerate(mentioned_users):
+        for user in mentioned_users:
             await modlog.log_action(
                 bot=self.bot,
                 action_type="reported",
