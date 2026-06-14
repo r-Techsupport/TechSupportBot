@@ -279,7 +279,6 @@ class Grabber(cogs.BaseCog):
 
         random_index = random.randint(0, len(grabs) - 1)
         grab = grabs[random_index]
-        print(f"Trying: {grab.message}")
 
         embed = discord.Embed(
             title=f'"{cryptography.decrypt(grab.message)}"',
