@@ -665,7 +665,9 @@ async def reply_to_thread(
     # Refetches the user from modmails client so it can reply to it instead of TS
     user = await Modmail_client.get_member_object(target_member.id)
 
-    view = EditView(msg_author.id, target_member.id)
+    view = None
+    if not automatic:
+        view = EditView(msg_author.id, target_member.id)
     # Attachments is either None or a list of files, discord can handle either
     discord_message = await thread.send(embed=embed, files=attachments, view=view)
 
