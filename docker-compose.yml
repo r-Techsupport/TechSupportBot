@@ -5,8 +5,9 @@ services:
         image: rtechsupport/techsupport-bot:prod
         build: .
         container_name: discordBot
+        env_file:
+            - .env
         environment:
-            - DEBUG=${DEBUG}
             - TZ=UTC
         restart: unless-stopped
         stop_signal: SIGINT
