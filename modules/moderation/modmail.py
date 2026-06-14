@@ -1762,12 +1762,6 @@ class EditView(discord.ui.View):
         self.target_id = target_id
         self.message: discord.Message | None = None
 
-    async def on_timeout(self: Self) -> None:
-        """Is called after the timeout, with the goal of deleting the buttons from the message"""
-
-        if self.message:
-            await self.message.edit(view=None)
-
     @discord.ui.button(label="Edit", style=discord.ButtonStyle.blurple, emoji="✏️")
     async def edit_button(
         self: Self,
