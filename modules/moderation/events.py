@@ -1075,65 +1075,6 @@ class EventLogger(cogs.BaseCog):
         )
 
     @commands.Cog.listener()
-    async def on_voice_state_update(
-        self: Self,
-        member: discord.Member,
-        before: discord.VoiceState,
-        after: discord.VoiceState,
-    ) -> None:
-        """This logs events related to server (un)mute/deafing of members
-        https://discordpy.readthedocs.io/en/latest/api.html#discord.on_voice_state_update
-
-        Args:
-            member (discord.Member): The member who had their account changed
-            before (discord.VoiceState): The previous state of the members voice account
-            after (discord.VoiceState): The new state of the members voice account
-        """
-        # We need to handle server deafen and server mute
-        if before.mute != after.mute:
-            embed = EventEmbed(
-                title=f"Member Server {'un' if before.mute else ''}muted",
-                description="",
-            )
-
-            embed.setEventAuthor(member)
-            embed.addMemberField("Member", member)
-
-            if after.channel:
-                embed.addChannelField("Current Channel", after.channel)
-
-            console_message = f"{embed.title}: {member.name} ({member.id})"
-
-            await self.send_event_log(
-                guild=member.guild,
-                log_location="member",
-                string_message=console_message,
-                embed_message=embed,
-                channel_location=after.channel,
-            )
-
-        if before.deaf != after.deaf:
-            embed = EventEmbed(
-                title=f"Member Server {'un' if before.deaf else ''}deafened",
-                description="",
-            )
-
-            embed.setEventAuthor(member)
-            embed.addMemberField("Member", member)
-
-            if after.channel:
-                embed.addChannelField("Current Channel", after.channel)
-
-            console_message = f"{embed.title}: {member.name} ({member.id})"
-
-            await self.send_event_log(
-                guild=member.guild,
-                log_location="member",
-                string_message=console_message,
-                embed_message=embed,
-            )
-
-    @commands.Cog.listener()
     async def on_user_update(
         self: Self, before: discord.User, after: discord.User
     ) -> None:

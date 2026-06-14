@@ -9,7 +9,8 @@ import discord
 from discord import app_commands
 
 import configuration
-from core import auxiliary, cogs, moderation
+from core import auxiliary, cogs
+from modules.moderation import modlog
 
 if TYPE_CHECKING:
     import bot
@@ -76,14 +77,13 @@ class Purger(cogs.BaseCog):
         await interaction.response.send_message("Purge Successful", ephemeral=True)
         sent_message = await interaction.original_response()
         deleted = await interaction.channel.purge(after=timestamp, limit=amount)
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="purge",
+            guild=interaction.guild,
+            moderator=interaction.user,
+        )
         await interaction.followup.edit_message(
             message_id=sent_message.id,
             content=f"Purge Successful. Deleted {len(deleted)} messages.",
-        )
-
-        await moderation.send_command_usage_alert(
-            bot_object=self.bot,
-            interaction=interaction,
-            command=f"/purge amount: {amount}, duration: {duration_minutes}",
-            guild=interaction.guild,
         )

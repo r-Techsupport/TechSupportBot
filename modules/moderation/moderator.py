@@ -106,20 +106,15 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        await modlog.log_ban(
-            self.bot, target, interaction.user, interaction.guild, reason
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="ban",
+            guild=interaction.guild,
+            member=target,
+            moderator=interaction.user,
+            reason=reason,
         )
 
-        await moderation.send_command_usage_alert(
-            bot_object=self.bot,
-            interaction=interaction,
-            command=(
-                f"/ban target: {target.display_name}, reason: {reason}, delete_days:"
-                f" {delete_days}"
-            ),
-            guild=interaction.guild,
-            target=target,
-        )
         embed = generate_response_embed(user=target, action="ban", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
@@ -173,17 +168,15 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        await modlog.log_unban(
-            self.bot, target, interaction.user, interaction.guild, reason
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="unban",
+            guild=interaction.guild,
+            member=target,
+            moderator=interaction.user,
+            reason=reason,
         )
 
-        await moderation.send_command_usage_alert(
-            bot_object=self.bot,
-            interaction=interaction,
-            command=f"/unban target: {target.display_name}, reason: {reason}",
-            guild=interaction.guild,
-            target=target,
-        )
         embed = generate_response_embed(user=target, action="unban", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
@@ -233,13 +226,15 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        await moderation.send_command_usage_alert(
-            bot_object=self.bot,
-            interaction=interaction,
-            command=f"/kick target: {target.display_name}, reason: {reason}",
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="kick",
             guild=interaction.guild,
-            target=target,
+            member=target,
+            moderator=interaction.user,
+            reason=reason,
         )
+
         embed = generate_response_embed(user=target, action="kick", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
@@ -324,10 +319,20 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
+        expires_at = datetime.datetime.now(datetime.UTC) + delta_duration
         result = await moderation.mute_user(
             user=target,
             reason=f"{reason} - muted by {interaction.user}",
             duration=delta_duration,
+        )
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="timeout",
+            guild=interaction.guild,
+            member=target,
+            moderator=interaction.user,
+            reason=reason,
+            expires_at=expires_at,
         )
         if not result:
             embed = auxiliary.prepare_deny_embed(
@@ -335,17 +340,6 @@ class ProtectCommands(cogs.BaseCog):
             )
             await interaction.response.send_message(embed=embed)
             return
-
-        await moderation.send_command_usage_alert(
-            bot_object=self.bot,
-            interaction=interaction,
-            command=(
-                f"/mute target: {target.display_name}, reason: {reason}, duration:"
-                f" {duration}"
-            ),
-            guild=interaction.guild,
-            target=target,
-        )
 
         muted_until_timestamp = (
             f"<t:{int((datetime.now() + delta_duration).timestamp())}>"
@@ -401,6 +395,14 @@ class ProtectCommands(cogs.BaseCog):
             user=target,
             reason=f"{reason} - unmuted by {interaction.user}",
         )
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="untimeout",
+            guild=interaction.guild,
+            member=target,
+            moderator=interaction.user,
+            reason=reason,
+        )
         if not result:
             embed = auxiliary.prepare_deny_embed(
                 message=f"Something went wrong when unmuting {target}"
@@ -408,13 +410,6 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        await moderation.send_command_usage_alert(
-            bot_object=self.bot,
-            interaction=interaction,
-            command=f"/unmute target: {target.display_name}, reason: {reason}",
-            guild=interaction.guild,
-            target=target,
-        )
         embed = generate_response_embed(user=target, action="unmute", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
@@ -486,6 +481,14 @@ class ProtectCommands(cogs.BaseCog):
         warn_result = await moderation.warn_user(
             bot_object=self.bot, user=target, invoker=interaction.user, reason=reason
         )
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="warn",
+            guild=interaction.guild,
+            member=target,
+            moderator=interaction.user,
+            reason=reason,
+        )
 
         if should_ban:
             ban_result = await moderation.ban_user(
@@ -512,8 +515,14 @@ class ProtectCommands(cogs.BaseCog):
                 else:
                     await interaction.response.send_message(embed=embed)
                 return
-            await modlog.log_ban(
-                self.bot, target, interaction.user, interaction.guild, reason
+
+            await modlog.log_action(
+                bot=self.bot,
+                action_type="ban",
+                guild=interaction.guild,
+                member=target,
+                moderator=interaction.user,
+                reason=reason,
             )
 
         if not warn_result:
@@ -525,14 +534,6 @@ class ProtectCommands(cogs.BaseCog):
             else:
                 await interaction.response.send_message(embed=embed)
             return
-
-        await moderation.send_command_usage_alert(
-            bot_object=self.bot,
-            interaction=interaction,
-            command=f"/warn target: {target.display_name}, reason: {reason}",
-            guild=interaction.guild,
-            target=target,
-        )
 
         response_action = "warn"
         if should_ban:
@@ -610,6 +611,14 @@ class ProtectCommands(cogs.BaseCog):
         result = await moderation.unwarn_user(
             bot_object=self.bot, user=target, warning=warning
         )
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="unwarn",
+            guild=interaction.guild,
+            member=target,
+            moderator=interaction.user,
+            reason=reason,
+        )
         if not result:
             embed = auxiliary.prepare_deny_embed(
                 message=f"Something went wrong when unwarning {target}"
@@ -617,13 +626,6 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        await moderation.send_command_usage_alert(
-            bot_object=self.bot,
-            interaction=interaction,
-            command=f"/unwarn target: {target.display_name}, reason: {reason}, warning: {warning}",
-            guild=interaction.guild,
-            target=target,
-        )
         embed = generate_response_embed(user=target, action="unwarn", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
 
@@ -710,12 +712,14 @@ class ProtectCommands(cogs.BaseCog):
         for warning in warnings:
             await moderation.unwarn_user(self.bot, target, warning.reason)
 
-        await moderation.send_command_usage_alert(
-            bot_object=self.bot,
-            interaction=interaction,
-            command=f"/warnings clear target: {target.display_name}, reaason: {reason}",
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="clear warn",
             guild=interaction.guild,
-            target=target,
+            member=target,
+            moderator=interaction.user,
+            reason=reason,
+            data=f"**Total warnings:** {len(warnings)}",
         )
 
         embed = generate_response_embed(

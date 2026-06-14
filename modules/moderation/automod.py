@@ -156,12 +156,28 @@ class AutoMod(cogs.MatchCog):
 
         total_punishment = process_automod_violations(all_punishments=all_punishments)
 
+        logged = False
+
         if total_punishment.mute > 0:
+            expires_at = datetime.datetime.now(datetime.UTC) + datetime.timedelta(
+                seconds=total_punishment.mute_duration
+            )
+
             await moderation.mute_user(
                 user=ctx.author,
                 reason=total_punishment.violation_string,
                 duration=datetime.timedelta(seconds=total_punishment.mute_duration),
             )
+            await modlog.log_action(
+                bot=self.bot,
+                action_type="timeout",
+                guild=ctx.guild,
+                member=ctx.author,
+                reason=total_punishment.violation_string,
+                expires_at=expires_at,
+                data=f"**Violating message:** {ctx.message.clean_content[:200]}",
+            )
+            logged = True
 
         if total_punishment.delete_message:
             await ctx.message.delete()
@@ -180,6 +196,15 @@ class AutoMod(cogs.MatchCog):
                 ctx.channel.guild.me,
                 total_punishment.violation_string,
             )
+            await modlog.log_action(
+                bot=self.bot,
+                action_type="warn",
+                guild=ctx.guild,
+                member=ctx.author,
+                reason=total_punishment.violation_string,
+                data=f"**Violating message:** {ctx.message.clean_content[:200]}",
+            )
+            logged = True
             max_warnings = configuration.get_config_entry(
                 ctx.guild.id, "moderation_max_warnings"
             )
@@ -215,13 +240,24 @@ class AutoMod(cogs.MatchCog):
                     ),
                     reason=total_punishment.violation_string,
                 )
-                await modlog.log_ban(
-                    self.bot,
-                    ctx.author,
-                    ctx.guild.me,
-                    ctx.guild,
-                    total_punishment.violation_string,
+                await modlog.log_action(
+                    bot=self.bot,
+                    action_type="ban",
+                    guild=ctx.guild,
+                    member=ctx.author,
+                    reason=total_punishment.violation_string,
+                    data=f"**Violating message:** {ctx.message.clean_content[:100]}",
                 )
+
+        if not logged:
+            await modlog.log_action(
+                bot=self.bot,
+                action_type="automod notice",
+                guild=ctx.guild,
+                member=ctx.author,
+                reason=total_punishment.violation_string,
+                data=f"**Violating message:** {ctx.message.clean_content[:200]}",
+            )
 
         if total_punishment.be_silent:
             return
