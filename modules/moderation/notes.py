@@ -160,7 +160,7 @@ class Notes(cogs.BaseCog):
             guild=interaction.guild,
             member=user,
             moderator=interaction.user,
-            data=f"Note: {body}",
+            data=f"**Note:** {body}",
         )
 
         role = discord.utils.get(
@@ -238,7 +238,7 @@ class Notes(cogs.BaseCog):
             guild=interaction.guild,
             member=user,
             moderator=interaction.user,
-            data=f"Notes cleared: {len(notes)}",
+            data=f"**Total notes:** {len(notes)}",
         )
 
         role = discord.utils.get(

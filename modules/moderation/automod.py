@@ -175,7 +175,7 @@ class AutoMod(cogs.MatchCog):
                 member=ctx.author,
                 reason=total_punishment.violation_string,
                 expires_at=expires_at,
-                data=f"Violating message: {ctx.message.clean_content[:100]}",
+                data=f"**Violating message:** {ctx.message.clean_content[:200]}",
             )
             logged = True
 
@@ -202,7 +202,7 @@ class AutoMod(cogs.MatchCog):
                 guild=ctx.guild,
                 member=ctx.author,
                 reason=total_punishment.violation_string,
-                data=f"Violating message: {ctx.message.clean_content[:100]}",
+                data=f"**Violating message:** {ctx.message.clean_content[:200]}",
             )
             logged = True
             max_warnings = configuration.get_config_entry(
@@ -246,7 +246,7 @@ class AutoMod(cogs.MatchCog):
                     guild=ctx.guild,
                     member=ctx.author,
                     reason=total_punishment.violation_string,
-                    data=f"Violating message: {ctx.message.clean_content[:100]}",
+                    data=f"**Violating message:** {ctx.message.clean_content[:100]}",
                 )
 
         if not logged:
@@ -256,7 +256,7 @@ class AutoMod(cogs.MatchCog):
                 guild=ctx.guild,
                 member=ctx.author,
                 reason=total_punishment.violation_string,
-                data=f"Violating message: {ctx.message.clean_content[:100]}",
+                data=f"**Violating message:** {ctx.message.clean_content[:200]}",
             )
 
         if total_punishment.be_silent:

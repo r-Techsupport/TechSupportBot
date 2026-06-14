@@ -147,6 +147,7 @@ class Report(cogs.BaseCog):
                 bot=self.bot,
                 action_type="reported",
                 guild=interaction.guild,
+                reason=reason,
                 member=user,
             )
 

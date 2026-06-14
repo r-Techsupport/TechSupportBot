@@ -719,7 +719,7 @@ class ProtectCommands(cogs.BaseCog):
             member=target,
             moderator=interaction.user,
             reason=reason,
-            data=f"Total warnings: {len(warnings)}",
+            data=f"**Total warnings:** {len(warnings)}",
         )
 
         embed = generate_response_embed(

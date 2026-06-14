@@ -38,32 +38,37 @@ class ModLogger(cogs.BaseCog):
     """
 
     modlog_group: app_commands.Group = app_commands.Group(
-        name="modlog", description="..."
+        name="modlog",
+        description="Commands that query the database related to mod logs",
     )
 
     @modlog_group.command(
         name="highscores",
-        description="Shows the top 10 moderators based on ban count",
+        description="Shows the top 10 moderators based on mod action count",
     )
     async def high_score_command(self: Self, interaction: discord.Interaction) -> None:
-        """Gets the top 10 moderators based on banned user count
+        """Gets the top 10 moderators based on mod action count
 
         Args:
             interaction (discord.Interaction): The interaction that started this command
         """
         await interaction.response.defer()
-        all_bans = await self.bot.models.BanLog.query.where(
-            self.bot.models.BanLog.guild_id == str(interaction.guild.id)
+        all_actions = await self.bot.models.ModLog.query.where(
+            self.bot.models.ModLog.guild_id == str(interaction.guild.id)
         ).gino.all()
-        ban_frequency_counter = Counter(ban.banning_moderator for ban in all_bans)
+        frequency_counter = Counter(
+            action.moderator_id
+            for action in all_actions
+            if action.moderator_id is not None
+        )
 
-        sorted_ban_frequency = sorted(
-            ban_frequency_counter.items(), key=lambda x: x[1], reverse=True
+        sorted_frequency = sorted(
+            frequency_counter.items(), key=lambda x: x[1], reverse=True
         )
         embed = discord.Embed(title="Most active moderators")
 
         final_string = ""
-        for index, (moderator_id, count) in enumerate(sorted_ban_frequency[:10]):
+        for index, (moderator_id, count) in enumerate(sorted_frequency[:10]):
             try:
                 moderator = await interaction.guild.fetch_member(int(moderator_id))
             except discord.NotFound:
@@ -84,7 +89,8 @@ class ModLogger(cogs.BaseCog):
 
     @modlog_group.command(
         name="lookup-user",
-        description="Looks up the 10 most recent bans for a given user",
+        description="Looks up mod actions taken against a given user",
+        extras={"ephemeral_error": True},
     )
     async def lookup_user_command(
         self: Self, interaction: discord.Interaction, user: discord.User
@@ -95,39 +101,51 @@ class ModLogger(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called the command
             user (discord.User): The user to search for bans for
         """
+        await interaction.response.defer(ephemeral=True)
 
-        await interaction.response.defer(ephemeral=False)
-
-        all_bans_by_user = (
-            await self.bot.models.BanLog.query.where(
-                self.bot.models.BanLog.guild_id == str(interaction.guild.id)
+        all_action_for_user = (
+            await self.bot.models.ModLog.query.where(
+                self.bot.models.ModLog.guild_id == str(interaction.guild.id)
             )
-            .where(self.bot.models.BanLog.banned_member == str(user.id))
-            .order_by(self.bot.models.BanLog.ban_time.desc())
+            .where(self.bot.models.ModLog.member_id == str(user.id))
+            .order_by(self.bot.models.ModLog.action_time.desc())
             .gino.all()
         )
 
         embeds = []
-        for ban in all_bans_by_user[:10]:
-            temp_embed = await self.convert_ban_to_pretty_string(
-                ban, f"{user.name} bans"
+        embed = discord.Embed(title=f"Actions for {user.name}")
+        embed.color = discord.Color.red()
+        for index, action in enumerate(all_action_for_user):
+            if index % 10 == 0 and index > 0:
+                embeds.append(embed)
+                embed = discord.Embed(title=f"Actions for {user.name}")
+                embed.color = discord.Color.red()
+            embed.add_field(
+                name=f"Case {action.guild_case_id} | {action.action.title()}",
+                value=(
+                    f"Reason: {action.reason if action.reason else "No reason specified"}\n"
+                    f"<t:{int(action.action_time.timestamp())}>"
+                ),
+                inline=False,
             )
-            temp_embed.description += f"\n**Total bans:** {len(all_bans_by_user)}"
-            embeds.append(temp_embed)
+        embeds.append(embed)
 
         if len(embeds) == 0:
             embed = auxiliary.prepare_deny_embed(
-                f"No bans for the user {user.name} could be found"
+                f"No actions for the user {user.name} could be found"
             )
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
         view = ui.PaginateView()
-        await view.send(interaction.channel, interaction.user, embeds, interaction)
+        await view.send(
+            interaction.channel, interaction.user, embeds, interaction, ephemeral=True
+        )
 
     @modlog_group.command(
         name="lookup-moderator",
-        description="Looks up the 10 most recent bans by a given moderator",
+        description="Looks up the mod actions taken by a given moderator",
+        extras={"ephemeral_error": True},
     )
     async def lookup_moderator_command(
         self: Self, interaction: discord.Interaction, moderator: discord.Member
@@ -138,59 +156,72 @@ class ModLogger(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called the command
             moderator (discord.Member): The moderator to search for bans for
         """
-        await interaction.response.defer(ephemeral=False)
+        await interaction.response.defer(ephemeral=True)
 
-        all_bans_by_user = (
-            await self.bot.models.BanLog.query.where(
-                self.bot.models.BanLog.guild_id == str(interaction.guild.id)
+        all_action_for_user = (
+            await self.bot.models.ModLog.query.where(
+                self.bot.models.ModLog.guild_id == str(interaction.guild.id)
             )
-            .where(self.bot.models.BanLog.banning_moderator == str(moderator.id))
-            .order_by(self.bot.models.BanLog.ban_time.desc())
+            .where(self.bot.models.ModLog.moderator_id == str(moderator.id))
+            .order_by(self.bot.models.ModLog.action_time.desc())
             .gino.all()
         )
 
         embeds = []
-        for ban in all_bans_by_user[:10]:
-            temp_embed = await self.convert_ban_to_pretty_string(
-                ban, f"Bans by {moderator.name}"
+        embed = discord.Embed(title=f"Actions by {moderator.name}")
+        embed.color = discord.Color.red()
+        for index, action in enumerate(all_action_for_user):
+            if index % 10 == 0 and index > 0:
+                embeds.append(embed)
+                embed = discord.Embed(title=f"Actions by {moderator.name}")
+                embed.color = discord.Color.red()
+            embed.add_field(
+                name=f"Case {action.guild_case_id} | {action.action.title()}",
+                value=(
+                    f"Member ID: {action.member_id}\n"
+                    f"Reason: {action.reason if action.reason else "No reason specified"}\n"
+                    f"<t:{int(action.action_time.timestamp())}>"
+                ),
+                inline=False,
             )
-            temp_embed.description += f"\n**Total bans:** {len(all_bans_by_user)}"
-            embeds.append(temp_embed)
+        embeds.append(embed)
 
         if len(embeds) == 0:
             embed = auxiliary.prepare_deny_embed(
-                f"No bans by the user {moderator.name} could be found"
+                f"No actions for the user {moderator.name} could be found"
             )
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
         view = ui.PaginateView()
-        await view.send(interaction.channel, interaction.user, embeds, interaction)
-
-    async def convert_ban_to_pretty_string(
-        self: Self, ban: munch.Munch, title: str
-    ) -> discord.Embed:
-        """This converts a database ban entry into a shiny embed
-
-        Args:
-            ban (munch.Munch): The ban database entry
-            title (str): The title to set the embeds to
-
-        Returns:
-            discord.Embed: The fancy embed
-        """
-        member = await self.bot.fetch_user(int(ban.banned_member))
-        moderator = await self.bot.fetch_user(int(ban.banning_moderator))
-        embed = discord.Embed(title=title)
-        embed.description = (
-            f"**Case:** {ban.pk}\n"
-            f"**Offender:** {member.name} {member.mention}\n"
-            f"**Reason:** {ban.reason}\n"
-            f"**Responsible moderator:** {moderator.name} {moderator.mention}"
+        await view.send(
+            interaction.channel, interaction.user, embeds, interaction, ephemeral=True
         )
-        embed.timestamp = ban.ban_time
-        embed.color = discord.Color.red()
-        return embed
+
+    @modlog_group.command(
+        name="lookup",
+        description="Looks up a case by the given id",
+        extras={"ephemeral_error": True},
+    )
+    async def lookup_case_command(
+        self: Self, interaction: discord.Interaction, case_number: int
+    ) -> None:
+        await interaction.response.defer(ephemeral=True)
+
+        case = (
+            await self.bot.models.ModLog.query.where(
+                self.bot.models.ModLog.guild_id == str(interaction.guild.id)
+            )
+            .where(self.bot.models.ModLog.guild_case_id == case_number)
+            .gino.first()
+        )
+        if not case:
+            embed = auxiliary.prepare_deny_embed(
+                f"The case number {case_number} could not be found"
+            )
+        else:
+            embed = await generate_action_embed(self.bot, case)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @commands.Cog.listener()
     async def on_audit_log_entry_create(
@@ -356,7 +387,7 @@ class ModLogger(cogs.BaseCog):
                     member=member,
                     reason=rule.name,
                     expires_at=expires_at,
-                    data=f"Violating content: {execution.content[:200]}",
+                    data=f"**Violating content:** {execution.content[:200]}",
                 )
         elif any(
             action.type == discord.AutoModRuleActionType.block_member_interactions
@@ -368,11 +399,11 @@ class ModLogger(cogs.BaseCog):
             ):
                 await log_action(
                     bot=self.bot,
-                    action_type="Quarantine",
+                    action_type="quarantine",
                     guild=rule.guild,
                     member=member,
                     reason=rule.name,
-                    data=f"Violating name: {member.display_name}",
+                    data=f"**Violating name:** {member.display_name}",
                 )
         elif any(
             action.type == discord.AutoModRuleActionType.block_message
@@ -385,7 +416,7 @@ class ModLogger(cogs.BaseCog):
                     guild=rule.guild,
                     member=member,
                     reason=rule.name,
-                    data=f"Violating name: {member.display_name}",
+                    data=f"**Violating name:** {member.display_name}",
                 )
         else:
             await log_action(
@@ -394,7 +425,7 @@ class ModLogger(cogs.BaseCog):
                 guild=rule.guild,
                 member=member,
                 reason=rule.name,
-                data=f"Violating content: {execution.content[:200]}",
+                data=f"**Violating content:** {execution.content[:200]}",
             )
 
     @commands.Cog.listener()
@@ -496,7 +527,7 @@ async def generate_action_embed(
     # If this action has extra data, display it as is.
     if action_entry.data:
         # This might need special handling for specific events, we will see
-        description_strs.append(f"**Data:** {action_entry.data}")
+        description_strs.append(action_entry.data)
 
     # If this action has an expiration date, display it
     if action_entry.until_time:
