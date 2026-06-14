@@ -79,6 +79,7 @@ Changes since 2026.06.04
 - The way modmail reads the configuration has changed to avoid the use of global variables
 - Adds a command to send the text of a rule in a modmail thread
 - Modmail was refactored to remove the usage of any privileged intents from the modmail bot itself
+- Adds an edit button to messages
 
 ### Report
 - The paramter name was changed from report_str to reason
