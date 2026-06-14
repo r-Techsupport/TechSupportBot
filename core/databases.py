@@ -71,10 +71,14 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             __tablename__ (str): The name of the table in postgres
             pk (int): The automatic primary key
             guild_id (str): The string of the guild ID the user was banned in
+            guild_case_id (int): The case number of the action taken
+            action (str): The string representation of the action taken
             reason (str): The reason of the ban
-            banning_moderator (str): The ID of the moderator who banned
-            banned_member (str): The ID of the user who was banned
-            ban_time (datetime): The date and time of the ban
+            data (str): Any extra data specific to the event logged
+            moderator_id (str): The ID of the moderator who banned
+            member_id (str): The ID of the user who was banned
+            action_time (datetime): The date and time of the ban
+            until_time (datetime): The time this action will expire
         """
 
         __tablename__ = "modlog"

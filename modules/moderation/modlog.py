@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import datetime
 from collections import Counter
 from typing import TYPE_CHECKING, Self
@@ -206,6 +205,12 @@ class ModLogger(cogs.BaseCog):
     async def lookup_case_command(
         self: Self, interaction: discord.Interaction, case_number: int
     ) -> None:
+        """A command to lookup a logged case by ID
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            case_number (int): The case number to lookup from the database
+        """
         await interaction.response.defer(ephemeral=True)
 
         case = (
@@ -519,7 +524,8 @@ async def generate_action_embed(
     if action_entry.moderator_id:
         moderator_account = await bot.fetch_user(int(action_entry.moderator_id))
         description_strs.append(
-            f"**Responsible moderator:** {moderator_account.name} {moderator_account.mention} ({moderator_account.id})"
+            f"**Responsible moderator:** {moderator_account.name} "
+            f"{moderator_account.mention} ({moderator_account.id})"
         )
     else:
         description_strs.append("**Responsible moderator:** No associated moderator")

@@ -9,7 +9,7 @@ import discord
 from discord import app_commands
 
 import configuration
-from core import auxiliary, cogs, moderation
+from core import auxiliary, cogs
 from modules.moderation import modlog
 
 if TYPE_CHECKING:

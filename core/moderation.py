@@ -6,8 +6,6 @@ import datetime
 import discord
 import munch
 
-import configuration
-
 
 async def ban_user(
     guild: discord.Guild, user: discord.User, delete_seconds: int, reason: str

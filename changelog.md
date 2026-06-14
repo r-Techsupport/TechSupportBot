@@ -70,6 +70,12 @@ Changes since 2026.06.04
 ### Moderator
 - Adds autocomplete for /unwarn command
 - Bans from max warnings will now show a ban in the text output
+- Removes command use logging, in favor of modlog
+
+### Modlog
+- Completely rewrites modlog to log all moderation actions
+- Reworks the output of the all of the modlog commands
+- Adds new command to lookup action by ID
 
 ### Modmail
 - Full migration to application commands
