@@ -203,67 +203,6 @@ async def get_all_notes(
     return user_notes
 
 
-async def send_command_usage_alert(
-    bot_object: object,
-    interaction: discord.Interaction,
-    command: str,
-    guild: discord.Guild,
-    target: discord.Member = None,
-) -> None:
-    """Sends a usage alert to the protect events channel, if configured
-
-    Args:
-        bot_object (object): The bot object to use
-        interaction (discord.Interaction): The interaction that trigger the command
-        command (str): The string representation of the command that was run
-        guild (discord.Guild): The guild the command was run in
-        target (discord.Member): The target of the command
-    """
-
-    ALERT_ICON_URL: str = (
-        "https://www.iconarchive.com/download/i76061/martz90/circle-addon2/warning.512.png"
-    )
-
-    try:
-        alert_channel = guild.get_channel(
-            int(configuration.get_config_entry(guild.id, "moderation_alert_channel"))
-        )
-    except TypeError:
-        alert_channel = None
-
-    if not alert_channel:
-        return
-
-    embed = discord.Embed(title="Command Usage Alert")
-
-    embed.description = f"**Command**\n`{command}`"
-    embed.add_field(
-        name="Channel",
-        value=f"{interaction.channel.name} ({interaction.channel.mention}) [Jump to context]"
-        f"(https://discord.com/channels/{interaction.guild.id}/{interaction.channel.id}/"
-        f"{discord.utils.time_snowflake(datetime.datetime.utcnow())})",
-    )
-
-    embed.add_field(
-        name="Invoking User",
-        value=(
-            f"{interaction.user.display_name} ({interaction.user.mention}, {interaction.user.id})"
-        ),
-    )
-
-    if target:
-        embed.add_field(
-            name="Target",
-            value=f"{target.display_name} ({target.mention}, {target.id})",
-        )
-
-    embed.set_thumbnail(url=ALERT_ICON_URL)
-    embed.color = discord.Color.red()
-    embed.timestamp = datetime.datetime.utcnow()
-
-    await alert_channel.send(embed=embed)
-
-
 async def check_if_user_banned(user: discord.User, guild: discord.Guild) -> bool:
     """Queries the given guild to find if the given discord.User is banned or not
 

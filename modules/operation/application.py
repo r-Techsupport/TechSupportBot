@@ -13,6 +13,7 @@ from discord import app_commands
 import configuration
 import ui
 from core import auxiliary, cogs
+from modules.moderation import modlog
 
 if TYPE_CHECKING:
     import bot
@@ -176,6 +177,15 @@ class ApplicationManager(cogs.LoopCog):
             applicant_id=str(member.id),
         )
         await ban.create()
+
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="application ban",
+            guild=interaction.guild,
+            member=member,
+            moderator=interaction.user,
+        )
+
         embed = auxiliary.prepare_confirm_embed(
             f"{member.name} successfully banned from making applications"
         )
@@ -205,6 +215,15 @@ class ApplicationManager(cogs.LoopCog):
         bans = await self.get_ban_entry(member)
         for ban in bans:
             await ban.delete()
+
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="application unban",
+            guild=interaction.guild,
+            member=member,
+            moderator=interaction.user,
+        )
+
         embed = auxiliary.prepare_confirm_embed(
             f"{member.name} successfully unbanned from making applications"
         )
