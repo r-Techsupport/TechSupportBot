@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import datetime
 from typing import TYPE_CHECKING, Self
 
-import discord
 from discord.ext import commands
 
 import configuration
 from core import cogs
+from modules.moderation import modlog
 
 if TYPE_CHECKING:
     import bot
@@ -61,34 +60,17 @@ class HoneyPot(cogs.MatchCog):
         # This should be replaced with a guild wide purge when discord.py can be updated.
         await ctx.author.ban(delete_message_days=1, reason="triggered honeypot")
         await ctx.guild.unban(ctx.author, reason="triggered honeypot")
-        # Send an alert in the alert channel, if its configured
-        try:
-            alert_channel = ctx.guild.get_channel(
-                configuration.get_config_entry(ctx.guild.id, "moderation_alert_channel")
-            )
-        except TypeError:
-            alert_channel = None
 
-        if not alert_channel:
-            return
-
-        embed = discord.Embed(title="Honeypot triggered")
-        embed.add_field(
-            name="Offending member",
-            value=f"{ctx.author.global_name} ({ctx.author.name})",
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="Honeypot",
+            guild=ctx.guild,
+            member=ctx.author,
+            data=(
+                f"**Content:** {ctx.message.clean_content[:500]}\n"
+                f"**Attachments:** {len(ctx.message.attachments)}"
+            ),
         )
-        embed.add_field(name="Message text", value=ctx.message.clean_content[:500])
-        embed.add_field(
-            name="Number of attachments", value=len(ctx.message.attachments)
-        )
-        embed.color = discord.Color.red()
-        embed.timestamp = datetime.datetime.utcnow()
-
-        embed.set_footer(
-            text=f"Author ID: {ctx.author.id} • Message ID: {ctx.message.id}"
-        )
-
-        await alert_channel.send(embed=embed)
 
         # Get only message in the channel and edit the description
         # Just in case, we make sure we pick the first message in the channel, as a foolproof method

@@ -11,6 +11,7 @@ from discord import app_commands
 
 import configuration
 from core import auxiliary, cogs
+from modules.moderation import modlog
 
 if TYPE_CHECKING:
     import bot
@@ -141,6 +142,14 @@ class Report(cogs.BaseCog):
             embed=embed,
             allowed_mentions=discord.AllowedMentions(roles=True),
         )
+        for user in mentioned_users:
+            await modlog.log_action(
+                bot=self.bot,
+                action_type="reported",
+                guild=interaction.guild,
+                reason=reason,
+                member=user,
+            )
 
         user_embed = auxiliary.prepare_confirm_embed(
             message="Your report was successfully sent"

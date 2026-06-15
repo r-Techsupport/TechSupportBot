@@ -26,7 +26,7 @@ from discord.ext import commands
 import configuration
 import ui
 from core import auxiliary, cogs
-from modules.moderation import rules
+from modules.moderation import modlog, rules
 
 if TYPE_CHECKING:
     import bot
@@ -1006,6 +1006,13 @@ class Modmail(cogs.BaseCog):
 
             case ui.ConfirmResponse.CONFIRMED:
                 await self.bot.models.ModmailBan(user_id=str(user.id)).create()
+                await modlog.log_action(
+                    bot=self.bot,
+                    action_type="modmail ban",
+                    guild=interaction.guild,
+                    member=user,
+                    moderator=interaction.user,
+                )
 
                 embed = auxiliary.prepare_confirm_embed(
                     message=f"{user.mention} was successfully banned from creating future modmail"
@@ -1236,6 +1243,13 @@ class Modmail(cogs.BaseCog):
             return
 
         await ban_entry.delete()
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="modmail unban",
+            guild=interaction.guild,
+            member=user,
+            moderator=interaction.user,
+        )
 
         embed = auxiliary.prepare_confirm_embed(
             message=f"{user.mention} was successfully unbanned from creating modmail threads!",

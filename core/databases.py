@@ -63,7 +63,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild_id: str = bot.db.Column(bot.db.String)
         applicant_id: str = bot.db.Column(bot.db.String)
 
-    class BanLog(bot.db.Model):
+    class ModLog(bot.db.Model):
         """The postgres table for banlogs
         Currently used in modlog.py
 
@@ -71,20 +71,35 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             __tablename__ (str): The name of the table in postgres
             pk (int): The automatic primary key
             guild_id (str): The string of the guild ID the user was banned in
+            guild_case_id (int): The case number of the action taken
+            action (str): The string representation of the action taken
             reason (str): The reason of the ban
-            banning_moderator (str): The ID of the moderator who banned
-            banned_member (str): The ID of the user who was banned
-            ban_time (datetime): The date and time of the ban
+            data (str): Any extra data specific to the event logged
+            moderator_id (str): The ID of the moderator who banned
+            member_id (str): The ID of the user who was banned
+            action_time (datetime): The date and time of the ban
+            until_time (datetime): The time this action will expire
         """
 
-        __tablename__ = "banlog"
+        __tablename__ = "modlog"
+        __table_args__ = (bot.db.UniqueConstraint("guild_id", "guild_case_id"),)
 
         pk = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
         guild_id = bot.db.Column(bot.db.String)
-        reason = bot.db.Column(bot.db.String)
-        banning_moderator = bot.db.Column(bot.db.String)
-        banned_member = bot.db.Column(bot.db.String)
-        ban_time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
+        guild_case_id = bot.db.Column(bot.db.Integer)
+        action = bot.db.Column(bot.db.String)
+        reason = bot.db.Column(bot.db.String, default="")
+        data = bot.db.Column(bot.db.String, default="")
+        moderator_id = bot.db.Column(bot.db.String, default="")
+        member_id = bot.db.Column(bot.db.String, default="")
+        action_time = bot.db.Column(
+            bot.db.DateTime(timezone=True),
+            default=lambda: datetime.datetime.now(datetime.UTC),
+        )
+        until_time = bot.db.Column(
+            bot.db.DateTime(timezone=True),
+            nullable=True,
+        )
 
     class DuckUser(bot.db.Model):
         """The postgres table for ducks
@@ -370,7 +385,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     bot.models.Applications = Applications
     bot.models.AppBans = ApplicationBans
-    bot.models.BanLog = BanLog
+    bot.models.ModLog = ModLog
     bot.models.DuckUser = DuckUser
     bot.models.Factoid = Factoid
     bot.models.FactoidJob = FactoidJob

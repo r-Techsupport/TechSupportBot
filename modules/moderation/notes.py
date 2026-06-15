@@ -12,6 +12,7 @@ import configuration
 import ui
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, moderation
+from modules.moderation import modlog
 
 if TYPE_CHECKING:
     import bot
@@ -153,6 +154,15 @@ class Notes(cogs.BaseCog):
 
         await note.create()
 
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="clear note",
+            guild=interaction.guild,
+            member=user,
+            moderator=interaction.user,
+            data=f"**Note:** {body}",
+        )
+
         role = discord.utils.get(
             interaction.guild.roles,
             name=configuration.get_config_entry(
@@ -221,6 +231,15 @@ class Notes(cogs.BaseCog):
 
         for note in notes:
             await note.delete()
+
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="note",
+            guild=interaction.guild,
+            member=user,
+            moderator=interaction.user,
+            data=f"**Total notes:** {len(notes)}",
+        )
 
         role = discord.utils.get(
             interaction.guild.roles,
