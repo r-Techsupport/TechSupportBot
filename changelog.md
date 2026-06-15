@@ -144,9 +144,9 @@ Changes since 2026.06.04
 - Is now a seperate file, having been decouping from the google extension
 
 # Dependencies
-Bump python version to 3.13
 
 ## Core
+- Python -> 3.13
 
 ## Prod
 - Unpinned aiohttp
@@ -158,6 +158,7 @@ Bump python version to 3.13
 ## Dev
 - hypothesis -> 6.155.2
 - pylint -> 4.0.6
+- pytest -> 9.1.0
 
 # Documentation
 Add detailed documentation for privileged intents usage
