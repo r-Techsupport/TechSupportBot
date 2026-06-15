@@ -27,6 +27,9 @@ Changes since 2026.06.15
 - Make /factoid call work with factoids with spaces
 - Fix permissions on /factoid add
 
+### Relay
+- Make relay only ping users with words starting with an @
+
 ## Utility
 
 # Dependencies
