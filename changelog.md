@@ -16,6 +16,7 @@ Changes since 2026.06.15
 
 ### Factoid
 - Make /factoid call work with factoids with spaces
+- Fix permissions on /factoid add
 
 ### Moderator
 - Fix /mute command using the wrong datetime object

@@ -75,7 +75,7 @@ async def has_manage_factoids_role_interaction(interaction: discord.Interaction)
     """A command check to determine if the invoker is allowed to modify basic factoids
 
     Args:
-        ctx (commands.Context): The context the command was run
+        interaction (discord.Interaction): The context the command was run
 
     Returns:
         bool: True if the command can be run, False if it can't
