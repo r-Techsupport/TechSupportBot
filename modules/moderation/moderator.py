@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Self
 
 import dateparser
@@ -319,7 +319,7 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        expires_at = datetime.now(datetime.UTC) + delta_duration
+        expires_at = datetime.now(UTC) + delta_duration
         result = await moderation.mute_user(
             user=target,
             reason=f"{reason} - muted by {interaction.user}",

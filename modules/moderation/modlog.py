@@ -289,8 +289,6 @@ class ModLogger(cogs.BaseCog):
             # This is NOT for native automod actions. Because why be even slightly consistent
             moderator = await self.bot.fetch_user(entry.user_id)
 
-            print(moderator)
-
             if not moderator or moderator.bot:
                 return
 
