@@ -15,6 +15,9 @@ Changes since 2026.06.15
 ### Moderator
 - Fix /mute command using the wrong datetime object
 
+### Modlog
+- Fix the data entry field for the automod block action type
+
 ### Nickname
 - Fix config call missing guild ID
 
