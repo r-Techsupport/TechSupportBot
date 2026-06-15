@@ -808,7 +808,7 @@ class TechSupportBot(commands.Bot):
         """
 
         # Since we can't do it anywhere else, log slash command here
-        await self.slash_command_log(interaction)
+        asyncio.create_task(self.slash_command_log(interaction))
 
         await self.logger.send_log(
             message="Checking if slash command can run",
