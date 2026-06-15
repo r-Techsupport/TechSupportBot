@@ -420,7 +420,7 @@ class ModLogger(cogs.BaseCog):
                     guild=rule.guild,
                     member=member,
                     reason=rule.name,
-                    data=f"**Violating name:** {member.display_name}",
+                    data=f"**Violating content:** {execution.content[:200]}",
                 )
         else:
             await log_action(
