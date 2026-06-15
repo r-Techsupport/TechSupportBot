@@ -983,7 +983,7 @@ class FactoidManager(cogs.MatchCog):
         Raises:
             TooLongFactoidMessageError: If the plaintext exceed 2000 characters
         """
-        query = factoid_name.replace("\n", " ").split(" ")[0].lower()
+        query = factoid_name.replace("\n", " ").lower()
         try:
             factoid = await self.get_factoid(query, str(interaction.guild.id))
 
