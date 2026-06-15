@@ -491,12 +491,13 @@ class DiscordToIRC(cogs.MatchCog):
         """
         mentions = []
         for word in message.split(" "):
-            member = channel.guild.get_member_named(word)
-            if member:
-                channel_permissions = channel.permissions_for(member)
-                if channel_permissions.read_messages:
-                    mentions.append(member)
-                    continue
+            if word.startswith("@"):
+                member = channel.guild.get_member_named(word[1:])
+                if member:
+                    channel_permissions = channel.permissions_for(member)
+                    if channel_permissions.read_messages:
+                        mentions.append(member)
+                        continue
         return mentions
 
     def generate_sent_message_embed(
