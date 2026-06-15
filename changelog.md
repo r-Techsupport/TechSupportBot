@@ -12,12 +12,6 @@ Changes since 2026.06.15
 
 ## Moderation
 
-## Operation
-
-### Factoid
-- Make /factoid call work with factoids with spaces
-- Fix permissions on /factoid add
-
 ### Moderator
 - Fix /mute command using the wrong datetime object
 
@@ -26,6 +20,12 @@ Changes since 2026.06.15
 
 ### Notes
 - Fix clear note/note being wrong in modlog entries
+
+## Operation
+
+### Factoid
+- Make /factoid call work with factoids with spaces
+- Fix permissions on /factoid add
 
 ## Utility
 
