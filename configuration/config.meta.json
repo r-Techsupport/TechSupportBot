@@ -351,6 +351,10 @@
     "datatype": "CronTab",
     "description": "Crontab syntax for executing news events"
   },
+  "nickname_enable_on_message": {
+    "datatype": "bool",
+    "description": "Whether or not to enable nickname on message send"
+  },
   "notes_note_bypass": {
     "datatype": "list[discord.Role]",
     "description": "A list of roles that shouldn't have notes set or the note role assigned"

@@ -87,6 +87,7 @@
     "news_channel": "",
     "news_country": "US",
     "news_cron_config": "0 17 * * *",
+    "nickname_enable_on_message": true,
     "notes_note_bypass": "",
     "notes_note_readers": [],
     "notes_note_role": [],
