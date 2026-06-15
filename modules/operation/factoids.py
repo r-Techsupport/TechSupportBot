@@ -71,7 +71,9 @@ async def has_manage_factoids_role(ctx: commands.Context) -> bool:
     )
 
 
-async def has_manage_factoids_role_interaction(interaction: discord.Interaction) -> bool:
+async def has_manage_factoids_role_interaction(
+    interaction: discord.Interaction,
+) -> bool:
     """A command check to determine if the invoker is allowed to modify basic factoids
 
     Args:
@@ -85,6 +87,7 @@ async def has_manage_factoids_role_interaction(interaction: discord.Interaction)
         interaction.user,
         configuration.get_config_entry(interaction.guild.id, "factoids_manage_roles"),
     )
+
 
 async def has_admin_factoids_role(ctx: commands.Context) -> bool:
     """A command check to determine if the invoker is allowed to modify factoid properties
