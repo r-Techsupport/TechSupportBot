@@ -156,7 +156,7 @@ class Notes(cogs.BaseCog):
 
         await modlog.log_action(
             bot=self.bot,
-            action_type="clear note",
+            action_type="note",
             guild=interaction.guild,
             member=user,
             moderator=interaction.user,
@@ -234,7 +234,7 @@ class Notes(cogs.BaseCog):
 
         await modlog.log_action(
             bot=self.bot,
-            action_type="note",
+            action_type="clear note",
             guild=interaction.guild,
             member=user,
             moderator=interaction.user,

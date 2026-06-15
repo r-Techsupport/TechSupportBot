@@ -319,7 +319,7 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        expires_at = datetime.datetime.now(datetime.UTC) + delta_duration
+        expires_at = datetime.now(datetime.UTC) + delta_duration
         result = await moderation.mute_user(
             user=target,
             reason=f"{reason} - muted by {interaction.user}",
