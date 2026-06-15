@@ -24,7 +24,7 @@ Changes since 2026.06.15
 - Fix config call missing guild ID
 
 ### Notes
-- Fix clear note/note being wrong
+- Fix clear note/note being wrong in modlog entries
 
 ## Utility
 
