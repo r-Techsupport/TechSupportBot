@@ -94,6 +94,8 @@ class AutoNickName(cogs.MatchCog):
         Returns:
             bool: If the nickname needs to be changed or not
         """
+        if not configuration.get_config_entry("nickname_enable_on_message"):
+            return False
         modified_name = format_username(ctx.author.display_name)
 
         # If the name didn't change for the user, do nothing
