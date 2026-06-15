@@ -88,6 +88,9 @@ Changes since 2026.06.04
 - Modmail was refactored to remove the usage of any privileged intents from the modmail bot itself
 - Adds an edit button to messages
 
+### Nickname
+- Add config option to disable nickname on message
+
 ### Report
 - The paramter name was changed from report_str to reason
 
