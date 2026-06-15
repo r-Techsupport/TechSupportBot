@@ -147,13 +147,17 @@ Changes since 2026.06.04
 Bump python version to 3.13
 
 ## Core
-Unpinned aiohttp
-Unpinned pips
-Unpinned pydantic
-Unpinned typing_extensions
+
+## Prod
+- Unpinned aiohttp
+- Unpinned pips
+- Unpinned pydantic
+- Unpinned typing_extensions
+- New dependency cryptograghy
 
 ## Dev
 - hypothesis -> 6.155.2
+- pylint -> 4.0.6
 
 # Documentation
 Add detailed documentation for privileged intents usage
