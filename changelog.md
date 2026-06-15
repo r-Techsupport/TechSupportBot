@@ -14,7 +14,7 @@ Changes since 2026.06.15
 
 ## Operation
 
-### Factoids
+### Factoid
 - Make /factoid call work with factoids with spaces
 
 ## Utility
