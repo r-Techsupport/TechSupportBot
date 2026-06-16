@@ -8,6 +8,9 @@ Changes since 2026.06.15
 
 ## Fun
 
+### Giphy
+- Fixes giphy command not correctly returning the image
+
 ## Internal
 
 ## Moderation

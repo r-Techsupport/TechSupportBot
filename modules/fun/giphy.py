@@ -41,21 +41,8 @@ class Giphy(cogs.BaseCog):
         SEARCH_LIMIT (int): The max amount of gifs to search for
     """
 
-    GIPHY_URL: str = "http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"
+    GIPHY_URL: str = "https://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit={}"
     SEARCH_LIMIT: int = 10
-
-    @staticmethod
-    def parse_url(url: str) -> str:
-        """Parses the raw API url into a useable gif link
-
-        Args:
-            url (str): The raw URL from Giphy
-
-        Returns:
-            str: The direct link to the gif, if it exists
-        """
-        index = url.find("?cid=")
-        return url[:index]
 
     @auxiliary.with_typing
     @commands.guild_only()
@@ -90,8 +77,7 @@ class Giphy(cogs.BaseCog):
 
         embeds = []
         for item in data:
-            url = item.get("images", {}).get("original", {}).get("url")
-            url = self.parse_url(url)
+            url = item.get("embed_url", {})
             embeds.append(url)
 
         await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
