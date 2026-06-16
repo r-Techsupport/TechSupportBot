@@ -90,6 +90,7 @@ class DuckHunt(cogs.BaseCog):
 
         Args:
             guild (discord.Guild): The guild where the duck is going to appear
+            channel (discord.abc.GuildChannel): This is the channel the duck is going to appear in
         """
         min_wait = configuration.get_config_entry(guild.id, "duck_min_wait")
         max_wait = configuration.get_config_entry(guild.id, "duck_max_wait")
@@ -112,14 +113,12 @@ class DuckHunt(cogs.BaseCog):
         )
 
     async def run_duck_hunt(self: Self, payload: dict) -> None:
-        """Sends a duck in the given channel
-        Can be manually called, and will be called automatically after wait()
+        """This runs a game of duck hunt
+        This function should only ever be called by the scheduler
 
         Args:
-            guild (discord.Guild): The guild where the duck is going
-            channel (discord.TextChannel): The channel to spawn the duck in
-            banned_user (discord.User, optional): A user that is not allowed to claim the duck.
-                Defaults to None.
+            payload (dict): A dictionary containing the guild and channel data
+                passed from the scheduler
         """
         guild: discord.Guild = payload["guild"]
         channel: discord.abc.GuildChannel = payload["channel"]
@@ -163,6 +162,15 @@ class DuckHunt(cogs.BaseCog):
         channel: discord.TextChannel,
         banned_user: discord.User = None,
     ) -> None:
+        """This spawns a duck in the passed channel
+
+        Args:
+            self (Self): _description_
+            guild (discord.Guild): The guild in which to spawn a duck
+            channel (discord.TextChannel): The channel in which to spawn a duck
+            banned_user (discord.User, optional): If a user is banned from
+                participating in this duck hunt instance. Defaults to None.
+        """
         self.cooldowns[guild.id] = {}
 
         embed = discord.Embed(

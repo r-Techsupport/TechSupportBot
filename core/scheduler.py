@@ -5,19 +5,30 @@ Removing guild from the execution, putting it in the payload
 Creating a way to reset specifc tasks, especially after a config change
 """
 
+from __future__ import annotations
+
 import datetime
 import random
 import uuid
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
-import discord
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.date import DateTrigger
 
+if TYPE_CHECKING:
+    import bot
+
 
 class SchedulerService:
-    def __init__(self: Self, bot):
+    """This is the scheduler service
+    This schedules a given task and runs it at later date
+
+    Args:
+        bot (bot.TechSupportBot): The running bot object
+    """
+
+    def __init__(self: Self, bot: bot.TechSupportBot):
         self.bot = bot
         self.scheduler = AsyncIOScheduler()
         self.tasks = {}  # task_name -> coroutine

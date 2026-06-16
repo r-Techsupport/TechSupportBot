@@ -117,7 +117,7 @@ class ForumChannel(cogs.BaseCog):
         # Schedule the next check
         await self.schedule_forum_manager(guild)
 
-        channel = await guild.fetch_channel(
+        channel = guild.get_channel(
             int(configuration.get_config_entry(guild.id, "forum_forum_channel_id"))
         )
         for existing_thread in channel.threads:
