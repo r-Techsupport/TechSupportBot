@@ -1048,15 +1048,3 @@ class ApplicationManager(cogs.BaseCog):
         ).where(self.bot.models.AppBans.guild_id == str(member.guild.id))
         entry = await query.gino.all()
         return entry
-
-    # Loop stuff
-
-    async def wait(self: Self, guild: discord.Guild) -> None:
-        """The queues the pending application reminder based on the cron config
-
-        Args:
-            guild (discord.Guild): The guild the loop is executing for
-        """
-        await aiocron.crontab(
-            configuration.get_config_entry(guild.id, "application_reminder_cron_config")
-        ).next()
