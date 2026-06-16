@@ -10,10 +10,6 @@ from apscheduler.triggers.date import DateTrigger
 
 
 class SchedulerService:
-    """
-    Simple, explicit scheduler.
-    """
-
     def __init__(self: Self, bot):
         self.bot = bot
         self.scheduler = AsyncIOScheduler()
