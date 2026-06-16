@@ -10,6 +10,7 @@ import bot
 MODULE_LOG_LEVELS = {
     "discord": logging.INFO,
     "gino": logging.WARNING,
+    "apscheduler": logging.WARNING,
 }
 
 for module_name, level in MODULE_LOG_LEVELS.items():

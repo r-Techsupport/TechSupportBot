@@ -6,7 +6,6 @@ import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Self
 
-import aiocron
 import discord
 from discord import app_commands
 
@@ -43,7 +42,6 @@ async def setup(bot: bot.TechSupportBot) -> None:
         bot (bot.TechSupportBot): The bot object to register the cogs to
     """
     await bot.add_cog(ApplicationManager(bot=bot))
-    await bot.add_cog(ApplicationNotifier(bot=bot))
 
 
 async def command_permission_check(interaction: discord.Interaction) -> bool:
@@ -86,45 +84,7 @@ async def command_permission_check(interaction: discord.Interaction) -> bool:
     return True
 
 
-class ApplicationNotifier(cogs.LoopCog):
-    """This cog is soley tasked with looping the application reminder for users
-    Everything else is handled in ApplicationManager"""
-
-    async def execute(self: Self, guild: discord.Guild) -> None:
-        """The function that executes the from the LoopCog structure
-
-        Args:
-            guild (discord.Guild): The guild the loop is executing for
-        """
-        channels = configuration.get_config_entry(
-            guild.id, "application_notification_channels"
-        )
-        for channel in channels:
-            channel = guild.get_channel(int(channel))
-            if not channel:
-                continue
-
-            await ui.AppNotice(timeout=None).send(
-                channel=channel,
-                message=configuration.get_config_entry(
-                    guild.id, "application_application_message"
-                ),
-            )
-
-    async def wait(self: Self, guild: discord.Guild) -> None:
-        """The function that causes the sleep/delay the from the LoopCog structure
-
-        Args:
-            guild (discord.Guild): The guild the loop is executing for
-        """
-        await aiocron.crontab(
-            configuration.get_config_entry(
-                guild.id, "application_notification_cron_config"
-            )
-        ).next()
-
-
-class ApplicationManager(cogs.LoopCog):
+class ApplicationManager(cogs.BaseCog):
     """This cog is responsible for the majority of functions in the application system
 
     Attributes:
@@ -135,6 +95,230 @@ class ApplicationManager(cogs.LoopCog):
         name="application",
         description="...",
     )
+
+    # Loop work
+
+    async def preconfig(self: Self) -> None:
+        """Register the scheduler task and schedule all guilds."""
+
+        # Register tasks into the scheduler system
+        self.bot.scheduler.register_task(
+            "application_notifier",
+            self.run_application_notifier,
+        )
+
+        self.bot.scheduler.register_task(
+            "application_manager",
+            self.run_application_manager,
+        )
+
+        # Start the initial tasks
+        for guild in self.bot.guilds:
+            await self.schedule_notifier_by_guild(guild)
+            await self.schedule_manager_by_guild(guild)
+
+    async def schedule_notifier_by_guild(
+        self: Self,
+        guild: discord.Guild,
+    ) -> None:
+        """This schedules an application notifier for a given guild
+        This will check if the extension is enabled
+
+        Args:
+            guild (discord.Guild): The guild to schedule the application notifier in
+        """
+
+        if not self.extension_enabled(guild):
+            return
+
+        cron = configuration.get_config_entry(
+            guild.id,
+            "application_notification_cron_config",
+        )
+
+        await self.bot.scheduler.schedule_cron(
+            task_name="application_notifier", cron=cron, payload={"guild": guild}
+        )
+
+    async def schedule_manager_by_guild(
+        self: Self,
+        guild: discord.Guild,
+    ) -> None:
+        """This schedules an application manager for a given guild
+        This will check if the extension is enabled
+
+        Args:
+            guild (discord.Guild): The guild to schedule the application manager in
+        """
+        if not self.extension_enabled(guild):
+            return
+
+        cron = configuration.get_config_entry(
+            guild.id,
+            "application_reminder_cron_config",
+        )
+
+        await self.bot.scheduler.schedule_cron(
+            task_name="application_manager", cron=cron, payload={"guild": guild}
+        )
+
+    async def run_application_notifier(
+        self: Self,
+        payload: dict,
+    ) -> None:
+        """This posts an application notification in every configured channel for the passed guild
+
+        Args:
+            payload (dict): A dictionary containing a guild to run this job in
+        """
+        # Expant the payload parameters
+        guild: discord.Guild = payload["guild"]
+
+        # Ensure that the extension has not been disabled between schedule and execution
+        if not self.extension_enabled(guild):
+            return
+
+        # This loop is recurring, reschedule it for this guild
+        await self.schedule_notifier_by_guild(guild)
+
+        channels = configuration.get_config_entry(
+            guild.id,
+            "application_notification_channels",
+        )
+
+        for channel_id in channels:
+            channel = guild.get_channel(int(channel_id))
+
+            if not channel:
+                continue
+
+            await ui.AppNotice(timeout=None).send(
+                channel=channel,
+                message=configuration.get_config_entry(
+                    guild.id,
+                    "application_application_message",
+                ),
+            )
+
+    async def run_application_manager(self: Self, payload: dict) -> None:
+        """The executes the reminder of pending applications
+
+        Args:
+            payload (dict): A dictionary containing a guild to run this job in
+        """
+        # Expant the payload parameters
+        guild: discord.Guild = payload["guild"]
+
+        # Ensure that the extension has not been disabled between schedule and execution
+        if not self.extension_enabled(guild):
+            return
+
+        # This loop is recurring, reschedule it for this guild
+        await self.schedule_manager_by_guild(guild)
+
+        channel = guild.get_channel(
+            int(
+                configuration.get_config_entry(
+                    guild.id, "application_management_channel"
+                )
+            )
+        )
+        if not channel:
+            return
+
+        apps = await self.get_applications_by_status(ApplicationStatus.PENDING, guild)
+        if not apps:
+            return
+
+        # Update the database
+        audit_log = []
+        for app in apps:
+            try:
+                user = await guild.fetch_member(int(app.applicant_id))
+            except discord.NotFound:
+                user = None
+
+            # User who made application left
+            if not user:
+                audit_log.append(
+                    f"Application by user: `{app.applicant_name}` was rejected because"
+                    " they left"
+                )
+                await app.update(
+                    application_status=ApplicationStatus.REJECTED.value
+                ).apply()
+                continue
+
+            # Application has been pending for max_age days
+            max_age_config = configuration.get_config_entry(
+                guild.id, "application_max_age"
+            )
+            if app.application_time < datetime.datetime.now() - datetime.timedelta(
+                days=max_age_config
+            ):
+                audit_log.append(
+                    f"Application by user: `{user.name}` was rejected since it's been"
+                    f" inactive for {max_age_config} days"
+                )
+                await app.update(
+                    application_status=ApplicationStatus.REJECTED.value
+                ).apply()
+                continue
+
+            # User changed their name
+            if user.name != app.applicant_name:
+                audit_log.append(
+                    f"Application by user: `{app.applicant_name}` had the stored name"
+                    f" updated to `{user.name}`"
+                )
+                await app.update(applicant_name=user.name).apply()
+
+            role = guild.get_role(
+                int(
+                    configuration.get_config_entry(
+                        guild.id, "application_application_role_id"
+                    )
+                )
+            )
+
+            # User has the helper role
+            if role in getattr(user, "roles", []):
+                audit_log.append(
+                    f"Application by user: `{user.name}` was approved since they have"
+                    f" the `{role.name}` role"
+                )
+                await app.update(
+                    application_status=ApplicationStatus.APPROVED.value
+                ).apply()
+
+        if audit_log:
+            embed = discord.Embed(title="Application manage events")
+            for event in audit_log:
+                if embed.description:
+                    embed.description = f"{embed.description}\n{event}"
+                else:
+                    embed.description = f"{event}"
+            await channel.send(embed=embed)
+
+        apps = await self.get_applications_by_status(ApplicationStatus.PENDING, guild)
+        if not apps:
+            return
+
+        embed = discord.Embed(title="All pending applcations")
+        list_of_applicants = []
+
+        for app in apps:
+            member = await guild.fetch_member(int(app.applicant_id))
+            list_of_applicants.append(
+                (
+                    f"Application by: `{member.display_name} ({app.applicant_name})`"
+                    f", applied on: <t:{int(app.application_time.timestamp())}>"
+                )
+            )
+
+        embed.description = "\n".join(list_of_applicants)
+
+        await channel.send(embed=embed)
 
     # Slash Commands
 
@@ -862,125 +1046,3 @@ class ApplicationManager(cogs.LoopCog):
         ).where(self.bot.models.AppBans.guild_id == str(member.guild.id))
         entry = await query.gino.all()
         return entry
-
-    # Loop stuff
-
-    async def execute(self: Self, guild: discord.Guild) -> None:
-        """The executes the reminder of pending applications
-
-        Args:
-            guild (discord.Guild): The guild the loop is executing for
-        """
-        channel = guild.get_channel(
-            int(
-                configuration.get_config_entry(
-                    guild.id, "application_management_channel"
-                )
-            )
-        )
-        if not channel:
-            return
-
-        apps = await self.get_applications_by_status(ApplicationStatus.PENDING, guild)
-        if not apps:
-            return
-
-        # Update the database
-        audit_log = []
-        for app in apps:
-            try:
-                user = await guild.fetch_member(int(app.applicant_id))
-            except discord.NotFound:
-                user = None
-
-            # User who made application left
-            if not user:
-                audit_log.append(
-                    f"Application by user: `{app.applicant_name}` was rejected because"
-                    " they left"
-                )
-                await app.update(
-                    application_status=ApplicationStatus.REJECTED.value
-                ).apply()
-                continue
-
-            # Application has been pending for max_age days
-            max_age_config = configuration.get_config_entry(
-                guild.id, "application_max_age"
-            )
-            if app.application_time < datetime.datetime.now() - datetime.timedelta(
-                days=max_age_config
-            ):
-                audit_log.append(
-                    f"Application by user: `{user.name}` was rejected since it's been"
-                    f" inactive for {max_age_config} days"
-                )
-                await app.update(
-                    application_status=ApplicationStatus.REJECTED.value
-                ).apply()
-                continue
-
-            # User changed their name
-            if user.name != app.applicant_name:
-                audit_log.append(
-                    f"Application by user: `{app.applicant_name}` had the stored name"
-                    f" updated to `{user.name}`"
-                )
-                await app.update(applicant_name=user.name).apply()
-
-            role = guild.get_role(
-                int(
-                    configuration.get_config_entry(
-                        guild.id, "application_application_role_id"
-                    )
-                )
-            )
-
-            # User has the helper role
-            if role in getattr(user, "roles", []):
-                audit_log.append(
-                    f"Application by user: `{user.name}` was approved since they have"
-                    f" the `{role.name}` role"
-                )
-                await app.update(
-                    application_status=ApplicationStatus.APPROVED.value
-                ).apply()
-
-        if audit_log:
-            embed = discord.Embed(title="Application manage events")
-            for event in audit_log:
-                if embed.description:
-                    embed.description = f"{embed.description}\n{event}"
-                else:
-                    embed.description = f"{event}"
-            await channel.send(embed=embed)
-
-        apps = await self.get_applications_by_status(ApplicationStatus.PENDING, guild)
-        if not apps:
-            return
-
-        embed = discord.Embed(title="All pending applcations")
-        list_of_applicants = []
-
-        for app in apps:
-            member = await guild.fetch_member(int(app.applicant_id))
-            list_of_applicants.append(
-                (
-                    f"Application by: `{member.display_name} ({app.applicant_name})`"
-                    f", applied on: <t:{int(app.application_time.timestamp())}>"
-                )
-            )
-
-        embed.description = "\n".join(list_of_applicants)
-
-        await channel.send(embed=embed)
-
-    async def wait(self: Self, guild: discord.Guild) -> None:
-        """The queues the pending application reminder based on the cron config
-
-        Args:
-            guild (discord.Guild): The guild the loop is executing for
-        """
-        await aiocron.crontab(
-            configuration.get_config_entry(guild.id, "application_reminder_cron_config")
-        ).next()

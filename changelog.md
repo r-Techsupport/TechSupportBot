@@ -1,6 +1,7 @@
 Changes since 2026.06.15
 
 # Core
+- Create a new scheduling system, to replace LoopCog.
 
 # Modules
 
