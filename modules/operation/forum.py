@@ -75,7 +75,7 @@ STATUS_CONFIG = {
 }
 
 
-class ForumChannel(cogs.LoopCog):
+class ForumChannel(cogs.BaseCog):
     """The cog that holds the forum channel commands and helper functions
 
     Attributes:
@@ -89,6 +89,73 @@ class ForumChannel(cogs.LoopCog):
     async def preconfig(self: Self) -> None:
         """Sets up a small list of threads closed by TS"""
         self.thread_ID_closed = []
+
+        # Scheduled task stuff
+        self.bot.scheduler.register_task(
+            "forum_manager",
+            self.run_forum_manager,
+        )
+
+        # Start the initial tasks
+        for guild in self.bot.guilds:
+            await self.schedule_forum_manager(guild)
+
+    # Loop Stuff
+
+    async def run_forum_manager(self: Self, payload: dict) -> None:
+        """This is what closes threads after inactivity
+
+        Args:
+            guild (discord.Guild): The guild where the loop is taking place
+        """
+        # Expand the payload
+        guild: discord.Guild = payload["guild"]
+        # Ensure forum is enabled
+        if not self.extension_enabled(guild):
+            return
+
+        # Schedule the next check
+        await self.schedule_forum_manager(guild)
+
+        channel = await guild.fetch_channel(
+            int(configuration.get_config_entry(guild.id, "forum_forum_channel_id"))
+        )
+        for existing_thread in channel.threads:
+            if not existing_thread.archived and not existing_thread.locked:
+                most_recent_message_id = existing_thread.last_message_id
+                # If there are NO messages in the thread, use the thread creation timestamp instead
+                if not most_recent_message_id:
+                    most_recent_message_id = existing_thread.id
+
+                message_timestamp = discord.utils.snowflake_time(most_recent_message_id)
+                timestamp_delta = (
+                    datetime.datetime.now(datetime.timezone.utc) - message_timestamp
+                )
+                if timestamp_delta > datetime.timedelta(
+                    minutes=configuration.get_config_entry(
+                        guild.id, "forum_max_age_minutes"
+                    )
+                ):
+                    await mark_thread(
+                        existing_thread,
+                        self.thread_ID_closed,
+                        "abandoned",
+                        "Threads are automatically closed after periods of no activity",
+                    )
+
+    async def schedule_forum_manager(self: Self, guild: discord.Guild) -> None:
+        """This schedules the forum manager check for a 5 minute delay, for the given guild
+
+        Args:
+            guild (discord.Guild): The guild to schedule for
+        """
+        # Only schedule if the extension is enabled
+        if not self.extension_enabled(guild):
+            return
+
+        await self.bot.scheduler.schedule_delay(
+            task_name="forum_manager", seconds=300, payload={"guild": guild}
+        )
 
     @forum_group.command(
         name="mark",
@@ -559,42 +626,6 @@ class ForumChannel(cogs.LoopCog):
             "deleted",
             reason=("It appears the original post for this thread was deleted."),
         )
-
-    async def execute(self: Self, guild: discord.Guild) -> None:
-        """This is what closes threads after inactivity
-
-        Args:
-            guild (discord.Guild): The guild where the loop is taking place
-        """
-        channel = await guild.fetch_channel(
-            int(configuration.get_config_entry(guild.id, "forum_forum_channel_id"))
-        )
-        for existing_thread in channel.threads:
-            if not existing_thread.archived and not existing_thread.locked:
-                most_recent_message_id = existing_thread.last_message_id
-                # If there are NO messages in the thread, use the thread creation timestamp instead
-                if not most_recent_message_id:
-                    most_recent_message_id = existing_thread.id
-
-                message_timestamp = discord.utils.snowflake_time(most_recent_message_id)
-                timestamp_delta = (
-                    datetime.datetime.now(datetime.timezone.utc) - message_timestamp
-                )
-                if timestamp_delta > datetime.timedelta(
-                    minutes=configuration.get_config_entry(
-                        guild.id, "forum_max_age_minutes"
-                    )
-                ):
-                    await mark_thread(
-                        existing_thread,
-                        self.thread_ID_closed,
-                        "abandoned",
-                        "Threads are automatically closed after periods of no activity",
-                    )
-
-    async def wait(self: Self, _: discord.Guild) -> None:
-        """This waits and rechecks every 5 minutes to search for old threads"""
-        await asyncio.sleep(300)
 
 
 def create_regex_list(str_list: list[str]) -> list[re.Pattern[str]]:

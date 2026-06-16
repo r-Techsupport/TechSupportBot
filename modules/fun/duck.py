@@ -32,7 +32,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     await bot.add_cog(DuckHunt(bot=bot))
 
 
-class DuckHunt(cogs.LoopCog):
+class DuckHunt(cogs.BaseCog):
     """Class for the actual duck commands
 
     Attributes:
@@ -62,43 +62,56 @@ class DuckHunt(cogs.LoopCog):
     ON_START: bool = False
     CHANNELS_KEY: str = "duck_hunt_channels"
 
-    async def loop_preconfig(self: Self) -> None:
+    async def preconfig(self: Self) -> None:
         """Preconfig for cooldowns"""
         self.cooldowns = {}
 
-        # "guild_id": datetime
-        self.next_duck: dict[str, datetime.datetime] = {}
+        # Scheduled task stuff
+        self.bot.scheduler.register_task(
+            "duck_hunt_game",
+            self.run_duck_hunt,
+        )
 
-    async def wait(self: Self, guild: discord.Guild) -> None:
+        # Start the initial tasks
+        for guild in self.bot.guilds:
+            for channel_id in configuration.get_config_entry(
+                guild.id, self.CHANNELS_KEY
+            ):
+                channel = guild.get_channel(int(channel_id))
+                await self.schedule_duck_hunt(guild, channel)
+
+    # Loop Stuff
+
+    async def schedule_duck_hunt(
+        self: Self, guild: discord.Guild, channel: discord.abc.GuildChannel
+    ) -> None:
         """Waits a random amount of time before sending another duck
         This function shouldn't be manually called
 
         Args:
             guild (discord.Guild): The guild where the duck is going to appear
         """
-        min_wait = configuration.get_config_entry(guild.id, "duck_min_wait") * 3600
-        max_wait = configuration.get_config_entry(guild.id, "duck_max_wait") * 3600
+        min_wait = configuration.get_config_entry(guild.id, "duck_min_wait")
+        max_wait = configuration.get_config_entry(guild.id, "duck_max_wait")
 
-        fuzzed_min = int(min_wait * random.uniform(0.9, 1.1))
-        fuzzed_max = int(max_wait * random.uniform(0.9, 1.1))
+        fuzzed_min = float(min_wait * random.uniform(0.9, 1.1))
+        fuzzed_max = float(max_wait * random.uniform(0.9, 1.1))
 
         if fuzzed_min > fuzzed_max:
             fuzzed_min, fuzzed_max = fuzzed_max, fuzzed_min
 
-        wait_time = random.randint(fuzzed_min, fuzzed_max)
+        # Only schedule if the extension is enabled
+        if not self.extension_enabled(guild):
+            return
 
-        self.next_duck[str(guild.id)] = datetime.datetime.now() + datetime.timedelta(
-            seconds=wait_time
+        await self.bot.scheduler.schedule_random(
+            task_name="duck_hunt_game",
+            max_hours=fuzzed_max,
+            min_hours=fuzzed_min,
+            payload={"guild": guild, "channel": channel},
         )
 
-        await asyncio.sleep(wait_time)
-
-    async def execute(
-        self: Self,
-        guild: discord.Guild,
-        channel: discord.TextChannel,
-        banned_user: discord.User = None,
-    ) -> None:
+    async def run_duck_hunt(self: Self, payload: dict) -> None:
         """Sends a duck in the given channel
         Can be manually called, and will be called automatically after wait()
 
@@ -108,26 +121,49 @@ class DuckHunt(cogs.LoopCog):
             banned_user (discord.User, optional): A user that is not allowed to claim the duck.
                 Defaults to None.
         """
+        guild: discord.Guild = payload["guild"]
+        channel: discord.abc.GuildChannel = payload["channel"]
+
         if not channel:
             log_channel = configuration.get_config_entry(
                 guild.id, "core_logging_channel"
             )
             await self.bot.logger.send_log(
-                message="Channel not found for Duckhunt loop - continuing",
+                message="Channel not found for Duckhunt loop - ending schedule",
                 level=LogLevel.WARNING,
                 context=LogContext(guild=guild),
                 channel=log_channel,
             )
             return
 
+        # Only execute if the extension is enabled
+        if not self.extension_enabled(guild):
+            return
+
+        # Only execute if channel is in config
+        if not str(channel.id) in configuration.get_config_entry(
+            guild.id, self.CHANNELS_KEY
+        ):
+            return
+
+        # If this is set, we assume the config has a list of categories
         if configuration.get_config_entry(guild.id, "duck_use_category"):
-            all_valid_channels = channel.category.text_channels
-            use_channel = random.choice(all_valid_channels)
+            use_channel = random.choice(channel.text_channels)
         else:
             use_channel = channel
 
+        await self.spawn_duck(guild, use_channel)
+
+        # Reschedule task after duck game has ended
+        await self.schedule_duck_hunt(guild, channel)
+
+    async def spawn_duck(
+        self: Self,
+        guild: discord.Guild,
+        channel: discord.TextChannel,
+        banned_user: discord.User = None,
+    ) -> None:
         self.cooldowns[guild.id] = {}
-        del self.next_duck[str(guild.id)]
 
         embed = discord.Embed(
             title="*Quack Quack*",
@@ -136,7 +172,7 @@ class DuckHunt(cogs.LoopCog):
         embed.set_image(url=self.DUCK_PIC_URL)
         embed.color = discord.Color.green()
 
-        duck_message = await use_channel.send(embed=embed)
+        duck_message = await channel.send(embed=embed)
         start_time = duck_message.created_at
 
         response_message = None
@@ -146,7 +182,7 @@ class DuckHunt(cogs.LoopCog):
                 timeout=configuration.get_config_entry(guild.id, "duck_timeout"),
                 # can't pull the config in a non-coroutine
                 check=functools.partial(
-                    self.message_check, use_channel, duck_message, banned_user
+                    self.message_check, channel, duck_message, banned_user
                 ),
             )
         except asyncio.TimeoutError:
@@ -158,7 +194,7 @@ class DuckHunt(cogs.LoopCog):
             await self.bot.logger.send_log(
                 message="Exception thrown waiting for duckhunt input",
                 level=LogLevel.ERROR,
-                context=LogContext(guild=guild, channel=use_channel),
+                context=LogContext(guild=guild, channel=channel),
                 channel=log_channel,
                 exception=exception,
             )
@@ -171,10 +207,10 @@ class DuckHunt(cogs.LoopCog):
                 "befriended" if response_message.content.lower() == "bef" else "killed"
             )
             await self.handle_winner(
-                response_message.author, guild, action, raw_duration, use_channel
+                response_message.author, guild, action, raw_duration, channel
             )
         else:
-            await self.got_away(use_channel)
+            await self.got_away(channel)
 
     async def got_away(self: Self, channel: discord.TextChannel) -> None:
         """Sends a message telling everyone the duck got away
@@ -432,26 +468,56 @@ class DuckHunt(cogs.LoopCog):
     @app_commands.checks.has_permissions(administrator=True)
     @duck_group.command(
         name="next",
-        description="Displays the time for the next duck for this guild",
+        description="Displays the time for the next ducks for this guild",
     )
-    async def lookup_next_duck(self: Self, interaction: discord.Interaction) -> None:
-        """A simple command to show an admin when the next duck will be spawning
+    async def lookup_next_duck(
+        self: Self,
+        interaction: discord.Interaction,
+    ) -> None:
+        """Show an admin when the next ducks will spawn.
 
         Args:
             interaction (discord.Interaction): The interaction that called this command
         """
-        if str(interaction.guild.id) not in self.next_duck:
+        await interaction.response.defer(ephemeral=True)
+
+        upcoming_tasks = await self.bot.scheduler.get_upcoming_tasks()
+
+        guild_ducks = [
+            task
+            for task in upcoming_tasks
+            if task["job_id"].startswith("duck_hunt_game:")
+            and task["payload"]["guild"] == interaction.guild
+        ]
+
+        if not guild_ducks:
             embed = auxiliary.prepare_deny_embed(
-                "Couldn't find a future duck for this guild."
+                "Couldn't find any future ducks for this guild."
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.followup.send(
+                embed=embed,
+                ephemeral=True,
+            )
             return
 
-        embed = auxiliary.prepare_confirm_embed(
-            "The next duck in this guild:"
-            f"<t:{int(self.next_duck[str(interaction.guild.id)].timestamp())}>"
+        guild_ducks.sort(key=lambda task: task["run_at"])
+
+        embed = auxiliary.prepare_confirm_embed("Upcoming ducks for this guild")
+
+        for task in guild_ducks:
+            embed.add_field(
+                name=task["payload"]["channel"].mention,
+                value=(
+                    f"<t:{int(task['run_at'].timestamp())}:F>\n"
+                    f"(<t:{int(task['run_at'].timestamp())}:R>)"
+                ),
+                inline=False,
+            )
+
+        await interaction.followup.send(
+            embed=embed,
+            ephemeral=True,
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @commands.group(
         brief="Executes a duck command",
@@ -749,7 +815,7 @@ class DuckHunt(cogs.LoopCog):
             channel=ctx.channel,
         )
 
-        await self.execute(ctx.guild, ctx.channel, banned_user=ctx.author)
+        await self.spawn_duck(ctx.guild, ctx.channel, banned_user=ctx.author)
 
     @auxiliary.with_typing
     @commands.guild_only()
@@ -944,7 +1010,7 @@ class DuckHunt(cogs.LoopCog):
         spawn_user = configuration.get_config_entry(ctx.guild.id, "duck_spawn_user")
         for person in spawn_user:
             if ctx.author.id == int(person):
-                await self.execute(ctx.guild, ctx.channel, ctx.author)
+                await self.spawn_duck(ctx.guild, ctx.channel, ctx.author)
                 return
         await auxiliary.send_deny_embed(
             message="It looks like you don't have permissions to spawn a duck",

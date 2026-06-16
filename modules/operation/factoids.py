@@ -209,6 +209,7 @@ class FactoidManager(cogs.MatchCog):
             message="Loading factoid jobs",
             level=LogLevel.DEBUG,
         )
+
         await self.kickoff_jobs()
 
     # -- DB calls --
@@ -828,14 +829,50 @@ class FactoidManager(cogs.MatchCog):
             )
             return
 
-        # Checking for disabled or restricted
+        mentions = auxiliary.construct_mention_string(ctx.message.mentions)
+        await self.send_factoid(
+            factoid=factoid,
+            channel=ctx.channel,
+            author=ctx.author,
+            mentions_str=mentions,
+            calling_message=ctx.message,
+        )
+
+    async def send_factoid(
+        self: Self,
+        factoid: bot.models.Factoid,
+        channel: discord.abc.GuildChannel,
+        author: discord.Member = None,
+        mentions_str: str = None,
+        calling_message: discord.message = None,
+    ) -> None:
+        """Sends a factoid to discord
+        If relevant, forwards to IRC and/or the logger
+        Checks for restricted channels, and disabled factoids
+
+        Args:
+            factoid (bot.models.Factoid): The database entry of the root factoid to send. Should not be an alias
+            channel (discord.abc.GuildChannel): The channel to send the factoid to
+            author (discord.Member): If this factoid was manually called, the user who called the factoid
+            mentions_str (str): A string of mentions to prepend to a factoid being sent
+        """
+        # First, ensure that mentions_str is not >2000
+        if mentions_str and len(mentions_str) > 2000:
+            await auxiliary.send_deny_embed(
+                message="I ran into an error sending that factoid: "
+                + "The factoid message is longer than the discord size limit (2000)",
+                channel=channel,
+            )
+            raise custom_errors.TooLongFactoidMessageError
+
+        # Second, do not send the factoid if its disabled
         if factoid.disabled:
             return
 
+        # Third, if the factoid is restricted, ensure the channel is on the restricted list
         if factoid.restricted:
-            channel = ctx.channel
             restricted_list = configuration.get_config_entry(
-                ctx.guild.id, "factoids_restricted_list"
+                channel.guild.id, "factoids_restricted_list"
             )
             if isinstance(channel, discord.Thread):
                 if str(channel.parent.id) not in restricted_list:
@@ -844,82 +881,97 @@ class FactoidManager(cogs.MatchCog):
                 if str(channel.id) not in restricted_list:
                     return
 
-        if configuration.get_config_entry(ctx.guild.id, "factoids_disable_embeds"):
-            embed = None
-        else:
+        # At this point, we should be sending the factoid.
+        # We will create the embed if enabled and possible
+        plaintext_content = factoid.message
+        embed = None
+
+        if not configuration.get_config_entry(
+            channel.guild.id, "factoids_disable_embeds"
+        ):
             try:
                 embed = self.get_embed_from_factoid(factoid)
             except TypeError as exception:
-                log_channel = configuration.get_config_entry(
-                    ctx.guild.id, "core_logging_channel"
-                )
                 await self.bot.logger.send_log(
-                    message=f"Unable to make embed for factoid `{factoid.name}`, sending fallback.",
+                    message=(
+                        f"Unable to make embed for factoid `{factoid.name}`, "
+                        "sending fallback."
+                    ),
                     level=LogLevel.ERROR,
-                    channel=log_channel,
-                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                    channel=configuration.get_config_entry(
+                        channel.guild.id,
+                        "core_logging_channel",
+                    ),
+                    context=LogContext(
+                        guild=channel.guild,
+                        channel=channel,
+                    ),
                     exception=exception,
                 )
-                embed = None
 
-        # if the json doesn't include non embed argument, then don't send anything
-        # otherwise send message text with embed
-        try:
-            plaintext_content = factoid.message if not embed else None
-        except ValueError:
-            # The not embed causes a ValueError in certain cases. This ensures fallback works
-            plaintext_content = factoid.message
-        mentions = auxiliary.construct_mention_string(ctx.message.mentions)
+        # If an embed was generated, we should attempt to send it
+        embed_success = False
+        if embed:
+            try:
+                if calling_message:
+                    sent_message = await calling_message.reply(
+                        content=mentions_str,
+                        embed=embed,
+                        mention_author=not mentions_str,
+                    )
+                else:
+                    sent_message = await channel.send(content=mentions_str, embed=embed)
+                embed_success = True
+            except discord.errors.HTTPException as exception:
+                log_channel = configuration.get_config_entry(
+                    channel.guild.id, "core_logging_channel"
+                )
+                await self.bot.logger.send_log(
+                    message="Could not send factoid",
+                    level=LogLevel.ERROR,
+                    context=LogContext(guild=channel.guild, channel=channel),
+                    channel=log_channel,
+                    exception=exception,
+                )
 
-        content = " ".join(filter(None, [mentions, plaintext_content])) or None
-        if content and len(content) > 2000:
-            await auxiliary.send_deny_embed(
-                message="I ran into an error sending that factoid: "
-                + "The factoid message is longer than the discord size limit (2000)",
-                channel=ctx.channel,
-            )
-            raise custom_errors.TooLongFactoidMessageError
-
-        try:
-            # define the message and send it
-            sent_message = await ctx.reply(
-                content=content, embed=embed, mention_author=not mentions
-            )
-            # log it in the logging channel with type info and generic content
-            log_channel = configuration.get_config_entry(
-                ctx.guild.id, "core_logging_channel"
-            )
-            await self.bot.logger.send_log(
-                message=(
-                    f"Sending factoid: {query} (triggered by {ctx.author} in"
-                    f" #{ctx.channel.name})"
-                ),
-                level=LogLevel.INFO,
-                context=LogContext(guild=ctx.guild, channel=ctx.channel),
-                channel=log_channel,
-            )
-        # If something breaks, also log it
-        except discord.errors.HTTPException as exception:
-            log_channel = configuration.get_config_entry(
-                ctx.guild.id, "core_logging_channel"
-            )
-            await self.bot.logger.send_log(
-                message="Could not send factoid",
-                level=LogLevel.ERROR,
-                context=LogContext(guild=ctx.guild, channel=ctx.channel),
-                channel=log_channel,
-                exception=exception,
-            )
-            # Sends the raw factoid instead of the embed as fallback
-            sent_message = await ctx.reply(
-                f"{mentions + ' ' if mentions else ''}{factoid.message}",
-                mention_author=not mentions,
+        # This means either we aren't sending an embed, or the embed failed for some reason
+        # We need to send this factoid as a plaintext factoid
+        if not embed_success:
+            plaintext_with_mentions = " ".join(
+                filter(
+                    None,
+                    [
+                        mentions_str,
+                        plaintext_content,
+                    ],
+                )
             )
 
-        await self.send_to_irc(ctx.channel, ctx.message, factoid.message)
-        await self.send_to_logger(
-            sent_message, ctx.author, ctx.channel, factoid.message
-        )
+            if len(plaintext_with_mentions) > 2000:
+                await auxiliary.send_deny_embed(
+                    message=(
+                        "I ran into an error sending that factoid: "
+                        "The factoid message is longer than the Discord "
+                        "size limit (2000)"
+                    ),
+                    channel=channel,
+                )
+                raise custom_errors.TooLongFactoidMessageError
+
+            if calling_message:
+                sent_message = await calling_message.reply(
+                    content=plaintext_with_mentions,
+                    mention_author=not mentions_str,
+                )
+            else:
+                sent_message = await channel.send(
+                    content=plaintext_with_mentions,
+                )
+
+        # At this point its time to move on to irc and logger
+        # TODO: Rewrite IRC processing
+        # await self.send_to_irc(channel, ctx.message, factoid.message)
+        await self.send_to_logger(sent_message, author, channel, plaintext_content)
 
     async def send_to_irc(
         self: Self,

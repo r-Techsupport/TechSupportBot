@@ -6,7 +6,6 @@ import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Self
 
-import aiocron
 import discord
 from discord import app_commands
 
@@ -138,9 +137,7 @@ class ApplicationManager(cogs.BaseCog):
         )
 
         await self.bot.scheduler.schedule_cron(
-            task_name="application_notifier",
-            guild=guild,
-            cron=cron,
+            task_name="application_notifier", cron=cron, payload={"guild": guild}
         )
 
     async def schedule_manager_by_guild(
@@ -162,21 +159,21 @@ class ApplicationManager(cogs.BaseCog):
         )
 
         await self.bot.scheduler.schedule_cron(
-            task_name="application_manager",
-            guild=guild,
-            cron=cron,
+            task_name="application_manager", cron=cron, payload={"guild": guild}
         )
 
     async def run_application_notifier(
         self: Self,
-        guild: discord.Guild,
-        _: dict,
+        payload: dict,
     ) -> None:
         """This posts an application notification in every configured channel for the passed guild
 
         Args:
             guild (discord.Guild): The guild to post the notification in
         """
+        # Expant the payload parameters
+        guild: discord.Guild = payload["guild"]
+
         # Ensure that the extension has not been disabled between schedule and execution
         if not self.extension_enabled(guild):
             return
@@ -203,14 +200,15 @@ class ApplicationManager(cogs.BaseCog):
                 ),
             )
 
-    async def run_application_manager(
-        self: Self, guild: discord.Guild, _: dict
-    ) -> None:
+    async def run_application_manager(self: Self, payload: dict) -> None:
         """The executes the reminder of pending applications
 
         Args:
             guild (discord.Guild): The guild the loop is executing for
         """
+        # Expant the payload parameters
+        guild: discord.Guild = payload["guild"]
+
         # Ensure that the extension has not been disabled between schedule and execution
         if not self.extension_enabled(guild):
             return
