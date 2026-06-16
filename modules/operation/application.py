@@ -169,7 +169,7 @@ class ApplicationManager(cogs.BaseCog):
         """This posts an application notification in every configured channel for the passed guild
 
         Args:
-            guild (discord.Guild): The guild to post the notification in
+            payload (dict): A dictionary containing a guild to run this job in
         """
         # Expant the payload parameters
         guild: discord.Guild = payload["guild"]
@@ -204,7 +204,7 @@ class ApplicationManager(cogs.BaseCog):
         """The executes the reminder of pending applications
 
         Args:
-            guild (discord.Guild): The guild the loop is executing for
+            payload (dict): A dictionary containing a guild to run this job in
         """
         # Expant the payload parameters
         guild: discord.Guild = payload["guild"]

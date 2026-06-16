@@ -28,7 +28,7 @@ class SchedulerService:
         bot (bot.TechSupportBot): The running bot object
     """
 
-    def __init__(self: Self, bot: bot.TechSupportBot):
+    def __init__(self: Self, bot: bot.TechSupportBot) -> None:
         self.bot = bot
         self.scheduler = AsyncIOScheduler()
         self.tasks = {}  # task_name -> coroutine
@@ -40,7 +40,7 @@ class SchedulerService:
         """
         self.scheduler.start()
 
-    def register_task(self: Self, name: str, func: callable):
+    def register_task(self: Self, name: str, func: callable) -> None:
         """This registers a callback location for a scheduled tasks
         Modules wishing to schedule tasks should call this to setup tasks first
 

@@ -165,7 +165,6 @@ class DuckHunt(cogs.BaseCog):
         """This spawns a duck in the passed channel
 
         Args:
-            self (Self): _description_
             guild (discord.Guild): The guild in which to spawn a duck
             channel (discord.TextChannel): The channel in which to spawn a duck
             banned_user (discord.User, optional): If a user is banned from

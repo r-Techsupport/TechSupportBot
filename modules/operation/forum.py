@@ -106,7 +106,7 @@ class ForumChannel(cogs.BaseCog):
         """This is what closes threads after inactivity
 
         Args:
-            guild (discord.Guild): The guild where the loop is taking place
+            payload (dict): A dictionary containing a guild to run this job in
         """
         # Expand the payload
         guild: discord.Guild = payload["guild"]
