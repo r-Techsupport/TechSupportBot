@@ -58,9 +58,19 @@ class SchedulerService:
         run_at: datetime.datetime,
         payload: dict,
     ) -> str:
-        """
-        Schedule a task at an exact datetime.
-        Ideally to be used for voting
+        """This schedules a task at a particular date in the future
+
+        Args:
+            task_name (str): The name of the task to register
+            run_at (datetime.datetime): The time to run this task
+            payload (dict): The data needed to run this task.
+                May include channels, guilds, strings, members, etc
+
+        Raises:
+            AttributeError: Raised if the job being scheduled hasn't been registered
+
+        Returns:
+            str: The job ID number created for this job
         """
 
         job_id = f"{task_name}:{uuid.uuid4()}"
@@ -85,9 +95,16 @@ class SchedulerService:
         seconds: int,
         payload: dict,
     ) -> str:
-        """
-        Schedule a task N seconds in the future.
-        Ideally to be used for modmail, forum
+        """This schedules a task in the future a given amount of seconds
+
+        Args:
+            task_name (str): The name of the task to register
+            seconds (int): The amount of seconds to schedule the task into the future
+            payload (dict): The data needed to run this task.
+                May include channels, guilds, strings, members, etc
+
+        Returns:
+            str: The job ID number created for this job
         """
 
         run_at = datetime.datetime.utcnow() + datetime.timedelta(seconds=seconds)
@@ -100,10 +117,19 @@ class SchedulerService:
         cron: str,
         payload: dict,
     ) -> str:
-        """
-        Schedule a task using cron syntax.
-        Converts cron → next execution datetime immediately.
-        Ideally to be used for news, application, factoid jobs
+        """This schedules a task based on the next execution of a given cron
+
+        Args:
+            task_name (str): The name of the task to register
+            cron (str): The crontab syntax for the job
+            payload (dict): The data needed to run this task.
+                May include channels, guilds, strings, members, etc
+
+        Raises:
+            ValueError: Raised if the passed crontab is invalid
+
+        Returns:
+            str: The job ID number created for this job
         """
 
         trigger = CronTrigger.from_crontab(cron)
@@ -123,9 +149,17 @@ class SchedulerService:
         max_hours: float,
         payload: dict,
     ) -> str:
-        """
-        Schedule a task at a random time between min/max hours.
-        Ideally to be used for duck, kanye
+        """This schedules a task based on a randomly picked time
+
+        Args:
+            task_name (str): The name of the task to register
+            min_hours (int): The minimum number of hours to wait
+            max_hours (int): The maximum number of hours to wait
+            payload (dict): The data needed to run this task.
+                May include channels, guilds, strings, members, etc
+
+        Returns:
+            str: The job ID number created for this job
         """
 
         seconds = random.uniform(min_hours * 3600, max_hours * 3600)
@@ -136,8 +170,11 @@ class SchedulerService:
     # Getting tasks and other internal functions
 
     async def get_upcoming_tasks(self: Self) -> list[dict]:
-        """
-        Return all scheduled tasks sorted by next execution time.
+        """This gets a list of all upcoming tasks in the scheduler, to allow for parsing
+        This includes the ID, the payload, and the run_at time
+
+        Returns:
+            list[dict]: The list of upcoming tasks
         """
 
         return sorted(
