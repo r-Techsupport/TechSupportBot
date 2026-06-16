@@ -131,12 +131,12 @@ class Report(cogs.BaseCog):
             await interaction.response.send_message(embed=user_embed, ephemeral=True)
             return
 
-
-        report_ping_role = configuration.get_config_entry(interaction.guild.id, "report_ping_role")
+        report_ping_role = configuration.get_config_entry(
+            interaction.guild.id, "report_ping_role"
+        )
 
         if report_ping_role:
-            report_ping_role = f'<@&{report_ping_role}>'
-
+            report_ping_role = f"<@&{report_ping_role}>"
 
         await alert_channel.send(
             content=report_ping_role,
