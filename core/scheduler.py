@@ -153,8 +153,8 @@ class SchedulerService:
 
         Args:
             task_name (str): The name of the task to register
-            min_hours (int): The minimum number of hours to wait
-            max_hours (int): The maximum number of hours to wait
+            min_hours (float): The minimum number of hours to wait
+            max_hours (float): The maximum number of hours to wait
             payload (dict): The data needed to run this task.
                 May include channels, guilds, strings, members, etc
 
