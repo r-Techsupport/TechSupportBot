@@ -44,5 +44,6 @@ Changes since 2026.06.15
 - dateparser -> 1.4.1
 
 ## Dev
+- hypothesis -> 6.155.3
 
 # Documentation
