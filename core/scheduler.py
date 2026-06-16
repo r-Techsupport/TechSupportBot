@@ -1,3 +1,10 @@
+"""
+Biggest issues I still want to look at:
+Generalizing the setup for the scheduler.
+Removing guild from the execution, putting it in the payload
+Creating a way to reset specifc tasks, especially after a config change
+"""
+
 import datetime
 import random
 import uuid
@@ -18,6 +25,7 @@ class SchedulerService:
     async def start(self: Self) -> None:
         """
         Start scheduler.
+        We should only start the scheduler after tasks have been registered
         """
         self.scheduler.start()
 
