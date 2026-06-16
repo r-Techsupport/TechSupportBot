@@ -25,7 +25,7 @@ import configuration
 import ircrelay
 import ui
 from botlogging import LogContext, LogLevel
-from core import auxiliary, custom_errors, databases, http
+from core import auxiliary, custom_errors, databases, http, scheduler
 
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
@@ -174,6 +174,10 @@ class TechSupportBot(commands.Bot):
         # Adds persistent views to the bot
         self.add_view(ui.VotingButtonPersistent())
 
+        # Make the scheduler
+        # We must wait for tasks to be registered to start it
+        self.scheduler = scheduler.SchedulerService(self)
+
         # The very last step should be loading extensions
         # Some extensions will require the database or config when loading
         await self.logger.send_log(
@@ -181,6 +185,9 @@ class TechSupportBot(commands.Bot):
         )
         self.extension_name_list = []
         await self.load_extensions()
+
+        # Star the scheduler
+        await self.scheduler.start()
 
     async def on_guild_remove(self: Self, guild: discord.Guild) -> None:
         """See: https://discordpy.readthedocs.io/en/latest/api.html#discord.on_guild_remove
