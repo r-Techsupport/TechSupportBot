@@ -1,7 +1,7 @@
 import datetime
 import random
 import uuid
-from typing import List, Self
+from typing import Self
 
 import discord
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -62,6 +62,7 @@ class SchedulerService:
     ) -> str:
         """
         Schedule a task at an exact datetime.
+        Ideally to be used for voting
         """
 
         job_id = f"{task_name}:{uuid.uuid4()}"
@@ -85,6 +86,7 @@ class SchedulerService:
     ) -> str:
         """
         Schedule a task N seconds in the future.
+        Ideally to be used for modmail, forum
         """
 
         run_at = datetime.datetime.utcnow() + datetime.timedelta(seconds=seconds)
@@ -101,6 +103,7 @@ class SchedulerService:
         """
         Schedule a task using cron syntax.
         Converts cron → next execution datetime immediately.
+        Ideally to be used for news, application, factoid jobs
         """
 
         trigger = CronTrigger.from_crontab(cron)
@@ -123,6 +126,7 @@ class SchedulerService:
     ) -> str:
         """
         Schedule a task at a random time between min/max hours.
+        Ideally to be used for duck, kanye
         """
 
         seconds = random.uniform(min_hours * 3600, max_hours * 3600)
@@ -132,7 +136,7 @@ class SchedulerService:
 
     # Getting tasks and other internal functions
 
-    async def get_upcoming_tasks(self: Self) -> List[dict]:
+    async def get_upcoming_tasks(self: Self) -> list[dict]:
         """
         Return all scheduled tasks sorted by next execution time.
         """
