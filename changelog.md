@@ -41,6 +41,7 @@ Changes since 2026.06.15
 ## Core
 
 ## Prod
+- dateparser -> 1.4.1
 
 ## Dev
 
