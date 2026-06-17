@@ -127,57 +127,50 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         )
         speed_record: float = bot.db.Column(bot.db.Float, default=-1.0)
 
-    class Factoid(bot.db.Model):
-        """The postgres table for factoids
-        Currently used in factoid.py
+    class FactoidData(bot.db.Model):
+        __tablename__ = "factoid_data"
 
-        Attributes:
-            factoid_id (int): The primary key of the factoid
-            name (str): The name of the factoid
-            guild (str): The string guild ID for the guild that the factoid is in
-            message (str): The string message of the factoid
-            time (datetime.datetime): When the factoid was created NOT edited
-            embed_config (str): The json of the factoid
-            hidden (bool): If the factoid should be hidden or not
-            protected (bool): If the factoid should be protected
-            disabled (bool): If the factoid should be disabled
-            restricted (bool): If the factoid should be restricted
-            alias (str): The string representation of the parent
-        """
-
-        __tablename__ = "factoids"
-
-        factoid_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
-        name: str = bot.db.Column(bot.db.String)
-        guild: str = bot.db.Column(bot.db.String)
-        message: str = bot.db.Column(bot.db.String)
-        time: datetime.datetime = bot.db.Column(
+        factoid_data_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild: str = bot.db.Column(bot.db.String, index=True)
+        message: str = bot.db.Column(bot.db.String, index=True)
+        create_time: datetime.datetime = bot.db.Column(
             bot.db.DateTime, default=datetime.datetime.utcnow
         )
-        embed_config: str = bot.db.Column(bot.db.String, default=None)
-        hidden: bool = bot.db.Column(bot.db.Boolean, default=False)
-        protected: bool = bot.db.Column(bot.db.Boolean, default=False)
-        disabled: bool = bot.db.Column(bot.db.Boolean, default=False)
-        restricted: bool = bot.db.Column(bot.db.Boolean, default=False)
-        alias: str = bot.db.Column(bot.db.String, default=None)
+        edit_time: datetime.datetime = bot.db.Column(
+            bot.db.DateTime,
+            default=datetime.datetime.utcnow,
+            onupdate=datetime.datetime.utcnow,
+        )
+        json_string: str = bot.db.Column(bot.db.String, default=None)
+        flags: int = bot.db.Column(bot.db.Integer)
+        times_called: int = bot.db.Column(bot.db.Integer)
+
+    class FactoidCall(bot.db.Model):
+        __tablename__ = "factoid_calls"
+
+        factoid_call_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild: str = bot.db.Column(bot.db.String, index=True)
+        name: str = bot.db.Column(bot.db.String)
+
+        factoid_data_id = bot.db.Column(
+            bot.db.Integer,
+            bot.db.ForeignKey("factoid_data.factoid_data_id"),
+            nullable=False,
+            index=True,
+        )
 
     class FactoidJob(bot.db.Model):
-        """The postgres table for factoid loops
-        Currently used in factoid.py
-
-        Attributes:
-            job_id (int): The primary key, ID of the job
-            factoid (int): The primary key of the linked factoid
-            channel (str): The channel this loop needs to run in
-            cron (str): The frequency this job should run
-        """
-
         __tablename__ = "factoid_jobs"
 
-        job_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
-        factoid: int = bot.db.Column(
-            bot.db.Integer, bot.db.ForeignKey("factoids.factoid_id")
+        factoid_job_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild: str = bot.db.Column(bot.db.String, index=True)
+        factoid_data_id = bot.db.Column(
+            bot.db.Integer,
+            bot.db.ForeignKey("factoid_data.factoid_data_id"),
+            nullable=False,
+            index=True,
         )
+
         channel: str = bot.db.Column(bot.db.String)
         cron: str = bot.db.Column(bot.db.String)
 
@@ -387,7 +380,8 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.AppBans = ApplicationBans
     bot.models.ModLog = ModLog
     bot.models.DuckUser = DuckUser
-    bot.models.Factoid = Factoid
+    bot.models.FactoidData = FactoidData
+    bot.models.FactoidCall = FactoidCall
     bot.models.FactoidJob = FactoidJob
     bot.models.Grab = Grab
     bot.models.IRCChannelMapping = IRCChannelMapping
