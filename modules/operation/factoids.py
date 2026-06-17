@@ -955,6 +955,7 @@ class FactoidManager(cogs.BaseCog):
         show_all: bool = False,
     ) -> None:
         # TODO: Caching - MAYBE
+        # Caching here would require us to build a guild:properties_flags key
 
         all_factoids = await self.get_all_factoids_for_guild(guild=interaction.guild)
 
