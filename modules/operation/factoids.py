@@ -420,9 +420,9 @@ class FactoidManager(cogs.BaseCog):
         new_factoid_data_id: int,
     ) -> bool:
         """
-        Moves a factoid call to a different factoid data entry.
+        Moves a FactoidCall to a different FactoidData entry.
 
-        If the old factoid_data loses all calls, it is deleted.
+        If the old FactoidData loses all calls, it is deleted.
         Returns True if the move succeeded.
         """
 
@@ -1283,8 +1283,6 @@ class FactoidManager(cogs.BaseCog):
         Raises:
             TooLongFactoidMessageError: If the plaintext exceed 2000 characters
         """
-        # TODO: New button: I can't see this (print plaintext)
-        # TODO: New button: Save to my DMs (send a copy of the message to the clickers DMs)
         # TODO: Interact with times called
 
         factoid_name = factoid_name.lower()
@@ -1339,8 +1337,7 @@ class FactoidManager(cogs.BaseCog):
             content = member_to_ping.mention
 
         embed_sent = False
-        view = DeleteView(interaction.user.id)
-        # TODO: Move factoid logging to background task, and ensure it works for fallback/plaintext
+        view = ButtonView(interaction.user.id, factoid)
         if embed:
             try:
                 # Attempt to send the message with the embed in it
@@ -1380,6 +1377,9 @@ class FactoidManager(cogs.BaseCog):
                 )
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
+
+            # The can't see button is not needed in plaintext cases
+            view.remove_item(view.cant_see_button)
             await interaction.response.send_message(content=content, view=view)
             view.message = await interaction.original_response()
 
@@ -1452,23 +1452,29 @@ class FactoidManager(cogs.BaseCog):
         await interaction.response.send_message(embed=embed)
 
 
-class DeleteView(discord.ui.View):
+class ButtonView(discord.ui.View):
+    # TODO: Migrate to LayoutView
+    # TODO: Make this entirely in charge of displaying factoids for factoid call and factoid loop jobs
     """The class to hold the view for the delete button on /factoid call
 
     Args:
         author_id (int): The ID of the author of the factoid
     """
 
-    def __init__(self: Self, author_id: int) -> None:
-        super().__init__(timeout=300)
+    def __init__(self: Self, author_id: int, factoid: FactoidView) -> None:
+        super().__init__(timeout=600)
         self.author_id = author_id
+        self.factoid: FactoidView = factoid
         self.message: discord.Message | None = None
 
     async def on_timeout(self: Self) -> None:
-        """Is called after the timeout, with the goal of deleting the buttons from the message"""
+        """Is called after the timeout, with the goal of disabling the buttons from the message"""
 
+        for child in self.walk_children():
+            if isinstance(child, discord.ui.Button):
+                child.disabled = True
         if self.message:
-            await self.message.edit(view=None)
+            await self.message.edit(view=self)
 
     @discord.ui.button(label="Delete", style=discord.ButtonStyle.danger, emoji="🗑️")
     async def delete_button(
@@ -1492,6 +1498,57 @@ class DeleteView(discord.ui.View):
 
         if interaction.message:
             await interaction.message.delete()
+
+    @discord.ui.button(
+        label="I see nothing", style=discord.ButtonStyle.blurple, emoji="👁️"
+    )
+    async def cant_see_button(
+        self: Self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ) -> None:
+        """The function called when the see nothing button is pressed
+
+        Args:
+            interaction (discord.Interaction): The interaction that pressed the button
+            button (discord.ui.Button): The button object itself
+        """
+        await interaction.response.send_message(
+            content=self.factoid.message, ephemeral=True
+        )
+
+        # Tell user how to enable embeds
+        await interaction.followup.send(
+            f"In order to see these messages in the future, consider enabling embeds: <https://rtech.support/meta/discord-embeds/>",
+            ephemeral=True,
+        )
+
+    @discord.ui.button(label="Save to DMs", style=discord.ButtonStyle.green, emoji="💬")
+    async def send_to_dm_button(
+        self: Self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ) -> None:
+        """The function called when the save to DMs button is pressed
+
+        Args:
+            interaction (discord.Interaction): The interaction that pressed the button
+            button (discord.ui.Button): The button object itself
+        """
+        try:
+            await interaction.user.send(
+                content=interaction.message.content, embeds=interaction.message.embeds
+            )
+        except discord.Forbidden:
+            embed = auxiliary.prepare_deny_embed(
+                "It appears you have DMs closed. I can't send you this factoid"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        await interaction.response.send_message(
+            "I sent a copy of this factoid to your DMs", ephemeral=True
+        )
 
 
 class NewFactoid(discord.ui.Modal):

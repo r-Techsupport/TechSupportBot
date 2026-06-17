@@ -35,6 +35,7 @@ Changes since 2026.06.15
 - /factoid all has been reworked, is now always ephemeral
 - /factoid call now works respects threads and restricted factoids
 - /factoid call now works with IRC
+- /factoid call now shows a "I see nothing" and "Save to DMs" button on factoids
 - /factoid dealias now shows the remaining aliases on success
 
 ### Relay
