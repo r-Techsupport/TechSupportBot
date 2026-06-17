@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import datetime
+import io
 import json
+from dataclasses import dataclass
+from enum import Enum
+from socket import gaierror
 from typing import TYPE_CHECKING, Self
 
 import discord
+import yaml
+from aiohttp.client_exceptions import InvalidURL
 from discord import app_commands
 
 import ui
@@ -96,19 +103,44 @@ async def setup(bot: bot.TechSupportBot) -> None:
     await bot.add_cog(FactoidManager(bot=bot))
 
 
-class FactoidManager(cogs.BaseCog):
+# TODO: Use this more
+@dataclass
+class FactoidView:
+    factoid_data_id: int
+    message: str
+    json_string: str
+    flags: int
+    times_called: int
+    create_time: datetime.datetime
+    edit_time: datetime.datetime
+    calls: list[str]
 
-    FACTOID_FLAG_DISABLED = 0b1000
-    FACTOID_FLAG_HIDDEN = 0b0100
-    FACTOID_FLAG_PROTECTED = 0b0010
-    FACTOID_FLAG_RESTRICTED = 0b0001
+
+class Properties(Enum):
+    """
+    This enum is for the new factoid all to be able to handle dynamic properties
+
+    Attributes:
+        DISABLED (int): Representation of disabled
+        HIDDEN (int): Representation of hidden
+        PROTECTED (int): Representation of protected
+        RESTRICTED (int): Representation of restricted
+    """
+
+    DISABLED: int = 0b1000
+    HIDDEN: int = 0b0100
+    PROTECTED: int = 0b0010
+    RESTRICTED: int = 0b0001
+
+
+class FactoidManager(cogs.BaseCog):
 
     factoid_app_group: app_commands.Group = app_commands.Group(
         name="factoid", description="Command Group for the Factoids Extension"
     )
 
     # DATABASE
-    # TODO: Add caching
+    # TODO: Add caching - MAYBE
 
     async def create_factoid_call(
         self: Self,
@@ -172,6 +204,22 @@ class FactoidManager(cogs.BaseCog):
             & (self.bot.models.FactoidData.factoid_data_id == factoid_data_id)
         ).gino.status()
 
+    async def get_all_factoid_calls(
+        self: Self,
+        guild: discord.Guild,
+    ) -> list[bot.models.FactoidCall]:
+        """This gets all FactoidCall database entries for a given guild
+
+        Args:
+            guild (discord.Guild): The guild to search for
+
+        Returns:
+            list[bot.models.FactoidCall]: The list of raw database entries
+        """
+        return await self.bot.models.FactoidCall.query.where(
+            self.bot.models.FactoidCall.guild == str(guild.id)
+        ).gino.all()
+
     async def create_factoid_data(
         self: Self,
         guild: discord.Guild,
@@ -232,11 +280,27 @@ class FactoidManager(cogs.BaseCog):
             & (self.bot.models.FactoidCall.name == name)
         ).gino.status()
 
+    async def get_all_factoid_data(
+        self: Self,
+        guild: discord.Guild,
+    ) -> list[bot.models.FactoidData]:
+        """This gets all FactoidData database entries for a given guild
+
+        Args:
+            guild (discord.Guild): The guild to search for
+
+        Returns:
+            list[bot.models.FactoidData]: The list of raw database entries
+        """
+        return await self.bot.models.FactoidData.query.where(
+            self.bot.models.FactoidData.guild == str(guild.id)
+        ).gino.all()
+
     async def get_factoid_calls_by_factoid_id(
         self: Self,
         guild: discord.Guild,
         factoid_data_id: int,
-    ) -> list:
+    ) -> list[bot.models.FactoidCall]:
         """Returns all calls pointing to a factoid."""
 
         return await self.bot.models.FactoidCall.query.where(
@@ -250,15 +314,15 @@ class FactoidManager(cogs.BaseCog):
         self: Self,
         guild: discord.Guild,
         name: str,
-    ) -> bot.models.FactoidData:
-        """Searches for the factoid data associated with a given factoid name
+    ) -> FactoidView | None:
+        """Searches for the factoid associated with a given factoid name.
 
         Args:
             guild (discord.Guild): The guild to look for the factoid in
             name (str): The name of the factoid to lookup
 
         Returns:
-            bot.models.FactoidData: The database entry of the factoid data, if found
+            FactoidView | None: The factoid view, if found
         """
 
         call = await self.read_factoid_call(
@@ -269,9 +333,28 @@ class FactoidManager(cogs.BaseCog):
         if call is None:
             return None
 
-        return await self.read_factoid_data(
+        factoid_data = await self.read_factoid_data(
             guild=guild,
             factoid_data_id=call.factoid_data_id,
+        )
+
+        if factoid_data is None:
+            return None
+
+        factoid_calls = await self.get_factoid_calls_by_factoid_id(
+            guild=guild,
+            factoid_data_id=factoid_data.factoid_data_id,
+        )
+
+        return FactoidView(
+            factoid_data_id=factoid_data.factoid_data_id,
+            message=factoid_data.message,
+            json_string=factoid_data.json_string,
+            flags=factoid_data.flags,
+            times_called=factoid_data.times_called,
+            create_time=factoid_data.create_time,
+            edit_time=factoid_data.edit_time,
+            calls=sorted(factoid_call.name for factoid_call in factoid_calls),
         )
 
     async def delete_factoid_by_name(
@@ -353,6 +436,7 @@ class FactoidManager(cogs.BaseCog):
         )
 
         # If there aren't any calls, prevent having orphaned factoids in the database at all
+        # TODO: Make sure this support canceling and deleting jobs
         if not remaining_calls:
             await self.delete_factoid_data(
                 guild=guild,
@@ -360,6 +444,44 @@ class FactoidManager(cogs.BaseCog):
             )
 
         return True
+
+    async def get_all_factoids_for_guild(
+        self: Self,
+        guild: discord.Guild,
+    ) -> list[FactoidView]:
+        factoid_data = await self.get_all_factoid_data(guild)
+        factoid_calls = await self.get_all_factoid_calls(guild)
+
+        calls_by_id: dict[int, list[str]] = {}
+
+        for call in factoid_calls:
+            calls_by_id.setdefault(
+                call.factoid_data_id,
+                [],
+            ).append(call.name)
+
+        views = []
+
+        for factoid in factoid_data:
+            views.append(
+                FactoidView(
+                    factoid_data_id=factoid.factoid_data_id,
+                    message=factoid.message,
+                    json_string=factoid.json_string,
+                    flags=factoid.flags,
+                    times_called=factoid.times_called,
+                    create_time=factoid.create_time,
+                    edit_time=factoid.edit_time,
+                    calls=sorted(
+                        calls_by_id.get(
+                            factoid.factoid_data_id,
+                            [],
+                        )
+                    ),
+                )
+            )
+
+        return views
 
     # OTHER HELPERS
 
@@ -436,6 +558,169 @@ class FactoidManager(cogs.BaseCog):
         await view.wait()
         return view.value
 
+    async def build_factoid_all(
+        self: Self,
+        guild: discord.Guild,
+        factoids: list[FactoidView],
+        use_file: bool,
+    ) -> discord.File | str:
+        """This builds the factoid all url or the yaml file
+
+        Args:
+            guild (discord.Guild): The guild to build factoid all for
+            factoids (list[FactoidView]): The factoids to include in the all
+            use_file (bool): Whether to force the use of a file or not
+
+        Returns:
+            discord.File | str: The final formatted factoid all
+        """
+
+        if use_file:
+            return await self.generate_factoid_all_file(guild, factoids)
+
+        try:
+            html = await self.generate_factoid_all_html(guild, factoids)
+
+            if html is None:
+                return None
+
+            headers = {
+                "Content-Type": "text/plain",
+            }
+
+            response = await self.bot.http_functions.http_call(
+                "put",
+                self.bot.file_config.api.api_url.linx,
+                headers=headers,
+                data=io.StringIO(html),
+                get_raw_response=True,
+            )
+
+            url = response["text"]
+            filename = url.split("/")[-1]
+
+            return url.replace(filename, f"selif/{filename}")
+
+        except (gaierror, InvalidURL) as exception:
+            log_channel = configuration.get_config_entry(
+                guild.id,
+                "core_logging_channel",
+            )
+
+            await self.bot.logger.send_log(
+                message="Could not render/send all-factoid HTML",
+                level=LogLevel.ERROR,
+                context=LogContext(guild=guild),
+                channel=log_channel,
+                exception=exception,
+            )
+
+            return await self.generate_factoid_all_file(guild, factoids)
+
+    async def generate_factoid_all_html(
+        self: Self,
+        guild: discord.Guild,
+        factoids: list[FactoidView],
+    ) -> str:
+        """Method to generate the html file contents
+
+        Args:
+            guild (discord.Guild): The guild the factoids are being pulled from
+            factoids (list[FactoidView]): List of all factoids
+
+        Returns:
+            str: The result html file
+        """
+
+        # Should never hit this, but double check
+        if not factoids:
+            return None
+
+        body_contents = ""
+
+        for factoid in factoids:
+            embed_text = " (embed)" if factoid.json_string else ""
+
+            calls = sorted(factoid.calls)
+
+            calls_text = f" [{', '.join(calls)}]"
+
+            body_contents += (
+                f"<li><code>{calls_text}{embed_text}"
+                f" - {factoid.message}</code></li>"
+            )
+
+        body_contents = f"<ul>{body_contents}</ul>"
+
+        return f"""
+        <!DOCTYPE html>
+
+        <html>
+        <body>
+        <h3>Factoids for {guild.name}</h3>
+        {body_contents}
+        <style>
+        ul {{
+            display: table;
+            width: auto;
+        }}
+
+        ul li {{
+        display: table-row;
+        }}
+
+        ul li:nth-child(even) {{
+        background-color: lightgray;
+        }} </style>
+
+        </body>
+        </html>
+        """
+
+    async def generate_factoid_all_file(
+        self: Self,
+        guild: discord.Guild,
+        factoids: list[FactoidView],
+    ) -> discord.File:
+        """Method to send the factoid list as a file instead of a paste
+
+        Args:
+            guild (discord.Guild): The guild the factoids are from
+            factoids (list[FactoidView]): List of all factoids
+
+        Returns:
+            discord.File: The file, ready to upload to discord
+        """
+
+        # We should never be here, but just in case
+        if not factoids:
+            return None
+
+        output_data = []
+
+        for index, factoid in enumerate(factoids):
+
+            calls = factoid.calls
+
+            data = {
+                "calls": calls,
+                "message": factoid.message,
+                "embed": bool(factoid.json_string),
+            }
+
+            output_data.append(
+                {
+                    index: data,
+                }
+            )
+
+        return discord.File(
+            io.StringIO(yaml.dump(output_data)),
+            filename=(
+                f"factoids-for-server-{guild.id}-{datetime.datetime.utcnow()}.yaml"
+            ),
+        )
+
     # AUTOFILL
 
     async def factoid_autocomplete(
@@ -452,6 +737,7 @@ class FactoidManager(cogs.BaseCog):
         Returns:
             list[app_commands.Choice[str]]: The list of suggestions
         """
+        # TODO: Filter disabled/restricted factoids
 
         guild = interaction.guild
         if guild is None:
@@ -488,6 +774,7 @@ class FactoidManager(cogs.BaseCog):
         self: Self, interaction: discord.Interaction, factoid_name: str
     ) -> None:
         factoid_name = factoid_name.lower()
+        # TODO: Block mentions in factoid messages
 
         # Only ever attempt to add a factoid if it doesn't exist
         if await self.read_factoid_call(guild=interaction.guild, name=factoid_name):
@@ -560,7 +847,7 @@ class FactoidManager(cogs.BaseCog):
                 await interaction.followup.send(embed=embed, ephemeral=True)
             except Exception as exc:
                 await interaction.followup.send(
-                    f"The embed you upload failed: {exc}", ephemeral=True
+                    f"The embed you uploaded failed: {exc}", ephemeral=True
                 )
 
     @app_commands.check(has_manage_factoids_role)
@@ -578,6 +865,10 @@ class FactoidManager(cogs.BaseCog):
         existing_factoid = existing_factoid.lower()
         new_factoid = new_factoid.lower()
 
+        # TODO: Add check for if existing_factoid == new_factoid
+        # TODO: Add check for ensuring both existing and new factoid aren't empty
+        # TODO: This should update the edit time for the FactoidData
+
         factoid = await self.get_factoid_data_by_name(
             guild=interaction.guild, name=existing_factoid
         )
@@ -591,7 +882,7 @@ class FactoidManager(cogs.BaseCog):
             return
 
         # No aliases on protected factoids
-        if factoid.flags & self.FACTOID_FLAG_DISABLED:
+        if factoid.flags & Properties.PROTECTED.value:
             embed = auxiliary.prepare_deny_embed(
                 message=f"The factoid `{existing_factoid}` is protected and cannot be edited."
             )
@@ -640,7 +931,7 @@ class FactoidManager(cogs.BaseCog):
                 factoid_data_id=factoid.factoid_data_id,
             )
 
-        embed = auxiliary.prepare_deny_embed(
+        embed = auxiliary.prepare_confirm_embed(
             message=f"Successfully added the alias `{new_factoid}` for `{existing_factoid}`",
         )
         # Depending on the path took to get here, we may need to followup
@@ -648,6 +939,98 @@ class FactoidManager(cogs.BaseCog):
             await interaction.followup.send(embed=embed)
         else:
             await interaction.response.send_message(embed=embed)
+
+    @factoid_app_group.command(
+        name="all",
+        description="Sends a configurable list of all factoids.",
+        extras={"ephemeral_error": True},
+    )
+    async def factoid_all_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_property: Properties = "",
+        force_file: bool = False,
+        show_all: bool = False,
+    ) -> None:
+        # TODO: Caching - MAYBE
+
+        all_factoids = await self.get_all_factoids_for_guild(guild=interaction.guild)
+
+        # Property filters only avaiable to manage roles
+        if factoid_property or show_all:
+            await has_given_factoids_role(
+                interaction.guild,
+                interaction.user,
+                configuration.get_config_entry(
+                    interaction.guild.id, "factoids_manage_roles"
+                ),
+            )
+
+        # Top priority is abiding by show_all
+        # If not but a specific property is requested, show that
+        # Otherwise, show a normal filtered list, no hidden, no disabled, no restricted
+        if show_all:
+            filtered_factoids = all_factoids
+        elif factoid_property:
+            filtered_factoids = [
+                factoid
+                for factoid in all_factoids
+                if factoid.flags & factoid_property.value
+            ]
+        else:
+            # Determine whether restricted factoids should be visible here
+            should_show_restricted = self.can_channel_send_restricted(
+                interaction.channel,
+            )
+
+            filtered_factoids = [
+                factoid
+                for factoid in all_factoids
+                if (
+                    # Never show hidden factoids normally
+                    not (factoid.flags & Properties.HIDDEN.value)
+                    # Never show disabled factoids normally
+                    and not (factoid.flags & Properties.DISABLED.value)
+                    # Restricted factoids depend on channel
+                    and (
+                        should_show_restricted
+                        or not (factoid.flags & Properties.RESTRICTED.value)
+                    )
+                )
+            ]
+
+        filtered_factoids.sort(key=lambda factoid: factoid.calls[0])
+        if not filtered_factoids:
+            embed = auxiliary.prepare_deny_embed(
+                "No factoids could be found matching your filter"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        # If the linx server isn't configured, we must make it a file
+        if not self.bot.file_config.api.api_url.linx:
+            force_file = True
+
+        await interaction.response.defer(ephemeral=True)
+
+        factoid_all = await self.build_factoid_all(
+            guild=interaction.guild, factoids=filtered_factoids, use_file=force_file
+        )
+
+        if not factoid_all:
+            embed = auxiliary.prepare_deny_embed(
+                "Something went wrong generating the list of factoids"
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        # If we know it's a file, or it's fallen back to a file, send it as a file
+        if isinstance(factoid_all, discord.File):
+            await interaction.followup.send(file=factoid_all, ephemeral=True)
+            return
+
+        embed = auxiliary.prepare_confirm_embed(factoid_all)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @factoid_app_group.command(
         name="call",
@@ -671,7 +1054,10 @@ class FactoidManager(cogs.BaseCog):
         Raises:
             TooLongFactoidMessageError: If the plaintext exceed 2000 characters
         """
-        # TODO: Generic this to support prefix commands?
+        # TODO: Generic this to support prefix calls and loop calls
+        # TODO: New button: I can't see this (print plaintext)
+        # TODO: New button: Save to my DMs (send a copy of the message to the clickers DMs)
+        # TODO: Interact with times called
         factoid_name = factoid_name.lower()
         factoid = await self.get_factoid_data_by_name(
             guild=interaction.guild, name=factoid_name
@@ -684,7 +1070,7 @@ class FactoidManager(cogs.BaseCog):
             return
 
         # Check if factoid is disabled. If so, don't send it
-        if factoid.flags & self.FACTOID_FLAG_DISABLED:
+        if factoid.flags & Properties.DISABLED.value:
             embed = auxiliary.prepare_deny_embed(
                 message=f"The factoid `{factoid_name}` is disabled."
             )
@@ -693,7 +1079,7 @@ class FactoidManager(cogs.BaseCog):
 
         # Check if factoid is restricted. If so, check if we can call it
         if (
-            factoid.flags & self.FACTOID_FLAG_RESTRICTED
+            factoid.flags & Properties.RESTRICTED.value
             and not self.can_channel_send_restricted(interaction.channel)
         ):
             embed = auxiliary.prepare_deny_embed(
