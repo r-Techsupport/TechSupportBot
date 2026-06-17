@@ -1701,6 +1701,30 @@ class FactoidManager(cogs.BaseCog):
                     f"The embed you uploaded failed: {exc}", ephemeral=True
                 )
 
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.check(has_admin_factoids_role)
+    @factoid_app_group.command(
+        name="flush",
+        description="Flushes cached factoids for the current guild",
+    )
+    async def factoid_flush_command(
+        self: Self,
+        interaction: discord.Interaction,
+    ) -> None:
+        """Command designed for fixing issues and debugging.
+        Will empty the cache for the current guild
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+        """
+        # TODO: Will need to clear factoid all cache when it exists
+        for entry in list(self.factoid_cache.keys()):
+            if entry.startswith(str(interaction.guild.id)):
+                del self.factoid_cache[entry]
+
+        embed = auxiliary.prepare_confirm_embed("Factoid cache for this guild cleared")
+        await interaction.response.send_message(embed=embed)
+
 
 class ButtonView(discord.ui.View):
     # TODO: Migrate to LayoutView
