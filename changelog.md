@@ -30,8 +30,11 @@ Changes since 2026.06.15
 ### Factoid
 - Complete migration to application commands
 - Factoids are now allowed to use spaces
-- Fix permissions on /factoid add
+- /factoid add was renamed to /factoid create
+- Fix permissions on /factoid create
 - /factoid all has been reworked, is now always ephemeral
+- /factoid call now works respects threads and restricted factoids
+- /factoid dealias now shows the remaining aliases on success
 
 ### Relay
 - Make relay only ping users with words starting with an @
