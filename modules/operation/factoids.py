@@ -13,9 +13,10 @@ import yaml
 from aiohttp.client_exceptions import InvalidURL
 from discord import app_commands
 
+import configuration
 import ui
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, configuration
+from core import auxiliary, cogs
 
 if TYPE_CHECKING:
     import bot
@@ -693,7 +694,7 @@ class FactoidManager(cogs.BaseCog):
         Returns:
             discord.File: The file, ready to upload to discord
         """
-
+        # TODO: Include properties in the yaml file
         # We should never be here, but just in case
         if not factoids:
             return None
@@ -777,6 +778,7 @@ class FactoidManager(cogs.BaseCog):
     ) -> None:
         factoid_name = factoid_name.lower()
         # TODO: Block mentions in factoid messages
+        # TODO: Rename command to /factoid create
 
         # Only ever attempt to add a factoid if it doesn't exist
         if await self.read_factoid_call(guild=interaction.guild, name=factoid_name):
