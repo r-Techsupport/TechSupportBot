@@ -28,8 +28,10 @@ Changes since 2026.06.15
 ## Operation
 
 ### Factoid
-- Make /factoid call work with factoids with spaces
+- Complete migration to application commands
+- Factoids are now allowed to use spaces
 - Fix permissions on /factoid add
+- /factoid all has been reworked, is now always ephemeral
 
 ### Relay
 - Make relay only ping users with words starting with an @

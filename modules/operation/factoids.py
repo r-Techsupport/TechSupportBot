@@ -325,6 +325,8 @@ class FactoidManager(cogs.BaseCog):
             FactoidView | None: The factoid view, if found
         """
 
+        # TODO: This should 100% have a cache. Cache the entire FactoidView object
+
         call = await self.read_factoid_call(
             guild=guild,
             name=name,
