@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import datetime
 import io
 import json
+import re
 from dataclasses import dataclass
 from enum import Enum
 from socket import gaierror
@@ -17,6 +19,7 @@ import configuration
 import ui
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs
+from modules.moderation import logger as function_logger
 
 if TYPE_CHECKING:
     import bot
@@ -141,11 +144,14 @@ class FactoidManager(cogs.BaseCog):
     )
 
     # PRECONFIG
+
     async def preconfig(self: Self) -> None:
         """This sets up cache and job loop calls"""
         # TODO: Factoid all cache
         # TODO: Loops
         self.factoid_cache: dict[str, FactoidView] = {}
+
+    # DATABASE CALLS
 
     async def create_factoid_call(
         self: Self,
@@ -340,7 +346,6 @@ class FactoidManager(cogs.BaseCog):
 
         cached_data = self.get_from_cache(guild, call.factoid_data_id)
         if cached_data:
-            print("WOOOO")
             return cached_data
 
         factoid_data = await self.read_factoid_data(
@@ -755,6 +760,167 @@ class FactoidManager(cogs.BaseCog):
             ),
         )
 
+    async def generate_sendable_factoid(
+        self: Self, guild: discord.Guild, factoid: FactoidView
+    ) -> tuple[discord.Embed, str]:
+        """This generates the embed and plaintext versions of a factoid, to prepare to be sent
+
+        Args:
+            guild (discord.Guild): The guild the factoid exists in
+            factoid (FactoidView): The factoid to send
+
+        Returns:
+            tuple[discord.Embed, str]: The embed if created (or None), the plaintext version
+        """
+        plaintext = factoid.message
+        if configuration.get_config_entry(guild.id, "factoids_disable_embeds"):
+            return (None, plaintext)
+        embed = None
+        try:
+            embed = self.get_embed_from_factoid(factoid)
+        except TypeError as exception:
+            await self.bot.logger.send_log(
+                message=(
+                    f"Unable to make embed for factoid `[{", ".join(factoid.calls)}]`, "
+                    "sending fallback."
+                ),
+                level=LogLevel.ERROR,
+                channel=configuration.get_config_entry(
+                    guild.id,
+                    "core_logging_channel",
+                ),
+                context=LogContext(
+                    guild=guild,
+                ),
+                exception=exception,
+            )
+        return (embed, plaintext)
+
+    async def log_factoid_send(
+        self: Self,
+        guild: discord.Guild,
+        channel: discord.abc.GuildChannel,
+        sender: discord.Member,
+        factoid: FactoidView,
+    ) -> None:
+        """This sends a factoid call to the bot log channel
+
+        Args:
+            guild (discord.Guild): The guild the factoid was sent to
+            channel (discord.abc.GuildChannel): The channel the factoid was sent to
+            sender (discord.Member): The member who sent the factoid
+            factoid (FactoidView): The factoid that was sent
+        """
+
+        log_channel = configuration.get_config_entry(guild.id, "core_logging_channel")
+        await self.bot.logger.send_log(
+            message=(
+                f"Sending factoid: `[{", ".join(factoid.calls)}]` (triggered by {sender} in"
+                f" #{channel.name})"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(guild=guild, channel=channel),
+            channel=log_channel,
+        )
+
+    def send_factoid_to_irc(
+        self: Self,
+        channel: discord.abc.Messageable,
+        factoid: FactoidView,
+        author: discord.Member,
+    ) -> None:
+        """If relevant, will send a factoid to the bridged IRC channel
+
+        Args:
+            channel (discord.abc.Messageable): The discord channel the message was sent in
+            factoid (FactoidView): The factoid that was sent
+            author (discord.Member): The member who sent the factoid. May be the bot
+        """
+        irc_config = self.bot.file_config.api.irc
+        if not irc_config.enable_irc:
+            return
+
+        self.bot.irc.irc_cog.handle_factoid(
+            channel=channel,
+            factoid=factoid,
+            author=author,
+        )
+
+    async def send_factoid_to_logger(
+        self: Self,
+        factoid_message_object: discord.Message,
+        factoid_caller: discord.Member,
+        channel: discord.abc.GuildChannel | discord.Thread,
+        factoid_message: str,
+    ) -> None:
+        """Send a factoid call to the logger function
+
+        Args:
+            factoid_message_object (discord.Message): The message that the factoid is sent in
+            factoid_caller (discord.Member): The person who called the factoid
+            channel (discord.abc.GuildChannel | discord.Thread): The channel the
+                factoid was sent in
+            factoid_message (str): The plaintext message content of the factoid
+        """
+        # Don't allow logging if extension is disabled
+        if "moderation.logger" not in configuration.get_config_entry(
+            factoid_caller.guild.id, "core_enabled_extensions"
+        ):
+            return
+
+        target_logging_channel = await function_logger.pre_log_checks(self.bot, channel)
+        if not target_logging_channel:
+            return
+
+        await function_logger.send_message(
+            self.bot,
+            factoid_message_object,
+            factoid_caller,
+            channel,
+            target_logging_channel,
+            content_override=factoid_message,
+            special_flags=["Factoid call"],
+        )
+
+    def check_valid_name(self: Self, name: str) -> bool:
+        """This checks if the name of a factoid is valid or not
+
+        Args:
+            name (str): The name of the factoid to check
+
+        Returns:
+            bool: Whether this name is allowable
+        """
+        # Rule 1: name must exist
+        if not name:
+            return False
+        # Rule 2: No commas
+        elif "," in name:
+            return False
+
+        # Factoid name passed all the rules
+        return True
+
+    def check_valid_message(self: Self, message: str) -> bool:
+        """This checks if the message of a factoid is valid or not
+
+        Args:
+            message (str): The message of the factoid to check
+
+        Returns:
+            bool: Whether this message is allowable
+        """
+        mention_regex = re.compile(r"(@everyone|@here|<@[!&]?\d+>|<#\d+>)")
+        # Rule 1, no mentions
+        if mention_regex.search(message):
+            return False
+        # Rule 2, ensure length is no longer than discord can handle
+        elif len(message) > 2000:
+            return False
+
+        # Message passes all rules
+        return True
+
     # AUTOFILL
 
     async def factoid_autocomplete(
@@ -814,9 +980,21 @@ class FactoidManager(cogs.BaseCog):
         existing_factoid = existing_factoid.lower()
         new_factoid = new_factoid.lower()
 
-        # TODO: Add check for if existing_factoid == new_factoid
-        # TODO: Add check for ensuring both existing and new factoid aren't empty
         # TODO: This should update the edit time for the FactoidData
+
+        if not self.check_valid_name(new_factoid):
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid name `{new_factoid}` is invalid and cannot be used!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        if new_factoid == existing_factoid:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"You cannot alias a factoid to itself!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
 
         factoid = await self.get_factoid_view_by_name(
             guild=interaction.guild, name=existing_factoid
@@ -995,8 +1173,6 @@ class FactoidManager(cogs.BaseCog):
         self: Self, interaction: discord.Interaction, factoid_name: str
     ) -> None:
         factoid_name = factoid_name.lower()
-        # TODO: Block mentions in factoid messages
-
         # Only ever attempt to add a factoid if it doesn't exist
         if await self.read_factoid_call(guild=interaction.guild, name=factoid_name):
             embed = auxiliary.prepare_deny_embed(
@@ -1005,9 +1181,23 @@ class FactoidManager(cogs.BaseCog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
+        if not self.check_valid_name(factoid_name):
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid name `{factoid_name}` is invalid and cannot be used!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
         form = NewFactoid(factoid_name)
         await interaction.response.send_modal(form)
         await form.wait()
+
+        if not self.check_valid_message(form.plaintext.component.value):
+            embed = auxiliary.prepare_deny_embed(
+                message="The message content is invalid and cannot be used!"
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
 
         embed_json_string = ""
 
@@ -1093,10 +1283,10 @@ class FactoidManager(cogs.BaseCog):
         Raises:
             TooLongFactoidMessageError: If the plaintext exceed 2000 characters
         """
-        # TODO: Generic this to support prefix calls and loop calls
         # TODO: New button: I can't see this (print plaintext)
         # TODO: New button: Save to my DMs (send a copy of the message to the clickers DMs)
         # TODO: Interact with times called
+
         factoid_name = factoid_name.lower()
         factoid = await self.get_factoid_view_by_name(
             guild=interaction.guild, name=factoid_name
@@ -1130,31 +1320,19 @@ class FactoidManager(cogs.BaseCog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        plaintext_content = factoid.message
-        embed = None
+        embed, plaintext_content = await self.generate_sendable_factoid(
+            interaction.guild, factoid
+        )
 
-        if not configuration.get_config_entry(
-            interaction.guild.id, "factoids_disable_embeds"
-        ):
-            try:
-                embed = self.get_embed_from_factoid(factoid)
-            except TypeError as exception:
-                await self.bot.logger.send_log(
-                    message=(
-                        f"Unable to make embed for factoid `{factoid_name}`, "
-                        "sending fallback."
-                    ),
-                    level=LogLevel.ERROR,
-                    channel=configuration.get_config_entry(
-                        interaction.guild.id,
-                        "core_logging_channel",
-                    ),
-                    context=LogContext(
-                        guild=interaction.guild,
-                        channel=interaction.channel,
-                    ),
-                    exception=exception,
-                )
+        # Log in the background
+        asyncio.create_task(
+            self.log_factoid_send(
+                guild=interaction.guild,
+                channel=interaction.channel,
+                sender=interaction.user,
+                factoid=factoid,
+            )
+        )
 
         content = ""
         if member_to_ping:
@@ -1171,23 +1349,7 @@ class FactoidManager(cogs.BaseCog):
                     embed=embed,
                     view=view,
                 )
-
                 view.message = await interaction.original_response()
-                # log it in the logging channel with type info and generic content
-                log_channel = configuration.get_config_entry(
-                    interaction.guild.id, "core_logging_channel"
-                )
-                await self.bot.logger.send_log(
-                    message=(
-                        f"Sending factoid: `{factoid_name}` (triggered by {interaction.user} in"
-                        f" #{interaction.channel.name})"
-                    ),
-                    level=LogLevel.INFO,
-                    context=LogContext(
-                        guild=interaction.guild, channel=interaction.channel
-                    ),
-                    channel=log_channel,
-                )
                 embed_sent = True
             # If something breaks, also log it
             except discord.errors.HTTPException as exception:
@@ -1221,8 +1383,14 @@ class FactoidManager(cogs.BaseCog):
             await interaction.response.send_message(content=content, view=view)
             view.message = await interaction.original_response()
 
-        # TODO: Send to IRC
-        # TODO: Send to Logger
+        # IRC connection
+        self.send_factoid_to_irc(interaction.channel, factoid, interaction.user)
+
+        # Logger connection
+        sent_message = await interaction.original_response()
+        await self.send_factoid_to_logger(
+            sent_message, interaction.user, interaction.channel, factoid.message
+        )
 
     @app_commands.check(has_manage_factoids_role)
     @factoid_app_group.command(
@@ -1341,7 +1509,7 @@ class NewFactoid(discord.ui.Modal):
     """
 
     def __init__(self: Self, factoid: str) -> None:
-        super().__init__(title=f"Creating factoid {factoid}")
+        super().__init__(title=f"Creating factoid {factoid}"[:45])
 
     plaintext: discord.ui.Label = discord.ui.Label(
         text="Plaintext:",

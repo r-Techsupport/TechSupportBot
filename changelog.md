@@ -34,6 +34,7 @@ Changes since 2026.06.15
 - Fix permissions on /factoid create
 - /factoid all has been reworked, is now always ephemeral
 - /factoid call now works respects threads and restricted factoids
+- /factoid call now works with IRC
 - /factoid dealias now shows the remaining aliases on success
 
 ### Relay

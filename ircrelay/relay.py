@@ -18,6 +18,7 @@ import irc.connection
 
 import modules.operation
 from ircrelay import formatting
+from modules.operation import factoids
 
 
 class IRCBot(irc.bot.SingleServerIRCBot):
@@ -268,6 +269,12 @@ class IRCBot(irc.bot.SingleServerIRCBot):
         formatted_message = formatting.format_discord_reaction_message(
             reaction.message, user, reaction
         )
+        self.send_message_to_channel(channel=channel, message=formatted_message)
+
+    def send_factoid_from_discord(
+        self: Self, channel: str, factoid: factoids.FactoidView, author: discord.Member
+    ) -> str:
+        formatted_message = formatting.factoid_format(factoid=factoid, author=author)
         self.send_message_to_channel(channel=channel, message=formatted_message)
 
     def send_message_from_discord(
