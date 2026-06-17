@@ -137,6 +137,7 @@ class Properties(Enum):
     RESTRICTED: int = 0b0001
 
 
+# TODO: create/edit need to have duplicate json file to string code generic shared function
 class FactoidManager(cogs.BaseCog):
 
     factoid_app_group: app_commands.Group = app_commands.Group(
@@ -278,6 +279,48 @@ class FactoidManager(cogs.BaseCog):
             (self.bot.models.FactoidData.guild == str(guild.id))
             & (self.bot.models.FactoidData.factoid_data_id == factoid_data_id)
         ).gino.first()
+
+    async def update_factoid_data(
+        self: Self,
+        guild: discord.Guild,
+        factoid_data_id: int,
+        message: str = None,
+        edit_time: datetime.datetime = None,
+        flags: int = None,
+        times_called: int = None,
+        json_string: str = None,
+    ) -> bot.models.FactoidData:
+        """Partially updates a factoid data entry."""
+
+        db_entry = await self.read_factoid_data(
+            guild=guild,
+            factoid_data_id=factoid_data_id,
+        )
+
+        update_values = {}
+
+        if message is not None:
+            update_values["message"] = message
+
+        if edit_time is not None:
+            update_values["edit_time"] = edit_time
+
+        if flags is not None:
+            update_values["flags"] = flags
+
+        if times_called is not None:
+            update_values["times_called"] = times_called
+
+        # special case: json_string can be explicitly cleared
+        if json_string is not None:
+            update_values["json_string"] = json_string
+        else:
+            update_values["json_string"] = ""
+
+        if update_values:
+            await db_entry.update(**update_values).apply()
+
+        return db_entry
 
     async def delete_factoid_call(
         self: Self,
@@ -1108,6 +1151,7 @@ class FactoidManager(cogs.BaseCog):
         show_all: bool = False,
     ) -> None:
         # TODO: Caching - MAYBE
+        # TODO: Check if guild has zero factoids, make special error
         # Caching here would require us to build a guild:properties_flags key
 
         all_factoids = await self.get_all_factoids_for_guild(guild=interaction.guild)
@@ -1343,7 +1387,7 @@ class FactoidManager(cogs.BaseCog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        form = NewFactoid(factoid_name)
+        form = FactoidModal(factoid_name, edit_mode=False)
         await interaction.response.send_modal(form)
         await form.wait()
 
@@ -1380,12 +1424,7 @@ class FactoidManager(cogs.BaseCog):
 
         selected = set(form.properties.component.values)
 
-        property_binary = (
-            ("disabled" in selected) << 3
-            | ("hidden" in selected) << 2
-            | ("protected" in selected) << 1
-            | ("restricted" in selected)
-        )
+        property_binary = sum(int(value) for value in selected)
 
         factoid = await self.create_factoid_data(
             guild=interaction.guild,
@@ -1540,6 +1579,128 @@ class FactoidManager(cogs.BaseCog):
         )
         await interaction.followup.send(embed=embed)
 
+    @app_commands.check(has_manage_factoids_role)
+    @factoid_app_group.command(
+        name="edit",
+        description="Edits an existing factoids message, embed or properties",
+    )
+    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    async def factoid_edit_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+    ) -> None:
+        """This edits an existing factoid, allowing changes to the properties, message, and embed
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid to edit
+        """
+        factoid_name = factoid_name.lower()
+        factoid = await self.get_factoid_view_by_name(
+            guild=interaction.guild, name=factoid_name
+        )
+
+        # We can't edit a factoid if it doesn't exist
+        if not factoid:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` doesn't exist!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        # No edits on protected factoids
+        if factoid.flags & Properties.PROTECTED.value:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` is protected and cannot be edited."
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        form = FactoidModal(factoid_name, edit_mode=True, factoid=factoid)
+        await interaction.response.send_modal(form)
+        await form.wait()
+
+        if not self.check_valid_message(form.plaintext.component.value):
+            embed = auxiliary.prepare_deny_embed(
+                message="The message content is invalid and cannot be used!"
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        show_plaintext = False
+        show_embed = False
+
+        if form.plaintext.component.value != factoid.message:
+            show_plaintext = True
+
+        # Embed handling.
+        embed_json_string = ""
+        embed_choice = form.json_action.component.value
+        if embed_choice == "keep":
+            embed_json_string = factoid.json_string
+        elif embed_choice == "replace":
+            show_embed = True
+            # In order to replace we must have a json file
+            if not form.embed.component.values:
+                embed = auxiliary.prepare_deny_embed(
+                    message="The json file was requested to be replaced, but no file was uploaded"
+                )
+                await interaction.followup.send(embed=embed, ephemeral=True)
+                return
+            embed_file: discord.Attachment = form.embed.component.values[0]
+
+            if not embed_file.filename.endswith(".json"):
+                embed = auxiliary.prepare_deny_embed(
+                    message="I don't recognize your upload as a JSON file.",
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            try:
+                json_bytes = await embed_file.read()
+                attachment_json = json.loads(json_bytes.decode("UTF-8"))
+                embed_json_string = json.dumps(attachment_json)
+
+            except Exception:
+                embed = auxiliary.prepare_deny_embed(
+                    message="I couldn't parse the uploaded JSON file.",
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+        # Get the property changes
+        selected = set(form.properties.component.values)
+        property_binary = sum(int(value) for value in selected)
+
+        # Remove factoid from cache after editing
+        self.remove_from_cache(interaction.guild, factoid)
+
+        factoid = await self.update_factoid_data(
+            guild=interaction.guild,
+            factoid_data_id=factoid.factoid_data_id,
+            message=form.plaintext.component.value,
+            flags=property_binary,
+            json_string=embed_json_string,
+        )
+
+        embed = auxiliary.prepare_confirm_embed(
+            message=f"Your factoid `{factoid_name}` was successfully edited!",
+        )
+        await interaction.followup.send(embed=embed)
+
+        # If plaintext or embed was edited, show the new version to the user
+        if show_plaintext:
+            await interaction.followup.send(content=factoid.message, ephemeral=True)
+        if show_embed:
+            try:
+                embed = self.get_embed_from_factoid(factoid=factoid)
+                await interaction.followup.send(embed=embed, ephemeral=True)
+            except Exception as exc:
+                await interaction.followup.send(
+                    f"The embed you uploaded failed: {exc}", ephemeral=True
+                )
+
 
 class ButtonView(discord.ui.View):
     # TODO: Migrate to LayoutView
@@ -1640,8 +1801,8 @@ class ButtonView(discord.ui.View):
         )
 
 
-class NewFactoid(discord.ui.Modal):
-    """A Modal that contains information to make a new factoid
+class FactoidModal(discord.ui.Modal):
+    """A Modal that contains information to make or edit a factoid
     This has the user fill in plaintext content, upload an embed json file
     And select default properties for the factoid
 
@@ -1654,37 +1815,83 @@ class NewFactoid(discord.ui.Modal):
         properties (discord.ui.Label): The properties of the factoid, such as hidden or disabled
     """
 
-    def __init__(self: Self, factoid: str) -> None:
-        super().__init__(title=f"Creating factoid {factoid}"[:45])
+    def __init__(
+        self,
+        factoid_name: str,
+        edit_mode: bool,
+        factoid: FactoidView | None = None,
+    ) -> None:
+        super().__init__(
+            title=(
+                f"Editing factoid {factoid_name}"
+                if edit_mode
+                else f"Creating factoid {factoid_name}"
+            )[:45]
+        )
 
-    plaintext: discord.ui.Label = discord.ui.Label(
-        text="Plaintext:",
-        component=discord.ui.TextInput(style=discord.TextStyle.long, required=True),
-    )
-    embed: discord.ui.Label = discord.ui.Label(
-        text="Embed json:", component=discord.ui.FileUpload(required=False)
-    )
-    properties: discord.ui.Label = discord.ui.Label(
-        text="Properties:",
-        component=discord.ui.CheckboxGroup(
-            max_values=4,
-            required=False,
-            options=[
-                discord.CheckboxGroupOption(
-                    default=False, label="Disabled", value="disabled"
+        self.plaintext = discord.ui.Label(
+            text="Plaintext:",
+            component=discord.ui.TextInput(
+                style=discord.TextStyle.long,
+                required=True,
+                default=factoid.message if factoid else None,
+            ),
+        )
+
+        self.add_item(self.plaintext)
+
+        if edit_mode:
+            self.json_action = discord.ui.Label(
+                text="JSON Action:",
+                component=discord.ui.RadioGroup(
+                    required=True,
+                    options=[
+                        discord.RadioGroupOption(
+                            label="Keep Existing",
+                            value="keep",
+                            default=True,
+                        ),
+                        discord.RadioGroupOption(
+                            label="Remove Existing",
+                            value="remove",
+                        ),
+                        discord.RadioGroupOption(
+                            label="Replace Existing",
+                            value="replace",
+                        ),
+                    ],
                 ),
+            )
+
+            self.add_item(self.json_action)
+
+        self.embed = discord.ui.Label(
+            text="Embed JSON:",
+            component=discord.ui.FileUpload(required=False),
+        )
+
+        self.add_item(self.embed)
+
+        property_options = []
+
+        for prop in Properties:
+            property_options.append(
                 discord.CheckboxGroupOption(
-                    default=False, label="Hidden", value="hidden"
-                ),
-                discord.CheckboxGroupOption(
-                    default=False, label="Protected", value="protected"
-                ),
-                discord.CheckboxGroupOption(
-                    default=False, label="Restricted", value="restricted"
-                ),
-            ],
-        ),
-    )
+                    label=prop.name.title(),
+                    value=str(prop.value),
+                    default=(bool(factoid.flags & prop.value) if factoid else False),
+                )
+            )
+        self.properties = discord.ui.Label(
+            text="Properties:",
+            component=discord.ui.CheckboxGroup(
+                max_values=len(property_options),
+                required=False,
+                options=property_options,
+            ),
+        )
+
+        self.add_item(self.properties)
 
     async def on_submit(self: Self, interaction: discord.Interaction) -> None:
         """What happens when the form has been successfully submitted
