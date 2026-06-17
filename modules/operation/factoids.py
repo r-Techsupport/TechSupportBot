@@ -372,7 +372,7 @@ class FactoidManager(cogs.BaseCog):
             calls=sorted(factoid_call.name for factoid_call in factoid_calls),
         )
 
-    async def delete_factoid_by_name(
+    async def delete_factoid_call_by_name(
         self: Self,
         guild: discord.Guild,
         name: str,
@@ -388,7 +388,7 @@ class FactoidManager(cogs.BaseCog):
             name=name,
         )
 
-        if call is None:
+        if not call:
             return False
 
         factoid_data_id = call.factoid_data_id
@@ -411,6 +411,31 @@ class FactoidManager(cogs.BaseCog):
                 factoid_data_id=factoid_data_id,
             )
 
+        return True
+
+    async def delete_factoid_data_by_id(
+        self: Self, guild: discord.Guild, id: int
+    ) -> bool:
+        """This deletes all FactoidData, FactoidCall and FactoidJob for the factoid ID passed
+
+        Args:
+            guild (discord.Guild): The guild the factoid to delete is in
+            id (int): The ID of the factoid to delete
+
+        Returns:
+            bool: Whether or not this was successful
+        """
+        # TODO: Make sure this support jobs
+        data = await self.read_factoid_data(guild, id)
+        calls = await self.get_factoid_calls_by_factoid_id(guild, id)
+
+        if not data or not calls:
+            return False
+
+        for call in calls:
+            await call.delete()
+
+        await data.delete()
         return True
 
     async def move_factoid_call(
@@ -509,7 +534,8 @@ class FactoidManager(cogs.BaseCog):
         self: Self, guild: discord.Guild, factoid: FactoidView
     ) -> None:
         cache_key = self.generate_cache_key(guild, factoid.factoid_data_id)
-        del self.factoid_cache[cache_key]
+        if cache_key in self.factoid_cache:
+            del self.factoid_cache[cache_key]
 
     def get_from_cache(
         self: Self, guild: discord.Guild, factoid_id: int
@@ -569,7 +595,7 @@ class FactoidManager(cogs.BaseCog):
     async def confirm_factoid_deletion(
         self: Self,
         interaction: discord.Interaction,
-        factoid_name: str,
+        display_message: str,
         channel: discord.abc.GuildChannel,
         author: discord.Member,
     ) -> ui.ConfirmResponse:
@@ -586,9 +612,7 @@ class FactoidManager(cogs.BaseCog):
         """
         view = ui.Confirm()
         await view.send(
-            message=(
-                f"The factoid `{factoid_name}` already exists. Should I overwrite it?"
-            ),
+            message=display_message,
             channel=channel,
             author=author,
             interaction=interaction,
@@ -1033,14 +1057,14 @@ class FactoidManager(cogs.BaseCog):
             await interaction.response.defer()
             confirmation_response = await self.confirm_factoid_deletion(
                 interaction=interaction,
-                factoid_name=new_factoid,
+                factoid_name=f"The factoid `{new_factoid}` already exists. Should I overwrite it?",
                 channel=interaction.channel,
                 author=interaction.user,
             )
             if confirmation_response == ui.ConfirmResponse.TIMEOUT:
                 return
             elif confirmation_response == ui.ConfirmResponse.DENIED:
-                embed = await auxiliary.prepare_deny_embed(
+                embed = auxiliary.prepare_deny_embed(
                     message=f"The factoid `{new_factoid}` was not replaced.",
                 )
                 interaction.followup.send(embed=embed)
@@ -1163,103 +1187,6 @@ class FactoidManager(cogs.BaseCog):
 
         embed = auxiliary.prepare_confirm_embed(factoid_all)
         await interaction.followup.send(embed=embed, ephemeral=True)
-
-    @app_commands.check(has_manage_factoids_role)
-    @factoid_app_group.command(
-        name="create",
-        description="Creates a new factoid by name",
-    )
-    async def factoid_create_command(
-        self: Self, interaction: discord.Interaction, factoid_name: str
-    ) -> None:
-        factoid_name = factoid_name.lower()
-        # Only ever attempt to add a factoid if it doesn't exist
-        if await self.read_factoid_call(guild=interaction.guild, name=factoid_name):
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` already exists"
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-
-        if not self.check_valid_name(factoid_name):
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid name `{factoid_name}` is invalid and cannot be used!"
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-
-        form = NewFactoid(factoid_name)
-        await interaction.response.send_modal(form)
-        await form.wait()
-
-        if not self.check_valid_message(form.plaintext.component.value):
-            embed = auxiliary.prepare_deny_embed(
-                message="The message content is invalid and cannot be used!"
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
-            return
-
-        embed_json_string = ""
-
-        if form.embed.component.values:
-            embed_file: discord.Attachment = form.embed.component.values[0]
-
-            if not embed_file.filename.endswith(".json"):
-                embed = auxiliary.prepare_deny_embed(
-                    message="I don't recognize your upload as a JSON file.",
-                )
-                await interaction.followup.send(embed=embed)
-                return
-
-            try:
-                json_bytes = await embed_file.read()
-                attachment_json = json.loads(json_bytes.decode("UTF-8"))
-                embed_json_string = json.dumps(attachment_json)
-
-            except Exception:
-                embed = auxiliary.prepare_deny_embed(
-                    message="I couldn't parse the uploaded JSON file.",
-                )
-                await interaction.followup.send(embed=embed)
-                return
-
-        selected = set(form.properties.component.values)
-
-        property_binary = (
-            ("disabled" in selected) << 3
-            | ("hidden" in selected) << 2
-            | ("protected" in selected) << 1
-            | ("restricted" in selected)
-        )
-
-        factoid = await self.create_factoid_data(
-            guild=interaction.guild,
-            message=form.plaintext.component.value,
-            json_string=embed_json_string,
-            flags=property_binary,
-        )
-
-        await self.create_factoid_call(
-            guild=interaction.guild,
-            name=factoid_name,
-            factoid_data_id=factoid.factoid_data_id,
-        )
-
-        embed = auxiliary.prepare_confirm_embed(
-            message=f"Your factoid `{factoid_name}` was successfully created!",
-        )
-        await interaction.followup.send(embed=embed)
-
-        # Send the factoid, and embed json if exists, to the user
-        await interaction.followup.send(content=factoid.message, ephemeral=True)
-        if embed_json_string:
-            try:
-                embed = self.get_embed_from_factoid(factoid=factoid)
-                await interaction.followup.send(embed=embed, ephemeral=True)
-            except Exception as exc:
-                await interaction.followup.send(
-                    f"The embed you uploaded failed: {exc}", ephemeral=True
-                )
 
     @factoid_app_group.command(
         name="call",
@@ -1394,6 +1321,103 @@ class FactoidManager(cogs.BaseCog):
 
     @app_commands.check(has_manage_factoids_role)
     @factoid_app_group.command(
+        name="create",
+        description="Creates a new factoid by name",
+    )
+    async def factoid_create_command(
+        self: Self, interaction: discord.Interaction, factoid_name: str
+    ) -> None:
+        factoid_name = factoid_name.lower()
+        # Only ever attempt to add a factoid if it doesn't exist
+        if await self.read_factoid_call(guild=interaction.guild, name=factoid_name):
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` already exists"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        if not self.check_valid_name(factoid_name):
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid name `{factoid_name}` is invalid and cannot be used!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        form = NewFactoid(factoid_name)
+        await interaction.response.send_modal(form)
+        await form.wait()
+
+        if not self.check_valid_message(form.plaintext.component.value):
+            embed = auxiliary.prepare_deny_embed(
+                message="The message content is invalid and cannot be used!"
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
+        embed_json_string = ""
+
+        if form.embed.component.values:
+            embed_file: discord.Attachment = form.embed.component.values[0]
+
+            if not embed_file.filename.endswith(".json"):
+                embed = auxiliary.prepare_deny_embed(
+                    message="I don't recognize your upload as a JSON file.",
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            try:
+                json_bytes = await embed_file.read()
+                attachment_json = json.loads(json_bytes.decode("UTF-8"))
+                embed_json_string = json.dumps(attachment_json)
+
+            except Exception:
+                embed = auxiliary.prepare_deny_embed(
+                    message="I couldn't parse the uploaded JSON file.",
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+        selected = set(form.properties.component.values)
+
+        property_binary = (
+            ("disabled" in selected) << 3
+            | ("hidden" in selected) << 2
+            | ("protected" in selected) << 1
+            | ("restricted" in selected)
+        )
+
+        factoid = await self.create_factoid_data(
+            guild=interaction.guild,
+            message=form.plaintext.component.value,
+            json_string=embed_json_string,
+            flags=property_binary,
+        )
+
+        await self.create_factoid_call(
+            guild=interaction.guild,
+            name=factoid_name,
+            factoid_data_id=factoid.factoid_data_id,
+        )
+
+        embed = auxiliary.prepare_confirm_embed(
+            message=f"Your factoid `{factoid_name}` was successfully created!",
+        )
+        await interaction.followup.send(embed=embed)
+
+        # Send the factoid, and embed json if exists, to the user
+        await interaction.followup.send(content=factoid.message, ephemeral=True)
+        if embed_json_string:
+            try:
+                embed = self.get_embed_from_factoid(factoid=factoid)
+                await interaction.followup.send(embed=embed, ephemeral=True)
+            except Exception as exc:
+                await interaction.followup.send(
+                    f"The embed you uploaded failed: {exc}", ephemeral=True
+                )
+
+    @app_commands.check(has_manage_factoids_role)
+    @factoid_app_group.command(
         name="dealias",
         description="Deletes an alias for an existing factoid call",
     )
@@ -1450,6 +1474,71 @@ class FactoidManager(cogs.BaseCog):
         self.remove_from_cache(interaction.guild, factoid)
 
         await interaction.response.send_message(embed=embed)
+
+    @app_commands.check(has_manage_factoids_role)
+    @factoid_app_group.command(
+        name="delete",
+        description="Deletes a factoid, all aliases and all jobs",
+    )
+    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    async def factoid_delete_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+    ) -> None:
+        """This deletes a factoid from the database entirely
+        All FactoidCall and FactoidJob entries will be deleted
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid to dealias
+        """
+        factoid_name = factoid_name.lower()
+        factoid = await self.get_factoid_view_by_name(
+            guild=interaction.guild, name=factoid_name
+        )
+
+        # We can't delete a factoid if it doesn't exist
+        if not factoid:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` doesn't exist!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        # No edits on protected factoids
+        if factoid.flags & Properties.PROTECTED.value:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` is protected and cannot be edited."
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        await interaction.response.defer()
+        confirmation_response = await self.confirm_factoid_deletion(
+            interaction=interaction,
+            display_message=f"Are you sure you want to delete the factoid `[{", ".join(factoid.calls)}]`?",
+            channel=interaction.channel,
+            author=interaction.user,
+        )
+        if confirmation_response == ui.ConfirmResponse.TIMEOUT:
+            return
+        elif confirmation_response == ui.ConfirmResponse.DENIED:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` was not deleted.",
+            )
+            interaction.followup.send(embed=embed)
+            return
+
+        await self.delete_factoid_data_by_id(interaction.guild, factoid.factoid_data_id)
+
+        # Remove factoid from cache after deleting
+        self.remove_from_cache(interaction.guild, factoid)
+
+        embed = auxiliary.prepare_confirm_embed(
+            f"The factoid `[{", ".join(factoid.calls)}]` was deleted"
+        )
+        await interaction.followup.send(embed=embed)
 
 
 class ButtonView(discord.ui.View):
