@@ -71,7 +71,7 @@ async def has_given_factoids_role(
         check_roles (list[str]): The list of string names of roles
 
     Raises:
-        CommandError: No management roles assigned in the config
+        AppCommandError: No management roles assigned in the config
         MissingAnyRole: Invoker doesn't have a factoid management role
 
     Returns:
@@ -141,7 +141,8 @@ class Properties(Enum):
 class FactoidManager(cogs.BaseCog):
 
     factoid_app_group: app_commands.Group = app_commands.Group(
-        name="factoid", description="Command Group for the Factoids Extension"
+        name="factoid",
+        description="Commands to create, manage and use the factoids system",
     )
 
     # PRECONFIG
@@ -311,11 +312,8 @@ class FactoidManager(cogs.BaseCog):
         if times_called is not None:
             update_values["times_called"] = times_called
 
-        # special case: json_string can be explicitly cleared
         if json_string is not None:
             update_values["json_string"] = json_string
-        else:
-            update_values["json_string"] = ""
 
         if update_values:
             await db_entry.update(**update_values).apply()
@@ -565,6 +563,19 @@ class FactoidManager(cogs.BaseCog):
             )
 
         return views
+
+    async def increment_times_called_by_view(
+        self: Self, guild: discord.Guild, factoid: FactoidView
+    ) -> None:
+        factoid.times_called += 1
+        await self.update_factoid_data(
+            guild=guild,
+            factoid_data_id=factoid.factoid_data_id,
+            times_called=factoid.times_called,
+        )
+        # Replace the factoid in the cache. No need to require a re-pull every call
+        self.remove_from_cache(guild, factoid)
+        self.add_to_cache(guild, factoid)
 
     # CACHE HELPERS
 
@@ -988,6 +999,25 @@ class FactoidManager(cogs.BaseCog):
         # Message passes all rules
         return True
 
+    def create_json_file(self: Self, factoid: FactoidView) -> discord.File:
+        """This takes a factoid and pulls the json string, and turns it into a file
+        Designed to be used to send a json file in a discord message
+
+        Args:
+            factoid (FactoidView): The factoid to make the json file of
+
+        Returns:
+            discord.File: The json file representing the embed of this factoid
+        """
+        formatted = json.dumps(json.loads(factoid.json_string), indent=4)
+        json_file = discord.File(
+            io.StringIO(formatted),
+            filename=(
+                f"factoid-{factoid.factoid_data_id}-embed-config-{datetime.datetime.utcnow()}.json"
+            ),
+        )
+        return json_file
+
     # AUTOFILL
 
     async def factoid_autocomplete(
@@ -1250,12 +1280,7 @@ class FactoidManager(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that triggered this command
             factoid_name (str): The factoid name to search for and print
             member_to_ping (discord.Member): A member to ping in the output
-
-        Raises:
-            TooLongFactoidMessageError: If the plaintext exceed 2000 characters
         """
-        # TODO: Interact with times called
-
         factoid_name = factoid_name.lower()
         factoid = await self.get_factoid_view_by_name(
             guild=interaction.guild, name=factoid_name
@@ -1361,6 +1386,11 @@ class FactoidManager(cogs.BaseCog):
         sent_message = await interaction.original_response()
         await self.send_factoid_to_logger(
             sent_message, interaction.user, interaction.channel, factoid.message
+        )
+
+        # Increase times called
+        await self.increment_times_called_by_view(
+            guild=interaction.guild, factoid=factoid
         )
 
     @app_commands.check(has_manage_factoids_role)
@@ -1473,6 +1503,7 @@ class FactoidManager(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that triggered this command
             factoid_name (str): The factoid to dealias
         """
+        # TODO: Update edit time
         factoid_name = factoid_name.lower()
         factoid = await self.get_factoid_view_by_name(
             guild=interaction.guild, name=factoid_name
@@ -1596,6 +1627,7 @@ class FactoidManager(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that triggered this command
             factoid_name (str): The factoid to edit
         """
+        # TODO: Update edit time
         factoid_name = factoid_name.lower()
         factoid = await self.get_factoid_view_by_name(
             guild=interaction.guild, name=factoid_name
@@ -1724,6 +1756,109 @@ class FactoidManager(cogs.BaseCog):
 
         embed = auxiliary.prepare_confirm_embed("Factoid cache for this guild cleared")
         await interaction.response.send_message(embed=embed)
+
+    @factoid_app_group.command(
+        name="info",
+        description="Gets information about a factoid and displays it to the user.",
+    )
+    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    async def factoid_info_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+    ) -> None:
+        """This gets information about a given factoid from the database and displays it to the user
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid name to display information for
+        """
+        # TODO: Interact with jobs
+        # TODO: Add embed/json buttons
+
+        factoid_name = factoid_name.lower()
+        factoid = await self.get_factoid_view_by_name(
+            guild=interaction.guild, name=factoid_name
+        )
+
+        # We can't get info from a factoid that doesn't exist
+        if not factoid:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` doesn't exist!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        # Cache the factoid
+        self.add_to_cache(interaction.guild, factoid)
+
+        embed = discord.Embed(
+            title=f"Info about `{factoid_name}`", description=factoid.message
+        )
+        embed.add_field(name="Calls", value=f"`[{', '.join(factoid.calls)}]`")
+        embed.add_field(name="Time called", value=factoid.times_called)
+        embed.add_field(name="Embed", value=bool(factoid.json_string))
+
+        # Handle properties different to convert from into to string
+        properties_str = (
+            ", ".join(
+                prop.name.lower() for prop in Properties if factoid.flags & prop.value
+            )
+            or "None"
+        )
+        embed.add_field(name="Properties", value=properties_str)
+
+        embed.add_field(
+            name="Date of creation", value=f"<t:{int(factoid.create_time.timestamp())}>"
+        )
+        embed.add_field(
+            name="Last edit", value=f"<t:{int(factoid.edit_time.timestamp())}>"
+        )
+
+        await interaction.response.send_message(embed=embed)
+
+    @factoid_app_group.command(
+        name="json",
+        description="Gets the json file for the embed of this factoid",
+    )
+    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    async def factoid_json_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+    ) -> None:
+        """This gets information about a given factoid from the database and displays it to the user
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid name to display information for
+        """
+        factoid_name = factoid_name.lower()
+        factoid = await self.get_factoid_view_by_name(
+            guild=interaction.guild, name=factoid_name
+        )
+
+        # We can't get info from a factoid that doesn't exist
+        if not factoid:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` doesn't exist!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        # Cache the factoid
+        self.add_to_cache(interaction.guild, factoid)
+
+        if not factoid.json_string:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` doesn't have any embed configured!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        json_file = self.create_json_file(factoid)
+
+        await interaction.response.send_message(file=json_file)
 
 
 class ButtonView(discord.ui.View):

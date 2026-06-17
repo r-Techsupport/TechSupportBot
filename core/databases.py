@@ -132,14 +132,13 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         factoid_data_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
         guild: str = bot.db.Column(bot.db.String, index=True)
-        message: str = bot.db.Column(bot.db.String, index=True)
+        message: str = bot.db.Column(bot.db.String)
         create_time: datetime.datetime = bot.db.Column(
             bot.db.DateTime, default=datetime.datetime.utcnow
         )
         edit_time: datetime.datetime = bot.db.Column(
             bot.db.DateTime,
             default=datetime.datetime.utcnow,
-            onupdate=datetime.datetime.utcnow,
         )
         json_string: str = bot.db.Column(bot.db.String, default=None)
         flags: int = bot.db.Column(bot.db.Integer)
@@ -150,7 +149,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         factoid_call_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
         guild: str = bot.db.Column(bot.db.String, index=True)
-        name: str = bot.db.Column(bot.db.String)
+        name: str = bot.db.Column(bot.db.String, index=True)
 
         factoid_data_id = bot.db.Column(
             bot.db.Integer,
