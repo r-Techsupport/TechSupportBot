@@ -136,6 +136,7 @@ class Properties(Enum):
     RESTRICTED: int = 0b0001
 
 
+# TODO: Update/remake all doc strings
 # TODO: create/edit need to have duplicate json file to string code generic shared function
 class FactoidManager(cogs.BaseCog):
 
@@ -282,7 +283,7 @@ class FactoidManager(cogs.BaseCog):
         job: bot.models.FactoidJob,
     ) -> None:
         """Remove all scheduled APScheduler entries for a factoid job."""
-
+        # TODO: Check for task name
         for scheduled_job in await self.bot.scheduler.get_upcoming_tasks():
             payload = scheduled_job["payload"]
 
@@ -749,6 +750,8 @@ class FactoidManager(cogs.BaseCog):
         If the old FactoidData loses all calls, it is deleted.
         Returns True if the move succeeded.
         """
+
+        # TODO: This needs to be re-written
 
         call = await self.read_factoid_call(
             guild=guild,
@@ -1430,10 +1433,8 @@ class FactoidManager(cogs.BaseCog):
             message=f"Successfully added the alias `{new_factoid}` for `{existing_factoid}`",
         )
 
-        # Remove factoid from cache after editing
-        self.remove_from_cache(interaction.guild, factoid)
-
         # Update the factoid edit time
+        # This will also remove the factoid from the cache
         await self.update_edit_time_for_factoid(interaction.guild, factoid)
 
         # Depending on the path took to get here, we may need to followup
@@ -1674,6 +1675,7 @@ class FactoidManager(cogs.BaseCog):
     ) -> None:
         factoid_name = factoid_name.lower()
         # Only ever attempt to add a factoid if it doesn't exist
+        # TODO: Change this to reading factoid, per the standard
         if await self.read_factoid_call(guild=interaction.guild, name=factoid_name):
             embed = auxiliary.prepare_deny_embed(
                 message=f"The factoid `{factoid_name}` already exists"
@@ -1810,10 +1812,8 @@ class FactoidManager(cogs.BaseCog):
             message=f"The factoid alias `{factoid_name}` was removed. Remaining aliases: `{remaining_aliases}`"
         )
 
-        # Remove factoid from cache after editing
-        self.remove_from_cache(interaction.guild, factoid)
-
         # Update the factoid edit time
+        # This will also remove the factoid from the cache
         await self.update_edit_time_for_factoid(interaction.guild, factoid)
 
         await interaction.response.send_message(embed=embed)
@@ -1900,8 +1900,6 @@ class FactoidManager(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that triggered this command
             factoid_name (str): The factoid to edit
         """
-        # TODO: Remove the properties from this modal
-        # TODO: Check if factoid was actually edited
         factoid_name = factoid_name.lower()
         factoid = await self.get_factoid_view_by_name(
             guild=interaction.guild, name=factoid_name
@@ -1950,7 +1948,7 @@ class FactoidManager(cogs.BaseCog):
             # In order to replace we must have a json file
             if not form.embed.component.values:
                 embed = auxiliary.prepare_deny_embed(
-                    message="The json file was requested to be replaced, but no file was uploaded"
+                    message="The json file was requested to be replaced, but no file was uploaded. No edits were made."
                 )
                 await interaction.followup.send(embed=embed, ephemeral=True)
                 return
@@ -1958,9 +1956,9 @@ class FactoidManager(cogs.BaseCog):
 
             if not embed_file.filename.endswith(".json"):
                 embed = auxiliary.prepare_deny_embed(
-                    message="I don't recognize your upload as a JSON file.",
+                    message="I don't recognize your upload as a JSON file. No edits were made.",
                 )
-                await interaction.followup.send(embed=embed)
+                await interaction.followup.send(embed=embed, ephemeral=True)
                 return
 
             try:
@@ -1970,26 +1968,27 @@ class FactoidManager(cogs.BaseCog):
 
             except Exception:
                 embed = auxiliary.prepare_deny_embed(
-                    message="I couldn't parse the uploaded JSON file.",
+                    message="I couldn't parse the uploaded JSON file. No edits were made.",
                 )
-                await interaction.followup.send(embed=embed)
+                await interaction.followup.send(embed=embed, ephemeral=True)
                 return
 
-        # Get the property changes
-        selected = set(form.properties.component.values)
-        property_binary = sum(int(value) for value in selected)
-
-        # Remove factoid from cache after editing
-        self.remove_from_cache(interaction.guild, factoid)
+        # If the factoid was not edited, do nothing
+        if not show_embed and not show_plaintext:
+            embed = auxiliary.prepare_deny_embed(
+                message="It doesn't appear any edits were made to this factoid. No edits were made.",
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
 
         # Update the factoid edit time
+        # This will also remove the factoid from the cache
         await self.update_edit_time_for_factoid(interaction.guild, factoid)
 
         factoid = await self.update_factoid_data(
             guild=interaction.guild,
             factoid_data_id=factoid.factoid_data_id,
             message=form.plaintext.component.value,
-            flags=property_binary,
             json_string=embed_json_string,
         )
 
@@ -2258,6 +2257,7 @@ class FactoidManager(cogs.BaseCog):
         await self.register_job(job_data)
 
         # Update the factoid edit time
+        # This will also remove the factoid from the cache
         await self.update_edit_time_for_factoid(interaction.guild, factoid)
 
         embed = auxiliary.prepare_confirm_embed(
@@ -2324,12 +2324,46 @@ class FactoidManager(cogs.BaseCog):
         await factoid_job.delete()
 
         # Update the factoid edit time
+        # This will also remove the factoid from the cache
         await self.update_edit_time_for_factoid(interaction.guild, factoid)
 
         embed = auxiliary.prepare_confirm_embed(
             f"The loop in {channel.mention} for factoid `{factoid_name}` was deleted successfully"
         )
         await interaction.response.send_message(embed=embed)
+
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.check(has_admin_factoids_role)
+    @factoid_loop_commands.command(
+        name="refresh",
+        description="Refreshes all the scheduled factoid loops for this guild",
+    )
+    async def factoid_loop_refresh_command(
+        self: Self,
+        interaction: discord.Interaction,
+    ) -> None:
+        """This is designed to cancel and reschedule all jobs in the guild, for debug purposes
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+        """
+        jobs = await self.get_all_jobs_for_guild(interaction.guild)
+        if not jobs:
+            embed = auxiliary.prepare_deny_embed(
+                "There are no configured jobs for this guild"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        await interaction.response.defer()
+        for job in jobs:
+            await self.unschedule_job(job)
+            await self.register_job(job)
+
+        embed = auxiliary.prepare_confirm_embed(
+            f"Refreshed {len(jobs)} job{"s" if len(jobs)>1 else ""} in this guild"
+        )
+        await interaction.followup.send(embed=embed)
 
 
 class ButtonView(discord.ui.View):
@@ -2506,26 +2540,29 @@ class FactoidModal(discord.ui.Modal):
 
         self.add_item(self.embed)
 
-        property_options = []
+        if not edit_mode:
+            property_options = []
 
-        for prop in Properties:
-            property_options.append(
-                discord.CheckboxGroupOption(
-                    label=prop.name.title(),
-                    value=str(prop.value),
-                    default=(bool(factoid.flags & prop.value) if factoid else False),
+            for prop in Properties:
+                property_options.append(
+                    discord.CheckboxGroupOption(
+                        label=prop.name.title(),
+                        value=str(prop.value),
+                        default=(
+                            bool(factoid.flags & prop.value) if factoid else False
+                        ),
+                    )
                 )
+            self.properties = discord.ui.Label(
+                text="Properties:",
+                component=discord.ui.CheckboxGroup(
+                    max_values=len(property_options),
+                    required=False,
+                    options=property_options,
+                ),
             )
-        self.properties = discord.ui.Label(
-            text="Properties:",
-            component=discord.ui.CheckboxGroup(
-                max_values=len(property_options),
-                required=False,
-                options=property_options,
-            ),
-        )
 
-        self.add_item(self.properties)
+            self.add_item(self.properties)
 
     async def on_submit(self: Self, interaction: discord.Interaction) -> None:
         """What happens when the form has been successfully submitted
