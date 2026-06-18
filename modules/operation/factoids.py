@@ -2503,6 +2503,7 @@ class FactoidManager(cogs.BaseCog):
     # TODO: /factoid search
     # TODO: /factoid top
     # TODO: Legacy prefix factoid calls
+    # TODO: Add guild config to control whether prefix factoids are enabled. Default to FALSE
 
 class ButtonView(discord.ui.View):
     # TODO: Migrate to LayoutView
