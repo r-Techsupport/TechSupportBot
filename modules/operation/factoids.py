@@ -107,7 +107,6 @@ async def setup(bot: bot.TechSupportBot) -> None:
     await bot.add_cog(FactoidManager(bot=bot))
 
 
-# TODO: Use this more
 @dataclass
 class FactoidView:
     factoid_data_id: int
@@ -145,13 +144,136 @@ class FactoidManager(cogs.BaseCog):
         description="Commands to create, manage and use the factoids system",
     )
 
+    factoid_loop_commands: app_commands.Group = app_commands.Group(
+        name="loop",
+        description="Commands to create, view and manage the factoid loops system",
+        parent=factoid_app_group,
+    )
+
     # PRECONFIG
 
     async def preconfig(self: Self) -> None:
         """This sets up cache and job loop calls"""
         # TODO: Factoid all cache
-        # TODO: Loops
         self.factoid_cache: dict[str, FactoidView] = {}
+
+        # Register the loop callback into APScheduler
+        self.bot.scheduler.register_task(
+            "factoid_loop",
+            self.execute_job,
+        )
+
+        # On bot startup, start all jobs
+        await self.startup_jobs()
+
+    # LOOP STUFF
+
+    async def startup_jobs(self: Self) -> None:
+        all_jobs = await self.get_all_global_jobs()
+        for job in all_jobs:
+            await self.register_job(job)
+
+    async def register_job(self: Self, job: bot.models.FactoidJob) -> None:
+        guild = self.bot.get_guild(int(job.guild))
+        # Do not register the job if extension is disabled
+        if not self.extension_enabled(guild=guild):
+            return
+
+        await self.bot.scheduler.schedule_cron(
+            task_name="factoid_loop",
+            cron=job.cron,
+            payload={"guild": guild, "job_id": job.factoid_job_id},
+        )
+
+    async def execute_job(
+        self: Self,
+        payload: dict,
+    ) -> None:
+
+        # Expand payload
+        guild: discord.Guild = payload["guild"]
+        factoid_job_id: int = payload["job_id"]
+
+        # Stop execution if factoids has been disabled
+        if not self.extension_enabled(guild=guild):
+            return
+
+        job_data = await self.read_factoid_job_by_id(guild, factoid_job_id)
+        if not job_data:
+            return
+        factoid = await self.get_factoid_view_by_id(guild, job_data.factoid_data_id)
+        if not factoid:
+            return
+
+        await self.register_job(job_data)
+
+        channel = self.bot.get_channel(int(job_data.channel))
+        if not channel:
+            return
+
+        # Check if factoid is disabled. If so, don't send it
+        if factoid.flags & Properties.DISABLED.value:
+            return
+
+        # Check if factoid is restricted. If so, check if we can call it
+        if (
+            factoid.flags & Properties.RESTRICTED.value
+            and not self.can_channel_send_restricted(channel)
+        ):
+            return
+
+        embed, plaintext_content = await self.generate_sendable_factoid(guild, factoid)
+
+        # Log in the background
+        asyncio.create_task(
+            self.log_factoid_send(
+                guild=guild,
+                channel=channel,
+                sender=guild.me,
+                factoid=factoid,
+            )
+        )
+
+        embed_sent = False
+        if embed:
+            try:
+                # Attempt to send the message with the embed in it
+                sent_message = await channel.send(embed=embed)
+                embed_sent = True
+            # If something breaks, also log it
+            except discord.errors.HTTPException as exception:
+                log_channel = configuration.get_config_entry(
+                    guild.id, "core_logging_channel"
+                )
+                await self.bot.logger.send_log(
+                    message=(
+                        f"Unable to send embed for factoid `[{", ".join(factoid.calls)}]`, "
+                        "sending fallback."
+                    ),
+                    level=LogLevel.ERROR,
+                    context=LogContext(guild=guild, channel=channel),
+                    channel=log_channel,
+                    exception=exception,
+                )
+
+        # Either no embed exists, or the embed failed to send for some reason.
+        # We will send the plaintext content of the factoid in this case
+        if not embed_sent:
+            content = plaintext_content.strip()
+            if len(content) > 2000:
+                return
+
+            sent_message = await channel.send(content=content)
+        # IRC connection
+        self.send_factoid_to_irc(channel, factoid, guild.me)
+
+        # Logger connection
+        await self.send_factoid_to_logger(
+            sent_message, guild.me, channel, factoid.message
+        )
+
+        # Increase times called
+        await self.increment_times_called_by_view(guild=guild, factoid=factoid)
 
     # DATABASE CALLS
 
@@ -269,11 +391,11 @@ class FactoidManager(cogs.BaseCog):
         """Searches the database for a factoid data for the passed guild
 
         Args:
-            guild (discord.Guild): The guild to find the factoid call of
+            guild (discord.Guild): The guild to find the factoid data of
             factoid_data_id (int): The ID of the factoid to search for
 
         Returns:
-            bot.models.FactoidData: The database entry for the factoid call
+            bot.models.FactoidData: The database entry for the factoid data
         """
 
         return await self.bot.models.FactoidData.query.where(
@@ -332,6 +454,77 @@ class FactoidManager(cogs.BaseCog):
             & (self.bot.models.FactoidCall.name == name)
         ).gino.status()
 
+    async def create_factoid_job(
+        self: Self,
+        guild: discord.Guild,
+        factoid_data_id: int,
+        channel: discord.abc.GuildChannel,
+        cron: str,
+    ) -> bot.models.FactoidJob:
+        """Creates a new FactoidJob entry in the table
+
+        Args:
+            guild (discord.Guild): The guild to create this factoid for
+            message (str): The plaintext version of the factoid
+            json_string (str): The json for this factoid
+            flags (int): The property binary flags for this factoid
+
+        Returns:
+            bot.models.FactoidJob: The newly created database entry
+        """
+
+        return await self.bot.models.FactoidJob.create(
+            guild=str(guild.id),
+            factoid_data_id=factoid_data_id,
+            channel=str(channel.id),
+            cron=cron,
+        )
+
+    async def read_factoid_job_by_id(
+        self: Self,
+        guild: discord.Guild,
+        factoid_job_id: int,
+    ) -> bot.models.FactoidJob:
+        """Searches the database for a factoid job for the passed guild
+
+        Args:
+            guild (discord.Guild): The guild to find the factoid job of
+            factoid_job_id (int): The ID of the factoid to search for
+
+        Returns:
+            bot.models.FactoidJob: The database entry for the factoid job
+        """
+
+        return await self.bot.models.FactoidJob.query.where(
+            (self.bot.models.FactoidJob.guild == str(guild.id))
+            & (self.bot.models.FactoidJob.factoid_job_id == factoid_job_id)
+        ).gino.first()
+
+    async def read_factoid_job_by_channel(
+        self: Self,
+        guild: discord.Guild,
+        factoid_data_id: int,
+        channel: discord.abc.GuildChannel,
+    ) -> bot.models.FactoidJob:
+        """Searches the database for a factoid job for the passed guild
+
+        Args:
+            guild (discord.Guild): The guild to find the factoid job of
+            factoid_job_id (int): The ID of the factoid to search for
+
+        Returns:
+            bot.models.FactoidJob: The database entry for the factoid job
+        """
+
+        return await self.bot.models.FactoidJob.query.where(
+            (self.bot.models.FactoidJob.guild == str(guild.id))
+            & (self.bot.models.FactoidJob.factoid_data_id == factoid_data_id)
+            & (self.bot.models.FactoidJob.channel == str(channel.id))
+        ).gino.first()
+
+    async def get_all_global_jobs(self: Self) -> list[bot.models.FactoidJob]:
+        return await self.bot.models.FactoidJob.query.gino.all()
+
     async def get_all_factoid_data(
         self: Self,
         guild: discord.Guild,
@@ -385,13 +578,18 @@ class FactoidManager(cogs.BaseCog):
         if call is None:
             return None
 
-        cached_data = self.get_from_cache(guild, call.factoid_data_id)
+        return await self.get_factoid_view_by_id(guild, call.factoid_data_id)
+
+    async def get_factoid_view_by_id(
+        self: Self, guild: discord.Guild, factoid_data_id: int
+    ) -> FactoidView | None:
+        cached_data = self.get_from_cache(guild, factoid_data_id)
         if cached_data:
             return cached_data
 
         factoid_data = await self.read_factoid_data(
             guild=guild,
-            factoid_data_id=call.factoid_data_id,
+            factoid_data_id=factoid_data_id,
         )
 
         if factoid_data is None:
@@ -402,7 +600,7 @@ class FactoidManager(cogs.BaseCog):
             factoid_data_id=factoid_data.factoid_data_id,
         )
 
-        return FactoidView(
+        factoid = FactoidView(
             factoid_data_id=factoid_data.factoid_data_id,
             message=factoid_data.message,
             json_string=factoid_data.json_string,
@@ -412,6 +610,10 @@ class FactoidManager(cogs.BaseCog):
             edit_time=factoid_data.edit_time,
             calls=sorted(factoid_call.name for factoid_call in factoid_calls),
         )
+
+        self.add_to_cache(guild, factoid)
+
+        return factoid
 
     async def delete_factoid_call_by_name(
         self: Self,
@@ -693,7 +895,7 @@ class FactoidManager(cogs.BaseCog):
         """
 
         if use_file:
-            return await self.generate_factoid_all_file(guild, factoids)
+            return self.generate_factoid_all_file(guild, factoids)
 
         try:
             html = await self.generate_factoid_all_html(guild, factoids)
@@ -732,7 +934,7 @@ class FactoidManager(cogs.BaseCog):
                 exception=exception,
             )
 
-            return await self.generate_factoid_all_file(guild, factoids)
+            return self.generate_factoid_all_file(guild, factoids)
 
     async def generate_factoid_all_html(
         self: Self,
@@ -794,7 +996,7 @@ class FactoidManager(cogs.BaseCog):
         </html>
         """
 
-    async def generate_factoid_all_file(
+    def generate_factoid_all_file(
         self: Self,
         guild: discord.Guild,
         factoids: list[FactoidView],
@@ -1292,9 +1494,6 @@ class FactoidManager(cogs.BaseCog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        # Add factoid to cache after getting it
-        self.add_to_cache(interaction.guild, factoid)
-
         # Check if factoid is disabled. If so, don't send it
         if factoid.flags & Properties.DISABLED.value:
             embed = auxiliary.prepare_deny_embed(
@@ -1789,9 +1988,6 @@ class FactoidManager(cogs.BaseCog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        # Cache the factoid
-        self.add_to_cache(interaction.guild, factoid)
-
         embed = discord.Embed(
             title=f"Info about `{factoid_name}`", description=factoid.message
         )
@@ -1846,9 +2042,6 @@ class FactoidManager(cogs.BaseCog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        # Cache the factoid
-        self.add_to_cache(interaction.guild, factoid)
-
         if not factoid.json_string:
             embed = auxiliary.prepare_deny_embed(
                 message=f"The factoid `{factoid_name}` doesn't have any embed configured!"
@@ -1859,6 +2052,127 @@ class FactoidManager(cogs.BaseCog):
         json_file = self.create_json_file(factoid)
 
         await interaction.response.send_message(file=json_file)
+
+    @app_commands.check(has_manage_factoids_role)
+    @factoid_loop_commands.command(
+        name="create",
+        description="Creates an new factoid loop job in the specified channel",
+    )
+    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    async def factoid_loop_create_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+        channel: discord.abc.GuildChannel,
+        cron: str,
+    ) -> None:
+        """This edits an existing factoid, allowing changes to the properties, message, and embed
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid to edit
+            channel (discord.abc.GuildChannel): The channel to put this loop in
+            cron (str): The crontab syntax to use for this job
+        """
+        factoid_name = factoid_name.lower()
+        factoid = await self.get_factoid_view_by_name(
+            guild=interaction.guild, name=factoid_name
+        )
+
+        # We can't edit a factoid if it doesn't exist
+        if not factoid:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` doesn't exist!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        # No edits on protected factoids
+        if factoid.flags & Properties.PROTECTED.value:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` is protected and cannot be edited."
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        # TODO: Validate cron syntax
+        # TODO: Enforce 1 factoid:1 channel
+        job_data = await self.create_factoid_job(
+            guild=interaction.guild,
+            factoid_data_id=factoid.factoid_data_id,
+            channel=channel,
+            cron=cron,
+        )
+
+        await self.register_job(job_data)
+
+        embed = auxiliary.prepare_confirm_embed(
+            f"The loop in {channel.mention} for factoid {factoid_name} was created successfully"
+        )
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.check(has_manage_factoids_role)
+    @factoid_loop_commands.command(
+        name="delete",
+        description="Deletes an existing factoid loop job based on name and channel",
+    )
+    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    async def factoid_loop_delete_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+        channel: discord.abc.GuildChannel,
+    ) -> None:
+        """This edits an existing factoid, allowing changes to the properties, message, and embed
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid to edit
+            channel (discord.abc.GuildChannel): The channel to put this loop in
+            cron (str): The crontab syntax to use for this job
+        """
+        factoid_name = factoid_name.lower()
+        factoid = await self.get_factoid_view_by_name(
+            guild=interaction.guild, name=factoid_name
+        )
+
+        # We can't edit a factoid if it doesn't exist
+        if not factoid:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` doesn't exist!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        # No edits on protected factoids
+        if factoid.flags & Properties.PROTECTED.value:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` is protected and cannot be edited."
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        factoid_job = await self.read_factoid_job_by_channel(
+            guild=interaction.guild,
+            factoid_data_id=factoid.factoid_data_id,
+            channel=channel,
+        )
+
+        if not factoid_job:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` doesn't have a job in {channel.mention}!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        await factoid_job.delete()
+
+        # TODO: Cancel job from APScheduler
+
+        embed = auxiliary.prepare_confirm_embed(
+            f"The loop in {channel.mention} for factoid `{factoid_name}` was deleted successfully"
+        )
+        await interaction.response.send_message(embed=embed)
 
 
 class ButtonView(discord.ui.View):
