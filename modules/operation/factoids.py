@@ -1327,12 +1327,60 @@ class FactoidManager(cogs.BaseCog):
             bool: True if protected, False if unprotected
         """
         if factoid.flags & Properties.PROTECTED.value:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `[{', '.join(factoid.calls)}]` is protected and cannot be edited."
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid `[{', '.join(factoid.calls)}]` is protected and cannot be edited.",
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return True
         return False
+
+    async def respond_error_embed(
+        self: Self, interaction: discord.Interaction, message: str
+    ) -> None:
+        """This formats a denial embed and responds to the interaction with it
+
+        Args:
+            interaction (discord.Interaction): The interaction to respond to
+            message (str): The message to include
+        """
+        embed = auxiliary.prepare_deny_embed(message=message)
+
+        if interaction.response.is_done():
+            await interaction.followup.send(
+                embed=embed,
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.send_message(
+            embed=embed,
+            ephemeral=True,
+        )
+
+    async def get_valid_factoid(
+        self: Self, interaction: discord.Interaction, factoid_name: str
+    ) -> FactoidView | None:
+        """This gets a factoid by factoid name
+        If the factoid does not exist, the interaction is responded to
+
+        Args:
+            interaction (discord.Interaction): The interaction that called for lookup
+            factoid_name (str): The factoid name to lookup
+
+        Returns:
+            FactoidView | None: The factoid, if it exists. None if no factoid exists
+        """
+        factoid = await self.get_factoid_view_by_name(
+            guild=interaction.guild, name=factoid_name
+        )
+
+        # We can't alias a factoid if it doesn't exist
+        if not factoid:
+            await self.respond_error_embed(
+                interaction, f"The factoid `{factoid_name}` doesn't exist!"
+            )
+
+        return factoid
 
     # AUTOFILL
 
@@ -1377,7 +1425,6 @@ class FactoidManager(cogs.BaseCog):
         ]
 
     # COMMANDS
-    # TODO: Code de-duplication efforts.
 
     @app_commands.check(has_manage_factoids_role)
     @factoid_app_group.command(
@@ -1394,29 +1441,23 @@ class FactoidManager(cogs.BaseCog):
         existing_factoid = existing_factoid.lower()
         new_factoid = new_factoid.lower()
         if not self.check_valid_name(new_factoid):
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid name `{new_factoid}` is invalid and cannot be used!"
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid name `{new_factoid}` is invalid and cannot be used!",
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         if new_factoid == existing_factoid:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"You cannot alias a factoid to itself!"
+            await self.respond_error_embed(
+                interaction, f"You cannot alias a factoid to itself!"
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        factoid = await self.get_factoid_view_by_name(
-            guild=interaction.guild, name=existing_factoid
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=existing_factoid
         )
-
-        # We can't alias a factoid if it doesn't exist
         if not factoid:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{existing_factoid}` doesn't exist!"
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         # No aliases on protected factoids
@@ -1429,10 +1470,10 @@ class FactoidManager(cogs.BaseCog):
 
         # If the existing and new calls already point to the same factoid, there is nothing to do
         if new_factoid_db and factoid.factoid_data_id == new_factoid_db.factoid_data_id:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{new_factoid}` is already an alias of `{existing_factoid}`."
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid `{new_factoid}` is already an alias of `{existing_factoid}`.",
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         # If the new_factoid already exists but point elsewhere, we need to ask the user for confirmation
@@ -1452,10 +1493,10 @@ class FactoidManager(cogs.BaseCog):
             if confirmation_response == ui.ConfirmResponse.TIMEOUT:
                 return
             elif confirmation_response == ui.ConfirmResponse.DENIED:
-                embed = auxiliary.prepare_deny_embed(
+                await self.respond_error_embed(
+                    interaction,
                     message=f"The factoid `{new_factoid}` was not replaced.",
                 )
-                interaction.followup.send(embed=embed)
                 return
             else:
                 await self.move_factoid_call(
@@ -1546,10 +1587,9 @@ class FactoidManager(cogs.BaseCog):
 
         filtered_factoids.sort(key=lambda factoid: factoid.calls[0])
         if not filtered_factoids:
-            embed = auxiliary.prepare_deny_embed(
-                "No factoids could be found matching your filter"
+            await self.respond_error_embed(
+                interaction, "No factoids could be found matching your filter"
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         # If the linx server isn't configured, we must make it a file
@@ -1563,10 +1603,9 @@ class FactoidManager(cogs.BaseCog):
         )
 
         if not factoid_all:
-            embed = auxiliary.prepare_deny_embed(
-                "Something went wrong generating the list of factoids"
+            await self.respond_error_embed(
+                interaction, "Something went wrong generating the list of factoids"
             )
-            await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
         # If we know it's a file, or it's fallen back to a file, send it as a file
@@ -1597,22 +1636,18 @@ class FactoidManager(cogs.BaseCog):
             member_to_ping (discord.Member): A member to ping in the output
         """
         factoid_name = factoid_name.lower()
-        factoid = await self.get_factoid_view_by_name(
-            guild=interaction.guild, name=factoid_name
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
         )
         if not factoid:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` couldn't be found"
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         # Check if factoid is disabled. If so, don't send it
         if factoid.flags & Properties.DISABLED.value:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` is disabled."
+            await self.respond_error_embed(
+                interaction, f"The factoid `{factoid_name}` is disabled."
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         # Check if factoid is restricted. If so, check if we can call it
@@ -1620,10 +1655,10 @@ class FactoidManager(cogs.BaseCog):
             factoid.flags & Properties.RESTRICTED.value
             and not self.can_channel_send_restricted(interaction.channel)
         ):
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` is restricted and not allowed in this channel."
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid `{factoid_name}` is restricted and not allowed in this channel.",
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         embed, plaintext_content = await self.generate_sendable_factoid(
@@ -1673,10 +1708,10 @@ class FactoidManager(cogs.BaseCog):
             content += f" {plaintext_content}"
             content = content.strip()
             if len(content) > 2000:
-                embed = auxiliary.prepare_deny_embed(
-                    message=f"The factoid `{factoid_name}` is too long and cannot be sent on discord."
+                await self.respond_error_embed(
+                    interaction,
+                    f"The factoid `{factoid_name}` is too long and cannot be sent on discord.",
                 )
-                await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
 
             # The can't see button is not needed in plaintext cases
@@ -1710,17 +1745,16 @@ class FactoidManager(cogs.BaseCog):
         # Only ever attempt to add a factoid if it doesn't exist
         # TODO: Change this to reading factoid, per the standard
         if await self.read_factoid_call(guild=interaction.guild, name=factoid_name):
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` already exists"
+            await self.respond_error_embed(
+                interaction, f"The factoid `{factoid_name}` already exists"
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         if not self.check_valid_name(factoid_name):
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid name `{factoid_name}` is invalid and cannot be used!"
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid name `{factoid_name}` is invalid and cannot be used!",
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         form = FactoidModal(factoid_name, edit_mode=False)
@@ -1728,10 +1762,9 @@ class FactoidManager(cogs.BaseCog):
         await form.wait()
 
         if not self.check_valid_message(form.plaintext.component.value):
-            embed = auxiliary.prepare_deny_embed(
-                message="The message content is invalid and cannot be used!"
+            await self.respond_error_embed(
+                interaction, "The message content is invalid and cannot be used!"
             )
-            await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
         embed_json_string = ""
@@ -1740,10 +1773,9 @@ class FactoidManager(cogs.BaseCog):
             embed_file: discord.Attachment = form.embed.component.values[0]
 
             if not embed_file.filename.endswith(".json"):
-                embed = auxiliary.prepare_deny_embed(
-                    message="I don't recognize your upload as a JSON file.",
+                await self.respond_error_embed(
+                    interaction, "I don't recognize your upload as a JSON file."
                 )
-                await interaction.followup.send(embed=embed)
                 return
 
             try:
@@ -1752,10 +1784,9 @@ class FactoidManager(cogs.BaseCog):
                 embed_json_string = json.dumps(attachment_json)
 
             except Exception:
-                embed = auxiliary.prepare_deny_embed(
-                    message="I couldn't parse the uploaded JSON file.",
+                await self.respond_error_embed(
+                    interaction, message="I couldn't parse the uploaded JSON file."
                 )
-                await interaction.followup.send(embed=embed)
                 return
 
         selected = set(form.properties.component.values)
@@ -1787,8 +1818,8 @@ class FactoidManager(cogs.BaseCog):
                 embed = self.get_embed_from_factoid(factoid=factoid)
                 await interaction.followup.send(embed=embed, ephemeral=True)
             except Exception as exc:
-                await interaction.followup.send(
-                    f"The embed you uploaded failed: {exc}", ephemeral=True
+                await self.respond_error_embed(
+                    interaction, f"The embed you uploaded failed: {exc}"
                 )
 
     @app_commands.check(has_manage_factoids_role)
@@ -1810,16 +1841,11 @@ class FactoidManager(cogs.BaseCog):
             factoid_name (str): The factoid to dealias
         """
         factoid_name = factoid_name.lower()
-        factoid = await self.get_factoid_view_by_name(
-            guild=interaction.guild, name=factoid_name
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
         )
-
-        # We can't dealias a factoid if it doesn't exist
         if not factoid:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` doesn't exist!"
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         # No edits on protected factoids
@@ -1828,10 +1854,9 @@ class FactoidManager(cogs.BaseCog):
 
         # Only allowed to dealias if this wouldn't require deleting the entire factoid
         if len(factoid.calls) == 1:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` has no other aliases."
+            await self.respond_error_embed(
+                interaction, f"The factoid `{factoid_name}` has no other aliases."
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         await self.delete_factoid_call(guild=interaction.guild, name=factoid_name)
@@ -1866,16 +1891,11 @@ class FactoidManager(cogs.BaseCog):
             factoid_name (str): The factoid to dealias
         """
         factoid_name = factoid_name.lower()
-        factoid = await self.get_factoid_view_by_name(
-            guild=interaction.guild, name=factoid_name
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
         )
-
-        # We can't delete a factoid if it doesn't exist
         if not factoid:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` doesn't exist!"
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         # No edits on protected factoids
@@ -1892,8 +1912,8 @@ class FactoidManager(cogs.BaseCog):
         if confirmation_response == ui.ConfirmResponse.TIMEOUT:
             return
         elif confirmation_response == ui.ConfirmResponse.DENIED:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` was not deleted.",
+            await self.respond_error_embed(
+                interaction, f"The factoid `{factoid_name}` was not deleted."
             )
             interaction.followup.send(embed=embed)
             return
@@ -1926,16 +1946,11 @@ class FactoidManager(cogs.BaseCog):
             factoid_name (str): The factoid to edit
         """
         factoid_name = factoid_name.lower()
-        factoid = await self.get_factoid_view_by_name(
-            guild=interaction.guild, name=factoid_name
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
         )
-
-        # We can't edit a factoid if it doesn't exist
         if not factoid:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` doesn't exist!"
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         # No edits on protected factoids
@@ -1947,10 +1962,9 @@ class FactoidManager(cogs.BaseCog):
         await form.wait()
 
         if not self.check_valid_message(form.plaintext.component.value):
-            embed = auxiliary.prepare_deny_embed(
-                message="The message content is invalid and cannot be used!"
+            await self.respond_error_embed(
+                interaction, "The message content is invalid and cannot be used!"
             )
-            await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
         show_plaintext = False
@@ -1968,18 +1982,18 @@ class FactoidManager(cogs.BaseCog):
             show_embed = True
             # In order to replace we must have a json file
             if not form.embed.component.values:
-                embed = auxiliary.prepare_deny_embed(
-                    message="The json file was requested to be replaced, but no file was uploaded. No edits were made."
+                await self.respond_error_embed(
+                    interaction,
+                    "The json file was requested to be replaced, but no file was uploaded. No edits were made.",
                 )
-                await interaction.followup.send(embed=embed, ephemeral=True)
                 return
             embed_file: discord.Attachment = form.embed.component.values[0]
 
             if not embed_file.filename.endswith(".json"):
-                embed = auxiliary.prepare_deny_embed(
-                    message="I don't recognize your upload as a JSON file. No edits were made.",
+                await self.respond_error_embed(
+                    interaction,
+                    "I don't recognize your upload as a JSON file. No edits were made.",
                 )
-                await interaction.followup.send(embed=embed, ephemeral=True)
                 return
 
             try:
@@ -1988,18 +2002,18 @@ class FactoidManager(cogs.BaseCog):
                 embed_json_string = json.dumps(attachment_json)
 
             except Exception:
-                embed = auxiliary.prepare_deny_embed(
+                await self.respond_error_embed(
+                    interaction,
                     message="I couldn't parse the uploaded JSON file. No edits were made.",
                 )
-                await interaction.followup.send(embed=embed, ephemeral=True)
                 return
 
         # If the factoid was not edited, do nothing
         if not show_embed and not show_plaintext:
-            embed = auxiliary.prepare_deny_embed(
-                message="It doesn't appear any edits were made to this factoid. No edits were made.",
+            await self.respond_error_embed(
+                interaction,
+                "It doesn't appear any edits were made to this factoid. No edits were made.",
             )
-            await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
         # Update the factoid edit time
@@ -2026,8 +2040,8 @@ class FactoidManager(cogs.BaseCog):
                 embed = self.get_embed_from_factoid(factoid=factoid)
                 await interaction.followup.send(embed=embed, ephemeral=True)
             except Exception as exc:
-                await interaction.followup.send(
-                    f"The embed you uploaded failed: {exc}", ephemeral=True
+                await self.respond_error_embed(
+                    interaction, f"The embed you uploaded failed: {exc}"
                 )
 
     @app_commands.checks.has_permissions(administrator=True)
@@ -2073,16 +2087,11 @@ class FactoidManager(cogs.BaseCog):
         # TODO: Add embed/json buttons
 
         factoid_name = factoid_name.lower()
-        factoid = await self.get_factoid_view_by_name(
-            guild=interaction.guild, name=factoid_name
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
         )
-
-        # We can't get info from a factoid that doesn't exist
         if not factoid:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` doesn't exist!"
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         embed = discord.Embed(
@@ -2147,23 +2156,18 @@ class FactoidManager(cogs.BaseCog):
             factoid_name (str): The factoid name to display information for
         """
         factoid_name = factoid_name.lower()
-        factoid = await self.get_factoid_view_by_name(
-            guild=interaction.guild, name=factoid_name
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
         )
-
-        # We can't get info from a factoid that doesn't exist
         if not factoid:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` doesn't exist!"
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         if not factoid.json_string:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` doesn't have any embed configured!"
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid `{factoid_name}` doesn't have any embed configured!",
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         json_file = self.create_json_file(factoid)
@@ -2185,10 +2189,9 @@ class FactoidManager(cogs.BaseCog):
         """
         jobs = await self.get_all_jobs_for_guild(interaction.guild)
         if not jobs:
-            embed = auxiliary.prepare_deny_embed(
-                "There are no configured jobs for this guild"
+            await self.respond_error_embed(
+                interaction, "There are no configured jobs for this guild"
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         embed = discord.Embed(title=f"Factoid loop for {interaction.guild.name}")
@@ -2234,16 +2237,11 @@ class FactoidManager(cogs.BaseCog):
             cron (str): The crontab syntax to use for this job
         """
         factoid_name = factoid_name.lower()
-        factoid = await self.get_factoid_view_by_name(
-            guild=interaction.guild, name=factoid_name
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
         )
-
-        # We can't edit a factoid if it doesn't exist
         if not factoid:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` doesn't exist!"
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         if await self.check_protected(interaction, factoid):
@@ -2254,10 +2252,10 @@ class FactoidManager(cogs.BaseCog):
             interaction.guild, factoid.factoid_data_id, channel
         )
         if existing_job:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` already has a job in {channel.mention}."
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid `{factoid_name}` already has a job in {channel.mention}.",
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         await interaction.response.defer()
@@ -2302,16 +2300,11 @@ class FactoidManager(cogs.BaseCog):
             cron (str): The crontab syntax to use for this job
         """
         factoid_name = factoid_name.lower()
-        factoid = await self.get_factoid_view_by_name(
-            guild=interaction.guild, name=factoid_name
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
         )
-
-        # We can't edit a factoid if it doesn't exist
         if not factoid:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` doesn't exist!"
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         # No edits on protected factoids
@@ -2325,10 +2318,10 @@ class FactoidManager(cogs.BaseCog):
         )
 
         if not factoid_job:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` doesn't have a job in {channel.mention}!"
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid `{factoid_name}` doesn't have a job in {channel.mention}!",
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         await interaction.response.defer()
@@ -2367,16 +2360,11 @@ class FactoidManager(cogs.BaseCog):
             cron (str): The crontab syntax to use for this job
         """
         factoid_name = factoid_name.lower()
-        factoid = await self.get_factoid_view_by_name(
-            guild=interaction.guild, name=factoid_name
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
         )
-
-        # We can't edit a factoid if it doesn't exist
         if not factoid:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` doesn't exist!"
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         # No edits on protected factoids
@@ -2390,10 +2378,10 @@ class FactoidManager(cogs.BaseCog):
         )
 
         if not factoid_job:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` doesn't have a job in {channel.mention}!"
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid `{factoid_name}` doesn't have a job in {channel.mention}!",
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         await interaction.response.defer()
@@ -2428,10 +2416,9 @@ class FactoidManager(cogs.BaseCog):
         """
         jobs = await self.get_all_jobs_for_guild(interaction.guild)
         if not jobs:
-            embed = auxiliary.prepare_deny_embed(
-                "There are no configured jobs for this guild"
+            await self.respond_error_embed(
+                interaction, "There are no configured jobs for this guild"
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         await interaction.response.defer()
@@ -2458,16 +2445,11 @@ class FactoidManager(cogs.BaseCog):
         set_value: bool,
     ) -> None:
         factoid_name = factoid_name.lower()
-        factoid = await self.get_factoid_view_by_name(
-            guild=interaction.guild, name=factoid_name
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
         )
-
-        # We can't edit a factoid if it doesn't exist
         if not factoid:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` doesn't exist!"
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         # No edits on protected factoids, unless we are modifying the protected flag
@@ -2482,14 +2464,10 @@ class FactoidManager(cogs.BaseCog):
         if currently_set == set_value:
             state = "enabled" if set_value else "disabled"
 
-            embed = auxiliary.prepare_deny_embed(
-                message=(
-                    f"The property `{property.name.lower()}` is already "
-                    f"{state} for `{factoid_name}`!"
-                )
+            await self.respond_error_embed(
+                interaction,
+                f"The property `{property.name.lower()}` is already {state} for `{factoid_name}`!",
             )
-
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         # Apply the property change
