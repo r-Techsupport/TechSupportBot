@@ -2500,6 +2500,9 @@ class FactoidManager(cogs.BaseCog):
 
         await interaction.response.send_message(embed=embed)
 
+    # TODO: /factoid search
+    # TODO: /factoid top
+    # TODO: Legacy prefix factoid calls
 
 class ButtonView(discord.ui.View):
     # TODO: Migrate to LayoutView
