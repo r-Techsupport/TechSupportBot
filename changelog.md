@@ -25,6 +25,9 @@ Changes since 2026.06.15
 ### Notes
 - Fix clear note/note being wrong in modlog entries
 
+### Report
+- Fix report not working without a ping role configured
+
 ## Operation
 
 ### Factoid
