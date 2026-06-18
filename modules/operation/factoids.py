@@ -244,19 +244,13 @@ class FactoidManager(cogs.BaseCog):
                 embed_sent = True
             # If something breaks, also log it
             except discord.errors.HTTPException as exception:
-                # TODO: This logging (and /factoid calls copy) can be done in the background, and in a separate function
-                log_channel = configuration.get_config_entry(
-                    guild.id, "core_logging_channel"
-                )
-                await self.bot.logger.send_log(
-                    message=(
-                        f"Unable to send embed for factoid `[{", ".join(factoid.calls)}]`, "
-                        "sending fallback."
-                    ),
-                    level=LogLevel.ERROR,
-                    context=LogContext(guild=guild, channel=channel),
-                    channel=log_channel,
-                    exception=exception,
+                asyncio.create_task(
+                    self.log_embed_fallback_exception(
+                        factoid=factoid,
+                        exception=exception,
+                        guild=guild,
+                        channel=channel,
+                    )
                 )
 
         # Either no embed exists, or the embed failed to send for some reason.
@@ -267,6 +261,7 @@ class FactoidManager(cogs.BaseCog):
                 return
 
             sent_message = await channel.send(content=content)
+
         # IRC connection
         self.send_factoid_to_irc(channel, factoid, guild.me)
 
@@ -1135,21 +1130,14 @@ class FactoidManager(cogs.BaseCog):
         try:
             embed = self.get_embed_from_factoid(factoid)
         except TypeError as exception:
-            await self.bot.logger.send_log(
-                message=(
-                    f"Unable to make embed for factoid `[{", ".join(factoid.calls)}]`, "
-                    "sending fallback."
-                ),
-                level=LogLevel.ERROR,
-                channel=configuration.get_config_entry(
-                    guild.id,
-                    "core_logging_channel",
-                ),
-                context=LogContext(
+            asyncio.create_task(
+                self.log_embed_fallback_exception(
+                    factoid=factoid,
+                    exception=exception,
                     guild=guild,
-                ),
-                exception=exception,
+                )
             )
+
         return (embed, plaintext)
 
     async def log_factoid_send(
@@ -1171,7 +1159,7 @@ class FactoidManager(cogs.BaseCog):
         log_channel = configuration.get_config_entry(guild.id, "core_logging_channel")
         await self.bot.logger.send_log(
             message=(
-                f"Sending factoid: `[{", ".join(factoid.calls)}]` (triggered by {sender} in"
+                f"Sending factoid: `[{', '.join(factoid.calls)}]` (triggered by {sender} in"
                 f" #{channel.name})"
             ),
             level=LogLevel.INFO,
@@ -1296,6 +1284,56 @@ class FactoidManager(cogs.BaseCog):
         )
         return json_file
 
+    async def log_embed_fallback_exception(
+        self: Self,
+        factoid: FactoidView,
+        exception: Exception,
+        guild: discord.Guild,
+        channel: discord.abc.GuildChannel = None,
+    ) -> None:
+        """This logs an error log if a factoid embed failed, causing a fallback to be sent
+
+        Args:
+            factoid (FactoidView): The factoid that had the problem
+            exception (Exception): The exception generated when making or sending the embed
+            guild (discord.Guild): The guild this happened in
+            channel (discord.abc.GuildChannel, optional): The channel the factoid was going to be sent in. Defaults to None.
+        """
+        log_channel = configuration.get_config_entry(guild.id, "core_logging_channel")
+        await self.bot.logger.send_log(
+            message=(
+                f"Unable to send embed for factoid `[{', '.join(factoid.calls)}]`, "
+                "sending fallback."
+            ),
+            level=LogLevel.ERROR,
+            context=LogContext(guild=guild, channel=channel),
+            channel=log_channel,
+            exception=exception,
+        )
+
+    # INTERACTION RESPONSE BOILERPLATE
+
+    async def check_protected(
+        self: Self, interaction: discord.Interaction, factoid: FactoidView
+    ) -> bool:
+        """This takes a factoid and ensures its not protected
+        If the factoid is protected, this will respond to the interaction
+
+        Args:
+            interaction (discord.Interaction): The interaction calling the command
+            factoid (FactoidView): The factoid attempting to be edited
+
+        Returns:
+            bool: True if protected, False if unprotected
+        """
+        if factoid.flags & Properties.PROTECTED.value:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `[{', '.join(factoid.calls)}]` is protected and cannot be edited."
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return True
+        return False
+
     # AUTOFILL
 
     async def factoid_autocomplete(
@@ -1326,7 +1364,7 @@ class FactoidManager(cogs.BaseCog):
                 & (self.bot.models.FactoidCall.name.ilike(f"{current}%"))
             )
             .order_by(self.bot.models.FactoidCall.name)
-            .limit(25)
+            .limit(10)
             .gino.all()
         )
 
@@ -1339,6 +1377,7 @@ class FactoidManager(cogs.BaseCog):
         ]
 
     # COMMANDS
+    # TODO: Code de-duplication efforts.
 
     @app_commands.check(has_manage_factoids_role)
     @factoid_app_group.command(
@@ -1381,11 +1420,7 @@ class FactoidManager(cogs.BaseCog):
             return
 
         # No aliases on protected factoids
-        if factoid.flags & Properties.PROTECTED.value:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{existing_factoid}` is protected and cannot be edited."
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+        if await self.check_protected(interaction, factoid):
             return
 
         new_factoid_db = await self.get_factoid_view_by_name(
@@ -1402,6 +1437,11 @@ class FactoidManager(cogs.BaseCog):
 
         # If the new_factoid already exists but point elsewhere, we need to ask the user for confirmation
         if new_factoid_db:
+
+            # No aliases on protected factoids
+            if await self.check_protected(interaction, new_factoid_db):
+                return
+
             await interaction.response.defer()
             confirmation_response = await self.confirm_factoid_deletion(
                 interaction=interaction,
@@ -1618,20 +1658,13 @@ class FactoidManager(cogs.BaseCog):
                 embed_sent = True
             # If something breaks, also log it
             except discord.errors.HTTPException as exception:
-                log_channel = configuration.get_config_entry(
-                    interaction.guild.id, "core_logging_channel"
-                )
-                await self.bot.logger.send_log(
-                    message=(
-                        f"Unable to send embed for factoid `{factoid_name}`, "
-                        "sending fallback."
-                    ),
-                    level=LogLevel.ERROR,
-                    context=LogContext(
-                        guild=interaction.guild, channel=interaction.channel
-                    ),
-                    channel=log_channel,
-                    exception=exception,
+                asyncio.create_task(
+                    self.log_embed_fallback_exception(
+                        factoid=factoid,
+                        exception=exception,
+                        guild=interaction.guild,
+                        channel=interaction.channel,
+                    )
                 )
 
         # Either no embed exists, or the embed failed to send for some reason.
@@ -1790,11 +1823,7 @@ class FactoidManager(cogs.BaseCog):
             return
 
         # No edits on protected factoids
-        if factoid.flags & Properties.PROTECTED.value:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` is protected and cannot be edited."
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+        if await self.check_protected(interaction, factoid):
             return
 
         # Only allowed to dealias if this wouldn't require deleting the entire factoid
@@ -1850,17 +1879,13 @@ class FactoidManager(cogs.BaseCog):
             return
 
         # No edits on protected factoids
-        if factoid.flags & Properties.PROTECTED.value:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` is protected and cannot be edited."
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+        if await self.check_protected(interaction, factoid):
             return
 
         await interaction.response.defer()
         confirmation_response = await self.confirm_factoid_deletion(
             interaction=interaction,
-            display_message=f"Are you sure you want to delete the factoid `[{", ".join(factoid.calls)}]`?",
+            display_message=f"Are you sure you want to delete the factoid `[{', '.join(factoid.calls)}]`?",
             channel=interaction.channel,
             author=interaction.user,
         )
@@ -1879,7 +1904,7 @@ class FactoidManager(cogs.BaseCog):
         self.remove_from_cache(interaction.guild, factoid)
 
         embed = auxiliary.prepare_confirm_embed(
-            f"The factoid `[{", ".join(factoid.calls)}]` was deleted"
+            f"The factoid `[{', '.join(factoid.calls)}]` was deleted"
         )
         await interaction.followup.send(embed=embed)
 
@@ -1914,11 +1939,7 @@ class FactoidManager(cogs.BaseCog):
             return
 
         # No edits on protected factoids
-        if factoid.flags & Properties.PROTECTED.value:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` is protected and cannot be edited."
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+        if await self.check_protected(interaction, factoid):
             return
 
         form = FactoidModal(factoid_name, edit_mode=True, factoid=factoid)
@@ -2167,7 +2188,7 @@ class FactoidManager(cogs.BaseCog):
             embed = auxiliary.prepare_deny_embed(
                 "There are no configured jobs for this guild"
             )
-            interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         embed = discord.Embed(title=f"Factoid loop for {interaction.guild.name}")
@@ -2225,12 +2246,7 @@ class FactoidManager(cogs.BaseCog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        # No edits on protected factoids
-        if factoid.flags & Properties.PROTECTED.value:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` is protected and cannot be edited."
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+        if await self.check_protected(interaction, factoid):
             return
 
         # We can only have 1 factoid have a job per channel
@@ -2299,11 +2315,7 @@ class FactoidManager(cogs.BaseCog):
             return
 
         # No edits on protected factoids
-        if factoid.flags & Properties.PROTECTED.value:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` is protected and cannot be edited."
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+        if await self.check_protected(interaction, factoid):
             return
 
         factoid_job = await self.read_factoid_job_by_channel(
@@ -2319,6 +2331,7 @@ class FactoidManager(cogs.BaseCog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
+        await interaction.response.defer()
         # We need to cancel the job in APScheduler and delete the database entry
         await self.unschedule_job(factoid_job)
         await factoid_job.delete()
@@ -2330,7 +2343,73 @@ class FactoidManager(cogs.BaseCog):
         embed = auxiliary.prepare_confirm_embed(
             f"The loop in {channel.mention} for factoid `{factoid_name}` was deleted successfully"
         )
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
+
+    @app_commands.check(has_manage_factoids_role)
+    @factoid_loop_commands.command(
+        name="edit",
+        description="Edits an existing factoid loop job based on name and channel",
+    )
+    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    async def factoid_loop_edit_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+        channel: discord.abc.GuildChannel,
+        cron: str,
+    ) -> None:
+        """This edits an existing job, changing the cron syntax
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid to edit
+            channel (discord.abc.GuildChannel): The channel the job to edit is in
+            cron (str): The crontab syntax to use for this job
+        """
+        factoid_name = factoid_name.lower()
+        factoid = await self.get_factoid_view_by_name(
+            guild=interaction.guild, name=factoid_name
+        )
+
+        # We can't edit a factoid if it doesn't exist
+        if not factoid:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` doesn't exist!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        # No edits on protected factoids
+        if await self.check_protected(interaction, factoid):
+            return
+
+        factoid_job = await self.read_factoid_job_by_channel(
+            guild=interaction.guild,
+            factoid_data_id=factoid.factoid_data_id,
+            channel=channel,
+        )
+
+        if not factoid_job:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` doesn't have a job in {channel.mention}!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        await interaction.response.defer()
+        # We need to update the database entry and reschedule the job
+        await self.unschedule_job(factoid_job)
+        await factoid_job.update(cron=cron).apply()
+        await self.register_job(factoid_job)
+
+        # Update the factoid edit time
+        # This will also remove the factoid from the cache
+        await self.update_edit_time_for_factoid(interaction.guild, factoid)
+
+        embed = auxiliary.prepare_confirm_embed(
+            f"The loop in {channel.mention} for factoid `{factoid_name}` was edited successfully"
+        )
+        await interaction.followup.send(embed=embed)
 
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.check(has_admin_factoids_role)
@@ -2364,6 +2443,84 @@ class FactoidManager(cogs.BaseCog):
             f"Refreshed {len(jobs)} job{"s" if len(jobs)>1 else ""} in this guild"
         )
         await interaction.followup.send(embed=embed)
+
+    @app_commands.check(has_manage_factoids_role)
+    @factoid_app_group.command(
+        name="property",
+        description="Modifies properites of the given factoid",
+    )
+    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    async def factoid_property_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+        property: Properties,
+        set_value: bool,
+    ) -> None:
+        factoid_name = factoid_name.lower()
+        factoid = await self.get_factoid_view_by_name(
+            guild=interaction.guild, name=factoid_name
+        )
+
+        # We can't edit a factoid if it doesn't exist
+        if not factoid:
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The factoid `{factoid_name}` doesn't exist!"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        # No edits on protected factoids, unless we are modifying the protected flag
+        if property != Properties.PROTECTED and await self.check_protected(
+            interaction, factoid
+        ):
+            return
+
+        # Check if the property is already set to the requested value
+        currently_set = bool(factoid.flags & property.value)
+
+        if currently_set == set_value:
+            state = "enabled" if set_value else "disabled"
+
+            embed = auxiliary.prepare_deny_embed(
+                message=(
+                    f"The property `{property.name.lower()}` is already "
+                    f"{state} for `{factoid_name}`!"
+                )
+            )
+
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        # Apply the property change
+        if set_value:
+            new_flags = factoid.flags | property.value
+        else:
+            new_flags = factoid.flags & ~property.value
+
+        # Update the factoid edit time
+        # This will also remove the factoid from the cache
+        await self.update_edit_time_for_factoid(
+            interaction.guild,
+            factoid,
+        )
+
+        factoid = await self.update_factoid_data(
+            guild=interaction.guild,
+            factoid_data_id=factoid.factoid_data_id,
+            flags=new_flags,
+        )
+
+        state = "enabled" if set_value else "disabled"
+
+        embed = auxiliary.prepare_confirm_embed(
+            message=(
+                f"The property `{property.name.lower()}` was successfully "
+                f"{state} for `{factoid_name}`!"
+            )
+        )
+
+        await interaction.response.send_message(embed=embed)
 
 
 class ButtonView(discord.ui.View):
