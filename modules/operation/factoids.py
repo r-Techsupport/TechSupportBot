@@ -11,6 +11,7 @@ from socket import gaierror
 from typing import TYPE_CHECKING, Self
 
 import discord
+import expiringdict
 import yaml
 from aiohttp.client_exceptions import InvalidURL
 from discord import app_commands
@@ -119,6 +120,7 @@ class FactoidView:
     calls: list[str]
 
 
+# TODO: Switch to Int Enum
 class Properties(Enum):
     """
     This enum is for the new factoid all to be able to handle dynamic properties
@@ -155,10 +157,14 @@ class FactoidManager(cogs.BaseCog):
 
     async def preconfig(self: Self) -> None:
         """This sets up cache and job loop calls"""
-        # TODO: Factoid all cache
-
         # TODO: Make this a proper cache, that expires based on usage
         self.factoid_cache: dict[str, FactoidView] = {}
+
+        # Factoid all cache setup to save links for 23 hours, to avoid links that are close to expiring from being presented
+        self.factoid_all_cache = expiringdict.ExpiringDict(
+            max_len=50,
+            max_age_seconds=82800,
+        )
 
         # Register the loop callback into APScheduler
         self.bot.scheduler.register_task(
@@ -834,10 +840,11 @@ class FactoidManager(cogs.BaseCog):
         self.remove_from_cache(guild, factoid)
         self.add_to_cache(guild, factoid)
 
-    async def update_edit_time_for_factoid(
+    async def handle_factoid_edit(
         self: Self, guild: discord.Guild, factoid: FactoidView
     ) -> None:
         """Sets the edit time of the factoid to now
+        This also clears the factoid and factoid all cache after the edits
 
         Args:
             guild (discord.Guild): The guild this factoid is in
@@ -851,6 +858,12 @@ class FactoidManager(cogs.BaseCog):
 
         # Make sure the edited factoid is not in the cache
         self.remove_from_cache(guild, factoid)
+
+        # Clear factoid all cache for the guild on every edit
+        # We could precision remove just the edits that matter, but this is safer
+        for entry in list(self.factoid_all_cache.keys()):
+            if entry[0] == guild.id:
+                del self.factoid_all_cache[entry]
 
     # CACHE HELPERS
 
@@ -1401,7 +1414,7 @@ class FactoidManager(cogs.BaseCog):
         Returns:
             list[app_commands.Choice[str]]: The list of suggestions
         """
-        # TODO: Filter disabled/restricted factoids
+        # TODO: Filter hidden/disabled/restricted factoids
 
         guild = interaction.guild
         if guild is None:
@@ -1519,7 +1532,7 @@ class FactoidManager(cogs.BaseCog):
 
         # Update the factoid edit time
         # This will also remove the factoid from the cache
-        await self.update_edit_time_for_factoid(interaction.guild, factoid)
+        await self.handle_factoid_edit(interaction.guild, factoid)
 
         # Depending on the path took to get here, we may need to followup
         if interaction.response.is_done():
@@ -1527,7 +1540,6 @@ class FactoidManager(cogs.BaseCog):
         else:
             await interaction.response.send_message(embed=embed)
 
-    # TODO: Ephemeral
     @factoid_app_group.command(
         name="all",
         description="Sends a configurable list of all factoids.",
@@ -1540,11 +1552,13 @@ class FactoidManager(cogs.BaseCog):
         force_file: bool = False,
         show_all: bool = False,
     ) -> None:
-        # TODO: Caching - MAYBE
-        # TODO: Check if guild has zero factoids, make special error
-        # Caching here would require us to build a guild:properties_flags key
-
         all_factoids = await self.get_all_factoids_for_guild(guild=interaction.guild)
+
+        if not all_factoids:
+            await self.respond_error_embed(
+                interaction, "No factoids have been created for this guild"
+            )
+            return
 
         # Property filters only avaiable to manage roles
         if factoid_property or show_all:
@@ -1555,6 +1569,11 @@ class FactoidManager(cogs.BaseCog):
                     interaction.guild.id, "factoids_manage_roles"
                 ),
             )
+
+        # Determine whether restricted factoids should be visible here
+        should_show_restricted = self.can_channel_send_restricted(
+            interaction.channel,
+        )
 
         # Top priority is abiding by show_all
         # If not but a specific property is requested, show that
@@ -1568,11 +1587,6 @@ class FactoidManager(cogs.BaseCog):
                 if factoid.flags & factoid_property.value
             ]
         else:
-            # Determine whether restricted factoids should be visible here
-            should_show_restricted = self.can_channel_send_restricted(
-                interaction.channel,
-            )
-
             filtered_factoids = [
                 factoid
                 for factoid in all_factoids
@@ -1589,6 +1603,26 @@ class FactoidManager(cogs.BaseCog):
                 )
             ]
 
+        # Bulding a cache key to cache factoid all links
+        if show_all:
+            cache_mode = "all"
+            property_value = 0
+        elif factoid_property:
+            cache_mode = "property"
+            property_value = factoid_property.value
+        elif should_show_restricted:
+            cache_mode = "default_with_restricted"
+            property_value = 0
+        else:
+            cache_mode = "default"
+            property_value = 0
+
+        cache_key = (
+            interaction.guild.id,
+            cache_mode,
+            property_value,
+        )
+
         filtered_factoids.sort(key=lambda factoid: factoid.calls[0])
         if not filtered_factoids:
             await self.respond_error_embed(
@@ -1602,9 +1636,14 @@ class FactoidManager(cogs.BaseCog):
 
         await interaction.response.defer(ephemeral=True)
 
-        factoid_all = await self.build_factoid_all(
-            guild=interaction.guild, factoids=filtered_factoids, use_file=force_file
-        )
+        cached_factoid_all = self.factoid_all_cache.get(cache_key)
+
+        if cached_factoid_all and not force_file:
+            factoid_all = cached_factoid_all
+        else:
+            factoid_all = await self.build_factoid_all(
+                guild=interaction.guild, factoids=filtered_factoids, use_file=force_file
+            )
 
         if not factoid_all:
             await self.respond_error_embed(
@@ -1612,10 +1651,14 @@ class FactoidManager(cogs.BaseCog):
             )
             return
 
-        # If we know it's a file, or it's fallen back to a file, send it as a file
+        # If we got a file, send it.
         if isinstance(factoid_all, discord.File):
             await interaction.followup.send(file=factoid_all, ephemeral=True)
             return
+
+        # If we didn't pull factoid all from the cache, add it to the cache
+        if not cached_factoid_all:
+            self.factoid_all_cache[cache_key] = factoid_all
 
         embed = auxiliary.prepare_confirm_embed(factoid_all)
         await interaction.followup.send(embed=embed, ephemeral=True)
@@ -1872,7 +1915,7 @@ class FactoidManager(cogs.BaseCog):
 
         # Update the factoid edit time
         # This will also remove the factoid from the cache
-        await self.update_edit_time_for_factoid(interaction.guild, factoid)
+        await self.handle_factoid_edit(interaction.guild, factoid)
 
         await interaction.response.send_message(embed=embed)
 
@@ -2022,7 +2065,7 @@ class FactoidManager(cogs.BaseCog):
 
         # Update the factoid edit time
         # This will also remove the factoid from the cache
-        await self.update_edit_time_for_factoid(interaction.guild, factoid)
+        await self.handle_factoid_edit(interaction.guild, factoid)
 
         factoid = await self.update_factoid_data(
             guild=interaction.guild,
@@ -2064,18 +2107,22 @@ class FactoidManager(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that triggered this command
         """
-        # TODO: Will need to clear factoid all cache when it exists
         for entry in list(self.factoid_cache.keys()):
             if entry.startswith(str(interaction.guild.id)):
                 del self.factoid_cache[entry]
 
+        # Clear factoid all cache
+        for entry in list(self.factoid_all_cache.keys()):
+            if entry[0] == interaction.guild.id:
+                del self.factoid_all_cache[entry]
+
         embed = auxiliary.prepare_confirm_embed("Factoid cache for this guild cleared")
         await interaction.response.send_message(embed=embed)
 
-    # TODO: Ephemeral
     @factoid_app_group.command(
         name="info",
         description="Gets information about a factoid and displays it to the user.",
+        extras={"ephemeral_error": True},
     )
     @app_commands.autocomplete(factoid_name=factoid_autocomplete)
     async def factoid_info_command(
@@ -2142,7 +2189,7 @@ class FactoidManager(cogs.BaseCog):
                 value="\n".join(job_lines),
             )
 
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @factoid_app_group.command(
         name="json",
@@ -2278,7 +2325,7 @@ class FactoidManager(cogs.BaseCog):
 
         # Update the factoid edit time
         # This will also remove the factoid from the cache
-        await self.update_edit_time_for_factoid(interaction.guild, factoid)
+        await self.handle_factoid_edit(interaction.guild, factoid)
 
         embed = auxiliary.prepare_confirm_embed(
             f"The loop in {channel.mention} for factoid {factoid_name} was created successfully"
@@ -2337,7 +2384,7 @@ class FactoidManager(cogs.BaseCog):
 
         # Update the factoid edit time
         # This will also remove the factoid from the cache
-        await self.update_edit_time_for_factoid(interaction.guild, factoid)
+        await self.handle_factoid_edit(interaction.guild, factoid)
 
         embed = auxiliary.prepare_confirm_embed(
             f"The loop in {channel.mention} for factoid `{factoid_name}` was deleted successfully"
@@ -2398,7 +2445,7 @@ class FactoidManager(cogs.BaseCog):
 
         # Update the factoid edit time
         # This will also remove the factoid from the cache
-        await self.update_edit_time_for_factoid(interaction.guild, factoid)
+        await self.handle_factoid_edit(interaction.guild, factoid)
 
         embed = auxiliary.prepare_confirm_embed(
             f"The loop in {channel.mention} for factoid `{factoid_name}` was edited successfully"
@@ -2484,7 +2531,7 @@ class FactoidManager(cogs.BaseCog):
 
         # Update the factoid edit time
         # This will also remove the factoid from the cache
-        await self.update_edit_time_for_factoid(
+        await self.handle_factoid_edit(
             interaction.guild,
             factoid,
         )
@@ -2506,10 +2553,10 @@ class FactoidManager(cogs.BaseCog):
 
         await interaction.response.send_message(embed=embed)
 
-    # TODO: Ephemeral
     @factoid_app_group.command(
         name="search",
         description="Searches for factoids where the message or json match the query",
+        extras={"ephemeral_error": True},
     )
     async def factoid_search_command(
         self: Self,
@@ -2522,10 +2569,14 @@ class FactoidManager(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that triggered this command
         """
-        all_factoids = await self.get_all_factoids_for_guild(guild=interaction.guild)
-
-        # TODO: Ensure min length of query
         query = query.lower()
+        if len(query) <= 3:
+            await self.respond_error_embed(
+                "The minimum search query length is 4 characters"
+            )
+            return
+
+        all_factoids = await self.get_all_factoids_for_guild(guild=interaction.guild)
 
         matching_factoids: list[FactoidView] = []
 
