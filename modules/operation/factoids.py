@@ -166,6 +166,10 @@ class FactoidManager(cogs.BaseCog):
             max_age_seconds=82800,
         )
 
+        # Autocomplete cache to avoid constant DB calls
+        # guild ID: list[(name, flags)]
+        self.factoid_autocomplete_cache: dict[int, list[tuple[str, int]]] = {}
+
         # Register the loop callback into APScheduler
         self.bot.scheduler.register_task(
             "factoid_loop",
@@ -865,6 +869,10 @@ class FactoidManager(cogs.BaseCog):
             if entry[0] == guild.id:
                 del self.factoid_all_cache[entry]
 
+        # We also must clear factoid autocomplete cache
+        if guild.id in self.factoid_autocomplete_cache:
+            del self.factoid_autocomplete_cache[guild.id]
+
     # CACHE HELPERS
 
     def add_to_cache(self: Self, guild: discord.Guild, factoid: FactoidView) -> None:
@@ -1400,6 +1408,99 @@ class FactoidManager(cogs.BaseCog):
 
     # AUTOFILL
 
+    async def setup_autocomplete_cache(self: Self, guild: discord.Guild) -> None:
+        """This calls the database and creates a cache for the passed guild for the autocomplete
+        This cache contains a mapping of names to flags
+
+        Args:
+            guild (discord.Guild): The guild to build the cache for
+        """
+        factoids = (
+            await self.bot.db.select(
+                [
+                    self.bot.models.FactoidCall.name,
+                    self.bot.models.FactoidData.flags,
+                ]
+            )
+            .select_from(
+                self.bot.models.FactoidCall.join(
+                    self.bot.models.FactoidData,
+                    self.bot.models.FactoidCall.factoid_data_id
+                    == self.bot.models.FactoidData.factoid_data_id,
+                )
+            )
+            .where(self.bot.models.FactoidCall.guild == str(guild.id))
+            .gino.all()
+        )
+
+        cache = [
+            (
+                factoid.name.lower(),
+                factoid.flags,
+            )
+            for factoid in factoids
+        ]
+
+        cache.sort(key=lambda x: x[0])
+
+        self.factoid_autocomplete_cache[guild.id] = cache
+
+    async def filtered_factoid_autocomplete(
+        self: Self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        """This filters the autocomplete list based on properties
+        This always hides hidden and disabled factoids.
+        Restricted factoids are hidden if the channel is not in the restricted list
+
+        Args:
+            interaction (discord.Interaction): The interaction calling for a factoid
+            current (str): The current string in the name field
+
+        Returns:
+            list[app_commands.Choice[str]]: The list of suggestions
+        """
+
+        guild = interaction.guild
+        if guild is None:
+            return []
+
+        if guild.id not in self.factoid_autocomplete_cache:
+            await self.setup_autocomplete_cache(guild)
+
+        current = current.lower()
+        cached = self.factoid_autocomplete_cache.get(guild.id, [])
+
+        show_restricted = self.can_channel_send_restricted(interaction.channel)
+
+        matches: list[app_commands.Choice[str]] = []
+
+        for name, flags in cached:
+            if not name.startswith(current):
+                continue
+
+            if flags & Properties.HIDDEN.value:
+                continue
+
+            if flags & Properties.DISABLED.value:
+                continue
+
+            if (flags & Properties.RESTRICTED.value) and not show_restricted:
+                continue
+
+            matches.append(
+                app_commands.Choice(
+                    name=name,
+                    value=name,
+                )
+            )
+
+            if len(matches) >= 10:
+                break
+
+        return matches
+
     async def factoid_autocomplete(
         self: Self,
         interaction: discord.Interaction,
@@ -1414,31 +1515,36 @@ class FactoidManager(cogs.BaseCog):
         Returns:
             list[app_commands.Choice[str]]: The list of suggestions
         """
-        # TODO: Filter hidden/disabled/restricted factoids
-
         guild = interaction.guild
         if guild is None:
             return []
 
         current = current.lower()
 
-        factoids = (
-            await self.bot.models.FactoidCall.query.where(
-                (self.bot.models.FactoidCall.guild == str(guild.id))
-                & (self.bot.models.FactoidCall.name.ilike(f"{current}%"))
-            )
-            .order_by(self.bot.models.FactoidCall.name)
-            .limit(10)
-            .gino.all()
-        )
+        # Lazy cache init
+        if guild.id not in self.factoid_autocomplete_cache:
+            await self.setup_autocomplete_cache(guild)
 
-        return [
-            app_commands.Choice(
-                name=factoid.name,
-                value=factoid.name,
+        cached = self.factoid_autocomplete_cache.get(guild.id, [])
+
+        matches: list[app_commands.Choice[str]] = []
+
+        # We don't need to filter by flags here
+        for name, _flags in cached:
+            if not name.startswith(current):
+                continue
+
+            matches.append(
+                app_commands.Choice(
+                    name=name,
+                    value=name,
+                )
             )
-            for factoid in factoids
-        ]
+
+            if len(matches) >= 10:
+                break
+
+        return matches
 
     # COMMANDS
 
@@ -1667,7 +1773,7 @@ class FactoidManager(cogs.BaseCog):
         name="call",
         description="Calls a factoid from the database and sends it publicy in the channel.",
     )
-    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    @app_commands.autocomplete(factoid_name=filtered_factoid_autocomplete)
     async def factoid_call_command(
         self: Self,
         interaction: discord.Interaction,
@@ -2107,16 +2213,39 @@ class FactoidManager(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that triggered this command
         """
+        guild_id = interaction.guild.id
+
+        factoid_cache_removed = 0
+        factoid_all_cache_removed = 0
+        autocomplete_cache_removed = 0
+
+        # Clear factoid cache
         for entry in list(self.factoid_cache.keys()):
-            if entry.startswith(str(interaction.guild.id)):
+            if entry.startswith(str(guild_id)):
                 del self.factoid_cache[entry]
+                factoid_cache_removed += 1
 
         # Clear factoid all cache
         for entry in list(self.factoid_all_cache.keys()):
-            if entry[0] == interaction.guild.id:
+            if entry[0] == guild_id:
                 del self.factoid_all_cache[entry]
+                factoid_all_cache_removed += 1
 
-        embed = auxiliary.prepare_confirm_embed("Factoid cache for this guild cleared")
+        # Clear autocomplete cache
+        if guild_id in self.factoid_autocomplete_cache:
+            autocomplete_cache_removed = 1
+            del self.factoid_autocomplete_cache[guild_id]
+
+        embed = auxiliary.prepare_confirm_embed(
+            "\n".join(
+                [
+                    f"FactoidView cache cleared: {factoid_cache_removed}",
+                    f"FactoidAll cache cleared: {factoid_all_cache_removed}",
+                    f"Autocomplete cache cleared: {autocomplete_cache_removed}",
+                ]
+            )
+        )
+
         await interaction.response.send_message(embed=embed)
 
     @factoid_app_group.command(
@@ -2124,7 +2253,7 @@ class FactoidManager(cogs.BaseCog):
         description="Gets information about a factoid and displays it to the user.",
         extras={"ephemeral_error": True},
     )
-    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    @app_commands.autocomplete(factoid_name=filtered_factoid_autocomplete)
     async def factoid_info_command(
         self: Self,
         interaction: discord.Interaction,
@@ -2598,6 +2727,7 @@ class FactoidManager(cogs.BaseCog):
         lines: list[str] = []
 
         # TODO: Paginate, 5 per page. Max 50
+        # TODO: Show partial factoid message
         for factoid in matching_factoids:
             lines.append(f"`[{', '.join(factoid.calls)}]`")
 
