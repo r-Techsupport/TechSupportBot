@@ -156,6 +156,8 @@ class FactoidManager(cogs.BaseCog):
     async def preconfig(self: Self) -> None:
         """This sets up cache and job loop calls"""
         # TODO: Factoid all cache
+
+        # TODO: Make this a proper cache, that expires based on usage
         self.factoid_cache: dict[str, FactoidView] = {}
 
         # Register the loop callback into APScheduler
@@ -1337,7 +1339,8 @@ class FactoidManager(cogs.BaseCog):
     async def respond_error_embed(
         self: Self, interaction: discord.Interaction, message: str
     ) -> None:
-        """This formats a denial embed and responds to the interaction with it
+        """This formats a denial embed and responds to the interaction with it.
+        Will always respond ephemerally, will handle followup if needed
 
         Args:
             interaction (discord.Interaction): The interaction to respond to
@@ -1524,6 +1527,7 @@ class FactoidManager(cogs.BaseCog):
         else:
             await interaction.response.send_message(embed=embed)
 
+    # TODO: Ephemeral
     @factoid_app_group.command(
         name="all",
         description="Sends a configurable list of all factoids.",
@@ -1931,7 +1935,7 @@ class FactoidManager(cogs.BaseCog):
     @app_commands.check(has_manage_factoids_role)
     @factoid_app_group.command(
         name="edit",
-        description="Edits an existing factoids message, embed or properties",
+        description="Edits an existing factoids message or embed",
     )
     @app_commands.autocomplete(factoid_name=factoid_autocomplete)
     async def factoid_edit_command(
@@ -2068,6 +2072,7 @@ class FactoidManager(cogs.BaseCog):
         embed = auxiliary.prepare_confirm_embed("Factoid cache for this guild cleared")
         await interaction.response.send_message(embed=embed)
 
+    # TODO: Ephemeral
     @factoid_app_group.command(
         name="info",
         description="Gets information about a factoid and displays it to the user.",
@@ -2195,6 +2200,7 @@ class FactoidManager(cogs.BaseCog):
             return
 
         embed = discord.Embed(title=f"Factoid loop for {interaction.guild.name}")
+        embed.color = discord.Color.blue()
         job_lines = []
 
         for job in jobs:
@@ -2218,7 +2224,7 @@ class FactoidManager(cogs.BaseCog):
     @app_commands.check(has_manage_factoids_role)
     @factoid_loop_commands.command(
         name="create",
-        description="Creates an new factoid loop job in the specified channel",
+        description="Creates a new factoid loop job in the specified channel",
     )
     @app_commands.autocomplete(factoid_name=factoid_autocomplete)
     async def factoid_loop_create_command(
@@ -2500,10 +2506,119 @@ class FactoidManager(cogs.BaseCog):
 
         await interaction.response.send_message(embed=embed)
 
-    # TODO: /factoid search
-    # TODO: /factoid top
+    # TODO: Ephemeral
+    @factoid_app_group.command(
+        name="search",
+        description="Searches for factoids where the message or json match the query",
+    )
+    async def factoid_search_command(
+        self: Self,
+        interaction: discord.Interaction,
+        query: str,
+    ) -> None:
+        """This will search all facatoids in the guild and display any that match the search query
+        This will filter out hidden factoids
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+        """
+        all_factoids = await self.get_all_factoids_for_guild(guild=interaction.guild)
+
+        # TODO: Ensure min length of query
+        query = query.lower()
+
+        matching_factoids: list[FactoidView] = []
+
+        for factoid in all_factoids:
+            # Filter hidden factoids
+            if factoid.flags & Properties.HIDDEN.value:
+                continue
+
+            if query in factoid.message.lower() or query in factoid.json_string.lower():
+                matching_factoids.append(factoid)
+
+        if not matching_factoids:
+            await self.respond_error_embed(
+                interaction,
+                f"No factoids matched the query `{query}`!",
+            )
+            return
+
+        lines: list[str] = []
+
+        # TODO: Paginate, 5 per page. Max 50
+        for factoid in matching_factoids:
+            lines.append(f"`[{', '.join(factoid.calls)}]`")
+
+        embed = auxiliary.prepare_confirm_embed(message="\n".join(lines))
+
+        embed.title = f"Found {len(matching_factoids)} matching factoid{'s' if len(matching_factoids) != 1 else ''}"
+
+        await interaction.response.send_message(
+            embed=embed,
+            ephemeral=True,
+        )
+
+    @factoid_app_group.command(
+        name="top",
+        description="Displays the top 10 factoids by number of times called",
+    )
+    async def factoid_top_command(
+        self: Self,
+        interaction: discord.Interaction,
+    ) -> None:
+        """This will display the most commonly called factoids in this guild
+        It will ignore hidden factoids
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+        """
+
+        all_factoids = await self.get_all_factoids_for_guild(guild=interaction.guild)
+
+        visible_factoids: list[FactoidView] = []
+
+        for factoid in all_factoids:
+            # Ignore hidden factoids
+            if factoid.flags & Properties.HIDDEN.value:
+                continue
+
+            visible_factoids.append(factoid)
+
+        if not visible_factoids:
+            await self.respond_error_embed(
+                interaction,
+                "There are no factoids in this guild!",
+            )
+            return
+
+        sorted_factoids = sorted(
+            visible_factoids,
+            key=lambda factoid: factoid.times_called,
+            reverse=True,
+        )
+
+        top_factoids = sorted_factoids[:10]
+
+        lines: list[str] = []
+
+        # TODO: Handling for 1 calls
+        for index, factoid in enumerate(top_factoids, start=1):
+            lines.append(
+                f"{index}. `[{', '.join(factoid.calls)}]` - {factoid.times_called} calls"
+            )
+
+        embed = discord.Embed(
+            title=f"Top {len(top_factoids)} factoid{'s' if len(top_factoids) != 1 else ''}",
+            description="\n".join(lines),
+        )
+        embed.color = discord.Color.blue()
+
+        await interaction.response.send_message(embed=embed)
+
     # TODO: Legacy prefix factoid calls
     # TODO: Add guild config to control whether prefix factoids are enabled. Default to FALSE
+
 
 class ButtonView(discord.ui.View):
     # TODO: Migrate to LayoutView
