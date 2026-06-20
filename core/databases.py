@@ -147,6 +147,12 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     class FactoidCall(bot.db.Model):
         __tablename__ = "factoid_calls"
 
+        __table_args__ = (
+            bot.db.UniqueConstraint(
+                "guild", "name", name="uq_factoid_calls_guild_name"
+            ),
+        )
+
         factoid_call_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
         guild: str = bot.db.Column(bot.db.String, index=True)
         name: str = bot.db.Column(bot.db.String, index=True)

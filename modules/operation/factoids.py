@@ -2,18 +2,21 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import hashlib
 import io
 import json
 import re
 from dataclasses import dataclass
-from enum import Enum
+from enum import IntFlag
 from socket import gaierror
 from typing import TYPE_CHECKING, Self
+from urllib.parse import urlsplit, urlunsplit
 
 import discord
 import expiringdict
 import yaml
 from aiohttp.client_exceptions import InvalidURL
+from apscheduler.triggers.cron import CronTrigger
 from discord import app_commands
 
 import configuration
@@ -26,6 +29,7 @@ if TYPE_CHECKING:
     import bot
 
 
+# TODO: Switch these to IDs
 async def has_manage_factoids_role(
     interaction: discord.Interaction,
 ) -> bool:
@@ -120,8 +124,7 @@ class FactoidView:
     calls: list[str]
 
 
-# TODO: Switch to Int Enum
-class Properties(Enum):
+class Properties(IntFlag):
     """
     This enum is for the new factoid all to be able to handle dynamic properties
 
@@ -138,9 +141,10 @@ class Properties(Enum):
     RESTRICTED: int = 0b0001
 
 
+# TODO: Warning on body/embed contents with discord CDN links
 # TODO: Update/remake all doc strings
-# TODO: create/edit need to have duplicate json file to string code generic shared function
-# TODO: Have autocomplete hide protected factoids outside of /property
+# BUG: On factoid create/alias, we need to make compeltely sure we aren't making data and then getting a unique error on call
+# TODO: Make a cleanup command to purge and hanging database entries. Data without any calls, calls/jobs pointing to missing data entries
 class FactoidManager(cogs.BaseCog):
 
     factoid_app_group: app_commands.Group = app_commands.Group(
@@ -158,7 +162,10 @@ class FactoidManager(cogs.BaseCog):
 
     async def preconfig(self: Self) -> None:
         """This sets up cache and job loop calls"""
-        self.factoid_cache: dict[str, FactoidView] = {}
+        self.factoid_cache = expiringdict.ExpiringDict(
+            max_len=500,
+            max_age_seconds=82800,
+        )
 
         # Factoid all cache setup to save links for 23 hours, to avoid links that are close to expiring from being presented
         self.factoid_all_cache = expiringdict.ExpiringDict(
@@ -188,10 +195,6 @@ class FactoidManager(cogs.BaseCog):
 
     async def register_job(self: Self, job: bot.models.FactoidJob) -> None:
         guild = self.bot.get_guild(int(job.guild))
-        # Do not register the job if extension is disabled
-        if not self.extension_enabled(guild=guild):
-            return
-
         await self.bot.scheduler.schedule_cron(
             task_name="factoid_loop",
             cron=job.cron,
@@ -202,15 +205,9 @@ class FactoidManager(cogs.BaseCog):
         self: Self,
         payload: dict,
     ) -> None:
-
         # Expand payload
         guild: discord.Guild = payload["guild"]
         factoid_job_id: int = payload["job_id"]
-
-        # Stop execution if factoids has been disabled
-        if not self.extension_enabled(guild=guild):
-            return
-
         job_data = await self.bot.models.FactoidJob.query.where(
             (self.bot.models.FactoidJob.guild == str(guild.id))
             & (self.bot.models.FactoidJob.factoid_job_id == factoid_job_id)
@@ -224,36 +221,44 @@ class FactoidManager(cogs.BaseCog):
         # If the FactoidJob and FactoidData entry both exist, the job is valid. We reschedule here to prevent a different error causing the job to be shadow cancelled
         await self.register_job(job_data)
 
+        # If factoids has been disabled, don't execute the job
+        # We have already rescheduled it, so it will check again later
+        if not self.extension_enabled(guild=guild):
+            return
+
+        # If for some reason we cannot find the channel, don't bother trying to execute
         channel = self.bot.get_channel(int(job_data.channel))
         if not channel:
             return
 
         # Check if factoid is disabled. If so, don't send it
-        if factoid.flags & Properties.DISABLED.value:
+        if factoid.flags & Properties.DISABLED:
             return
 
         # Check if factoid is restricted. If so, check if we can call it
         if (
-            factoid.flags & Properties.RESTRICTED.value
+            factoid.flags & Properties.RESTRICTED
             and not self.can_channel_send_restricted(channel)
         ):
             return
 
         embed, plaintext_content = await self.generate_sendable_factoid(guild, factoid)
 
-        # Log in the background
-        asyncio.create_task(
-            self.log_factoid_send(
-                guild=guild,
-                channel=channel,
-                sender=guild.me,
-                factoid=factoid,
-            )
-        )
-
+        last_message = await channel.fetch_message(channel.last_message_id)
         embed_sent = False
         if embed:
             try:
+                # If the bot wrote the last message, and its the same as the current job, do nothing
+                if last_message.embeds:
+                    old_embed_hash = self.compute_embed_hash(last_message.embeds[0])
+                    new_embed_hash = self.compute_embed_hash(embed)
+                    print(f"OLD: {old_embed_hash}, NEW: {new_embed_hash}")
+                    if (
+                        last_message.author == guild.me
+                        and new_embed_hash == old_embed_hash
+                    ):
+                        return
+
                 # Attempt to send the message with the embed in it
                 sent_message = await channel.send(embed=embed)
                 embed_sent = True
@@ -275,7 +280,21 @@ class FactoidManager(cogs.BaseCog):
             if len(content) > 2000:
                 return
 
+            # If the bot wrote the last message, and its the same as the current job, do nothing
+            if last_message.author == guild.me and last_message.content == content:
+                return
+
             sent_message = await channel.send(content=content)
+
+        # Log in the background
+        asyncio.create_task(
+            self.log_factoid_send(
+                guild=guild,
+                channel=channel,
+                sender=guild.me,
+                factoid=factoid,
+            )
+        )
 
         # IRC connection
         self.send_factoid_to_irc(channel, factoid, guild.me)
@@ -590,9 +609,6 @@ class FactoidManager(cogs.BaseCog):
         If the old FactoidData loses all calls, it is deleted.
         Returns True if the move succeeded.
         """
-
-        # TODO: This needs to be re-written
-
         call = await self.read_factoid_call(
             guild=guild,
             name=existing_name,
@@ -965,9 +981,7 @@ class FactoidManager(cogs.BaseCog):
 
             properties_str = (
                 ", ".join(
-                    prop.name.lower()
-                    for prop in Properties
-                    if factoid.flags & prop.value
+                    prop.name.lower() for prop in Properties if factoid.flags & prop
                 )
                 or "None"
             )
@@ -1192,6 +1206,96 @@ class FactoidManager(cogs.BaseCog):
             exception=exception,
         )
 
+    async def generate_json_string_from_file(
+        self: Self, interaction: discord.Interaction, uploaded_file: discord.Attachment
+    ) -> str:
+
+        if not uploaded_file.filename.endswith(".json"):
+            await self.respond_error_embed(
+                interaction, "I don't recognize your upload as a JSON file."
+            )
+            return
+
+        try:
+            json_bytes = await uploaded_file.read()
+            attachment_json = json.loads(json_bytes.decode("UTF-8"))
+            embed_json_string = json.dumps(attachment_json)
+
+        except Exception:
+            await self.respond_error_embed(
+                interaction, message="I couldn't parse the uploaded JSON file."
+            )
+            return
+
+        return embed_json_string
+
+    def compute_embed_hash(self: Self, embed: discord.Embed) -> str:
+        """This generates a hash from a discords embed content, for comparison purposes
+        This allows us to normalize the embed we are about to send and the embed we previously sent
+
+        Args:
+            embed (discord.Embed): The embed we want to normalize
+
+        Returns:
+            str: The hash of the embed to compare
+        """
+
+        # I hate everything about this
+        # This is all because of discord CDN links
+
+        # Do some parsing to attempt to ensure embeds are the same
+        def normalize_discord_url(url: str | None) -> str | None:
+            if not url:
+                return None
+
+            parsed_url = urlsplit(url)
+            return urlunsplit(
+                (parsed_url.scheme, parsed_url.netloc, parsed_url.path, "", "")
+            )
+
+        def normalize_inline(value):
+            if value is None:
+                return False
+            return bool(value)
+
+        embed_data = {
+            "author": (
+                {
+                    "name": embed.author.name if embed.author else None,
+                    "icon_url": normalize_discord_url(embed.author.icon_url),
+                    "url": normalize_discord_url(embed.author.url),
+                }
+                if embed.author
+                else None
+            ),
+            "footer": (
+                {
+                    "text": embed.footer.text if embed.footer else None,
+                    "icon_url": normalize_discord_url(embed.footer.icon_url),
+                }
+                if embed.footer
+                else None
+            ),
+            "color": embed.color.value if embed.color else None,
+            "fields": [
+                {
+                    "name": field.name,
+                    "value": field.value,
+                    "inline": normalize_inline(field.inline),
+                }
+                for field in embed.fields
+            ],
+            "image": normalize_discord_url(embed.image.url),
+            "thumbnail": normalize_discord_url(embed.thumbnail.url),
+            "title": embed.title,
+            "description": embed.description,
+            "url": normalize_discord_url(embed.url),
+            "timestamp": embed.timestamp.isoformat() if embed.timestamp else None,
+        }
+
+        normalized_json = json.dumps(embed_data, sort_keys=True, ensure_ascii=False)
+        return hashlib.sha256(normalized_json.encode("utf-8")).hexdigest()
+
     # INTERACTION RESPONSE BOILERPLATE
 
     async def check_protected(
@@ -1207,7 +1311,7 @@ class FactoidManager(cogs.BaseCog):
         Returns:
             bool: True if protected, False if unprotected
         """
-        if factoid.flags & Properties.PROTECTED.value:
+        if factoid.flags & Properties.PROTECTED:
             await self.respond_error_embed(
                 interaction,
                 f"The factoid `[{', '.join(factoid.calls)}]` is protected and cannot be edited.",
@@ -1265,7 +1369,6 @@ class FactoidManager(cogs.BaseCog):
         return factoid
 
     # AUTOFILL
-
     async def setup_autocomplete_cache(self: Self, guild: discord.Guild) -> None:
         """This calls the database and creates a cache for the passed guild for the autocomplete
         This cache contains a mapping of names to flags
@@ -1303,23 +1406,25 @@ class FactoidManager(cogs.BaseCog):
 
         self.factoid_autocomplete_cache[guild.id] = cache
 
-    async def filtered_factoid_autocomplete(
+    async def generate_factoid_autocomplete_list(
         self: Self,
         interaction: discord.Interaction,
         current: str,
+        hidden_flags: Properties = Properties(0),
     ) -> list[app_commands.Choice[str]]:
-        """This filters the autocomplete list based on properties
-        This always hides hidden and disabled factoids.
-        Restricted factoids are hidden if the channel is not in the restricted list
+        """This autocomplete list is capable of returning all factoids, filtering by no properties
+        It is setup in a way where it can be called with a list of flags to hide
+        This is not designed to be used as a direct call
 
         Args:
-            interaction (discord.Interaction): The interaction calling for a factoid
-            current (str): The current string in the name field
+            interaction (discord.Interaction): The interaction calling for autocomplete
+            current (str): The current text in the factoid name field
+            hidden_flags (Properties, optional): The properties to exclude from the list.
+                Defaults to Properties(0).
 
         Returns:
-            list[app_commands.Choice[str]]: The list of suggestions
+            list[app_commands.Choice[str]]: The list of choices matching the user input and flag filter
         """
-
         guild = interaction.guild
         if guild is None:
             return []
@@ -1329,8 +1434,6 @@ class FactoidManager(cogs.BaseCog):
 
         current = current.lower()
         cached = self.factoid_autocomplete_cache.get(guild.id, [])
-
-        show_restricted = self.can_channel_send_restricted(interaction.channel)
 
         matches: list[app_commands.Choice[str]] = []
 
@@ -1338,13 +1441,7 @@ class FactoidManager(cogs.BaseCog):
             if not name.startswith(current):
                 continue
 
-            if flags & Properties.HIDDEN.value:
-                continue
-
-            if flags & Properties.DISABLED.value:
-                continue
-
-            if (flags & Properties.RESTRICTED.value) and not show_restricted:
+            if flags & hidden_flags:
                 continue
 
             matches.append(
@@ -1359,50 +1456,72 @@ class FactoidManager(cogs.BaseCog):
 
         return matches
 
-    async def factoid_autocomplete(
+    async def property_factoid_autocomplete(
         self: Self,
         interaction: discord.Interaction,
         current: str,
     ) -> list[app_commands.Choice[str]]:
-        """Suggests factoids for autofill for commands that need autofilled factoids
+        """This function is designed to return ALL factoids, regardless of property flags
+        Designed for use exclusively in the /factoid property command
 
         Args:
-            interaction (discord.Interaction): The interaction calling the factoids
-            current (str): The current string value of the factoid argument
+            interaction (discord.Interaction): The interaction calling for autocomplete
+            current (str): The current text in the factoid name field
 
         Returns:
-            list[app_commands.Choice[str]]: The list of suggestions
+            list[app_commands.Choice[str]]: The list of choices matching to show to the user
         """
-        guild = interaction.guild
-        if guild is None:
-            return []
+        return await self.generate_factoid_autocomplete_list(
+            interaction,
+            current,
+        )
 
-        current = current.lower()
+    async def editing_factoid_autocomplete(
+        self: Self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        """This autocomplete list will hide hidden and protected factoids from the autocomplete list
+        This is designed for use when editing factoids
 
-        # Lazy cache init
-        if guild.id not in self.factoid_autocomplete_cache:
-            await self.setup_autocomplete_cache(guild)
+        Args:
+            interaction (discord.Interaction): The interaction calling for autocomplete
+            current (str): The current text in the factoid name field
 
-        cached = self.factoid_autocomplete_cache.get(guild.id, [])
+        Returns:
+            list[app_commands.Choice[str]]: The list of choices matching to show to the user
+        """
+        return await self.generate_factoid_autocomplete_list(
+            interaction,
+            current,
+            hidden_flags=(Properties.HIDDEN | Properties.PROTECTED),
+        )
 
-        matches: list[app_commands.Choice[str]] = []
+    async def filtered_factoid_autocomplete(
+        self: Self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        """This hides hidden and disabled facotids, and restricted factoids if they cannot be used in the current channel
+        This is designed for user forward commands, like /factoid call and /factoid info
 
-        # We don't need to filter by flags here
-        for name, _flags in cached:
-            if not name.startswith(current):
-                continue
+        Args:
+            interaction (discord.Interaction): The interaction calling for autocomplete
+            current (str): The current text in the factoid name field
 
-            matches.append(
-                app_commands.Choice(
-                    name=name,
-                    value=name,
-                )
-            )
+        Returns:
+            list[app_commands.Choice[str]]: The list of choices matching to show to the user
+        """
+        hidden_flags = Properties.HIDDEN | Properties.DISABLED
 
-            if len(matches) >= 10:
-                break
+        if not self.can_channel_send_restricted(interaction.channel):
+            hidden_flags |= Properties.RESTRICTED
 
-        return matches
+        return await self.generate_factoid_autocomplete_list(
+            interaction,
+            current,
+            hidden_flags=hidden_flags,
+        )
 
     # COMMANDS
 
@@ -1411,7 +1530,7 @@ class FactoidManager(cogs.BaseCog):
         name="alias",
         description="Creates an alias for an existing factoid call",
     )
-    @app_commands.autocomplete(existing_factoid=factoid_autocomplete)
+    @app_commands.autocomplete(existing_factoid=editing_factoid_autocomplete)
     async def factoid_alias_command(
         self: Self,
         interaction: discord.Interaction,
@@ -1497,6 +1616,8 @@ class FactoidManager(cogs.BaseCog):
         # Update the factoid edit time
         # This will also remove the factoid from the cache
         await self.handle_factoid_edit(interaction.guild, factoid)
+        if new_factoid_db:
+            await self.handle_factoid_edit(interaction.guild, new_factoid_db)
 
         # Depending on the path took to get here, we may need to followup
         if interaction.response.is_done():
@@ -1546,9 +1667,7 @@ class FactoidManager(cogs.BaseCog):
             filtered_factoids = all_factoids
         elif factoid_property:
             filtered_factoids = [
-                factoid
-                for factoid in all_factoids
-                if factoid.flags & factoid_property.value
+                factoid for factoid in all_factoids if factoid.flags & factoid_property
             ]
         else:
             filtered_factoids = [
@@ -1556,13 +1675,13 @@ class FactoidManager(cogs.BaseCog):
                 for factoid in all_factoids
                 if (
                     # Never show hidden factoids normally
-                    not (factoid.flags & Properties.HIDDEN.value)
+                    not (factoid.flags & Properties.HIDDEN)
                     # Never show disabled factoids normally
-                    and not (factoid.flags & Properties.DISABLED.value)
+                    and not (factoid.flags & Properties.DISABLED)
                     # Restricted factoids depend on channel
                     and (
                         should_show_restricted
-                        or not (factoid.flags & Properties.RESTRICTED.value)
+                        or not (factoid.flags & Properties.RESTRICTED)
                     )
                 )
             ]
@@ -1573,7 +1692,7 @@ class FactoidManager(cogs.BaseCog):
             property_value = 0
         elif factoid_property:
             cache_mode = "property"
-            property_value = factoid_property.value
+            property_value = factoid_property
         elif should_show_restricted:
             cache_mode = "default_with_restricted"
             property_value = 0
@@ -1655,7 +1774,7 @@ class FactoidManager(cogs.BaseCog):
             return
 
         # Check if factoid is disabled. If so, don't send it
-        if factoid.flags & Properties.DISABLED.value:
+        if factoid.flags & Properties.DISABLED:
             await self.respond_error_embed(
                 interaction, f"The factoid `{factoid_name}` is disabled."
             )
@@ -1663,7 +1782,7 @@ class FactoidManager(cogs.BaseCog):
 
         # Check if factoid is restricted. If so, check if we can call it
         if (
-            factoid.flags & Properties.RESTRICTED.value
+            factoid.flags & Properties.RESTRICTED
             and not self.can_channel_send_restricted(interaction.channel)
         ):
             await self.respond_error_embed(
@@ -1754,8 +1873,10 @@ class FactoidManager(cogs.BaseCog):
     ) -> None:
         factoid_name = factoid_name.lower()
         # Only ever attempt to add a factoid if it doesn't exist
-        # TODO: Change this to reading factoid, per the standard
-        if await self.read_factoid_call(guild=interaction.guild, name=factoid_name):
+        existing_factoid = await self.get_factoid_view_by_name(
+            guild=interaction.guild, name=factoid_name
+        )
+        if existing_factoid:
             await self.respond_error_embed(
                 interaction, f"The factoid `{factoid_name}` already exists"
             )
@@ -1779,25 +1900,11 @@ class FactoidManager(cogs.BaseCog):
             return
 
         embed_json_string = ""
-
         if form.embed.component.values:
-            embed_file: discord.Attachment = form.embed.component.values[0]
-
-            if not embed_file.filename.endswith(".json"):
-                await self.respond_error_embed(
-                    interaction, "I don't recognize your upload as a JSON file."
-                )
-                return
-
-            try:
-                json_bytes = await embed_file.read()
-                attachment_json = json.loads(json_bytes.decode("UTF-8"))
-                embed_json_string = json.dumps(attachment_json)
-
-            except Exception:
-                await self.respond_error_embed(
-                    interaction, message="I couldn't parse the uploaded JSON file."
-                )
+            embed_json_string = self.generate_json_string_from_file(
+                interaction, form.embed.component.values[0]
+            )
+            if not embed_json_string:
                 return
 
         selected = set(form.properties.component.values)
@@ -1841,7 +1948,7 @@ class FactoidManager(cogs.BaseCog):
         name="dealias",
         description="Deletes an alias for an existing factoid call",
     )
-    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    @app_commands.autocomplete(factoid_name=editing_factoid_autocomplete)
     async def factoid_dealias_command(
         self: Self,
         interaction: discord.Interaction,
@@ -1873,7 +1980,10 @@ class FactoidManager(cogs.BaseCog):
             )
             return
 
-        await self.delete_factoid_call(guild=interaction.guild, name=factoid_name)
+        await self.bot.models.FactoidCall.delete.where(
+            (self.bot.models.FactoidCall.guild == str(interaction.guild.id))
+            & (self.bot.models.FactoidCall.name == factoid_name)
+        ).gino.status()
         factoid.calls.remove(factoid_name)
         remaining_aliases = ", ".join(factoid.calls)
         embed = auxiliary.prepare_confirm_embed(
@@ -1891,7 +2001,7 @@ class FactoidManager(cogs.BaseCog):
         name="delete",
         description="Deletes a factoid, all aliases and all jobs",
     )
-    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    @app_commands.autocomplete(factoid_name=editing_factoid_autocomplete)
     async def factoid_delete_command(
         self: Self,
         interaction: discord.Interaction,
@@ -1949,7 +2059,7 @@ class FactoidManager(cogs.BaseCog):
         name="edit",
         description="Edits an existing factoids message or embed",
     )
-    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    @app_commands.autocomplete(factoid_name=editing_factoid_autocomplete)
     async def factoid_edit_command(
         self: Self,
         interaction: discord.Interaction,
@@ -2003,25 +2113,11 @@ class FactoidManager(cogs.BaseCog):
                     "The json file was requested to be replaced, but no file was uploaded. No edits were made.",
                 )
                 return
-            embed_file: discord.Attachment = form.embed.component.values[0]
 
-            if not embed_file.filename.endswith(".json"):
-                await self.respond_error_embed(
-                    interaction,
-                    "I don't recognize your upload as a JSON file. No edits were made.",
-                )
-                return
-
-            try:
-                json_bytes = await embed_file.read()
-                attachment_json = json.loads(json_bytes.decode("UTF-8"))
-                embed_json_string = json.dumps(attachment_json)
-
-            except Exception:
-                await self.respond_error_embed(
-                    interaction,
-                    message="I couldn't parse the uploaded JSON file. No edits were made.",
-                )
+            embed_json_string = self.generate_json_string_from_file(
+                interaction, form.embed.component.values[0]
+            )
+            if not embed_json_string:
                 return
 
         # If the factoid was not edited, do nothing
@@ -2128,8 +2224,6 @@ class FactoidManager(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that triggered this command
             factoid_name (str): The factoid name to display information for
         """
-        # TODO: Add embed/json buttons
-
         factoid_name = factoid_name.lower()
         # Make sure the factoid is valid
         factoid = await self.get_valid_factoid(
@@ -2138,19 +2232,19 @@ class FactoidManager(cogs.BaseCog):
         if not factoid:
             return
 
+        has_embed = bool(factoid.json_string)
+
         embed = discord.Embed(
             title=f"Info about `{factoid_name}`", description=factoid.message
         )
         embed.color = discord.Color.blue()
         embed.add_field(name="Calls", value=f"`[{', '.join(factoid.calls)}]`")
         embed.add_field(name="Time called", value=factoid.times_called)
-        embed.add_field(name="Embed", value=bool(factoid.json_string))
+        embed.add_field(name="Embed", value=has_embed)
 
         # Handle properties different to convert from into to string
         properties_str = (
-            ", ".join(
-                prop.name.lower() for prop in Properties if factoid.flags & prop.value
-            )
+            ", ".join(prop.name.lower() for prop in Properties if factoid.flags & prop)
             or "None"
         )
         embed.add_field(name="Properties", value=properties_str)
@@ -2181,13 +2275,20 @@ class FactoidManager(cogs.BaseCog):
                 value="\n".join(job_lines),
             )
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        if has_embed:
+            view = InfoEmbedButtons(interaction.user.id, factoid, self)
+            await interaction.response.send_message(
+                embed=embed, view=view, ephemeral=True
+            )
+            view.message = interaction.original_response()
+        else:
+            await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @factoid_app_group.command(
         name="json",
         description="Gets the json file for the embed of this factoid",
     )
-    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    @app_commands.autocomplete(factoid_name=editing_factoid_autocomplete)
     async def factoid_json_command(
         self: Self,
         interaction: discord.Interaction,
@@ -2265,7 +2366,7 @@ class FactoidManager(cogs.BaseCog):
         name="create",
         description="Creates a new factoid loop job in the specified channel",
     )
-    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    @app_commands.autocomplete(factoid_name=editing_factoid_autocomplete)
     async def factoid_loop_create_command(
         self: Self,
         interaction: discord.Interaction,
@@ -2307,14 +2408,20 @@ class FactoidManager(cogs.BaseCog):
 
         await interaction.response.defer()
 
-        # TODO: Validate cron syntax
+        # Use APSchduler to determine if the cron syntax is valid before scheduling
+        trigger = CronTrigger.from_crontab(cron)
+        now = datetime.datetime.utcnow()
+        run_at = trigger.get_next_fire_time(None, now)
+
+        if run_at is None:
+            await self.respond_error_embed(f"The cron expression: `{cron}` is invalid.")
+
         job_data = await self.bot.models.FactoidJob.create(
             guild=str(interaction.guild.id),
             factoid_data_id=factoid.factoid_data_id,
             channel=str(channel.id),
             cron=cron,
         )
-        # TODO: Catch ValueError here
         await self.register_job(job_data)
 
         # Update the factoid edit time
@@ -2322,7 +2429,7 @@ class FactoidManager(cogs.BaseCog):
         await self.handle_factoid_edit(interaction.guild, factoid)
 
         embed = auxiliary.prepare_confirm_embed(
-            f"The loop in {channel.mention} for factoid {factoid_name} was created successfully"
+            f"The loop in {channel.mention} for factoid `{factoid_name}` was created successfully"
         )
         await interaction.followup.send(embed=embed)
 
@@ -2331,7 +2438,7 @@ class FactoidManager(cogs.BaseCog):
         name="delete",
         description="Deletes an existing factoid loop job based on name and channel",
     )
-    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    @app_commands.autocomplete(factoid_name=editing_factoid_autocomplete)
     async def factoid_loop_delete_command(
         self: Self,
         interaction: discord.Interaction,
@@ -2390,7 +2497,7 @@ class FactoidManager(cogs.BaseCog):
         name="edit",
         description="Edits an existing factoid loop job based on name and channel",
     )
-    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    @app_commands.autocomplete(factoid_name=editing_factoid_autocomplete)
     async def factoid_loop_edit_command(
         self: Self,
         interaction: discord.Interaction,
@@ -2483,7 +2590,7 @@ class FactoidManager(cogs.BaseCog):
         name="property",
         description="Modifies properites of the given factoid",
     )
-    @app_commands.autocomplete(factoid_name=factoid_autocomplete)
+    @app_commands.autocomplete(factoid_name=property_factoid_autocomplete)
     async def factoid_property_command(
         self: Self,
         interaction: discord.Interaction,
@@ -2506,7 +2613,7 @@ class FactoidManager(cogs.BaseCog):
             return
 
         # Check if the property is already set to the requested value
-        currently_set = bool(factoid.flags & property.value)
+        currently_set = bool(factoid.flags & property)
 
         if currently_set == set_value:
             state = "enabled" if set_value else "disabled"
@@ -2519,9 +2626,9 @@ class FactoidManager(cogs.BaseCog):
 
         # Apply the property change
         if set_value:
-            new_flags = factoid.flags | property.value
+            new_flags = factoid.flags | property
         else:
-            new_flags = factoid.flags & ~property.value
+            new_flags = factoid.flags & ~property
 
         # Update the factoid edit time
         # This will also remove the factoid from the cache
@@ -2577,7 +2684,7 @@ class FactoidManager(cogs.BaseCog):
 
         for factoid in all_factoids:
             # Filter hidden factoids
-            if factoid.flags & Properties.HIDDEN.value:
+            if factoid.flags & Properties.HIDDEN:
                 continue
 
             if query in factoid.message.lower() or query in factoid.json_string.lower():
@@ -2635,7 +2742,7 @@ class FactoidManager(cogs.BaseCog):
 
         for factoid in all_factoids:
             # Ignore hidden factoids
-            if factoid.flags & Properties.HIDDEN.value:
+            if factoid.flags & Properties.HIDDEN:
                 continue
 
             visible_factoids.append(factoid)
@@ -2856,10 +2963,8 @@ class FactoidModal(discord.ui.Modal):
                 property_options.append(
                     discord.CheckboxGroupOption(
                         label=prop.name.title(),
-                        value=str(prop.value),
-                        default=(
-                            bool(factoid.flags & prop.value) if factoid else False
-                        ),
+                        value=str(prop),
+                        default=(bool(factoid.flags & prop) if factoid else False),
                     )
                 )
             self.properties = discord.ui.Label(
@@ -2881,3 +2986,70 @@ class FactoidModal(discord.ui.Modal):
         """
         await interaction.response.defer()
         return
+
+
+class InfoEmbedButtons(discord.ui.View):
+    def __init__(
+        self: Self, author_id: int, factoid: FactoidView, cog: FactoidManager
+    ) -> None:
+        super().__init__(timeout=600)
+        self.author_id = author_id
+        self.factoid: FactoidView = factoid
+        self.cog = cog
+        self.message: discord.Message | None = None
+
+    async def on_timeout(self: Self) -> None:
+        """Is called after the timeout, with the goal of disabling the buttons from the message"""
+
+        for child in self.walk_children():
+            if isinstance(child, discord.ui.Button):
+                child.disabled = True
+        if self.message:
+            await self.message.edit(view=self)
+
+        # Be memory safe and clear these objects
+        self.factoid = None
+        self.message = None
+        self.cog = None
+
+    @discord.ui.button(label="Show JSON file", style=discord.ButtonStyle.blurple)
+    async def show_json(
+        self: Self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ) -> None:
+        """The function called when the show json file button is pressed
+
+        Args:
+            interaction (discord.Interaction): The interaction that pressed the button
+            button (discord.ui.Button): The button object itself
+        """
+        json_file = self.cog.create_json_file(self.factoid)
+        await interaction.response.send_message(file=json_file, ephemeral=True)
+
+    @discord.ui.button(label="Show embed", style=discord.ButtonStyle.blurple)
+    async def show_embed(
+        self: Self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ) -> None:
+        """The function called when the show embed is pressed
+
+        Args:
+            interaction (discord.Interaction): The interaction that pressed the button
+            button (discord.ui.Button): The button object itself
+        """
+        embed, _ = await self.cog.generate_sendable_factoid(
+            interaction.guild, self.factoid
+        )
+        if not embed:
+            await self.cog.respond_error_embed(
+                "The embed for this factoid could not be generated"
+            )
+
+        try:
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        except discord.HTTPException:
+            await self.cog.respond_error_embed(
+                "The embed for this factoid could not be sent"
+            )
