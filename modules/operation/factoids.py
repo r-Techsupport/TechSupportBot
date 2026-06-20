@@ -157,7 +157,6 @@ class FactoidManager(cogs.BaseCog):
 
     async def preconfig(self: Self) -> None:
         """This sets up cache and job loop calls"""
-        # TODO: Make this a proper cache, that expires based on usage
         self.factoid_cache: dict[str, FactoidView] = {}
 
         # Factoid all cache setup to save links for 23 hours, to avoid links that are close to expiring from being presented
@@ -289,16 +288,29 @@ class FactoidManager(cogs.BaseCog):
         self: Self,
         job: bot.models.FactoidJob,
     ) -> None:
-        """Remove all scheduled APScheduler entries for a factoid job."""
-        # TODO: Check for task name
+        """This removes the passed FactoidJob from the APScheduler queue
+
+        Args:
+            job (bot.models.FactoidJob): The job to remove from the queue
+        """
+
         for scheduled_job in await self.bot.scheduler.get_upcoming_tasks():
             payload = scheduled_job["payload"]
+
+            job_id = scheduled_job["job_id"]
+
+            # Extract task name from APScheduler job ID
+            task_name = job_id.split(":", 1)[0]
+
+            # Ignore unrelated scheduled tasks
+            if task_name != "factoid_loop":
+                continue
 
             if (
                 payload.get("job_id") == job.factoid_job_id
                 and str(payload.get("guild").id) == job.guild
             ):
-                self.bot.scheduler.scheduler.remove_job(scheduled_job["job_id"])
+                self.bot.scheduler.scheduler.remove_job(job_id)
 
     # DATABASE CALLS
     # TODO: Re-evaluate the use of these functions
@@ -1104,7 +1116,6 @@ class FactoidManager(cogs.BaseCog):
         Returns:
             discord.File: The file, ready to upload to discord
         """
-        # TODO: Include properties in the yaml file
         # We should never be here, but just in case
         if not factoids:
             return None
@@ -1115,10 +1126,20 @@ class FactoidManager(cogs.BaseCog):
 
             calls = factoid.calls
 
+            properties_str = (
+                ", ".join(
+                    prop.name.lower()
+                    for prop in Properties
+                    if factoid.flags & prop.value
+                )
+                or "None"
+            )
+
             data = {
                 "calls": calls,
                 "message": factoid.message,
                 "embed": bool(factoid.json_string),
+                "properties": properties_str,
             }
 
             output_data.append(
@@ -2701,10 +2722,11 @@ class FactoidManager(cogs.BaseCog):
         query = query.lower()
         if len(query) <= 3:
             await self.respond_error_embed(
-                "The minimum search query length is 4 characters"
+                interaction, "The minimum search query length is 4 characters"
             )
             return
 
+        await interaction.response.defer(ephemeral=True)
         all_factoids = await self.get_all_factoids_for_guild(guild=interaction.guild)
 
         matching_factoids: list[FactoidView] = []
@@ -2724,20 +2746,28 @@ class FactoidManager(cogs.BaseCog):
             )
             return
 
-        lines: list[str] = []
+        title = f"Found {len(matching_factoids)} matching factoid{'s' if len(matching_factoids) != 1 else ''}"
 
-        # TODO: Paginate, 5 per page. Max 50
-        # TODO: Show partial factoid message
-        for factoid in matching_factoids:
-            lines.append(f"`[{', '.join(factoid.calls)}]`")
+        factoids = matching_factoids[:50]
+        embeds: list[discord.Embed] = []
 
-        embed = auxiliary.prepare_confirm_embed(message="\n".join(lines))
+        for i in range(0, len(factoids), 5):
+            chunk = factoids[i : i + 5]
 
-        embed.title = f"Found {len(matching_factoids)} matching factoid{'s' if len(matching_factoids) != 1 else ''}"
+            lines = [
+                f"`[{', '.join(factoid.calls)}]`: {factoid.message[:30]}"
+                for factoid in chunk
+            ]
 
-        await interaction.response.send_message(
-            embed=embed,
-            ephemeral=True,
+            embed = discord.Embed(
+                title=title, description="\n".join(lines), color=discord.Color.green()
+            )
+
+            embeds.append(embed)
+
+        view = ui.PaginateView()
+        await view.send(
+            interaction.channel, interaction.user, embeds, interaction, True
         )
 
     @factoid_app_group.command(
@@ -2783,10 +2813,9 @@ class FactoidManager(cogs.BaseCog):
 
         lines: list[str] = []
 
-        # TODO: Handling for 1 calls
         for index, factoid in enumerate(top_factoids, start=1):
             lines.append(
-                f"{index}. `[{', '.join(factoid.calls)}]` - {factoid.times_called} calls"
+                f"{index}. `[{', '.join(factoid.calls)}]` - {factoid.times_called} call{'s' if factoid.times_called != 1 else ''}"
             )
 
         embed = discord.Embed(
@@ -2802,13 +2831,14 @@ class FactoidManager(cogs.BaseCog):
 
 
 class ButtonView(discord.ui.View):
-    # TODO: Migrate to LayoutView
-    # TODO: Make this entirely in charge of displaying factoids for factoid call and factoid loop jobs
     """The class to hold the view for the delete button on /factoid call
 
     Args:
         author_id (int): The ID of the author of the factoid
     """
+
+    # At a point in which we migrate to components, this view should take over sending and processing the embed/plaintext factiods
+    # A new view entirely designed around components should exist to send those factoids
 
     def __init__(self: Self, author_id: int, factoid: FactoidView) -> None:
         super().__init__(timeout=600)
