@@ -141,8 +141,8 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             default=datetime.datetime.utcnow,
         )
         json_string: str = bot.db.Column(bot.db.String, default=None)
-        flags: int = bot.db.Column(bot.db.Integer)
-        times_called: int = bot.db.Column(bot.db.Integer)
+        flags: int = bot.db.Column(bot.db.Integer, default=0)
+        times_called: int = bot.db.Column(bot.db.Integer, default=0)
 
     class FactoidCall(bot.db.Model):
         __tablename__ = "factoid_calls"

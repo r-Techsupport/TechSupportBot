@@ -140,6 +140,7 @@ class Properties(Enum):
 
 # TODO: Update/remake all doc strings
 # TODO: create/edit need to have duplicate json file to string code generic shared function
+# TODO: Have autocomplete hide protected factoids outside of /property
 class FactoidManager(cogs.BaseCog):
 
     factoid_app_group: app_commands.Group = app_commands.Group(
@@ -181,7 +182,7 @@ class FactoidManager(cogs.BaseCog):
     # LOOP STUFF
 
     async def startup_jobs(self: Self) -> None:
-        all_jobs = await self.get_all_global_jobs()
+        all_jobs = await self.bot.models.FactoidJob.query.gino.all()
         for job in all_jobs:
             await self.register_job(job)
 
@@ -210,7 +211,10 @@ class FactoidManager(cogs.BaseCog):
         if not self.extension_enabled(guild=guild):
             return
 
-        job_data = await self.read_factoid_job_by_id(guild, factoid_job_id)
+        job_data = await self.bot.models.FactoidJob.query.where(
+            (self.bot.models.FactoidJob.guild == str(guild.id))
+            & (self.bot.models.FactoidJob.factoid_job_id == factoid_job_id)
+        ).gino.first()
         if not job_data:
             return
         factoid = await self.get_factoid_view_by_id(guild, job_data.factoid_data_id)
@@ -313,7 +317,6 @@ class FactoidManager(cogs.BaseCog):
                 self.bot.scheduler.scheduler.remove_job(job_id)
 
     # DATABASE CALLS
-    # TODO: Re-evaluate the use of these functions
 
     async def create_factoid_call(
         self: Self,
@@ -358,68 +361,6 @@ class FactoidManager(cogs.BaseCog):
             (self.bot.models.FactoidCall.guild == str(guild.id))
             & (self.bot.models.FactoidCall.name == name)
         ).gino.first()
-
-    async def delete_factoid_data(
-        self: Self,
-        guild: discord.Guild,
-        factoid_data_id: int,
-    ) -> None:
-        """Deletes factoid data from the database
-        This does not impact factoid jobs or factoid calls
-
-        Args:
-            guild (discord.Guild): The guild the factoid data is stored in
-            factoid_data_id (int): The ID of the data entry to delete
-        """
-
-        await self.bot.models.FactoidData.delete.where(
-            (self.bot.models.FactoidData.guild == str(guild.id))
-            & (self.bot.models.FactoidData.factoid_data_id == factoid_data_id)
-        ).gino.status()
-
-    async def get_all_factoid_calls(
-        self: Self,
-        guild: discord.Guild,
-    ) -> list[bot.models.FactoidCall]:
-        """This gets all FactoidCall database entries for a given guild
-
-        Args:
-            guild (discord.Guild): The guild to search for
-
-        Returns:
-            list[bot.models.FactoidCall]: The list of raw database entries
-        """
-        return await self.bot.models.FactoidCall.query.where(
-            self.bot.models.FactoidCall.guild == str(guild.id)
-        ).gino.all()
-
-    async def create_factoid_data(
-        self: Self,
-        guild: discord.Guild,
-        message: str,
-        json_string: str,
-        flags: int,
-    ) -> bot.models.FactoidData:
-        """Creates a new factoid data entry in the table
-        This will not create a call to this factoid
-
-        Args:
-            guild (discord.Guild): The guild to create this factoid for
-            message (str): The plaintext version of the factoid
-            json_string (str): The json for this factoid
-            flags (int): The property binary flags for this factoid
-
-        Returns:
-            bot.models.FactoidData: The newly created database entry
-        """
-
-        return await self.bot.models.FactoidData.create(
-            guild=str(guild.id),
-            message=message,
-            json_string=json_string,
-            flags=flags,
-            times_called=0,
-        )
 
     async def read_factoid_data(
         self: Self,
@@ -492,52 +433,6 @@ class FactoidManager(cogs.BaseCog):
             & (self.bot.models.FactoidCall.name == name)
         ).gino.status()
 
-    async def create_factoid_job(
-        self: Self,
-        guild: discord.Guild,
-        factoid_data_id: int,
-        channel: discord.abc.GuildChannel,
-        cron: str,
-    ) -> bot.models.FactoidJob:
-        """Creates a new FactoidJob entry in the table
-
-        Args:
-            guild (discord.Guild): The guild to create this factoid for
-            message (str): The plaintext version of the factoid
-            json_string (str): The json for this factoid
-            flags (int): The property binary flags for this factoid
-
-        Returns:
-            bot.models.FactoidJob: The newly created database entry
-        """
-
-        return await self.bot.models.FactoidJob.create(
-            guild=str(guild.id),
-            factoid_data_id=factoid_data_id,
-            channel=str(channel.id),
-            cron=cron,
-        )
-
-    async def read_factoid_job_by_id(
-        self: Self,
-        guild: discord.Guild,
-        factoid_job_id: int,
-    ) -> bot.models.FactoidJob:
-        """Searches the database for a factoid job for the passed guild
-
-        Args:
-            guild (discord.Guild): The guild to find the factoid job of
-            factoid_job_id (int): The ID of the factoid to search for
-
-        Returns:
-            bot.models.FactoidJob: The database entry for the factoid job
-        """
-
-        return await self.bot.models.FactoidJob.query.where(
-            (self.bot.models.FactoidJob.guild == str(guild.id))
-            & (self.bot.models.FactoidJob.factoid_job_id == factoid_job_id)
-        ).gino.first()
-
     async def read_factoid_job_by_channel(
         self: Self,
         guild: discord.Guild,
@@ -560,30 +455,11 @@ class FactoidManager(cogs.BaseCog):
             & (self.bot.models.FactoidJob.channel == str(channel.id))
         ).gino.first()
 
-    async def get_all_global_jobs(self: Self) -> list[bot.models.FactoidJob]:
-        return await self.bot.models.FactoidJob.query.gino.all()
-
     async def get_all_jobs_for_guild(
         self: Self, guild: discord.Guild
     ) -> list[bot.models.FactoidJob]:
         return await self.bot.models.FactoidJob.query.where(
             (self.bot.models.FactoidJob.guild == str(guild.id))
-        ).gino.all()
-
-    async def get_all_factoid_data(
-        self: Self,
-        guild: discord.Guild,
-    ) -> list[bot.models.FactoidData]:
-        """This gets all FactoidData database entries for a given guild
-
-        Args:
-            guild (discord.Guild): The guild to search for
-
-        Returns:
-            list[bot.models.FactoidData]: The list of raw database entries
-        """
-        return await self.bot.models.FactoidData.query.where(
-            self.bot.models.FactoidData.guild == str(guild.id)
         ).gino.all()
 
     async def get_factoid_calls_by_factoid_id(
@@ -608,20 +484,6 @@ class FactoidManager(cogs.BaseCog):
         return await self.bot.models.FactoidJob.query.where(
             (self.bot.models.FactoidJob.guild == str(guild.id))
             & (self.bot.models.FactoidJob.factoid_data_id == factoid_data_id)
-        ).gino.all()
-
-    async def get_factoid_jobs_by_channel(
-        self: Self,
-        guild: discord.Guild,
-        factoid_data_id: int,
-        channel: discord.abc.GuildChannel,
-    ) -> list[bot.models.FactoidJob]:
-        """Returns all jobs pointing to a factoid in a specific channel."""
-
-        return await self.bot.models.FactoidJob.query.where(
-            (self.bot.models.FactoidJob.guild == str(guild.id))
-            & (self.bot.models.FactoidJob.factoid_data_id == factoid_data_id)
-            & (self.bot.models.FactoidJob.channel == str(channel.id))
         ).gino.all()
 
     # DATABASE HELPERS
@@ -685,47 +547,6 @@ class FactoidManager(cogs.BaseCog):
         self.add_to_cache(guild, factoid)
 
         return factoid
-
-    async def delete_factoid_call_by_name(
-        self: Self,
-        guild: discord.Guild,
-        name: str,
-    ) -> bool:
-        """
-        Deletes a factoid call.
-        If it was the last call, deletes the underlying factoid data too.
-        Returns True if anything was deleted.
-        """
-
-        call = await self.get_factoid_call(
-            guild=guild,
-            name=name,
-        )
-
-        if not call:
-            return False
-
-        factoid_data_id = call.factoid_data_id
-
-        # delete the call first
-        await self.delete_factoid_call(
-            guild=guild,
-            name=name,
-        )
-
-        # check remaining calls
-        remaining_calls = await self.get_factoid_calls_by_factoid_id(
-            guild=guild,
-            factoid_data_id=factoid_data_id,
-        )
-
-        if not remaining_calls:
-            await self.delete_factoid_data(
-                guild=guild,
-                factoid_data_id=factoid_data_id,
-            )
-
-        return True
 
     async def delete_factoid_data_by_id(
         self: Self, guild: discord.Guild, id: int
@@ -809,8 +630,12 @@ class FactoidManager(cogs.BaseCog):
         self: Self,
         guild: discord.Guild,
     ) -> list[FactoidView]:
-        factoid_data = await self.get_all_factoid_data(guild)
-        factoid_calls = await self.get_all_factoid_calls(guild)
+        factoid_data = await self.bot.models.FactoidData.query.where(
+            self.bot.models.FactoidData.guild == str(guild.id)
+        ).gino.all()
+        factoid_calls = await self.bot.models.FactoidCall.query.where(
+            self.bot.models.FactoidCall.guild == str(guild.id)
+        ).gino.all()
 
         calls_by_id: dict[int, list[str]] = {}
 
@@ -875,15 +700,8 @@ class FactoidManager(cogs.BaseCog):
         # Make sure the edited factoid is not in the cache
         self.remove_from_cache(guild, factoid)
 
-        # Clear factoid all cache for the guild on every edit
-        # We could precision remove just the edits that matter, but this is safer
-        for entry in list(self.factoid_all_cache.keys()):
-            if entry[0] == guild.id:
-                del self.factoid_all_cache[entry]
-
-        # We also must clear factoid autocomplete cache
-        if guild.id in self.factoid_autocomplete_cache:
-            del self.factoid_autocomplete_cache[guild.id]
+        # Clear factoid all and factoid autocomplete caches
+        self.clear_guild_caches(guild)
 
     # CACHE HELPERS
 
@@ -909,6 +727,25 @@ class FactoidManager(cogs.BaseCog):
 
     def generate_cache_key(self: Self, guild: discord.Guild, factoid_id: int) -> str:
         return f"{guild.id}:{factoid_id}"
+
+    def clear_guild_caches(self: Self, guild: discord.Guild) -> None:
+        """This clears the guild wide caches, being factoid all and factoid autocomplete
+
+        Args:
+            guild (discord.Guild): The guild to clear the cache for
+        """
+        # This theoretically could be made better by being more targetted and efficient
+        # There are a lot of cases where only some of this cache should be deleted
+        # We delete it all anyway to avoid bugs
+
+        # Clearing factoid all cache for this guild
+        for entry in list(self.factoid_all_cache.keys()):
+            if entry[0] == guild.id:
+                del self.factoid_all_cache[entry]
+
+        # clearing factoid autocomplete cache for this guild
+        if guild.id in self.factoid_autocomplete_cache:
+            del self.factoid_autocomplete_cache[guild.id]
 
     # OTHER HELPERS
 
@@ -1967,8 +1804,8 @@ class FactoidManager(cogs.BaseCog):
 
         property_binary = sum(int(value) for value in selected)
 
-        factoid = await self.create_factoid_data(
-            guild=interaction.guild,
+        factoid = await self.bot.models.FactoidData.create(
+            guild=str(interaction.guild.id),
             message=form.plaintext.component.value,
             json_string=embed_json_string,
             flags=property_binary,
@@ -1979,6 +1816,9 @@ class FactoidManager(cogs.BaseCog):
             name=factoid_name,
             factoid_data_id=factoid.factoid_data_id,
         )
+
+        # We must update the factoid all and autocomplete list
+        self.clear_guild_caches(interaction.guild)
 
         embed = auxiliary.prepare_confirm_embed(
             message=f"Your factoid `{factoid_name}` was successfully created!",
@@ -2089,10 +1929,12 @@ class FactoidManager(cogs.BaseCog):
             await self.respond_error_embed(
                 interaction, f"The factoid `{factoid_name}` was not deleted."
             )
-            interaction.followup.send(embed=embed)
             return
 
         await self.delete_factoid_data_by_id(interaction.guild, factoid.factoid_data_id)
+
+        # We must update the factoid all and autocomplete list
+        self.clear_guild_caches(interaction.guild)
 
         # Remove factoid from cache after deleting
         self.remove_from_cache(interaction.guild, factoid)
@@ -2451,9 +2293,11 @@ class FactoidManager(cogs.BaseCog):
             return
 
         # We can only have 1 factoid have a job per channel
-        existing_job = await self.get_factoid_jobs_by_channel(
-            interaction.guild, factoid.factoid_data_id, channel
-        )
+        existing_job = await self.bot.models.FactoidJob.query.where(
+            (self.bot.models.FactoidJob.guild == str(interaction.guild.id))
+            & (self.bot.models.FactoidJob.factoid_data_id == factoid.factoid_data_id)
+            & (self.bot.models.FactoidJob.channel == str(channel.id))
+        ).gino.all()
         if existing_job:
             await self.respond_error_embed(
                 interaction,
@@ -2464,10 +2308,10 @@ class FactoidManager(cogs.BaseCog):
         await interaction.response.defer()
 
         # TODO: Validate cron syntax
-        job_data = await self.create_factoid_job(
-            guild=interaction.guild,
+        job_data = await self.bot.models.FactoidJob.create(
+            guild=str(interaction.guild.id),
             factoid_data_id=factoid.factoid_data_id,
-            channel=channel,
+            channel=str(channel.id),
             cron=cron,
         )
         # TODO: Catch ValueError here
