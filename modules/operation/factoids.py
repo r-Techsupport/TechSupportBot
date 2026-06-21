@@ -29,7 +29,6 @@ if TYPE_CHECKING:
     import bot
 
 
-# TODO: Switch these to IDs
 async def has_manage_factoids_role(
     interaction: discord.Interaction,
 ) -> bool:
@@ -84,8 +83,8 @@ async def has_given_factoids_role(
     """
     factoid_roles = []
     # Gets permitted roles
-    for name in check_roles:
-        factoid_role = discord.utils.get(guild.roles, name=name)
+    for id in check_roles:
+        factoid_role = guild.get_role(int(id))
         if not factoid_role:
             continue
         factoid_roles.append(factoid_role)
@@ -141,9 +140,9 @@ class Properties(IntFlag):
     RESTRICTED: int = 0b0001
 
 
+# TODO: Race condition limiting effects on /factoid edit
 # TODO: Warning on body/embed contents with discord CDN links
 # TODO: Update/remake all doc strings
-# BUG: On factoid create/alias, we need to make compeltely sure we aren't making data and then getting a unique error on call
 # TODO: Make a cleanup command to purge and hanging database entries. Data without any calls, calls/jobs pointing to missing data entries
 class FactoidManager(cogs.BaseCog):
 
@@ -1749,6 +1748,7 @@ class FactoidManager(cogs.BaseCog):
     @factoid_app_group.command(
         name="call",
         description="Calls a factoid from the database and sends it publicy in the channel.",
+        extras={"ephemeral_error": True},
     )
     @app_commands.autocomplete(factoid_name=filtered_factoid_autocomplete)
     async def factoid_call_command(
@@ -1867,6 +1867,7 @@ class FactoidManager(cogs.BaseCog):
     @factoid_app_group.command(
         name="create",
         description="Creates a new factoid by name",
+        extras={"ephemeral_error": True},
     )
     async def factoid_create_command(
         self: Self, interaction: discord.Interaction, factoid_name: str
@@ -1917,12 +1918,15 @@ class FactoidManager(cogs.BaseCog):
             json_string=embed_json_string,
             flags=property_binary,
         )
-
-        await self.create_factoid_call(
-            guild=interaction.guild,
-            name=factoid_name,
-            factoid_data_id=factoid.factoid_data_id,
-        )
+        try:
+            await self.create_factoid_call(
+                guild=interaction.guild,
+                name=factoid_name,
+                factoid_data_id=factoid.factoid_data_id,
+            )
+        except Exception as exc:
+            await factoid.delete()
+            raise exc
 
         # We must update the factoid all and autocomplete list
         self.clear_guild_caches(interaction.guild)
