@@ -34,7 +34,7 @@ dev = [
     "isort==8.0.1",
     "pydoclint==0.8.6",
     "pylint==4.0.6",
-    "pytest==9.1.0",
+    "pytest==9.1.1",
     "pytest-asyncio==1.4.0"
 ]
 
