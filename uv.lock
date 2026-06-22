@@ -380,7 +380,7 @@ requires-dist = [
     { name = "irc", specifier = "==20.5.0" },
     { name = "isort", marker = "extra == 'dev'", specifier = "==8.0.1" },
     { name = "munch", specifier = "==4.0.0" },
-    { name = "pydoclint", marker = "extra == 'dev'", specifier = "==0.8.6" },
+    { name = "pydoclint", marker = "extra == 'dev'", specifier = "==0.8.7" },
     { name = "pylint", marker = "extra == 'dev'", specifier = "==4.0.6" },
     { name = "pytest", marker = "extra == 'dev'", specifier = "==9.1.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = "==1.4.0" },
@@ -925,15 +925,15 @@ wheels = [
 
 [[package]]
 name = "pydoclint"
-version = "0.8.6"
+version = "0.8.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "docstring-parser-fork" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1e/a4/af6d870bd7d5568c0854e2ee16b2252568cce4895e2479fa6d5e6de85ab2/pydoclint-0.8.6.tar.gz", hash = "sha256:cd4a99d2bbd25b1ed47baf8ed12aa169982a14fd4071dfbd2cc09f8c04895ae4", size = 198461, upload-time = "2026-06-03T07:31:20.733Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/2e/e4df6b0cbb281cb6cf355f5d90b8c66939c7f3cd799c075fab23e0983dfb/pydoclint-0.8.7.tar.gz", hash = "sha256:1ce5055dfdaf2bc3c999d3ffd5494556b903b7090bb5fadac90819107f90629b", size = 199793, upload-time = "2026-06-22T01:24:20.117Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b7/36/ca79e758c05bb40afb6a03178fa68618149f31293b8cee6969d0fe1bfcb7/pydoclint-0.8.6-py3-none-any.whl", hash = "sha256:8f2a8b995d69cb41631d56e653e38e522cd227916a04587db842c07b7977906e", size = 82678, upload-time = "2026-06-03T07:31:19.575Z" },
+    { url = "https://files.pythonhosted.org/packages/e9/d4/15fe5c3e66bbf3f60eb9c6ef7c2dca3931302f9acf317e65d70e7d8b338a/pydoclint-0.8.7-py3-none-any.whl", hash = "sha256:40f6b80e59129fe753f6a2f9edd76e4259c970eedc1ce3663adc43f54af439d3", size = 82963, upload-time = "2026-06-22T01:24:19.102Z" },
 ]
 
 [[package]]

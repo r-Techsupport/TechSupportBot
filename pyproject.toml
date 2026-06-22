@@ -32,7 +32,7 @@ dev = [
     "flake8-variables-names==0.0.6",
     "hypothesis==6.155.3",
     "isort==8.0.1",
-    "pydoclint==0.8.6",
+    "pydoclint==0.8.7",
     "pylint==4.0.6",
     "pytest==9.1.0",
     "pytest-asyncio==1.4.0"
