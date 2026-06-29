@@ -4,7 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "aiocron==2.1",
-    "apscheduler==3.11.2",
+    "apscheduler==3.11.3",
     "bidict==0.23.1",
     "cryptography==49.0.0",
     "dateparser==1.4.1",
