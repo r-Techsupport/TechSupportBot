@@ -18,6 +18,7 @@ import yaml
 from aiohttp.client_exceptions import InvalidURL
 from apscheduler.triggers.cron import CronTrigger
 from discord import app_commands
+from discord.ext import commands  # Added only to support legacy prefix calls
 
 import configuration
 import ui
@@ -141,9 +142,7 @@ class Properties(IntFlag):
 
 
 # TODO: Race condition limiting effects on /factoid edit
-# TODO: Warning on body/embed contents with discord CDN links
 # TODO: Update/remake all doc strings
-# TODO: Make a cleanup command to purge and hanging database entries. Data without any calls, calls/jobs pointing to missing data entries
 class FactoidManager(cogs.BaseCog):
 
     factoid_app_group: app_commands.Group = app_commands.Group(
@@ -251,7 +250,6 @@ class FactoidManager(cogs.BaseCog):
                 if last_message.embeds:
                     old_embed_hash = self.compute_embed_hash(last_message.embeds[0])
                     new_embed_hash = self.compute_embed_hash(embed)
-                    print(f"OLD: {old_embed_hash}, NEW: {new_embed_hash}")
                     if (
                         last_message.author == guild.me
                         and new_embed_hash == old_embed_hash
@@ -636,7 +634,7 @@ class FactoidManager(cogs.BaseCog):
         if not remaining_calls:
             await self.delete_factoid_data_by_id(
                 guild=guild,
-                factoid_data_id=old_factoid_data_id,
+                id=old_factoid_data_id,
             )
 
         return True
@@ -1359,7 +1357,6 @@ class FactoidManager(cogs.BaseCog):
             guild=interaction.guild, name=factoid_name
         )
 
-        # We can't alias a factoid if it doesn't exist
         if not factoid:
             await self.respond_error_embed(
                 interaction, f"The factoid `{factoid_name}` doesn't exist!"
@@ -1862,6 +1859,90 @@ class FactoidManager(cogs.BaseCog):
         await self.increment_times_called_by_view(
             guild=interaction.guild, factoid=factoid
         )
+
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @app_commands.check(has_admin_factoids_role)
+    @factoid_app_group.command(
+        name="cleanup",
+        description="Deletes any broken database entries for the current guild",
+    )
+    async def factoid_cleanup_command(
+        self: Self, interaction: discord.Interaction
+    ) -> None:
+        """This command cleans up any broken database entries
+        Hopefully this never needs to be run
+
+        Args:
+            self (Self): _description_
+            interaction (discord.Interaction): The interaction that called this command
+        """
+        await interaction.response.defer()
+
+        factoid_data = await self.bot.models.FactoidData.query.where(
+            self.bot.models.FactoidData.guild == str(interaction.guild.id)
+        ).gino.all()
+        factoid_calls = await self.bot.models.FactoidCall.query.where(
+            self.bot.models.FactoidCall.guild == str(interaction.guild.id)
+        ).gino.all()
+        factoid_jobs = await self.get_all_jobs_for_guild(interaction.guild)
+
+        # A master list of valid factoid IDs, pulled from the database
+        factoid_data_ids = {data.factoid_data_id for data in factoid_data}
+
+        # A mast list of factoid IDs that have at least a single valid guild
+        called_factoid_data_ids = set()
+
+        factoid_data_removed = 0
+        factoid_calls_removed = 0
+        factoid_jobs_removed = 0
+
+        # Find any calls that point to an invalid factoid
+        for call in factoid_calls:
+            if call.factoid_data_id in factoid_data_ids:
+                called_factoid_data_ids.add(call.factoid_data_id)
+                continue
+
+            await call.delete()
+            factoid_calls_removed += 1
+
+        # Find any jobs that point to an invalid factoid
+        for job in factoid_jobs:
+            if job.factoid_data_id in factoid_data_ids:
+                continue
+
+            await self.unschedule_job(job)
+            await job.delete()
+            factoid_jobs_removed += 1
+
+        # Find any data that has no calls
+        for data in factoid_data:
+            if data.factoid_data_id in called_factoid_data_ids:
+                continue
+
+            factoid_jobs_removed += len(
+                [
+                    job
+                    for job in factoid_jobs
+                    if job.factoid_data_id == data.factoid_data_id
+                ]
+            )
+            if await self.delete_factoid_data_by_id(
+                guild=interaction.guild,
+                id=data.factoid_data_id,
+            ):
+                factoid_data_removed += 1
+
+        self.clear_guild_caches(interaction.guild)
+
+        embed = auxiliary.prepare_confirm_embed(
+            (
+                f"FactoidData entries removed: {factoid_data_removed}\n"
+                f"FactoidCall entries removed: {factoid_calls_removed}\n"
+                f"FactoidJob entries removed: {factoid_jobs_removed}"
+            )
+        )
+
+        await interaction.followup.send(embed=embed)
 
     @app_commands.check(has_manage_factoids_role)
     @factoid_app_group.command(
@@ -2781,8 +2862,106 @@ class FactoidManager(cogs.BaseCog):
 
         await interaction.response.send_message(embed=embed)
 
-    # TODO: Legacy prefix factoid calls
-    # TODO: Add guild config to control whether prefix factoids are enabled. Default to FALSE
+    # LEGACY - Prefix Calls
+    @commands.Cog.listener()
+    async def on_message(self: Self, message: discord.Message) -> None:
+        """This listens for any messages sent the bot can read
+
+        Args:
+            message (discord.Message): The message object sent
+        """
+        # Do nothing if the extension is disabled
+        if not self.extension_enabled(message.guild):
+            return
+
+        # Do nothing if the prefix calls are disabled
+        if configuration.get_config_entry(message.guild.id, "factoids_disable_prefix"):
+            return
+
+        # Do nothing if the message does not start with a factoid prefix
+        raw_content = message.clean_content
+        factoid_prefix = configuration.get_config_entry(
+            message.guild.id, "factoids_prefix"
+        )
+        if not message.clean_content.startswith(factoid_prefix):
+            return
+
+        factoid_name = (
+            raw_content[len(factoid_prefix) :].replace("\n", " ").split(" ")[0].lower()
+        )
+        factoid = factoid = await self.get_factoid_view_by_name(
+            guild=message.guild, name=factoid_name
+        )
+        if not factoid:
+            return
+
+        # Check if factoid is disabled. If so, don't send it
+        if factoid.flags & Properties.DISABLED:
+            return
+
+        # Check if factoid is restricted. If so, check if we can call it
+        if (
+            factoid.flags & Properties.RESTRICTED
+            and not self.can_channel_send_restricted(message.channel)
+        ):
+            return
+
+        # At this point we know factoids is enabled, as is prefix factoids
+        # We know the message is trying to call a factoid, and that the factoid exists
+        # We also know we should be able to send the factoid in this channel
+        embed, plaintext_content = await self.generate_sendable_factoid(
+            message.guild, factoid
+        )
+
+        # Log in the background
+        asyncio.create_task(
+            self.log_factoid_send(
+                guild=message.guild,
+                channel=message.channel,
+                sender=message.author,
+                factoid=factoid,
+            )
+        )
+        mentions = auxiliary.construct_mention_string(message.mentions)
+
+        embed_sent = False
+        if embed:
+            try:
+                # Attempt to send the message with the embed in it
+                sent_message = await message.reply(
+                    content=mentions,
+                    embed=embed,
+                )
+                embed_sent = True
+            # If something breaks, also log it
+            except discord.errors.HTTPException as exception:
+                asyncio.create_task(
+                    self.log_embed_fallback_exception(
+                        factoid=factoid,
+                        exception=exception,
+                        guild=message.guild,
+                        channel=message.channel,
+                    )
+                )
+
+        # Either no embed exists, or the embed failed to send for some reason.
+        # We will send the plaintext content of the factoid in this case
+        if not embed_sent:
+            content = f"{mentions if mentions else ""}{plaintext_content}"
+            content = content.strip()[:2000]
+            # The can't see button is not needed in plaintext cases
+            sent_message = await message.reply(content=content)
+
+        # IRC connection
+        self.send_factoid_to_irc(message.channel, factoid, message.author)
+
+        # Logger connection
+        await self.send_factoid_to_logger(
+            sent_message, message.author, message.channel, factoid.message
+        )
+
+        # Increase times called
+        await self.increment_times_called_by_view(guild=message.guild, factoid=factoid)
 
 
 class ButtonView(discord.ui.View):
