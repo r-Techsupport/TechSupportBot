@@ -201,6 +201,13 @@ class FactoidManager(cogs.BaseCog):
         self: Self,
         payload: dict,
     ) -> None:
+        """Called when its time to run a job
+        The payload in this case contains the guild and the job_id
+        This is called by apscheduler
+
+        Args:
+            payload (dict): The payload of the job to execute, stored by apscheduler
+        """
         # Expand payload
         guild: discord.Guild = payload["guild"]
         factoid_job_id: int = payload["job_id"]
@@ -472,6 +479,15 @@ class FactoidManager(cogs.BaseCog):
     async def get_all_jobs_for_guild(
         self: Self, guild: discord.Guild
     ) -> list[bot.models.FactoidJob]:
+        """This returns raw database entries for all jobs for a given guild
+
+        Args:
+            self (Self): _description_
+            guild (discord.Guild): The guild to search for
+
+        Returns:
+            list[bot.models.FactoidJob]: The list of all database entries of factoid jobs
+        """
         return await self.bot.models.FactoidJob.query.where(
             (self.bot.models.FactoidJob.guild == str(guild.id))
         ).gino.all()
@@ -641,6 +657,15 @@ class FactoidManager(cogs.BaseCog):
         self: Self,
         guild: discord.Guild,
     ) -> list[FactoidView]:
+        """Generates a list of every factoid in the guild
+        This converts the Data/Call entries into the FactoidView objects
+
+        Args:
+            guild (discord.Guild): The guild to fetch the factoids for
+
+        Returns:
+            list[FactoidView]: The list of all the processed factoids as view objects
+        """
         factoid_data = await self.bot.models.FactoidData.query.where(
             self.bot.models.FactoidData.guild == str(guild.id)
         ).gino.all()
@@ -682,6 +707,14 @@ class FactoidManager(cogs.BaseCog):
     async def increment_times_called_by_view(
         self: Self, guild: discord.Guild, factoid: FactoidView
     ) -> None:
+        """This will update the times called for a factoid
+        This writes to the database and updates the cache
+
+        Args:
+            self (Self): _description_
+            guild (discord.Guild): The guild the factoid belongs to
+            factoid (FactoidView): The factoid view fo the factoid that was called to increment
+        """
         factoid.times_called += 1
         await self.update_factoid_data(
             guild=guild,
@@ -717,6 +750,13 @@ class FactoidManager(cogs.BaseCog):
     # CACHE HELPERS
 
     def add_to_cache(self: Self, guild: discord.Guild, factoid: FactoidView) -> None:
+        """This adds a factoid to the cache, if it isn't already in the cache
+
+        Args:
+            self (Self): _description_
+            guild (discord.Guild): The guild the factoid is in
+            factoid (FactoidView): The factoid view of the factoid to add to the cache
+        """
         cache_key = self.generate_cache_key(guild, factoid.factoid_data_id)
         if cache_key not in self.factoid_cache:
             self.factoid_cache[cache_key] = factoid
@@ -724,6 +764,12 @@ class FactoidManager(cogs.BaseCog):
     def remove_from_cache(
         self: Self, guild: discord.Guild, factoid: FactoidView
     ) -> None:
+        """This removes the factoid from cache, if it exists in the cache
+
+        Args:
+            guild (discord.Guild): The guild the factoid belongs to
+            factoid (FactoidView): The factoid view object of the factoid to remove from the cache
+        """
         cache_key = self.generate_cache_key(guild, factoid.factoid_data_id)
         if cache_key in self.factoid_cache:
             del self.factoid_cache[cache_key]
@@ -731,12 +777,30 @@ class FactoidManager(cogs.BaseCog):
     def get_from_cache(
         self: Self, guild: discord.Guild, factoid_id: int
     ) -> FactoidView | None:
+        """This attempts to fetch a factoid from the cache
+
+        Args:
+            guild (discord.Guild): The guild to search for factoids in
+            factoid_id (int): The ID of the factoid to search
+
+        Returns:
+            FactoidView | None: The view object, if the factoid was cached
+        """
         cache_key = self.generate_cache_key(guild, factoid_id)
         if cache_key in self.factoid_cache:
             return self.factoid_cache[cache_key]
         return None
 
     def generate_cache_key(self: Self, guild: discord.Guild, factoid_id: int) -> str:
+        """This generates a key to use to determine if a specific factoid is cached
+
+        Args:
+            guild (discord.Guild): The guild the factoid is in
+            factoid_id (int): The factoid ID from the FactoidData database
+
+        Returns:
+            str: The string to use for the cache system
+        """
         return f"{guild.id}:{factoid_id}"
 
     def clear_guild_caches(self: Self, guild: discord.Guild) -> None:
@@ -1608,12 +1672,12 @@ class FactoidManager(cogs.BaseCog):
                     message=f"The factoid `{new_factoid}` was not replaced.",
                 )
                 return
-            else:
-                await self.move_factoid_call(
-                    guild=interaction.guild,
-                    existing_name=new_factoid,
-                    new_factoid_data_id=factoid.factoid_data_id,
-                )
+
+            await self.move_factoid_call(
+                guild=interaction.guild,
+                existing_name=new_factoid,
+                new_factoid_data_id=factoid.factoid_data_id,
+            )
         else:
             await self.create_factoid_call(
                 guild=interaction.guild,
