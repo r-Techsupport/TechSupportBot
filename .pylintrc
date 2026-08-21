@@ -291,7 +291,7 @@ indent-string='    '
 
 # Maximum number of characters on a single line.
 # Following the standards set forth by black, this will be removed
-#max-line-length=100
+max-line-length=100000000
 
 # Maximum number of lines in a module.
 max-module-lines=1000

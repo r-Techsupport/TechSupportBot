@@ -2118,7 +2118,7 @@ class FactoidManager(cogs.BaseCog):
         )
         if confirmation_response == ui.ConfirmResponse.TIMEOUT:
             return
-        elif confirmation_response == ui.ConfirmResponse.DENIED:
+        if confirmation_response == ui.ConfirmResponse.DENIED:
             await self.respond_error_embed(
                 interaction, f"The factoid `{factoid_name}` was not deleted."
             )
@@ -2497,7 +2497,9 @@ class FactoidManager(cogs.BaseCog):
         run_at = trigger.get_next_fire_time(None, now)
 
         if run_at is None:
-            await self.respond_error_embed(f"The cron expression: `{cron}` is invalid.")
+            await self.respond_error_embed(
+                interaction, f"The cron expression: `{cron}` is invalid."
+            )
 
         job_data = await self.bot.models.FactoidJob.create(
             guild=str(interaction.guild.id),
@@ -2681,6 +2683,15 @@ class FactoidManager(cogs.BaseCog):
         property: Properties,
         set_value: bool,
     ) -> None:
+        """This command modifies a given factoids property
+        This will flip the relevant bit if allowed
+
+        Args:
+            interaction (discord.Interaction): The interaction that called the command
+            factoid_name (str): The name of the factoid to edit
+            property (Properties): The property to edit
+            set_value (bool): What to set the property to
+        """
         factoid_name = factoid_name.lower()
         # Make sure the factoid is valid
         factoid = await self.get_valid_factoid(
@@ -2950,6 +2961,15 @@ class FactoidManager(cogs.BaseCog):
             # The can't see button is not needed in plaintext cases
             sent_message = await message.reply(content=content)
 
+        if not sent_message:
+            # This is a major error, and should never happen
+            await self.logger.send_log(
+                message="Factoid sent_message not found. Critical failure",
+                level=LogLevel.ERROR,
+                context=LogContext(guild=message.guild, channel=message.channel),
+            )
+            return
+
         # IRC connection
         self.send_factoid_to_irc(message.channel, factoid, message.author)
 
@@ -3034,7 +3054,7 @@ class ButtonView(discord.ui.View):
 
         # Tell user how to enable embeds
         await interaction.followup.send(
-            f"To see these messages in the future, consider enabling embeds: <https://rtech.support/meta/discord-embeds/>",
+            "To see these messages in the future, consider enabling embeds: <https://rtech.support/meta/discord-embeds/>",
             ephemeral=True,
         )
 
@@ -3170,6 +3190,10 @@ class FactoidModal(discord.ui.Modal):
 
 
 class InfoEmbedButtons(discord.ui.View):
+    """This adds up to 3 buttons for relevant factoids
+    This also handles the pressing of these buttons
+    """
+
     def __init__(
         self: Self, author_id: int, factoid: FactoidView, cog: FactoidManager
     ) -> None:
