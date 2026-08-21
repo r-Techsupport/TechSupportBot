@@ -151,7 +151,8 @@ spelling-store-unknown-words=no
 # List of note tags to take in consideration, separated by a comma.
 notes=FIXME,
       XXX,
-      TODO
+      TODO,
+      BUG
 
 
 [TYPECHECK]
@@ -289,7 +290,8 @@ indent-after-paren=4
 indent-string='    '
 
 # Maximum number of characters on a single line.
-max-line-length=100
+# Following the standards set forth by black, this will be removed
+max-line-length=100000000
 
 # Maximum number of lines in a module.
 max-module-lines=1000

@@ -1,80 +1,46 @@
-"""
-Name: Factoids
-Info: Makes callable slices of text
-Unit tests: No
-Config: manage_roles, prefix
-API: Linx
-Databases: Postgres
-Models: Factoid, FactoidJob
-Subcommands: remember, forget, info, json, all, search, loop, deloop, job, jobs, hide, unhide,
-             alias, dealias
-Defines: has_manage_factoids_role
+"""This holds all commands, database helpers, functions, listeners and more to run the factoids system
+This module is almost entirely all application command
+
+A legacy prefix way to call factoids is maintained here for the time being
+Barring discord forcing this to be shut down, this will be maintained until at least summer 2027
 """
 
 from __future__ import annotations
 
 import asyncio
 import datetime
+import hashlib
 import io
 import json
 import re
 from dataclasses import dataclass
-from enum import Enum
+from enum import IntFlag
 from socket import gaierror
 from typing import TYPE_CHECKING, Self
+from urllib.parse import urlsplit, urlunsplit
 
-import aiocron
 import discord
 import expiringdict
-import munch
 import yaml
 from aiohttp.client_exceptions import InvalidURL
+from apscheduler.triggers.cron import CronTrigger
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands  # Added only to support legacy prefix calls
 
 import configuration
 import ui
 from botlogging import LogContext, LogLevel
-from core import auxiliary, cogs, custom_errors
+from core import auxiliary, cogs
 from modules.moderation import logger as function_logger
 
 if TYPE_CHECKING:
     import bot
 
 
-async def setup(bot: bot.TechSupportBot) -> None:
-    """Loading the Factoid plugin into the bot
-
-    Args:
-        bot (bot.TechSupportBot): The bot object to register the cogs to
-    """
-    await bot.add_cog(
-        FactoidManager(
-            bot=bot,
-        )
-    )
-
-
-async def has_manage_factoids_role(ctx: commands.Context) -> bool:
-    """A command check to determine if the invoker is allowed to modify basic factoids
-
-    Args:
-        ctx (commands.Context): The context the command was run
-
-    Returns:
-        bool: True if the command can be run, False if it can't
-    """
-    return await has_given_factoids_role(
-        ctx.guild,
-        ctx.author,
-        configuration.get_config_entry(ctx.guild.id, "factoids_manage_roles"),
-    )
-
-
-async def has_manage_factoids_role_interaction(
+async def has_manage_factoids_role(
     interaction: discord.Interaction,
 ) -> bool:
-    """A command check to determine if the invoker is allowed to modify basic factoids
+    """A command check to determine if the invoker has a configured manage role
 
     Args:
         interaction (discord.Interaction): The context the command was run
@@ -89,19 +55,19 @@ async def has_manage_factoids_role_interaction(
     )
 
 
-async def has_admin_factoids_role(ctx: commands.Context) -> bool:
-    """A command check to determine if the invoker is allowed to modify factoid properties
+async def has_admin_factoids_role(interaction: discord.Interaction) -> bool:
+    """A command check to determine if the invoker has a configured admin role
 
     Args:
-        ctx (commands.Context): The context the command was run
+       interaction (discord.Interaction): The context the command was run
 
     Returns:
         bool: True if the command can be run, False if it can't
     """
     return await has_given_factoids_role(
-        ctx.guild,
-        ctx.author,
-        configuration.get_config_entry(ctx.guild.id, "factoids_admin_roles"),
+        interaction.guild,
+        interaction.user,
+        configuration.get_config_entry(interaction.guild.id, "factoids_admin_roles"),
     )
 
 
@@ -117,7 +83,7 @@ async def has_given_factoids_role(
         check_roles (list[str]): The list of string names of roles
 
     Raises:
-        CommandError: No management roles assigned in the config
+        AppCommandError: No management roles assigned in the config
         MissingAnyRole: Invoker doesn't have a factoid management role
 
     Returns:
@@ -125,214 +91,830 @@ async def has_given_factoids_role(
     """
     factoid_roles = []
     # Gets permitted roles
-    for name in check_roles:
-        factoid_role = discord.utils.get(guild.roles, name=name)
+    for id in check_roles:
+        factoid_role = guild.get_role(int(id))
         if not factoid_role:
             continue
         factoid_roles.append(factoid_role)
 
     if not factoid_roles:
-        raise commands.CommandError(
+        raise app_commands.AppCommandError(
             "No factoid management roles found in the config file"
         )
     # Checking against the user to see if they have the roles specified in the config
     if not any(
         factoid_role in getattr(invoker, "roles", []) for factoid_role in factoid_roles
     ):
-        raise commands.MissingAnyRole(factoid_roles)
+        raise app_commands.MissingAnyRole(factoid_roles)
 
     return True
 
 
-@dataclass
-class CalledFactoid:
-    """A class to allow keeping the original factoid name in tact
-    Without having to call the database lookup function every time
+async def setup(bot: bot.TechSupportBot) -> None:
+    """Loading the Factoid plugin into the bot
 
-    Attributes:
-        original_call_str (str): The original name the user provided for a factoid
-        factoid_db_entry (bot.models.Factoid): The database entry for the original factoid
+    Args:
+        bot (bot.TechSupportBot): The bot to register the cog to
+    """
+    await bot.add_cog(FactoidManager(bot=bot))
+
+
+@dataclass
+class FactoidView:
+    """The FactoidView is a parsed combination of the FactoidData and FactoidCall databases
+    The FactoidView contains all the calls, in a list, as well as all the data
     """
 
-    original_call_str: str
-    factoid_db_entry: bot.models.Factoid
+    factoid_data_id: int
+    message: str
+    json_string: str
+    flags: int
+    times_called: int
+    create_time: datetime.datetime
+    edit_time: datetime.datetime
+    calls: list[str]
 
 
-class Properties(Enum):
+class Properties(IntFlag):
     """
     This enum is for the new factoid all to be able to handle dynamic properties
 
     Attributes:
-        HIDDEN (str): Representation of hidden
-        DISABLED (str): Representation of disabled
-        RESTRICTED (str): Representation of restricted
-        PROTECTED (str): Representation of protected
+        DISABLED (int): Representation of disabled
+        HIDDEN (int): Representation of hidden
+        PROTECTED (int): Representation of protected
+        RESTRICTED (int): Representation of restricted
     """
 
-    HIDDEN: str = "hidden"
-    DISABLED: str = "disabled"
-    RESTRICTED: str = "restricted"
-    PROTECTED: str = "protected"
+    DISABLED: int = 0b1000
+    HIDDEN: int = 0b0100
+    PROTECTED: int = 0b0010
+    RESTRICTED: int = 0b0001
 
 
-class FactoidManager(cogs.MatchCog):
+class FactoidManager(cogs.BaseCog):
+    """This is the cog for factoids
+    It is what is registered into the bot and has access to self.bot
     """
-    Manages all factoid features
-
-    Attributes:
-        CRON_REGEX (str): The regex to check if a cronjob is correct
-        factoid_app_group (app_commands.Group): Group for /factoid commands
-    """
-
-    CRON_REGEX: str = (
-        r"^((\*|([0-5]?\d|\*\/\d+)(-([0-5]?\d))?)(,\s*(\*|([0-5]?\d|\*\/\d+)(-([0-5]"
-        + r"?\d))?)){0,59}\s+){4}(\*|([0-7]?\d|\*(\/[1-9]|[1-5]\d)|mon|tue|wed|thu|fri|sat|sun"
-        + r")|\*\/[1-9])$"
-    )
 
     factoid_app_group: app_commands.Group = app_commands.Group(
-        name="factoid", description="Command Group for the Factoids Extension"
+        name="factoid",
+        description="Commands to create, manage and use the factoids system",
     )
 
-    async def preconfig(self: Self) -> None:
-        """Preconfig for factoid jobs"""
-        self.factoid_cache = expiringdict.ExpiringDict(
-            max_len=100, max_age_seconds=1200
-        )
-        # set a hard time limit on repeated cronjob DB calls
-        self.running_jobs = {}
-        self.factoid_all_cache = expiringdict.ExpiringDict(
-            max_len=1,
-            max_age_seconds=86400,  # 24 hours, matches deletion on linx server
-        )
-        await self.bot.logger.send_log(
-            message="Loading factoid jobs",
-            level=LogLevel.DEBUG,
-        )
-        await self.kickoff_jobs()
+    factoid_loop_commands: app_commands.Group = app_commands.Group(
+        name="loop",
+        description="Commands to create, view and manage the factoid loops system",
+        parent=factoid_app_group,
+    )
 
-    # -- DB calls --
-    async def delete_factoid_call(
-        self: Self, factoid: bot.models.Factoid, guild: str
-    ) -> None:
-        """Calls the db to delete a factoid
+    # PRECONFIG
+
+    async def preconfig(self: Self) -> None:
+        """This sets up cache and job loop calls"""
+        self.factoid_cache = expiringdict.ExpiringDict(
+            max_len=500,
+            max_age_seconds=82800,
+        )
+
+        # Factoid all cache setup to save links for 23 hours, to avoid links that are close to expiring from being presented
+        self.factoid_all_cache = expiringdict.ExpiringDict(
+            max_len=50,
+            max_age_seconds=82800,
+        )
+
+        # Autocomplete cache to avoid constant DB calls
+        # guild ID: list[(name, flags)]
+        self.factoid_autocomplete_cache: dict[int, list[tuple[str, int]]] = {}
+
+        # Register the loop callback into APScheduler
+        self.bot.scheduler.register_task(
+            "factoid_loop",
+            self.execute_job,
+        )
+
+        # On bot startup, start all jobs
+        await self.startup_jobs()
+
+    # LOOP STUFF
+
+    async def startup_jobs(self: Self) -> None:
+        """This registers all jobs at once, ideally run when the bot restarts
+        All jobs in all guilds are read with this
+        """
+        all_jobs = await self.bot.models.FactoidJob.query.gino.all()
+        for job in all_jobs:
+            await self.register_job(job)
+
+    async def register_job(self: Self, job: bot.models.FactoidJob) -> None:
+        """This registers a FactoidJob with apscheduler, to allow it to be automatically called
 
         Args:
-            factoid (bot.models.Factoid): The factoid to delete
-            guild (str): The guild ID for cache handling
+            job (bot.models.FactoidJob): The job database entry to schedule
         """
-        # Removes the `factoid all` cache since it has become outdated
-        if guild in self.factoid_all_cache:
-            del self.factoid_all_cache[guild]
+        guild = self.bot.get_guild(int(job.guild))
+        await self.bot.scheduler.schedule_cron(
+            task_name="factoid_loop",
+            cron=job.cron,
+            payload={"guild": guild, "job_id": job.factoid_job_id},
+        )
 
-        # Deloops the factoid first (if it's looped)
-        jobs = await self.bot.models.FactoidJob.query.where(
-            self.bot.models.FactoidJob.factoid == factoid.factoid_id
-        ).gino.all()
-        if jobs:
-            for job in jobs:
-                job_id = job.job_id
-                # Cancels the job
-                self.running_jobs[job_id]["task"].cancel()
+    async def execute_job(
+        self: Self,
+        payload: dict,
+    ) -> None:
+        """Called when its time to run a job
+        The payload in this case contains the guild and the job_id
+        This is called by apscheduler
 
-                # Removes it from the cache
-                del self.running_jobs[job_id]
+        Args:
+            payload (dict): The payload of the job to execute, stored by apscheduler
+        """
+        # Expand payload
+        guild: discord.Guild = payload["guild"]
+        factoid_job_id: int = payload["job_id"]
+        job_data = await self.bot.models.FactoidJob.query.where(
+            (self.bot.models.FactoidJob.guild == str(guild.id))
+            & (self.bot.models.FactoidJob.factoid_job_id == factoid_job_id)
+        ).gino.first()
+        if not job_data:
+            return
+        factoid = await self.get_factoid_view_by_id(guild, job_data.factoid_data_id)
+        if not factoid:
+            return
 
-                # Removes the DB entry
-                await job.delete()
+        # If the FactoidJob and FactoidData entry both exist, the job is valid. We reschedule here to prevent a different error causing the job to be shadow cancelled
+        await self.register_job(job_data)
 
-        await self.handle_cache(guild, factoid.name)
-        await factoid.delete()
+        # If factoids has been disabled, don't execute the job
+        # We have already rescheduled it, so it will check again later
+        if not self.extension_enabled(guild=guild):
+            return
+
+        # If for some reason we cannot find the channel, don't bother trying to execute
+        channel = self.bot.get_channel(int(job_data.channel))
+        if not channel:
+            return
+
+        # Check if factoid is disabled. If so, don't send it
+        if factoid.flags & Properties.DISABLED:
+            return
+
+        # Check if factoid is restricted. If so, check if we can call it
+        if (
+            factoid.flags & Properties.RESTRICTED
+            and not self.can_channel_send_restricted(channel)
+        ):
+            return
+
+        embed, plaintext_content = await self.generate_sendable_factoid(guild, factoid)
+
+        last_message = await channel.fetch_message(channel.last_message_id)
+        embed_sent = False
+        sent_message = None
+        if embed:
+            try:
+                # If the bot wrote the last message, and its the same as the current job, do nothing
+                if last_message.embeds:
+                    old_embed_hash = self.compute_embed_hash(last_message.embeds[0])
+                    new_embed_hash = self.compute_embed_hash(embed)
+                    if (
+                        last_message.author == guild.me
+                        and new_embed_hash == old_embed_hash
+                    ):
+                        return
+
+                # Attempt to send the message with the embed in it
+                sent_message = await channel.send(embed=embed)
+                embed_sent = True
+            # If something breaks, also log it
+            except discord.errors.HTTPException as exception:
+                asyncio.create_task(
+                    self.log_embed_fallback_exception(
+                        factoid=factoid,
+                        exception=exception,
+                        guild=guild,
+                        channel=channel,
+                    )
+                )
+
+        # Either no embed exists, or the embed failed to send for some reason.
+        # We will send the plaintext content of the factoid in this case
+        if not embed_sent:
+            content = plaintext_content.strip()
+            if len(content) > 2000:
+                return
+
+            # If the bot wrote the last message, and its the same as the current job, do nothing
+            if last_message.author == guild.me and last_message.content == content:
+                return
+
+            sent_message = await channel.send(content=content)
+
+        # Log in the background
+        asyncio.create_task(
+            self.log_factoid_send(
+                guild=guild,
+                channel=channel,
+                sender=guild.me,
+                factoid=factoid,
+            )
+        )
+
+        if not sent_message:
+            # This is a major error, and should never happen
+            await self.logger.send_log(
+                message="Factoid sent_message not found. Critical failure",
+                level=LogLevel.ERROR,
+                context=LogContext(guild=guild, channel=channel),
+            )
+            return
+
+        # IRC connection
+        self.send_factoid_to_irc(channel, factoid, guild.me)
+
+        # Logger connection
+        await self.send_factoid_to_logger(
+            sent_message, guild.me, channel, factoid.message
+        )
+
+        # Increase times called
+        await self.increment_times_called_by_view(guild=guild, factoid=factoid)
+
+    async def unschedule_job(
+        self: Self,
+        job: bot.models.FactoidJob,
+    ) -> None:
+        """This removes the passed FactoidJob from the APScheduler queue
+
+        Args:
+            job (bot.models.FactoidJob): The job to remove from the queue
+        """
+
+        for scheduled_job in await self.bot.scheduler.get_upcoming_tasks():
+            payload = scheduled_job["payload"]
+
+            job_id = scheduled_job["job_id"]
+
+            # Extract task name from APScheduler job ID
+            task_name = job_id.split(":", 1)[0]
+
+            # Ignore unrelated scheduled tasks
+            if task_name != "factoid_loop":
+                continue
+
+            if (
+                payload.get("job_id") == job.factoid_job_id
+                and str(payload.get("guild").id) == job.guild
+            ):
+                self.bot.scheduler.scheduler.remove_job(job_id)
+
+    # DATABASE CALLS
 
     async def create_factoid_call(
         self: Self,
-        factoid_name: str,
-        guild: str,
-        message: str,
-        embed_config: str,
-        alias: str = None,
-        properties: list[bool] = None,
-    ) -> None:
-        """Calls the DB to create a factoid
+        guild: discord.Guild,
+        name: str,
+        factoid_data_id: int,
+    ) -> bot.models.FactoidCall:
+        """This creates a new factoid call database entry for the given guild and factoid
 
         Args:
-            factoid_name (str): The name of the factoid
-            guild (str): Guild of the factoid
-            message (str): Message the factoid should send
-            embed_config (str): Whether the factoid has an embed set up
-            alias (str, optional): The parent factoid. Defaults to None.
-            properties (list[bool]): A list of true/false for properties. Defaults to None.
-                0 Disabled, 1 Hidden, 2 Protected, 3 Restricted
+            self (Self): _description_
+            guild (discord.Guild): The guild to create the factoid in
+            name (str): The name of the factoid call to create
+            factoid_data_id (int): The factoid data entry to associate this call with
 
-        Raises:
-            TooLongFactoidMessageError:
-                When the message argument is over 2k chars, discords limit
+        Returns:
+            bot.models.FactoidCall: The newly created database entry
         """
-        if not properties:
-            properties = [False, False, False, False]
 
-        if len(message) > 2000:
-            raise custom_errors.TooLongFactoidMessageError
-
-        # Removes the `factoid all` cache since it has become outdated
-        if guild in self.factoid_all_cache:
-            del self.factoid_all_cache[guild]
-
-        factoid = self.bot.models.Factoid(
-            name=factoid_name.lower(),
-            guild=guild,
-            message=message,
-            embed_config=embed_config,
-            alias=alias,
-            disabled=properties[0],
-            hidden=properties[1],
-            protected=properties[2],
-            restricted=properties[3],
+        return await self.bot.models.FactoidCall.create(
+            guild=str(guild.id),
+            name=name,
+            factoid_data_id=factoid_data_id,
         )
 
-        await factoid.create()
-
-    async def modify_factoid_call(
+    async def read_factoid_call(
         self: Self,
-        factoid: bot.models.Factoid,
-    ) -> None:
-        """Makes a DB call to modify a factoid
+        guild: discord.Guild,
+        name: str,
+    ) -> bot.models.FactoidCall:
+        """Searches the database for a factoid call for the passed guild
 
         Args:
-            factoid (bot.models.Factoid): Factoid to modify.
+            guild (discord.Guild): The guild to find the factoid call of
+            name (str): The name of the factoid to search for
 
-        Raises:
-            TooLongFactoidMessageError:
-                When the message argument is over 2k chars, discords limit
+        Returns:
+            bot.models.FactoidCall: The database entry for the factoid call
         """
-        if len(factoid.message) > 2000:
-            raise custom_errors.TooLongFactoidMessageError
 
-        # Removes the `factoid all` cache since it has become outdated
-        if factoid.guild in self.factoid_all_cache:
-            del self.factoid_all_cache[factoid.guild]
+        return await self.bot.models.FactoidCall.query.where(
+            (self.bot.models.FactoidCall.guild == str(guild.id))
+            & (self.bot.models.FactoidCall.name == name)
+        ).gino.first()
 
-        await factoid.update(
-            name=factoid.name,
-            message=factoid.message,
-            embed_config=factoid.embed_config,
-            hidden=factoid.hidden,
-            protected=factoid.protected,
-            disabled=factoid.disabled,
-            restricted=factoid.restricted,
-            alias=factoid.alias,
-        ).apply()
+    async def read_factoid_data(
+        self: Self,
+        guild: discord.Guild,
+        factoid_data_id: int,
+    ) -> bot.models.FactoidData:
+        """Searches the database for a factoid data for the passed guild
 
-        await self.handle_cache(factoid.guild, factoid.name)
+        Args:
+            guild (discord.Guild): The guild to find the factoid data of
+            factoid_data_id (int): The ID of the factoid to search for
 
-    # -- Utility --
+        Returns:
+            bot.models.FactoidData: The database entry for the factoid data
+        """
+
+        return await self.bot.models.FactoidData.query.where(
+            (self.bot.models.FactoidData.guild == str(guild.id))
+            & (self.bot.models.FactoidData.factoid_data_id == factoid_data_id)
+        ).gino.first()
+
+    async def update_factoid_data(
+        self: Self,
+        guild: discord.Guild,
+        factoid_data_id: int,
+        message: str = None,
+        edit_time: datetime.datetime = None,
+        flags: int = None,
+        times_called: int = None,
+        json_string: str = None,
+    ) -> bot.models.FactoidData:
+        """Partially updates a factoid data entry."""
+
+        db_entry = await self.read_factoid_data(
+            guild=guild,
+            factoid_data_id=factoid_data_id,
+        )
+
+        update_values = {}
+
+        if message is not None:
+            update_values["message"] = message
+
+        if edit_time is not None:
+            update_values["edit_time"] = edit_time
+
+        if flags is not None:
+            update_values["flags"] = flags
+
+        if times_called is not None:
+            update_values["times_called"] = times_called
+
+        if json_string is not None:
+            update_values["json_string"] = json_string
+
+        if update_values:
+            await db_entry.update(**update_values).apply()
+
+        return db_entry
+
+    async def delete_factoid_call(
+        self: Self,
+        guild: discord.Guild,
+        name: str,
+    ) -> None:
+        """Deletes a factoid call by name."""
+
+        await self.bot.models.FactoidCall.delete.where(
+            (self.bot.models.FactoidCall.guild == str(guild.id))
+            & (self.bot.models.FactoidCall.name == name)
+        ).gino.status()
+
+    async def read_factoid_job_by_channel(
+        self: Self,
+        guild: discord.Guild,
+        factoid_data_id: int,
+        channel: discord.abc.GuildChannel,
+    ) -> bot.models.FactoidJob:
+        """Searches the database for a factoid job for the passed guild
+
+        Args:
+            guild (discord.Guild): The guild to find the factoid job of
+            factoid_job_id (int): The ID of the factoid to search for
+
+        Returns:
+            bot.models.FactoidJob: The database entry for the factoid job
+        """
+
+        return await self.bot.models.FactoidJob.query.where(
+            (self.bot.models.FactoidJob.guild == str(guild.id))
+            & (self.bot.models.FactoidJob.factoid_data_id == factoid_data_id)
+            & (self.bot.models.FactoidJob.channel == str(channel.id))
+        ).gino.first()
+
+    async def get_all_jobs_for_guild(
+        self: Self, guild: discord.Guild
+    ) -> list[bot.models.FactoidJob]:
+        """This returns raw database entries for all jobs for a given guild
+
+        Args:
+            self (Self): _description_
+            guild (discord.Guild): The guild to search for
+
+        Returns:
+            list[bot.models.FactoidJob]: The list of all database entries of factoid jobs
+        """
+        return await self.bot.models.FactoidJob.query.where(
+            (self.bot.models.FactoidJob.guild == str(guild.id))
+        ).gino.all()
+
+    async def get_factoid_calls_by_factoid_id(
+        self: Self,
+        guild: discord.Guild,
+        factoid_data_id: int,
+    ) -> list[bot.models.FactoidCall]:
+        """Returns all calls pointing to a factoid."""
+
+        return await self.bot.models.FactoidCall.query.where(
+            (self.bot.models.FactoidCall.guild == str(guild.id))
+            & (self.bot.models.FactoidCall.factoid_data_id == factoid_data_id)
+        ).gino.all()
+
+    async def get_factoid_jobs_by_factoid_id(
+        self: Self,
+        guild: discord.Guild,
+        factoid_data_id: int,
+    ) -> list[bot.models.FactoidJob]:
+        """Returns all jobs pointing to a factoid."""
+
+        return await self.bot.models.FactoidJob.query.where(
+            (self.bot.models.FactoidJob.guild == str(guild.id))
+            & (self.bot.models.FactoidJob.factoid_data_id == factoid_data_id)
+        ).gino.all()
+
+    # DATABASE HELPERS
+
+    async def get_factoid_view_by_name(
+        self: Self,
+        guild: discord.Guild,
+        name: str,
+    ) -> FactoidView | None:
+        """Searches for the factoid associated with a given factoid name.
+
+        Args:
+            guild (discord.Guild): The guild to look for the factoid in
+            name (str): The name of the factoid to lookup
+
+        Returns:
+            FactoidView | None: The factoid view, if found
+        """
+
+        call = await self.read_factoid_call(
+            guild=guild,
+            name=name,
+        )
+
+        if call is None:
+            return None
+
+        return await self.get_factoid_view_by_id(guild, call.factoid_data_id)
+
+    async def get_factoid_view_by_id(
+        self: Self, guild: discord.Guild, factoid_data_id: int
+    ) -> FactoidView | None:
+        """This gets a factoid view for a given factoid ID
+        This attempts to fetch the factoid from cache, but will query the database if needed
+
+        Args:
+            guild (discord.Guild): The guild the factoid belongs in
+            factoid_data_id (int): The ID of the factoid to fetch
+
+        Returns:
+            FactoidView | None: The factoid view of the factoid, if the factoid exists
+        """
+        cached_data = self.get_from_cache(guild, factoid_data_id)
+        if cached_data:
+            return cached_data
+
+        factoid_data = await self.read_factoid_data(
+            guild=guild,
+            factoid_data_id=factoid_data_id,
+        )
+
+        if factoid_data is None:
+            return None
+
+        factoid_calls = await self.get_factoid_calls_by_factoid_id(
+            guild=guild,
+            factoid_data_id=factoid_data.factoid_data_id,
+        )
+
+        factoid = FactoidView(
+            factoid_data_id=factoid_data.factoid_data_id,
+            message=factoid_data.message,
+            json_string=factoid_data.json_string,
+            flags=factoid_data.flags,
+            times_called=factoid_data.times_called,
+            create_time=factoid_data.create_time,
+            edit_time=factoid_data.edit_time,
+            calls=sorted(factoid_call.name for factoid_call in factoid_calls),
+        )
+
+        self.add_to_cache(guild, factoid)
+
+        return factoid
+
+    async def delete_factoid_data_by_id(
+        self: Self, guild: discord.Guild, id: int
+    ) -> bool:
+        """This deletes all FactoidData, FactoidCall and FactoidJob for the factoid ID passed
+
+        Args:
+            guild (discord.Guild): The guild the factoid to delete is in
+            id (int): The ID of the factoid to delete
+
+        Returns:
+            bool: Whether or not this was successful
+        """
+        data = await self.read_factoid_data(guild, id)
+        calls = await self.get_factoid_calls_by_factoid_id(guild, id)
+        jobs = await self.get_factoid_jobs_by_factoid_id(guild, id)
+
+        if not data:
+            return False
+
+        for call in calls:
+            await call.delete()
+
+        for job in jobs:
+            # We need to clear the job from both the database and APScheduler
+            await self.unschedule_job(job)
+            await job.delete()
+
+        await data.delete()
+        return True
+
+    async def move_factoid_call(
+        self: Self,
+        guild: discord.Guild,
+        existing_name: str,
+        new_factoid_data_id: int,
+    ) -> bool:
+        """
+        Moves a FactoidCall to a different FactoidData entry.
+
+        If the old FactoidData loses all calls, it is deleted.
+        Returns True if the move succeeded.
+        """
+        call = await self.read_factoid_call(
+            guild=guild,
+            name=existing_name,
+        )
+
+        if call is None:
+            return False
+
+        old_factoid_data_id = call.factoid_data_id
+
+        # Update the call to point to the new factoid
+        await self.bot.models.FactoidCall.update.values(
+            factoid_data_id=new_factoid_data_id
+        ).where(
+            (self.bot.models.FactoidCall.guild == str(guild.id))
+            & (self.bot.models.FactoidCall.name == existing_name)
+        ).gino.status()
+
+        # Check if the old factoid is now orphaned
+        remaining_calls = await self.get_factoid_calls_by_factoid_id(
+            guild=guild,
+            factoid_data_id=old_factoid_data_id,
+        )
+
+        # If there aren't any calls, prevent having orphaned factoids in the database at all
+        if not remaining_calls:
+            await self.delete_factoid_data_by_id(
+                guild=guild,
+                id=old_factoid_data_id,
+            )
+
+        return True
+
+    async def get_all_factoids_for_guild(
+        self: Self,
+        guild: discord.Guild,
+    ) -> list[FactoidView]:
+        """Generates a list of every factoid in the guild
+        This converts the Data/Call entries into the FactoidView objects
+
+        Args:
+            guild (discord.Guild): The guild to fetch the factoids for
+
+        Returns:
+            list[FactoidView]: The list of all the processed factoids as view objects
+        """
+        factoid_data = await self.bot.models.FactoidData.query.where(
+            self.bot.models.FactoidData.guild == str(guild.id)
+        ).gino.all()
+        factoid_calls = await self.bot.models.FactoidCall.query.where(
+            self.bot.models.FactoidCall.guild == str(guild.id)
+        ).gino.all()
+
+        calls_by_id: dict[int, list[str]] = {}
+
+        for call in factoid_calls:
+            calls_by_id.setdefault(
+                call.factoid_data_id,
+                [],
+            ).append(call.name)
+
+        views = []
+
+        for factoid in factoid_data:
+            views.append(
+                FactoidView(
+                    factoid_data_id=factoid.factoid_data_id,
+                    message=factoid.message,
+                    json_string=factoid.json_string,
+                    flags=factoid.flags,
+                    times_called=factoid.times_called,
+                    create_time=factoid.create_time,
+                    edit_time=factoid.edit_time,
+                    calls=sorted(
+                        calls_by_id.get(
+                            factoid.factoid_data_id,
+                            [],
+                        )
+                    ),
+                )
+            )
+
+        return views
+
+    async def increment_times_called_by_view(
+        self: Self, guild: discord.Guild, factoid: FactoidView
+    ) -> None:
+        """This will update the times called for a factoid
+        This writes to the database and updates the cache
+
+        Args:
+            self (Self): _description_
+            guild (discord.Guild): The guild the factoid belongs to
+            factoid (FactoidView): The factoid view fo the factoid that was called to increment
+        """
+        factoid.times_called += 1
+        await self.update_factoid_data(
+            guild=guild,
+            factoid_data_id=factoid.factoid_data_id,
+            times_called=factoid.times_called,
+        )
+        # Replace the factoid in the cache. No need to require a re-pull every call
+        self.remove_from_cache(guild, factoid)
+        self.add_to_cache(guild, factoid)
+
+    async def handle_factoid_edit(
+        self: Self, guild: discord.Guild, factoid: FactoidView
+    ) -> None:
+        """Sets the edit time of the factoid to now
+        This also clears the factoid and factoid all cache after the edits
+
+        Args:
+            guild (discord.Guild): The guild this factoid is in
+            factoid (FactoidView): The factoid to edit
+        """
+        await self.update_factoid_data(
+            guild=guild,
+            factoid_data_id=factoid.factoid_data_id,
+            edit_time=datetime.datetime.utcnow(),
+        )
+
+        # Make sure the edited factoid is not in the cache
+        self.remove_from_cache(guild, factoid)
+
+        # Clear factoid all and factoid autocomplete caches
+        self.clear_guild_caches(guild)
+
+    # CACHE HELPERS
+
+    def add_to_cache(self: Self, guild: discord.Guild, factoid: FactoidView) -> None:
+        """This adds a factoid to the cache, if it isn't already in the cache
+
+        Args:
+            self (Self): _description_
+            guild (discord.Guild): The guild the factoid is in
+            factoid (FactoidView): The factoid view of the factoid to add to the cache
+        """
+        cache_key = self.generate_cache_key(guild, factoid.factoid_data_id)
+        if cache_key not in self.factoid_cache:
+            self.factoid_cache[cache_key] = factoid
+
+    def remove_from_cache(
+        self: Self, guild: discord.Guild, factoid: FactoidView
+    ) -> None:
+        """This removes the factoid from cache, if it exists in the cache
+
+        Args:
+            guild (discord.Guild): The guild the factoid belongs to
+            factoid (FactoidView): The factoid view object of the factoid to remove from the cache
+        """
+        cache_key = self.generate_cache_key(guild, factoid.factoid_data_id)
+        if cache_key in self.factoid_cache:
+            del self.factoid_cache[cache_key]
+
+    def get_from_cache(
+        self: Self, guild: discord.Guild, factoid_id: int
+    ) -> FactoidView | None:
+        """This attempts to fetch a factoid from the cache
+
+        Args:
+            guild (discord.Guild): The guild to search for factoids in
+            factoid_id (int): The ID of the factoid to search
+
+        Returns:
+            FactoidView | None: The view object, if the factoid was cached
+        """
+        cache_key = self.generate_cache_key(guild, factoid_id)
+        if cache_key in self.factoid_cache:
+            return self.factoid_cache[cache_key]
+        return None
+
+    def generate_cache_key(self: Self, guild: discord.Guild, factoid_id: int) -> str:
+        """This generates a key to use to determine if a specific factoid is cached
+
+        Args:
+            guild (discord.Guild): The guild the factoid is in
+            factoid_id (int): The factoid ID from the FactoidData database
+
+        Returns:
+            str: The string to use for the cache system
+        """
+        return f"{guild.id}:{factoid_id}"
+
+    def clear_guild_caches(self: Self, guild: discord.Guild) -> None:
+        """This clears the guild wide caches, being factoid all and factoid autocomplete
+
+        Args:
+            guild (discord.Guild): The guild to clear the cache for
+        """
+        # This theoretically could be made better by being more targetted and efficient
+        # There are a lot of cases where only some of this cache should be deleted
+        # We delete it all anyway to avoid bugs
+
+        # Clearing factoid all cache for this guild
+        for entry in list(self.factoid_all_cache.keys()):
+            if entry[0] == guild.id:
+                del self.factoid_all_cache[entry]
+
+        # clearing factoid autocomplete cache for this guild
+        if guild.id in self.factoid_autocomplete_cache:
+            del self.factoid_autocomplete_cache[guild.id]
+
+    # OTHER HELPERS
+
+    def can_channel_send_restricted(
+        self: Self, channel: discord.abc.GuildChannel
+    ) -> bool:
+        """This checks if the given channel is in the restricted channel list.
+        Can handle parsing threads
+
+        Args:
+            self (Self): _description_
+            channel (discord.abc.GuildChannel): The channel trying to see the factoid
+
+        Returns:
+            bool: Whether the restricted factoid can be sent
+        """
+        if isinstance(channel, discord.Thread):
+            channel = channel.parent
+
+        restricted_channel_list = configuration.get_config_entry(
+            channel.guild.id, "factoids_restricted_list"
+        )
+
+        if str(channel.id) in restricted_channel_list:
+            return True
+        return False
+
+    def get_embed_from_factoid(
+        self: Self, factoid: bot.models.FactoidData
+    ) -> discord.Embed:
+        """Gets the factoid embed from its database entry
+
+        Args:
+            factoid (bot.models.FactoidData): The factoid to get the json of
+
+        Returns:
+            discord.Embed: The embed of the factoid
+        """
+        if not factoid.json_string:
+            return None
+
+        embed_config = json.loads(factoid.json_string)
+
+        return discord.Embed.from_dict(embed_config)
+
     async def confirm_factoid_deletion(
         self: Self,
-        factoid_name: str,
+        interaction: discord.Interaction,
+        display_message: str,
         channel: discord.abc.GuildChannel,
         author: discord.Member,
-        fmt: str,
-    ) -> bool:
+    ) -> ui.ConfirmResponse:
         """Confirms if a factoid should be deleted/modified
 
         Args:
@@ -344,608 +926,267 @@ class FactoidManager(cogs.MatchCog):
         Returns:
             bool: Whether the factoid was deleted/modified
         """
-
         view = ui.Confirm()
         await view.send(
-            message=(
-                f"The factoid `{factoid_name}` already exists. Should I overwrite it?"
-            ),
+            message=display_message,
             channel=channel,
             author=author,
+            interaction=interaction,
         )
 
         await view.wait()
-        if view.value is ui.ConfirmResponse.TIMEOUT:
-            return False
+        return view.value
 
-        if view.value is ui.ConfirmResponse.DENIED:
-            await auxiliary.send_deny_embed(
-                message=f"The factoid `{factoid_name}` was not {fmt}.",
-                channel=channel,
-            )
-            return False
-
-        return True
-
-    async def check_valid_factoid_contents(
-        self: Self, ctx: commands.Context, factoid_name: str, message: str
-    ) -> str:
-        """Makes sure the factoid contents are valid
-
-        Args:
-            ctx (commands.Context): Used to make sure that the .factoid remember invokation message
-                                    didn't include any mentions
-            factoid_name (str): The name to check
-            message (str): The message to check
-
-        Returns:
-            str: The error message
-        """
-
-        # Prevents factoids from being created with any mentions
-        if (
-            ctx.message.mention_everyone  # @everyone
-            or ctx.message.role_mentions  # @role
-            or ctx.message.mentions  # @person
-            or ctx.message.channel_mentions  # #Channel
-        ):
-            return "I cannot remember factoids with user/role/channel mentions"
-
-        # Prevents factoids being created with html elements
-        if re.search(r"<[^>]+>", message) or re.search(r"<[^>]+>", factoid_name):
-            return "Cannot create factoids that contain HTML tags!"
-
-        # Prevents factoids being created with spaces
-        if " " in factoid_name:
-            return "Cannot create factoids with names that contain spaces!"
-
-        return None
-
-    async def handle_parent_change(
-        self: Self, ctx: commands.Context, aliases: list, new_name: str
-    ) -> None:
-        """Changes the list of aliases to point to a new name
-
-        Args:
-            ctx (commands.Context): Used for cache handling
-            aliases (list): A list of aliases to change
-            new_name (str): The name of the new parent
-        """
-
-        for alias in aliases:
-            # Doesn't handle the initial, changed alias
-            if alias.name == new_name:
-                continue
-            # Updates the existing aliases to point to the new parent
-            alias.alias = new_name
-            await self.modify_factoid_call(factoid=alias)
-            await self.handle_cache(str(ctx.guild.id), alias.name)
-
-    async def check_alias_recursion(
+    async def build_factoid_all(
         self: Self,
-        channel: discord.TextChannel,
-        guild: str,
-        factoid_name: str,
-        alias_name: str,
-    ) -> bool:
-        """Makes sure an alias isn't already present in a factoids alias list
+        guild: discord.Guild,
+        factoids: list[FactoidView],
+        use_file: bool,
+    ) -> discord.File | str:
+        """This builds the factoid all url or the yaml file
 
         Args:
-            channel (discord.TextChannel): The channel to send the return message to
-            guild (str): The id of the guild from which the command was executed
-            factoid_name (str): The name of the parent
-            alias_name (str): The alias to check
+            guild (discord.Guild): The guild to build factoid all for
+            factoids (list[FactoidView]): The factoids to include in the all
+            use_file (bool): Whether to force the use of a file or not
 
         Returns:
-            bool: Whether the alias recurses
+            discord.File | str: The final formatted factoid all
         """
 
-        # Get list of aliases of the target factoid
-        factoid_aliases = (
-            await self.bot.models.Factoid.query.where(
-                self.bot.models.Factoid.alias == alias_name
-            )
-            .where(self.bot.models.Factoid.guild == guild)
-            .gino.all()
-        )
-
-        # Returns arue if the factoid and alias name is the same (.factoid alias a a)
-        if factoid_name == alias_name:
-            await auxiliary.send_deny_embed(
-                message="Can't set an alias for itself!", channel=channel
-            )
-            return True
-
-        # Returns True if the target has the alias already
-        # (.factoid alias b a, where b has a set already)
-        if factoid_name in [alias.name for alias in factoid_aliases]:
-            await auxiliary.send_deny_embed(
-                message=f"`{alias_name}` already has `{factoid_name}`"
-                + "set as an alias!",
-                channel=channel,
-            )
-            return True
-
-        return False
-
-    def get_embed_from_factoid(
-        self: Self, factoid: bot.models.Factoid
-    ) -> discord.Embed:
-        """Gets the factoid embed from its message.
-
-        Args:
-            factoid (bot.models.Factoid): The factoid to get the json of
-
-        Returns:
-            discord.Embed: The embed of the factoid
-        """
-        if not factoid.embed_config:
-            return None
-
-        embed_config = json.loads(factoid.embed_config)
-
-        return discord.Embed.from_dict(embed_config)
-
-    # -- Cache functions --
-    async def handle_cache(self: Self, guild: str, factoid_name: str) -> None:
-        """Deletes factoid from the factoid cache
-
-        Args:
-            guild (str): The guild to get the cache key
-            factoid_name (str): The name of the factoid to remove from the cache
-        """
-        key = self.get_cache_key(guild, factoid_name)
-
-        if key in self.factoid_cache:
-            del self.factoid_cache[key]
-
-    def get_cache_key(self: Self, guild: str, factoid_name: str) -> str:
-        """Gets the cache key for a guild
-
-        Args:
-            guild (str): The ID of the guild
-            factoid_name (str): The name of the factoid
-
-        Returns:
-            str: The cache key
-        """
-        return f"{guild}_{factoid_name}"
-
-    # -- Getting factoids --
-    async def get_all_factoids(
-        self: Self, guild: str = None, list_hidden: bool = False
-    ) -> list:
-        """Gets all factoids from a guild
-
-        Args:
-            guild (str, optional): The guild to get the factoids from.
-                                   Defaults to None, where all guilds are returned instead.
-            list_hidden (bool, optional): Whether to list hidden factoids as well.
-                                          Defaults to False.
-
-        Returns:
-            list: List of factoids
-        """
-        # Gets factoids for a guild, including those that are hidden
-        if guild and list_hidden:
-            factoids = await self.bot.models.Factoid.query.where(
-                self.bot.models.Factoid.guild == guild
-            ).gino.all()
-
-        # Gets factoids for a guild excluding the hidden ones
-        elif guild and not list_hidden:
-            factoids = (
-                await self.bot.models.Factoid.query.where(
-                    self.bot.models.Factoid.guild == guild
-                )
-                # hiding hidden factoids
-                # pylint: disable=C0121
-                .where(self.bot.models.Factoid.hidden == False).gino.all()
-            )
-
-        # Gets ALL factoids for ALL guilds
-        else:
-            factoids = await self.bot.db.all(self.bot.models.Factoid.query)
-
-        # Sorts them alphabetically
-        if factoids:
-            factoids.sort(key=lambda factoid: factoid.name)
-
-        return factoids
-
-    async def get_raw_factoid_entry(
-        self: Self, factoid_name: str, guild: str
-    ) -> bot.models.Factoid:
-        """Searches the db for a factoid by its name, does NOT follow aliases
-
-        Args:
-            factoid_name (str): The name of the factoid to get
-            guild (str): The id of the guild for the factoid
-
-        Raises:
-            FactoidNotFoundError: Raised when the provided factoid doesn't exist
-
-        Returns:
-            bot.models.Factoid: The factoid
-        """
-        cache_key = self.get_cache_key(guild, factoid_name.lower())
-        factoid = self.factoid_cache.get(cache_key)
-        # If the factoid isn't cached
-        if not factoid:
-            factoid = (
-                await self.bot.models.Factoid.query.where(
-                    self.bot.models.Factoid.name == factoid_name.lower()
-                )
-                .where(self.bot.models.Factoid.guild == guild)
-                .gino.first()
-            )
-
-            # If the factoid doesn't exist
-            if not factoid:
-                raise custom_errors.FactoidNotFoundError(factoid=factoid_name)
-
-            # Caches it
-            self.factoid_cache[cache_key] = factoid
-
-        return factoid
-
-    async def get_factoid(
-        self: Self, factoid_name: str, guild: str
-    ) -> bot.models.Factoid:
-        """Gets the factoid from the DB, follows aliases
-
-        Args:
-            factoid_name (str): The name of the factoid to get
-            guild (str): The id of the guild for the factoid
-
-        Raises:
-            FactoidNotFoundError: If the factoid wasn't found
-
-        Returns:
-            bot.models.Factoid: The factoid
-        """
-        factoid = await self.get_raw_factoid_entry(factoid_name, guild)
-
-        # Handling if the call is an alias
-        if factoid and factoid.alias not in ["", None]:
-            factoid = await self.get_raw_factoid_entry(factoid.alias, guild)
-            factoid_name = factoid.name
-
-        if not factoid:
-            raise custom_errors.FactoidNotFoundError(factoid=factoid_name)
-
-        return factoid
-
-    async def get_list_of_aliases(
-        self: Self, factoid_to_search: str, guild: str
-    ) -> list[str]:
-        """Gets an alphabetical list of all ways to call a factoid
-        This will include the internal parent AND all aliases
-
-        Args:
-            factoid_to_search (str): The name of the factoid to search for aliases of
-            guild (str): The guild to search for factoids in
-
-        Returns:
-            list[str]: The list of all ways to call the factoid, including what was passed
-        """
-        factoid = await self.get_factoid(factoid_to_search, guild)
-        alias_list = [factoid.name]
-        factoids = await self.get_all_factoids(guild)
-        for test_factoid in factoids:
-            if test_factoid.alias and test_factoid.alias == factoid.name:
-                alias_list.append(test_factoid.name)
-        return sorted(alias_list)
-
-    # -- Adding and removing factoids --
-
-    async def add_factoid(
-        self: Self,
-        channel: discord.abc.Messageable,
-        author: discord.Member,
-        factoid_name: str,
-        guild: str,
-        message: str,
-        embed_config: str,
-        alias: str = None,
-    ) -> None:
-        """Adds a factoid with confirmation, modifies it if it already exists
-
-        Args:
-            channel (discord.abc.Messageable): The channel the factoid was added from
-            author (discord.Member): The member who created this factoid
-            factoid_name (str): The name of the factoid
-            guild (str): The guild of the factoid
-            message (str): The message of the factoid
-            embed_config (str): The embed config of the factoid
-            alias (str, optional): The parent of the factoid. Defaults to None.
-        """
-        fmt = "added"  # Changes to modified, used for the returned message
-        name = factoid_name  # Name if the factoid doesn't exist
-
-        # Checks if the factoid exists already
-        try:
-            factoid = await self.get_factoid(factoid_name, guild)
-            if factoid.protected:
-                await auxiliary.send_deny_embed(
-                    message=f"`{factoid.name}` is protected and cannot be modified",
-                    channel=channel,
-                )
-                return
-            name = factoid.name.lower()  # Name of the parent
-
-        # Adds the factoid if it doesn't exist already
-        except custom_errors.FactoidNotFoundError:
-            # If remember was called with an embed but not a message and the factoid does not exist
-            if not message:
-                await auxiliary.send_deny_embed(
-                    message="You did not provide the factoid message!",
-                    channel=channel,
-                )
-                return
-
-            await self.create_factoid_call(
-                factoid_name=name,
-                guild=guild,
-                message=message,
-                embed_config=embed_config,
-                alias=alias,
-            )
-
-        # Modifies the factoid if it already exists
-        else:
-            fmt = "modified"
-            # Confirms modification
-            if (
-                await self.confirm_factoid_deletion(factoid_name, channel, author, fmt)
-                is False
-            ):
-                return
-
-            # Modifies the old entry
-            factoid = await self.get_raw_factoid_entry(name, str(channel.guild.id))
-            factoid.name = name
-            # if no message was supplied, keep the original factoid's message.
-            if message:
-                factoid.message = message
-            factoid.embed_config = embed_config
-            factoid.alias = alias
-            await self.modify_factoid_call(factoid=factoid)
-
-        # Removes the factoid from the cache
-        await self.handle_cache(guild, name)
-        await auxiliary.send_confirm_embed(
-            message=f"Successfully {fmt} the factoid `{factoid_name}`",
-            channel=channel,
-        )
-
-    async def delete_factoid(
-        self: Self, ctx: commands.Context, called_factoid: CalledFactoid
-    ) -> bool:
-        """Deletes a factoid with confirmation
-
-        Args:
-            ctx (commands.Context): Context to send the confirmation message to
-            called_factoid (CalledFactoid): The factoid to remove
-
-        Returns:
-            bool: Whether the factoid was deleted
-        """
-        factoid = await self.get_raw_factoid_entry(
-            called_factoid.factoid_db_entry.name, str(ctx.guild.id)
-        )
-        aliases_list = await self.get_list_of_aliases(
-            called_factoid.factoid_db_entry.name, str(ctx.guild.id)
-        )
-        aliases_list.remove(called_factoid.original_call_str)
-        print_aliases_list = ", ".join(aliases_list)
-
-        send_message = (
-            f"This will remove the factoid `{called_factoid.original_call_str}`"
-        )
-        if print_aliases_list:
-            send_message += f" and all of it's aliases `({print_aliases_list})` forever"
-
-        send_message += ". Are you sure?"
-
-        view = ui.Confirm()
-        await view.send(
-            message=send_message,
-            channel=ctx.channel,
-            author=ctx.author,
-        )
-
-        await view.wait()
-        if view.value is ui.ConfirmResponse.TIMEOUT:
-            return False
-
-        if view.value is ui.ConfirmResponse.DENIED:
-            await auxiliary.send_deny_embed(
-                message=f"Factoid `{called_factoid.original_call_str}` was not deleted",
-                channel=ctx.channel,
-            )
-            return False
-
-        await self.delete_factoid_call(factoid, str(ctx.guild.id))
-
-        # Don't send the confirmation message if this is an alias either
-        confirm_message = (
-            f"Successfully deleted the factoid `{called_factoid.original_call_str}`"
-        )
-        if print_aliases_list:
-            confirm_message += f" and all of it's aliases `({print_aliases_list})`"
-
-        await auxiliary.send_confirm_embed(message=confirm_message, channel=ctx.channel)
-        return True
-
-    # -- Getting and responding with a factoid --
-    async def match(self: Self, ctx: commands.Context, message_contents: str) -> bool:
-        """Checks if a message started with the prefix from the config
-
-        Args:
-            ctx (commands.Context): The context of which the message was sent
-            message_contents (str): The message to check
-
-        Returns:
-            bool: Whether the message starts with the prefix or not
-        """
-        if not ctx.guild:
-            return
-        return message_contents.startswith(
-            configuration.get_config_entry(ctx.guild.id, "factoids_prefix")
-        )
-
-    async def response(
-        self: Self,
-        ctx: commands.Context,
-        message_content: str,
-        _: bool,
-    ) -> None:
-        """Responds to a factoid call
-
-        Args:
-            ctx (commands.Context): Context of the call
-            message_content (str): Content of the call
-
-        Raises:
-            TooLongFactoidMessageError:
-                Raised when the raw message content is over discords 2000 char limit
-        """
-        if not ctx.guild:
-            return
-        # Checks if the first word of the content after the prefix is a valid factoid
-        # Replaces \n with spaces so factoid can be called even with newlines
-        prefix = configuration.get_config_entry(ctx.guild.id, "factoids_prefix")
-        query = message_content[len(prefix) :].replace("\n", " ").split(" ")[0].lower()
-        try:
-            factoid = await self.get_factoid(query, str(ctx.guild.id))
-
-        except custom_errors.FactoidNotFoundError:
-            await self.bot.logger.send_log(
-                message=f"Invalid factoid call {query} from {ctx.guild.id}",
-                level=LogLevel.DEBUG,
-                context=LogContext(guild=ctx.guild, channel=ctx.channel),
-            )
-            return
-
-        # Checking for disabled or restricted
-        if factoid.disabled:
-            return
-
-        if factoid.restricted:
-            channel = ctx.channel
-            restricted_list = configuration.get_config_entry(
-                ctx.guild.id, "factoids_restricted_list"
-            )
-            if isinstance(channel, discord.Thread):
-                if str(channel.parent.id) not in restricted_list:
-                    return
-            else:
-                if str(channel.id) not in restricted_list:
-                    return
-
-        if configuration.get_config_entry(ctx.guild.id, "factoids_disable_embeds"):
-            embed = None
-        else:
-            try:
-                embed = self.get_embed_from_factoid(factoid)
-            except TypeError as exception:
-                log_channel = configuration.get_config_entry(
-                    ctx.guild.id, "core_logging_channel"
-                )
-                await self.bot.logger.send_log(
-                    message=f"Unable to make embed for factoid `{factoid.name}`, sending fallback.",
-                    level=LogLevel.ERROR,
-                    channel=log_channel,
-                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
-                    exception=exception,
-                )
-                embed = None
-
-        # if the json doesn't include non embed argument, then don't send anything
-        # otherwise send message text with embed
-        try:
-            plaintext_content = factoid.message if not embed else None
-        except ValueError:
-            # The not embed causes a ValueError in certain cases. This ensures fallback works
-            plaintext_content = factoid.message
-        mentions = auxiliary.construct_mention_string(ctx.message.mentions)
-
-        content = " ".join(filter(None, [mentions, plaintext_content])) or None
-        if content and len(content) > 2000:
-            await auxiliary.send_deny_embed(
-                message="I ran into an error sending that factoid: "
-                + "The factoid message is longer than the discord size limit (2000)",
-                channel=ctx.channel,
-            )
-            raise custom_errors.TooLongFactoidMessageError
+        if use_file:
+            return self.generate_factoid_all_file(guild, factoids)
 
         try:
-            # define the message and send it
-            sent_message = await ctx.reply(
-                content=content, embed=embed, mention_author=not mentions
+            html = await self.generate_factoid_all_html(guild, factoids)
+
+            if html is None:
+                return None
+
+            headers = {
+                "Content-Type": "text/plain",
+            }
+
+            response = await self.bot.http_functions.http_call(
+                "put",
+                self.bot.file_config.api.api_url.linx,
+                headers=headers,
+                data=io.StringIO(html),
+                get_raw_response=True,
             )
-            # log it in the logging channel with type info and generic content
+
+            url = response["text"]
+            filename = url.split("/")[-1]
+
+            return url.replace(filename, f"selif/{filename}")
+
+        except (gaierror, InvalidURL) as exception:
             log_channel = configuration.get_config_entry(
-                ctx.guild.id, "core_logging_channel"
+                guild.id,
+                "core_logging_channel",
             )
+
             await self.bot.logger.send_log(
-                message=(
-                    f"Sending factoid: {query} (triggered by {ctx.author} in"
-                    f" #{ctx.channel.name})"
-                ),
-                level=LogLevel.INFO,
-                context=LogContext(guild=ctx.guild, channel=ctx.channel),
-                channel=log_channel,
-            )
-        # If something breaks, also log it
-        except discord.errors.HTTPException as exception:
-            log_channel = configuration.get_config_entry(
-                ctx.guild.id, "core_logging_channel"
-            )
-            await self.bot.logger.send_log(
-                message="Could not send factoid",
+                message="Could not render/send all-factoid HTML",
                 level=LogLevel.ERROR,
-                context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                context=LogContext(guild=guild),
                 channel=log_channel,
                 exception=exception,
             )
-            # Sends the raw factoid instead of the embed as fallback
-            sent_message = await ctx.reply(
-                f"{mentions + ' ' if mentions else ''}{factoid.message}",
-                mention_author=not mentions,
-            )
 
-        await self.send_to_irc(ctx.channel, ctx.message, factoid.message)
-        await self.send_to_logger(
-            sent_message, ctx.author, ctx.channel, factoid.message
-        )
+            return self.generate_factoid_all_file(guild, factoids)
 
-    async def send_to_irc(
+    async def generate_factoid_all_html(
         self: Self,
-        channel: discord.abc.Messageable,
-        message: discord.Message,
-        factoid_message: str,
-    ) -> None:
-        """Send a factoid to IRC channel, if it was called in a linked channel
+        guild: discord.Guild,
+        factoids: list[FactoidView],
+    ) -> str:
+        """Method to generate the html file contents
 
         Args:
-            channel (discord.abc.Messageable): The channel the factoid was sent in
-            message (discord.Message): The message object of the invocation
-            factoid_message (str): The text of the factoid to send
+            guild (discord.Guild): The guild the factoids are being pulled from
+            factoids (list[FactoidView]): List of all factoids
+
+        Returns:
+            str: The result html file
         """
-        # Don't attempt to send a message if irc if irc is disabled
+
+        # Should never hit this, but double check
+        if not factoids:
+            return None
+
+        body_contents = ""
+
+        for factoid in factoids:
+            embed_text = " (embed)" if factoid.json_string else ""
+
+            calls = sorted(factoid.calls)
+
+            calls_text = f" [{', '.join(calls)}]"
+
+            body_contents += (
+                f"<li><code>{calls_text}{embed_text}"
+                f" - {factoid.message}</code></li>"
+            )
+
+        body_contents = f"<ul>{body_contents}</ul>"
+
+        return f"""
+        <!DOCTYPE html>
+
+        <html>
+        <body>
+        <h3>Factoids for {guild.name}</h3>
+        {body_contents}
+        <style>
+        ul {{
+            display: table;
+            width: auto;
+        }}
+
+        ul li {{
+        display: table-row;
+        }}
+
+        ul li:nth-child(even) {{
+        background-color: lightgray;
+        }} </style>
+
+        </body>
+        </html>
+        """
+
+    def generate_factoid_all_file(
+        self: Self,
+        guild: discord.Guild,
+        factoids: list[FactoidView],
+    ) -> discord.File:
+        """Method to send the factoid list as a file instead of a paste
+
+        Args:
+            guild (discord.Guild): The guild the factoids are from
+            factoids (list[FactoidView]): List of all factoids
+
+        Returns:
+            discord.File: The file, ready to upload to discord
+        """
+        # We should never be here, but just in case
+        if not factoids:
+            return None
+
+        output_data = []
+
+        for index, factoid in enumerate(factoids):
+
+            calls = factoid.calls
+
+            properties_str = (
+                ", ".join(
+                    prop.name.lower() for prop in Properties if factoid.flags & prop
+                )
+                or "None"
+            )
+
+            data = {
+                "calls": calls,
+                "message": factoid.message,
+                "embed": bool(factoid.json_string),
+                "properties": properties_str,
+            }
+
+            output_data.append(
+                {
+                    index: data,
+                }
+            )
+
+        return discord.File(
+            io.StringIO(yaml.dump(output_data)),
+            filename=(
+                f"factoids-for-server-{guild.id}-{datetime.datetime.utcnow()}.yaml"
+            ),
+        )
+
+    async def generate_sendable_factoid(
+        self: Self, guild: discord.Guild, factoid: FactoidView
+    ) -> tuple[discord.Embed, str]:
+        """This generates the embed and plaintext versions of a factoid, to prepare to be sent
+
+        Args:
+            guild (discord.Guild): The guild the factoid exists in
+            factoid (FactoidView): The factoid to send
+
+        Returns:
+            tuple[discord.Embed, str]: The embed if created (or None), the plaintext version
+        """
+        plaintext = factoid.message
+        if configuration.get_config_entry(guild.id, "factoids_disable_embeds"):
+            return (None, plaintext)
+        embed = None
+        try:
+            embed = self.get_embed_from_factoid(factoid)
+        except TypeError as exception:
+            asyncio.create_task(
+                self.log_embed_fallback_exception(
+                    factoid=factoid,
+                    exception=exception,
+                    guild=guild,
+                )
+            )
+
+        return (embed, plaintext)
+
+    async def log_factoid_send(
+        self: Self,
+        guild: discord.Guild,
+        channel: discord.abc.GuildChannel,
+        sender: discord.Member,
+        factoid: FactoidView,
+    ) -> None:
+        """This sends a factoid call to the bot log channel
+
+        Args:
+            guild (discord.Guild): The guild the factoid was sent to
+            channel (discord.abc.GuildChannel): The channel the factoid was sent to
+            sender (discord.Member): The member who sent the factoid
+            factoid (FactoidView): The factoid that was sent
+        """
+
+        log_channel = configuration.get_config_entry(guild.id, "core_logging_channel")
+        await self.bot.logger.send_log(
+            message=(
+                f"Sending factoid: `[{', '.join(factoid.calls)}]` (triggered by {sender} in"
+                f" #{channel.name})"
+            ),
+            level=LogLevel.INFO,
+            context=LogContext(guild=guild, channel=channel),
+            channel=log_channel,
+        )
+
+    def send_factoid_to_irc(
+        self: Self,
+        channel: discord.abc.Messageable,
+        factoid: FactoidView,
+        author: discord.Member,
+    ) -> None:
+        """If relevant, will send a factoid to the bridged IRC channel
+
+        Args:
+            channel (discord.abc.Messageable): The discord channel the message was sent in
+            factoid (FactoidView): The factoid that was sent
+            author (discord.Member): The member who sent the factoid. May be the bot
+        """
         irc_config = self.bot.file_config.api.irc
         if not irc_config.enable_irc:
             return
 
-        await self.bot.irc.irc_cog.handle_factoid(
+        self.bot.irc.irc_cog.handle_factoid(
             channel=channel,
-            discord_message=message,
-            factoid_message=factoid_message,
+            factoid=factoid,
+            author=author,
         )
 
-    async def send_to_logger(
+    async def send_factoid_to_logger(
         self: Self,
         factoid_message_object: discord.Message,
         factoid_caller: discord.Member,
@@ -981,10 +1222,661 @@ class FactoidManager(cogs.MatchCog):
             special_flags=["Factoid call"],
         )
 
+    def check_valid_name(self: Self, name: str) -> bool:
+        """This checks if the name of a factoid is valid or not
+
+        Args:
+            name (str): The name of the factoid to check
+
+        Returns:
+            bool: Whether this name is allowable
+        """
+        # Rule 1: name must exist
+        if not name:
+            return False
+        # Rule 2: No commas
+        if "," in name:
+            return False
+
+        # Factoid name passed all the rules
+        return True
+
+    def check_valid_message(self: Self, message: str) -> bool:
+        """This checks if the message of a factoid is valid or not
+
+        Args:
+            message (str): The message of the factoid to check
+
+        Returns:
+            bool: Whether this message is allowable
+        """
+        mention_regex = re.compile(r"(@everyone|@here|<@[!&]?\d+>|<#\d+>)")
+        # Rule 1, no mentions
+        if mention_regex.search(message):
+            return False
+        # Rule 2, ensure length is no longer than discord can handle
+        if len(message) > 2000:
+            return False
+
+        # Message passes all rules
+        return True
+
+    def create_json_file(self: Self, factoid: FactoidView) -> discord.File:
+        """This takes a factoid and pulls the json string, and turns it into a file
+        Designed to be used to send a json file in a discord message
+
+        Args:
+            factoid (FactoidView): The factoid to make the json file of
+
+        Returns:
+            discord.File: The json file representing the embed of this factoid
+        """
+        formatted = json.dumps(json.loads(factoid.json_string), indent=4)
+        json_file = discord.File(
+            io.StringIO(formatted),
+            filename=(
+                f"factoid-{factoid.factoid_data_id}-embed-config-{datetime.datetime.utcnow()}.json"
+            ),
+        )
+        return json_file
+
+    async def log_embed_fallback_exception(
+        self: Self,
+        factoid: FactoidView,
+        exception: Exception,
+        guild: discord.Guild,
+        channel: discord.abc.GuildChannel = None,
+    ) -> None:
+        """This logs an error log if a factoid embed failed, causing a fallback to be sent
+
+        Args:
+            factoid (FactoidView): The factoid that had the problem
+            exception (Exception): The exception generated when making or sending the embed
+            guild (discord.Guild): The guild this happened in
+            channel (discord.abc.GuildChannel, optional): The channel the factoid was going to be sent in. Defaults to None.
+        """
+        log_channel = configuration.get_config_entry(guild.id, "core_logging_channel")
+        await self.bot.logger.send_log(
+            message=(
+                f"Unable to send embed for factoid `[{', '.join(factoid.calls)}]`, "
+                "sending fallback."
+            ),
+            level=LogLevel.ERROR,
+            context=LogContext(guild=guild, channel=channel),
+            channel=log_channel,
+            exception=exception,
+        )
+
+    async def generate_json_string_from_file(
+        self: Self, interaction: discord.Interaction, uploaded_file: discord.Attachment
+    ) -> str:
+        """This turns a json file discord attachement into a single string, ready to be inserted into a database
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            uploaded_file (discord.Attachment): The file that was uploaded to parse
+
+        Returns:
+            str: The parsed string representation of the json file
+        """
+
+        if not uploaded_file.filename.endswith(".json"):
+            await self.respond_error_embed(
+                interaction, "I don't recognize your upload as a JSON file."
+            )
+            return
+
+        try:
+            json_bytes = await uploaded_file.read()
+            attachment_json = json.loads(json_bytes.decode("UTF-8"))
+            embed_json_string = json.dumps(attachment_json)
+
+        except Exception:
+            await self.respond_error_embed(
+                interaction, message="I couldn't parse the uploaded JSON file."
+            )
+            return
+
+        return embed_json_string
+
+    def compute_embed_hash(self: Self, embed: discord.Embed) -> str:
+        """This generates a hash from a discords embed content, for comparison purposes
+        This allows us to normalize the embed we are about to send and the embed we previously sent
+
+        Args:
+            embed (discord.Embed): The embed we want to normalize
+
+        Returns:
+            str: The hash of the embed to compare
+        """
+
+        # I hate everything about this
+        # This is all because of discord CDN links
+
+        # Do some parsing to attempt to ensure embeds are the same
+        def normalize_discord_url(url: str | None) -> str | None:
+            if not url:
+                return None
+
+            parsed_url = urlsplit(url)
+            return urlunsplit(
+                (parsed_url.scheme, parsed_url.netloc, parsed_url.path, "", "")
+            )
+
+        def normalize_inline(value):
+            if value is None:
+                return False
+            return bool(value)
+
+        embed_data = {
+            "author": (
+                {
+                    "name": embed.author.name if embed.author else None,
+                    "icon_url": normalize_discord_url(embed.author.icon_url),
+                    "url": normalize_discord_url(embed.author.url),
+                }
+                if embed.author
+                else None
+            ),
+            "footer": (
+                {
+                    "text": embed.footer.text if embed.footer else None,
+                    "icon_url": normalize_discord_url(embed.footer.icon_url),
+                }
+                if embed.footer
+                else None
+            ),
+            "color": embed.color.value if embed.color else None,
+            "fields": [
+                {
+                    "name": field.name,
+                    "value": field.value,
+                    "inline": normalize_inline(field.inline),
+                }
+                for field in embed.fields
+            ],
+            "image": normalize_discord_url(embed.image.url),
+            "thumbnail": normalize_discord_url(embed.thumbnail.url),
+            "title": embed.title,
+            "description": embed.description,
+            "url": normalize_discord_url(embed.url),
+            "timestamp": embed.timestamp.isoformat() if embed.timestamp else None,
+        }
+
+        normalized_json = json.dumps(embed_data, sort_keys=True, ensure_ascii=False)
+        return hashlib.sha256(normalized_json.encode("utf-8")).hexdigest()
+
+    # INTERACTION RESPONSE BOILERPLATE
+
+    async def check_protected(
+        self: Self, interaction: discord.Interaction, factoid: FactoidView
+    ) -> bool:
+        """This takes a factoid and ensures its not protected
+        If the factoid is protected, this will respond to the interaction
+
+        Args:
+            interaction (discord.Interaction): The interaction calling the command
+            factoid (FactoidView): The factoid attempting to be edited
+
+        Returns:
+            bool: True if protected, False if unprotected
+        """
+        if factoid.flags & Properties.PROTECTED:
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid `[{', '.join(factoid.calls)}]` is protected and cannot be edited.",
+            )
+            return True
+        return False
+
+    async def respond_error_embed(
+        self: Self, interaction: discord.Interaction, message: str
+    ) -> None:
+        """This formats a denial embed and responds to the interaction with it.
+        Will always respond ephemerally, will handle followup if needed
+
+        Args:
+            interaction (discord.Interaction): The interaction to respond to
+            message (str): The message to include
+        """
+        embed = auxiliary.prepare_deny_embed(message=message)
+
+        if interaction.response.is_done():
+            await interaction.followup.send(
+                embed=embed,
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.send_message(
+            embed=embed,
+            ephemeral=True,
+        )
+
+    async def get_valid_factoid(
+        self: Self, interaction: discord.Interaction, factoid_name: str
+    ) -> FactoidView | None:
+        """This gets a factoid by factoid name
+        If the factoid does not exist, the interaction is responded to
+
+        Args:
+            interaction (discord.Interaction): The interaction that called for lookup
+            factoid_name (str): The factoid name to lookup
+
+        Returns:
+            FactoidView | None: The factoid, if it exists. None if no factoid exists
+        """
+        factoid = await self.get_factoid_view_by_name(
+            guild=interaction.guild, name=factoid_name
+        )
+
+        if not factoid:
+            await self.respond_error_embed(
+                interaction, f"The factoid `{factoid_name}` doesn't exist!"
+            )
+
+        return factoid
+
+    # AUTOFILL
+    async def setup_autocomplete_cache(self: Self, guild: discord.Guild) -> None:
+        """This calls the database and creates a cache for the passed guild for the autocomplete
+        This cache contains a mapping of names to flags
+
+        Args:
+            guild (discord.Guild): The guild to build the cache for
+        """
+        factoids = (
+            await self.bot.db.select(
+                [
+                    self.bot.models.FactoidCall.name,
+                    self.bot.models.FactoidData.flags,
+                ]
+            )
+            .select_from(
+                self.bot.models.FactoidCall.join(
+                    self.bot.models.FactoidData,
+                    self.bot.models.FactoidCall.factoid_data_id
+                    == self.bot.models.FactoidData.factoid_data_id,
+                )
+            )
+            .where(self.bot.models.FactoidCall.guild == str(guild.id))
+            .gino.all()
+        )
+
+        cache = [
+            (
+                factoid.name.lower(),
+                factoid.flags,
+            )
+            for factoid in factoids
+        ]
+
+        cache.sort(key=lambda x: x[0])
+
+        self.factoid_autocomplete_cache[guild.id] = cache
+
+    async def generate_factoid_autocomplete_list(
+        self: Self,
+        interaction: discord.Interaction,
+        current: str,
+        hidden_flags: Properties = Properties(0),
+    ) -> list[app_commands.Choice[str]]:
+        """This autocomplete list is capable of returning all factoids, filtering by no properties
+        It is setup in a way where it can be called with a list of flags to hide
+        This is not designed to be used as a direct call
+
+        Args:
+            interaction (discord.Interaction): The interaction calling for autocomplete
+            current (str): The current text in the factoid name field
+            hidden_flags (Properties, optional): The properties to exclude from the list.
+                Defaults to Properties(0).
+
+        Returns:
+            list[app_commands.Choice[str]]: The list of choices matching the user input and flag filter
+        """
+        guild = interaction.guild
+        if guild is None:
+            return []
+
+        if guild.id not in self.factoid_autocomplete_cache:
+            await self.setup_autocomplete_cache(guild)
+
+        current = current.lower()
+        cached = self.factoid_autocomplete_cache.get(guild.id, [])
+
+        matches: list[app_commands.Choice[str]] = []
+
+        for name, flags in cached:
+            if not name.startswith(current):
+                continue
+
+            if flags & hidden_flags:
+                continue
+
+            matches.append(
+                app_commands.Choice(
+                    name=name,
+                    value=name,
+                )
+            )
+
+            if len(matches) >= 10:
+                break
+
+        return matches
+
+    async def property_factoid_autocomplete(
+        self: Self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        """This function is designed to return ALL factoids, regardless of property flags
+        Designed for use exclusively in the /factoid property command
+
+        Args:
+            interaction (discord.Interaction): The interaction calling for autocomplete
+            current (str): The current text in the factoid name field
+
+        Returns:
+            list[app_commands.Choice[str]]: The list of choices matching to show to the user
+        """
+        return await self.generate_factoid_autocomplete_list(
+            interaction,
+            current,
+        )
+
+    async def editing_factoid_autocomplete(
+        self: Self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        """This autocomplete list will hide hidden and protected factoids from the autocomplete list
+        This is designed for use when editing factoids
+
+        Args:
+            interaction (discord.Interaction): The interaction calling for autocomplete
+            current (str): The current text in the factoid name field
+
+        Returns:
+            list[app_commands.Choice[str]]: The list of choices matching to show to the user
+        """
+        return await self.generate_factoid_autocomplete_list(
+            interaction,
+            current,
+            hidden_flags=(Properties.HIDDEN | Properties.PROTECTED),
+        )
+
+    async def filtered_factoid_autocomplete(
+        self: Self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        """This hides hidden and disabled facotids, and restricted factoids if they cannot be used in the current channel
+        This is designed for user forward commands, like /factoid call and /factoid info
+
+        Args:
+            interaction (discord.Interaction): The interaction calling for autocomplete
+            current (str): The current text in the factoid name field
+
+        Returns:
+            list[app_commands.Choice[str]]: The list of choices matching to show to the user
+        """
+        hidden_flags = Properties.HIDDEN | Properties.DISABLED
+
+        if not self.can_channel_send_restricted(interaction.channel):
+            hidden_flags |= Properties.RESTRICTED
+
+        return await self.generate_factoid_autocomplete_list(
+            interaction,
+            current,
+            hidden_flags=hidden_flags,
+        )
+
+    # COMMANDS
+
+    @app_commands.check(has_manage_factoids_role)
+    @factoid_app_group.command(
+        name="alias",
+        description="Creates an alias for an existing factoid call",
+    )
+    @app_commands.autocomplete(existing_factoid=editing_factoid_autocomplete)
+    async def factoid_alias_command(
+        self: Self,
+        interaction: discord.Interaction,
+        existing_factoid: str,
+        new_factoid: str,
+    ) -> None:
+        """Creates an alias to a factoid without creating new data
+        This will create only a FactoidCall entry
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            existing_factoid (str): The pre-existing factoid name
+            new_factoid (str): The new name to use
+        """
+        existing_factoid = existing_factoid.lower()
+        new_factoid = new_factoid.lower()
+        if not self.check_valid_name(new_factoid):
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid name `{new_factoid}` is invalid and cannot be used!",
+            )
+            return
+
+        if new_factoid == existing_factoid:
+            await self.respond_error_embed(
+                interaction, "You cannot alias a factoid to itself!"
+            )
+            return
+
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=existing_factoid
+        )
+        if not factoid:
+            return
+
+        # No aliases on protected factoids
+        if await self.check_protected(interaction, factoid):
+            return
+
+        new_factoid_db = await self.get_factoid_view_by_name(
+            guild=interaction.guild, name=new_factoid
+        )
+
+        # If the existing and new calls already point to the same factoid, there is nothing to do
+        if new_factoid_db and factoid.factoid_data_id == new_factoid_db.factoid_data_id:
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid `{new_factoid}` is already an alias of `{existing_factoid}`.",
+            )
+            return
+
+        # If the new_factoid already exists but point elsewhere, we need to ask the user for confirmation
+        if new_factoid_db:
+
+            # No aliases on protected factoids
+            if await self.check_protected(interaction, new_factoid_db):
+                return
+
+            await interaction.response.defer()
+            confirmation_response = await self.confirm_factoid_deletion(
+                interaction=interaction,
+                display_message=f"The factoid `{new_factoid}` already exists. Should I overwrite it?",
+                channel=interaction.channel,
+                author=interaction.user,
+            )
+            if confirmation_response == ui.ConfirmResponse.TIMEOUT:
+                return
+            if confirmation_response == ui.ConfirmResponse.DENIED:
+                await self.respond_error_embed(
+                    interaction,
+                    message=f"The factoid `{new_factoid}` was not replaced.",
+                )
+                return
+
+            await self.move_factoid_call(
+                guild=interaction.guild,
+                existing_name=new_factoid,
+                new_factoid_data_id=factoid.factoid_data_id,
+            )
+        else:
+            await self.create_factoid_call(
+                guild=interaction.guild,
+                name=new_factoid,
+                factoid_data_id=factoid.factoid_data_id,
+            )
+        embed = auxiliary.prepare_confirm_embed(
+            message=f"Successfully added the alias `{new_factoid}` for `{existing_factoid}`",
+        )
+
+        # Update the factoid edit time
+        # This will also remove the factoid from the cache
+        await self.handle_factoid_edit(interaction.guild, factoid)
+        if new_factoid_db:
+            await self.handle_factoid_edit(interaction.guild, new_factoid_db)
+
+        # Depending on the path took to get here, we may need to followup
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=embed)
+        else:
+            await interaction.response.send_message(embed=embed)
+
+    @factoid_app_group.command(
+        name="all",
+        description="Sends a configurable list of all factoids.",
+        extras={"ephemeral_error": True},
+    )
+    async def factoid_all_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_property: Properties = "",
+        force_file: bool = False,
+        show_all: bool = False,
+    ) -> None:
+        """This displays to the user a configurable list of all factoids
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            factoid_property (Properties, optional): A property to force the search to display. Defaults to "".
+            force_file (bool, optional): Whether a file is generated, even if a linx server is configured. Defaults to False.
+            show_all (bool, optional): To force all factoids, including hidden ones, to be in the output. Defaults to False.
+        """
+        all_factoids = await self.get_all_factoids_for_guild(guild=interaction.guild)
+
+        if not all_factoids:
+            await self.respond_error_embed(
+                interaction, "No factoids have been created for this guild"
+            )
+            return
+
+        # Property filters only avaiable to manage roles
+        if factoid_property or show_all:
+            await has_given_factoids_role(
+                interaction.guild,
+                interaction.user,
+                configuration.get_config_entry(
+                    interaction.guild.id, "factoids_manage_roles"
+                ),
+            )
+
+        # Determine whether restricted factoids should be visible here
+        should_show_restricted = self.can_channel_send_restricted(
+            interaction.channel,
+        )
+
+        # Top priority is abiding by show_all
+        # If not but a specific property is requested, show that
+        # Otherwise, show a normal filtered list, no hidden, no disabled, no restricted
+        if show_all:
+            filtered_factoids = all_factoids
+        elif factoid_property:
+            filtered_factoids = [
+                factoid for factoid in all_factoids if factoid.flags & factoid_property
+            ]
+        else:
+            filtered_factoids = [
+                factoid
+                for factoid in all_factoids
+                if (
+                    # Never show hidden factoids normally
+                    not (factoid.flags & Properties.HIDDEN)
+                    # Never show disabled factoids normally
+                    and not (factoid.flags & Properties.DISABLED)
+                    # Restricted factoids depend on channel
+                    and (
+                        should_show_restricted
+                        or not (factoid.flags & Properties.RESTRICTED)
+                    )
+                )
+            ]
+
+        # Bulding a cache key to cache factoid all links
+        if show_all:
+            cache_mode = "all"
+            property_value = 0
+        elif factoid_property:
+            cache_mode = "property"
+            property_value = factoid_property
+        elif should_show_restricted:
+            cache_mode = "default_with_restricted"
+            property_value = 0
+        else:
+            cache_mode = "default"
+            property_value = 0
+
+        cache_key = (
+            interaction.guild.id,
+            cache_mode,
+            property_value,
+        )
+
+        filtered_factoids.sort(key=lambda factoid: factoid.calls[0])
+        if not filtered_factoids:
+            await self.respond_error_embed(
+                interaction, "No factoids could be found matching your filter"
+            )
+            return
+
+        # If the linx server isn't configured, we must make it a file
+        if not self.bot.file_config.api.api_url.linx:
+            force_file = True
+
+        await interaction.response.defer(ephemeral=True)
+
+        cached_factoid_all = self.factoid_all_cache.get(cache_key)
+
+        if cached_factoid_all and not force_file:
+            factoid_all = cached_factoid_all
+        else:
+            factoid_all = await self.build_factoid_all(
+                guild=interaction.guild, factoids=filtered_factoids, use_file=force_file
+            )
+
+        if not factoid_all:
+            await self.respond_error_embed(
+                interaction, "Something went wrong generating the list of factoids"
+            )
+            return
+
+        # If we got a file, send it.
+        if isinstance(factoid_all, discord.File):
+            await interaction.followup.send(file=factoid_all, ephemeral=True)
+            return
+
+        # If we didn't pull factoid all from the cache, add it to the cache
+        if not cached_factoid_all:
+            self.factoid_all_cache[cache_key] = factoid_all
+
+        embed = auxiliary.prepare_confirm_embed(factoid_all)
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
     @factoid_app_group.command(
         name="call",
         description="Calls a factoid from the database and sends it publicy in the channel.",
+        extras={"ephemeral_error": True},
     )
+    @app_commands.autocomplete(factoid_name=filtered_factoid_autocomplete)
     async def factoid_call_command(
         self: Self,
         interaction: discord.Interaction,
@@ -992,1993 +1884,1270 @@ class FactoidManager(cogs.MatchCog):
         member_to_ping: discord.Member = None,
     ) -> None:
         """This is an app command version of typing {prefix}call
+        This is the preferred method of getting factoids
 
         Args:
             interaction (discord.Interaction): The interaction that triggered this command
             factoid_name (str): The factoid name to search for and print
             member_to_ping (discord.Member): A member to ping in the output
-
-        Raises:
-            TooLongFactoidMessageError: If the plaintext exceed 2000 characters
         """
-        query = factoid_name.replace("\n", " ").lower()
-        try:
-            factoid = await self.get_factoid(query, str(interaction.guild.id))
+        factoid_name = factoid_name.lower()
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
+        )
+        if not factoid:
+            return
 
-        except custom_errors.FactoidNotFoundError:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid {factoid_name} couldn't be found"
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            await self.bot.logger.send_log(
-                message=f"Invalid factoid call {query} from {interaction.guild.id}",
-                level=LogLevel.DEBUG,
-                context=LogContext(
-                    guild=interaction.guild, channel=interaction.channel
-                ),
+        # Check if factoid is disabled. If so, don't send it
+        if factoid.flags & Properties.DISABLED:
+            await self.respond_error_embed(
+                interaction, f"The factoid `{factoid_name}` is disabled."
             )
             return
 
-        # Checking for disabled or restricted
-        if factoid.disabled:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid {factoid_name} is disabled."
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-            return
-
-        if factoid.restricted and str(
-            interaction.channel.id
-        ) not in configuration.get_config_entry(
-            interaction.guild.id, "factoids_restricted_list"
+        # Check if factoid is restricted. If so, check if we can call it
+        if (
+            factoid.flags & Properties.RESTRICTED
+            and not self.can_channel_send_restricted(interaction.channel)
         ):
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid {factoid_name} is restricted and not allowed in this channel."
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid `{factoid_name}` is restricted and not allowed in this channel.",
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
-        if configuration.get_config_entry(
-            interaction.guild.id, "factoids_disable_embeds"
-        ):
-            embed = None
-        else:
-            try:
-                embed = self.get_embed_from_factoid(factoid)
-            except TypeError as exception:
-                log_channel = configuration.get_config_entry(
-                    interaction.guild.id, "core_logging_channel"
-                )
-                await self.bot.logger.send_log(
-                    message=f"Unable to make embed for factoid `{factoid.name}`, sending fallback.",
-                    level=LogLevel.ERROR,
-                    channel=log_channel,
-                    context=LogContext(
-                        guild=interaction.guild, channel=interaction.channel
-                    ),
-                    exception=exception,
-                )
-                embed = None
-        # if the json doesn't include non embed argument, then don't send anything
-        # otherwise send message text with embed
-        try:
-            content = factoid.message if not embed else None
-        except ValueError:
-            # The not embed causes a ValueError in certain cases. This ensures fallback works
-            content = factoid.message
 
-        if member_to_ping:
-            if not content:
-                content = ""
-            content = f"{member_to_ping.mention} {content}".strip()
-
-        if content and len(content) > 2000:
-            embed = auxiliary.prepare_deny_embed(
-                message="I ran into an error sending that factoid: "
-                + "The factoid message is longer than the discord size limit (2000)",
-            )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-
-            raise custom_errors.TooLongFactoidMessageError
-
-        try:
-            # define the message and send it
-            view = DeleteView(interaction.user.id)
-
-            await interaction.response.send_message(
-                content=content,
-                embed=embed,
-                view=view,
-            )
-
-            view.message = await interaction.original_response()
-            # log it in the logging channel with type info and generic content
-            log_channel = configuration.get_config_entry(
-                interaction.guild.id, "core_logging_channel"
-            )
-            await self.bot.logger.send_log(
-                message=(
-                    f"Sending factoid: {query} (triggered by {interaction.user} in"
-                    f" #{interaction.channel.name})"
-                ),
-                level=LogLevel.INFO,
-                context=LogContext(
-                    guild=interaction.guild, channel=interaction.channel
-                ),
-                channel=log_channel,
-            )
-        # If something breaks, also log it
-        except discord.errors.HTTPException as exception:
-            log_channel = configuration.get_config_entry(
-                interaction.guild.id, "core_logging_channel"
-            )
-            await self.bot.logger.send_log(
-                message="Could not send factoid",
-                level=LogLevel.ERROR,
-                context=LogContext(
-                    guild=interaction.guild, channel=interaction.channel
-                ),
-                channel=log_channel,
-                exception=exception,
-            )
-            # Sends the raw factoid instead of the embed as fallback
-            await interaction.response.send_message(content=factoid.message)
-        await self.send_to_irc(
-            interaction.channel, interaction.message, factoid.message
+        embed, plaintext_content = await self.generate_sendable_factoid(
+            interaction.guild, factoid
         )
 
+        # Log in the background
+        asyncio.create_task(
+            self.log_factoid_send(
+                guild=interaction.guild,
+                channel=interaction.channel,
+                sender=interaction.user,
+                factoid=factoid,
+            )
+        )
+
+        content = ""
+        if member_to_ping:
+            content = member_to_ping.mention
+
+        embed_sent = False
+        view = ButtonView(interaction.user.id, factoid)
+        if embed:
+            try:
+                # Attempt to send the message with the embed in it
+                await interaction.response.send_message(
+                    content=content,
+                    embed=embed,
+                    view=view,
+                )
+                view.message = await interaction.original_response()
+                embed_sent = True
+            # If something breaks, also log it
+            except discord.errors.HTTPException as exception:
+                asyncio.create_task(
+                    self.log_embed_fallback_exception(
+                        factoid=factoid,
+                        exception=exception,
+                        guild=interaction.guild,
+                        channel=interaction.channel,
+                    )
+                )
+
+        # Either no embed exists, or the embed failed to send for some reason.
+        # We will send the plaintext content of the factoid in this case
+        if not embed_sent:
+            content += f" {plaintext_content}"
+            content = content.strip()
+            if len(content) > 2000:
+                await self.respond_error_embed(
+                    interaction,
+                    f"The factoid `{factoid_name}` is too long and cannot be sent on discord.",
+                )
+                return
+
+            # The can't see button is not needed in plaintext cases
+            view.remove_item(view.cant_see_button)
+            await interaction.response.send_message(content=content, view=view)
+            view.message = await interaction.original_response()
+
+        # IRC connection
+        self.send_factoid_to_irc(interaction.channel, factoid, interaction.user)
+
+        # Logger connection
         sent_message = await interaction.original_response()
-        await self.send_to_logger(
+        await self.send_factoid_to_logger(
             sent_message, interaction.user, interaction.channel, factoid.message
         )
 
-    @app_commands.check(has_manage_factoids_role_interaction)
+        # Increase times called
+        await self.increment_times_called_by_view(
+            guild=interaction.guild, factoid=factoid
+        )
+
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @app_commands.check(has_admin_factoids_role)
     @factoid_app_group.command(
-        name="add",
-        description="Creates a new factoid.",
+        name="cleanup",
+        description="Deletes any broken database entries for the current guild",
     )
-    async def factoid_add_command(
+    async def factoid_cleanup_command(
+        self: Self, interaction: discord.Interaction
+    ) -> None:
+        """This command cleans up any broken database entries
+        Hopefully this never needs to be run
+
+        Args:
+            self (Self): _description_
+            interaction (discord.Interaction): The interaction that called this command
+        """
+        await interaction.response.defer()
+
+        factoid_data = await self.bot.models.FactoidData.query.where(
+            self.bot.models.FactoidData.guild == str(interaction.guild.id)
+        ).gino.all()
+        factoid_calls = await self.bot.models.FactoidCall.query.where(
+            self.bot.models.FactoidCall.guild == str(interaction.guild.id)
+        ).gino.all()
+        factoid_jobs = await self.get_all_jobs_for_guild(interaction.guild)
+
+        # A master list of valid factoid IDs, pulled from the database
+        factoid_data_ids = {data.factoid_data_id for data in factoid_data}
+
+        # A mast list of factoid IDs that have at least a single valid guild
+        called_factoid_data_ids = set()
+
+        factoid_data_removed = 0
+        factoid_calls_removed = 0
+        factoid_jobs_removed = 0
+
+        # Find any calls that point to an invalid factoid
+        for call in factoid_calls:
+            if call.factoid_data_id in factoid_data_ids:
+                called_factoid_data_ids.add(call.factoid_data_id)
+                continue
+
+            await call.delete()
+            factoid_calls_removed += 1
+
+        # Find any jobs that point to an invalid factoid
+        for job in factoid_jobs:
+            if job.factoid_data_id in factoid_data_ids:
+                continue
+
+            await self.unschedule_job(job)
+            await job.delete()
+            factoid_jobs_removed += 1
+
+        # Find any data that has no calls
+        for data in factoid_data:
+            if data.factoid_data_id in called_factoid_data_ids:
+                continue
+
+            factoid_jobs_removed += len(
+                [
+                    job
+                    for job in factoid_jobs
+                    if job.factoid_data_id == data.factoid_data_id
+                ]
+            )
+            if await self.delete_factoid_data_by_id(
+                guild=interaction.guild,
+                id=data.factoid_data_id,
+            ):
+                factoid_data_removed += 1
+
+        self.clear_guild_caches(interaction.guild)
+
+        embed = auxiliary.prepare_confirm_embed(
+            (
+                f"FactoidData entries removed: {factoid_data_removed}\n"
+                f"FactoidCall entries removed: {factoid_calls_removed}\n"
+                f"FactoidJob entries removed: {factoid_jobs_removed}"
+            )
+        )
+
+        await interaction.followup.send(embed=embed)
+
+    @app_commands.check(has_manage_factoids_role)
+    @factoid_app_group.command(
+        name="create",
+        description="Creates a new factoid by name",
+        extras={"ephemeral_error": True},
+    )
+    async def factoid_create_command(
         self: Self, interaction: discord.Interaction, factoid_name: str
     ) -> None:
-        """A /factoid add command, to add a factoid using a Modal
+        """Create a new factoid, using a Modal popup
 
         Args:
             interaction (discord.Interaction): The interaction that called this command
-            factoid_name (str): The name of the factoid to add
+            factoid_name (str): The name of the factoid to create
         """
-        query = factoid_name.replace("\n", " ").split(" ")[0].lower()
-        try:
-            await self.get_factoid(query, str(interaction.guild.id))
-            embed = auxiliary.prepare_deny_embed(
-                message=f"The factoid `{factoid_name}` already exists"
+        factoid_name = factoid_name.lower()
+        # Only ever attempt to add a factoid if it doesn't exist
+        existing_factoid = await self.get_factoid_view_by_name(
+            guild=interaction.guild, name=factoid_name
+        )
+        if existing_factoid:
+            await self.respond_error_embed(
+                interaction, f"The factoid `{factoid_name}` already exists"
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        except custom_errors.FactoidNotFoundError:
-            ...
+        if not self.check_valid_name(factoid_name):
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid name `{factoid_name}` is invalid and cannot be used!",
+            )
+            return
 
-        form = NewFactoid(factoid_name)
+        form = FactoidModal(factoid_name, edit_mode=False)
         await interaction.response.send_modal(form)
         await form.wait()
 
+        if not self.check_valid_message(form.plaintext.component.value):
+            await self.respond_error_embed(
+                interaction, "The message content is invalid and cannot be used!"
+            )
+            return
+
         embed_json_string = ""
-
         if form.embed.component.values:
-            embed_file: discord.Attachment = form.embed.component.values[0]
-            if not embed_file.filename.endswith(".json"):
-                embed = auxiliary.prepare_deny_embed(
-                    message="I don't recognize your upload as a json file",
-                )
-                await interaction.followup.send(embed=embed)
-                return
-
-            try:
-                json_bytes = await embed_file.read()
-                attachment_json = json.loads(json_bytes.decode("UTF-8"))
-                embed_json_string = json.dumps(attachment_json)
-            except Exception:
-                embed = auxiliary.prepare_deny_embed(
-                    message="I couldn't parse the uploaded JSON file.",
-                )
-                await interaction.followup.send(embed=embed)
+            embed_json_string = self.generate_json_string_from_file(
+                interaction, form.embed.component.values[0]
+            )
+            if not embed_json_string:
                 return
 
         selected = set(form.properties.component.values)
-        properties = [
-            "disabled" in selected,
-            "hidden" in selected,
-            "protected" in selected,
-            "restricted" in selected,
-        ]
 
-        await self.create_factoid_call(
-            factoid_name=factoid_name,
+        property_binary = sum(int(value) for value in selected)
+
+        factoid = await self.bot.models.FactoidData.create(
             guild=str(interaction.guild.id),
             message=form.plaintext.component.value,
-            embed_config=embed_json_string if embed_json_string else "",
-            properties=properties,
+            json_string=embed_json_string,
+            flags=property_binary,
         )
+        try:
+            await self.create_factoid_call(
+                guild=interaction.guild,
+                name=factoid_name,
+                factoid_data_id=factoid.factoid_data_id,
+            )
+        except Exception as exc:
+            await factoid.delete()
+            raise exc
+
+        # We must update the factoid all and autocomplete list
+        self.clear_guild_caches(interaction.guild)
+
         embed = auxiliary.prepare_confirm_embed(
             message=f"Your factoid `{factoid_name}` was successfully created!",
         )
         await interaction.followup.send(embed=embed)
 
-    # -- Factoid job related functions --
-    async def kickoff_jobs(self: Self) -> None:
-        """Gets a list of cron jobs and starts them"""
-        jobs = await self.bot.models.FactoidJob.query.gino.all()
-        for job in jobs:
-            job_id = job.job_id
-            self.running_jobs[job_id] = {}
-
-            # This allows the task to be manually cancelled, preventing one more execution
-            task = asyncio.create_task(self.cronjob(job))
-            task = self.running_jobs[job_id]["task"] = task
-
-    async def cronjob(
-        self: Self, job: bot.models.FactoidJob, ctx: commands.Context = None
-    ) -> None:
-        """Run a cron job for a factoid
-
-        Args:
-            job (bot.models.FactoidJob): The job to start
-            ctx (commands.Context): The context, used for logging
-        """
-        job_id = job.job_id
-        self.running_jobs[job_id]["job"] = job
-
-        while True:
-            job = self.running_jobs.get(job_id)["job"]
-            if not job:
-                from_db = await self.bot.models.FactoidJob.query.where(
-                    self.bot.models.FactoidJob.job_id == job_id
-                ).gino.first()
-                if not from_db:
-                    # This factoid job has been deleted from the DB
-                    log_channel = None
-                    log_context = None
-                    channel = None
-
-                    if ctx:
-                        channel = configuration.get_config_entry(
-                            ctx.guild.id, "core_logging_channel"
-                        )
-                        log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
-
-                    await self.bot.logger.send_log(
-                        message=(
-                            f"Cron job {job} has failed - factoid has been deleted from"
-                            " the DB"
-                        ),
-                        level=LogLevel.WARNING,
-                        channel=channel,
-                        context=log_context,
-                    )
-
-                    return
-                job = from_db
-                self.running_jobs[job_id]["job"] = job
-
+        # Send the factoid, and embed json if exists, to the user
+        await interaction.followup.send(content=factoid.message, ephemeral=True)
+        if embed_json_string:
             try:
-                await aiocron.crontab(job.cron).next()
-
-            except ValueError as exception:
-                log_channel = None
-                log_context = None
-
-                if ctx:
-                    channel = configuration.get_config_entry(
-                        ctx.guild.id, "core_logging_channel"
-                    )
-                    log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
-
-                await self.bot.logger.send_log(
-                    message="Could not await cron completion",
-                    level=LogLevel.ERROR,
-                    channel=log_channel,
-                    context=log_context,
-                    exception=exception,
+                embed = self.get_embed_from_factoid(factoid=factoid)
+                await interaction.followup.send(embed=embed, ephemeral=True)
+            except Exception as exc:
+                await self.respond_error_embed(
+                    interaction, f"The embed you uploaded failed: {exc}"
                 )
 
-                await asyncio.sleep(300)
-
-            factoid = await self.bot.models.Factoid.query.where(
-                self.bot.models.Factoid.factoid_id == job.factoid
-            ).gino.first()
-            if not factoid:
-                log_channel = None
-                log_context = None
-
-                if ctx:
-                    channel = configuration.get_config_entry(
-                        ctx.guild.id, "core_logging_channel"
-                    )
-                    log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
-
-                await self.bot.logger.send_log(
-                    message=(
-                        "Could not find factoid referenced by job - will retry after"
-                        " waiting"
-                    ),
-                    level=LogLevel.WARNING,
-                    channel=log_channel,
-                    context=log_context,
-                )
-                continue
-
-            channel = self.bot.get_channel(int(job.channel))
-            if not channel:
-                log_channel = None
-                log_context = None
-
-                if ctx:
-                    channel = configuration.get_config_entry(
-                        ctx.guild.id, "core_logging_channel"
-                    )
-                    log_context = LogContext(guild=ctx.guild, channel=ctx.channel)
-
-                await self.bot.logger.send_log(
-                    message=(
-                        "Could not find channel to send factoid cronjob - will retry"
-                        " after waiting"
-                    ),
-                    level=LogLevel.WARNING,
-                    channel=log_channel,
-                    context=log_context,
-                )
-                continue
-            # Checking for disabled or restricted
-            if factoid.disabled:
-                return
-
-            if factoid.restricted and str(
-                channel.id
-            ) not in configuration.get_config_entry(
-                ctx.guild.id, "factoids_restricted_list"
-            ):
-                return
-
-            # Get_embed accepts job as a factoid object
-            if configuration.get_config_entry(ctx.guild.id, "factoids_disable_embeds"):
-                embed = None
-            else:
-                try:
-                    embed = self.get_embed_from_factoid(factoid)
-                except TypeError as exception:
-                    log_channel = configuration.get_config_entry(
-                        ctx.guild.id, "core_logging_channel"
-                    )
-                    await self.bot.logger.send_log(
-                        message=(
-                            f"Unable to make embed for factoid `{factoid.name}`, sending fallback."
-                        ),
-                        level=LogLevel.ERROR,
-                        channel=log_channel,
-                        context=LogContext(guild=channel.guild, channel=channel),
-                        exception=exception,
-                    )
-                    embed = None
-
-            try:
-                content = factoid.message if not embed else None
-            except ValueError:
-                # The not embed causes a ValueError in certian places. This ensures fallback works
-                content = factoid.message
-
-            try:
-                message = await channel.send(content=content, embed=embed)
-
-            except discord.errors.HTTPException as exception:
-                log_channel = configuration.get_config_entry(
-                    ctx.guild.id, "core_logging_channel"
-                )
-                await self.bot.logger.send_log(
-                    message="Could not send looped factoid",
-                    level=LogLevel.ERROR,
-                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
-                    channel=log_channel,
-                    exception=exception,
-                )
-                # Sends the raw factoid instead of the embed as fallback
-                message = await channel.send(content=factoid.message)
-
-            await self.send_to_irc(channel, message, factoid.message)
-            await self.send_to_logger(message, ctx.author, ctx.channel, factoid.message)
-
-    @commands.group(
-        brief="Executes a factoid command",
-        description="Executes a factoid command",
-    )
-    async def factoid(self: Self, ctx: commands.Context) -> None:
-        """The bare .factoid command. This does nothing but generate the help message
-
-        Args:
-            ctx (commands.Context): The context in which the command was run in
-        """
-        return
-
-    @auxiliary.with_typing
-    @commands.check(has_manage_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Creates a factoid",
-        aliases=["add"],
-        description="Creates a factoid",
-        usage="[factoid-name] [factoid-output] |optional-embed-json-upload|",
-    )
-    async def remember(
-        self: Self, ctx: commands.Context, factoid_name: str, *, message: str = ""
-    ) -> None:
-        """Command to add a factoid
-
-        Args:
-            ctx (commands.Context): Context of the invokation
-            factoid_name (str): Name of the factoid to add
-            message (str): The message of the factoid
-        """
-        # Checks if contents and name are valid
-        error_message = await self.check_valid_factoid_contents(
-            ctx, factoid_name, message
-        )
-        if error_message is not None:
-            await auxiliary.send_deny_embed(message=error_message, channel=ctx.channel)
-            return
-
-        embed_config = await auxiliary.get_json_from_attachments(
-            ctx.message, as_string=True
-        )
-
-        if not embed_config and not message:
-            await auxiliary.send_deny_embed(
-                message="You did not provide the factoid message!", channel=ctx.channel
-            )
-            return
-
-        if embed_config and message == "":
-            message = None
-
-        await self.add_factoid(
-            ctx.channel,
-            ctx.author,
-            factoid_name=factoid_name,
-            guild=str(ctx.guild.id),
-            message=message,
-            embed_config=embed_config if embed_config else "",
-            alias=None,
-        )
-
-    @commands.check(has_manage_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Deletes a factoid",
-        aliases=["delete", "remove"],
-        description="Deletes a factoid permanently, including its aliases",
-        usage="[factoid-name]",
-    )
-    async def forget(self: Self, ctx: commands.Context, factoid_name: str) -> None:
-        """Command to remove a factoid
-
-        Args:
-            ctx (commands.Context): Context of the invokation
-            factoid_name (str): Name of the factoid to remove
-        """
-
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        if factoid.protected:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid.name}` is protected and cannot be modified",
-                channel=ctx.channel,
-            )
-            return
-
-        factoid_called = CalledFactoid(
-            original_call_str=factoid_name, factoid_db_entry=factoid
-        )
-
-        if not await self.delete_factoid(ctx, factoid_called):
-            return
-
-        # Removes associated aliases as well
-        aliases = (
-            await self.bot.models.Factoid.query.where(
-                self.bot.models.Factoid.alias == factoid.name
-            )
-            .where(self.bot.models.Factoid.guild == str(ctx.guild.id))
-            .gino.all()
-        )
-        for alias in aliases:
-            await self.delete_factoid_call(alias, str(ctx.guild.id))
-
-    @auxiliary.with_typing
-    @commands.check(has_manage_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Loops a factoid",
-        description="Loops a pre-existing factoid",
-        usage="[factoid-name] [channel] [cron-config]",
-    )
-    async def loop(
-        self: Self,
-        ctx: commands.Context,
-        factoid_name: str,
-        channel: discord.TextChannel,
-        *,
-        cron_config: str,
-    ) -> None:
-        """Command to loop a factoid in a channel
-
-        Args:
-            ctx (commands.Context): Context of the invocation
-            factoid_name (str): The name of the factoid to loop
-            channel (discord.TextChannel): The channel to loop the factoid in
-            cron_config (str): The cron config of the loop
-        """
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        if factoid.protected:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is protected and cannot be modified",
-                channel=ctx.channel,
-            )
-            return
-
-        if factoid.disabled:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is disabled and new loops cannot be made",
-                channel=ctx.channel,
-            )
-            return
-
-        if factoid.restricted and str(channel.id) not in configuration.get_config_entry(
-            ctx.guild.id, "factoids_restricted_list"
-        ):
-            await auxiliary.send_deny_embed(
-                message=(
-                    f"`{factoid_name}` is restricted "
-                    f"and cannot be used in {channel.mention}"
-                ),
-                channel=ctx.channel,
-            )
-            return
-
-        # Check if loop already exists
-        job = (
-            await self.bot.models.FactoidJob.join(self.bot.models.Factoid)
-            .select()
-            .where(self.bot.models.FactoidJob.channel == str(channel.id))
-            .where(self.bot.models.Factoid.name == factoid.name)
-            .gino.first()
-        )
-        if job:
-            await auxiliary.send_deny_embed(
-                message="That factoid is already looping in this channel",
-                channel=ctx.channel,
-            )
-            return
-
-        # Only matches valid cron syntaxes (including some ugly ones,
-        # except @ stuff since that isn't supported by cronitor anyways)
-        if not re.match(
-            self.CRON_REGEX,
-            cron_config,
-        ):
-            await auxiliary.send_deny_embed(
-                message=f"`{cron_config}` is not a valid cron configuration!",
-                channel=ctx.channel,
-            )
-            return
-
-        job = self.bot.models.FactoidJob(
-            factoid=factoid.factoid_id, channel=str(channel.id), cron=cron_config
-        )
-        await job.create()
-
-        job_id = job.job_id
-        self.running_jobs[job_id] = {}
-
-        # This allows the task to be manually cancelled, preventing one more execution
-        task = asyncio.create_task(self.cronjob(job, ctx))
-        self.running_jobs[job_id]["task"] = task
-
-        await auxiliary.send_confirm_embed(
-            message="Factoid loop created", channel=ctx.channel
-        )
-
-    @auxiliary.with_typing
-    @commands.check(has_manage_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Removes a factoid's loop config",
-        description="De-loops a pre-existing factoid",
-        usage="[factoid-name] [channel]",
-    )
-    async def deloop(
-        self: Self,
-        ctx: commands.Context,
-        factoid_name: str,
-        channel: discord.TextChannel,
-    ) -> None:
-        """Command to remove a factoid loop
-
-        Args:
-            ctx (commands.Context): Context of the invocation
-            factoid_name (str): The name of the factoid to deloop
-            channel (discord.TextChannel): The channel to deloop the factoid from
-        """
-
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        if factoid.protected:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is already protected",
-                channel=ctx.channel,
-            )
-            return
-
-        job = (
-            await self.bot.models.FactoidJob.query.where(
-                self.bot.models.FactoidJob.channel == str(channel.id)
-            )
-            .where(self.bot.models.Factoid.name == factoid.name)
-            .gino.first()
-        )
-        if not job:
-            await auxiliary.send_deny_embed(
-                message="That job does not exist", channel=ctx.channel
-            )
-            return
-
-        job_id = job.job_id
-        # Stops the job
-        self.running_jobs[job_id]["task"].cancel()
-        # Deletes it
-        await job.delete()
-
-        await auxiliary.send_confirm_embed(
-            message="Loop job deleted",
-            channel=ctx.channel,
-        )
-
-    @auxiliary.with_typing
-    @commands.check(has_manage_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Displays loop config",
-        description="Retrieves and displays the loop config for a specific factoid",
-        usage="[factoid-name] [channel]",
-    )
-    async def job(
-        self: Self,
-        ctx: commands.Context,
-        factoid_name: str,
-        channel: discord.TextChannel,
-    ) -> None:
-        """Command to list info about a loop
-
-        Args:
-            ctx (commands.Context): Context of the invocation
-            factoid_name (str): The name of the factoid
-            channel (discord.TextChannel): The channel the factoid is looping in
-        """
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        # List jobs > Select jobs that have a matching text and channel
-        job = (
-            await self.bot.models.FactoidJob.join(self.bot.models.Factoid)
-            .select()
-            .where(self.bot.models.FactoidJob.channel == str(channel.id))
-            .where(self.bot.models.Factoid.name == factoid.name)
-            .gino.first()
-        )
-        if not job:
-            await auxiliary.send_deny_embed(
-                message="That job does not exist", channel=ctx.channel
-            )
-            return
-
-        embed_label = ""
-        if job.embed_config:
-            embed_label = "(embed)"
-
-        embed = auxiliary.generate_basic_embed(
-            color=discord.Color.blurple(),
-            title=f"Loop config for `{factoid_name}` {embed_label}",
-            description=f'"{job.message}"',
-        )
-
-        embed.add_field(name="Channel", value=f"#{channel.name}")
-        embed.add_field(name="Cron config", value=f"`{job.cron}`")
-
-        await ctx.send(embed=embed)
-
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @factoid.command(
-        brief="Lists loop jobs",
-        description="Lists all the currently registered loop jobs",
-    )
-    async def jobs(self: Self, ctx: commands.Context) -> None:
-        """Command ot list all factoid loop jobs
-
-        Args:
-            ctx (commands.Context): Context of the invocation
-        """
-        # Gets jobs for invokers guild
-        jobs = (
-            await self.bot.models.FactoidJob.join(self.bot.models.Factoid)
-            .select()
-            .where(self.bot.models.Factoid.guild == str(ctx.guild.id))
-            .gino.all()
-        )
-        if not jobs:
-            await auxiliary.send_deny_embed(
-                message="There are no registered factoid loop jobs for this guild",
-                channel=ctx.channel,
-            )
-            return
-
-        embed = discord.Embed(
-            color=discord.Color.blurple(),
-            title=f"Factoid loop jobs for {ctx.guild.name}",
-        )
-        for job in jobs[:10]:
-            channel = self.bot.get_channel(int(job.channel))
-            if not channel:
-                continue
-            embed.add_field(
-                name=f"{job.name.lower()} - #{channel.name}",
-                value=f"`{job.cron}`",
-                inline=False,
-            )
-
-        await ctx.send(embed=embed)
-
-    @auxiliary.with_typing
-    @commands.check(has_manage_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        name="json",
-        brief="Gets embed JSON",
-        description="Gets embed JSON for a factoid",
-        usage="[factoid-name]",
-    )
-    async def _json(self: Self, ctx: commands.Context, factoid_name: str) -> None:
-        """Gets the json of a factoid
-
-        Args:
-            ctx (commands.Context): Context of the invocation
-            factoid_name (str): The name of the factoid
-        """
-
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        if not factoid.embed_config:
-            await auxiliary.send_deny_embed(
-                message=f"There is no embed config for `{factoid_name}`",
-                channel=ctx.channel,
-            )
-            return
-
-        # Formats the json to have indents, then sends it to the channel it was called from
-        formatted = json.dumps(json.loads(factoid.embed_config), indent=4)
-        json_file = discord.File(
-            io.StringIO(formatted),
-            filename=(
-                f"{factoid_name.lower()}-factoid-embed-config-{datetime.datetime.utcnow()}.json"
-            ),
-        )
-
-        await ctx.send(file=json_file)
-
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @factoid.command(
-        brief="Gets information about a factoid",
-        aliases=["aliases"],
-        description=(
-            "Returns information about a factoid (or the parent if it's an alias)"
-        ),
-        usage="[factoid-name]",
-    )
-    async def info(
-        self: Self,
-        ctx: commands.Context,
-        query: str,
-    ) -> None:
-        """Command to list info about a factoid
-
-        Args:
-            ctx (commands.Context): Context of the invocation
-            query (str): The factoid name to query
-        """
-
-        # Gets the factoid if it exists
-        factoid = await self.get_factoid(query, str(ctx.guild.id))
-
-        embed = discord.Embed(title=f"Info about `{query}`")
-
-        # Parses list of aliases into a neat string
-        aliases = (
-            await self.bot.models.Factoid.query.where(
-                self.bot.models.Factoid.alias == factoid.name
-            )
-            .where(self.bot.models.Factoid.guild == str(ctx.guild.id))
-            .gino.all()
-        )
-
-        # Add and sort all aliases to a comma separated string
-        aliases.append(factoid)
-        alias_list = (
-            "None"
-            if not aliases
-            else ", ".join(sorted([f"`{alias.name.lower()}`" for alias in aliases]))
-        )
-
-        # Gets the factoids loop jobs
-        jobs = await self.bot.models.FactoidJob.query.where(
-            self.bot.models.FactoidJob.factoid == factoid.factoid_id
-        ).gino.all()
-
-        # Adds all fields to the embed
-        embed.add_field(name="Aliases", value=alias_list)
-        embed.add_field(name="Embed", value=bool(factoid.embed_config))
-        embed.add_field(name="Contents", value=factoid.message[:1020])
-        embed.add_field(name="Date of creation", value=factoid.time)
-
-        # Get all the special properties of a factoid, if any are set
-        factoid_properties = ["hidden", "restricted", "disabled", "protected"]
-        factoid_string = ", ".join(
-            property
-            for property in factoid_properties
-            if getattr(factoid, property, False)
-        )
-        result = factoid_string if factoid_string else "None"
-        embed.add_field(name="Properties", value=result)
-
-        if jobs:
-            for job in jobs[:10]:
-                channel = self.bot.get_channel(int(job.channel))
-                if not channel:
-                    continue
-                embed.add_field(
-                    name=f"**Loop:** #{channel.name}",
-                    value=f"`{job.cron}`\n",
-                    inline=False,
-                )
-
-        # Finally, sends the factoid
-        await ctx.send(embed=embed)
-
+    @app_commands.check(has_manage_factoids_role)
     @factoid_app_group.command(
-        name="all",
-        description="Sends a configurable list of all factoids.",
+        name="dealias",
+        description="Deletes an alias for an existing factoid call",
     )
-    async def app_command_all(
+    @app_commands.autocomplete(factoid_name=editing_factoid_autocomplete)
+    async def factoid_dealias_command(
         self: Self,
         interaction: discord.Interaction,
-        force_file: bool = False,
-        property: Properties = "",
-        true_all: bool = False,
-        show_hidden: bool = False,
-    ) -> None:
-        """This is the more feature full version of factoid all
-        This is an application command
-
-        Args:
-            interaction (discord.Interaction): The interaction that started this command
-            force_file (bool, optional): Whether this should be forced as a yml file.
-                Defaults to False.
-            property (Properties, optional): What property to look for. Defaults to "".
-            true_all (bool, optional): Whether this should force every factoid. Defaults to False.
-            show_hidden (bool, optional): If set to true will show hidden factoids.
-                Defaults to False.
-        """
-        guild = str(interaction.guild.id)
-        # Check for admin roles if ignoring hidden
-        if true_all or show_hidden:
-            await has_given_factoids_role(
-                interaction.guild,
-                interaction.user,
-                configuration.get_config_entry(
-                    interaction.guild.id, "factoids_admin_roles"
-                ),
-            )
-
-        if true_all:
-            factoids = await self.build_list_of_factoids(guild, include_hidden=True)
-        else:
-            factoids = await self.build_list_of_factoids(
-                guild, exclusive_property=property, include_hidden=show_hidden
-            )
-
-        if not factoids:
-            embed = auxiliary.prepare_deny_embed(
-                "No factoids could be found matching your filter"
-            )
-            await interaction.response.send_message(embed=embed)
-            return
-
-        aliases = self.build_alias_dict_for_given_factoids(factoids)
-
-        # If the linx server isn't configured, we must make it a file
-        if not self.bot.file_config.api.api_url.linx:
-            force_file = True
-
-        cachable = bool(
-            not force_file and not property and not true_all and not show_hidden
-        )
-
-        if cachable and guild in self.factoid_all_cache:
-            url = self.factoid_all_cache[guild]["url"]
-            embed = auxiliary.prepare_confirm_embed(url)
-            await interaction.response.send_message(embed=embed)
-            return
-
-        factoid_all = await self.build_factoid_all(
-            interaction.guild, factoids, aliases, force_file, cachable
-        )
-
-        if not factoid_all:
-            embed = auxiliary.prepare_deny_embed(
-                "No factoids could be found matching your filter"
-            )
-            await interaction.response.send_message(embed=embed)
-            return
-
-        # If we know it's a file, or it's fallen back to a file, send it as a file
-        if force_file or isinstance(factoid_all, discord.File):
-            await interaction.response.send_message(file=factoid_all)
-            return
-
-        embed = auxiliary.prepare_confirm_embed(factoid_all)
-        await interaction.response.send_message(embed=embed)
-
-    async def build_list_of_factoids(
-        self: Self,
-        guild: discord.Guild,
-        exclusive_property: Properties = "",
-        include_hidden: bool = False,
-    ) -> list[munch.Munch]:
-        """This builds a list of database objects that match the factoid all requests
-
-        Args:
-            guild (discord.Guild): The guild to pull factoids from
-            exclusive_property (Properties, optional): What property to exclusivly get.
-                Defaults to "".
-            include_hidden (bool, optional): Whether this query should ignore the hidden property.
-                Defaults to False.
-
-        Returns:
-            list[munch.Munch]: The filtered list of factoids
-        """
-        factoids = await self.get_all_factoids(guild, list_hidden=True)
-        # If there are no factoids for the guild, return None
-        if not factoids:
-            return None
-        # If exclusive property is set, then that property as the only one
-        # This obeys include_hidden
-        if exclusive_property:
-            filtered_factoids = [
-                factoid
-                for factoid in factoids
-                if getattr(factoid, exclusive_property.value)
-                and (include_hidden or not factoid.hidden)
-            ]
-            return filtered_factoids
-        # If no specific property is set, see if we have to filter out hidden factoids
-        if not include_hidden:
-            filtered_factoids = [factoid for factoid in factoids if not factoid.hidden]
-            return filtered_factoids
-        # Otherwise just return every factoid
-        return factoids
-
-    def build_alias_dict_for_given_factoids(
-        self: Self, factoids: list[munch.Munch]
-    ) -> dict[str, list[str]]:
-        """This builds a dict of parent to aliases for a given list of factoids
-
-        Args:
-            factoids (list[munch.Munch]): The factoid list to find aliases for
-
-        Returns:
-            dict[str, list[str]]: The dict of parent to list of aliases
-        """
-        aliases = {}
-        for factoid in factoids:
-            if factoid.alias not in [None, ""]:
-                # Append to aliases
-                if factoid.alias in aliases:
-                    aliases[factoid.alias].append(factoid.name)
-                    continue
-
-                aliases[factoid.alias] = [factoid.name]
-        return aliases
-
-    async def build_factoid_all(
-        self: Self,
-        guild: discord.Guild,
-        factoids: list[munch.Munch],
-        aliases: dict[str, list[str]],
-        use_file: bool,
-        cachable: bool,
-    ) -> discord.File | str:
-        """This builds the factoid all url or the yaml file
-
-        Args:
-            guild (discord.Guild): The guild to build factoid all for
-            factoids (list[munch.Munch]): The factoids to include in the all
-            aliases (dict[str, list[str]]): Aliases for the given factoids
-            use_file (bool): Whether to force the use of a file or not
-            cachable (bool): Whether this request is cachable
-
-        Returns:
-            discord.File | str: The final formatted factoid all
-        """
-
-        if use_file:
-            return await self.send_factoids_as_file(guild, factoids, aliases)
-
-        try:
-            # -Tries calling the api-
-            html = await self.generate_html(guild, factoids, aliases)
-            # If there are no applicable factoids
-            if html is None:
-                # Something must go wrong to get here
-                return None
-
-            headers = {
-                "Content-Type": "text/plain",
-            }
-            response = await self.bot.http_functions.http_call(
-                "put",
-                self.bot.file_config.api.api_url.linx,
-                headers=headers,
-                data=io.StringIO(html),
-                get_raw_response=True,
-            )
-            url = response["text"]
-            filename = url.split("/")[-1]
-            url = url.replace(filename, f"selif/{filename}")
-
-            if cachable:
-                self.factoid_all_cache[str(guild.id)] = {}
-                self.factoid_all_cache[str(guild.id)]["url"] = url
-
-            return url
-
-        # If an error happened while calling the api
-        except (gaierror, InvalidURL) as exception:
-            log_channel = configuration.get_config_entry(
-                guild.id, "core_logging_channel"
-            )
-            await self.bot.logger.send_log(
-                message="Could not render/send all-factoid HTML",
-                level=LogLevel.ERROR,
-                context=LogContext(guild=guild),
-                channel=log_channel,
-                exception=exception,
-            )
-
-            return await self.send_factoids_as_file(guild, factoids, aliases)
-
-    def build_formatted_factoid_data(
-        self: Self, factoids: list[munch.Munch], aliases: dict[str, list[str]]
-    ) -> dict[str, dict[str, str]]:
-        """This builds a nicely formatted, sorted, and processed dict of factoids
-        Ready to be put into factoid all
-
-        Args:
-            factoids (list[munch.Munch]): The list of all parent factoids to be included
-            aliases (dict[str, list[str]]): The list of all aliases, if any,
-                for the factoids in the main factoids list
-
-        Returns:
-            dict[str, dict[str, str]]: The formatted list of factoids with all the information
-        """
-        output_data = []
-        for factoid in factoids:
-            # Skips aliases
-            if factoid.alias not in [None, ""]:
-                continue
-
-            # Default name to the actual factoid name
-            name = factoid.name
-
-            # If not aliased
-            if factoid.name in aliases:
-                all_aliases = [factoid.name] + aliases[factoid.name]
-                all_aliases.sort()
-                name = all_aliases[0]
-                data = {
-                    "message": factoid.message,
-                    "embed": bool(factoid.embed_config),
-                    "aliases": all_aliases[1:],
-                }
-
-            # If aliased
-            else:
-                data = {"message": factoid.message, "embed": bool(factoid.embed_config)}
-
-            output_data.append({name: data})
-
-        # Sort output alphabetically
-        output_data = sorted(output_data, key=lambda x: list(x.keys())[0])
-        return output_data
-
-    async def generate_html(
-        self: Self,
-        guild: discord.Guild,
-        factoids: list[munch.Munch],
-        aliases: dict[str, list[str]],
-    ) -> str:
-        """Method to generate the html file contents
-
-        Args:
-            guild (discord.Guild): The guild the factoids are being pulled from
-            factoids (list[munch.Munch]): List of all factoids
-            aliases (dict[str, list[str]]): A dictionary containing factoids and their aliases
-
-        Returns:
-            str: The result html file
-        """
-
-        body_contents = ""
-
-        output_data = self.build_formatted_factoid_data(factoids, aliases)
-
-        if not output_data:
-            # Something is wrong with the database if we are ever here
-            return None
-
-        for factoid in output_data:
-            name, data = next(iter(factoid.items()))
-            embed_text = " (embed)" if data["embed"] else ""
-
-            if "aliases" in data:
-                body_contents += (
-                    f"<li><code>{name} [{', '.join(data['aliases'])}]{embed_text}"
-                    + f" - {data['message']}</code></li>"
-                )
-            else:
-                body_contents += (
-                    f"<li><code>{name}{embed_text}"
-                    + f" - {data['message']}</code></li>"
-                )
-
-        if body_contents == "":
-            return None
-
-        body_contents = f"<ul>{body_contents}</ul>"
-        output = (
-            f"""
-        <!DOCTYPE html>
-        <html>
-        <body>
-        <h3>Factoids for {guild.name}</h3>
-        {body_contents}
-        <style>"""
-            + """
-        ul {
-            display: table;
-            width: auto;
-        }
-
-        ul li {
-            display: table-row;
-        }
-
-        ul li:nth-child(even) {
-            background-color: lightgray;
-        }
-        </style>
-        </body>
-        </html>
-        """
-        )
-        return output
-
-    async def send_factoids_as_file(
-        self: Self,
-        guild: discord.Guild,
-        factoids: list[munch.Munch],
-        aliases: dict[str, list[str]],
-    ) -> discord.File:
-        """Method to send the factoid list as a file instead of a paste
-
-        Args:
-            guild (discord.Guild): The guild the factoids are from
-            factoids (list[munch.Munch]): List of all factoids
-            aliases (dict[str, list[str]]): A dictionary containing factoids and their aliases
-
-        Returns:
-            discord.File: The file, ready to upload to discord
-        """
-
-        output_data = self.build_formatted_factoid_data(factoids, aliases)
-
-        if not output_data:
-            # Something is wrong with the database if we are ever here
-            return None
-
-        yaml_file = discord.File(
-            io.StringIO(yaml.dump(output_data)),
-            filename=(
-                f"factoids-for-server-{guild.id}-{datetime.datetime.utcnow()}.yaml"
-            ),
-        )
-
-        # Returns the file
-        return yaml_file
-
-    def search_content_and_bold(
-        self: Self, original: str, search_string: str
-    ) -> str | None:
-        """Finds all starting indices of the search_string in the original string.
-
-        Args:
-            original (str): The original content to search through.
-            search_string (str): The string we are searching for.
-
-        Returns:
-            str | None: A single string with bolded matches and surrounding context,
-                or None if no matches exist.
-        """
-
-        original = original.replace(search_string, f"**{search_string}**")
-
-        show_range = 20
-
-        indices = []
-        search_len = len(search_string)
-        for i in range(len(original) - search_len + 1):
-            if original[i : i + search_len] == search_string:
-                indices.append(i)
-
-        if len(indices) == 0:
-            return None
-
-        # Generate ranges to include
-        ranges_to_include = []
-        for start in indices:
-            ranges_to_include.append(
-                (
-                    max(0, start - show_range - 2),
-                    min(len(original), start + search_len + show_range + 2),
-                )
-            )
-
-        # Minimize ranges by merging overlapping or adjacent ranges
-        minimized_ranges = []
-        for start, end in sorted(ranges_to_include):
-            if minimized_ranges and start <= minimized_ranges[-1][1]:
-                minimized_ranges[-1] = (
-                    min(minimized_ranges[-1][0], start),
-                    max(minimized_ranges[-1][1], end),
-                )
-            else:
-                minimized_ranges.append((start, end))
-
-        ranges_to_strs = []
-
-        if minimized_ranges[0][0] != 0:
-            ranges_to_strs.append("")
-
-        for include_range in minimized_ranges:
-            ranges_to_strs.append(original[include_range[0] : include_range[1]])
-
-        if minimized_ranges[len(minimized_ranges) - 1][1] != len(original):
-            ranges_to_strs.append("")
-
-        return "...".join(ranges_to_strs)
-
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @factoid.command(
-        aliases=["find"],
-        brief="Searches a factoid",
-        description="Searches a factoid by name and contents",
-        usage="[search-query]",
-    )
-    async def search(self: Self, ctx: commands.Context, *, query: str) -> None:
-        """Commands to search a factoid
-
-        Args:
-            ctx (commands.Context): Context of the invokation
-            query (str): The querry to look for
-        """
-        query = query.lower()
-        guild = str(ctx.guild.id)
-
-        if len(query) < 3:
-            await auxiliary.send_deny_embed(
-                message="Please enter at least 3 characters for the search query!",
-                channel=ctx.channel,
-            )
-            return
-
-        factoids = await self.get_all_factoids(guild, list_hidden=False)
-        matches = {}
-        for factoid in factoids:
-            if factoid.alias:
-                continue
-
-            factoid_key = ", ".join(await self.get_list_of_aliases(factoid.name, guild))
-
-            # Name string
-            name_highlight = self.search_content_and_bold(factoid_key.lower(), query)
-            if name_highlight:
-                if factoid_key in matches:
-                    matches[factoid_key].append(f"Name: {name_highlight}")
-                else:
-                    matches[factoid_key] = [f"Name: {name_highlight}"]
-
-            # Content
-            content_highlight = self.search_content_and_bold(
-                factoid.message.lower(), query
-            )
-            if content_highlight:
-                if factoid_key in matches:
-                    matches[factoid_key].append(f"Content: {content_highlight}")
-                else:
-                    matches[factoid_key] = [f"Content: {content_highlight}"]
-
-            # Embed
-            if factoid.embed_config is not None:
-                embed_highlight = self.search_content_and_bold(
-                    factoid.embed_config.lower(), query
-                )
-                if embed_highlight:
-                    if factoid_key in matches:
-                        matches[factoid_key].append(
-                            f"Embed: {embed_highlight.replace('_', '`_`')}"
-                        )
-                    else:
-                        matches[factoid_key] = [
-                            f"Embed: {embed_highlight.replace('_', '`_`')}"
-                        ]
-
-        if len(matches) == 0:
-            embed = auxiliary.prepare_deny_embed(
-                f"No factoids could be found matching `{query}`"
-            )
-            await ctx.send(embed=embed)
-            return
-        embeds = []
-        embed = discord.Embed(color=discord.Color.green())
-        for index, match in enumerate(matches):
-            if index > 0 and index % 10 == 0:
-                embeds.append(embed)
-                embed = discord.Embed(color=discord.Color.green())
-            embed.add_field(name=match, value="\n".join(matches.get(match)))
-
-        embeds.append(embed)
-        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
-
-    @auxiliary.with_typing
-    @commands.check(has_manage_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Adds a factoid alias",
-        description="Adds an alternate way to call a factoid",
-        usage="[new-alias-name] [original-factoid-name]",
-    )
-    async def alias(
-        self: Self,
-        ctx: commands.Context,
-        alias_name: str,
         factoid_name: str,
     ) -> None:
-        """Command to add an alternate way of calling a factoid
+        """This deletes an alias from an existing factoid
+        This will not delete the FactoidData entry
 
         Args:
-            ctx (commands.Context): Context of the invokation
-            alias_name (str): The new alias name to create
-            factoid_name (str): The original factoid name to add alias to
-
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid to dealias
         """
-        # Makes factoids caps insensitive
+        factoid_name = factoid_name.lower()
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
+        )
+        if not factoid:
+            return
 
-        # Gets the parent factoid
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
+        # No edits on protected factoids
+        if await self.check_protected(interaction, factoid):
+            return
 
-        if factoid.protected:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid.name}` is protected and cannot be modified",
-                channel=ctx.channel,
+        # Only allowed to dealias if this wouldn't require deleting the entire factoid
+        if len(factoid.calls) == 1:
+            await self.respond_error_embed(
+                interaction, f"The factoid `{factoid_name}` has no other aliases."
             )
             return
 
-        # Stops execution if the target is in the alias list already
-        if await self.check_alias_recursion(
-            ctx.channel, str(ctx.guild.id), factoid_name, alias_name
+        await self.bot.models.FactoidCall.delete.where(
+            (self.bot.models.FactoidCall.guild == str(interaction.guild.id))
+            & (self.bot.models.FactoidCall.name == factoid_name)
+        ).gino.status()
+        factoid.calls.remove(factoid_name)
+        remaining_aliases = ", ".join(factoid.calls)
+        embed = auxiliary.prepare_confirm_embed(
+            message=f"The factoid alias `{factoid_name}` was removed. Remaining aliases: `{remaining_aliases}`"
+        )
+
+        # Update the factoid edit time
+        # This will also remove the factoid from the cache
+        await self.handle_factoid_edit(interaction.guild, factoid)
+
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.check(has_manage_factoids_role)
+    @factoid_app_group.command(
+        name="delete",
+        description="Deletes a factoid, all aliases and all jobs",
+    )
+    @app_commands.autocomplete(factoid_name=editing_factoid_autocomplete)
+    async def factoid_delete_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+    ) -> None:
+        """This deletes a factoid from the database entirely
+        All FactoidCall and FactoidJob entries will be deleted
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid to dealias
+        """
+        factoid_name = factoid_name.lower()
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
+        )
+        if not factoid:
+            return
+
+        # No edits on protected factoids
+        if await self.check_protected(interaction, factoid):
+            return
+
+        await interaction.response.defer()
+        confirmation_response = await self.confirm_factoid_deletion(
+            interaction=interaction,
+            display_message=f"Are you sure you want to delete the factoid `[{', '.join(factoid.calls)}]`?",
+            channel=interaction.channel,
+            author=interaction.user,
+        )
+        if confirmation_response == ui.ConfirmResponse.TIMEOUT:
+            return
+        if confirmation_response == ui.ConfirmResponse.DENIED:
+            await self.respond_error_embed(
+                interaction, f"The factoid `{factoid_name}` was not deleted."
+            )
+            return
+
+        await self.delete_factoid_data_by_id(interaction.guild, factoid.factoid_data_id)
+
+        # We must update the factoid all and autocomplete list
+        self.clear_guild_caches(interaction.guild)
+
+        # Remove factoid from cache after deleting
+        self.remove_from_cache(interaction.guild, factoid)
+
+        embed = auxiliary.prepare_confirm_embed(
+            f"The factoid `[{', '.join(factoid.calls)}]` was deleted"
+        )
+        await interaction.followup.send(embed=embed)
+
+    @app_commands.check(has_manage_factoids_role)
+    @factoid_app_group.command(
+        name="edit",
+        description="Edits an existing factoids message or embed",
+    )
+    @app_commands.autocomplete(factoid_name=editing_factoid_autocomplete)
+    async def factoid_edit_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+    ) -> None:
+        """This edits an existing factoid, allowing changes to the properties, message, and embed
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid to edit
+        """
+        factoid_name = factoid_name.lower()
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
+        )
+        if not factoid:
+            return
+
+        # No edits on protected factoids
+        if await self.check_protected(interaction, factoid):
+            return
+
+        form = FactoidModal(factoid_name, edit_mode=True, factoid=factoid)
+        await interaction.response.send_modal(form)
+        await form.wait()
+
+        if not self.check_valid_message(form.plaintext.component.value):
+            await self.respond_error_embed(
+                interaction, "The message content is invalid and cannot be used!"
+            )
+            return
+
+        show_plaintext = False
+        show_embed = False
+
+        if form.plaintext.component.value != factoid.message:
+            show_plaintext = True
+
+        # Embed handling.
+        embed_json_string = ""
+        embed_choice = form.json_action.component.value
+        if embed_choice == "keep":
+            embed_json_string = factoid.json_string
+        elif embed_choice == "replace":
+            show_embed = True
+            # In order to replace we must have a json file
+            if not form.embed.component.values:
+                await self.respond_error_embed(
+                    interaction,
+                    "The json file was requested to be replaced, but no file was uploaded. No edits were made.",
+                )
+                return
+
+            embed_json_string = self.generate_json_string_from_file(
+                interaction, form.embed.component.values[0]
+            )
+            if not embed_json_string:
+                return
+
+        # If the factoid was not edited, do nothing
+        if not show_embed and not show_plaintext:
+            await self.respond_error_embed(
+                interaction,
+                "It doesn't appear any edits were made to this factoid. No edits were made.",
+            )
+            return
+
+        # Update the factoid edit time
+        # This will also remove the factoid from the cache
+        await self.handle_factoid_edit(interaction.guild, factoid)
+
+        factoid = await self.update_factoid_data(
+            guild=interaction.guild,
+            factoid_data_id=factoid.factoid_data_id,
+            message=form.plaintext.component.value,
+            json_string=embed_json_string,
+        )
+
+        embed = auxiliary.prepare_confirm_embed(
+            message=f"Your factoid `{factoid_name}` was successfully edited!",
+        )
+        await interaction.followup.send(embed=embed)
+
+        # If plaintext or embed was edited, show the new version to the user
+        if show_plaintext:
+            await interaction.followup.send(content=factoid.message, ephemeral=True)
+        if show_embed:
+            try:
+                embed = self.get_embed_from_factoid(factoid=factoid)
+                await interaction.followup.send(embed=embed, ephemeral=True)
+            except Exception as exc:
+                await self.respond_error_embed(
+                    interaction, f"The embed you uploaded failed: {exc}"
+                )
+
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.check(has_admin_factoids_role)
+    @factoid_app_group.command(
+        name="flush",
+        description="Flushes cached factoids for the current guild",
+    )
+    async def factoid_flush_command(
+        self: Self,
+        interaction: discord.Interaction,
+    ) -> None:
+        """Command designed for fixing issues and debugging.
+        Will empty the cache for the current guild
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+        """
+        guild_id = interaction.guild.id
+
+        factoid_cache_removed = 0
+        factoid_all_cache_removed = 0
+        autocomplete_cache_removed = 0
+
+        # Clear factoid cache
+        for entry in list(self.factoid_cache.keys()):
+            if entry.startswith(str(guild_id)):
+                del self.factoid_cache[entry]
+                factoid_cache_removed += 1
+
+        # Clear factoid all cache
+        for entry in list(self.factoid_all_cache.keys()):
+            if entry[0] == guild_id:
+                del self.factoid_all_cache[entry]
+                factoid_all_cache_removed += 1
+
+        # Clear autocomplete cache
+        if guild_id in self.factoid_autocomplete_cache:
+            autocomplete_cache_removed = 1
+            del self.factoid_autocomplete_cache[guild_id]
+
+        embed = auxiliary.prepare_confirm_embed(
+            "\n".join(
+                [
+                    f"FactoidView cache cleared: {factoid_cache_removed}",
+                    f"FactoidAll cache cleared: {factoid_all_cache_removed}",
+                    f"Autocomplete cache cleared: {autocomplete_cache_removed}",
+                ]
+            )
+        )
+
+        await interaction.response.send_message(embed=embed)
+
+    @factoid_app_group.command(
+        name="info",
+        description="Gets information about a factoid and displays it to the user.",
+        extras={"ephemeral_error": True},
+    )
+    @app_commands.autocomplete(factoid_name=filtered_factoid_autocomplete)
+    async def factoid_info_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+    ) -> None:
+        """This gets information about a given factoid from the database and displays it to the user
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid name to display information for
+        """
+        factoid_name = factoid_name.lower()
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
+        )
+        if not factoid:
+            return
+
+        has_embed = bool(factoid.json_string)
+
+        embed = discord.Embed(
+            title=f"Info about `{factoid_name}`", description=factoid.message
+        )
+        embed.color = discord.Color.blue()
+        embed.add_field(name="Calls", value=f"`[{', '.join(factoid.calls)}]`")
+        embed.add_field(name="Time called", value=factoid.times_called)
+        embed.add_field(name="Embed", value=has_embed)
+
+        # Handle properties different to convert from into to string
+        properties_str = (
+            ", ".join(prop.name.lower() for prop in Properties if factoid.flags & prop)
+            or "None"
+        )
+        embed.add_field(name="Properties", value=properties_str)
+
+        embed.add_field(
+            name="Date of creation", value=f"<t:{int(factoid.create_time.timestamp())}>"
+        )
+        embed.add_field(
+            name="Last edit", value=f"<t:{int(factoid.edit_time.timestamp())}>"
+        )
+
+        jobs = await self.get_factoid_jobs_by_factoid_id(
+            interaction.guild, factoid.factoid_data_id
+        )
+        if jobs:
+            job_lines = []
+
+            for job in jobs:
+                channel = interaction.guild.get_channel(int(job.channel))
+
+                if channel:
+                    job_lines.append(f"{channel.mention} - `{job.cron}`")
+                else:
+                    job_lines.append(f"Unknown channel ({job.channel}) - `{job.cron}`")
+
+            embed.add_field(
+                name=f"Jobs ({len(jobs)})",
+                value="\n".join(job_lines),
+            )
+
+        if has_embed:
+            view = InfoEmbedButtons(interaction.user.id, factoid, self)
+            await interaction.response.send_message(
+                embed=embed, view=view, ephemeral=True
+            )
+            view.message = interaction.original_response()
+        else:
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @factoid_app_group.command(
+        name="json",
+        description="Gets the json file for the embed of this factoid",
+    )
+    @app_commands.autocomplete(factoid_name=editing_factoid_autocomplete)
+    async def factoid_json_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+    ) -> None:
+        """This gets information about a given factoid from the database and displays it to the user
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid name to display information for
+        """
+        factoid_name = factoid_name.lower()
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
+        )
+        if not factoid:
+            return
+
+        if not factoid.json_string:
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid `{factoid_name}` doesn't have any embed configured!",
+            )
+            return
+
+        json_file = self.create_json_file(factoid)
+
+        await interaction.response.send_message(file=json_file)
+
+    @factoid_loop_commands.command(
+        name="all",
+        description="Displays all active factoid loops for this guild",
+    )
+    async def factoid_loop_all_command(
+        self: Self,
+        interaction: discord.Interaction,
+    ) -> None:
+        """If any jobs exist, this will get and display all factoid jobs to the use
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+        """
+        jobs = await self.get_all_jobs_for_guild(interaction.guild)
+        if not jobs:
+            await self.respond_error_embed(
+                interaction, "There are no configured jobs for this guild"
+            )
+            return
+
+        embed = discord.Embed(title=f"Factoid loop for {interaction.guild.name}")
+        embed.color = discord.Color.blue()
+        job_lines = []
+
+        for job in jobs:
+            factoid = await self.get_factoid_view_by_id(
+                interaction.guild, job.factoid_data_id
+            )
+            channel = interaction.guild.get_channel(int(job.channel))
+
+            if channel:
+                job_lines.append(
+                    f"`[{', '.join(factoid.calls)}]` - {channel.mention} - `{job.cron}`"
+                )
+            else:
+                job_lines.append(
+                    f"`[{', '.join(factoid.calls)}]` - Unknown channel ({job.channel}) - `{job.cron}`"
+                )
+
+        embed.description = "\n".join(job_lines)
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.check(has_manage_factoids_role)
+    @factoid_loop_commands.command(
+        name="create",
+        description="Creates a new factoid loop job in the specified channel",
+    )
+    @app_commands.autocomplete(factoid_name=editing_factoid_autocomplete)
+    async def factoid_loop_create_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+        channel: discord.abc.GuildChannel,
+        cron: str,
+    ) -> None:
+        """This edits an existing factoid, allowing changes to the properties, message, and embed
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid to edit
+            channel (discord.abc.GuildChannel): The channel to put this loop in
+            cron (str): The crontab syntax to use for this job
+        """
+        factoid_name = factoid_name.lower()
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
+        )
+        if not factoid:
+            return
+
+        if await self.check_protected(interaction, factoid):
+            return
+
+        # We can only have 1 factoid have a job per channel
+        existing_job = await self.bot.models.FactoidJob.query.where(
+            (self.bot.models.FactoidJob.guild == str(interaction.guild.id))
+            & (self.bot.models.FactoidJob.factoid_data_id == factoid.factoid_data_id)
+            & (self.bot.models.FactoidJob.channel == str(channel.id))
+        ).gino.all()
+        if existing_job:
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid `{factoid_name}` already has a job in {channel.mention}.",
+            )
+            return
+
+        await interaction.response.defer()
+
+        # Use APSchduler to determine if the cron syntax is valid before scheduling
+        trigger = CronTrigger.from_crontab(cron)
+        now = datetime.datetime.utcnow()
+        run_at = trigger.get_next_fire_time(None, now)
+
+        if run_at is None:
+            await self.respond_error_embed(
+                interaction, f"The cron expression: `{cron}` is invalid."
+            )
+
+        job_data = await self.bot.models.FactoidJob.create(
+            guild=str(interaction.guild.id),
+            factoid_data_id=factoid.factoid_data_id,
+            channel=str(channel.id),
+            cron=cron,
+        )
+        await self.register_job(job_data)
+
+        # Update the factoid edit time
+        # This will also remove the factoid from the cache
+        await self.handle_factoid_edit(interaction.guild, factoid)
+
+        embed = auxiliary.prepare_confirm_embed(
+            f"The loop in {channel.mention} for factoid `{factoid_name}` was created successfully"
+        )
+        await interaction.followup.send(embed=embed)
+
+    @app_commands.check(has_manage_factoids_role)
+    @factoid_loop_commands.command(
+        name="delete",
+        description="Deletes an existing factoid loop job based on name and channel",
+    )
+    @app_commands.autocomplete(factoid_name=editing_factoid_autocomplete)
+    async def factoid_loop_delete_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+        channel: discord.abc.GuildChannel,
+    ) -> None:
+        """This edits an existing factoid, allowing changes to the properties, message, and embed
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid to edit
+            channel (discord.abc.GuildChannel): The channel to put this loop in
+            cron (str): The crontab syntax to use for this job
+        """
+        factoid_name = factoid_name.lower()
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
+        )
+        if not factoid:
+            return
+
+        # No edits on protected factoids
+        if await self.check_protected(interaction, factoid):
+            return
+
+        factoid_job = await self.read_factoid_job_by_channel(
+            guild=interaction.guild,
+            factoid_data_id=factoid.factoid_data_id,
+            channel=channel,
+        )
+
+        if not factoid_job:
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid `{factoid_name}` doesn't have a job in {channel.mention}!",
+            )
+            return
+
+        await interaction.response.defer()
+        # We need to cancel the job in APScheduler and delete the database entry
+        await self.unschedule_job(factoid_job)
+        await factoid_job.delete()
+
+        # Update the factoid edit time
+        # This will also remove the factoid from the cache
+        await self.handle_factoid_edit(interaction.guild, factoid)
+
+        embed = auxiliary.prepare_confirm_embed(
+            f"The loop in {channel.mention} for factoid `{factoid_name}` was deleted successfully"
+        )
+        await interaction.followup.send(embed=embed)
+
+    @app_commands.check(has_manage_factoids_role)
+    @factoid_loop_commands.command(
+        name="edit",
+        description="Edits an existing factoid loop job based on name and channel",
+    )
+    @app_commands.autocomplete(factoid_name=editing_factoid_autocomplete)
+    async def factoid_loop_edit_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+        channel: discord.abc.GuildChannel,
+        cron: str,
+    ) -> None:
+        """This edits an existing job, changing the cron syntax
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+            factoid_name (str): The factoid to edit
+            channel (discord.abc.GuildChannel): The channel the job to edit is in
+            cron (str): The crontab syntax to use for this job
+        """
+        factoid_name = factoid_name.lower()
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
+        )
+        if not factoid:
+            return
+
+        # No edits on protected factoids
+        if await self.check_protected(interaction, factoid):
+            return
+
+        factoid_job = await self.read_factoid_job_by_channel(
+            guild=interaction.guild,
+            factoid_data_id=factoid.factoid_data_id,
+            channel=channel,
+        )
+
+        if not factoid_job:
+            await self.respond_error_embed(
+                interaction,
+                f"The factoid `{factoid_name}` doesn't have a job in {channel.mention}!",
+            )
+            return
+
+        await interaction.response.defer()
+        # We need to update the database entry and reschedule the job
+        await self.unschedule_job(factoid_job)
+        await factoid_job.update(cron=cron).apply()
+        await self.register_job(factoid_job)
+
+        # Update the factoid edit time
+        # This will also remove the factoid from the cache
+        await self.handle_factoid_edit(interaction.guild, factoid)
+
+        embed = auxiliary.prepare_confirm_embed(
+            f"The loop in {channel.mention} for factoid `{factoid_name}` was edited successfully"
+        )
+        await interaction.followup.send(embed=embed)
+
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.check(has_admin_factoids_role)
+    @factoid_loop_commands.command(
+        name="refresh",
+        description="Refreshes all the scheduled factoid loops for this guild",
+    )
+    async def factoid_loop_refresh_command(
+        self: Self,
+        interaction: discord.Interaction,
+    ) -> None:
+        """This is designed to cancel and reschedule all jobs in the guild, for debug purposes
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+        """
+        jobs = await self.get_all_jobs_for_guild(interaction.guild)
+        if not jobs:
+            await self.respond_error_embed(
+                interaction, "There are no configured jobs for this guild"
+            )
+            return
+
+        await interaction.response.defer()
+        for job in jobs:
+            await self.unschedule_job(job)
+            await self.register_job(job)
+
+        embed = auxiliary.prepare_confirm_embed(
+            f"Refreshed {len(jobs)} job{"s" if len(jobs)>1 else ""} in this guild"
+        )
+        await interaction.followup.send(embed=embed)
+
+    @app_commands.check(has_manage_factoids_role)
+    @factoid_app_group.command(
+        name="property",
+        description="Modifies properites of the given factoid",
+    )
+    @app_commands.autocomplete(factoid_name=property_factoid_autocomplete)
+    async def factoid_property_command(
+        self: Self,
+        interaction: discord.Interaction,
+        factoid_name: str,
+        property: Properties,
+        set_value: bool,
+    ) -> None:
+        """This command modifies a given factoids property
+        This will flip the relevant bit if allowed
+
+        Args:
+            interaction (discord.Interaction): The interaction that called the command
+            factoid_name (str): The name of the factoid to edit
+            property (Properties): The property to edit
+            set_value (bool): What to set the property to
+        """
+        factoid_name = factoid_name.lower()
+        # Make sure the factoid is valid
+        factoid = await self.get_valid_factoid(
+            interaction=interaction, factoid_name=factoid_name
+        )
+        if not factoid:
+            return
+
+        # No edits on protected factoids, unless we are modifying the protected flag
+        if property != Properties.PROTECTED and await self.check_protected(
+            interaction, factoid
         ):
             return
 
-        # Prevents recursing aliases because fuck that!
-        # This should never be run, a bug exists in get_factoid, or a database error exist
-        # if this ever runs
-        if factoid.alias not in ["", None]:
-            await auxiliary.send_deny_embed(
-                message="Can't set an alias for an alias!", channel=ctx.channel
+        # Check if the property is already set to the requested value
+        currently_set = bool(factoid.flags & property)
+
+        if currently_set == set_value:
+            state = "enabled" if set_value else "disabled"
+
+            await self.respond_error_embed(
+                interaction,
+                f"The property `{property.name.lower()}` is already {state} for `{factoid_name}`!",
             )
             return
 
-        try:
-            # Firstly check if the new entry already exists
-            target_entry = await self.get_raw_factoid_entry(
-                alias_name, str(ctx.guild.id)
-            )
-
-        # No handling needs to be done if it doesn't exist
-        except custom_errors.FactoidNotFoundError:
-            pass
-
-        # Handling if it does already exist
+        # Apply the property change
+        if set_value:
+            new_flags = factoid.flags | property
         else:
-            # Alias already present and points to the correct factoid
-            if target_entry.alias == factoid.name:
-                await auxiliary.send_deny_embed(
-                    f"`{factoid_name}` already has `{alias_name}` set as an alias!",
-                    channel=ctx.channel,
-                )
-                return
+            new_flags = factoid.flags & ~property
 
-            # Confirms deletion of old entry
-            if not await self.confirm_factoid_deletion(
-                alias_name, ctx.channel, ctx.author, "replaced"
-            ):
-                return
-
-            # If the target entry is the parent
-            if target_entry.alias in ["", None]:
-                # The first alias becomes the new parent
-                # A more destructive way to do this would be to have the new parent have
-                # the old aliases, but that would delete the previous parent and therefore
-                # be more dangerous.
-
-                # Gets list of all aliases
-                aliases = (
-                    await self.bot.models.Factoid.query.where(
-                        self.bot.models.Factoid.alias == target_entry.name
-                    )
-                    .where(self.bot.models.Factoid.guild == str(ctx.guild.id))
-                    .gino.all()
-                )
-
-                # Don't make new parent if there isn't an alias for it
-                if len(aliases) != 0:
-                    # Modifies previous instance of alias to be the parent
-                    alias_entry = await self.get_raw_factoid_entry(
-                        aliases[0].name, str(ctx.guild.id)
-                    )
-
-                    alias_entry.name = aliases[0].name
-                    alias_entry.message = target_entry.message
-                    alias_entry.embed_config = target_entry.embed_config
-                    alias_entry.alias = None
-
-                    await self.modify_factoid_call(factoid=alias_entry)
-
-                    await self.handle_parent_change(ctx, aliases, aliases[0].name)
-
-            # Removes the old alias entry
-            await self.delete_factoid_call(target_entry, str(ctx.guild.id))
-
-        # Finally, add the new alias
-        await self.create_factoid_call(
-            factoid_name=alias_name,
-            guild=str(ctx.guild.id),
-            message="",
-            embed_config="",
-            alias=factoid.name,
-        )
-        await auxiliary.send_confirm_embed(
-            message=f"Successfully added the alias `{alias_name}` for"
-            + f" `{factoid_name}`",
-            channel=ctx.channel,
+        # Update the factoid edit time
+        # This will also remove the factoid from the cache
+        await self.handle_factoid_edit(
+            interaction.guild,
+            factoid,
         )
 
-    @auxiliary.with_typing
-    @commands.check(has_manage_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Deletes only an alias",
-        description=(
-            "Removes an alias from the group. Will never delete the actual factoid"
-        ),
-        usage="[factoid-name] [optional-new-parent]",
-    )
-    async def dealias(
-        self: Self,
-        ctx: commands.Context,
-        factoid_name: str,
-        replacement_name: str = None,
-    ) -> None:
-        """Command to remove an alias from the group, but never delete the parent
-
-        Args:
-            ctx (commands.Context): Context of the invocation
-            factoid_name (str): The name of the factoid to remove
-            replacement_name (str, optional): Name of new parent. Defaults to None.
-        """
-
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        if factoid.protected:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid.name}` is protected and cannot be modified",
-                channel=ctx.channel,
-            )
-            return
-
-        # -- Handling for aliases  --
-        # (They just get deleted, no parent handling needs to be done)
-
-        if factoid.name.lower() != factoid_name.lower():
-            await self.delete_factoid_call(
-                await self.get_raw_factoid_entry(factoid_name, str(ctx.guild.id)),
-                str(ctx.guild.id),
-            )
-            await auxiliary.send_confirm_embed(
-                message=f"Deleted the alias `{factoid_name}`",
-                channel=ctx.channel,
-            )
-            return
-
-        # -- Handling for parents --
-
-        # Gets list of aliases
-        aliases = (
-            await self.bot.models.Factoid.query.where(
-                self.bot.models.Factoid.alias == factoid_name
-            )
-            .where(self.bot.models.Factoid.guild == str(ctx.guild.id))
-            .gino.all()
-        )
-        # Stop execution if there is no other parent to be assigned
-        if len(aliases) == 0:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` has no aliases.", channel=ctx.channel
-            )
-            return
-
-        # Converts the raw alias list to a list of alias names
-        alias_list = []
-        for alias in aliases:
-            alias_list.append(alias.name)
-
-        # Firstly checks if the replacement name is in the aliast list, if it wasn't specified
-        # it defaults to None, both of which would assign a random value
-        new_name = replacement_name if replacement_name in alias_list else alias_list[0]
-        # If the value is specified (not None) and doesn't match the name, we know
-        # the new entry is randomized
-        if replacement_name and replacement_name != new_name:
-            await auxiliary.send_deny_embed(
-                message=f"I couldn't find the new parent `{replacement_name}`"
-                + ", picking new parent at random",
-                channel=ctx.channel,
-            )
-
-        new_entry = await self.get_raw_factoid_entry(new_name, str(ctx.guild.id))
-        new_entry.name = new_name
-        new_entry.message = factoid.message
-        new_entry.embed_config = factoid.embed_config
-        new_entry.alias = None
-        await self.modify_factoid_call(factoid=new_entry)
-
-        # Updates old aliases
-        await self.handle_parent_change(ctx, aliases, new_name)
-        await auxiliary.send_confirm_embed(
-            message=f"Deleted the alias `{factoid_name}`",
-            channel=ctx.channel,
+        factoid = await self.update_factoid_data(
+            guild=interaction.guild,
+            factoid_data_id=factoid.factoid_data_id,
+            flags=new_flags,
         )
 
-        # Logs the new parent change
-        log_channel = configuration.get_config_entry(
-            ctx.guild.id, "core_logging_channel"
-        )
-        await self.bot.logger.send_log(
+        state = "enabled" if set_value else "disabled"
+
+        embed = auxiliary.prepare_confirm_embed(
             message=(
-                f"Factoid dealias: Deleted the alias `{factoid_name}`, new"
-                f" parent: `{new_name}`"
-            ),
-            level=LogLevel.INFO,
-            context=LogContext(guild=ctx.guild, channel=ctx.channel),
-            channel=log_channel,
-        )
-
-        jobs = (
-            await self.bot.models.FactoidJob.query.where(
-                self.bot.models.Factoid.guild == factoid.guild
+                f"The property `{property.name.lower()}` was successfully "
+                f"{state} for `{factoid_name}`!"
             )
-            .where(self.bot.models.Factoid.factoid_id == factoid.factoid_id)
-            .gino.all()
         )
-        # Deletes the factoid and deletes all jobs tied to it
-        await self.delete_factoid_call(factoid, str(ctx.guild.id))
 
-        # If there were jobs tied to it, recreate them with the new factoid
-        if jobs:
-            for job in jobs:
-                new_job = self.bot.models.FactoidJob(
-                    factoid=new_entry.factoid_id, channel=job.channel, cron=job.cron
+        await interaction.response.send_message(embed=embed)
+
+    @factoid_app_group.command(
+        name="search",
+        description="Searches for factoids where the message or json match the query",
+        extras={"ephemeral_error": True},
+    )
+    async def factoid_search_command(
+        self: Self,
+        interaction: discord.Interaction,
+        query: str,
+    ) -> None:
+        """This will search all facatoids in the guild and display any that match the search query
+        This will filter out hidden factoids
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+        """
+        query = query.lower()
+        if len(query) <= 3:
+            await self.respond_error_embed(
+                interaction, "The minimum search query length is 4 characters"
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+        all_factoids = await self.get_all_factoids_for_guild(guild=interaction.guild)
+
+        matching_factoids: list[FactoidView] = []
+
+        for factoid in all_factoids:
+            # Filter hidden factoids
+            if factoid.flags & Properties.HIDDEN:
+                continue
+
+            if query in factoid.message.lower() or query in factoid.json_string.lower():
+                matching_factoids.append(factoid)
+
+        if not matching_factoids:
+            await self.respond_error_embed(
+                interaction,
+                f"No factoids matched the query `{query}`!",
+            )
+            return
+
+        title = f"Found {len(matching_factoids)} matching factoid{'s' if len(matching_factoids) != 1 else ''}"
+
+        factoids = matching_factoids[:50]
+        embeds: list[discord.Embed] = []
+
+        for i in range(0, len(factoids), 5):
+            chunk = factoids[i : i + 5]
+
+            lines = [
+                f"`[{', '.join(factoid.calls)}]`: {factoid.message[:30]}"
+                for factoid in chunk
+            ]
+
+            embed = discord.Embed(
+                title=title, description="\n".join(lines), color=discord.Color.green()
+            )
+
+            embeds.append(embed)
+
+        view = ui.PaginateView()
+        await view.send(
+            interaction.channel, interaction.user, embeds, interaction, True
+        )
+
+    @factoid_app_group.command(
+        name="top",
+        description="Displays the top 10 factoids by number of times called",
+    )
+    async def factoid_top_command(
+        self: Self,
+        interaction: discord.Interaction,
+    ) -> None:
+        """This will display the most commonly called factoids in this guild
+        It will ignore hidden factoids
+
+        Args:
+            interaction (discord.Interaction): The interaction that triggered this command
+        """
+
+        all_factoids = await self.get_all_factoids_for_guild(guild=interaction.guild)
+
+        visible_factoids: list[FactoidView] = []
+
+        for factoid in all_factoids:
+            # Ignore hidden factoids
+            if factoid.flags & Properties.HIDDEN:
+                continue
+
+            visible_factoids.append(factoid)
+
+        if not visible_factoids:
+            await self.respond_error_embed(
+                interaction,
+                "There are no factoids in this guild!",
+            )
+            return
+
+        sorted_factoids = sorted(
+            visible_factoids,
+            key=lambda factoid: factoid.times_called,
+            reverse=True,
+        )
+
+        top_factoids = sorted_factoids[:10]
+
+        lines: list[str] = []
+
+        for index, factoid in enumerate(top_factoids, start=1):
+            lines.append(
+                f"{index}. `[{', '.join(factoid.calls)}]` - {factoid.times_called} call{'s' if factoid.times_called != 1 else ''}"
+            )
+
+        embed = discord.Embed(
+            title=f"Top {len(top_factoids)} factoid{'s' if len(top_factoids) != 1 else ''}",
+            description="\n".join(lines),
+        )
+        embed.color = discord.Color.blue()
+
+        await interaction.response.send_message(embed=embed)
+
+    # LEGACY - Prefix Calls
+    @commands.Cog.listener()
+    async def on_message(self: Self, message: discord.Message) -> None:
+        """This listens for any messages sent the bot can read
+
+        Args:
+            message (discord.Message): The message object sent
+        """
+        # Do nothing if the extension is disabled
+        if not self.extension_enabled(message.guild):
+            return
+
+        # Do nothing if the prefix calls are disabled
+        if configuration.get_config_entry(message.guild.id, "factoids_disable_prefix"):
+            return
+
+        # Do nothing if the message does not start with a factoid prefix
+        raw_content = message.clean_content
+        factoid_prefix = configuration.get_config_entry(
+            message.guild.id, "factoids_prefix"
+        )
+        if not message.clean_content.startswith(factoid_prefix):
+            return
+
+        factoid_name = (
+            raw_content[len(factoid_prefix) :].replace("\n", " ").split(" ")[0].lower()
+        )
+        factoid = factoid = await self.get_factoid_view_by_name(
+            guild=message.guild, name=factoid_name
+        )
+        if not factoid:
+            return
+
+        # Check if factoid is disabled. If so, don't send it
+        if factoid.flags & Properties.DISABLED:
+            return
+
+        # Check if factoid is restricted. If so, check if we can call it
+        if (
+            factoid.flags & Properties.RESTRICTED
+            and not self.can_channel_send_restricted(message.channel)
+        ):
+            return
+
+        # At this point we know factoids is enabled, as is prefix factoids
+        # We know the message is trying to call a factoid, and that the factoid exists
+        # We also know we should be able to send the factoid in this channel
+        embed, plaintext_content = await self.generate_sendable_factoid(
+            message.guild, factoid
+        )
+
+        # Log in the background
+        asyncio.create_task(
+            self.log_factoid_send(
+                guild=message.guild,
+                channel=message.channel,
+                sender=message.author,
+                factoid=factoid,
+            )
+        )
+        mentions = auxiliary.construct_mention_string(message.mentions)
+
+        embed_sent = False
+        sent_message = None
+        if embed:
+            try:
+                # Attempt to send the message with the embed in it
+                sent_message = await message.reply(
+                    content=mentions,
+                    embed=embed,
                 )
-                await new_job.create()
+                embed_sent = True
+            # If something breaks, also log it
+            except discord.errors.HTTPException as exception:
+                asyncio.create_task(
+                    self.log_embed_fallback_exception(
+                        factoid=factoid,
+                        exception=exception,
+                        guild=message.guild,
+                        channel=message.channel,
+                    )
+                )
 
-                job_id = new_job.job_id
-                self.running_jobs[job_id] = {}
-                self.running_jobs[job_id]["job"] = new_job
+        # Either no embed exists, or the embed failed to send for some reason.
+        # We will send the plaintext content of the factoid in this case
+        if not embed_sent:
+            content = f"{mentions if mentions else ""}{plaintext_content}"
+            content = content.strip()[:2000]
+            # The can't see button is not needed in plaintext cases
+            sent_message = await message.reply(content=content)
 
-                # Starts the new job
-                task = asyncio.create_task(self.cronjob(new_job, ctx))
-                self.running_jobs[job_id]["task"] = task
+        if not sent_message:
+            # This is a major error, and should never happen
+            await self.logger.send_log(
+                message="Factoid sent_message not found. Critical failure",
+                level=LogLevel.ERROR,
+                context=LogContext(guild=message.guild, channel=message.channel),
+            )
+            return
 
-    @auxiliary.with_typing
-    @commands.has_permissions(administrator=True)
-    @commands.check(has_manage_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Flushes all factoid caches",
-        description="Flushes all factoid caches",
-    )
-    async def flush(self: Self, ctx: commands.Context) -> None:
-        """Command to flush all factoid caches
+        # IRC connection
+        self.send_factoid_to_irc(message.channel, factoid, message.author)
 
-        Args:
-            ctx (commands.Context): Context of the invokation
-        """
-        self.factoid_cache.clear()  # Factoid execution cache
-        self.factoid_all_cache.clear()  # Factoid all URL cache
-
-        await auxiliary.send_confirm_embed(
-            message=f"Factoid caches for `{str(ctx.guild.id)}` succesfully flushed!",
-            channel=ctx.channel,
+        # Logger connection
+        await self.send_factoid_to_logger(
+            sent_message, message.author, message.channel, factoid.message
         )
 
-    # -- Property Commands --
-
-    # Hiding
-
-    @auxiliary.with_typing
-    @commands.check(has_admin_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Hides a factoid",
-        description="Hides a factoid from showing in the all response",
-        usage="[factoid-name]",
-    )
-    async def hide(
-        self: Self,
-        ctx: commands.Context,
-        factoid_name: str,
-    ) -> None:
-        """Command to hide a factoid from the .factoid all command
-
-        Args:
-            ctx (commands.Context): Context of the invokation
-            factoid_name (str): Name of the factoid to hide
-        """
-
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        if factoid.protected:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is protected and cannot be modified",
-                channel=ctx.channel,
-            )
-            return
-
-        if factoid.hidden:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is already hidden",
-                channel=ctx.channel,
-            )
-            return
-        factoid.hidden = True
-        await self.modify_factoid_call(factoid=factoid)
-
-        await auxiliary.send_confirm_embed(
-            message=f"`{factoid_name}` is now hidden", channel=ctx.channel
-        )
-
-    @auxiliary.with_typing
-    @commands.check(has_admin_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Unhides a factoid",
-        description="Unhides a factoid from showing in the all response",
-        usage="[factoid-name]",
-    )
-    async def unhide(
-        self: Self,
-        ctx: commands.Context,
-        factoid_name: str,
-    ) -> None:
-        """Command to unhide a factoid from the .factoid all list
-
-        Args:
-            ctx (commands.Context): Context of the invokation
-            factoid_name (str): The name of the factoid to unhide
-        """
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        if factoid.protected:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is protected and cannot be modified",
-                channel=ctx.channel,
-            )
-            return
-
-        if not factoid.hidden:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is already unhidden",
-                channel=ctx.channel,
-            )
-            return
-
-        factoid.hidden = False
-        await self.modify_factoid_call(factoid=factoid)
-
-        await auxiliary.send_confirm_embed(
-            message=f"`{factoid_name}` is now unhidden", channel=ctx.channel
-        )
-
-    # Protecting
-
-    @auxiliary.with_typing
-    @commands.check(has_admin_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Protects a factoid",
-        description="Protects a factoid and prevents modification or deletion",
-        usage="[factoid-name]",
-    )
-    async def protect(
-        self: Self,
-        ctx: commands.Context,
-        factoid_name: str,
-    ) -> None:
-        """Command to protect a factoid from being deleted or modified
-
-        Args:
-            ctx (commands.Context): Context of the invokation
-            factoid_name (str): Name of the factoid to hide
-        """
-
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        if factoid.protected:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is already protected",
-                channel=ctx.channel,
-            )
-            return
-        factoid.protected = True
-        await self.modify_factoid_call(factoid=factoid)
-
-        await auxiliary.send_confirm_embed(
-            message=f"`{factoid_name}` is now protected", channel=ctx.channel
-        )
-
-    @auxiliary.with_typing
-    @commands.check(has_admin_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Unprotects a factoid",
-        description="Allows a protected factoid to be modified or deleted",
-        usage="[factoid-name]",
-    )
-    async def unprotect(
-        self: Self,
-        ctx: commands.Context,
-        factoid_name: str,
-    ) -> None:
-        """Command to unprotect a factoid and allow it to be deleted or modified
-
-        Args:
-            ctx (commands.Context): Context of the invokation
-            factoid_name (str): The name of the factoid to unhide
-        """
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        factoid.protected = False
-        await self.modify_factoid_call(factoid=factoid)
-
-        await auxiliary.send_confirm_embed(
-            message=f"`{factoid_name}` is now unprotected", channel=ctx.channel
-        )
-
-    # Restricting
-
-    @auxiliary.with_typing
-    @commands.check(has_admin_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Restricts a factoid",
-        description="Restricts a factoid and only allows it to be called in certain channels",
-        usage="[factoid-name]",
-    )
-    async def restrict(
-        self: Self,
-        ctx: commands.Context,
-        factoid_name: str,
-    ) -> None:
-        """Command to restrict a factoid to only certain channels
-
-        Args:
-            ctx (commands.Context): Context of the invokation
-            factoid_name (str): Name of the factoid to hide
-        """
-
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        if factoid.protected:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is protected and cannot be modified",
-                channel=ctx.channel,
-            )
-            return
-
-        if factoid.restricted:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is already restricted",
-                channel=ctx.channel,
-            )
-            return
-        factoid.restricted = True
-        await self.modify_factoid_call(factoid=factoid)
-
-        await auxiliary.send_confirm_embed(
-            message=f"`{factoid_name}` is now restricted", channel=ctx.channel
-        )
-
-    @auxiliary.with_typing
-    @commands.check(has_admin_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Unrestricts a factoid",
-        description="Unrestricts a factoid and allows it to be called anywhere",
-        usage="[factoid-name]",
-    )
-    async def unrestrict(
-        self: Self,
-        ctx: commands.Context,
-        factoid_name: str,
-    ) -> None:
-        """Command to allow a factoid to be called anywhere
-
-        Args:
-            ctx (commands.Context): Context of the invokation
-            factoid_name (str): The name of the factoid to unhide
-        """
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        if factoid.protected:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is protected and cannot be modified",
-                channel=ctx.channel,
-            )
-            return
-
-        if not factoid.restricted:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is already unrestricted",
-                channel=ctx.channel,
-            )
-            return
-
-        factoid.restricted = False
-        await self.modify_factoid_call(factoid=factoid)
-
-        await auxiliary.send_confirm_embed(
-            message=f"`{factoid_name}` is now unrestricted", channel=ctx.channel
-        )
-
-    # Disabling
-
-    @auxiliary.with_typing
-    @commands.check(has_admin_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Disables a factoid",
-        description="Disables a factoid and prevents it from being called anywhere",
-        usage="[factoid-name]",
-    )
-    async def disable(
-        self: Self,
-        ctx: commands.Context,
-        factoid_name: str,
-    ) -> None:
-        """Command to completely prevent a factoid from being called
-
-        Args:
-            ctx (commands.Context): Context of the invokation
-            factoid_name (str): Name of the factoid to hide
-        """
-
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        if factoid.protected:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is protected and cannot be modified",
-                channel=ctx.channel,
-            )
-            return
-
-        if factoid.disabled:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is already disabled",
-                channel=ctx.channel,
-            )
-            return
-        factoid.disabled = True
-        await self.modify_factoid_call(factoid=factoid)
-
-        await auxiliary.send_confirm_embed(
-            message=f"`{factoid_name}` is now disabled", channel=ctx.channel
-        )
-
-    @auxiliary.with_typing
-    @commands.check(has_admin_factoids_role)
-    @commands.guild_only()
-    @factoid.command(
-        brief="Enables a factoid",
-        description="Enables a factoid and allows it to be called",
-        usage="[factoid-name]",
-    )
-    async def enable(
-        self: Self,
-        ctx: commands.Context,
-        factoid_name: str,
-    ) -> None:
-        """Command to allow a factoid to be called
-
-        Args:
-            ctx (commands.Context): Context of the invokation
-            factoid_name (str): The name of the factoid to unhide
-        """
-        factoid = await self.get_factoid(factoid_name, str(ctx.guild.id))
-
-        if factoid.protected:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is protected and cannot be modified",
-                channel=ctx.channel,
-            )
-            return
-
-        if not factoid.disabled:
-            await auxiliary.send_deny_embed(
-                message=f"`{factoid_name}` is already enabled",
-                channel=ctx.channel,
-            )
-            return
-
-        factoid.disabled = False
-        await self.modify_factoid_call(factoid=factoid)
-
-        await auxiliary.send_confirm_embed(
-            message=f"`{factoid_name}` is now enabled", channel=ctx.channel
-        )
+        # Increase times called
+        await self.increment_times_called_by_view(guild=message.guild, factoid=factoid)
 
 
-class DeleteView(discord.ui.View):
+class ButtonView(discord.ui.View):
     """The class to hold the view for the delete button on /factoid call
 
     Args:
         author_id (int): The ID of the author of the factoid
     """
 
-    def __init__(self: Self, author_id: int) -> None:
-        super().__init__(timeout=60)
+    # At a point in which we migrate to components, this view should take over sending and processing the embed/plaintext factiods
+    # A new view entirely designed around components should exist to send those factoids
+
+    def __init__(self: Self, author_id: int, factoid: FactoidView) -> None:
+        super().__init__(timeout=600)
         self.author_id = author_id
+        self.factoid: FactoidView = factoid
         self.message: discord.Message | None = None
 
     async def on_timeout(self: Self) -> None:
-        """Is called after the timeout, with the goal of deleting the buttons from the message"""
+        """Is called after the timeout, with the goal of disabling the buttons from the message"""
 
+        for child in self.walk_children():
+            if isinstance(child, discord.ui.Button):
+                child.disabled = True
         if self.message:
-            await self.message.edit(view=None)
+            await self.message.edit(view=self)
+
+        # Be memory safe and clear these objects
+        self.factoid = None
+        self.message = None
 
     @discord.ui.button(label="Delete", style=discord.ButtonStyle.danger, emoji="🗑️")
     async def delete_button(
@@ -3003,9 +3172,60 @@ class DeleteView(discord.ui.View):
         if interaction.message:
             await interaction.message.delete()
 
+    @discord.ui.button(
+        label="I see nothing", style=discord.ButtonStyle.blurple, emoji="👁️"
+    )
+    async def cant_see_button(
+        self: Self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ) -> None:
+        """The function called when the see nothing button is pressed
 
-class NewFactoid(discord.ui.Modal):
-    """A Modal that contains information to make a new factoid
+        Args:
+            interaction (discord.Interaction): The interaction that pressed the button
+            button (discord.ui.Button): The button object itself
+        """
+        await interaction.response.send_message(
+            content=self.factoid.message, ephemeral=True
+        )
+
+        # Tell user how to enable embeds
+        await interaction.followup.send(
+            "To see these messages in the future, consider enabling embeds: <https://rtech.support/meta/discord-embeds/>",
+            ephemeral=True,
+        )
+
+    @discord.ui.button(label="Save to DMs", style=discord.ButtonStyle.green, emoji="💬")
+    async def send_to_dm_button(
+        self: Self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ) -> None:
+        """The function called when the save to DMs button is pressed
+
+        Args:
+            interaction (discord.Interaction): The interaction that pressed the button
+            button (discord.ui.Button): The button object itself
+        """
+        try:
+            await interaction.user.send(
+                content=interaction.message.content, embeds=interaction.message.embeds
+            )
+        except discord.Forbidden:
+            embed = auxiliary.prepare_deny_embed(
+                "It appears you have DMs closed. I can't send you this factoid"
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        await interaction.response.send_message(
+            "I sent a copy of this factoid to your DMs", ephemeral=True
+        )
+
+
+class FactoidModal(discord.ui.Modal):
+    """A Modal that contains information to make or edit a factoid
     This has the user fill in plaintext content, upload an embed json file
     And select default properties for the factoid
 
@@ -3018,37 +3238,84 @@ class NewFactoid(discord.ui.Modal):
         properties (discord.ui.Label): The properties of the factoid, such as hidden or disabled
     """
 
-    def __init__(self: Self, factoid: str) -> None:
-        super().__init__(title=f"Creating factoid {factoid}")
+    def __init__(
+        self,
+        factoid_name: str,
+        edit_mode: bool,
+        factoid: FactoidView | None = None,
+    ) -> None:
+        super().__init__(
+            title=(
+                f"Editing factoid {factoid_name}"
+                if edit_mode
+                else f"Creating factoid {factoid_name}"
+            )[:45]
+        )
 
-    plaintext: discord.ui.Label = discord.ui.Label(
-        text="Plaintext:",
-        component=discord.ui.TextInput(style=discord.TextStyle.long, required=True),
-    )
-    embed: discord.ui.Label = discord.ui.Label(
-        text="Embed json:", component=discord.ui.FileUpload(required=False)
-    )
-    properties: discord.ui.Label = discord.ui.Label(
-        text="Properties:",
-        component=discord.ui.CheckboxGroup(
-            max_values=4,
-            required=False,
-            options=[
-                discord.CheckboxGroupOption(
-                    default=False, label="Disabled", value="disabled"
+        self.plaintext = discord.ui.Label(
+            text="Plaintext:",
+            component=discord.ui.TextInput(
+                style=discord.TextStyle.long,
+                required=True,
+                default=factoid.message if factoid else None,
+            ),
+        )
+
+        self.add_item(self.plaintext)
+
+        if edit_mode:
+            self.json_action = discord.ui.Label(
+                text="JSON Action:",
+                component=discord.ui.RadioGroup(
+                    required=True,
+                    options=[
+                        discord.RadioGroupOption(
+                            label="Keep Existing",
+                            value="keep",
+                            default=True,
+                        ),
+                        discord.RadioGroupOption(
+                            label="Remove Existing",
+                            value="remove",
+                        ),
+                        discord.RadioGroupOption(
+                            label="Replace Existing",
+                            value="replace",
+                        ),
+                    ],
                 ),
-                discord.CheckboxGroupOption(
-                    default=False, label="Hidden", value="hidden"
+            )
+
+            self.add_item(self.json_action)
+
+        self.embed = discord.ui.Label(
+            text="Embed JSON:",
+            component=discord.ui.FileUpload(required=False),
+        )
+
+        self.add_item(self.embed)
+
+        if not edit_mode:
+            property_options = []
+
+            for prop in Properties:
+                property_options.append(
+                    discord.CheckboxGroupOption(
+                        label=prop.name.title(),
+                        value=str(prop),
+                        default=(bool(factoid.flags & prop) if factoid else False),
+                    )
+                )
+            self.properties = discord.ui.Label(
+                text="Properties:",
+                component=discord.ui.CheckboxGroup(
+                    max_values=len(property_options),
+                    required=False,
+                    options=property_options,
                 ),
-                discord.CheckboxGroupOption(
-                    default=False, label="Protected", value="protected"
-                ),
-                discord.CheckboxGroupOption(
-                    default=False, label="Restricted", value="restricted"
-                ),
-            ],
-        ),
-    )
+            )
+
+            self.add_item(self.properties)
 
     async def on_submit(self: Self, interaction: discord.Interaction) -> None:
         """What happens when the form has been successfully submitted
@@ -3058,3 +3325,74 @@ class NewFactoid(discord.ui.Modal):
         """
         await interaction.response.defer()
         return
+
+
+class InfoEmbedButtons(discord.ui.View):
+    """This adds up to 3 buttons for relevant factoids
+    This also handles the pressing of these buttons
+    """
+
+    def __init__(
+        self: Self, author_id: int, factoid: FactoidView, cog: FactoidManager
+    ) -> None:
+        super().__init__(timeout=600)
+        self.author_id = author_id
+        self.factoid: FactoidView = factoid
+        self.cog = cog
+        self.message: discord.Message | None = None
+
+    async def on_timeout(self: Self) -> None:
+        """Is called after the timeout, with the goal of disabling the buttons from the message"""
+
+        for child in self.walk_children():
+            if isinstance(child, discord.ui.Button):
+                child.disabled = True
+        if self.message:
+            await self.message.edit(view=self)
+
+        # Be memory safe and clear these objects
+        self.factoid = None
+        self.message = None
+        self.cog = None
+
+    @discord.ui.button(label="Show JSON file", style=discord.ButtonStyle.blurple)
+    async def show_json(
+        self: Self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ) -> None:
+        """The function called when the show json file button is pressed
+
+        Args:
+            interaction (discord.Interaction): The interaction that pressed the button
+            button (discord.ui.Button): The button object itself
+        """
+        json_file = self.cog.create_json_file(self.factoid)
+        await interaction.response.send_message(file=json_file, ephemeral=True)
+
+    @discord.ui.button(label="Show embed", style=discord.ButtonStyle.blurple)
+    async def show_embed(
+        self: Self,
+        interaction: discord.Interaction,
+        button: discord.ui.Button,
+    ) -> None:
+        """The function called when the show embed is pressed
+
+        Args:
+            interaction (discord.Interaction): The interaction that pressed the button
+            button (discord.ui.Button): The button object itself
+        """
+        embed, _ = await self.cog.generate_sendable_factoid(
+            interaction.guild, self.factoid
+        )
+        if not embed:
+            await self.cog.respond_error_embed(
+                "The embed for this factoid could not be generated"
+            )
+
+        try:
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        except discord.HTTPException:
+            await self.cog.respond_error_embed(
+                "The embed for this factoid could not be sent"
+            )

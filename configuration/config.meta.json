@@ -163,6 +163,10 @@
     "datatype": "bool",
     "description": "This will force all factoids to not use embeds."
   },
+  "factoids_disable_prefix": {
+    "datatype": "bool",
+    "description": "Whether or not to disable calling factoids by a prefix command."
+  },
   "factoids_manage_roles": {
     "datatype": "list[discord.Role]",
     "description": "The roles required to manage factoids"

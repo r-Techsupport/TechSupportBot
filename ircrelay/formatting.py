@@ -5,6 +5,8 @@ from __future__ import annotations
 import discord
 import irc.client
 
+from modules.operation import factoids
+
 
 def parse_irc_message(event: irc.client.Event) -> dict[str, str]:
     """This turns the irc.client.Event object into a dictionary
@@ -103,6 +105,30 @@ def core_sent_message_format(
         return ""
     message_str = f"{IRC_BOLD}[D]{IRC_BOLD} <{permissions_prefix}"
     message_str += f"{message.author.display_name}> {message_content}"
+    message_str = message_str.replace("\n", " ")
+    message_str = message_str.strip()
+    return message_str
+
+
+def factoid_format(factoid: factoids.FactoidView, author: discord.Member) -> str:
+    """This formats a message, adds a permissions prefix, user prefix, and fixes new lines and
+    file attachements
+
+    Args:
+        message (discord.Message): The discord message object to format
+        content_override (str): If passed, this will changed the content of the message
+
+    Returns:
+        str: The string, with unlimited length, that is ready to be sent to IRC
+    """
+    use_content = factoid.message
+    IRC_BOLD = ""
+    permissions_prefix = get_permissions_prefix_for_discord_user(member=author)
+    message_content = f"{use_content}"
+    if len(message_content.strip()) == 0:
+        return ""
+    message_str = f"{IRC_BOLD}[D]{IRC_BOLD} <{permissions_prefix}"
+    message_str += f"{author.display_name}> {message_content}"
     message_str = message_str.replace("\n", " ")
     message_str = message_str.strip()
     return message_str

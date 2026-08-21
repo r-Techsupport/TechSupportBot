@@ -127,57 +127,90 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         )
         speed_record: float = bot.db.Column(bot.db.Float, default=-1.0)
 
-    class Factoid(bot.db.Model):
-        """The postgres table for factoids
-        Currently used in factoid.py
+    class FactoidData(bot.db.Model):
+        """
+        FactoidData is the data of the factoid, content displayed and how its displayed
 
         Attributes:
-            factoid_id (int): The primary key of the factoid
-            name (str): The name of the factoid
-            guild (str): The string guild ID for the guild that the factoid is in
-            message (str): The string message of the factoid
-            time (datetime.datetime): When the factoid was created NOT edited
-            embed_config (str): The json of the factoid
-            hidden (bool): If the factoid should be hidden or not
-            protected (bool): If the factoid should be protected
-            disabled (bool): If the factoid should be disabled
-            restricted (bool): If the factoid should be restricted
-            alias (str): The string representation of the parent
+            factoid_data_id (int): The data ID of the factoid
+            guild (str): The ID of the guild this factoid belongs to
+            message (str): The plaintext message of this factoid
+            create_time (datetime): The time this factoid was created in the database
+            edit_time (datetime): The last time this factoid was edited in any way
+            json_string (str): The JSON of an embed, parsed into a string
+            flags (int): A bitwise value of the property flags of this factoid
+            timed_called (int): The amount of times this factoid was called
         """
 
-        __tablename__ = "factoids"
+        __tablename__ = "factoid_data"
 
-        factoid_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
-        name: str = bot.db.Column(bot.db.String)
-        guild: str = bot.db.Column(bot.db.String)
+        factoid_data_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild: str = bot.db.Column(bot.db.String, index=True)
         message: str = bot.db.Column(bot.db.String)
-        time: datetime.datetime = bot.db.Column(
+        create_time: datetime.datetime = bot.db.Column(
             bot.db.DateTime, default=datetime.datetime.utcnow
         )
-        embed_config: str = bot.db.Column(bot.db.String, default=None)
-        hidden: bool = bot.db.Column(bot.db.Boolean, default=False)
-        protected: bool = bot.db.Column(bot.db.Boolean, default=False)
-        disabled: bool = bot.db.Column(bot.db.Boolean, default=False)
-        restricted: bool = bot.db.Column(bot.db.Boolean, default=False)
-        alias: str = bot.db.Column(bot.db.String, default=None)
+        edit_time: datetime.datetime = bot.db.Column(
+            bot.db.DateTime,
+            default=datetime.datetime.utcnow,
+        )
+        json_string: str = bot.db.Column(bot.db.String, default=None)
+        flags: int = bot.db.Column(bot.db.Integer, default=0)
+        times_called: int = bot.db.Column(bot.db.Integer, default=0)
 
-    class FactoidJob(bot.db.Model):
-        """The postgres table for factoid loops
-        Currently used in factoid.py
+    class FactoidCall(bot.db.Model):
+        """
+        FactoidCall is the name of a factoid. All FactoidCall's are tied to a FactoidData
 
         Attributes:
-            job_id (int): The primary key, ID of the job
-            factoid (int): The primary key of the linked factoid
-            channel (str): The channel this loop needs to run in
-            cron (str): The frequency this job should run
+            factoid_call_id (int): This is the ID of the call
+            guild (str): This is the ID of the guild this factoid belongs to
+            name (str): This is the name, used and displayed to users
+            factoid_data_id (object): The linked foreign ID for the related FactoidData
+        """
+
+        __tablename__ = "factoid_calls"
+
+        __table_args__ = (
+            bot.db.UniqueConstraint(
+                "guild", "name", name="uq_factoid_calls_guild_name"
+            ),
+        )
+
+        factoid_call_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild: str = bot.db.Column(bot.db.String, index=True)
+        name: str = bot.db.Column(bot.db.String, index=True)
+
+        factoid_data_id = bot.db.Column(
+            bot.db.Integer,
+            bot.db.ForeignKey("factoid_data.factoid_data_id"),
+            nullable=False,
+            index=True,
+        )
+
+    class FactoidJob(bot.db.Model):
+        """
+        FactoidJob is a database entry that represents loop jobs for factoids
+
+        Attributes:
+            factoid_job_id (int): This is the ID of the job
+            guild (str): This is the ID of the guild this job belongs to
+            factoid_data_id (object): The linked foreign ID for the related FactoidData
+            channel (str): This is the ID of the channel the loop should execute in
+            cron (str): This is the cron syntax for the job
         """
 
         __tablename__ = "factoid_jobs"
 
-        job_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
-        factoid: int = bot.db.Column(
-            bot.db.Integer, bot.db.ForeignKey("factoids.factoid_id")
+        factoid_job_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
+        guild: str = bot.db.Column(bot.db.String, index=True)
+        factoid_data_id = bot.db.Column(
+            bot.db.Integer,
+            bot.db.ForeignKey("factoid_data.factoid_data_id"),
+            nullable=False,
+            index=True,
         )
+
         channel: str = bot.db.Column(bot.db.String)
         cron: str = bot.db.Column(bot.db.String)
 
@@ -387,7 +420,8 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.AppBans = ApplicationBans
     bot.models.ModLog = ModLog
     bot.models.DuckUser = DuckUser
-    bot.models.Factoid = Factoid
+    bot.models.FactoidData = FactoidData
+    bot.models.FactoidCall = FactoidCall
     bot.models.FactoidJob = FactoidJob
     bot.models.Grab = Grab
     bot.models.IRCChannelMapping = IRCChannelMapping
