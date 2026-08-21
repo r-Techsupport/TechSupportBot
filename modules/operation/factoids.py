@@ -141,8 +141,6 @@ class Properties(IntFlag):
     RESTRICTED: int = 0b0001
 
 
-# TODO: Race condition limiting effects on /factoid edit
-# TODO: Update/remake all doc strings
 class FactoidManager(cogs.BaseCog):
 
     factoid_app_group: app_commands.Group = app_commands.Group(

@@ -273,7 +273,14 @@ class IRCBot(irc.bot.SingleServerIRCBot):
 
     def send_factoid_from_discord(
         self: Self, channel: str, factoid: factoids.FactoidView, author: discord.Member
-    ) -> str:
+    ) -> None:
+        """This processes a factoid into a valid IRC message, attributed to the correct autho
+
+        Args:
+            channel (str): The IRC channel to send the message to
+            factoid (factoids.FactoidView): The factoid that was sent
+            author (discord.Member): The author who sent the message
+        """
         formatted_message = formatting.factoid_format(factoid=factoid, author=author)
         self.send_message_to_channel(channel=channel, message=formatted_message)
 
