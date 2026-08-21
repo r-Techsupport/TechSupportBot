@@ -121,6 +121,10 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 @dataclass
 class FactoidView:
+    """The FactoidView is a parsed combination of the FactoidData and FactoidCall databases
+    The FactoidView contains all the calls, in a list, as well as all the data
+    """
+
     factoid_data_id: int
     message: str
     json_string: str
@@ -149,6 +153,9 @@ class Properties(IntFlag):
 
 
 class FactoidManager(cogs.BaseCog):
+    """This is the cog for factoids
+    It is what is registered into the bot and has access to self.bot
+    """
 
     factoid_app_group: app_commands.Group = app_commands.Group(
         name="factoid",
