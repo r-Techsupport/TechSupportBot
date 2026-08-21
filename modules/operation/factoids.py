@@ -1129,7 +1129,7 @@ class FactoidManager(cogs.BaseCog):
         if not name:
             return False
         # Rule 2: No commas
-        elif "," in name:
+        if "," in name:
             return False
 
         # Factoid name passed all the rules
@@ -1149,7 +1149,7 @@ class FactoidManager(cogs.BaseCog):
         if mention_regex.search(message):
             return False
         # Rule 2, ensure length is no longer than discord can handle
-        elif len(message) > 2000:
+        if len(message) > 2000:
             return False
 
         # Message passes all rules
@@ -1204,6 +1204,15 @@ class FactoidManager(cogs.BaseCog):
     async def generate_json_string_from_file(
         self: Self, interaction: discord.Interaction, uploaded_file: discord.Attachment
     ) -> str:
+        """This turns a json file discord attachement into a single string, ready to be inserted into a database
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            uploaded_file (discord.Attachment): The file that was uploaded to parse
+
+        Returns:
+            str: The parsed string representation of the json file
+        """
 
         if not uploaded_file.filename.endswith(".json"):
             await self.respond_error_embed(
@@ -1531,6 +1540,14 @@ class FactoidManager(cogs.BaseCog):
         existing_factoid: str,
         new_factoid: str,
     ) -> None:
+        """Creates an alias to a factoid without creating new data
+        This will create only a FactoidCall entry
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            existing_factoid (str): The pre-existing factoid name
+            new_factoid (str): The new name to use
+        """
         existing_factoid = existing_factoid.lower()
         new_factoid = new_factoid.lower()
         if not self.check_valid_name(new_factoid):
@@ -1542,7 +1559,7 @@ class FactoidManager(cogs.BaseCog):
 
         if new_factoid == existing_factoid:
             await self.respond_error_embed(
-                interaction, f"You cannot alias a factoid to itself!"
+                interaction, "You cannot alias a factoid to itself!"
             )
             return
 
@@ -1585,7 +1602,7 @@ class FactoidManager(cogs.BaseCog):
             )
             if confirmation_response == ui.ConfirmResponse.TIMEOUT:
                 return
-            elif confirmation_response == ui.ConfirmResponse.DENIED:
+            if confirmation_response == ui.ConfirmResponse.DENIED:
                 await self.respond_error_embed(
                     interaction,
                     message=f"The factoid `{new_factoid}` was not replaced.",
@@ -1631,6 +1648,14 @@ class FactoidManager(cogs.BaseCog):
         force_file: bool = False,
         show_all: bool = False,
     ) -> None:
+        """This displays to the user a configurable list of all factoids
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            factoid_property (Properties, optional): A property to force the search to display. Defaults to "".
+            force_file (bool, optional): Whether a file is generated, even if a linx server is configured. Defaults to False.
+            show_all (bool, optional): To force all factoids, including hidden ones, to be in the output. Defaults to False.
+        """
         all_factoids = await self.get_all_factoids_for_guild(guild=interaction.guild)
 
         if not all_factoids:
@@ -1951,6 +1976,12 @@ class FactoidManager(cogs.BaseCog):
     async def factoid_create_command(
         self: Self, interaction: discord.Interaction, factoid_name: str
     ) -> None:
+        """Create a new factoid, using a Modal popup
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+            factoid_name (str): The name of the factoid to create
+        """
         factoid_name = factoid_name.lower()
         # Only ever attempt to add a factoid if it doesn't exist
         existing_factoid = await self.get_factoid_view_by_name(
@@ -2934,6 +2965,7 @@ class FactoidManager(cogs.BaseCog):
         mentions = auxiliary.construct_mention_string(message.mentions)
 
         embed_sent = False
+        sent_message = None
         if embed:
             try:
                 # Attempt to send the message with the embed in it
