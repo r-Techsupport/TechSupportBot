@@ -1,3 +1,10 @@
+"""This holds all commands, database helpers, functions, listeners and more to run the factoids system
+This module is almost entirely all application command
+
+A legacy prefix way to call factoids is maintained here for the time being
+Barring discord forcing this to be shut down, this will be maintained until at least summer 2027
+"""
+
 from __future__ import annotations
 
 import asyncio
@@ -185,11 +192,19 @@ class FactoidManager(cogs.BaseCog):
     # LOOP STUFF
 
     async def startup_jobs(self: Self) -> None:
+        """This registers all jobs at once, ideally run when the bot restarts
+        All jobs in all guilds are read with this
+        """
         all_jobs = await self.bot.models.FactoidJob.query.gino.all()
         for job in all_jobs:
             await self.register_job(job)
 
     async def register_job(self: Self, job: bot.models.FactoidJob) -> None:
+        """This registers a FactoidJob with apscheduler, to allow it to be automatically called
+
+        Args:
+            job (bot.models.FactoidJob): The job database entry to schedule
+        """
         guild = self.bot.get_guild(int(job.guild))
         await self.bot.scheduler.schedule_cron(
             task_name="factoid_loop",
@@ -249,6 +264,7 @@ class FactoidManager(cogs.BaseCog):
 
         last_message = await channel.fetch_message(channel.last_message_id)
         embed_sent = False
+        sent_message = None
         if embed:
             try:
                 # If the bot wrote the last message, and its the same as the current job, do nothing
@@ -297,6 +313,15 @@ class FactoidManager(cogs.BaseCog):
                 factoid=factoid,
             )
         )
+
+        if not sent_message:
+            # This is a major error, and should never happen
+            await self.logger.send_log(
+                message="Factoid sent_message not found. Critical failure",
+                level=LogLevel.ERROR,
+                context=LogContext(guild=guild, channel=channel),
+            )
+            return
 
         # IRC connection
         self.send_factoid_to_irc(channel, factoid, guild.me)
@@ -546,6 +571,16 @@ class FactoidManager(cogs.BaseCog):
     async def get_factoid_view_by_id(
         self: Self, guild: discord.Guild, factoid_data_id: int
     ) -> FactoidView | None:
+        """This gets a factoid view for a given factoid ID
+        This attempts to fetch the factoid from cache, but will query the database if needed
+
+        Args:
+            guild (discord.Guild): The guild the factoid belongs in
+            factoid_data_id (int): The ID of the factoid to fetch
+
+        Returns:
+            FactoidView | None: The factoid view of the factoid, if the factoid exists
+        """
         cached_data = self.get_from_cache(guild, factoid_data_id)
         if cached_data:
             return cached_data
