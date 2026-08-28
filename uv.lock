@@ -174,11 +174,11 @@ wheels = [
 
 [[package]]
 name = "bidict"
-version = "0.23.1"
+version = "0.24.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/9a/6e/026678aa5a830e07cd9498a05d3e7e650a4f56a42f267a53d22bcda1bdc9/bidict-0.23.1.tar.gz", hash = "sha256:03069d763bc387bbd20e7d49914e75fc4132a41937fa3405417e1a5a2d006d71", size = 29093, upload-time = "2024-02-18T19:09:05.748Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/16/fd/edb3e88392853aa0e4b84c6ce44b0040ac79ba1e299ed689a9cb762c22b3/bidict-0.24.0.tar.gz", hash = "sha256:3ac3ed76ed1875bd23a5253daa34e7816e7786570d6df8c900c0c64c28634b39", size = 30211, upload-time = "2026-08-25T01:33:09.167Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/99/37/e8730c3587a65eb5645d4aba2d27aae48e8003614d6aaf15dda67f702f1f/bidict-0.23.1-py3-none-any.whl", hash = "sha256:5dae8d4d79b552a71cbabc7deb25dfe8ce710b17ff41711e13010ead2abfc3e5", size = 32764, upload-time = "2024-02-18T19:09:04.156Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/5b/e16e8cefa48c501b64bec8264f480dc45e87bb4c65d5c9ae5ac4252da3df/bidict-0.24.0-py3-none-any.whl", hash = "sha256:402ee24909d450d438fc5ae7621973817a22f2b9487504dc96954bb861be6f4f", size = 36249, upload-time = "2026-08-25T01:33:08.133Z" },
 ]
 
 [[package]]
@@ -360,7 +360,7 @@ dev = [
 requires-dist = [
     { name = "aiocron", specifier = "==2.1" },
     { name = "apscheduler", specifier = "==3.11.2" },
-    { name = "bidict", specifier = "==0.23.1" },
+    { name = "bidict", specifier = "==0.24.0" },
     { name = "black", marker = "extra == 'dev'", specifier = "==26.5.1" },
     { name = "cryptography", specifier = "==49.0.0" },
     { name = "dateparser", specifier = "==1.4.1" },

@@ -5,7 +5,7 @@ requires-python = ">=3.13,<3.14"
 dependencies = [
     "aiocron==2.1",
     "apscheduler==3.11.2",
-    "bidict==0.23.1",
+    "bidict==0.24.0",
     "cryptography==49.0.0",
     "dateparser==1.4.1",
     "discord.py==2.7.1",
