@@ -26,7 +26,7 @@ dev = [
     "black==26.5.1",
     "flake8==7.3.0",
     "flake8-annotations==3.2.0",
-    "flake8-bugbear==25.11.29",
+    "flake8-bugbear==26.9.9",
     "flake8-docstrings-complete==1.4.1",
     "flake8-modern-annotations==1.6.0",
     "flake8-variables-names==0.0.6",
