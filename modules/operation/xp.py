@@ -78,7 +78,7 @@ class LevelXP(cogs.MatchCog):
             # 1 - DisplayName (username), @XP, xp
             user_str = f"Unkown user ({database_entry.user_id})"
             xp_role_str = "No role yet"
-            xp_user: Optional[discord.Member] = None
+            xp_user: discord.Member | None = None
 
             try:
                 # Try fetching member first
