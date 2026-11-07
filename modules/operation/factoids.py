@@ -2147,10 +2147,8 @@ class FactoidManager(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that called this command
             factoid_name (str): The name of the factoid to create
-
-        Raises:
-            Exception: Raised if for any reason the factoid call fails to be created, but the factoid data was created
         """
+
         factoid_name = factoid_name.lower()
         # Only ever attempt to add a factoid if it doesn't exist
         existing_factoid = await self.get_factoid_view_by_name(
@@ -2205,7 +2203,7 @@ class FactoidManager(cogs.BaseCog):
             )
         except Exception as exc:
             await factoid.delete()
-            raise exc
+            raise
 
         # We must update the factoid all and autocomplete list
         self.clear_guild_caches(interaction.guild)
