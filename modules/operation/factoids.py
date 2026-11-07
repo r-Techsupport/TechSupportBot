@@ -2201,7 +2201,7 @@ class FactoidManager(cogs.BaseCog):
                 name=factoid_name,
                 factoid_data_id=factoid.factoid_data_id,
             )
-        except Exception as exc:
+        except Exception:
             await factoid.delete()
             raise
 
