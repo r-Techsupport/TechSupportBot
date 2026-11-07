@@ -62,7 +62,7 @@ class LevelXP(cogs.MatchCog):
             .where(self.bot.models.XP.xp > 0)
             .where(self.bot.models.XP.guild_id == str(interaction.guild.id))
             .gino.all()
-        )[:10]
+        )
 
         if not top_xp:
             embed = auxiliary.prepare_deny_embed(
@@ -71,10 +71,10 @@ class LevelXP(cogs.MatchCog):
             await interaction.followup.send(embed=embed)
             return
 
-        embed = discord.Embed(title=f"Top {len(top_xp)} users in this server:")
+        embed = discord.Embed(title=f"Top {min(len(top_xp), 10)} users in this server:")
         description = ""
         index = 1
-        for database_entry in top_xp:
+        for database_entry in top_xp[:10]:
             # 1 - DisplayName (username), @XP, xp
             user_str = f"Unkown user ({database_entry.user_id})"
             xp_role_str = "No role yet"
@@ -99,6 +99,34 @@ class LevelXP(cogs.MatchCog):
 
             description += f"{index} - {user_str}, {xp_role_str}, {database_entry.xp}\n"
             index += 1
+
+        # Find and display the caller's rank if outside the top 10
+        caller_position = next(
+            (
+                position
+                for position, database_entry in enumerate(top_xp, start=1)
+                if str(database_entry.user_id) == str(interaction.user.id)
+            ),
+            None,
+        )
+
+        if caller_position is not None and caller_position > 10:
+            caller = top_xp[caller_position - 1]
+            xp_role_str = "No role yet"
+
+            if isinstance(interaction.user, discord.Member):
+                xp_role = await get_current_XP_role(self.bot, interaction.user)
+                if xp_role:
+                    xp_role_str = xp_role.mention
+
+            description += (
+                f"\n**Your Rank:**\n"
+                f"{caller_position} - {interaction.user.mention} "
+                f"({interaction.user.name}), {xp_role_str}, {caller.xp}"
+            )
+
+        elif caller_position is None:
+            description += "\n**Your Rank:**\nUnranked (0 XP)"
 
         embed.description = description
         embed.color = discord.Color.dark_gold()
