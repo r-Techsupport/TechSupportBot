@@ -618,36 +618,44 @@ class DuckHunt(cogs.BaseCog):
             )
             return
 
-        field_counter = 1
-        embeds = []
-        for index, duck_user in enumerate(duck_users):
-            embed = (
-                discord.Embed(
-                    title="Duck Friendships",
-                    description=(
-                        "Global speed record: "
-                        f" {str(await self.get_global_record(ctx.guild.id))} seconds"
-                    ),
-                )
-                if field_counter == 1
-                else embed
+        description = f"Global speed record: {await self.get_global_record(ctx.guild.id)} seconds\n\n"
+
+        # Top 10 killers
+        for position, duck_user in enumerate(duck_users[:10], start=1):
+            user_str = await self.get_user_text(duck_user, ctx.guild)
+            description += f"{position} - {user_str}, {duck_user.befriend_count} friend{"s" if duck_user.befriend_count != 1 else ""}\n"
+
+        # Find the command caller's position
+        caller_position = next(
+            (
+                position
+                for position, duck_user in enumerate(duck_users, start=1)
+                if str(duck_user.author_id) == str(ctx.author.id)
+            ),
+            None,
+        )
+
+        # Display the caller separately if they're outside the top 10
+        if caller_position is not None and caller_position > 10:
+            caller = duck_users[caller_position - 1]
+            user_str = await self.get_user_text(caller, ctx.guild)
+
+            description += (
+                f"\n**Your Rank:**\n"
+                f"{caller_position} - {user_str}, {caller.befriend_count} friend{"s" if caller.befriend_count != 1 else ""}"
             )
 
-            embed.set_thumbnail(url=self.DUCK_PIC_URL)
-            embed.color = embed_colors.green()
+        elif caller_position is None:
+            description += "\n**Your Rank:**\nUnranked (0 friends)"
 
-            embed.add_field(
-                name=await self.get_user_text(duck_user, ctx.guild),
-                value=f"Friends: `{duck_user.befriend_count}`",
-                inline=False,
-            )
-            if field_counter == 3 or index == len(duck_users) - 1:
-                embeds.append(embed)
-                field_counter = 1
-            else:
-                field_counter += 1
+        embed = discord.Embed(
+            title="Duck Friendships",
+            description=description,
+            color=embed_colors.green(),
+        )
+        embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
-        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
+        await ctx.send(embed=embed)
 
     @auxiliary.with_typing
     @commands.guild_only()
@@ -695,10 +703,10 @@ class DuckHunt(cogs.BaseCog):
         description="Gets duck kill scores for all users",
     )
     async def killers(self: Self, ctx: commands.Context) -> None:
-        """Discord command to view high scores for killed ducks
+        """Discord command to view high scores for killed ducks.
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            ctx (commands.Context): The context in which the command was run.
         """
         duck_users = (
             await self.bot.models.DuckUser.query.order_by(
@@ -711,40 +719,49 @@ class DuckHunt(cogs.BaseCog):
 
         if not duck_users:
             await auxiliary.send_deny_embed(
-                message="It appears nobody has killed any ducks", channel=ctx.channel
+                message="It appears nobody has killed any ducks",
+                channel=ctx.channel,
             )
             return
 
-        field_counter = 1
-        embeds = []
-        for index, duck_user in enumerate(duck_users):
-            embed = (
-                discord.Embed(
-                    title="Duck Kills",
-                    description=(
-                        "Global speed record: "
-                        f" {str(await self.get_global_record(ctx.guild.id))} seconds"
-                    ),
-                )
-                if field_counter == 1
-                else embed
+        description = f"Global speed record: {await self.get_global_record(ctx.guild.id)} seconds\n\n"
+
+        # Top 10 killers
+        for position, duck_user in enumerate(duck_users[:10], start=1):
+            user_str = await self.get_user_text(duck_user, ctx.guild)
+            description += f"{position} - {user_str}, {duck_user.kill_count} kill{"s" if duck_user.kill_count != 1 else ""}\n"
+
+        # Find the command caller's position
+        caller_position = next(
+            (
+                position
+                for position, duck_user in enumerate(duck_users, start=1)
+                if str(duck_user.author_id) == str(ctx.author.id)
+            ),
+            None,
+        )
+
+        # Display the caller separately if they're outside the top 10
+        if caller_position is not None and caller_position > 10:
+            caller = duck_users[caller_position - 1]
+            user_str = await self.get_user_text(caller, ctx.guild)
+
+            description += (
+                f"\n**Your Rank:**\n"
+                f"{caller_position} - {user_str}, {caller.kill_count} kill{"s" if caller.kill_count != 1 else ""}"
             )
 
-            embed.set_thumbnail(url=self.DUCK_PIC_URL)
-            embed.color = embed_colors.green()
+        elif caller_position is None:
+            description += "\n**Your Rank:**\nUnranked (0 kills)"
 
-            embed.add_field(
-                name=await self.get_user_text(duck_user, ctx.guild),
-                value=f"Kills: `{duck_user.kill_count}`",
-                inline=False,
-            )
-            if field_counter == 3 or index == len(duck_users) - 1:
-                embeds.append(embed)
-                field_counter = 1
-            else:
-                field_counter += 1
+        embed = discord.Embed(
+            title="Duck Kills",
+            description=description,
+            color=embed_colors.green(),
+        )
+        embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
-        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
+        await ctx.send(embed=embed)
 
     async def get_user_text(
         self: Self, duck_user: bot.models.DuckUser, guild: discord.Guild

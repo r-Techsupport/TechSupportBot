@@ -9,6 +9,9 @@ Changes since 2026.06.15
 
 ## Fun
 
+### Duck
+- Refactors the duck killers and friends list to show only the top 10 + the caller
+
 ### Giphy
 - Fixes giphy command not correctly returning the image
 
