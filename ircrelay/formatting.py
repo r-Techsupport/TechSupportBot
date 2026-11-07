@@ -112,7 +112,7 @@ def core_sent_message_format(
 
 def factoid_format(factoid: factoids.FactoidView, author: discord.Member) -> str:
     """This formats a factoid, adds a permissions prefix, user prefix, and fixes new lines
-    
+
     Args:
         factoid (factoids.FactoidView): The factoid object that should be sent to IRC
         author (discord.Member): The discord member who sent the factoid

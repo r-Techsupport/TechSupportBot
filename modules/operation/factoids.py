@@ -118,6 +118,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     """
     await bot.add_cog(FactoidManager(bot=bot))
 
+
 @dataclass
 class FactoidView:
     """A parsed combination of the FactoidData and FactoidCall databases.
@@ -144,6 +145,7 @@ class FactoidView:
     create_time: datetime.datetime
     edit_time: datetime.datetime
     calls: list[str]
+
 
 class Properties(IntFlag):
     """
