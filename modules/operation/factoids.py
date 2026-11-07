@@ -2147,6 +2147,9 @@ class FactoidManager(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that called this command
             factoid_name (str): The name of the factoid to create
+
+        Raises:
+            Exception: Raised if for any reason the factoid call fails to be created, but the factoid data was created
         """
 
         factoid_name = factoid_name.lower()
