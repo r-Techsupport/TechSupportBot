@@ -294,7 +294,7 @@ wheels = [
 
 [[package]]
 name = "dateparser"
-version = "1.4.0"
+version = "1.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "python-dateutil" },
@@ -302,9 +302,9 @@ dependencies = [
     { name = "regex" },
     { name = "tzlocal" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/46/2d/a0ccdb78788064fa0dc901b8524e50615c42be1d78b78d646d0b28d09180/dateparser-1.4.0.tar.gz", hash = "sha256:97a21840d5ecdf7630c584f673338a5afac5dfe84f647baf4d7e8df98f9354a4", size = 321512, upload-time = "2026-03-26T09:56:10.292Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d3/f4/561c49bca97af561d34eed27e3e831135eb5cb88e754c1150be41820f5c6/dateparser-1.4.1.tar.gz", hash = "sha256:f265df13c0380e2e07543ba74b67c0681aaa1096981ffcd35227e1aa0cb81c7c", size = 314734, upload-time = "2026-06-15T08:45:47.659Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b4/0b/3c3bb7cbe757279e693a0be6049048012f794d01f81099609ecd53b899f0/dateparser-1.4.0-py3-none-any.whl", hash = "sha256:7902b8e85d603494bf70a5a0b1decdddb2270b9c6e6b2bc8a57b93476c0df378", size = 300379, upload-time = "2026-03-26T09:56:08.409Z" },
+    { url = "https://files.pythonhosted.org/packages/8b/7c/2e5dcf53909deddd0bf38cbe277ad9806be038276b1c6c436561b4d9b2e2/dateparser-1.4.1-py3-none-any.whl", hash = "sha256:f25d4e051a84be27a35bd297e3e1dc59ff78373701b89be352ba80372d22d0d0", size = 300503, upload-time = "2026-06-15T08:45:45.951Z" },
 ]
 
 [[package]]
@@ -363,7 +363,7 @@ requires-dist = [
     { name = "bidict", specifier = "==0.23.1" },
     { name = "black", marker = "extra == 'dev'", specifier = "==26.5.1" },
     { name = "cryptography", specifier = "==49.0.0" },
-    { name = "dateparser", specifier = "==1.4.0" },
+    { name = "dateparser", specifier = "==1.4.1" },
     { name = "discord-py", specifier = "==2.7.1" },
     { name = "emoji", specifier = "==2.15.0" },
     { name = "expiringdict", specifier = "==1.2.2" },
@@ -375,7 +375,7 @@ requires-dist = [
     { name = "flake8-variables-names", marker = "extra == 'dev'", specifier = "==0.0.6" },
     { name = "gino", specifier = "==1.0.1" },
     { name = "gitpython", specifier = "==3.1.50" },
-    { name = "hypothesis", marker = "extra == 'dev'", specifier = "==6.155.2" },
+    { name = "hypothesis", marker = "extra == 'dev'", specifier = "==6.155.3" },
     { name = "inflect", specifier = "==7.5.0" },
     { name = "irc", specifier = "==20.5.0" },
     { name = "isort", marker = "extra == 'dev'", specifier = "==8.0.1" },
@@ -583,14 +583,14 @@ wheels = [
 
 [[package]]
 name = "hypothesis"
-version = "6.155.2"
+version = "6.155.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "sortedcontainers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f5/04/64032a1dccd2233615c8a3f701bbb563558575ed017496a24b6d81762c91/hypothesis-6.155.2.tar.gz", hash = "sha256:ae36880287c9c5defe9f199d3d2b67d9947a4da2a46e6c57373cbdf2345b20e1", size = 477765, upload-time = "2026-06-05T16:32:23.63Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/36/77/13ec9b6390bce44f5badab39837dd6789bbfe6342a2ac611a71537a7756f/hypothesis-6.155.3.tar.gz", hash = "sha256:1e34b17ae9873515384312cb7640abd773eb096c7eef8c0d9c614fa2c306e9bb", size = 477961, upload-time = "2026-06-16T00:33:23.273Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ec/6e/e735f27ac1a530a4cd0a31cd970ec495a3a11830fdc5d281cc292593b330/hypothesis-6.155.2-py3-none-any.whl", hash = "sha256:c85ce6dcd630a90ce501f1d1dd1bc84b97f5649ca8a27e134c8cbf5aa480b1a5", size = 544213, upload-time = "2026-06-05T16:32:21.15Z" },
+    { url = "https://files.pythonhosted.org/packages/a2/23/ce3a543935a01e478349e82f6c1440776f92d4cb346662c4d81574878fed/hypothesis-6.155.3-py3-none-any.whl", hash = "sha256:ede5a3d142d9c5c9f70cb3075541905b228d6c3a682bcec3d4fe0722e9eda127", size = 544401, upload-time = "2026-06-16T00:33:20.497Z" },
 ]
 
 [[package]]
