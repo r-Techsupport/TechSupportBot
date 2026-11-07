@@ -40,6 +40,7 @@
     "embed_embed_roles": [],
     "factoids_admin_roles": [],
     "factoids_disable_embeds": false,
+    "factoids_disable_prefix": true,
     "factoids_manage_roles": [],
     "factoids_prefix": "?",
     "factoids_restricted_list": [],
