@@ -19,6 +19,9 @@ Changes since 2026.06.15
 
 ## Moderation
 
+### Automod
+- Removes the old automod violations embed in favor of the modlog system
+
 ### Moderator
 - Fix /mute command using the wrong datetime object
 

@@ -278,25 +278,6 @@ class AutoMod(cogs.MatchCog):
                 context=LogContext(guild=ctx.guild, channel=ctx.channel),
             )
 
-        alert_channel_embed = generate_automod_alert_embed(
-            ctx, total_punishment.total_punishments, total_punishment.action_string
-        )
-        try:
-            alert_channel = ctx.guild.get_channel(
-                int(
-                    configuration.get_config_entry(
-                        ctx.guild.id, "automod_alert_channel"
-                    )
-                )
-            )
-        except TypeError:
-            alert_channel = None
-
-        if not alert_channel:
-            return
-
-        await alert_channel.send(embed=alert_channel_embed)
-
     @commands.Cog.listener()
     async def on_raw_message_edit(
         self: Self, payload: discord.RawMessageUpdateEvent
@@ -397,43 +378,6 @@ def process_automod_violations(
     )
 
     return final_action
-
-
-def generate_automod_alert_embed(
-    ctx: commands.Context, violations: str, action_taken: str
-) -> discord.Embed:
-    """Generates an alert embed for the automod rules that are broken
-
-    Args:
-        ctx (commands.Context): The context of the message that violated the automod
-        violations (str): The string form of ALL automod violations the user triggered
-        action_taken (str): The text based action taken against the user
-
-    Returns:
-        discord.Embed: The formatted embed ready to be sent to discord
-    """
-
-    ALERT_ICON_URL: str = (
-        "https://www.iconarchive.com/download/i76061/martz90/circle-addon2/warning.512.png"
-    )
-
-    embed = discord.Embed(
-        title="Automod Violations",
-        description=violations,
-    )
-    embed.add_field(name="Actions Taken", value=action_taken)
-    embed.add_field(name="Channel", value=f"{ctx.channel.mention} ({ctx.channel.name})")
-    embed.add_field(
-        name="User", value=f"{ctx.author.mention} ({ctx.author.name}, {ctx.author.id})"
-    )
-    embed.add_field(name="Message", value=ctx.message.content[:1024], inline=False)
-    embed.add_field(name="URL", value=ctx.message.jump_url, inline=False)
-
-    embed.set_thumbnail(url=ALERT_ICON_URL)
-    embed.color = discord.Color.red()
-    embed.timestamp = datetime.datetime.utcnow()
-
-    return embed
 
 
 # Automod will only ever be a framework to say something needs to be done
