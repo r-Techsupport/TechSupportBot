@@ -133,7 +133,7 @@ class FactoidView:
         flags (int): Bitwise flags that control protected, hidden, restricted and disabled.
         times_called (int): Total number of times the factoid has been called.
         create_time (datetime.datetime): Date and time the factoid was created.
-        edit_time )datetime.datetime): Date and time the factoid was last edited.
+        edit_time (datetime.datetime): Date and time the factoid was last edited.
         calls (list[str]): List of strings used to invoke the factoid.
     """
 
@@ -509,7 +509,12 @@ class FactoidManager(cogs.BaseCog):
         guild: discord.Guild,
         name: str,
     ) -> None:
-        """Deletes a factoid call by name."""
+        """This deletes a factoid call. This function has no checks for an orphaned factoid data
+
+        Args:
+            guild (discord.Guild): The guild the factoid exists in
+            name (str): The name of the call to delete
+        """
 
         await self.bot.models.FactoidCall.delete.where(
             (self.bot.models.FactoidCall.guild == str(guild.id))
@@ -526,7 +531,8 @@ class FactoidManager(cogs.BaseCog):
 
         Args:
             guild (discord.Guild): The guild to find the factoid job of
-            factoid_job_id (int): The ID of the factoid to search for
+            factoid_data_id (int): The ID of the factoid to search for
+            channel (discord.abc.GuildChannel): The channel the factoid job is running in
 
         Returns:
             bot.models.FactoidJob: The database entry for the factoid job
@@ -2141,6 +2147,9 @@ class FactoidManager(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that called this command
             factoid_name (str): The name of the factoid to create
+
+        Raises:
+            Exception: Raised if for any reason the factoid call fails to be created, but the factoid data was created
         """
         factoid_name = factoid_name.lower()
         # Only ever attempt to add a factoid if it doesn't exist
@@ -3287,7 +3296,7 @@ class FactoidModal(discord.ui.Modal):
     Args:
         factoid_name (str): The name of the factoid, to display in the title
         edit_mode (bool): True if this is editing a factoid, false if this is a new factoid
-        factoid (FactoidView): If this factoid already exists, the view data of the factoid
+        factoid (FactoidView | None): If this factoid already exists, the view data of the factoid
 
     Attributes:
         plaintext (discord.ui.Label): The plaintext representation of the factoid

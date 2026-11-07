@@ -135,8 +135,8 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             factoid_data_id (int): The data ID of the factoid
             guild (str): The ID of the guild this factoid belongs to
             message (str): The plaintext message of this factoid
-            create_time (datetime): The time this factoid was created in the database
-            edit_time (datetime): The last time this factoid was edited in any way
+            create_time (datetime.datetime): The time this factoid was created in the database
+            edit_time (datetime.datetime): The last time this factoid was edited in any way
             json_string (str): The JSON of an embed, parsed into a string
             flags (int): A bitwise value of the property flags of this factoid
             times_called (int): The amount of times this factoid was called
@@ -204,7 +204,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         factoid_job_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
         guild: str = bot.db.Column(bot.db.String, index=True)
-        factoid_data_id = bot.db.Column(
+        factoid_data_id: object = bot.db.Column(
             bot.db.Integer,
             bot.db.ForeignKey("factoid_data.factoid_data_id"),
             nullable=False,
