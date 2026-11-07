@@ -379,6 +379,7 @@ def process_automod_violations(
 
     return final_action
 
+
 # Automod will only ever be a framework to say something needs to be done
 # Outside of running from the response function, NO ACTION will be taken
 # All checks will return a list of AutoModPunishment, which may be nothing
