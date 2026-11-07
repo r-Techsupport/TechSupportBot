@@ -578,7 +578,15 @@ class FactoidManager(cogs.BaseCog):
         guild: discord.Guild,
         factoid_data_id: int,
     ) -> list[bot.models.FactoidJob]:
-        """Returns all jobs pointing to a factoid."""
+        """Gets a list of all jobs associated with a specific factoid
+
+        Args:
+            guild (discord.Guild): The guild the factoid belongs to
+            factoid_data_id (int): The ID of the factoid to search for
+
+        Returns:
+            list[bot.models.FactoidJob]: The list of all the database entires of the jobs
+        """
 
         return await self.bot.models.FactoidJob.query.where(
             (self.bot.models.FactoidJob.guild == str(guild.id))
@@ -693,11 +701,16 @@ class FactoidManager(cogs.BaseCog):
         existing_name: str,
         new_factoid_data_id: int,
     ) -> bool:
-        """
-        Moves a FactoidCall to a different FactoidData entry.
+        """This changes which data object a call object points to
+        If no remaining calls exist, the old factoid data will be deleted
 
-        If the old FactoidData loses all calls, it is deleted.
-        Returns True if the move succeeded.
+        Args:
+            guild (discord.Guild): The guild the factoids belong to
+            existing_name (str): The call string to move
+            new_factoid_data_id (int): The new ID of the data to point the call to
+
+        Returns:
+            bool: Whether this was successful or not
         """
         call = await self.read_factoid_call(
             guild=guild,
@@ -3374,6 +3387,11 @@ class FactoidModal(discord.ui.Modal):
 class InfoEmbedButtons(discord.ui.View):
     """This adds up to 3 buttons for relevant factoids
     This also handles the pressing of these buttons
+
+    Args:
+        author_id (int): The ID of the author of the factoid
+        factoid (FactoidView): The factoid data of the factoid these buttons are attached to
+        cog (FactoidManager): The factoids cog object
     """
 
     def __init__(
