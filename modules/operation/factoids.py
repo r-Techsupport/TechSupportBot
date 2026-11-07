@@ -2982,9 +2982,7 @@ class FactoidManager(cogs.BaseCog):
             if factoid.flags & Properties.HIDDEN:
                 continue
 
-            if (factoid.message and query in factoid.message.lower()) or (
-                factoid.json_string and query in factoid.json_string.lower()
-            ):
+            if query in factoid.message.lower() or query in factoid.json_string.lower():
                 matching_factoids.append(factoid)
 
         if not matching_factoids:
