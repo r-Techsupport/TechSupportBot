@@ -22,6 +22,9 @@ Changes since 2026.06.15
 ### Modlog
 - Fix the data entry field for the automod block action type
 
+### Modmail
+- Fix the modmail closure logging to not say everyone has left
+
 ### Nickname
 - Fix config call missing guild ID
 
