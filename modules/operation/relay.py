@@ -14,6 +14,7 @@ import ui
 from core import auxiliary, cogs
 from modules.moderation import automod
 from modules.moderation import logger as function_logger
+from modules.operation import factoids
 
 if TYPE_CHECKING:
     import bot
@@ -109,19 +110,19 @@ class DiscordToIRC(cogs.MatchCog):
         if self.bot.irc.ready:
             self.bot.irc.send_message_from_discord(message=ctx.message, channel=result)
 
-    async def handle_factoid(
+    def handle_factoid(
         self: Self,
         channel: discord.abc.Messageable,
-        discord_message: discord.Message,
-        factoid_message: str,
+        factoid: factoids.FactoidView,
+        author: discord.Member,
     ) -> None:
         """A method to handle a factoid event and send a message to IRC with the content of
         the factoid but the author of the factoid invoker
 
         Args:
             channel (discord.abc.Messageable): The discord channel the factoid was called in
-            discord_message (discord.Message): The original containing the invocation of the factoid
-            factoid_message (str): The string representation of the factoid
+            factoid (factoids.FactoidView): The factoid object to be processed and sent to IRC
+            author (discord.Member): The discord member who called the factoid initially
         """
         irc_config = self.bot.file_config.api.irc
         if not irc_config.enable_irc:
@@ -134,10 +135,8 @@ class DiscordToIRC(cogs.MatchCog):
         if str(channel.id) not in self.mapping:
             return
 
-        self.bot.irc.send_message_from_discord(
-            message=discord_message,
-            channel=self.mapping[str(channel.id)],
-            content_override=factoid_message,
+        self.bot.irc.send_factoid_from_discord(
+            channel=self.mapping[str(channel.id)], factoid=factoid, author=author
         )
 
     @commands.group(
