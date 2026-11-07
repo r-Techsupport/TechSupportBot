@@ -42,6 +42,9 @@ Changes since 2026.06.15
 ### Relay
 - Make relay only ping users with words starting with an @
 
+### XP
+- Fix the /xp top command failing if someone has left the server
+
 ## Utility
 
 # Dependencies

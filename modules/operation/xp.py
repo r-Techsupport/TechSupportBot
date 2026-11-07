@@ -76,17 +76,26 @@ class LevelXP(cogs.MatchCog):
         index = 1
         for database_entry in top_xp:
             # 1 - DisplayName (username), @XP, xp
-            xp_user: discord.Member = await interaction.guild.fetch_member(
-                database_entry.user_id
-            )
             user_str = f"Unkown user ({database_entry.user_id})"
             xp_role_str = "No role yet"
+            xp_user: discord.Member | None = None
 
-            if xp_user:
+            try:
+                # Try fetching member first
+                xp_user = await interaction.guild.fetch_member(
+                    int(database_entry.user_id)
+                )
                 user_str = f"{xp_user.mention} ({xp_user.name})"
                 xp_role = await get_current_XP_role(self.bot, xp_user)
                 if xp_role:
                     xp_role_str = xp_role.mention
+            except (discord.NotFound, discord.HTTPException):
+                try:
+                    # Fall back to global user if no member exists
+                    user_obj = await self.bot.fetch_user(int(database_entry.user_id))
+                    user_str = f"{user_obj.name} ({database_entry.user_id})"
+                except discord.HTTPException:
+                    pass
 
             description += f"{index} - {user_str}, {xp_role_str}, {database_entry.xp}\n"
             index += 1
