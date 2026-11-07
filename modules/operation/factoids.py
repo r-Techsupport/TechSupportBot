@@ -908,7 +908,6 @@ class FactoidManager(cogs.BaseCog):
         Can handle parsing threads
 
         Args:
-            self (Self): _description_
             channel (discord.abc.GuildChannel): The channel trying to see the factoid
 
         Returns:
@@ -950,16 +949,16 @@ class FactoidManager(cogs.BaseCog):
         channel: discord.abc.GuildChannel,
         author: discord.Member,
     ) -> ui.ConfirmResponse:
-        """Confirms if a factoid should be deleted/modified
+        """Process the confirmation propmt for deleting a factoid
 
         Args:
-            factoid_name (str): The factoid that is being prompted for deletion
+            interaction (discord.Interaction): The interaction calling the factoid deletion
+            display_message (str): The message to display to the user
             channel (discord.abc.GuildChannel): The channel the factoid is being deleted in
-            author (discord.Member): The member deleting the factoid
-            fmt (str): Formatting for the returned message
+            author (discord.Member): The person trying to delete the factoid
 
         Returns:
-            bool: Whether the factoid was deleted/modified
+            ui.ConfirmResponse: If the factoid was confirmed to be deleted or not
         """
         view = ui.Confirm()
         await view.send(
@@ -1398,7 +1397,15 @@ class FactoidManager(cogs.BaseCog):
                 (parsed_url.scheme, parsed_url.netloc, parsed_url.path, "", "")
             )
 
-        def normalize_inline(value):
+        def normalize_inline(value: int | bool) -> bool:
+            """This ensuring inline boolean is standardized from discord
+
+            Args:
+                value (int | bool): The raw incoming data from discord
+
+            Returns:
+                bool: THe standarzied boolean to use to detect changes
+            """
             if value is None:
                 return False
             return bool(value)

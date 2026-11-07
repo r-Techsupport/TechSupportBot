@@ -121,8 +121,8 @@ class DiscordToIRC(cogs.MatchCog):
 
         Args:
             channel (discord.abc.Messageable): The discord channel the factoid was called in
-            discord_message (discord.Message): The original containing the invocation of the factoid
-            factoid_message (str): The string representation of the factoid
+            factoid (factoids.FactoidView): The factoid object to be processed and sent to IRC
+            author (discord.Member): The discord member who called the factoid initially
         """
         irc_config = self.bot.file_config.api.irc
         if not irc_config.enable_irc:
