@@ -91,8 +91,8 @@ async def has_given_factoids_role(
     """
     factoid_roles = []
     # Gets permitted roles
-    for id in check_roles:
-        factoid_role = guild.get_role(int(id))
+    for role_id in check_roles:
+        factoid_role = guild.get_role(int(role_id))
         if not factoid_role:
             continue
         factoid_roles.append(factoid_role)
@@ -118,11 +118,22 @@ async def setup(bot: bot.TechSupportBot) -> None:
     """
     await bot.add_cog(FactoidManager(bot=bot))
 
-
 @dataclass
 class FactoidView:
-    """The FactoidView is a parsed combination of the FactoidData and FactoidCall databases
-    The FactoidView contains all the calls, in a list, as well as all the data
+    """A parsed combination of the FactoidData and FactoidCall databases.
+
+    Contains all data associated with a factoid, including a list of
+    its registered calls.
+
+    Attributes:
+        factoid_data_id (int): Unique identifier of the factoid.
+        message (str): The plaintext string of the factoid.
+        json_string (str): The JOSN represetntation of the embed config.
+        flags (int): Bitwise flags that control protected, hidden, restricted and disabled.
+        times_called (int): Total number of times the factoid has been called.
+        create_time (datetime.datetime): Date and time the factoid was created.
+        edit_time )datetime.datetime): Date and time the factoid was last edited.
+        calls (list[str]): List of strings used to invoke the factoid.
     """
 
     factoid_data_id: int
@@ -133,7 +144,6 @@ class FactoidView:
     create_time: datetime.datetime
     edit_time: datetime.datetime
     calls: list[str]
-
 
 class Properties(IntFlag):
     """
@@ -155,6 +165,10 @@ class Properties(IntFlag):
 class FactoidManager(cogs.BaseCog):
     """This is the cog for factoids
     It is what is registered into the bot and has access to self.bot
+
+    Attributes:
+        factoid_app_group (app_commands.Group): The app command group for all /factoid commands
+        factoid_loop_commands (app_commands.Group): The app command groupd for all /factoid loop commands
     """
 
     factoid_app_group: app_commands.Group = app_commands.Group(
@@ -380,7 +394,6 @@ class FactoidManager(cogs.BaseCog):
         """This creates a new factoid call database entry for the given guild and factoid
 
         Args:
-            self (Self): _description_
             guild (discord.Guild): The guild to create the factoid in
             name (str): The name of the factoid call to create
             factoid_data_id (int): The factoid data entry to associate this call with
@@ -445,7 +458,20 @@ class FactoidManager(cogs.BaseCog):
         times_called: int = None,
         json_string: str = None,
     ) -> bot.models.FactoidData:
-        """Partially updates a factoid data entry."""
+        """Updates a factoid data database entry. Only provided data will be updated, the rest will be unchanged
+
+        Args:
+            guild (discord.Guild): The guild this facotid belongs to
+            factoid_data_id (int): The ID of the factoid
+            message (str, optional): If supplied, the mew plaintext message for this factoid.
+            edit_time (datetime.datetime, optional): If supplied, override the edit time for the factoid.
+            flags (int, optional): If supplied, the new set of property flags for the factoid.
+            times_called (int, optional): If suppied, override the times called for the factoid.
+            json_string (str, optional): If supplied, override the emnbed json for the factoid.
+
+        Returns:
+            bot.models.FactoidData: The updated factoid database entry
+        """
 
         db_entry = await self.read_factoid_data(
             guild=guild,
@@ -514,7 +540,6 @@ class FactoidManager(cogs.BaseCog):
         """This returns raw database entries for all jobs for a given guild
 
         Args:
-            self (Self): _description_
             guild (discord.Guild): The guild to search for
 
         Returns:
@@ -529,7 +554,15 @@ class FactoidManager(cogs.BaseCog):
         guild: discord.Guild,
         factoid_data_id: int,
     ) -> list[bot.models.FactoidCall]:
-        """Returns all calls pointing to a factoid."""
+        """Gets a list of all calls of a factoid by a given factoid data ID
+
+        Args:
+            guild (discord.Guild): The guild the factoid belongs to
+            factoid_data_id (int): The database ID of the factoid to search for
+
+        Returns:
+            list[bot.models.FactoidCall]: A list of all factoid call database objects for the given factoid
+        """
 
         return await self.bot.models.FactoidCall.query.where(
             (self.bot.models.FactoidCall.guild == str(guild.id))
@@ -753,7 +786,6 @@ class FactoidManager(cogs.BaseCog):
         This writes to the database and updates the cache
 
         Args:
-            self (Self): _description_
             guild (discord.Guild): The guild the factoid belongs to
             factoid (FactoidView): The factoid view fo the factoid that was called to increment
         """

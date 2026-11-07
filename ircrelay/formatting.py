@@ -111,12 +111,11 @@ def core_sent_message_format(
 
 
 def factoid_format(factoid: factoids.FactoidView, author: discord.Member) -> str:
-    """This formats a message, adds a permissions prefix, user prefix, and fixes new lines and
-    file attachements
-
+    """This formats a factoid, adds a permissions prefix, user prefix, and fixes new lines
+    
     Args:
-        message (discord.Message): The discord message object to format
-        content_override (str): If passed, this will changed the content of the message
+        factoid (factoids.FactoidView): The factoid object that should be sent to IRC
+        author (discord.Member): The discord member who sent the factoid
 
     Returns:
         str: The string, with unlimited length, that is ready to be sent to IRC

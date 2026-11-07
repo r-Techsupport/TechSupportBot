@@ -139,7 +139,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             edit_time (datetime): The last time this factoid was edited in any way
             json_string (str): The JSON of an embed, parsed into a string
             flags (int): A bitwise value of the property flags of this factoid
-            timed_called (int): The amount of times this factoid was called
+            times_called (int): The amount of times this factoid was called
         """
 
         __tablename__ = "factoid_data"
@@ -181,7 +181,7 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         guild: str = bot.db.Column(bot.db.String, index=True)
         name: str = bot.db.Column(bot.db.String, index=True)
 
-        factoid_data_id = bot.db.Column(
+        factoid_data_id: object = bot.db.Column(
             bot.db.Integer,
             bot.db.ForeignKey("factoid_data.factoid_data_id"),
             nullable=False,
