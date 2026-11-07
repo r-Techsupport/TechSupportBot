@@ -649,7 +649,7 @@ class DuckHunt(cogs.BaseCog):
             description += "\n**Your Rank:**\nUnranked (0 friends)"
 
         embed = discord.Embed(
-            title=f"Duck Friendships",
+            title="Duck Friendships",
             description=description,
             color=embed_colors.green(),
         )
@@ -755,7 +755,7 @@ class DuckHunt(cogs.BaseCog):
             description += "\n**Your Rank:**\nUnranked (0 kills)"
 
         embed = discord.Embed(
-            title=f"Duck Kills",
+            title="Duck Kills",
             description=description,
             color=embed_colors.green(),
         )
