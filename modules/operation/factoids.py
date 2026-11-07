@@ -152,12 +152,14 @@ class Properties(IntFlag):
     This enum is for the new factoid all to be able to handle dynamic properties
 
     Attributes:
+        NONE (int): Representation of no flags being enabled
         DISABLED (int): Representation of disabled
         HIDDEN (int): Representation of hidden
         PROTECTED (int): Representation of protected
         RESTRICTED (int): Representation of restricted
     """
 
+    NONE: int = 0b0000
     DISABLED: int = 0b1000
     HIDDEN: int = 0b0100
     PROTECTED: int = 0b0010
@@ -829,7 +831,6 @@ class FactoidManager(cogs.BaseCog):
         """This adds a factoid to the cache, if it isn't already in the cache
 
         Args:
-            self (Self): _description_
             guild (discord.Guild): The guild the factoid is in
             factoid (FactoidView): The factoid view of the factoid to add to the cache
         """
@@ -1553,7 +1554,7 @@ class FactoidManager(cogs.BaseCog):
         self: Self,
         interaction: discord.Interaction,
         current: str,
-        hidden_flags: Properties = Properties(0),
+        hidden_flags: Properties = Properties.NONE,
     ) -> list[app_commands.Choice[str]]:
         """This autocomplete list is capable of returning all factoids, filtering by no properties
         It is setup in a way where it can be called with a list of flags to hide
@@ -1563,7 +1564,7 @@ class FactoidManager(cogs.BaseCog):
             interaction (discord.Interaction): The interaction calling for autocomplete
             current (str): The current text in the factoid name field
             hidden_flags (Properties, optional): The properties to exclude from the list.
-                Defaults to Properties(0).
+                Defaults to Properties.NONE.
 
         Returns:
             list[app_commands.Choice[str]]: The list of choices matching the user input and flag filter
@@ -2036,7 +2037,6 @@ class FactoidManager(cogs.BaseCog):
         Hopefully this never needs to be run
 
         Args:
-            self (Self): _description_
             interaction (discord.Interaction): The interaction that called this command
         """
         await interaction.response.defer()
@@ -2707,7 +2707,6 @@ class FactoidManager(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that triggered this command
             factoid_name (str): The factoid to edit
             channel (discord.abc.GuildChannel): The channel to put this loop in
-            cron (str): The crontab syntax to use for this job
         """
         factoid_name = factoid_name.lower()
         # Make sure the factoid is valid
@@ -2837,7 +2836,7 @@ class FactoidManager(cogs.BaseCog):
             await self.register_job(job)
 
         embed = auxiliary.prepare_confirm_embed(
-            f"Refreshed {len(jobs)} job{"s" if len(jobs)>1 else ""} in this guild"
+            f"Refreshed {len(jobs)} job{"s" if len(jobs) > 1 else ""} in this guild"
         )
         await interaction.followup.send(embed=embed)
 
@@ -2934,6 +2933,7 @@ class FactoidManager(cogs.BaseCog):
 
         Args:
             interaction (discord.Interaction): The interaction that triggered this command
+            query (str): The string to search the factoids database for
         """
         query = query.lower()
         if len(query) <= 3:
@@ -3159,6 +3159,7 @@ class ButtonView(discord.ui.View):
 
     Args:
         author_id (int): The ID of the author of the factoid
+        factoid (FactoidView): The factoid view data of the factoid these buttons are attached to
     """
 
     # At a point in which we migrate to components, this view should take over sending and processing the embed/plaintext factiods
@@ -3264,7 +3265,9 @@ class FactoidModal(discord.ui.Modal):
     And select default properties for the factoid
 
     Args:
-        factoid (str): The name of the factoid, to display in the title
+        factoid_name (str): The name of the factoid, to display in the title
+        edit_mode (bool): True if this is editing a factoid, false if this is a new factoid
+        factoid (FactoidView): If this factoid already exists, the view data of the factoid
 
     Attributes:
         plaintext (discord.ui.Label): The plaintext representation of the factoid
@@ -3273,7 +3276,7 @@ class FactoidModal(discord.ui.Modal):
     """
 
     def __init__(
-        self,
+        self: Self,
         factoid_name: str,
         edit_mode: bool,
         factoid: FactoidView | None = None,
