@@ -210,8 +210,12 @@ class Modmail_bot(discord.Client):
         Returns:
             discord.Member: The member object obtained
         """
-        guild = await self.fetch_guild(self.guild_id)
-        return await guild.fetch_member(user_id)
+        try:
+            guild = await self.fetch_guild(self.guild_id)
+            return await guild.fetch_member(user_id)
+        except discord.NotFound:
+            # If the member doesn't exist, return a none object
+            return None
 
 
 # Makes the Ts_client variable a global variable
@@ -702,7 +706,7 @@ async def close_thread(
         closed_by (discord.User): The person who closed the thread
     """
     user_id = int(thread.name.split("|")[-1].strip())
-    user = Modmail_client.get_user(user_id)
+    user = await Modmail_client.get_member_object(user_id)
 
     # Waits 5 minutes before closing, below is only executed when func was run as an asyncio job
     if timed:
@@ -802,7 +806,7 @@ async def log_closure(
         closed_by (discord.User): The person who closed the thread
         silent (bool): Whether the thread was closed silently
     """
-    user = Modmail_client.get_user(user_id)
+    user = await Modmail_client.get_member_object(user_id)
 
     if not user:
         embed = discord.Embed(
