@@ -9,7 +9,7 @@ endif
 
 make sync:
 	uv lock
-	uv sync --frozen
+	uv sync --frozen --extra dev
 
 check-format:
 	black $(shell git rev-parse --show-toplevel) --check
