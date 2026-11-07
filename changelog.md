@@ -53,6 +53,7 @@ Changes since 2026.06.15
 
 ### XP
 - Fix the /xp top command failing if someone has left the server
+- The /xp top command now always shows your rank, even if its not in the top 10
 
 ## Utility
 
