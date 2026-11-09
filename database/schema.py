@@ -3,7 +3,19 @@
 import datetime
 
 from piccolo.columns import Boolean, Serial, Timestamp, Varchar
+from piccolo.conf.apps import table_finder
+from piccolo.engine.postgres import PostgresEngine
 from piccolo.table import Table
+
+
+def bind_engine(engine: PostgresEngine) -> None:
+    """Bind all tables defined in this schema to the database engine.
+
+    Args:
+        engine (PostgresEngine): The engine to use for this schema's tables
+    """
+    for table in table_finder([__name__], exclude_imported=True):
+        table._meta.db = engine
 
 
 class Grab(Table, tablename="grabs"):

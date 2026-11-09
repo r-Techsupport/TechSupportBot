@@ -214,34 +214,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         channel: str = bot.db.Column(bot.db.String)
         cron: str = bot.db.Column(bot.db.String)
 
-    class Grab(bot.db.Model):
-        """The postgres table for grabs
-        Currently used in grab.py
-
-        Attributes:
-            pk (int): The primary key for this database
-            author_id (str): The ID of the author of the original grab message
-            channel (str): The channel the message was grabbed from
-            guild (str): The guild the message was grabbed from
-            message (str): The string contents of the message
-            message_hash (str): A hash of the contents of the message
-            time (datetime.datetime): The time the message was grabbed
-            nsfw (bool): Whether the message was grabbed in an NSFW channel
-        """
-
-        __tablename__ = "grabs"
-
-        pk: int = bot.db.Column(bot.db.Integer, primary_key=True)
-        author_id: str = bot.db.Column(bot.db.String)
-        channel: str = bot.db.Column(bot.db.String)
-        guild: str = bot.db.Column(bot.db.String)
-        message: str = bot.db.Column(bot.db.String)
-        message_hash: str = bot.db.Column(bot.db.String)
-        time: datetime.datetime = bot.db.Column(
-            bot.db.DateTime, default=datetime.datetime.utcnow
-        )
-        nsfw: bool = bot.db.Column(bot.db.Boolean, default=False)
-
     class IRCChannelMapping(bot.db.Model):
         """The postgres table for IRC->discord maps
         Currently used in relay.py
@@ -423,7 +395,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.FactoidData = FactoidData
     bot.models.FactoidCall = FactoidCall
     bot.models.FactoidJob = FactoidJob
-    bot.models.Grab = Grab
     bot.models.IRCChannelMapping = IRCChannelMapping
     bot.models.ModmailBan = ModmailBan
     bot.models.UserNote = UserNote
