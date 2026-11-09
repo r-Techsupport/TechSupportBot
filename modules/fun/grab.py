@@ -13,6 +13,7 @@ from discord.ext import commands
 import configuration
 import ui
 from core import auxiliary, cogs, cryptography
+from database.schema import Grab
 
 if TYPE_CHECKING:
     import bot
@@ -52,6 +53,25 @@ async def invalid_channel(ctx: commands.Context) -> bool:
     if str(ctx.channel.id) in allowed_channels:
         return True
     raise commands.CommandError("Grabs are disabled for this channel")
+
+
+async def get_visible_grabs(user: discord.Member, ctx: commands.Context) -> list[Grab]:
+    """Fetch a user's grabs in this server, respecting the channel's NSFW setting.
+
+    Args:
+        user (discord.Member): The user to get grabs for
+        ctx (commands.Context): The command context providing the guild and channel
+
+    Returns:
+        list[Grab]: The user's grabs in this guild, filtered by the channel's NSFW setting
+    """
+    nsfw_filter = () if ctx.channel.is_nsfw() else (Grab.nsfw.eq(False),)
+
+    return await Grab.objects().where(
+        Grab.author_id == str(user.id),
+        Grab.guild == str(ctx.guild.id),
+        *nsfw_filter,
+    )
 
 
 class Grabber(cogs.BaseCog):
@@ -112,11 +132,12 @@ class Grabber(cogs.BaseCog):
         grab_hash = cryptography.hash_text(grab_message)
 
         grab = (
-            await self.bot.models.Grab.query.where(
-                self.bot.models.Grab.author_id == str(user_to_grab.id),
+            await Grab.objects()
+            .where(
+                Grab.author_id == str(user_to_grab.id),
+                Grab.message_hash == grab_hash,
             )
-            .where(self.bot.models.Grab.message_hash == grab_hash)
-            .gino.first()
+            .first()
         )
 
         if grab:
@@ -125,7 +146,7 @@ class Grabber(cogs.BaseCog):
             )
             return
 
-        grab = self.bot.models.Grab(
+        grab = Grab(
             author_id=str(user_to_grab.id),
             channel=str(ctx.channel.id),
             guild=str(ctx.guild.id),
@@ -133,7 +154,7 @@ class Grabber(cogs.BaseCog):
             message_hash=grab_hash,
             nsfw=ctx.channel.is_nsfw(),
         )
-        await grab.create()
+        await grab.save()
 
         await auxiliary.send_confirm_embed(
             message=f"Successfully saved: '*{grab_message}*'", channel=ctx.channel
@@ -176,15 +197,7 @@ class Grabber(cogs.BaseCog):
             )
             return
 
-        query = self.bot.models.Grab.query.where(
-            self.bot.models.Grab.author_id == str(user_to_grab.id)
-        ).where(self.bot.models.Grab.guild == str(ctx.guild.id))
-
-        if not is_nsfw:
-            # pylint: disable=C0121
-            query = query.where(self.bot.models.Grab.nsfw == False)
-
-        grabs = await query.gino.all()
+        grabs = await get_visible_grabs(user_to_grab, ctx)
 
         if not grabs:
             await auxiliary.send_deny_embed(
@@ -253,23 +266,7 @@ class Grabber(cogs.BaseCog):
             )
             return
 
-        grabs = (
-            await self.bot.models.Grab.query.where(
-                self.bot.models.Grab.author_id == str(user_to_grab.id)
-            )
-            .where(self.bot.models.Grab.guild == str(ctx.guild.id))
-            .gino.all()
-        )
-
-        query = self.bot.models.Grab.query.where(
-            self.bot.models.Grab.author_id == str(user_to_grab.id)
-        ).where(self.bot.models.Grab.guild == str(ctx.guild.id))
-
-        if not ctx.channel.is_nsfw():
-            # pylint: disable=C0121
-            query = query.where(self.bot.models.Grab.nsfw == False)
-
-        grabs = await query.gino.all()
+        grabs = await get_visible_grabs(user_to_grab, ctx)
 
         if not grabs:
             await auxiliary.send_deny_embed(
@@ -309,9 +306,6 @@ class Grabber(cogs.BaseCog):
             ctx (commands.Context): The context in which the command was run in
             target_user (discord.Member): The user to delete a grab from
             message (str): The exact string of the grab to delete
-
-        Raises:
-            CommandError: Raised if the grab cannot be found for the given user
         """
         # Stop execution if the invoker isn't the target or an admin
         if (
@@ -325,14 +319,14 @@ class Grabber(cogs.BaseCog):
             return
 
         grab_hash = cryptography.hash_text(message)
-        # Gets the target grab by the message
         grab = (
-            await self.bot.models.Grab.query.where(
-                self.bot.models.Grab.author_id == str(target_user.id)
+            await Grab.objects()
+            .where(
+                Grab.author_id == str(target_user.id),
+                Grab.guild == str(ctx.guild.id),
+                Grab.message_hash == grab_hash,
             )
-            .where(self.bot.models.Grab.guild == str(ctx.guild.id))
-            .where(self.bot.models.Grab.message_hash == grab_hash)
-            .gino.all()
+            .first()
         )
 
         if not grab:
@@ -341,11 +335,7 @@ class Grabber(cogs.BaseCog):
                 channel=ctx.channel,
             )
             return
-        try:
-            await grab[0].delete()
-
-        except IndexError:
-            raise commands.CommandError("Couldn't delete the grab!") from IndexError
+        await grab.remove()
 
         await auxiliary.send_confirm_embed(
             message="Grab succesfully deleted!", channel=ctx.channel

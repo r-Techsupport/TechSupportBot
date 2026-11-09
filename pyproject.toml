@@ -16,6 +16,7 @@ dependencies = [
     "inflect==7.6.0",
     "irc==20.5.0",
     "munch==4.0.0",
+    "piccolo==1.39.0",
     "pyyaml==6.0.3",
     "setuptools==80.9.0", # Added so gino/asyncpg/sqlalchemy doesn't break.
     "unidecode==1.4.0",
