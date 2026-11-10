@@ -12,6 +12,7 @@ from discord import app_commands
 import configuration
 import ui
 from core import auxiliary, cogs
+from database.schema import ApplicationBans
 from modules.moderation import modlog
 
 if TYPE_CHECKING:
@@ -356,11 +357,11 @@ class ApplicationManager(cogs.BaseCog):
             )
             await interaction.response.send_message(embed=embed)
             return
-        ban = self.bot.models.AppBans(
+        ban = ApplicationBans(
             guild_id=str(interaction.guild.id),
             applicant_id=str(member.id),
         )
-        await ban.create()
+        await ban.save()
 
         await modlog.log_action(
             bot=self.bot,
@@ -396,9 +397,8 @@ class ApplicationManager(cogs.BaseCog):
             )
             await interaction.response.send_message(embed=embed)
             return
-        bans = await self.get_ban_entry(member)
-        for ban in bans:
-            await ban.delete()
+        ban = await self.get_ban_entry(member)
+        await ban.delete()
 
         await modlog.log_action(
             bot=self.bot,
@@ -1032,17 +1032,21 @@ class ApplicationManager(cogs.BaseCog):
         entry = await query.gino.first()
         return entry
 
-    async def get_ban_entry(self: Self, member: discord.Member) -> bot.models.AppBans:
+    async def get_ban_entry(self: Self, member: discord.Member) -> ApplicationBans:
         """Gets the DB entry of a banned user
 
         Args:
             member (discord.Member): The member to tlookup the ban for
 
         Returns:
-            bot.models.AppBans: The DB entry of the ban, if one was found
+            ApplicationBans: The DB entry of the ban, if one was found
         """
-        query = self.bot.models.AppBans.query.where(
-            self.bot.models.AppBans.applicant_id == str(member.id)
-        ).where(self.bot.models.AppBans.guild_id == str(member.guild.id))
-        entry = await query.gino.all()
+        entry = (
+            await ApplicationBans.objects()
+            .where(
+                ApplicationBans.applicant_id == str(member.id),
+                ApplicationBans.guild_id == str(member.guild.id),
+            )
+            .first()
+        )
         return entry

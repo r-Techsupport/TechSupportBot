@@ -18,6 +18,20 @@ def bind_engine(engine: PostgresEngine) -> None:
         table._meta.db = engine  # pylint: disable=protected-access
 
 
+class ApplicationBans(Table, tablename="appbans"):
+    """The postgres table for users banned from applications
+
+    Attributes:
+        pk (Serial): The automatic primary key
+        guild_id (Varchar): The string of the guild ID the applicant is banned in
+        applicant_id (Varchar): The string representation of the ID of the user
+    """
+
+    pk: Serial = Serial(primary_key=True)
+    guild_id: Varchar = Varchar(length=None, null=True, default=None)
+    applicant_id: Varchar = Varchar(length=None, null=True, default=None)
+
+
 class Grab(Table, tablename="grabs"):
     """The table for the grab module, storing encrypted messages and who sent them.
 

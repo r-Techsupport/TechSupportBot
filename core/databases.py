@@ -47,22 +47,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
             bot.db.DateTime, default=datetime.datetime.utcnow
         )
 
-    class ApplicationBans(bot.db.Model):
-        """The postgres table for users banned from applications
-        Currently used in application.py and who.py
-
-        Attributes:
-            pk (int): The automatic primary key
-            guild_id (str): The string of the guild ID the applicant is banned in
-            applicant_id (str): The string representation of the ID of the user
-        """
-
-        __tablename__ = "appbans"
-
-        pk: int = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
-        guild_id: str = bot.db.Column(bot.db.String)
-        applicant_id: str = bot.db.Column(bot.db.String)
-
     class ModLog(bot.db.Model):
         """The postgres table for banlogs
         Currently used in modlog.py
@@ -347,7 +331,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         anonymous: bool = bot.db.Column(bot.db.Boolean, default=False)
 
     bot.models.Applications = Applications
-    bot.models.AppBans = ApplicationBans
     bot.models.ModLog = ModLog
     bot.models.DuckUser = DuckUser
     bot.models.FactoidData = FactoidData
