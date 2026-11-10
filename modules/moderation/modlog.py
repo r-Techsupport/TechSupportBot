@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Self
 
 import asyncpg
 import discord
-import munch
 from discord import app_commands
 from discord.ext import commands
 

@@ -1,8 +1,15 @@
 """Piccolo models for the existing database tables."""
 
-import datetime
-
-from piccolo.columns import Boolean, Integer, Serial, Timestamp, Timestamptz, Varchar
+from piccolo.columns import (
+    Boolean,
+    ForeignKey,
+    Integer,
+    OnDelete,
+    OnUpdate,
+    Serial,
+    Timestamptz,
+    Varchar,
+)
 from piccolo.conf.apps import table_finder
 from piccolo.constraints import Unique
 from piccolo.engine.postgres import PostgresEngine
@@ -33,6 +40,80 @@ class ApplicationBans(Table, tablename="appbans"):
     applicant_id: Varchar = Varchar(length=None, null=True, default=None)
 
 
+class FactoidData(Table, tablename="factoid_data"):
+    """The content, presentation settings and usage of a factoid.
+
+    Attributes:
+        factoid_data_id (Serial): The factoid's automatic primary key
+        guild (Varchar): The ID of the guild the factoid belongs to
+        message (Varchar): The plaintext message
+        create_time (Timestamptz): The timezone-aware creation time in UTC
+        edit_time (Timestamptz): The timezone-aware last edit time in UTC
+        json_string (Varchar): The serialized embed JSON
+        flags (Integer): The bitwise property flags
+        times_called (Integer): The number of times the factoid has been called
+    """
+
+    factoid_data_id: Serial = Serial(primary_key=True)
+    guild: Varchar = Varchar(length=None, null=True, default=None, index=True)
+    message: Varchar = Varchar(length=None, null=True, default=None)
+    create_time: Timestamptz = Timestamptz(null=True)
+    edit_time: Timestamptz = Timestamptz(null=True)
+    json_string: Varchar = Varchar(length=None, null=True, default=None)
+    flags: Integer = Integer(null=True, default=0)
+    times_called: Integer = Integer(null=True, default=0)
+
+
+class FactoidCall(Table, tablename="factoid_calls"):
+    """An alias pointing to a factoid's content.
+
+    Attributes:
+        factoid_call_id (Serial): The alias's automatic primary key
+        guild (Varchar): The ID of the guild the alias belongs to
+        name (Varchar): The alias used to invoke the factoid
+        factoid_data_id (ForeignKey): The referenced factoid data ID
+    """
+
+    factoid_call_id: Serial = Serial(primary_key=True)
+    guild: Varchar = Varchar(length=None, null=True, default=None, index=True)
+    name: Varchar = Varchar(length=None, null=True, default=None, index=True)
+    factoid_data_id: ForeignKey = ForeignKey(
+        FactoidData,
+        target_column=FactoidData.factoid_data_id,
+        null=False,
+        index=True,
+        on_delete=OnDelete.no_action,
+        on_update=OnUpdate.no_action,
+    )
+
+    unique_guild_name = Unique([guild, name], name="uq_factoid_calls_guild_name")
+
+
+class FactoidJob(Table, tablename="factoid_jobs"):
+    """A scheduled factoid invocation for a channel.
+
+    Attributes:
+        factoid_job_id (Serial): The job's automatic primary key
+        guild (Varchar): The ID of the guild the job belongs to
+        factoid_data_id (ForeignKey): The referenced factoid data ID
+        channel (Varchar): The ID of the channel to send the factoid in
+        cron (Varchar): The cron expression controlling the schedule
+    """
+
+    factoid_job_id: Serial = Serial(primary_key=True)
+    guild: Varchar = Varchar(length=None, null=True, default=None, index=True)
+    factoid_data_id: ForeignKey = ForeignKey(
+        FactoidData,
+        target_column=FactoidData.factoid_data_id,
+        null=False,
+        index=True,
+        on_delete=OnDelete.no_action,
+        on_update=OnUpdate.no_action,
+    )
+    channel: Varchar = Varchar(length=None, null=True, default=None)
+    cron: Varchar = Varchar(length=None, null=True, default=None)
+
+
 class Grab(Table, tablename="grabs"):
     """The table for the grab module, storing encrypted messages and who sent them.
 
@@ -43,7 +124,7 @@ class Grab(Table, tablename="grabs"):
         guild (Varchar): The ID of the guild the grab belongs to
         message (Varchar): The encrypted contents of the grabbed message
         message_hash (Varchar): The message hash used to identify duplicate grabs
-        time (Timestamptz): The UTC time the message was grabbed, without timezone information
+        time (Timestamptz): The timezone-aware UTC time the message was grabbed
         nsfw (Boolean): Whether the message was grabbed from an NSFW channel
     """
 
@@ -119,7 +200,7 @@ class UserNote(Table, tablename="usernote"):
         pk (Serial): The primary key for this database
         user_id (Varchar): The user ID that has a note
         guild_id (Varchar): The guild ID that the note belongs to
-        updated (Timestamp): The time the note was created on
+        updated (Timestamptz): The timezone-aware time the note was created on
         author_id (Varchar): The author of the note
         body (Varchar): The contents of the note
     """
@@ -156,7 +237,7 @@ class Warning(Table, tablename="warnings"):
         user_id (Varchar): The ID of the user who received the warning
         guild_id (Varchar): The ID of the guild where the warning was given
         reason (Varchar): The reason for the warning
-        time (Timestamp): The UTC time the warning was given, without timezone information
+        time (Timestamptz): The timezone-aware UTC time the warning was given
         invoker_id (Varchar): The ID of the moderator who gave the warning
     """
 
@@ -164,8 +245,5 @@ class Warning(Table, tablename="warnings"):
     user_id: Varchar = Varchar(length=None, null=True, default=None)
     guild_id: Varchar = Varchar(length=None, null=True, default=None)
     reason: Varchar = Varchar(length=None, null=True, default=None)
-    time: Timestamp = Timestamp(
-        null=True,
-        default=lambda: datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
-    )
+    time: Timestamptz = Timestamptz(null=True)
     invoker_id: Varchar = Varchar(length=None, null=True, default=None)

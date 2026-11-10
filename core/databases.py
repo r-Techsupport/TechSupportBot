@@ -73,93 +73,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         )
         speed_record: float = bot.db.Column(bot.db.Float, default=-1.0)
 
-    class FactoidData(bot.db.Model):
-        """
-        FactoidData is the data of the factoid, content displayed and how its displayed
-
-        Attributes:
-            factoid_data_id (int): The data ID of the factoid
-            guild (str): The ID of the guild this factoid belongs to
-            message (str): The plaintext message of this factoid
-            create_time (datetime.datetime): The time this factoid was created in the database
-            edit_time (datetime.datetime): The last time this factoid was edited in any way
-            json_string (str): The JSON of an embed, parsed into a string
-            flags (int): A bitwise value of the property flags of this factoid
-            times_called (int): The amount of times this factoid was called
-        """
-
-        __tablename__ = "factoid_data"
-
-        factoid_data_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
-        guild: str = bot.db.Column(bot.db.String, index=True)
-        message: str = bot.db.Column(bot.db.String)
-        create_time: datetime.datetime = bot.db.Column(
-            bot.db.DateTime, default=datetime.datetime.utcnow
-        )
-        edit_time: datetime.datetime = bot.db.Column(
-            bot.db.DateTime,
-            default=datetime.datetime.utcnow,
-        )
-        json_string: str = bot.db.Column(bot.db.String, default=None)
-        flags: int = bot.db.Column(bot.db.Integer, default=0)
-        times_called: int = bot.db.Column(bot.db.Integer, default=0)
-
-    class FactoidCall(bot.db.Model):
-        """
-        FactoidCall is the name of a factoid. All FactoidCall's are tied to a FactoidData
-
-        Attributes:
-            factoid_call_id (int): This is the ID of the call
-            guild (str): This is the ID of the guild this factoid belongs to
-            name (str): This is the name, used and displayed to users
-            factoid_data_id (object): The linked foreign ID for the related FactoidData
-        """
-
-        __tablename__ = "factoid_calls"
-
-        __table_args__ = (
-            bot.db.UniqueConstraint(
-                "guild", "name", name="uq_factoid_calls_guild_name"
-            ),
-        )
-
-        factoid_call_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
-        guild: str = bot.db.Column(bot.db.String, index=True)
-        name: str = bot.db.Column(bot.db.String, index=True)
-
-        factoid_data_id: object = bot.db.Column(
-            bot.db.Integer,
-            bot.db.ForeignKey("factoid_data.factoid_data_id"),
-            nullable=False,
-            index=True,
-        )
-
-    class FactoidJob(bot.db.Model):
-        """
-        FactoidJob is a database entry that represents loop jobs for factoids
-
-        Attributes:
-            factoid_job_id (int): This is the ID of the job
-            guild (str): This is the ID of the guild this job belongs to
-            factoid_data_id (object): The linked foreign ID for the related FactoidData
-            channel (str): This is the ID of the channel the loop should execute in
-            cron (str): This is the cron syntax for the job
-        """
-
-        __tablename__ = "factoid_jobs"
-
-        factoid_job_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
-        guild: str = bot.db.Column(bot.db.String, index=True)
-        factoid_data_id: object = bot.db.Column(
-            bot.db.Integer,
-            bot.db.ForeignKey("factoid_data.factoid_data_id"),
-            nullable=False,
-            index=True,
-        )
-
-        channel: str = bot.db.Column(bot.db.String)
-        cron: str = bot.db.Column(bot.db.String)
-
     class IRCChannelMapping(bot.db.Model):
         """The postgres table for IRC->discord maps
         Currently used in relay.py
@@ -244,9 +157,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     bot.models.Applications = Applications
     bot.models.DuckUser = DuckUser  # Needs app command conversion
-    bot.models.FactoidData = FactoidData
-    bot.models.FactoidCall = FactoidCall
-    bot.models.FactoidJob = FactoidJob
     bot.models.IRCChannelMapping = IRCChannelMapping  # Needs app command conversion
     bot.models.Listener = Listener  # Needs app command conversion
     bot.models.Votes = Votes
