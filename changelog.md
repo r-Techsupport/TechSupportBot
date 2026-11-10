@@ -1,4 +1,4 @@
-Changes since 2026.06.15
+Changes since 2026.11.07
 
 # Core
 - Full migration of database engine from gino to piccolo
@@ -6,6 +6,12 @@ Changes since 2026.06.15
 # Modules
 
 ## Administration
+
+### Backup
+- Removed, in favor of new database commands
+
+### Database
+- New module, taking over backup. Allowing both exporting and importing of database tables
 
 ## Fun
 
@@ -39,6 +45,7 @@ Changes since 2026.06.15
 # Dependencies
 
 ## Core
+- Regenerated the uv.lock file
 
 ## Prod
 - Removed gino
