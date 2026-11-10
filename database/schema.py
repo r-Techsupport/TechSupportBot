@@ -2,6 +2,7 @@
 
 from piccolo.columns import (
     Boolean,
+    DoublePrecision,
     ForeignKey,
     Integer,
     OnDelete,
@@ -62,6 +63,28 @@ class ApplicationBans(Table, tablename="appbans"):
     pk: Serial = Serial(primary_key=True)
     guild_id: Varchar = Varchar(length=None, null=True, default=None)
     applicant_id: Varchar = Varchar(length=None, null=True, default=None)
+
+
+class DuckUser(Table, tablename="duckusers"):
+    """A member's duck hunt scores and speed record within a guild.
+
+    Attributes:
+        pk (Serial): The automatic primary key
+        author_id (Varchar): The ID of the member
+        guild_id (Varchar): The ID of the guild
+        befriend_count (Integer): The number of befriended ducks
+        kill_count (Integer): The number of killed ducks
+        updated (Timestamptz): The timezone-aware UTC time of the last hunt result
+        speed_record (DoublePrecision): The fastest reaction time in seconds, or -1 if unset
+    """
+
+    pk: Serial = Serial(primary_key=True)
+    author_id: Varchar = Varchar(length=None, null=True, default=None)
+    guild_id: Varchar = Varchar(length=None, null=True, default=None)
+    befriend_count: Integer = Integer(null=True, default=0)
+    kill_count: Integer = Integer(null=True, default=0)
+    updated: Timestamptz = Timestamptz(null=True)
+    speed_record: DoublePrecision = DoublePrecision(null=True, default=-1.0)
 
 
 class FactoidData(Table, tablename="factoid_data"):
