@@ -123,27 +123,27 @@ class TechSupportBot(commands.Bot):
             self.logger.register_queue()
             asyncio.create_task(self.logger.run())
 
-        # Start the IRC bot in an asynchronous task
-        irc_config = self.file_config.api.irc
-        if irc_config.enable_irc:
-            await self.logger.send_log(
-                message="Connecting to IRC...", level=LogLevel.DEBUG, console_only=True
-            )
-            # Make the IRC class in such a way to allow reload without desctruction
-            # We need to pass it the running loop so it can interact with discord
-            await self.start_irc()
-
-        # this is required for the bot
+        # Synchronize the database before starting IRC, Discord, extensions or jobs.
         await self.logger.send_log(
             message="Connecting to Postgres...", level=LogLevel.DEBUG, console_only=True
         )
         self.db = await self.get_postgres_ref()
-
-        await self.logger.send_log(
-            message="Logging into Discord...", level=LogLevel.DEBUG, console_only=True
-        )
-        self.guild_config_lock = asyncio.Lock()
         try:
+            irc_config = self.file_config.api.irc
+            if irc_config.enable_irc:
+                await self.logger.send_log(
+                    message="Connecting to IRC...",
+                    level=LogLevel.DEBUG,
+                    console_only=True,
+                )
+                await self.start_irc()
+
+            await self.logger.send_log(
+                message="Logging into Discord...",
+                level=LogLevel.DEBUG,
+                console_only=True,
+            )
+            self.guild_config_lock = asyncio.Lock()
             await super().start(self.file_config.bot_config.auth_token)
         finally:
             if self.db is not None:

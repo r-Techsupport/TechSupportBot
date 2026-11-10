@@ -29,6 +29,8 @@ You will need to create a username and password postgres.
 You will also need to create a db name for postgres. This works best when it is all lowercase, but it is not strictly required.  
 When filling in the information, do not include spaces or quotes. Just put the content directly after the equals sign.  
 You will need all of this information again, so make sure to keep note of it.  
+Set `DATABASE_SCHEMA_MODE=0`, `1` (default), or `2` to report, add only, or force schema reconciliation at startup.
+
 ### config.yml
 This is the configuration file for the bot itself.  
 First, configure the token and admin ID. The token is the discord token you got earlier. Put this token in quotes following the `auth_token:` line. Example: `auth_token: "abcd_totally_real_token"`  
