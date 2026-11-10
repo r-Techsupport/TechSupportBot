@@ -178,18 +178,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         discord_channel_id: str = bot.db.Column(bot.db.String, default=None)
         irc_channel_id: str = bot.db.Column(bot.db.String, default=None)
 
-    class ModmailBan(bot.db.Model):
-        """The postgres table for modmail bans
-        Currently used in modmail.py
-
-        Attributes:
-            user_id (str): The ID of the user banned from modmail
-        """
-
-        __tablename__ = "modmail_bans"
-
-        user_id: str = bot.db.Column(bot.db.String, default=None, primary_key=True)
-
     class Warning(bot.db.Model):
         """The postgres table for warnings
         Currently used in protect.py and who.py
@@ -293,14 +281,12 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         anonymous: bool = bot.db.Column(bot.db.Boolean, default=False)
 
     bot.models.Applications = Applications
-    bot.models.ModLog = ModLog
-    bot.models.DuckUser = DuckUser
+    bot.models.DuckUser = DuckUser  # Needs app command conversion
     bot.models.FactoidData = FactoidData
     bot.models.FactoidCall = FactoidCall
     bot.models.FactoidJob = FactoidJob
-    bot.models.IRCChannelMapping = IRCChannelMapping
-    bot.models.ModmailBan = ModmailBan
+    bot.models.IRCChannelMapping = IRCChannelMapping  # Needs app command conversion
     bot.models.Warning = Warning
-    bot.models.Listener = Listener
-    bot.models.Rule = Rule
+    bot.models.Listener = Listener  # Needs app command conversion
+    bot.models.Rule = Rule  # Needs app command conversion
     bot.models.Votes = Votes

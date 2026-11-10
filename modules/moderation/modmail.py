@@ -26,6 +26,7 @@ from discord.ext import commands
 import configuration
 import ui
 from core import auxiliary, cogs
+from database.schema import ModmailBan
 from modules.moderation import modlog, rules
 
 if TYPE_CHECKING:
@@ -108,9 +109,11 @@ class Modmail_bot(discord.Client):
             )
 
             # User is banned from creating modmail threads
-            if await Ts_client.models.ModmailBan.query.where(
-                Ts_client.models.ModmailBan.user_id == str(message.author.id)
-            ).gino.first():
+            if (
+                await ModmailBan.objects()
+                .where(ModmailBan.user_id == str(message.author.id))
+                .first()
+            ):
                 await message.add_reaction("❌")
                 return
 
@@ -165,9 +168,11 @@ class Modmail_bot(discord.Client):
             isinstance(before.channel, discord.DMChannel)
             and before.author.id in active_threads
         ):
-            if await Ts_client.models.ModmailBan.query.where(
-                Ts_client.models.ModmailBan.user_id == str(before.author.id)
-            ).gino.first():
+            if (
+                await ModmailBan.objects()
+                .where(ModmailBan.user_id == str(before.author.id))
+                .first()
+            ):
                 return
 
             thread = self.get_channel(active_threads[before.author.id])
@@ -952,9 +957,7 @@ class Modmail(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called this command
             user (discord.User): The user to ban
         """
-        if await self.bot.models.ModmailBan.query.where(
-            self.bot.models.ModmailBan.user_id == str(user.id)
-        ).gino.first():
+        if await ModmailBan.objects().where(ModmailBan.user_id == str(user.id)).first():
             embed = auxiliary.prepare_deny_embed(
                 message=f"{user.mention} is already banned!"
             )
@@ -1009,7 +1012,7 @@ class Modmail(cogs.BaseCog):
                 return
 
             case ui.ConfirmResponse.CONFIRMED:
-                await self.bot.models.ModmailBan(user_id=str(user.id)).create()
+                await ModmailBan(user_id=str(user.id)).save()
                 await modlog.log_action(
                     bot=self.bot,
                     action_type="modmail ban",
@@ -1116,7 +1119,7 @@ class Modmail(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that called this command
         """
-        bans = await self.bot.models.ModmailBan.query.gino.all()
+        bans = await ModmailBan.objects()
         if not bans:
             embed = auxiliary.prepare_deny_embed(
                 message="There are no modmail bans",
@@ -1235,9 +1238,9 @@ class Modmail(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called this command
             user (discord.User): The user to unban
         """
-        ban_entry = await self.bot.models.ModmailBan.query.where(
-            self.bot.models.ModmailBan.user_id == str(user.id)
-        ).gino.first()
+        ban_entry = (
+            await ModmailBan.objects().where(ModmailBan.user_id == str(user.id)).first()
+        )
 
         if not ban_entry:
             embed = auxiliary.prepare_deny_embed(

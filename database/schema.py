@@ -1,7 +1,5 @@
 """Piccolo models for the existing database tables."""
 
-import datetime
-
 from piccolo.columns import Boolean, Integer, Serial, Timestamptz, Varchar
 from piccolo.conf.apps import table_finder
 from piccolo.constraints import Unique
@@ -85,6 +83,17 @@ class ModLog(Table, tablename="modlog"):
     until_time: Timestamptz = Timestamptz(null=True, default=None)
 
     unique_guild_case = Unique([guild_id, guild_case_id])
+
+
+class ModmailBan(Table, tablename="modmail_bans"):
+    """The postgres table for modmail bans.
+    Currently used in modmail.py.
+
+    Attributes:
+        user_id (Varchar): The ID of the user banned from modmail.
+    """
+
+    user_id: Varchar = Varchar(length=None, primary_key=True)
 
 
 class UserNote(Table, tablename="usernote"):
