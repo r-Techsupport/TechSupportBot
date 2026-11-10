@@ -10,7 +10,7 @@ from discord import app_commands
 
 import ui
 from core import auxiliary, cogs
-from database.schema import Grab
+from database.schema import XP, Grab
 
 if TYPE_CHECKING:
     import bot
@@ -97,10 +97,8 @@ class DataDeleter(cogs.BaseCog):
             await grab.remove()
             records_deleted += 1
 
-        xp_database = await self.bot.models.XP.query.where(
-            self.bot.models.XP.user_id == str(interaction.user.id)
-        ).gino.all()
-        for entry in xp_database:
+        xps = await XP.objects().where(XP.user_id == str(interaction.user.id))
+        for entry in xps:
             await entry.delete()
             records_deleted += 1
 

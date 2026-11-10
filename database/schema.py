@@ -2,7 +2,7 @@
 
 import datetime
 
-from piccolo.columns import Boolean, Serial, Timestamp, Varchar
+from piccolo.columns import Boolean, Integer, Serial, Timestamp, Varchar
 from piccolo.conf.apps import table_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.table import Table
@@ -19,7 +19,7 @@ def bind_engine(engine: PostgresEngine) -> None:
 
 
 class Grab(Table, tablename="grabs"):
-    """An encrypted message saved by the Grab commands.
+    """The table for the grab module, storing encrypted messages and who sent them.
 
     Attributes:
         pk (Serial): The auto-incrementing primary key
@@ -46,8 +46,7 @@ class Grab(Table, tablename="grabs"):
 
 
 class UserNote(Table, tablename="usernote"):
-    """The postgres table for notes
-    Currently used in who.py
+    """The table to store user notes, who set them and when
 
     Attributes:
         pk (Serial): The primary key for this database
@@ -67,3 +66,19 @@ class UserNote(Table, tablename="usernote"):
     )
     author_id: Varchar = Varchar(length=None, null=True, default=None)
     body: Varchar = Varchar(length=None, null=True, default=None)
+
+
+class XP(Table, tablename="user_xp"):
+    """The table to store user XP per guild
+
+    Attributes:
+        pk (Serial): The primary key for the database
+        guild_id (Varchar): The ID of the guild that the XP is for
+        user_id (Varchar): The ID of the user
+        xp (Integer): The amount of XP the user has
+    """
+
+    pk: Serial = Serial(primary_key=True)
+    guild_id: Varchar = Varchar(length=None, null=True, default=None)
+    user_id: Varchar = Varchar(length=None, null=True, default=None)
+    xp: Integer = Integer()
