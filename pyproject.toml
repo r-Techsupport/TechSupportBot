@@ -37,5 +37,13 @@ dev = [
     "pytest-asyncio==1.4.1"
 ]
 
+[tool.uv]
+override-dependencies = [
+    { package = { name = "targ" }, dependencies = ["docstring-parser-fork"] },
+]
+exclude-dependencies = [
+    { package = { name = "targ" }, dependencies = ["docstring-parser"] },
+]
+
 [tool.pytest.ini_options]
 testpaths = ["./unit_tests"]

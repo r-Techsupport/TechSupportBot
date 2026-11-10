@@ -1,6 +1,10 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = "==3.13.*"
+
+[manifest]
+overrides = [{ package = { name = "targ" }, dependencies = [{ name = "docstring-parser-fork" }] }]
+excludes = [{ package = { name = "targ" }, dependencies = ["docstring-parser"] }]
 
 [[package]]
 name = "aiocron"
