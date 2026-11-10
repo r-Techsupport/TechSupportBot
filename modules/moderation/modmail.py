@@ -1712,7 +1712,7 @@ class Modmail(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        raw_rules = await rules.get_guild_rules(self.bot, interaction.guild)
+        raw_rules = await rules.get_guild_rules(interaction.guild)
         guild_rules = raw_rules.get("rules")
 
         try:

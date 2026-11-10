@@ -78,9 +78,7 @@ class Rules(cogs.BaseCog):
             return
 
         uploaded_data["guild_id"] = str(interaction.guild.id)
-        await write_new_rules(
-            self.bot, interaction.guild, munch.munchify(uploaded_data)
-        )
+        await write_new_rules(interaction.guild, munch.munchify(uploaded_data))
         embed = auxiliary.prepare_confirm_embed(message="I've updated to those rules")
         await interaction.response.send_message(embed=embed)
 
@@ -122,7 +120,7 @@ class Rules(cogs.BaseCog):
             color=discord.Color.gold(),
             url=self.RULE_ICON_URL,
         )
-        raw_rules = await get_guild_rules(self.bot, interaction.guild)
+        raw_rules = await get_guild_rules(interaction.guild)
         guild_rules = raw_rules.get("rules")
         for rule_number in numbers:
             embed.add_field(
@@ -143,7 +141,7 @@ class Rules(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that called this command
         """
-        rules_data = await get_guild_rules(self.bot, interaction.guild)
+        rules_data = await get_guild_rules(interaction.guild)
         if not rules_data or not rules_data.get("rules"):
             embed = auxiliary.prepare_confirm_embed(
                 "There are no rules for this server"
@@ -179,19 +177,18 @@ class Rules(cogs.BaseCog):
         Returns:
             int: The number of rules in the given guild
         """
-        rules_data = await get_guild_rules(self.bot, guild)
+        rules_data = await get_guild_rules(guild)
         if not rules_data or not rules_data.get("rules"):
             return 0
 
         return len(rules_data.get("rules"))
 
 
-async def get_guild_rules(bot: bot.TechSupportBot, guild: discord.Guild) -> munch.Munch:
+async def get_guild_rules(guild: discord.Guild) -> munch.Munch:
     """Gets the munchified rules for a given guild.
     Will create and write to the database if no rules exist
 
     Args:
-        bot (bot.TechSupportBot): The instance of TS to use
         guild (discord.Guild): The guild to get rules for
 
     Returns:
@@ -215,7 +212,7 @@ async def get_guild_rules(bot: bot.TechSupportBot, guild: discord.Guild) -> munc
             }
         )
         new_rules = munch.munchify(json.loads(rules_data))
-        await write_new_rules(bot=bot, guild=guild, rules=new_rules)
+        await write_new_rules(guild=guild, rules=new_rules)
         return munch.munchify(json.loads(rules_data))
     rules_data = json.loads(query.rules)
     # Older inserts stored JSON inside a second JSON string.
@@ -224,9 +221,7 @@ async def get_guild_rules(bot: bot.TechSupportBot, guild: discord.Guild) -> munc
     return munch.munchify(rules_data)
 
 
-async def write_new_rules(
-    bot: bot.TechSupportBot, guild: discord.Guild, rules: munch.Munch
-) -> None:
+async def write_new_rules(guild: discord.Guild, rules: munch.Munch) -> None:
     """This converts the munchified rules into a string and writes it to the database
 
     Args:
