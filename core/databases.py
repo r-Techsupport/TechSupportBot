@@ -244,30 +244,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
         user_id: str = bot.db.Column(bot.db.String, default=None, primary_key=True)
 
-    class UserNote(bot.db.Model):
-        """The postgres table for notes
-        Currently used in who.py
-
-        Attributes:
-            pk (int): The primary key for this database
-            user_id (str): The user ID that has a note
-            guild_id (str): The guild ID that the note belongs to
-            updated (datetime.datetime): The time the note was created on
-            author_id (str): The author of the note
-            body (str): The contents of the note
-        """
-
-        __tablename__ = "usernote"
-
-        pk: int = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
-        user_id: str = bot.db.Column(bot.db.String)
-        guild_id: str = bot.db.Column(bot.db.String)
-        updated: datetime.datetime = bot.db.Column(
-            bot.db.DateTime, default=datetime.datetime.utcnow
-        )
-        author_id: str = bot.db.Column(bot.db.String)
-        body: str = bot.db.Column(bot.db.String)
-
     class Warning(bot.db.Model):
         """The postgres table for warnings
         Currently used in protect.py and who.py
@@ -397,7 +373,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.FactoidJob = FactoidJob
     bot.models.IRCChannelMapping = IRCChannelMapping
     bot.models.ModmailBan = ModmailBan
-    bot.models.UserNote = UserNote
     bot.models.Warning = Warning
     bot.models.Listener = Listener
     bot.models.Rule = Rule

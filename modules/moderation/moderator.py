@@ -13,6 +13,7 @@ import configuration
 import ui
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, moderation
+from database.schema import UserNote
 from modules.moderation import modlog
 
 if TYPE_CHECKING:
@@ -869,14 +870,14 @@ def generate_response_embed(
 def build_warning_embeds(
     guild: discord.Guild,
     member: discord.Member,
-    warnings: list[bot.models.UserNote],
+    warnings: list[bot.models.Warnings],
 ) -> list[discord.Embed]:
     """Makes a list of embeds with 6 warnings per page, for a given user
 
     Args:
         guild (discord.Guild): The guild where the warnings occured
         member (discord.Member): The member whose warnings are being looked for
-        warnings (list[bot.models.UserNote]): The list of warnings from the database
+        warnings (list[bot.models.Warnings]): The list of warnings from the database
 
     Returns:
         list[discord.Embed]: The list of well formatted embeds

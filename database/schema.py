@@ -43,3 +43,27 @@ class Grab(Table, tablename="grabs"):
         default=lambda: datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
     )
     nsfw: Boolean = Boolean(null=True, default=False)
+
+
+class UserNote(Table, tablename="usernote"):
+    """The postgres table for notes
+    Currently used in who.py
+
+    Attributes:
+        pk (Serial): The primary key for this database
+        user_id (Varchar): The user ID that has a note
+        guild_id (Varchar): The guild ID that the note belongs to
+        updated (Timestamp): The time the note was created on
+        author_id (Varchar): The author of the note
+        body (Varchar): The contents of the note
+    """
+
+    pk: Serial = Serial(primary_key=True)
+    user_id: Varchar = Varchar(length=None, null=True, default=None)
+    guild_id: Varchar = Varchar(length=None, null=True, default=None)
+    updated: Timestamp = Timestamp(
+        null=True,
+        default=lambda: datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
+    )
+    author_id: Varchar = Varchar(length=None, null=True, default=None)
+    body: Varchar = Varchar(length=None, null=True, default=None)

@@ -12,6 +12,7 @@ import configuration
 import ui
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, moderation
+from database.schema import UserNote
 from modules.moderation import modlog
 
 if TYPE_CHECKING:
@@ -130,7 +131,7 @@ class Notes(cogs.BaseCog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        note = self.bot.models.UserNote(
+        note = UserNote(
             user_id=str(user.id),
             guild_id=str(interaction.guild.id),
             author_id=str(interaction.user.id),
@@ -152,7 +153,7 @@ class Notes(cogs.BaseCog):
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
 
-        await note.create()
+        await note.save()
 
         await modlog.log_action(
             bot=self.bot,
@@ -230,7 +231,7 @@ class Notes(cogs.BaseCog):
             return
 
         for note in notes:
-            await note.delete()
+            await note.remove()
 
         await modlog.log_action(
             bot=self.bot,
@@ -319,14 +320,14 @@ class Notes(cogs.BaseCog):
 def build_note_embeds(
     guild: discord.Guild,
     member: discord.Member,
-    notes: list[bot.models.UserNote],
+    notes: list[UserNote],
 ) -> list[discord.Embed]:
     """Makes a list of embeds with 6 notes per page, for a given user
 
     Args:
         guild (discord.Guild): The guild where the notes occured
         member (discord.Member): The member whose notes are being looked for
-        notes (list[bot.models.UserNote]): The list of notes from the database
+        notes (list[UserNote]): The list of notes from the database
 
     Returns:
         list[discord.Embed]: The list of well formatted embeds
