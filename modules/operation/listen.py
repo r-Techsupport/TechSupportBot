@@ -26,7 +26,7 @@ async def setup(bot: bot.TechSupportBot) -> None:
     await bot.add_cog(Listener(bot=bot))
 
 
-class ListenChannel(app_commands.Transformer):
+class ListenChannel(app_commands.Transformer):  # pylint: disable=abstract-method
     """Converter for grabbing a channel via the API.
 
     This avoids the limitation set by the builtin channel converters.

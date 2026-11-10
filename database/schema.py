@@ -245,20 +245,49 @@ class UserNote(Table, tablename="usernote"):
     body: Varchar = Varchar(length=None, null=True, default=None)
 
 
-class XP(Table, tablename="user_xp"):
-    """The table to store user XP per guild
+class Votes(Table, tablename="voting"):
+    """The postgres table for votes
+    Currently used in voting.py
 
     Attributes:
-        pk (Serial): The primary key for the database
-        guild_id (Varchar): The ID of the guild that the XP is for
-        user_id (Varchar): The ID of the user
-        xp (Integer): The amount of XP the user has
+        vote_id (Serial): The primary key of the vote
+        guild_id (Varchar): The guild the vote belongs to
+        message_id (Varchar): The ID of the message the vote is in
+        thread_id (Varchar): The ID of the thread the vote is in
+        vote_owner_id (Varchar): The ID of the user who started the vote
+        vote_description (Varchar): The long form description of the vote
+        vote_ids_yes (Varchar): The comma separated list of who has voted yes
+        vote_ids_no (Varchar): The comma separated list of who has voted no
+        vote_ids_abstain (Varchar): The comma separated list of who have abstained
+        vote_ids_all (Varchar): The comma separated list of who has voted
+        vote_ids_eligible (Varchar): The comma separated list of all who can vote
+        votes_yes (Integer): The number of votes for yes
+        votes_no (Integer): The number of votes for no
+        votes_abstain (Integer): The number of votes that have abstained
+        start_time (Timestamptz): The start time of the vote
+        vote_active (Boolean): If the vote is current active or not
+        blind (Boolean): If the vote needs to be blind
+        anonymous (Boolean): If the vote needs to be anonymous
     """
 
-    pk: Serial = Serial(primary_key=True)
+    vote_id: Serial = Serial(primary_key=True)
     guild_id: Varchar = Varchar(length=None, null=True, default=None)
-    user_id: Varchar = Varchar(length=None, null=True, default=None)
-    xp: Integer = Integer()
+    message_id: Varchar = Varchar(length=None, null=True, default=None)
+    thread_id: Varchar = Varchar(length=None, null=True, default=None)
+    vote_owner_id: Varchar = Varchar(length=None, null=True, default=None)
+    vote_description: Varchar = Varchar(length=None, null=True, default=None)
+    vote_ids_yes: Varchar = Varchar(length=None, null=True, default="")
+    vote_ids_no: Varchar = Varchar(length=None, null=True, default="")
+    vote_ids_abstain: Varchar = Varchar(length=None, null=True, default="")
+    vote_ids_all: Varchar = Varchar(length=None, null=True, default="")
+    vote_ids_eligible: Varchar = Varchar(length=None, null=True, default="")
+    votes_yes: Integer = Integer(null=True, default=0)
+    votes_no: Integer = Integer(null=True, default=0)
+    votes_abstain: Integer = Integer(null=True, default=0)
+    start_time: Timestamptz = Timestamptz(null=True)
+    vote_active: Boolean = Boolean(null=True, default=True)
+    blind: Boolean = Boolean(null=True, default=False)
+    anonymous: Boolean = Boolean(null=True, default=False)
 
 
 class Warning(Table, tablename="warnings"):
@@ -279,3 +308,19 @@ class Warning(Table, tablename="warnings"):
     reason: Varchar = Varchar(length=None, null=True, default=None)
     time: Timestamptz = Timestamptz(null=True)
     invoker_id: Varchar = Varchar(length=None, null=True, default=None)
+
+
+class XP(Table, tablename="user_xp"):
+    """The table to store user XP per guild
+
+    Attributes:
+        pk (Serial): The primary key for the database
+        guild_id (Varchar): The ID of the guild that the XP is for
+        user_id (Varchar): The ID of the user
+        xp (Integer): The amount of XP the user has
+    """
+
+    pk: Serial = Serial(primary_key=True)
+    guild_id: Varchar = Varchar(length=None, null=True, default=None)
+    user_id: Varchar = Varchar(length=None, null=True, default=None)
+    xp: Integer = Integer()
