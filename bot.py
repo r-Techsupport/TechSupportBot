@@ -27,7 +27,6 @@ import ui
 from botlogging import LogContext, LogLevel
 from core import auxiliary, custom_errors, http, scheduler
 from database import connection
-from database.schema import Grab
 
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
@@ -162,7 +161,7 @@ class TechSupportBot(commands.Bot):
 
     async def setup_hook(self: Self) -> None:
         """This function is automatically called after the bot has been logged into discord
-        This registers the Grab model, registers new guild configs if needed,
+        This registers new guild configs if needed,
         Loads extensions, registers the custom help command
         and loads guild configs from the database.
 
@@ -174,15 +173,6 @@ class TechSupportBot(commands.Bot):
             message="Loading Help commands...", level=LogLevel.DEBUG, console_only=True
         )
         self.remove_command("help")
-
-        # Register Grab against the existing database table
-        await self.logger.send_log(
-            message="Registering Piccolo Grab model...",
-            level=LogLevel.DEBUG,
-            console_only=True,
-        )
-        self.models = munch.DefaultMunch(None)
-        self.models.Grab = Grab
 
         # Adds persistent views to the bot
         self.add_view(ui.VotingButtonPersistent())
