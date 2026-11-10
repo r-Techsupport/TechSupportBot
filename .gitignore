@@ -3,10 +3,10 @@
 config.yml
 *.pyc
 .vscode
-DBs/
 __pycache__
 .pytest_cache
 .coverage
 .hypothesis
 .idea/
 configuration/guild_configs
+database/postgres_data

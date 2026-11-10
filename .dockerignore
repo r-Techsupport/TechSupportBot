@@ -10,9 +10,11 @@ __pycache__
 
 # Folders that contain important information in the repo, but are not used to run the bot itself
 .github/
-DBs/
 documentation/
 unit_tests/
+
+# We don't need the database data in the bot docker container
+database/postgres_data
 
 # Files that contain information not relevant to running the code itself
 .dockerignore
