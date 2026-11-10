@@ -8,10 +8,10 @@ Changes since 2026.11.07
 ## Administration
 
 ### Backup
-- Removed, in favor of new database commands
+- Removed, in favor of new DB_management commands
 
-### Database
-- New module, taking over backup. Allowing both exporting and importing of database tables
+### DB_management
+- New module, taking over backup. Allowing both exporting and importing of DB_management tables
 
 ## Fun
 
