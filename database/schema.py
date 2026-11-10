@@ -96,6 +96,20 @@ class ModmailBan(Table, tablename="modmail_bans"):
     user_id: Varchar = Varchar(length=None, primary_key=True)
 
 
+class Rule(Table, tablename="guild_rules"):
+    """The postgres table for guild rules.
+
+    Attributes:
+        pk (Serial): The automatic primary key
+        guild_id (Varchar): The ID of the guild these rules belong to
+        rules (Varchar): The JSON representation of the rules
+    """
+
+    pk: Serial = Serial(primary_key=True)
+    guild_id: Varchar = Varchar(length=None, null=True, default=None)
+    rules: Varchar = Varchar(length=None, null=True, default=None)
+
+
 class UserNote(Table, tablename="usernote"):
     """The table to store user notes, who set them and when
 

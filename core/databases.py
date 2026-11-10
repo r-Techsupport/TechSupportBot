@@ -216,22 +216,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         src_id: str = bot.db.Column(bot.db.String)
         dst_id: str = bot.db.Column(bot.db.String)
 
-    class Rule(bot.db.Model):
-        """The postgres table for rules
-        Currently used in rules.py
-
-        Attributes:
-            pk (int): The primary key for the database
-            guild_id (str): The ID of the guild that these rules are for
-            rules (str): The json representation of the rules
-        """
-
-        __tablename__ = "guild_rules"
-
-        pk: int = bot.db.Column(bot.db.Integer, primary_key=True)
-        guild_id: str = bot.db.Column(bot.db.String)
-        rules: str = bot.db.Column(bot.db.String)
-
     class Votes(bot.db.Model):
         """The postgres table for votes
         Currently used in voting.py
@@ -288,5 +272,4 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.IRCChannelMapping = IRCChannelMapping  # Needs app command conversion
     bot.models.Warning = Warning
     bot.models.Listener = Listener  # Needs app command conversion
-    bot.models.Rule = Rule  # Needs app command conversion
     bot.models.Votes = Votes

@@ -16,6 +16,9 @@ Changes since 2026.06.15
 
 ## Moderation
 
+### Rules
+- Full migration to application commands
+
 ## Operation
 
 ### Application
