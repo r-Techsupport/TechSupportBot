@@ -138,6 +138,22 @@ class Grab(Table, tablename="grabs"):
     nsfw: Boolean = Boolean(null=True, default=False)
 
 
+class IRCChannelMapping(Table, tablename="ircchannelmap"):
+    """The channel mappings between Discord and IRC.
+
+    Attributes:
+        map_id (Serial): The automatic primary key
+        guild_id (Varchar): The ID of the guild containing the Discord channel
+        discord_channel_id (Varchar): The ID of the Discord channel
+        irc_channel_id (Varchar): The name of the IRC channel
+    """
+
+    map_id: Serial = Serial(primary_key=True)
+    guild_id: Varchar = Varchar(length=None, null=True, default=None)
+    discord_channel_id: Varchar = Varchar(length=None, null=True, default=None)
+    irc_channel_id: Varchar = Varchar(length=None, null=True, default=None)
+
+
 class ModLog(Table, tablename="modlog"):
     """The postgres table for all mod log events
 

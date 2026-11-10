@@ -73,24 +73,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         )
         speed_record: float = bot.db.Column(bot.db.Float, default=-1.0)
 
-    class IRCChannelMapping(bot.db.Model):
-        """The postgres table for IRC->discord maps
-        Currently used in relay.py
-
-        Attributes:
-            map_id (int): The primary key for the database
-            guild_id (str): The guild where the discord channel exists at
-            discord_channel_id (str): The ID of the discord channel
-            irc_channel_id (str): The name of the IRC channel
-        """
-
-        __tablename__ = "ircchannelmap"
-
-        map_id: int = bot.db.Column(bot.db.Integer, primary_key=True)
-        guild_id: str = bot.db.Column(bot.db.String, default=None)
-        discord_channel_id: str = bot.db.Column(bot.db.String, default=None)
-        irc_channel_id: str = bot.db.Column(bot.db.String, default=None)
-
     class Listener(bot.db.Model):
         """The postgres table for listeners
         Currently used in listen.py
@@ -157,6 +139,5 @@ def setup_models(bot: bot.TechSupportBot) -> None:
 
     bot.models.Applications = Applications
     bot.models.DuckUser = DuckUser  # Needs app command conversion
-    bot.models.IRCChannelMapping = IRCChannelMapping  # Needs app command conversion
     bot.models.Listener = Listener  # Needs app command conversion
     bot.models.Votes = Votes

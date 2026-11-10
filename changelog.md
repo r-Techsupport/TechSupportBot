@@ -27,6 +27,9 @@ Changes since 2026.06.15
 ### Factoid
 - Fixes issue where factoid search breaks if factoids don't have an embed config
 
+### Relay
+- Full migration to application commands
+
 ## Utility
 
 # Dependencies
