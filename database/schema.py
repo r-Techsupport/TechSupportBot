@@ -2,8 +2,9 @@
 
 import datetime
 
-from piccolo.columns import Boolean, Integer, Serial, Timestamp, Varchar
+from piccolo.columns import Boolean, Integer, Serial, Timestamptz, Varchar
 from piccolo.conf.apps import table_finder
+from piccolo.constraints import Unique
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.table import Table
 
@@ -42,7 +43,7 @@ class Grab(Table, tablename="grabs"):
         guild (Varchar): The ID of the guild the grab belongs to
         message (Varchar): The encrypted contents of the grabbed message
         message_hash (Varchar): The message hash used to identify duplicate grabs
-        time (Timestamp): The UTC time the message was grabbed, without timezone information
+        time (Timestamptz): The UTC time the message was grabbed, without timezone information
         nsfw (Boolean): Whether the message was grabbed from an NSFW channel
     """
 
@@ -52,11 +53,38 @@ class Grab(Table, tablename="grabs"):
     guild: Varchar = Varchar(length=None, null=True, default=None)
     message: Varchar = Varchar(length=None, null=True, default=None)
     message_hash: Varchar = Varchar(length=None, null=True, default=None)
-    time: Timestamp = Timestamp(
-        null=True,
-        default=lambda: datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
-    )
+    time: Timestamptz = Timestamptz()
     nsfw: Boolean = Boolean(null=True, default=False)
+
+
+class ModLog(Table, tablename="modlog"):
+    """The postgres table for all mod log events
+
+    Attributes:
+        pk (Serial): The automatic primary key
+        guild_id (Varchar): The string of the guild ID the user was banned in
+        guild_case_id (Integer): The case number of the action taken
+        action (Varchar): The string representation of the action taken
+        reason (Varchar): The reason of the ban
+        data (Varchar): Any extra data specific to the event logged
+        moderator_id (Varchar): The ID of the moderator who banned
+        member_id (Varchar): The ID of the user who was banned
+        action_time (Timestamptz): The date and time of the ban
+        until_time (Timestamptz): The time this action will expire
+    """
+
+    pk: Serial = Serial(primary_key=True)
+    guild_id: Varchar = Varchar(length=None)
+    guild_case_id: Integer = Integer()
+    action: Varchar = Varchar(length=None)
+    reason: Varchar = Varchar(length=None, null=True, default=None)
+    data: Varchar = Varchar(length=None, null=True, default=None)
+    moderator_id: Varchar = Varchar(length=None, null=True, default=None)
+    member_id: Varchar = Varchar(length=None, null=True, default=None)
+    action_time: Timestamptz = Timestamptz()
+    until_time: Timestamptz = Timestamptz(null=True, default=None)
+
+    unique_guild_case = Unique([guild_id, guild_case_id])
 
 
 class UserNote(Table, tablename="usernote"):
@@ -74,10 +102,7 @@ class UserNote(Table, tablename="usernote"):
     pk: Serial = Serial(primary_key=True)
     user_id: Varchar = Varchar(length=None, null=True, default=None)
     guild_id: Varchar = Varchar(length=None, null=True, default=None)
-    updated: Timestamp = Timestamp(
-        null=True,
-        default=lambda: datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
-    )
+    updated: Timestamptz = Timestamptz()
     author_id: Varchar = Varchar(length=None, null=True, default=None)
     body: Varchar = Varchar(length=None, null=True, default=None)
 
