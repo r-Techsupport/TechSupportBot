@@ -501,7 +501,7 @@ class TechSupportBot(commands.Bot):
 
     async def get_postgres_ref(self: Self) -> PostgresEngine:
         """Connect Piccolo using the configured PostgreSQL credentials.
-        
+
         Returns:
             PostgresEngine: The connected Postgres database object
         """
