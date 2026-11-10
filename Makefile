@@ -25,7 +25,7 @@ lint:
 	pylint $(shell git ls-files '*.py')
 
 test:
-	PYTHONPATH=./ pytest ./tests/ -p no:warnings
+	PYTHONPATH=./ pytest ./unit_tests/ -p no:warnings
 
 build:
 	make establish_config

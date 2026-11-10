@@ -12,7 +12,7 @@ __pycache__
 .github/
 DBs/
 documentation/
-tests/
+unit_tests/
 
 # Files that contain information not relevant to running the code itself
 .dockerignore

@@ -13,7 +13,6 @@ import configuration
 import ui
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, moderation
-from database.schema import UserNote
 from modules.moderation import modlog
 
 if TYPE_CHECKING:

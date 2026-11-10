@@ -15,7 +15,7 @@ def bind_engine(engine: PostgresEngine) -> None:
         engine (PostgresEngine): The engine to use for this schema's tables
     """
     for table in table_finder([__name__], exclude_imported=True):
-        table._meta.db = engine
+        table._meta.db = engine  # pylint: disable=protected-access
 
 
 class Grab(Table, tablename="grabs"):
