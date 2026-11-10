@@ -17,6 +17,7 @@ import git
 from discord import app_commands
 
 from core import auxiliary, cogs
+from database import status as db_status
 
 if TYPE_CHECKING:
     import bot
@@ -73,6 +74,18 @@ class BotInfo(cogs.BaseCog):
             value=", ".join(f"{guild.name} ({guild.id})" for guild in self.bot.guilds),
             inline=True,
         )
+
+        connection_status = (
+            await db_status.get_connection_status(self.bot.db)
+        ).connected
+        schema_status = (await db_status.get_schema_status(self.bot.db)).matches
+        embed.add_field(
+            name="Postgres",
+            value=f"Status: `{"Connected" if connection_status else "Not connected"}`\n"
+            + f"Schema matches: `{schema_status}`",
+            inline=True,
+        )
+
         irc_config = self.bot.file_config.api.irc
         if not irc_config.enable_irc:
             embed.add_field(
@@ -87,8 +100,9 @@ class BotInfo(cogs.BaseCog):
                 value=f"IRC Status: `{irc_status['status']}`\n"
                 + f"IRC Bot Name: `{irc_status['name']}`\n"
                 + f"Channels: `{irc_status['channels']}`",
-                inline=True,
+                inline=False,
             )
+
         try:
             repo = git.Repo(search_parent_directories=True)
             commit = repo.head.commit
