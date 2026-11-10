@@ -37,6 +37,9 @@ Changes since 2026.11.07
 - Migrate from BaseCog to MatchCog
 - Full migraiton to application commands
 
+### Modmail
+- Fixes /modmail factoid not working after database changes
+
 ### Relay
 - Full migration to application commands
 
