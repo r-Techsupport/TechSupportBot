@@ -72,6 +72,7 @@ class FactoidCall(Table, tablename="factoid_calls"):
         guild (Varchar): The ID of the guild the alias belongs to
         name (Varchar): The alias used to invoke the factoid
         factoid_data_id (ForeignKey): The referenced factoid data ID
+        unique_guild_name (Unique): Prevents duplicate alias names within a guild
     """
 
     factoid_call_id: Serial = Serial(primary_key=True)
@@ -86,7 +87,7 @@ class FactoidCall(Table, tablename="factoid_calls"):
         on_update=OnUpdate.no_action,
     )
 
-    unique_guild_name = Unique([guild, name], name="uq_factoid_calls_guild_name")
+    unique_guild_name: Unique = Unique([guild, name])
 
 
 class FactoidJob(Table, tablename="factoid_jobs"):
@@ -154,6 +155,20 @@ class IRCChannelMapping(Table, tablename="ircchannelmap"):
     irc_channel_id: Varchar = Varchar(length=None, null=True, default=None)
 
 
+class Listener(Table, tablename="listeners"):
+    """A message forwarding registration between two channels.
+
+    Attributes:
+        pk (Serial): The automatic primary key
+        src_id (Varchar): The ID of the source channel
+        dst_id (Varchar): The ID of the destination channel
+    """
+
+    pk: Serial = Serial(primary_key=True)
+    src_id: Varchar = Varchar(length=None, null=True, default=None)
+    dst_id: Varchar = Varchar(length=None, null=True, default=None)
+
+
 class ModLog(Table, tablename="modlog"):
     """The postgres table for all mod log events
 
@@ -168,6 +183,7 @@ class ModLog(Table, tablename="modlog"):
         member_id (Varchar): The ID of the user who was banned
         action_time (Timestamptz): The date and time of the ban
         until_time (Timestamptz): The time this action will expire
+        unique_guild_case (Unique): Prevents duplicate case numbers within a guild
     """
 
     pk: Serial = Serial(primary_key=True)
@@ -181,7 +197,7 @@ class ModLog(Table, tablename="modlog"):
     action_time: Timestamptz = Timestamptz()
     until_time: Timestamptz = Timestamptz(null=True, default=None)
 
-    unique_guild_case = Unique([guild_id, guild_case_id])
+    unique_guild_case: Unique = Unique([guild_id, guild_case_id])
 
 
 class ModmailBan(Table, tablename="modmail_bans"):

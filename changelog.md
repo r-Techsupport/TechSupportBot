@@ -27,6 +27,10 @@ Changes since 2026.06.15
 ### Factoid
 - Fixes issue where factoid search breaks if factoids don't have an embed config
 
+### Listen
+- Migrate from BaseCog to MatchCog
+- Full migraiton to application commands
+
 ### Relay
 - Full migration to application commands
 

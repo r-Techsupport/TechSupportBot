@@ -54,7 +54,7 @@ class Rules(cogs.BaseCog):
         """
         try:
             uploaded_data = json.loads(await json_file.read())
-        except (ValueError, UnicodeDecodeError):
+        except UnicodeDecodeError:
             embed = auxiliary.prepare_deny_embed(
                 message="Please upload a valid JSON file"
             )
@@ -225,7 +225,6 @@ async def write_new_rules(guild: discord.Guild, rules: munch.Munch) -> None:
     """This converts the munchified rules into a string and writes it to the database
 
     Args:
-        bot (bot.TechSupportBot): The instance of TS to use
         guild (discord.Guild): The guild to write the rules for
         rules (munch.Munch): The rules to convert and write
     """
