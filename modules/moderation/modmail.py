@@ -1250,7 +1250,7 @@ class Modmail(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        await ban_entry.delete()
+        await ban_entry.remove()
         await modlog.log_action(
             bot=self.bot,
             action_type="modmail unban",

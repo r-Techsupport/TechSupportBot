@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 from typing import TYPE_CHECKING, Self
 
@@ -42,6 +43,24 @@ class Rules(cogs.BaseCog):
     )
 
     @app_commands.checks.has_permissions(administrator=True)
+    @rule_group.command(
+        name="json", description="Downloads the current guild's rules as JSON"
+    )
+    async def rules_json(self: Self, interaction: discord.Interaction) -> None:
+        """Send the guild's current rules as an editable JSON attachment.
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+        """
+        await interaction.response.defer()
+        rules = await get_guild_rules(interaction.guild)
+        json_file = discord.File(
+            io.BytesIO(json.dumps(rules, indent=4).encode("utf-8")),
+            filename=f"{interaction.guild.id}-rules.json",
+        )
+        await interaction.followup.send(file=json_file)
+
+    @app_commands.checks.has_permissions(administrator=True)
     @rule_group.command(name="edit", description="Edits rules by uploading JSON")
     async def edit_rules(
         self: Self, interaction: discord.Interaction, json_file: discord.Attachment
@@ -52,13 +71,20 @@ class Rules(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called this command
             json_file (discord.Attachment): The JSON file containing the new rules
         """
+        await interaction.response.defer()
+
+        if not json_file.filename.lower().endswith(".json"):
+            embed = auxiliary.prepare_deny_embed(message="Please upload a JSON file")
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
         try:
             uploaded_data = json.loads(await json_file.read())
-        except UnicodeDecodeError:
+        except (UnicodeDecodeError, json.JSONDecodeError):
             embed = auxiliary.prepare_deny_embed(
                 message="Please upload a valid JSON file"
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
         if (
@@ -74,13 +100,13 @@ class Rules(cogs.BaseCog):
             embed = auxiliary.prepare_deny_embed(
                 message='The JSON must contain a "rules" list of rule objects'
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
         uploaded_data["guild_id"] = str(interaction.guild.id)
         await write_new_rules(interaction.guild, munch.munchify(uploaded_data))
         embed = auxiliary.prepare_confirm_embed(message="I've updated to those rules")
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
 
     @rule_group.command(
         name="get",

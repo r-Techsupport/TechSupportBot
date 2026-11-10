@@ -396,7 +396,7 @@ class ApplicationManager(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
         ban = await self.get_ban_entry(member)
-        await ban.delete()
+        await ban.remove()
 
         await modlog.log_action(
             bot=self.bot,

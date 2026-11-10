@@ -99,7 +99,7 @@ class DataDeleter(cogs.BaseCog):
 
         xps = await XP.objects().where(XP.user_id == str(interaction.user.id))
         for entry in xps:
-            await entry.delete()
+            await entry.remove()
             records_deleted += 1
 
         embed = auxiliary.prepare_confirm_embed(

@@ -196,10 +196,11 @@ class DiscordToIRC(cogs.MatchCog):
         Args:
             interaction (discord.Interaction): The interaction that called this command
         """
+        await interaction.response.defer()
         self.bot.irc.ready = False
         self.bot.irc.connection.reconnect()
         embed = auxiliary.prepare_confirm_embed(message="Reconnected to IRC")
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
 
     @irc_group.command(name="status", description="Check status")
     async def irc_status(self: Self, interaction: discord.Interaction) -> None:
