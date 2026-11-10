@@ -10,7 +10,7 @@ from discord import app_commands
 
 import ui
 from core import auxiliary, cogs
-from database.schema import XP, Grab
+from database.schema import XP, Applications, Grab
 
 if TYPE_CHECKING:
     import bot
@@ -78,11 +78,11 @@ class DataDeleter(cogs.BaseCog):
             return
 
         records_deleted = 0
-        application_database = await self.bot.models.Applications.query.where(
-            self.bot.models.Applications.applicant_id == str(interaction.user.id)
-        ).gino.all()
-        for entry in application_database:
-            await entry.delete()
+        applications = await Applications.objects().where(
+            Applications.applicant_id == str(interaction.user.id)
+        )
+        for application in applications:
+            await application.remove()
             records_deleted += 1
 
         duck_database = await self.bot.models.DuckUser.query.where(

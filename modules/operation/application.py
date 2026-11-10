@@ -12,7 +12,7 @@ from discord import app_commands
 import configuration
 import ui
 from core import auxiliary, cogs
-from database.schema import ApplicationBans
+from database.schema import ApplicationBans, Applications
 from modules.moderation import modlog
 
 if TYPE_CHECKING:
@@ -245,25 +245,23 @@ class ApplicationManager(cogs.BaseCog):
                     f"Application by user: `{app.applicant_name}` was rejected because"
                     " they left"
                 )
-                await app.update(
-                    application_status=ApplicationStatus.REJECTED.value
-                ).apply()
+                app.application_status = ApplicationStatus.REJECTED.value
+                await app.save(columns=[Applications.application_status])
                 continue
 
             # Application has been pending for max_age days
             max_age_config = configuration.get_config_entry(
                 guild.id, "application_max_age"
             )
-            if app.application_time < datetime.datetime.now() - datetime.timedelta(
-                days=max_age_config
-            ):
+            if app.application_time < datetime.datetime.now(
+                datetime.UTC
+            ) - datetime.timedelta(days=max_age_config):
                 audit_log.append(
                     f"Application by user: `{user.name}` was rejected since it's been"
                     f" inactive for {max_age_config} days"
                 )
-                await app.update(
-                    application_status=ApplicationStatus.REJECTED.value
-                ).apply()
+                app.application_status = ApplicationStatus.REJECTED.value
+                await app.save(columns=[Applications.application_status])
                 continue
 
             # User changed their name
@@ -272,7 +270,8 @@ class ApplicationManager(cogs.BaseCog):
                     f"Application by user: `{app.applicant_name}` had the stored name"
                     f" updated to `{user.name}`"
                 )
-                await app.update(applicant_name=user.name).apply()
+                app.applicant_name = user.name
+                await app.save(columns=[Applications.applicant_name])
 
             role = guild.get_role(
                 int(
@@ -288,9 +287,8 @@ class ApplicationManager(cogs.BaseCog):
                     f"Application by user: `{user.name}` was approved since they have"
                     f" the `{role.name}` role"
                 )
-                await app.update(
-                    application_status=ApplicationStatus.APPROVED.value
-                ).apply()
+                app.application_status = ApplicationStatus.APPROVED.value
+                await app.save(columns=[Applications.application_status])
 
         if audit_log:
             embed = discord.Embed(title="Application manage events")
@@ -473,9 +471,8 @@ class ApplicationManager(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        await application.update(
-            application_status=ApplicationStatus.APPROVED.value
-        ).apply()
+        application.application_status = ApplicationStatus.APPROVED.value
+        await application.save(columns=[Applications.application_status])
 
         await member.add_roles(
             application_role, reason=f"Application approved by {interaction.user}"
@@ -511,9 +508,8 @@ class ApplicationManager(cogs.BaseCog):
             )
             await interaction.response.send_message(embed=embed)
             return
-        await application.update(
-            application_status=ApplicationStatus.DENIED.value
-        ).apply()
+        application.application_status = ApplicationStatus.DENIED.value
+        await application.save(columns=[Applications.application_status])
 
         await self.notify_for_application_change(
             message, False, interaction, application, member
@@ -544,7 +540,7 @@ class ApplicationManager(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
         for application in applications:
-            await application.delete()
+            await application.remove()
         embed = auxiliary.prepare_confirm_embed(
             f"Applications from {member.name} have been successfully deleted"
         )
@@ -629,12 +625,12 @@ class ApplicationManager(cogs.BaseCog):
     # Helper functions
 
     async def make_array_from_applications(
-        self: Self, applications: bot.models.Applications, guild: discord.Guild
+        self: Self, applications: list[Applications], guild: discord.Guild
     ) -> list[discord.Embed]:
         """Makes an array designed for pagination from a list of applications
 
         Args:
-            applications (bot.models.Applications): The list of applications to convert into embeds
+            applications (list[Applications]): The list of applications to convert into embeds
             guild (discord.Guild): The guild the command is run from
 
         Returns:
@@ -707,13 +703,13 @@ class ApplicationManager(cogs.BaseCog):
         return bool(entry)
 
     async def get_application_from_db_entry(
-        self: Self, guild: discord.Guild, application: bot.models.Applications
+        self: Self, guild: discord.Guild, application: Applications
     ) -> discord.Member:
         """Gets the applicant member object from a db entry
 
         Args:
             guild (discord.Guild): The guild to search in
-            application (bot.models.Applications): The application database entry
+            application (Applications): The application database entry
                 to get the member from
 
         Returns:
@@ -725,14 +721,14 @@ class ApplicationManager(cogs.BaseCog):
     async def build_application_embed(
         self: Self,
         guild: discord.Guild,
-        application: bot.models.Applications,
+        application: Applications,
         new: bool = True,
     ) -> discord.Embed:
         """This builds the embed that will be sent to staff
 
         Args:
             guild (discord.Guild): The guild the user has applied to
-            application (bot.models.Applications): The database entry of the application
+            application (Applications): The database entry of the application
             new (bool, optional): If the application is new and the title should
                 include new. Defaults to True.
 
@@ -789,7 +785,7 @@ class ApplicationManager(cogs.BaseCog):
             reason (str): The answer to the reason question
         """
         # Add application to database
-        application = self.bot.models.Applications(
+        application = Applications(
             guild_id=str(applicant.guild.id),
             applicant_name=applicant.name,
             applicant_id=str(applicant.id),
@@ -797,7 +793,7 @@ class ApplicationManager(cogs.BaseCog):
             background=background,
             reason=reason,
         )
-        await application.create()
+        await application.save()
 
         # Find the channel to send to
         channel = applicant.guild.get_channel(
@@ -905,7 +901,7 @@ class ApplicationManager(cogs.BaseCog):
         message: str,
         approved: bool,
         interaction: discord.Interaction,
-        application: bot.models.Applications,
+        application: Applications,
         member: discord.Member,
     ) -> None:
         """Notifies:
@@ -920,7 +916,7 @@ class ApplicationManager(cogs.BaseCog):
             approved (bool): Whether this application has been approved. If False, it is denied
             interaction (discord.Interaction): The interaction from the slash command
                 that changed the status
-            application (bot.models.Applications): The db entry of the application to update
+            application (Applications): The db entry of the application to update
             member (discord.Member): The member to approve/deny,
                 only for the purposes of sending a DM
         """
@@ -974,24 +970,24 @@ class ApplicationManager(cogs.BaseCog):
 
     async def search_for_all_applications(
         self: Self, member: discord.Member
-    ) -> list[bot.models.Applications]:
+    ) -> list[Applications]:
         """Gets ALL applications for a given user, regardless of status
 
         Args:
             member (discord.Member): The member to lookup applications for
 
         Returns:
-            list[bot.models.Applications]: A list of all of the applications beloning to the user
+            list[Applications]: A list of all of the applications beloning to the user
         """
-        query = self.bot.models.Applications.query.where(
-            self.bot.models.Applications.applicant_id == str(member.id)
-        ).where(self.bot.models.Applications.guild_id == str(member.guild.id))
-        entry = await query.gino.all()
+        entry = await Applications.objects().where(
+            Applications.applicant_id == str(member.id),
+            Applications.guild_id == str(member.guild.id),
+        )
         return entry
 
     async def get_applications_by_status(
         self: Self, status: ApplicationStatus, guild: discord.Guild
-    ) -> list[bot.models.Applications]:
+    ) -> list[Applications]:
         """Gets all applications of a given status
 
         Args:
@@ -999,37 +995,35 @@ class ApplicationManager(cogs.BaseCog):
             guild (discord.Guild): The guild to get applications from
 
         Returns:
-            list[bot.models.Applications]: The list of applications in a oldest first order
+            list[Applications]: The list of applications in a oldest first order
         """
-        query = self.bot.models.Applications.query.where(
-            self.bot.models.Applications.application_status == status.value
-        ).where(self.bot.models.Applications.guild_id == str(guild.id))
-        entry = await query.gino.all()
+        entry = await Applications.objects().where(
+            Applications.application_status == status.value,
+            Applications.guild_id == str(guild.id),
+        )
         entry.sort(key=lambda entry: entry.application_time)
         return entry
 
     async def search_for_pending_application(
         self: Self, member: discord.Member
-    ) -> bot.models.Applications:
+    ) -> Applications | None:
         """Finds a pending application from the given user
 
         Args:
             member (discord.Member): The member to lookup the application for
 
         Returns:
-            bot.models.Applications: The pending application object of the given user
+            Applications | None: The pending application, or None if none exists
         """
-        query = (
-            self.bot.models.Applications.query.where(
-                self.bot.models.Applications.applicant_id == str(member.id)
-            )
-            .where(self.bot.models.Applications.guild_id == str(member.guild.id))
+        entry = (
+            await Applications.objects()
             .where(
-                self.bot.models.Applications.application_status
-                == ApplicationStatus.PENDING.value
+                Applications.applicant_id == str(member.id),
+                Applications.guild_id == str(member.guild.id),
+                Applications.application_status == ApplicationStatus.PENDING.value,
             )
+            .first()
         )
-        entry = await query.gino.first()
         return entry
 
     async def get_ban_entry(self: Self, member: discord.Member) -> ApplicationBans:

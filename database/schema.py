@@ -26,6 +26,30 @@ def bind_engine(engine: PostgresEngine) -> None:
         table._meta.db = engine  # pylint: disable=protected-access
 
 
+class Applications(Table, tablename="applications"):
+    """The applications submitted by guild members.
+
+    Attributes:
+        pk (Serial): The automatic primary key
+        guild_id (Varchar): The ID of the guild receiving the application
+        applicant_name (Varchar): The applicant's name
+        applicant_id (Varchar): The ID of the applicant
+        application_status (Varchar): The current application status
+        background (Varchar): The applicant's background answer
+        reason (Varchar): The applicant's reason for applying
+        application_time (Timestamptz): The timezone-aware UTC submission time
+    """
+
+    pk: Serial = Serial(primary_key=True)
+    guild_id: Varchar = Varchar(length=None, null=True, default=None)
+    applicant_name: Varchar = Varchar(length=None, null=True, default=None)
+    applicant_id: Varchar = Varchar(length=None, null=True, default=None)
+    application_status: Varchar = Varchar(length=None, null=True, default=None)
+    background: Varchar = Varchar(length=None, null=True, default=None)
+    reason: Varchar = Varchar(length=None, null=True, default=None)
+    application_time: Timestamptz = Timestamptz(null=True)
+
+
 class ApplicationBans(Table, tablename="appbans"):
     """The postgres table for users banned from applications
 

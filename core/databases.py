@@ -19,34 +19,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         bot (bot.TechSupportBot): The bot object to register the databases to
     """
 
-    class Applications(bot.db.Model):
-        """The postgres table for applications
-        Currenty used in application.py
-
-        Attributes:
-            pk (int): The automatic primary key
-            guild_id (str): The string of the guild ID the application is in
-            applicant_name (str): The name of the user who submitted the app
-            applicant_id (str): The string representation of the ID of the user
-            application_status (str): The string representation of the status
-            background (str): The answer to the background question of the application
-            reason (str): The answer to the reason question of the application
-            application_time (datetime.datetime): The time the application was submitted
-        """
-
-        __tablename__ = "applications"
-
-        pk: int = bot.db.Column(bot.db.Integer, primary_key=True, autoincrement=True)
-        guild_id: str = bot.db.Column(bot.db.String)
-        applicant_name: str = bot.db.Column(bot.db.String)
-        applicant_id: str = bot.db.Column(bot.db.String)
-        application_status: str = bot.db.Column(bot.db.String)
-        background: str = bot.db.Column(bot.db.String)
-        reason: str = bot.db.Column(bot.db.String)
-        application_time: datetime.datetime = bot.db.Column(
-            bot.db.DateTime, default=datetime.datetime.utcnow
-        )
-
     class DuckUser(bot.db.Model):
         """The postgres table for ducks
         Currently used in duck.py
@@ -73,5 +45,4 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         )
         speed_record: float = bot.db.Column(bot.db.Float, default=-1.0)
 
-    bot.models.Applications = Applications
     bot.models.DuckUser = DuckUser  # Needs app command conversion
