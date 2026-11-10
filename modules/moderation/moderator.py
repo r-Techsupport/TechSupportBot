@@ -13,6 +13,7 @@ import configuration
 import ui
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, moderation
+from database.schema import Warning
 from modules.moderation import modlog
 
 if TYPE_CHECKING:
@@ -822,7 +823,7 @@ class ProtectCommands(cogs.BaseCog):
 
     async def get_warning(
         self: Self, user: discord.Member, warning: str
-    ) -> bot.models.Warning:
+    ) -> Warning | None:
         """Gets a specific warning by string for a user
 
         Args:
@@ -830,16 +831,17 @@ class ProtectCommands(cogs.BaseCog):
             warning (str): The warning to look for
 
         Returns:
-            bot.models.Warning: If it exists, the warning object
+            Warning | None: The matching warning, or None if it does not exist
         """
-        query = (
-            self.bot.models.Warning.query.where(
-                self.bot.models.Warning.guild_id == str(user.guild.id)
+        entry = (
+            await Warning.objects()
+            .where(
+                Warning.guild_id == str(user.guild.id),
+                Warning.reason == warning,
+                Warning.user_id == str(user.id),
             )
-            .where(self.bot.models.Warning.reason == warning)
-            .where(self.bot.models.Warning.user_id == str(user.id))
+            .first()
         )
-        entry = await query.gino.first()
         return entry
 
 
@@ -869,14 +871,14 @@ def generate_response_embed(
 def build_warning_embeds(
     guild: discord.Guild,
     member: discord.Member,
-    warnings: list[bot.models.Warnings],
+    warnings: list[Warning],
 ) -> list[discord.Embed]:
     """Makes a list of embeds with 6 warnings per page, for a given user
 
     Args:
         guild (discord.Guild): The guild where the warnings occured
         member (discord.Member): The member whose warnings are being looked for
-        warnings (list[bot.models.Warnings]): The list of warnings from the database
+        warnings (list[Warning]): The list of warnings from the database
 
     Returns:
         list[discord.Embed]: The list of well formatted embeds

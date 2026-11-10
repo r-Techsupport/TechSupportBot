@@ -178,28 +178,6 @@ def setup_models(bot: bot.TechSupportBot) -> None:
         discord_channel_id: str = bot.db.Column(bot.db.String, default=None)
         irc_channel_id: str = bot.db.Column(bot.db.String, default=None)
 
-    class Warning(bot.db.Model):
-        """The postgres table for warnings
-        Currently used in protect.py and who.py
-
-        Attributes:
-            __tablename__ (str): The name of the table in postgres
-            pk (int): The primary key for the database
-            user_id (str): The user who got warned
-            guild_id (str): The guild this warn occured in
-            reason (str): The reason for the warn
-            time (datetime): The time the warning was given
-            invoker_id (str): The moderator who made the warning
-        """
-
-        __tablename__ = "warnings"
-        pk = bot.db.Column(bot.db.Integer, primary_key=True)
-        user_id = bot.db.Column(bot.db.String)
-        guild_id = bot.db.Column(bot.db.String)
-        reason = bot.db.Column(bot.db.String)
-        time = bot.db.Column(bot.db.DateTime, default=datetime.datetime.utcnow)
-        invoker_id = bot.db.Column(bot.db.String)
-
     class Listener(bot.db.Model):
         """The postgres table for listeners
         Currently used in listen.py
@@ -270,6 +248,5 @@ def setup_models(bot: bot.TechSupportBot) -> None:
     bot.models.FactoidCall = FactoidCall
     bot.models.FactoidJob = FactoidJob
     bot.models.IRCChannelMapping = IRCChannelMapping  # Needs app command conversion
-    bot.models.Warning = Warning
     bot.models.Listener = Listener  # Needs app command conversion
     bot.models.Votes = Votes

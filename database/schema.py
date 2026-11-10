@@ -1,6 +1,8 @@
 """Piccolo models for the existing database tables."""
 
-from piccolo.columns import Boolean, Integer, Serial, Timestamptz, Varchar
+import datetime
+
+from piccolo.columns import Boolean, Integer, Serial, Timestamp, Timestamptz, Varchar
 from piccolo.conf.apps import table_finder
 from piccolo.constraints import Unique
 from piccolo.engine.postgres import PostgresEngine
@@ -144,3 +146,26 @@ class XP(Table, tablename="user_xp"):
     guild_id: Varchar = Varchar(length=None, null=True, default=None)
     user_id: Varchar = Varchar(length=None, null=True, default=None)
     xp: Integer = Integer()
+
+
+class Warning(Table, tablename="warnings"):
+    """The postgres table for moderator warnings.
+
+    Attributes:
+        pk (Serial): The automatic primary key
+        user_id (Varchar): The ID of the user who received the warning
+        guild_id (Varchar): The ID of the guild where the warning was given
+        reason (Varchar): The reason for the warning
+        time (Timestamp): The UTC time the warning was given, without timezone information
+        invoker_id (Varchar): The ID of the moderator who gave the warning
+    """
+
+    pk: Serial = Serial(primary_key=True)
+    user_id: Varchar = Varchar(length=None, null=True, default=None)
+    guild_id: Varchar = Varchar(length=None, null=True, default=None)
+    reason: Varchar = Varchar(length=None, null=True, default=None)
+    time: Timestamp = Timestamp(
+        null=True,
+        default=lambda: datetime.datetime.now(datetime.UTC).replace(tzinfo=None),
+    )
+    invoker_id: Varchar = Varchar(length=None, null=True, default=None)

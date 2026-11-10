@@ -4,9 +4,8 @@ Do the proper moderative action and return true if successful, false if not."""
 import datetime
 
 import discord
-import munch
 
-from database.schema import UserNote
+from database.schema import UserNote, Warning
 
 
 async def ban_user(
@@ -119,12 +118,12 @@ async def warn_user(
     Returns:
         bool: True if warning was successful
     """
-    await bot_object.models.Warning(
+    await Warning(
         user_id=str(user.id),
         guild_id=str(invoker.guild.id),
         reason=reason,
         invoker_id=str(invoker.id),
-    ).create()
+    ).save()
     return True
 
 
@@ -139,23 +138,24 @@ async def unwarn_user(bot_object: object, user: discord.Member, warning: str) ->
     Returns:
         bool: True if unwarning was successful
     """
-    query = (
-        bot_object.models.Warning.query.where(
-            bot_object.models.Warning.guild_id == str(user.guild.id)
+    entry = (
+        await Warning.objects()
+        .where(
+            Warning.guild_id == str(user.guild.id),
+            Warning.reason == warning,
+            Warning.user_id == str(user.id),
         )
-        .where(bot_object.models.Warning.reason == warning)
-        .where(bot_object.models.Warning.user_id == str(user.id))
+        .first()
     )
-    entry = await query.gino.first()
     if not entry:
         return False
-    await entry.delete()
+    await entry.remove()
     return True
 
 
 async def get_all_warnings(
     bot_object: object, user: discord.User, guild: discord.Guild
-) -> list[munch.Munch]:
+) -> list[Warning]:
     """Gets a list of all warnings for a specific user in a specific guild
 
     Args:
@@ -164,15 +164,15 @@ async def get_all_warnings(
         guild (discord.Guild): The guild that we want warns from
 
     Returns:
-        list[munch.Munch]: The list of all warnings for the user/guild, if any exist
+        list[Warning]: The list of all warnings for the user/guild, if any exist
     """
     warnings = (
-        await bot_object.models.Warning.query.where(
-            bot_object.models.Warning.user_id == str(user.id)
+        await Warning.objects()
+        .where(
+            Warning.user_id == str(user.id),
+            Warning.guild_id == str(guild.id),
         )
-        .where(bot_object.models.Warning.guild_id == str(guild.id))
-        .order_by(bot_object.models.Warning.time.desc())
-        .gino.all()
+        .order_by(Warning.time, ascending=False)
     )
     return warnings
 
