@@ -51,20 +51,6 @@ class Applications(Table, tablename="applications"):
     application_time: Timestamptz = Timestamptz(null=True)
 
 
-class ApplicationBans(Table, tablename="appbans"):
-    """The postgres table for users banned from applications
-
-    Attributes:
-        pk (Serial): The automatic primary key
-        guild_id (Varchar): The string of the guild ID the applicant is banned in
-        applicant_id (Varchar): The string representation of the ID of the user
-    """
-
-    pk: Serial = Serial(primary_key=True)
-    guild_id: Varchar = Varchar(length=None, null=True, default=None)
-    applicant_id: Varchar = Varchar(length=None, null=True, default=None)
-
-
 class DuckUser(Table, tablename="duckusers"):
     """A member's duck hunt scores and speed record within a guild.
 
@@ -162,6 +148,22 @@ class FactoidJob(Table, tablename="factoid_jobs"):
     cron: Varchar = Varchar(length=None, null=True, default=None)
 
 
+class FeatureBan(Table, tablename="featurebans"):
+    """The postgres table for users banned from various features
+
+    Attributes:
+        pk (Serial): The automatic primary key
+        guild_id (Varchar): The string of the guild ID the user is banned in
+        user_id (Varchar): The string of the ID of the user who is banned
+        ban_flags (Integer): A bitwise set of flags for features this user is banned from
+    """
+
+    pk: Serial = Serial(primary_key=True)
+    guild_id: Varchar = Varchar(length=None, null=True, default=None)
+    user_id: Varchar = Varchar(length=None, null=True, default=None)
+    ban_flags: Integer = Integer(default=0)
+
+
 class Grab(Table, tablename="grabs"):
     """The table for the grab module, storing encrypted messages and who sent them.
 
@@ -245,17 +247,6 @@ class ModLog(Table, tablename="modlog"):
     until_time: Timestamptz = Timestamptz(null=True, default=None)
 
     unique_guild_case: Unique = Unique([guild_id, guild_case_id])
-
-
-class ModmailBan(Table, tablename="modmail_bans"):
-    """The postgres table for modmail bans.
-    Currently used in modmail.py.
-
-    Attributes:
-        user_id (Varchar): The ID of the user banned from modmail.
-    """
-
-    user_id: Varchar = Varchar(length=None, primary_key=True)
 
 
 class Rule(Table, tablename="guild_rules"):

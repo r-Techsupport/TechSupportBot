@@ -11,7 +11,7 @@ from discord import app_commands
 
 import configuration
 from core import auxiliary, cogs
-from modules.moderation import modlog
+from modules.moderation import featureban, modlog
 
 if TYPE_CHECKING:
     import bot
@@ -44,11 +44,20 @@ class Report(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called this command
             reason (str): The report string that the user submitted
         """
+        if await featureban.is_feature_banned(
+            interaction.guild.id, interaction.user.id, featureban.FeatureFlag.REPORT
+        ):
+            embed = auxiliary.prepare_deny_embed(
+                "You are not allowed to make a report at this time."
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
         if len(reason) > 2000:
             embed = auxiliary.prepare_deny_embed(
                 "Your report cannot be longer than 2000 characters."
             )
-            await interaction.response.send_message(embed=embed)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         embed = discord.Embed(title="New Report", description=reason)
