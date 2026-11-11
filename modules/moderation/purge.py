@@ -82,6 +82,8 @@ class Purger(cogs.BaseCog):
             action_type="purge",
             guild=interaction.guild,
             moderator=interaction.user,
+            channel=interaction.channel,
+            data=f"**Messages deleted:** {len(deleted)}",
         )
         await interaction.followup.edit_message(
             message_id=sent_message.id,

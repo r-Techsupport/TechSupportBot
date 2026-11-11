@@ -267,6 +267,7 @@ class FeatureBans(cogs.BaseCog):
                     guild=interaction.guild,
                     member=user,
                     moderator=interaction.user,
+                    channel=interaction.channel,
                     reason=reason,
                 )
 

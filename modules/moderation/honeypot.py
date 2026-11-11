@@ -66,6 +66,7 @@ class HoneyPot(cogs.MatchCog):
             action_type="Honeypot",
             guild=ctx.guild,
             member=ctx.author,
+            channel=ctx.channel,
             data=(
                 f"**Content:** {ctx.message.clean_content[:500]}\n"
                 f"**Attachments:** {len(ctx.message.attachments)}"

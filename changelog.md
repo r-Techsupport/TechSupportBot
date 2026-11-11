@@ -38,10 +38,20 @@ Changes since 2026.11.07
 
 ### Moderator
 - Fixed edge case bugs when warning people causing the warn command to not work
+- Warn modlogs now show total warnings after event
+- Fixed edge case bug where a warn could be both applied and not applied at the same time
 
 ### Modmail
 - Removed the invidiual ban commands in favor of a joint feature ban system.
 - Made a new system for confirming new modmail threads
+
+### Modlog
+- Fixes edge case bugs if the moderator or member deleted their accounts
+- Adds new channel field to all events
+
+### Notes
+- Note modlogs now show total notes after event
+- Note modlogs now use the note as the reason instead of adding a different field
 
 ### Report
 - Added ability to ban people from report
