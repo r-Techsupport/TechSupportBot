@@ -6,7 +6,7 @@ Config: API key in config.yml
 API: OpenAI
 Databases: None
 Models: None
-Subcommands: gpt, gptutil (history, clean)
+Subcommands: /chatgpt chat, /chatgpt history, /chatgpt clear
 Defines: None
 """
 
@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Self
 
 import discord
 import expiringdict
-from discord.ext import commands
+from discord import app_commands
 
 import configuration
 import ui
@@ -52,10 +52,14 @@ class ChatGPT(cogs.BaseCog):
 
     Attributes:
         API_URL (str): The URL for the openai API
-        SYSTEM_PROMPT (dict[str, str]): The default starting prompt for chatGPT
+        chatgpt (app_commands.Group): The group for the /chatgpt commands
+        SYSTEM_PROMPT (list[dict[str, str]]): The default starting prompt for chatGPT
     """
 
     API_URL: str = "https://api.openai.com/v1/chat/completions"
+    chatgpt: app_commands.Group = app_commands.Group(
+        name="chatgpt", description="Chat with ChatGPT and manage your history"
+    )
 
     async def preconfig(self: Self) -> None:
         """Sets up the dict"""
@@ -64,7 +68,7 @@ class ChatGPT(cogs.BaseCog):
             max_age_seconds=3600,
         )
 
-    SYSTEM_PROMPT: dict[str, str] = [
+    SYSTEM_PROMPT: list[dict[str, str]] = [
         {
             "role": "system",
             "content": (
@@ -79,17 +83,17 @@ class ChatGPT(cogs.BaseCog):
     ]
 
     async def call_api(
-        self: Self, ctx: commands.Context, api_key: str, prompt: str
-    ) -> str:
+        self: Self, interaction: discord.Interaction, api_key: str, prompt: str
+    ) -> dict:
         """Calls the API with the history as well as the new prompt
 
         Args:
-            ctx (commands.Context): Context of the command invokation
+            interaction (discord.Interaction): The interaction that called the command
             api_key (str): The OpenAI API key
             prompt (str): The prompt to push to the api
 
         Returns:
-            str: The ChatGPT response
+            dict: The ChatGPT response
         """
         headers = {
             "Authorization": f"Bearer {api_key}",
@@ -101,7 +105,7 @@ class ChatGPT(cogs.BaseCog):
             "model": "gpt-3.5-turbo",
             "messages": (
                 self.SYSTEM_PROMPT
-                + self.history.get(ctx.author.id, [])
+                + self.history.get(interaction.user.id, [])
                 + [{"role": "user", "content": prompt}]
             ),
         }
@@ -110,29 +114,31 @@ class ChatGPT(cogs.BaseCog):
         )
         return response
 
-    @auxiliary.with_typing
-    @commands.command(
-        brief="Prompts ChatGPT",
+    @chatgpt.command(
+        name="chat",
         description="Issues a prompt to the ChatGPT API",
-        usage="[prompt]",
     )
-    async def gpt(self: Self, ctx: commands.Context, *, prompt: str) -> None:
+    async def chat(self: Self, interaction: discord.Interaction, prompt: str) -> None:
         """Pushes a prompt to the OpenAI API for ChatGPT
 
         Args:
-            ctx (commands.Context): Context of the invokation
+            interaction (discord.Interaction): The interaction that called the command
             prompt (str): The prompt to push
         """
+        await interaction.response.defer()
+
         # -> Gets the API key <-
         api_key = self.bot.file_config.api.api_keys.openai
         if not api_key:
-            await auxiliary.send_deny_embed(
-                message="I couldn't find the OpenAI API key", channel=ctx.channel
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    "I couldn't find the OpenAI API key"
+                ),
             )
             return
 
         # -> Calls the API <-
-        response = await self.call_api(ctx, api_key, prompt)
+        response = await self.call_api(interaction, api_key, prompt)
 
         # -> Response processing <-
         choices = response.get("choices", [])
@@ -140,7 +146,7 @@ class ChatGPT(cogs.BaseCog):
             # Tries to figure out what error happened
             if error := response.get("error", []):
                 channel = configuration.get_config_entry(
-                    ctx.guild.id, "core_logging_channel"
+                    interaction.guild.id, "core_logging_channel"
                 )
                 await self.bot.logger.send_log(
                     message=(
@@ -149,110 +155,111 @@ class ChatGPT(cogs.BaseCog):
                     ),
                     level=LogLevel.WARNING,
                     channel=channel,
-                    context=LogContext(guild=ctx.guild, channel=ctx.channel),
+                    context=LogContext(
+                        guild=interaction.guild, channel=interaction.channel
+                    ),
                 )
 
-            await auxiliary.send_deny_embed(
-                message="I couldn't figure out what to say!", channel=ctx.channel
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    "I couldn't figure out what to say!"
+                ),
             )
             return
 
         response = choices[0].get("message", {}).get("content")
         if not response:
-            await auxiliary.send_deny_embed(
-                message="I couldn't figure out what to say!", channel=ctx.channel
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    "I couldn't figure out what to say!"
+                ),
             )
             return
 
         # Creates the history entry for the given user and appens the prompt and the result to it
-        if not self.history.get(ctx.author.id):
-            self.history[ctx.author.id] = [
+        if not self.history.get(interaction.user.id):
+            self.history[interaction.user.id] = [
                 {"role": "user", "content": prompt},
                 {"role": "assistant", "content": response},
             ]
         # If the history exists, just appends the prompt and the result to it
         else:
-            self.history[ctx.author.id].append({"role": "user", "content": prompt})
-            self.history[ctx.author.id].append(
+            self.history[interaction.user.id].append(
+                {"role": "user", "content": prompt}
+            )
+            self.history[interaction.user.id].append(
                 {"role": "assistant", "content": response}
             )
 
-        # Finally, sends the result to the chat in plaintext
-        await ctx.send(content=response[:2000])
+        embed = discord.Embed(
+            description=response[:4096], color=discord.Color.blurple()
+        )
+        await interaction.followup.send(embed=embed)
 
-    @commands.group(
-        brief="Executes a ChatGPT utility command",
-        description="Executes a ChatGPT utility command",
-    )
-    async def gptutil(self: Self, ctx: commands.Context) -> None:
-        """Defines the Gptutil command group for history management
-
-        Args:
-            ctx (commands.Context): Context of the invokation
-        """
-        return
-
-    @auxiliary.with_typing
-    @gptutil.command(
+    @chatgpt.command(
         name="clear",
-        brief="Clears history",
         description="Clears your ChatGPT conversation history",
     )
-    async def clear_history(self: Self, ctx: commands.Context) -> None:
+    async def clear_history(self: Self, interaction: discord.Interaction) -> None:
         """Command to clear the invokers result history
 
         Args:
-            ctx (commands.Context): Context of the invokation
+            interaction (discord.Interaction): The interaction that called the command
         """
         # If the history for the invoker doesn't exist
-        if self.history is None and ctx.author.id not in self.history:
-            await auxiliary.send_deny_embed(
-                message=f"No history found for {ctx.author.mention}",
-                channel=ctx.channel,
+        if not self.history.get(interaction.user.id):
+            await interaction.response.send_message(
+                embed=auxiliary.prepare_deny_embed(
+                    f"No history found for {interaction.user.mention}"
+                ),
+                ephemeral=True,
             )
             return
 
         # Deletion confirmation
         view = ui.Confirm()
         await view.send(
+            interaction=interaction,
             message="Clear your conversation history?",
-            channel=ctx.channel,
-            author=ctx.author,
+            ephemeral=True,
         )
         await view.wait()
         if view.value is ui.ConfirmResponse.TIMEOUT:
             return
         if view.value is ui.ConfirmResponse.DENIED:
-            await auxiliary.send_deny_embed(
-                message="Conversation history was not cleared", channel=ctx.channel
+            await view.message.edit(
+                embed=auxiliary.prepare_deny_embed(
+                    "Conversation history was not cleared"
+                ),
             )
             return
 
         # Finally, removes the entry
-        self.history.pop(ctx.author.id, None)
+        self.history.pop(interaction.user.id, None)
 
-        await auxiliary.send_confirm_embed(
-            message="Chat history cleared!", channel=ctx.channel
+        await view.message.edit(
+            embed=auxiliary.prepare_confirm_embed("Chat history cleared!"),
         )
 
-    @auxiliary.with_typing
-    @gptutil.command(
+    @chatgpt.command(
         name="history",
-        brief="Gets history",
         description="Gets your ChatGPT conversation history",
     )
-    async def get_history(self: Self, ctx: commands.Context) -> None:
+    async def get_history(self: Self, interaction: discord.Interaction) -> None:
         """Command to get the history of the invoker
 
         Args:
-            ctx (commands.Context): Context of the invokation
+            interaction (discord.Interaction): The interaction that called the command
         """
+        await interaction.response.defer(ephemeral=True)
         # Gets the history, makes sure it is valid
-        history = self.history.get(ctx.author.id)
-        if history is None:
-            await auxiliary.send_deny_embed(
-                message=f"No history found for {ctx.author.mention}",
-                channel=ctx.channel,
+        history = self.history.get(interaction.user.id)
+        if not history:
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    f"No history found for {interaction.user.mention}"
+                ),
+                ephemeral=True,
             )
             return
 
@@ -268,4 +275,6 @@ class ChatGPT(cogs.BaseCog):
 
             embeds.append(embed)
 
-        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
+        await ui.PaginateView().send(
+            interaction.channel, interaction.user, embeds, interaction, ephemeral=True
+        )

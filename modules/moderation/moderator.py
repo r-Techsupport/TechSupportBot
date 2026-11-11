@@ -433,55 +433,31 @@ class ProtectCommands(cogs.BaseCog):
             target (discord.Member): The target for being warned
             reason (str): The reason the user is being warned
         """
+        await interaction.response.defer()
+
         denial = await permission_check(
             bot=self.bot, invoker=interaction.user, target=target, action_name="warn"
         )
+        if not denial:
+            if len(reason) > 500:
+                denial = "Warn reason must be 500 characters or fewer"
+            elif not can_user_see_punishment(target, interaction.channel):
+                denial = f"{target} cannot see this warning. No warning was added."
         if denial:
-            embed = auxiliary.prepare_deny_embed(message=denial)
-            await interaction.response.send_message(embed=embed)
+            await interaction.followup.send(embed=auxiliary.prepare_deny_embed(denial))
             return
 
-        if len(reason) > 500:
-            embed = auxiliary.prepare_deny_embed(
-                message="Warn reason must be under 500 characters"
-            )
-            await interaction.response.send_message(embed=embed)
-            return
-
-        if not can_user_see_punishment(target, interaction.channel):
-            embed = auxiliary.prepare_deny_embed(
-                message=f"{target} cannot see this warning. No warning was added."
-            )
-            await interaction.response.send_message(embed=embed)
-            return
-
-        new_count_of_warnings = (
-            len(await moderation.get_all_warnings(self.bot, target, interaction.guild))
-            + 1
-        )
-
-        should_ban = False
-        max_warnings = configuration.get_config_entry(
-            interaction.guild.id, "moderation_max_warnings"
-        )
-        if new_count_of_warnings >= max_warnings:
-            await interaction.response.defer(ephemeral=False)
-            view = ui.Confirm()
-            await view.send(
-                message="This user has exceeded the max warnings of "
-                + f"{max_warnings}. Would "
-                + "you like to ban them instead?",
-                channel=interaction.channel,
-                author=interaction.user,
-                interaction=interaction,
-            )
-            await view.wait()
-            if view.value is ui.ConfirmResponse.CONFIRMED:
-                should_ban = True
-
-        warn_result = await moderation.warn_user(
+        warned = await moderation.warn_user(
             bot_object=self.bot, user=target, invoker=interaction.user, reason=reason
         )
+        if not warned:
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    f"Something went wrong when warning {target}"
+                )
+            )
+            return
+
         await modlog.log_action(
             bot=self.bot,
             action_type="warn",
@@ -490,75 +466,82 @@ class ProtectCommands(cogs.BaseCog):
             moderator=interaction.user,
             reason=reason,
         )
+        warning_count = len(
+            await moderation.get_all_warnings(self.bot, target, interaction.guild)
+        )
+        max_warnings = configuration.get_config_entry(
+            interaction.guild.id, "moderation_max_warnings"
+        )
 
-        if should_ban:
-            ban_result = await moderation.ban_user(
-                guild=interaction.guild,
-                user=target,
-                delete_seconds=(
-                    configuration.get_config_entry(
-                        interaction.guild.id, "moderator_ban_delete_duration"
-                    )
-                    * 86400
-                ),
-                reason=(
-                    f"Over max warning count {new_count_of_warnings} out of"
-                    f" {max_warnings} (final warning:"
-                    f" {reason}) - banned by {interaction.user}"
+        action = "warn"
+        ban_failed = False
+        view = None
+        if (
+            warning_count >= max_warnings
+            and interaction.permissions.ban_members
+            and interaction.app_permissions.ban_members
+        ):
+            view = ui.Confirm()
+            await view.send(
+                interaction=interaction,
+                message=(
+                    f"{target} now has {warning_count} warnings (limit: {max_warnings}). "
+                    "Would you like to ban them as well?"
                 ),
             )
-            if not ban_result:
-                embed = auxiliary.prepare_deny_embed(
-                    message=f"Something went wrong when banning {target}"
+            await view.wait()
+            if view.value is ui.ConfirmResponse.CONFIRMED:
+                ban_reason = (
+                    f"Warning limit reached: {warning_count}/{max_warnings} "
+                    f"(final warning: {reason}) - banned by {interaction.user}"
                 )
-                if interaction.response.is_done():
-                    await interaction.followup.send(embed=embed)
+                delete_days = configuration.get_config_entry(
+                    interaction.guild.id, "moderator_ban_delete_duration"
+                )
+                try:
+                    banned = await moderation.ban_user(
+                        guild=interaction.guild,
+                        user=target,
+                        delete_seconds=delete_days * 86400,
+                        reason=ban_reason,
+                    )
+                except discord.HTTPException:
+                    banned = False
+
+                if banned:
+                    action = "warn + ban"
+                    await modlog.log_action(
+                        bot=self.bot,
+                        action_type="ban",
+                        guild=interaction.guild,
+                        member=target,
+                        moderator=interaction.user,
+                        reason=ban_reason,
+                    )
                 else:
-                    await interaction.response.send_message(embed=embed)
-                return
+                    ban_failed = True
 
-            await modlog.log_action(
-                bot=self.bot,
-                action_type="ban",
-                guild=interaction.guild,
-                member=target,
-                moderator=interaction.user,
-                reason=reason,
-            )
-
-        if not warn_result:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"Something went wrong when warning {target}"
-            )
-            if interaction.response.is_done():
-                await interaction.followup.send(embed=embed)
-            else:
-                await interaction.response.send_message(embed=embed)
-            return
-
-        response_action = "warn"
-        if should_ban:
-            response_action = response_action + " + ban"
         embed = generate_response_embed(
             user=target,
-            action=response_action,
-            reason=f"{reason} ({new_count_of_warnings} total warnings)",
+            action=action,
+            reason=f"{reason} ({warning_count} total warnings)",
         )
-        if interaction.response.is_done():
-            await interaction.followup.send(content=target.mention, embed=embed)
+        if ban_failed:
+            embed.add_field(name="Ban failed", value="The warning was still added.")
+        if view:
+            await view.message.edit(content=target.mention, embed=embed)
         else:
-            await interaction.response.send_message(content=target.mention, embed=embed)
+            await interaction.followup.send(content=target.mention, embed=embed)
 
         try:
             await target.send(embed=embed)
-        except (discord.HTTPException, discord.Forbidden):
-            channel = configuration.get_config_entry(
-                interaction.guild.id, "core_logging_channel"
-            )
+        except discord.HTTPException:
             await self.bot.logger.send_log(
                 message=f"Failed to DM warning to {target}",
                 level=LogLevel.WARNING,
-                channel=channel,
+                channel=configuration.get_config_entry(
+                    interaction.guild.id, "core_logging_channel"
+                ),
                 context=LogContext(
                     guild=interaction.guild, channel=interaction.channel
                 ),

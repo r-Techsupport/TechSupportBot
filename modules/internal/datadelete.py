@@ -59,13 +59,10 @@ class DataDeleter(cogs.BaseCog):
             "- XP data, including losing access to your XP roles\n\n"
             "**This action is irreversible!**"
         )
-        await interaction.response.defer(ephemeral=True)
         view = ui.Confirm()
         await view.send(
-            message=delete_message,
-            channel=interaction.channel,
-            author=interaction.user,
             interaction=interaction,
+            message=delete_message,
             ephemeral=True,
         )
         await view.wait()
@@ -74,7 +71,7 @@ class DataDeleter(cogs.BaseCog):
             return
         if view.value is ui.ConfirmResponse.DENIED:
             embed = auxiliary.prepare_deny_embed(message="Your data was not deleted")
-            await view.followup.send(embed=embed, ephemeral=True)
+            await view.message.edit(embed=embed)
             return
 
         records_deleted = 0
@@ -105,4 +102,4 @@ class DataDeleter(cogs.BaseCog):
         embed = auxiliary.prepare_confirm_embed(
             f"Successfully deleted {records_deleted} entries from the database"
         )
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        await view.message.edit(embed=embed)

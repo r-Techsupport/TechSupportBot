@@ -355,14 +355,11 @@ class DiscordToIRC(cogs.MatchCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        await interaction.response.defer()
         view = ui.Confirm()
         await view.send(
+            interaction=interaction,
             message=f"Are you sure you want to unlink <#{interaction.channel.id}>"
             + f"and {self.mapping[str(interaction.channel.id)]}",
-            channel=interaction.channel,
-            author=interaction.user,
-            interaction=interaction,
         )
         await view.wait()
         if view.value is ui.ConfirmResponse.TIMEOUT:
@@ -372,7 +369,7 @@ class DiscordToIRC(cogs.MatchCog):
                 message=f"The link between <#{interaction.channel.id}> "
                 + f"and {self.mapping[str(interaction.channel.id)]} was not deleted"
             )
-            await interaction.followup.send(embed=embed)
+            await view.message.edit(embed=embed)
             return
 
         irc_channel = self.mapping[str(interaction.channel.id)]
@@ -391,7 +388,7 @@ class DiscordToIRC(cogs.MatchCog):
             message=f"Successfully deleted link between <#{interaction.channel.id}> and"
             f" {irc_channel}"
         )
-        await interaction.followup.send(embed=embed)
+        await view.message.edit(embed=embed)
 
     async def send_message_from_irc(self: Self, split_message: dict[str, str]) -> None:
         """Sends a message on discord after recieving one on IRC

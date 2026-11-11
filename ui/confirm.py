@@ -27,55 +27,48 @@ class ConfirmResponse(Enum):
 class Confirm(discord.ui.View):
     """The class that holds the view for the confirm
 
-    The entry point for this class is the send function
-    Don't call anything else
+    Call send to show the confirmation. Use message.edit to update its message.
     """
 
     def __init__(self: Self) -> None:
         super().__init__()
-        self.value = (
-            ConfirmResponse.TIMEOUT
-        )  # default to timeout unless a button is pressed
+        # default to timeout unless a button is pressed
+        self.value = ConfirmResponse.TIMEOUT
 
     async def send(
         self: Self,
+        interaction: discord.Interaction,
         message: str,
-        channel: discord.abc.Messageable,
-        author: discord.Member,
         timeout: int = 60,
-        interaction: discord.Interaction | None = None,
         ephemeral: bool = False,
     ) -> None:
         """A function initiate the confirm view
 
         Args:
+            interaction (discord.Interaction): The interaction to reply or follow up to
             message (str): The message to ask the user if they want to confirm
-            channel (discord.abc.Messageable): The channel this should be sent in
-            author (discord.Member): The original author of the command triggering this
-            timeout (int, optional): The amount of seconds to wait for a response before
-                returning ConfirmResponse.TIMEOUT. Defaults to 60.
-            interaction (discord.Interaction | None, optional): If this is in an
-                application command, what is the interaction to reply or followup to.
-                Defaults to None
-            ephemeral (bool, optional): If this is an application command,
-                should replies be ephemeral?
-                Will do nothing without interaction being passed. Defaults to False
+            timeout (int, optional): The amount of seconds to wait for a response before returning ConfirmResponse.TIMEOUT. Defaults to 60.
+            ephemeral (bool, optional): Whether the confirmation should be private. Defaults to False.
         """
         embed = auxiliary.generate_basic_embed(
-            title="Please confirm!", description=message, color=discord.Color.green()
+            title="Please confirm!", description=message, color=discord.Color.yellow()
         )
-        if interaction:
-            self.followup = interaction.followup
-            self.message = await self.followup.send(
-                content=author.mention, embed=embed, view=self, ephemeral=ephemeral
+        self.interaction: discord.Interaction = interaction
+        self.timeout: int = timeout
+
+        if interaction.response.is_done():
+            self.message = await interaction.followup.send(
+                embed=embed, view=self, ephemeral=ephemeral
             )
         else:
-            self.message = await channel.send(
-                content=author.mention, embed=embed, view=self
+            await interaction.response.send_message(
+                embed=embed, view=self, ephemeral=ephemeral
             )
+            self.message = await interaction.original_response()
 
-        self.author = author
-        self.timeout = timeout
+    async def delete_buttons(self: Self) -> None:
+        """This removes the view from the message, deleting the buttons for good"""
+        await self.message.edit(view=None)
 
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green)
     async def confirm(
@@ -89,7 +82,7 @@ class Confirm(discord.ui.View):
         """
         await interaction.response.defer()
         self.value = ConfirmResponse.CONFIRMED
-        await self.message.delete()
+        await self.delete_buttons()
         self.stop()
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
@@ -104,25 +97,27 @@ class Confirm(discord.ui.View):
         """
         await interaction.response.defer()
         self.value = ConfirmResponse.DENIED
-        await self.message.delete()
+        await self.delete_buttons()
         self.stop()
 
     async def on_timeout(self: Self) -> None:
-        """This deletes the buttons after the timeout has elapsed"""
-        await self.message.delete()
+        """Disable the buttons after the timeout has elapsed."""
+        for child in self.walk_children():
+            if isinstance(child, discord.ui.Button):
+                child.disabled = True
+        await self.message.edit(view=self)
 
     async def interaction_check(self: Self, interaction: discord.Interaction) -> bool:
         """This checks to ensure that only the original author can press the button
         If the original author didn't press, it sends an ephemeral message
 
         Args:
-            interaction (discord.Interaction): The interaction generated when this
-                UI is interacted with in any way
+            interaction (discord.Interaction): The interaction generated when this UI is interacted with in any way
 
         Returns:
-            bool: If this is False the interaction should NOT be followed through with
+            bool: If this is False the interaction should not be followed through with
         """
-        if interaction.user != self.author:
+        if interaction.user != self.interaction.user:
             await interaction.response.send_message(
                 "Only the original author can control this!", ephemeral=True
             )

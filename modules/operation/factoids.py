@@ -996,10 +996,8 @@ class FactoidManager(cogs.BaseCog):
         """
         view = ui.Confirm()
         await view.send(
-            message=display_message,
-            channel=channel,
-            author=author,
             interaction=interaction,
+            message=display_message,
         )
 
         await view.wait()

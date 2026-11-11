@@ -364,54 +364,54 @@ class HangmanCog(cogs.BaseCog):
             interaction (discord.Interaction): The interaction object from Discord.
             word (str): The word to start the Hangman game with.
         """
-        # Ensure only the command's author can see this interaction
-        await interaction.response.defer(ephemeral=True)
-
-        # Check if the provided word is too long
-        if len(word) >= 85:
-            await interaction.followup.send(
-                "The word must be less than 256 characters.", ephemeral=True
+        if len(word) > 84:
+            await interaction.response.send_message(
+                "Your word cannot be more than 85 characters.", ephemeral=True
             )
             return
 
-        # Check if a game is already active in the channel
+        try:
+            game = HangmanGame(word=word.lower())
+        except ValueError as exc:
+            await interaction.response.send_message(
+                f"Invalid word: {exc}", ephemeral=True
+            )
+            return
+
+        view = None
         game_data = self.games.get(interaction.channel_id)
         if game_data:
-            # Check if the game owner wants to overwrite the current game
-            user = game_data.get("user")
-            if user.id == interaction.user.id:
-                view = ui.Confirm()
-                await view.send(
-                    message="There is a current game in progress. Do you want to end it?",
-                    channel=interaction.channel,
-                    author=interaction.user,
-                )
-                await view.wait()
-                if view.value in [
-                    ui.ConfirmResponse.TIMEOUT,
-                    ui.ConfirmResponse.DENIED,
-                ]:
-                    await interaction.followup.send(
-                        "The current game was not ended.", ephemeral=True
-                    )
-                    return
-
-                # Remove the existing game
-                del self.games[interaction.channel_id]
-            else:
-                await interaction.followup.send(
+            if game_data["user"].id != interaction.user.id:
+                await interaction.response.send_message(
                     "A game is already in progress for this channel.", ephemeral=True
                 )
                 return
 
-        # Validate the provided word
-        try:
-            game = HangmanGame(word=word.lower())
-        except ValueError as e:
-            await interaction.followup.send(f"Invalid word: {e}", ephemeral=True)
-            return
+            view = ui.Confirm()
+            await view.send(
+                interaction=interaction,
+                message="There is a current game in progress. Do you want to replace it?",
+                ephemeral=True,
+            )
+            await view.wait()
+            if view.value is not ui.ConfirmResponse.CONFIRMED:
+                await view.message.edit(
+                    embed=auxiliary.prepare_deny_embed(
+                        "The current game was not ended."
+                    ),
+                )
+                return
 
-        # Create and send the initial game embed
+            if self.games.get(interaction.channel_id) is not game_data:
+                await view.message.edit(
+                    embed=auxiliary.prepare_deny_embed(
+                        "The game changed while you were confirming. Please try again."
+                    ),
+                )
+                return
+        else:
+            await interaction.response.defer(ephemeral=True)
+
         embed = await self.generate_game_embed(interaction, game, interaction.user)
         message = await interaction.channel.send(embed=embed)
         self.games[interaction.channel_id] = {
@@ -421,9 +421,13 @@ class HangmanCog(cogs.BaseCog):
             "last_guesser": None,
         }
 
-        await interaction.followup.send(
-            "The Hangman game has started with a hidden word!", ephemeral=True
+        embed = auxiliary.prepare_confirm_embed(
+            f"The Hangman game has started with the word: `{word}`"
         )
+        if view:
+            await view.message.edit(embed=embed)
+        else:
+            await interaction.followup.send(embed=embed, ephemeral=True)
 
     @hangman_app_group.command(
         name="guess",
@@ -509,9 +513,10 @@ class HangmanCog(cogs.BaseCog):
         """
         hangman_drawing = game.draw_hang_state()
         hangman_word = game.draw_word_state()
+        guess_command = f"</hangman guess:{interaction.data['id']}>"
         embed = discord.Embed(
             title=f"`{hangman_word}`",
-            description=f"Use `/hangman guess` to guess a letter.\n\n```{hangman_drawing}```",
+            description=f"Use {guess_command} to guess a letter.\n\n```{hangman_drawing}```",
         )
 
         if game.failed:
@@ -596,21 +601,26 @@ class HangmanCog(cogs.BaseCog):
             )
             return
 
-        await interaction.response.defer()
         view = ui.Confirm()
         await view.send(
-            message="Are you sure you want to end the current game?",
-            channel=interaction.channel,
-            author=interaction.user,
             interaction=interaction,
+            message="Are you sure you want to end the current game?",
+            ephemeral=True,
         )
         await view.wait()
         if view.value is ui.ConfirmResponse.TIMEOUT:
             return
         if view.value is ui.ConfirmResponse.DENIED:
-            await interaction.followup.send(
+            await view.message.edit(
                 embed=auxiliary.prepare_deny_embed("The current game was not ended"),
-                ephemeral=True,
+            )
+            return
+
+        if self.games.get(interaction.channel.id) is not game_data:
+            await view.message.edit(
+                embed=auxiliary.prepare_deny_embed(
+                    "The game changed while you were confirming. Please try again."
+                ),
             )
             return
 
@@ -618,9 +628,14 @@ class HangmanCog(cogs.BaseCog):
         word = getattr(game, "word", "???")
 
         del self.games[interaction.channel.id]
-        await interaction.followup.send(
+        await view.message.edit(
             embed=auxiliary.prepare_confirm_embed(
-                f"That game is now finished. The word was: `{word}`"
+                "The game in this channel has been ended."
+            )
+        )
+        await interaction.channel.send(
+            embed=auxiliary.prepare_confirm_embed(
+                f"This game is now finished. The word was: `{word}`"
             )
         )
 

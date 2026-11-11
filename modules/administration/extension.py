@@ -204,11 +204,9 @@ class ExtensionControl(cogs.BaseCog):
         if extension_name.lower() in await self.bot.get_potential_extensions():
             view = ui.Confirm()
             await view.send(
+                interaction=interaction,
                 message=f"Warning! This will replace the current `{extension_name}.py` "
                 + "extension! Are you SURE?",
-                channel=interaction.channel,
-                author=interaction.user,
-                interaction=interaction,
             )
             await view.wait()
 
@@ -218,7 +216,7 @@ class ExtensionControl(cogs.BaseCog):
                 embed = auxiliary.send_deny_embed(
                     message=f"{extension_name}.py was not replaced"
                 )
-                await view.followup.send(embed=embed)
+                await view.message.edit(embed=embed)
                 return
 
         fp = await extension_file.read()
@@ -226,7 +224,7 @@ class ExtensionControl(cogs.BaseCog):
         embed = auxiliary.prepare_confirm_embed(
             message="I've registered that extension. You can now try loading it",
         )
-        await interaction.followup.send(embed=embed)
+        await view.message.edit(embed=embed)
         return
 
     async def does_extension_exist(self: Self, extension_name: str) -> bool:
