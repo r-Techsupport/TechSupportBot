@@ -371,31 +371,21 @@ async def handle_dm(message: discord.Message, guild_id: int, forum_id: int) -> N
         )
         return
 
-    confirmation = ui.Confirm()
+    confirmation = ModmailConfirmation()
+    awaiting_confirmation.append(message.author.id)
     await confirmation.send(
+        user=message.author,
         message=configuration.get_config_entry(
             guild_id, "modmail_thread_creation_message"
         ),
-        channel=message.channel,
-        author=message.author,
     )
 
-    awaiting_confirmation.append(message.author.id)
     await confirmation.wait()
 
-    if confirmation.value == ui.ConfirmResponse.DENIED:
+    if not confirmation.confirmed:
         awaiting_confirmation.remove(message.author.id)
         await auxiliary.send_deny_embed(
-            message="Thread creation cancelled.",
-            channel=message.channel,
-        )
-        return
-
-    if confirmation.value == ui.ConfirmResponse.TIMEOUT:
-        awaiting_confirmation.remove(message.author.id)
-        await auxiliary.send_deny_embed(
-            message="Thread confirmation prompt timed out, please hit `Confirm` or `Cancel` when "
-            + "creating a new thread. You are welcome to send another message.",
+            message="Modmail thread was not created. You may send a new message any time.",
             channel=message.channel,
         )
         return
@@ -1674,3 +1664,79 @@ class EditMessageModal(discord.ui.Modal, title="Edit message"):
         """
         await interaction.response.defer()
         return
+
+
+class ModmailConfirmation(discord.ui.View):
+    """Require a reading delay before accepting a modmail confirmation."""
+
+    def __init__(self: Self) -> None:
+        super().__init__(timeout=130)
+        # default to timeout unless a button is pressed
+        self.confirmed = False
+
+    async def send(
+        self: Self,
+        user: discord.Member,
+        message: str,
+    ) -> None:
+        """Send the confirmation and enable its buttons after ten seconds.
+
+        Args:
+            user (discord.Member): The user opening the modmail thread
+            message (str): The information to show before they confirm
+        """
+        embed = auxiliary.generate_basic_embed(
+            title="Open modmail thread?",
+            description=message,
+            color=discord.Color.yellow(),
+        )
+        self.message = await user.send(content=user.mention, embed=embed, view=self)
+        await asyncio.sleep(10)
+        for child in self.walk_children():
+            if isinstance(child, discord.ui.Button):
+                child.disabled = False
+        self.timeout = 120
+        await self.message.edit(view=self)
+
+    async def disable_buttons(self: Self) -> None:
+        """Disable the buttons and update the message."""
+        for child in self.walk_children():
+            if isinstance(child, discord.ui.Button):
+                child.disabled = True
+        await self.message.edit(view=self)
+
+    @discord.ui.button(
+        label="Agree and continue", style=discord.ButtonStyle.green, disabled=True
+    )
+    async def confirm(
+        self: Self, interaction: discord.Interaction, button: discord.ui.Button
+    ) -> None:
+        """Define what happens when the confirm button is pressed
+
+        Args:
+            interaction (discord.Interaction): The interaction generated when the button pressed
+            button (discord.ui.Button): The button object that got pressed
+        """
+        await interaction.response.defer()
+        await self.disable_buttons()
+        self.confirmed = True
+        self.stop()
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey, disabled=True)
+    async def cancel(
+        self: Self, interaction: discord.Interaction, button: discord.ui.Button
+    ) -> None:
+        """Define what happens when the cancel button is pressed
+
+        Args:
+            interaction (discord.Interaction): The interaction generated when the button pressed
+            button (discord.ui.Button): The button object that got pressed
+        """
+        await interaction.response.defer()
+        await self.disable_buttons()
+        self.confirmed = False
+        self.stop()
+
+    async def on_timeout(self: Self) -> None:
+        """Disable the buttons after the timeout has elapsed."""
+        await self.disable_buttons()
