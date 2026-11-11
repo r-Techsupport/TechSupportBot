@@ -468,12 +468,10 @@ class ProtectCommands(cogs.BaseCog):
             await interaction.response.defer(ephemeral=False)
             view = ui.Confirm()
             await view.send(
+                interaction=interaction,
                 message="This user has exceeded the max warnings of "
                 + f"{max_warnings}. Would "
                 + "you like to ban them instead?",
-                channel=interaction.channel,
-                author=interaction.user,
-                interaction=interaction,
             )
             await view.wait()
             if view.value is ui.ConfirmResponse.CONFIRMED:
