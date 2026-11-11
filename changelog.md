@@ -17,6 +17,9 @@ Changes since 2026.11.07
 ### DB_management
 - New module, taking over backup. Allowing both exporting and importing of DB_management tables
 
+### GitHub
+- Full migration to app commands
+
 ## Fun
 
 ### Grabs
