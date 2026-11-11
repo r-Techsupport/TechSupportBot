@@ -67,6 +67,7 @@ class Confirm(discord.ui.View):
             self.message = await interaction.original_response()
 
     async def delete_buttons(self: Self) -> None:
+        """This removes the view from the message, deleting the buttons for good"""
         await self.message.edit(view=None)
 
     @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green)
