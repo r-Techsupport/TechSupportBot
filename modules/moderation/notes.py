@@ -213,10 +213,8 @@ class Notes(cogs.BaseCog):
         view = ui.Confirm()
 
         await view.send(
-            message=f"Are you sure you want to clear {len(notes)} notes?",
-            channel=interaction.channel,
-            author=interaction.user,
             interaction=interaction,
+            message=f"Are you sure you want to clear {len(notes)} notes?",
             ephemeral=True,
         )
 
@@ -227,7 +225,7 @@ class Notes(cogs.BaseCog):
             embed = auxiliary.prepare_deny_embed(
                 message=f"Notes for `{user}` were not cleared"
             )
-            await view.followup.send(embed=embed, ephemeral=True)
+            await view.message.edit(embed=embed, ephemeral=True)
             return
 
         for note in notes:
@@ -254,7 +252,7 @@ class Notes(cogs.BaseCog):
             )
 
         embed = auxiliary.prepare_confirm_embed(message=f"Notes cleared for `{user}`")
-        await view.followup.send(embed=embed, ephemeral=True)
+        await view.message.edit(embed=embed, ephemeral=True)
 
     @app_commands.check(is_reader)
     @notes.command(

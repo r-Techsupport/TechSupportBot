@@ -272,20 +272,17 @@ class ConfigControl(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that triggered the slash command
         """
-        await interaction.response.defer()
         view = ui.Confirm()
         await view.send(
-            message=f"Are you sure you want to reset the config for {interaction.guild.name}?",
-            channel=interaction.channel,
-            author=interaction.user,
             interaction=interaction,
+            message=f"Are you sure you want to reset the config for {interaction.guild.name}?",
         )
         await view.wait()
         if view.value == ui.ConfirmResponse.DENIED:
             embed = auxiliary.prepare_deny_embed(
                 message="The config was not reset",
             )
-            await view.followup.send(embed=embed)
+            await view.message.edit(embed=embed)
             return
         if view.value == ui.ConfirmResponse.TIMEOUT:
             return
@@ -298,4 +295,4 @@ class ConfigControl(cogs.BaseCog):
         embed = auxiliary.prepare_confirm_embed(
             message="I've reset the config for this guild"
         )
-        await view.followup.send(embed=embed)
+        await view.message.edit(embed=embed)

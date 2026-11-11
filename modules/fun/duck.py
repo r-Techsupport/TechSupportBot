@@ -983,10 +983,8 @@ class DuckHunt(cogs.BaseCog):
         await interaction.response.defer()
         view = ui.Confirm()
         await view.send(
-            message=f"Are you sure you want to reset {user.mention}s duck stats?",
-            channel=interaction.channel,
-            author=interaction.user,
             interaction=interaction,
+            message=f"Are you sure you want to reset {user.mention}s duck stats?",
         )
         await view.wait()
         if view.value is ui.ConfirmResponse.TIMEOUT:
@@ -995,14 +993,14 @@ class DuckHunt(cogs.BaseCog):
             embed = auxiliary.prepare_deny_embed(
                 message=f"{user.mention}s duck stats were NOT reset."
             )
-            await interaction.followup.send(embed=embed)
+            await view.message.edit(embed=embed)
             return
 
         await duck_user.remove()
         embed = auxiliary.prepare_confirm_embed(
             message=f"Successfully reset {user.mention}s duck stats!"
         )
-        await interaction.followup.send(embed=embed)
+        await view.message.edit(embed=embed)
 
     @duck_group.command(
         description="Will spawn a duck with the command",
