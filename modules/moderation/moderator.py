@@ -67,11 +67,11 @@ class ProtectCommands(cogs.BaseCog):
                 messages to delete. Defaults to 7.
         """
         # Ensure we can ban the person
-        permission_check = await self.permission_check(
-            invoker=interaction.user, target=target, action_name="ban"
+        denial = await permission_check(
+            bot=self.bot, invoker=interaction.user, target=target, action_name="ban"
         )
-        if permission_check:
-            embed = auxiliary.prepare_deny_embed(message=permission_check)
+        if denial:
+            embed = auxiliary.prepare_deny_embed(message=denial)
             await interaction.response.send_message(embed=embed)
             return
 
@@ -135,11 +135,11 @@ class ProtectCommands(cogs.BaseCog):
             target (discord.User): The target to be unbanned
             reason (str): The reason for the user being unbanned
         """
-        permission_check = await self.permission_check(
-            invoker=interaction.user, target=target, action_name="unban"
+        denial = await permission_check(
+            bot=self.bot, invoker=interaction.user, target=target, action_name="unban"
         )
-        if permission_check:
-            embed = auxiliary.prepare_deny_embed(message=permission_check)
+        if denial:
+            embed = auxiliary.prepare_deny_embed(message=denial)
             await interaction.response.send_message(embed=embed)
             return
 
@@ -200,11 +200,11 @@ class ProtectCommands(cogs.BaseCog):
             target (discord.Member): The target for being kicked
             reason (str): The reason for the user being kicked
         """
-        permission_check = await self.permission_check(
-            invoker=interaction.user, target=target, action_name="kick"
+        denial = await permission_check(
+            bot=self.bot, invoker=interaction.user, target=target, action_name="kick"
         )
-        if permission_check:
-            embed = auxiliary.prepare_deny_embed(message=permission_check)
+        if denial:
+            embed = auxiliary.prepare_deny_embed(message=denial)
             await interaction.response.send_message(embed=embed)
             return
 
@@ -260,11 +260,11 @@ class ProtectCommands(cogs.BaseCog):
             reason (str): The reason for being muted
             duration (str, optional): The human readable duration to be muted for. Defaults to None.
         """
-        permission_check = await self.permission_check(
-            invoker=interaction.user, target=target, action_name="mute"
+        denial = await permission_check(
+            bot=self.bot, invoker=interaction.user, target=target, action_name="mute"
         )
-        if permission_check:
-            embed = auxiliary.prepare_deny_embed(message=permission_check)
+        if denial:
+            embed = auxiliary.prepare_deny_embed(message=denial)
             await interaction.response.send_message(embed=embed)
             return
 
@@ -370,11 +370,11 @@ class ProtectCommands(cogs.BaseCog):
             target (discord.Member): The target for being unmuted
             reason (str): The reason for the unmute
         """
-        permission_check = await self.permission_check(
-            invoker=interaction.user, target=target, action_name="unmute"
+        denial = await permission_check(
+            bot=self.bot, invoker=interaction.user, target=target, action_name="unmute"
         )
-        if permission_check:
-            embed = auxiliary.prepare_deny_embed(message=permission_check)
+        if denial:
+            embed = auxiliary.prepare_deny_embed(message=denial)
             await interaction.response.send_message(embed=embed)
             return
 
@@ -433,11 +433,11 @@ class ProtectCommands(cogs.BaseCog):
             target (discord.Member): The target for being warned
             reason (str): The reason the user is being warned
         """
-        permission_check = await self.permission_check(
-            invoker=interaction.user, target=target, action_name="warn"
+        denial = await permission_check(
+            bot=self.bot, invoker=interaction.user, target=target, action_name="warn"
         )
-        if permission_check:
-            embed = auxiliary.prepare_deny_embed(message=permission_check)
+        if denial:
+            embed = auxiliary.prepare_deny_embed(message=denial)
             await interaction.response.send_message(embed=embed)
             return
 
@@ -585,11 +585,11 @@ class ProtectCommands(cogs.BaseCog):
             reason (str): The reason for the unwarn
             warning (str): The exact string of the warning
         """
-        permission_check = await self.permission_check(
-            invoker=interaction.user, target=target, action_name="unwarn"
+        denial = await permission_check(
+            bot=self.bot, invoker=interaction.user, target=target, action_name="unwarn"
         )
-        if permission_check:
-            embed = auxiliary.prepare_deny_embed(message=permission_check)
+        if denial:
+            embed = auxiliary.prepare_deny_embed(message=denial)
             await interaction.response.send_message(embed=embed)
             return
 
@@ -686,11 +686,11 @@ class ProtectCommands(cogs.BaseCog):
             target (discord.Member): The user having warnings cleared
             reason (str): The reason for the warnings being cleared
         """
-        permission_check = await self.permission_check(
-            invoker=interaction.user, target=target, action_name="unwarn"
+        denial = await permission_check(
+            bot=self.bot, invoker=interaction.user, target=target, action_name="unwarn"
         )
-        if permission_check:
-            embed = auxiliary.prepare_deny_embed(message=permission_check)
+        if denial:
+            embed = auxiliary.prepare_deny_embed(message=denial)
             await interaction.response.send_message(embed=embed)
             return
 
@@ -757,68 +757,6 @@ class ProtectCommands(cogs.BaseCog):
             interaction.channel, interaction.user, embeds, interaction, True
         )
 
-    # Helper functions
-
-    async def permission_check(
-        self: Self,
-        invoker: discord.Member,
-        target: discord.User | discord.Member,
-        action_name: str,
-    ) -> str:
-        """Checks permissions to ensure the command should be executed. This checks:
-        If the target is the invoker
-        If the target is the bot
-        If the user is in the server
-        If the target has an immune role
-        If the target can be banned by the bot
-        If the invoker has a higher role than the target
-
-        Args:
-            invoker (discord.Member): The invoker of the action.
-                Either will be the user who ran the command, or the bot itself
-            target (discord.User | discord.Member): The target of the command.
-                Can be a user or member.
-            action_name (str): The action name to be displayed in messages
-
-        Returns:
-            str: The rejection string, if one exists. Otherwise, None is returned
-        """
-        # Check to see if executed on author
-        if invoker == target:
-            return f"You cannot {action_name} yourself"
-
-        # Check to see if executed on bot
-        if target == self.bot.user:
-            return f"It would be silly to {action_name} myself"
-
-        # Check to see if User or Member
-        if isinstance(target, discord.User):
-            return None
-
-        # Check to see if target has any immune roles
-        try:
-            for name in configuration.get_config_entry(
-                target.guild.id, "moderator_immune_roles"
-            ):
-                role_check = discord.utils.get(target.guild.roles, name=name)
-                if role_check and role_check in getattr(target, "roles", []):
-                    return (
-                        f"You cannot {action_name} {target} because they have"
-                        f" `{role_check}` role"
-                    )
-        except AttributeError:
-            pass
-
-        # Check to see if the Bot can execute on the target
-        if invoker.guild.get_member(int(self.bot.user.id)).top_role <= target.top_role:
-            return f"Bot does not have enough permissions to {action_name} `{target}`"
-
-        # Check to see if author top role is higher than targets
-        if invoker.top_role <= target.top_role:
-            return f"You do not have enough permissions to {action_name} `{target}`"
-
-        return None
-
     # Database functions
 
     async def get_warning(
@@ -843,6 +781,68 @@ class ProtectCommands(cogs.BaseCog):
             .first()
         )
         return entry
+
+
+async def permission_check(
+    bot: bot.TechSupportBot,
+    invoker: discord.Member,
+    target: discord.User | discord.Member,
+    action_name: str,
+) -> str | None:
+    """Checks permissions to ensure the command should be executed. This checks:
+    If the target is the invoker
+    If the target is the bot
+    If the user is in the server
+    If the target has an immune role
+    If the target can be banned by the bot
+    If the invoker has a higher role than the target
+
+    Args:
+        bot (bot.TechSupportBot): The bot handling the moderation action
+        invoker (discord.Member): The invoker of the action.
+            Either will be the user who ran the command, or the bot itself
+        target (discord.User | discord.Member): The target of the command.
+            Can be a user or member.
+        action_name (str): The action name to be displayed in messages
+
+    Returns:
+        str | None: The rejection message, or None if the action is allowed
+    """
+    # Check to see if executed on author
+    if invoker == target:
+        return f"You cannot {action_name} yourself"
+
+    # Check to see if executed on bot
+    if target == bot.user:
+        return f"It would be silly to {action_name} myself"
+
+    # Check to see if User or Member
+    if isinstance(target, discord.User):
+        return None
+
+    # Check to see if target has any immune roles
+    try:
+        for name in configuration.get_config_entry(
+            target.guild.id, "moderator_immune_roles"
+        ):
+            role_check = discord.utils.get(target.guild.roles, name=name)
+            if role_check and role_check in getattr(target, "roles", []):
+                return (
+                    f"You cannot {action_name} {target} because they have"
+                    f" `{role_check}` role"
+                )
+    except AttributeError:
+        pass
+
+    # Check to see if the Bot can execute on the target
+    if invoker.guild.get_member(int(bot.user.id)).top_role <= target.top_role:
+        return f"Bot does not have enough permissions to {action_name} `{target}`"
+
+    # Check to see if author top role is higher than targets
+    if invoker.top_role <= target.top_role:
+        return f"You do not have enough permissions to {action_name} `{target}`"
+
+    return None
 
 
 def generate_response_embed(

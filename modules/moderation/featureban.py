@@ -12,7 +12,7 @@ from discord import app_commands
 import ui
 from core import auxiliary, cogs
 from database.schema import FeatureBan
-from modules.moderation import modlog
+from modules.moderation import moderator, modlog
 
 if TYPE_CHECKING:
     import bot
@@ -205,9 +205,21 @@ class FeatureBans(cogs.BaseCog):
             banned (bool): Whether to add or remove the ban
         """
         flag = FeatureFlag.__members__.get(feature.strip().upper().replace(" ", "_"))
+        action = "banned" if banned else "unbanned"
         if not flag:
             embed = auxiliary.prepare_deny_embed("Choose a valid feature.")
         else:
+            denial = await moderator.permission_check(
+                bot=self.bot,
+                invoker=interaction.user,
+                target=user,
+                action_name=action[:-3],
+            )
+            if denial:
+                embed = auxiliary.prepare_deny_embed(denial)
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                return
+
             label = flag.name.replace("_", " ").title()
             guild_id = interaction.guild.id
             if await is_feature_banned(guild_id, user.id, flag) == banned:
@@ -217,7 +229,6 @@ class FeatureBans(cogs.BaseCog):
                 )
             else:
                 await set_feature_ban(guild_id, user.id, flag, banned=banned)
-                action = "banned" if banned else "unbanned"
                 embed = auxiliary.prepare_confirm_embed(
                     f"{user.mention} is {action} from {label}."
                 )

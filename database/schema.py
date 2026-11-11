@@ -249,17 +249,6 @@ class ModLog(Table, tablename="modlog"):
     unique_guild_case: Unique = Unique([guild_id, guild_case_id])
 
 
-class ModmailBan(Table, tablename="modmail_bans"):
-    """The postgres table for modmail bans.
-    Currently used in modmail.py.
-
-    Attributes:
-        user_id (Varchar): The ID of the user banned from modmail.
-    """
-
-    user_id: Varchar = Varchar(length=None, primary_key=True)
-
-
 class Rule(Table, tablename="guild_rules"):
     """The postgres table for guild rules.
 
