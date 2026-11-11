@@ -1,4 +1,5 @@
 # Temp files, cache files, etc that we do not need in the container
+.git
 .venv
 *.pyc
 .vscode

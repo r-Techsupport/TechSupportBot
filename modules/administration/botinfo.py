@@ -9,11 +9,10 @@ This file contains 1 command:
 
 from __future__ import annotations
 
-import re
+import json
 from typing import TYPE_CHECKING, Self
 
 import discord
-import git
 from discord import app_commands
 
 from core import auxiliary, cogs
@@ -103,39 +102,29 @@ class BotInfo(cogs.BaseCog):
                 inline=False,
             )
 
+        version_info = "Not available"
         try:
-            repo = git.Repo(search_parent_directories=True)
-            commit = repo.head.commit
-            commit_hash = commit.hexsha[:7]
-            commit_message = commit.message.splitlines()[0].strip()
-            branch_name = repo.active_branch.name
-            match = re.search(
-                r"github.com[:/](.*?)/(.*?)(?:.git)?$", repo.remotes.origin.url
-            )
-            if match:
-                repo_owner = match.group(1)
-                repo_name = match.group(2)
-            else:
-                repo_owner = ""
-                repo_name = ""
+            with open("resources/dynamic/version.json", "r", encoding="utf-8") as file:
+                version = json.load(file)
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            version = None
 
-            has_differences = repo.is_dirty()
+        if isinstance(version, dict):
+            upstream: str = version.get("upstream")
+            commit: str = version.get("commit")
+            subject: str = version.get("subject")
+            dirty: bool = version.get("dirty")
+            if all(
+                isinstance(value, str) and value
+                for value in (upstream, commit, subject)
+            ) and isinstance(dirty, bool):
+                version_info = (
+                    f"Upstream: `{upstream}`\n"
+                    f"Commit: `{commit[:7]} - {subject}`\n"
+                    f"Local changes made: `{dirty}`"
+                )
 
-            embed.add_field(
-                name="Version Info",
-                value=(
-                    f"Upstream: `{repo_owner}/{repo_name}/{branch_name}`\n"
-                    f"Commit: `{commit_hash} - {commit_message}`\n"
-                    f"Local changes made: `{has_differences}`"
-                ),
-                inline=False,
-            )
-        except Exception as exc:
-            embed.add_field(
-                name="Version Info",
-                value=f"There was an error getting version info: {exc}",
-                inline=False,
-            )
+        embed.add_field(name="Version Info", value=version_info, inline=False)
 
         embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
