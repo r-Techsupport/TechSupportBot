@@ -2,12 +2,6 @@
 Commands which allows the admin to create github issues on linked repo
 The cog in the file is named:
     IssueCreator
-
-This file contains 4 commands:
-    .botish
-    .botissue
-    .ish
-    .issue
 """
 
 from __future__ import annotations
@@ -16,7 +10,7 @@ import json
 from typing import TYPE_CHECKING, Self
 
 import discord
-from discord.ext import commands
+from discord import app_commands
 
 from core import auxiliary, cogs
 
@@ -58,30 +52,27 @@ class IssueCreator(cogs.BaseCog):
 
     GITHUB_API_BASE_URL: str = "https://api.github.com"
 
-    @commands.check(auxiliary.bot_admin_check_context)
-    @auxiliary.with_typing
-    @commands.command(
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @app_commands.command(
         name="issue",
-        aliases=["ish", "botish", "botissue"],
         description="Creates a Github issue on the configured bot repo",
-        usage="[title] [description]",
     )
     async def issue(
-        self: Self, ctx: commands.Context, title: str, description: str = ""
+        self: Self, interaction: discord.Interaction, title: str, description: str = ""
     ) -> None:
         """Creates an issue in the bot's Github Repo
 
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (commands.Context): the context object for the calling message
+            interaction (discord.Interaction): The interaction that called this command
             title (str): the title of the issue
-            description (str, optional): the description of the issue. Defaults to ""
+            description (str, optional): The description of the issue. Defaults to ""
         """
-
+        await interaction.response.defer()
         if not self.bot.file_config.api.github.api_key:
-            await auxiliary.send_deny_embed(
-                message="I don't have a Github API key", channel=ctx.channel
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed("I don't have a Github API key")
             )
             return
 
@@ -89,8 +80,10 @@ class IssueCreator(cogs.BaseCog):
             not self.bot.file_config.api.github.username
             or not self.bot.file_config.api.github.repo
         ):
-            await auxiliary.send_deny_embed(
-                message="I don't have a Github repo configured", channel=ctx.channel
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
+                    "I don't have a Github repo configured"
+                )
             )
             return
 
@@ -110,11 +103,10 @@ class IssueCreator(cogs.BaseCog):
 
         status_code = response.get("status_code")
         if status_code != 201:
-            await auxiliary.send_deny_embed(
-                message=(
+            await interaction.followup.send(
+                embed=auxiliary.prepare_deny_embed(
                     f"I was unable to create your issue (status code {status_code})"
                 ),
-                channel=ctx.channel,
             )
             return
 
@@ -127,4 +119,4 @@ class IssueCreator(cogs.BaseCog):
             url="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
         )
 
-        await ctx.send(embed=embed)
+        await interaction.followup.send(embed=embed)
