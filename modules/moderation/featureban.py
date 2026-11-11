@@ -20,7 +20,15 @@ if TYPE_CHECKING:
 
 @unique
 class FeatureFlag(IntFlag):
-    """Features that can be banned. Keep assigned bits stable for stored bans."""
+    """Features that can be banned. Keep assigned bits stable for stored bans.
+
+    Attributes:
+        NONE (int): Indicates no feature bans
+        APPLICATION (int): Ban from Applications
+        HANGMAN (int): Ban from Hangman
+        MODMAIL (int): Ban from Modmail
+        REPORT (int): Ban from Reports
+    """
 
     NONE = 0
     APPLICATION = 1 << 0
@@ -39,7 +47,11 @@ async def setup(bot: bot.TechSupportBot) -> None:
 
 
 class FeatureBans(cogs.BaseCog):
-    """Commands for managing feature bans in a guild."""
+    """Commands for managing feature bans in a guild.
+
+    Attributes:
+        feature_group (app_commands.Group): The group for the /feature commands
+    """
 
     feature_group = app_commands.Group(
         name="feature", description="Manage feature bans", guild_only=True
@@ -286,7 +298,7 @@ async def get_feature_bans(guild_id: int, user_id: int) -> FeatureFlag:
         user_id (int): The Discord user ID
 
     Returns:
-        Feature: The stored flags, or Feature.NONE if no ban exists
+        FeatureFlag: The stored flags, or FeatureFlag.NONE if no ban exists
     """
     entry = await get_ban_entry(guild_id, user_id)
     return FeatureFlag(entry.ban_flags) if entry is not None else FeatureFlag.NONE
@@ -298,7 +310,7 @@ async def is_feature_banned(guild_id: int, user_id: int, feature: FeatureFlag) -
     Args:
         guild_id (int): The Discord guild ID
         user_id (int): The Discord user ID
-        feature (Feature): One or more features to check
+        feature (FeatureFlag): One or more features to check
 
     Returns:
         bool: Whether any requested feature is banned
@@ -314,7 +326,7 @@ async def set_feature_ban(
     Args:
         guild_id (int): The Discord guild ID
         user_id (int): The Discord user ID
-        features (Feature): One or more features to update
+        features (FeatureFlag): One or more features to update
         banned (bool): True to add the flags, False to clear them
 
     Returns:
