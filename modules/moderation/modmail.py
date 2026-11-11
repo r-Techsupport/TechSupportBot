@@ -26,7 +26,9 @@ from discord.ext import commands
 import configuration
 import ui
 from core import auxiliary, cogs
+from database.schema import FactoidCall, FactoidData, ModmailBan
 from modules.moderation import modlog, rules
+from modules.operation.factoids import Properties
 
 if TYPE_CHECKING:
     import bot
@@ -108,9 +110,11 @@ class Modmail_bot(discord.Client):
             )
 
             # User is banned from creating modmail threads
-            if await Ts_client.models.ModmailBan.query.where(
-                Ts_client.models.ModmailBan.user_id == str(message.author.id)
-            ).gino.first():
+            if (
+                await ModmailBan.objects()
+                .where(ModmailBan.user_id == str(message.author.id))
+                .first()
+            ):
                 await message.add_reaction("❌")
                 return
 
@@ -165,9 +169,11 @@ class Modmail_bot(discord.Client):
             isinstance(before.channel, discord.DMChannel)
             and before.author.id in active_threads
         ):
-            if await Ts_client.models.ModmailBan.query.where(
-                Ts_client.models.ModmailBan.user_id == str(before.author.id)
-            ).gino.first():
+            if (
+                await ModmailBan.objects()
+                .where(ModmailBan.user_id == str(before.author.id))
+                .first()
+            ):
                 return
 
             thread = self.get_channel(active_threads[before.author.id])
@@ -952,9 +958,7 @@ class Modmail(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called this command
             user (discord.User): The user to ban
         """
-        if await self.bot.models.ModmailBan.query.where(
-            self.bot.models.ModmailBan.user_id == str(user.id)
-        ).gino.first():
+        if await ModmailBan.objects().where(ModmailBan.user_id == str(user.id)).first():
             embed = auxiliary.prepare_deny_embed(
                 message=f"{user.mention} is already banned!"
             )
@@ -1009,7 +1013,7 @@ class Modmail(cogs.BaseCog):
                 return
 
             case ui.ConfirmResponse.CONFIRMED:
-                await self.bot.models.ModmailBan(user_id=str(user.id)).create()
+                await ModmailBan(user_id=str(user.id)).save()
                 await modlog.log_action(
                     bot=self.bot,
                     action_type="modmail ban",
@@ -1116,7 +1120,7 @@ class Modmail(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that called this command
         """
-        bans = await self.bot.models.ModmailBan.query.gino.all()
+        bans = await ModmailBan.objects()
         if not bans:
             embed = auxiliary.prepare_deny_embed(
                 message="There are no modmail bans",
@@ -1235,9 +1239,9 @@ class Modmail(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that called this command
             user (discord.User): The user to unban
         """
-        ban_entry = await self.bot.models.ModmailBan.query.where(
-            self.bot.models.ModmailBan.user_id == str(user.id)
-        ).gino.first()
+        ban_entry = (
+            await ModmailBan.objects().where(ModmailBan.user_id == str(user.id)).first()
+        )
 
         if not ban_entry:
             embed = auxiliary.prepare_deny_embed(
@@ -1246,7 +1250,7 @@ class Modmail(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        await ban_entry.delete()
+        await ban_entry.remove()
         await modlog.log_action(
             bot=self.bot,
             action_type="modmail unban",
@@ -1627,22 +1631,25 @@ class Modmail(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        factoid = (
-            await self.bot.models.Factoid.query.where(
-                self.bot.models.Factoid.name == factoid_to_send.lower()
+        call = (
+            await FactoidCall.objects()
+            .where(
+                FactoidCall.name == factoid_to_send.lower(),
+                FactoidCall.guild == str(interaction.guild.id),
             )
-            .where(self.bot.models.Factoid.guild == str(interaction.guild.id))
-            .gino.first()
+            .first()
         )
 
-        # Handling if the call is an alias
-        if factoid and factoid.alias not in ["", None]:
+        # Get the factoid data from the FactoidCall object.
+        factoid = None
+        if call is not None:
             factoid = (
-                await self.bot.models.Factoid.query.where(
-                    self.bot.models.Factoid.name == factoid.alias
+                await FactoidData.objects()
+                .where(
+                    FactoidData.factoid_data_id == call.factoid_data_id,
+                    FactoidData.guild == str(interaction.guild.id),
                 )
-                .where(self.bot.models.Factoid.guild == str(interaction.guild.id))
-                .gino.first()
+                .first()
             )
 
         # Make sure the factoid exists
@@ -1654,8 +1661,9 @@ class Modmail(cogs.BaseCog):
             return
 
         # Checks for restricted and disabled factoids
-        if factoid.disabled or (
-            factoid.restricted
+        flags = Properties(factoid.flags)
+        if flags & Properties.DISABLED or (
+            flags & Properties.RESTRICTED
             and str(self.modmail_forum.id)
             not in configuration.get_config_entry(
                 interaction.guild.id, "factoids_restricted_list"
@@ -1709,7 +1717,7 @@ class Modmail(cogs.BaseCog):
             await interaction.response.send_message(embed=embed)
             return
 
-        raw_rules = await rules.get_guild_rules(self.bot, interaction.guild)
+        raw_rules = await rules.get_guild_rules(interaction.guild)
         guild_rules = raw_rules.get("rules")
 
         try:

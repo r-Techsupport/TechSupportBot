@@ -8,11 +8,12 @@ import random
 from typing import TYPE_CHECKING, Self
 
 import discord
-from discord.ext import commands
+from discord import app_commands
 
 import configuration
 import ui
 from core import auxiliary, cogs, cryptography
+from database.schema import Grab
 
 if TYPE_CHECKING:
     import bot
@@ -28,30 +29,51 @@ async def setup(bot: bot.TechSupportBot) -> None:
     await bot.add_cog(Grabber(bot=bot))
 
 
-async def invalid_channel(ctx: commands.Context) -> bool:
+async def invalid_channel(interaction: discord.Interaction) -> bool:
     """A method to check channels against the whitelist
     If the channel is not in the whitelist, the command execution is halted
-    This is expected to be used in a @commands.check call
+    This is expected to be used in a @app_commands.check call
 
     Args:
-        ctx (commands.Context): The context in which the command was run in
+        interaction (discord.Interaction): The interaction that called this command
 
     Raises:
-        CommandError: Raised if grabs aren't allowed in the given channel
+        CheckFailure: Raised if grabs aren't allowed in the given channel
 
     Returns:
         bool: If the grabs are allowed in the channel the command was run in
     """
     allowed_channels = configuration.get_config_entry(
-        ctx.guild.id, "grab_allowed_channels"
+        interaction.guild.id, "grab_allowed_channels"
     )
     # Check if list is empty. If it is, allow all channels
     if not allowed_channels:
         return True
     # If this list is not empty, it is a strict whitelist
-    if str(ctx.channel.id) in allowed_channels:
+    if str(interaction.channel.id) in allowed_channels:
         return True
-    raise commands.CommandError("Grabs are disabled for this channel")
+    raise app_commands.CheckFailure("Grabs are disabled for this channel")
+
+
+async def get_visible_grabs(
+    user: discord.Member, interaction: discord.Interaction
+) -> list[Grab]:
+    """Fetch a user's grabs in this server, respecting the channel's NSFW setting.
+
+    Args:
+        user (discord.Member): The user to get grabs for
+        interaction (discord.Interaction): The interaction providing the guild and channel
+
+    Returns:
+        list[Grab]: The user's grabs in this guild, filtered by the channel's NSFW setting
+    """
+    nsfw_filter = () if interaction.channel.is_nsfw() else (Grab.nsfw.eq(False),)
+
+    return await Grab.objects().where(
+        Grab.author_id == str(user.id),
+        Grab.guild == str(interaction.guild.id),
+        *nsfw_filter,
+    )
 
 
 class Grabber(cogs.BaseCog):
@@ -59,137 +81,120 @@ class Grabber(cogs.BaseCog):
 
     Attributes:
         SEARCH_LIMIT (int): The max amount of messages to search when grabbing
+        grab_group (app_commands.Group): The group for the /grab commands
     """
 
     SEARCH_LIMIT: int = 20
+    grab_group: app_commands.Group = app_commands.Group(
+        name="grab", description="Save and retrieve grabbed messages", guild_only=True
+    )
 
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @commands.check(invalid_channel)
-    @commands.command(
-        name="grab",
-        brief="Grabs a user's message",
-        description="Grabs a message by ID and saves it",
-        usage="[username-or-user-ID]",
+    @app_commands.guild_only()
+    @app_commands.check(invalid_channel)
+    @grab_group.command(
+        name="message",
+        description="Saves a recent message from a user",
     )
     async def grab_user(
-        self: Self, ctx: commands.Context, user_to_grab: discord.Member
+        self: Self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
-        """This is the grab by user function. Accessible by .grab
+        """Save a recent message using /grab message.
         This will only search for 20 messages
 
         Args:
-            ctx (commands.Context): The context in which the command was run in
-            user_to_grab (discord.Member): The user to search for grabs from
+            interaction (discord.Interaction): The interaction that called this command
+            user (discord.Member): The user to search for grabs from
         """
 
-        if user_to_grab.bot:
-            await auxiliary.send_deny_embed(
-                message="Ain't gonna catch me slipping!", channel=ctx.channel
+        if user.bot:
+            embed = auxiliary.prepare_deny_embed(
+                message="Ain't gonna catch me slipping!"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        if user_to_grab == ctx.author:
-            await auxiliary.send_deny_embed(
-                message="You can't do this to yourself", channel=ctx.channel
+        if user == interaction.user:
+            embed = auxiliary.prepare_deny_embed(
+                message="You can't do this to yourself"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         grab_message = None
 
-        async for message in ctx.channel.history(limit=self.SEARCH_LIMIT):
-            if message.author == user_to_grab:
+        async for message in interaction.channel.history(limit=self.SEARCH_LIMIT):
+            if message.author == user:
                 grab_message = message.content
                 break
 
         if not grab_message:
-            await auxiliary.send_deny_embed(
-                message=f"Could not find a recent message from user {user_to_grab}",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message=f"Could not find a recent message from user {user}"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         grab_hash = cryptography.hash_text(grab_message)
 
         grab = (
-            await self.bot.models.Grab.query.where(
-                self.bot.models.Grab.author_id == str(user_to_grab.id),
+            await Grab.objects()
+            .where(
+                Grab.author_id == str(user.id),
+                Grab.message_hash == grab_hash,
             )
-            .where(self.bot.models.Grab.message_hash == grab_hash)
-            .gino.first()
+            .first()
         )
 
         if grab:
-            await auxiliary.send_deny_embed(
-                message="That grab already exists!", channel=ctx.channel
-            )
+            embed = auxiliary.prepare_deny_embed(message="That grab already exists!")
+            await interaction.response.send_message(embed=embed)
             return
 
-        grab = self.bot.models.Grab(
-            author_id=str(user_to_grab.id),
-            channel=str(ctx.channel.id),
-            guild=str(ctx.guild.id),
+        grab = Grab(
+            author_id=str(user.id),
+            channel=str(interaction.channel.id),
+            guild=str(interaction.guild.id),
             message=cryptography.encrypt(grab_message),
             message_hash=grab_hash,
-            nsfw=ctx.channel.is_nsfw(),
+            nsfw=interaction.channel.is_nsfw(),
         )
-        await grab.create()
+        await grab.save()
 
-        await auxiliary.send_confirm_embed(
-            message=f"Successfully saved: '*{grab_message}*'", channel=ctx.channel
+        embed = auxiliary.prepare_confirm_embed(
+            message=f"Successfully saved: '*{grab_message}*'"
         )
+        await interaction.response.send_message(embed=embed)
 
-    @commands.group(
-        brief="Executes a grabs command",
-        description="Executes a grabs command",
-    )
-    async def grabs(self: Self, ctx: commands.Context) -> None:
-        """The bare .grabs command. This does nothing but generate the help message
-
-        Args:
-            ctx (commands.Context): The context in which the command was run in
-        """
-        return
-
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @commands.check(invalid_channel)
-    @grabs.command(
+    @app_commands.guild_only()
+    @app_commands.check(invalid_channel)
+    @grab_group.command(
         name="all",
-        brief="Returns grabs for a user",
         description="Returns all grabbed messages for a user",
-        usage="[user]",
     )
     async def all_grabs(
-        self: Self, ctx: commands.Context, user_to_grab: discord.Member
+        self: Self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         """Discord command to get a paginated list of all grabs from a given user
 
         Args:
-            ctx (commands.Context): The context in which the command was run in
-            user_to_grab (discord.Member): The user to get all the grabs from
+            interaction (discord.Interaction): The interaction that called this command
+            user (discord.Member): The user to get all the grabs from
         """
-        is_nsfw = ctx.channel.is_nsfw()
-        if user_to_grab.bot:
-            await auxiliary.send_deny_embed(
-                message="Ain't gonna catch me slipping!", channel=ctx.channel
+        is_nsfw = interaction.channel.is_nsfw()
+        if user.bot:
+            embed = auxiliary.prepare_deny_embed(
+                message="Ain't gonna catch me slipping!"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        query = self.bot.models.Grab.query.where(
-            self.bot.models.Grab.author_id == str(user_to_grab.id)
-        ).where(self.bot.models.Grab.guild == str(ctx.guild.id))
-
-        if not is_nsfw:
-            # pylint: disable=C0121
-            query = query.where(self.bot.models.Grab.nsfw == False)
-
-        grabs = await query.gino.all()
+        grabs = await get_visible_grabs(user, interaction)
 
         if not grabs:
-            await auxiliary.send_deny_embed(
-                message=f"No grabs found for {user_to_grab.name}", channel=ctx.channel
+            embed = auxiliary.prepare_deny_embed(
+                message=f"No grabs found for {user.name}"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         grabs.sort(reverse=True, key=lambda grab: grab.time)
@@ -202,7 +207,7 @@ class Grabber(cogs.BaseCog):
                 description = "Note: *NSFW grabs are hidden in this channel*"
             embed = (
                 discord.Embed(
-                    title=f"Grabs for {user_to_grab.name}",
+                    title=f"Grabs for {user.name}",
                     description=description,
                 )
                 if field_counter == 1
@@ -215,66 +220,53 @@ class Grabber(cogs.BaseCog):
             )
             if (
                 field_counter
-                == configuration.get_config_entry(ctx.guild.id, "grab_per_page")
+                == configuration.get_config_entry(interaction.guild.id, "grab_per_page")
                 or index == len(list(grabs)) - 1
             ):
-                embed.set_thumbnail(url=user_to_grab.display_avatar.url)
+                embed.set_thumbnail(url=user.display_avatar.url)
                 embed.color = discord.Color.orange()
                 embeds.append(embed)
                 field_counter = 1
             else:
                 field_counter += 1
 
-        await ui.PaginateView().send(ctx.channel, ctx.author, embeds)
+        await interaction.response.defer()
+        await ui.PaginateView().send(
+            channel=interaction.channel,
+            author=interaction.user,
+            data=embeds,
+            interaction=interaction,
+        )
 
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @commands.check(invalid_channel)
-    @grabs.command(
+    @app_commands.guild_only()
+    @app_commands.check(invalid_channel)
+    @grab_group.command(
         name="random",
-        brief="Returns a random grab",
         description="Returns a random grabbed message for a user "
         + "(note: NSFW messages are filtered by channel settings)",
-        usage="[user]",
     )
     async def random_grab(
-        self: Self, ctx: commands.Context, user_to_grab: discord.Member
+        self: Self, interaction: discord.Interaction, user: discord.Member
     ) -> None:
         """Discord command to get a random grab from the given user
 
         Args:
-            ctx (commands.Context): The context in which the command was run in
-            user_to_grab (discord.Member): The user to get a random grab from
+            interaction (discord.Interaction): The interaction that called this command
+            user (discord.Member): The user to get a random grab from
         """
 
-        if user_to_grab.bot:
-            await auxiliary.send_deny_embed(
-                message="Ain't gonna catch me slipping!", channel=ctx.channel
+        if user.bot:
+            embed = auxiliary.prepare_deny_embed(
+                message="Ain't gonna catch me slipping!"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        grabs = (
-            await self.bot.models.Grab.query.where(
-                self.bot.models.Grab.author_id == str(user_to_grab.id)
-            )
-            .where(self.bot.models.Grab.guild == str(ctx.guild.id))
-            .gino.all()
-        )
-
-        query = self.bot.models.Grab.query.where(
-            self.bot.models.Grab.author_id == str(user_to_grab.id)
-        ).where(self.bot.models.Grab.guild == str(ctx.guild.id))
-
-        if not ctx.channel.is_nsfw():
-            # pylint: disable=C0121
-            query = query.where(self.bot.models.Grab.nsfw == False)
-
-        grabs = await query.gino.all()
+        grabs = await get_visible_grabs(user, interaction)
 
         if not grabs:
-            await auxiliary.send_deny_embed(
-                message=f"No grabs found for {user_to_grab}", channel=ctx.channel
-            )
+            embed = auxiliary.prepare_deny_embed(message=f"No grabs found for {user}")
+            await interaction.response.send_message(embed=embed)
             return
 
         random_index = random.randint(0, len(grabs) - 1)
@@ -282,71 +274,64 @@ class Grabber(cogs.BaseCog):
 
         embed = discord.Embed(
             title=f'"{cryptography.decrypt(grab.message)}"',
-            description=f"{user_to_grab.name}, {grab.time.date()}",
+            description=f"{user.name}, {grab.time.date()}",
         )
 
         embed.color = discord.Color.orange()
 
-        embed.set_thumbnail(url=user_to_grab.display_avatar.url)
+        embed.set_thumbnail(url=user.display_avatar.url)
 
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @commands.check(invalid_channel)
-    @grabs.command(
+    @app_commands.guild_only()
+    @app_commands.check(invalid_channel)
+    @grab_group.command(
         name="delete",
-        brief="Deleted a specific grab",
         description="Deleted a specific grab from a user by the message",
-        usage="[user] [message]",
     )
     async def delete_grab(
-        self: Self, ctx: commands.Context, target_user: discord.Member, *, message: str
+        self: Self,
+        interaction: discord.Interaction,
+        user: discord.Member,
+        *,
+        message: str,
     ) -> None:
         """Deletes a given grab by exact string
 
         Args:
-            ctx (commands.Context): The context in which the command was run in
-            target_user (discord.Member): The user to delete a grab from
+            interaction (discord.Interaction): The interaction that called this command
+            user (discord.Member): The user to delete a grab from
             message (str): The exact string of the grab to delete
-
-        Raises:
-            CommandError: Raised if the grab cannot be found for the given user
         """
         # Stop execution if the invoker isn't the target or an admin
         if (
-            not ctx.message.author.id == target_user.id
-            and not ctx.message.author.guild_permissions.administrator
+            not interaction.user.id == user.id
+            and not interaction.user.guild_permissions.administrator
         ):
-            await auxiliary.send_deny_embed(
-                message="You don't have sufficient permissions to do this!",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message="You don't have sufficient permissions to do this!"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         grab_hash = cryptography.hash_text(message)
-        # Gets the target grab by the message
         grab = (
-            await self.bot.models.Grab.query.where(
-                self.bot.models.Grab.author_id == str(target_user.id)
+            await Grab.objects()
+            .where(
+                Grab.author_id == str(user.id),
+                Grab.guild == str(interaction.guild.id),
+                Grab.message_hash == grab_hash,
             )
-            .where(self.bot.models.Grab.guild == str(ctx.guild.id))
-            .where(self.bot.models.Grab.message_hash == grab_hash)
-            .gino.all()
+            .first()
         )
 
         if not grab:
-            await auxiliary.send_deny_embed(
-                message=f"Grab `{message}` not found for {target_user}",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message=f"Grab `{message}` not found for {user}"
             )
+            await interaction.response.send_message(embed=embed)
             return
-        try:
-            await grab[0].delete()
+        await grab.remove()
 
-        except IndexError:
-            raise commands.CommandError("Couldn't delete the grab!") from IndexError
-
-        await auxiliary.send_confirm_embed(
-            message="Grab succesfully deleted!", channel=ctx.channel
-        )
+        embed = auxiliary.prepare_confirm_embed(message="Grab succesfully deleted!")
+        await interaction.response.send_message(embed=embed)

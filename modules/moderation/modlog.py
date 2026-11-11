@@ -8,13 +8,13 @@ from typing import TYPE_CHECKING, Self
 
 import asyncpg
 import discord
-import munch
 from discord import app_commands
 from discord.ext import commands
 
 import configuration
 import ui
 from core import auxiliary, cogs
+from database.schema import ModLog
 
 if TYPE_CHECKING:
     import bot
@@ -52,9 +52,9 @@ class ModLogger(cogs.BaseCog):
             interaction (discord.Interaction): The interaction that started this command
         """
         await interaction.response.defer()
-        all_actions = await self.bot.models.ModLog.query.where(
-            self.bot.models.ModLog.guild_id == str(interaction.guild.id)
-        ).gino.all()
+        all_actions = await ModLog.objects().where(
+            ModLog.guild_id == str(interaction.guild.id)
+        )
         frequency_counter = Counter(
             action.moderator_id
             for action in all_actions
@@ -103,12 +103,12 @@ class ModLogger(cogs.BaseCog):
         await interaction.response.defer(ephemeral=True)
 
         all_action_for_user = (
-            await self.bot.models.ModLog.query.where(
-                self.bot.models.ModLog.guild_id == str(interaction.guild.id)
+            await ModLog.objects()
+            .where(
+                ModLog.guild_id == str(interaction.guild.id),
+                ModLog.member_id == str(user.id),
             )
-            .where(self.bot.models.ModLog.member_id == str(user.id))
-            .order_by(self.bot.models.ModLog.action_time.desc())
-            .gino.all()
+            .order_by(ModLog.action_time, ascending=False)
         )
 
         embeds = []
@@ -158,12 +158,12 @@ class ModLogger(cogs.BaseCog):
         await interaction.response.defer(ephemeral=True)
 
         all_action_for_user = (
-            await self.bot.models.ModLog.query.where(
-                self.bot.models.ModLog.guild_id == str(interaction.guild.id)
+            await ModLog.objects()
+            .where(
+                ModLog.guild_id == str(interaction.guild.id),
+                ModLog.moderator_id == str(moderator.id),
             )
-            .where(self.bot.models.ModLog.moderator_id == str(moderator.id))
-            .order_by(self.bot.models.ModLog.action_time.desc())
-            .gino.all()
+            .order_by(ModLog.action_time, ascending=False)
         )
 
         embeds = []
@@ -214,12 +214,14 @@ class ModLogger(cogs.BaseCog):
         await interaction.response.defer(ephemeral=True)
 
         case = (
-            await self.bot.models.ModLog.query.where(
-                self.bot.models.ModLog.guild_id == str(interaction.guild.id)
+            await ModLog.objects()
+            .where(
+                ModLog.guild_id == str(interaction.guild.id),
+                ModLog.guild_case_id == case_number,
             )
-            .where(self.bot.models.ModLog.guild_case_id == case_number)
-            .gino.first()
+            .first()
         )
+
         if not case:
             embed = auxiliary.prepare_deny_embed(
                 f"The case number {case_number} could not be found"
@@ -443,13 +445,14 @@ class ModLogger(cogs.BaseCog):
             return
 
         most_recent_kick = (
-            await self.bot.models.ModLog.query.where(
-                self.bot.models.ModLog.guild_id == str(member.guild.id)
+            await ModLog.objects()
+            .where(
+                ModLog.guild_id == str(member.guild.id),
+                ModLog.member_id == str(member.id),
+                ModLog.action == "kick",
             )
-            .where(self.bot.models.ModLog.member_id == str(member.id))
-            .where(self.bot.models.ModLog.action == "kick")
-            .order_by(self.bot.models.ModLog.guild_case_id.desc())
-            .gino.first()
+            .order_by(ModLog.guild_case_id, ascending=False)
+            .first()
         )
 
         # No kick on record, nothing to do
@@ -457,13 +460,14 @@ class ModLogger(cogs.BaseCog):
             return
 
         most_recent_unkick = (
-            await self.bot.models.ModLog.query.where(
-                self.bot.models.ModLog.guild_id == str(member.guild.id)
+            await ModLog.objects()
+            .where(
+                ModLog.guild_id == str(member.guild.id),
+                ModLog.member_id == str(member.id),
+                ModLog.action == "unkick",
             )
-            .where(self.bot.models.ModLog.member_id == str(member.id))
-            .where(self.bot.models.ModLog.action == "unkick")
-            .order_by(self.bot.models.ModLog.guild_case_id.desc())
-            .gino.first()
+            .order_by(ModLog.guild_case_id, ascending=False)
+            .first()
         )
 
         # If they've never been marked as unkicked, this join is an unkick
@@ -488,13 +492,13 @@ class ModLogger(cogs.BaseCog):
 
 
 async def generate_action_embed(
-    bot: bot.models.ModLog, action_entry: munch.Munch
+    bot: bot.TechSupportBot, action_entry: ModLog
 ) -> discord.Embed:
     """This generates a stylized embed that displays the mod action taken and information
 
     Args:
-        bot (bot.models.ModLog): The bot object, used to fetch information from discord
-        action_entry (munch.Munch): The action entry from the database to display
+        bot (bot.TechSupportBot): The bot object, used to fetch information from discord
+        action_entry (ModLog): The action entry from the database to display
 
     Returns:
         discord.Embed: The final embed, ready to display
@@ -567,9 +571,10 @@ async def get_next_case_number(
         int: The next case number to use
     """
     latest_case = (
-        await bot.models.ModLog.query.where(bot.models.ModLog.guild_id == str(guild.id))
-        .order_by(bot.models.ModLog.guild_case_id.desc())
-        .gino.first()
+        await ModLog.objects()
+        .where(ModLog.guild_id == str(guild.id))
+        .order_by(ModLog.guild_case_id, ascending=False)
+        .first()
     )
 
     if latest_case is None:
@@ -621,8 +626,7 @@ async def log_action(
         try:
             # We need to calculate the case ID number for this action
             case_id = await get_next_case_number(bot, guild)
-
-            entry = bot.models.ModLog(
+            entry = ModLog(
                 guild_id=str(guild.id),
                 guild_case_id=case_id,
                 action=action_type,
@@ -632,7 +636,7 @@ async def log_action(
                 member_id=member_id,
                 until_time=expires_at,
             )
-            entry = await entry.create()
+            await entry.save()
             break
         except asyncpg.UniqueViolationError:
             continue

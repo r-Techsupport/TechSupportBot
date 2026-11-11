@@ -7,9 +7,11 @@ from typing import TYPE_CHECKING, Self
 
 import discord
 import expiringdict
+from discord import app_commands
 from discord.ext import commands
 
 from core import auxiliary, cogs
+from database.schema import Listener as ListenerModel
 
 if TYPE_CHECKING:
     import bot
@@ -24,31 +26,43 @@ async def setup(bot: bot.TechSupportBot) -> None:
     await bot.add_cog(Listener(bot=bot))
 
 
-class ListenChannel(commands.Converter):
+class ListenChannel(app_commands.Transformer):  # pylint: disable=abstract-method
     """Converter for grabbing a channel via the API.
 
     This avoids the limitation set by the builtin channel converters.
     """
 
-    async def convert(
-        self: Self, ctx: commands.Context, argument: int
+    async def transform(
+        self: Self, interaction: discord.Interaction, argument: str
     ) -> discord.abc.GuildChannel | discord.abc.PrivateChannel | discord.Thread:
-        """Convert method for the converter.
+        """Resolve a channel ID through the Discord API.
 
         Args:
-            ctx (commands.Context): the context object
-            argument (int): the channel ID to convert
+            interaction (discord.Interaction): The interaction that called this command
+            argument (str): The channel ID to resolve, including channels in other guilds
+
+        Raises:
+            AppCommandError: Raised if the channel ID is not a number
 
         Returns:
             discord.abc.GuildChannel | discord.abc.PrivateChannel | discord.Thread:
                 The channel object that is associated with the ID
         """
-        channel = await ctx.bot.fetch_channel(argument)
-        return channel
+        try:
+            channel_id = int(argument)
+        except ValueError as exception:
+            raise app_commands.AppCommandError(
+                "Please provide a valid channel ID"
+            ) from exception
+        return await interaction.client.fetch_channel(channel_id)
 
 
-class Listener(cogs.BaseCog):
-    """Cog object for listening to channels."""
+class Listener(cogs.MatchCog):
+    """Cog object for listening to channels.
+
+    Attributes:
+        listen_group (app_commands.Group): The group for the /listen commands
+    """
 
     def format_message_in_embed(self: Self, message: discord.Message) -> discord.Embed:
         """Formats a listened message into a pretty embed
@@ -157,21 +171,19 @@ class Listener(cogs.BaseCog):
         Returns:
             list[str]: The list of channel IDs that should have the listened message sent to
         """
-        destination_data = await self.bot.models.Listener.query.where(
-            self.bot.models.Listener.src_id == str(src.id)
-        ).gino.all()
+        destination_data = await ListenerModel.objects().where(
+            ListenerModel.src_id == str(src.id)
+        )
         if not destination_data:
             return None
 
         return [listener.dst_id for listener in destination_data]
 
-    def build_list_of_sources(
-        self: Self, listeners: list[bot.db.model.Listener]
-    ) -> list[str]:
+    def build_list_of_sources(self: Self, listeners: list[ListenerModel]) -> list[str]:
         """Builds a list of unique sources from the raw database output
 
         Args:
-            listeners (list[bot.db.model.Listener]): The entire database dumped into a list
+            listeners (list[ListenerModel]): The entire database dumped into a list
 
         Returns:
             list[str]: The list of unique src channel strings
@@ -182,7 +194,7 @@ class Listener(cogs.BaseCog):
 
     async def get_specific_listener(
         self: Self, src: discord.TextChannel, dst: discord.TextChannel
-    ) -> bot.db.models.Listener:
+    ) -> ListenerModel | None:
         """Gets a database object of the given listener pair
 
         Args:
@@ -190,14 +202,15 @@ class Listener(cogs.BaseCog):
             dst (discord.TextChannel): The destination channel
 
         Returns:
-            bot.db.models.Listener: The db object, if the listener exists
+            ListenerModel | None: The db object, or None if the listener does not exist
         """
         listener = (
-            await self.bot.models.Listener.query.where(
-                self.bot.models.Listener.src_id == str(src.id)
+            await ListenerModel.objects()
+            .where(
+                ListenerModel.src_id == str(src.id),
+                ListenerModel.dst_id == str(dst.id),
             )
-            .where(self.bot.models.Listener.dst_id == str(dst.id))
-            .gino.first()
+            .first()
         )
         return listener
 
@@ -213,16 +226,16 @@ class Listener(cogs.BaseCog):
                 listen jobs from and to every channel
         """
         source_objects = []
-        all_listens = await self.bot.models.Listener.query.gino.all()
+        all_listens = await ListenerModel.objects()
         source_list = self.build_list_of_sources(all_listens)
         for src in source_list:
             src_ch = self.bot.get_channel(int(src))
             if not src_ch:
                 continue
 
-            destination_ids = await self.bot.models.Listener.query.where(
-                self.bot.models.Listener.src_id == src
-            ).gino.all()
+            destination_ids = await ListenerModel.objects().where(
+                ListenerModel.src_id == src
+            )
             dst_id_list = [listener.dst_id for listener in destination_ids]
             if not dst_id_list:
                 continue
@@ -246,136 +259,145 @@ class Listener(cogs.BaseCog):
             src (discord.TextChannel): the source channel to build for
             dst (discord.TextChannel): the destination channel to build for
         """
-        new_listener = self.bot.models.Listener(
+        new_listener = ListenerModel(
             src_id=str(src.id),
             dst_id=str(dst.id),
         )
-        await new_listener.create()
+        await new_listener.save()
         try:
             del self.destination_cache[src.id]
         except KeyError:
             pass
 
-    @commands.check(auxiliary.bot_admin_check_context)
-    @commands.group(description="Executes a listen command")
-    async def listen(self: Self, ctx: commands.Context) -> None:
-        """Command group for listen commands.
-
-        This is a command and should be accessed via Discord.
-
-        Args:
-            ctx (commands.Context): the context object for the message
-        """
-        return
-
-    @listen.command(
-        description="Starts a listening job", usage="[src-channel] [dst-channel]"
+    listen_group: app_commands.Group = app_commands.Group(
+        name="listen", description="Manage channel listening jobs", guild_only=True
     )
+
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @listen_group.command(name="start", description="Starts a listening job")
     async def start(
-        self: Self, ctx: commands.Context, src: ListenChannel, dst: ListenChannel
+        self: Self,
+        interaction: discord.Interaction,
+        src: app_commands.Transform[
+            discord.abc.GuildChannel | discord.abc.PrivateChannel | discord.Thread,
+            ListenChannel,
+        ],
+        dst: app_commands.Transform[
+            discord.abc.GuildChannel | discord.abc.PrivateChannel | discord.Thread,
+            ListenChannel,
+        ],
     ) -> None:
         """Executes a start-listening command.
 
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (commands.Context): the context object for the message
-            src (ListenChannel): the source channel ID
-            dst (ListenChannel): the destination channel ID
+            interaction (discord.Interaction): The interaction that called this command
+            src (app_commands.Transform[discord.abc.GuildChannel | discord.abc.PrivateChannel | discord.Thread, ListenChannel]): The source channel resolved from its ID
+            dst (app_commands.Transform[discord.abc.GuildChannel | discord.abc.PrivateChannel | discord.Thread, ListenChannel]): The destination channel resolved from its ID
         """
         if src.id == dst.id:
-            await auxiliary.send_deny_embed(
-                message="Source and destination channels must differ",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                "Source and destination channels must differ"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         listener_object = await self.get_specific_listener(src, dst)
         if listener_object:
-            await auxiliary.send_deny_embed(
-                message="That source and destination already exist", channel=ctx.channel
+            embed = auxiliary.prepare_deny_embed(
+                "That source and destination already exist"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         await self.update_destinations(src, dst)
 
-        await auxiliary.send_confirm_embed(
-            message="Listening registered!", channel=ctx.channel
-        )
+        embed = auxiliary.prepare_confirm_embed("Listening registered!")
+        await interaction.response.send_message(embed=embed)
 
-    @listen.command(
-        description="Stops a listening job", usage="[src-channel] [dst-channel]"
-    )
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @listen_group.command(name="stop", description="Stops a listening job")
     async def stop(
-        self: Self, ctx: commands.Context, src: ListenChannel, dst: ListenChannel
+        self: Self,
+        interaction: discord.Interaction,
+        src: app_commands.Transform[
+            discord.abc.GuildChannel | discord.abc.PrivateChannel | discord.Thread,
+            ListenChannel,
+        ],
+        dst: app_commands.Transform[
+            discord.abc.GuildChannel | discord.abc.PrivateChannel | discord.Thread,
+            ListenChannel,
+        ],
     ) -> None:
         """Executes a stop-listening command.
 
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (commands.Context): the context object for the message
-            src (ListenChannel): the source channel ID
-            dst (ListenChannel): the destination channel ID
+            interaction (discord.Interaction): The interaction that called this command
+            src (app_commands.Transform[discord.abc.GuildChannel | discord.abc.PrivateChannel | discord.Thread, ListenChannel]): The source channel resolved from its ID
+            dst (app_commands.Transform[discord.abc.GuildChannel | discord.abc.PrivateChannel | discord.Thread, ListenChannel]): The destination channel resolved from its ID
         """
         if src.id == dst.id:
-            await auxiliary.send_deny_embed(
-                message="Source and destination channels must differ",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                "Source and destination channels must differ"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         listener_object = await self.get_specific_listener(src, dst)
         if not listener_object:
-            await auxiliary.send_deny_embed(
-                message="That destination is not registered with that source",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                "That destination is not registered with that source"
             )
+            await interaction.response.send_message(embed=embed)
             return
-        await listener_object.delete()
+        await listener_object.remove()
+        self.destination_cache.pop(src.id, None)
 
-        await auxiliary.send_confirm_embed(
-            message="Listening deregistered!", channel=ctx.channel
-        )
+        embed = auxiliary.prepare_confirm_embed("Listening deregistered!")
+        await interaction.response.send_message(embed=embed)
 
-    @listen.command(
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @listen_group.command(
         description="Clears all listener jobs",
     )
-    async def clear(self: Self, ctx: commands.Context) -> None:
+    async def clear(self: Self, interaction: discord.Interaction) -> None:
         """Clears all listener registrations.
 
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (commands.Context): the context object for the message
+            interaction (discord.Interaction): The interaction that called this command
         """
-        all_listens = await self.bot.models.Listener.query.gino.all()
+        all_listens = await ListenerModel.objects()
         for listener in all_listens:
-            await listener.delete()
+            await listener.remove()
         self.destination_cache.clear()
 
-        await auxiliary.send_confirm_embed(
-            message="All listeners deregistered!", channel=ctx.channel
-        )
+        embed = auxiliary.prepare_confirm_embed("All listeners deregistered!")
+        await interaction.response.send_message(embed=embed)
 
-    @listen.command(
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @listen_group.command(
         description="Gets listener job registrations",
     )
-    async def jobs(self: Self, ctx: commands.Context) -> None:
+    async def jobs(self: Self, interaction: discord.Interaction) -> None:
         """Gets listener job info.
 
         This is a command and should be accessed via Discord.
 
         Args:
-            ctx (commands.Context): the context object for the message
+            interaction (discord.Interaction): The interaction that called this command
         """
         source_objects = await self.get_all_sources()
 
         if len(source_objects) == 0:
-            await auxiliary.send_deny_embed(
-                message="There are currently no registered listeners",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                "There are currently no registered listeners"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         embed = auxiliary.generate_basic_embed(
@@ -396,22 +418,37 @@ class Listener(cogs.BaseCog):
                 inline=False,
             )
 
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
-    @commands.Cog.listener()
-    async def on_message(self: Self, message: discord.Message) -> None:
-        """Listens to message events.
+    async def match(
+        self: Self, ctx: commands.Context, _content: str
+    ) -> list[discord.abc.Messageable]:
+        """Checks if a message sent should be forwarded by listener.
 
         Args:
-            message (discord.Message): the message that triggered the event
+            ctx (commands.Context): The context of the incoming message
+            _content (str): The message content, unused when matching channels
+
+        Returns:
+            list[discord.abc.Messageable]: The destinations, or an empty list if none match
         """
-        if message.author.bot:
-            return
-        if isinstance(message.channel, discord.DMChannel):
-            return
-        destinations = await self.get_destinations(message.channel)
-        if not destinations:
-            return
-        for dst in destinations:
-            embed = self.format_message_in_embed(message=message)
-            await dst.send(embed=embed)
+        if ctx.author.bot or ctx.guild is None:
+            return []
+        return await self.get_destinations(ctx.channel) or []
+
+    async def response(
+        self: Self,
+        ctx: commands.Context,
+        _content: str,
+        result: list[discord.abc.Messageable],
+    ) -> None:
+        """Forward the matched message to its registered destinations.
+
+        Args:
+            ctx (commands.Context): The context of the incoming message
+            _content (str): The message content, unused when formatting the original message
+            result (list[discord.abc.Messageable]): The destinations returned by match
+        """
+        for destination in result:
+            embed = self.format_message_in_embed(message=ctx.message)
+            await destination.send(embed=embed)

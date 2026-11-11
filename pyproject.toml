@@ -11,13 +11,12 @@ dependencies = [
     "discord.py==2.7.1",
     "emoji==2.16.0",
     "expiringdict==1.2.2",
-    "gino==1.0.1",
     "gitpython==3.2.1",
     "inflect==7.6.0",
     "irc==20.5.0",
     "munch==4.0.0",
+    "piccolo[postgres]==1.39.0",
     "pyyaml==6.0.3",
-    "setuptools==80.9.0", # Added so gino/asyncpg/sqlalchemy doesn't break.
     "unidecode==1.4.0",
 ]
 
@@ -38,5 +37,13 @@ dev = [
     "pytest-asyncio==1.4.1"
 ]
 
+[tool.uv]
+override-dependencies = [
+    { package = { name = "targ" }, dependencies = ["docstring-parser-fork"] },
+]
+exclude-dependencies = [
+    { package = { name = "targ" }, dependencies = ["docstring-parser"] },
+]
+
 [tool.pytest.ini_options]
-testpaths = ["./tests"]
+testpaths = ["./unit_tests"]

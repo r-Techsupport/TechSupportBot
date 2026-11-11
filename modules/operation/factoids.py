@@ -31,6 +31,7 @@ import configuration
 import ui
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs
+from database.schema import FactoidCall, FactoidData, FactoidJob
 from modules.moderation import logger as function_logger
 
 if TYPE_CHECKING:
@@ -220,15 +221,15 @@ class FactoidManager(cogs.BaseCog):
         """This registers all jobs at once, ideally run when the bot restarts
         All jobs in all guilds are read with this
         """
-        all_jobs = await self.bot.models.FactoidJob.query.gino.all()
+        all_jobs = await FactoidJob.objects()
         for job in all_jobs:
             await self.register_job(job)
 
-    async def register_job(self: Self, job: bot.models.FactoidJob) -> None:
+    async def register_job(self: Self, job: FactoidJob) -> None:
         """This registers a FactoidJob with apscheduler, to allow it to be automatically called
 
         Args:
-            job (bot.models.FactoidJob): The job database entry to schedule
+            job (FactoidJob): The job database entry to schedule
         """
         guild = self.bot.get_guild(int(job.guild))
         await self.bot.scheduler.schedule_cron(
@@ -251,10 +252,14 @@ class FactoidManager(cogs.BaseCog):
         # Expand payload
         guild: discord.Guild = payload["guild"]
         factoid_job_id: int = payload["job_id"]
-        job_data = await self.bot.models.FactoidJob.query.where(
-            (self.bot.models.FactoidJob.guild == str(guild.id))
-            & (self.bot.models.FactoidJob.factoid_job_id == factoid_job_id)
-        ).gino.first()
+        job_data = (
+            await FactoidJob.objects()
+            .where(
+                FactoidJob.guild == str(guild.id),
+                FactoidJob.factoid_job_id == factoid_job_id,
+            )
+            .first()
+        )
         if not job_data:
             return
         factoid = await self.get_factoid_view_by_id(guild, job_data.factoid_data_id)
@@ -361,12 +366,12 @@ class FactoidManager(cogs.BaseCog):
 
     async def unschedule_job(
         self: Self,
-        job: bot.models.FactoidJob,
+        job: FactoidJob,
     ) -> None:
         """This removes the passed FactoidJob from the APScheduler queue
 
         Args:
-            job (bot.models.FactoidJob): The job to remove from the queue
+            job (FactoidJob): The job to remove from the queue
         """
 
         for scheduled_job in await self.bot.scheduler.get_upcoming_tasks():
@@ -394,7 +399,7 @@ class FactoidManager(cogs.BaseCog):
         guild: discord.Guild,
         name: str,
         factoid_data_id: int,
-    ) -> bot.models.FactoidCall:
+    ) -> FactoidCall:
         """This creates a new factoid call database entry for the given guild and factoid
 
         Args:
@@ -403,20 +408,22 @@ class FactoidManager(cogs.BaseCog):
             factoid_data_id (int): The factoid data entry to associate this call with
 
         Returns:
-            bot.models.FactoidCall: The newly created database entry
+            FactoidCall: The newly created database entry
         """
 
-        return await self.bot.models.FactoidCall.create(
+        call = FactoidCall(
             guild=str(guild.id),
             name=name,
             factoid_data_id=factoid_data_id,
         )
+        await call.save()
+        return call
 
     async def read_factoid_call(
         self: Self,
         guild: discord.Guild,
         name: str,
-    ) -> bot.models.FactoidCall:
+    ) -> FactoidCall:
         """Searches the database for a factoid call for the passed guild
 
         Args:
@@ -424,19 +431,23 @@ class FactoidManager(cogs.BaseCog):
             name (str): The name of the factoid to search for
 
         Returns:
-            bot.models.FactoidCall: The database entry for the factoid call
+            FactoidCall: The database entry for the factoid call
         """
 
-        return await self.bot.models.FactoidCall.query.where(
-            (self.bot.models.FactoidCall.guild == str(guild.id))
-            & (self.bot.models.FactoidCall.name == name)
-        ).gino.first()
+        return (
+            await FactoidCall.objects()
+            .where(
+                FactoidCall.guild == str(guild.id),
+                FactoidCall.name == name,
+            )
+            .first()
+        )
 
     async def read_factoid_data(
         self: Self,
         guild: discord.Guild,
         factoid_data_id: int,
-    ) -> bot.models.FactoidData:
+    ) -> FactoidData:
         """Searches the database for a factoid data for the passed guild
 
         Args:
@@ -444,13 +455,17 @@ class FactoidManager(cogs.BaseCog):
             factoid_data_id (int): The ID of the factoid to search for
 
         Returns:
-            bot.models.FactoidData: The database entry for the factoid data
+            FactoidData: The database entry for the factoid data
         """
 
-        return await self.bot.models.FactoidData.query.where(
-            (self.bot.models.FactoidData.guild == str(guild.id))
-            & (self.bot.models.FactoidData.factoid_data_id == factoid_data_id)
-        ).gino.first()
+        return (
+            await FactoidData.objects()
+            .where(
+                FactoidData.guild == str(guild.id),
+                FactoidData.factoid_data_id == factoid_data_id,
+            )
+            .first()
+        )
 
     async def update_factoid_data(
         self: Self,
@@ -461,7 +476,7 @@ class FactoidManager(cogs.BaseCog):
         flags: int = None,
         times_called: int = None,
         json_string: str = None,
-    ) -> bot.models.FactoidData:
+    ) -> FactoidData:
         """Updates a factoid data database entry. Only provided data will be updated, the rest will be unchanged
 
         Args:
@@ -474,7 +489,7 @@ class FactoidManager(cogs.BaseCog):
             json_string (str, optional): If supplied, override the emnbed json for the factoid.
 
         Returns:
-            bot.models.FactoidData: The updated factoid database entry
+            FactoidData: The updated factoid database entry
         """
 
         db_entry = await self.read_factoid_data(
@@ -500,7 +515,9 @@ class FactoidManager(cogs.BaseCog):
             update_values["json_string"] = json_string
 
         if update_values:
-            await db_entry.update(**update_values).apply()
+            for column, value in update_values.items():
+                setattr(db_entry, column, value)
+            await db_entry.save(columns=list(update_values))
 
         return db_entry
 
@@ -516,17 +533,17 @@ class FactoidManager(cogs.BaseCog):
             name (str): The name of the call to delete
         """
 
-        await self.bot.models.FactoidCall.delete.where(
-            (self.bot.models.FactoidCall.guild == str(guild.id))
-            & (self.bot.models.FactoidCall.name == name)
-        ).gino.status()
+        await FactoidCall.delete().where(
+            FactoidCall.guild == str(guild.id),
+            FactoidCall.name == name,
+        )
 
     async def read_factoid_job_by_channel(
         self: Self,
         guild: discord.Guild,
         factoid_data_id: int,
         channel: discord.abc.GuildChannel,
-    ) -> bot.models.FactoidJob:
+    ) -> FactoidJob:
         """Searches the database for a factoid job for the passed guild
 
         Args:
@@ -535,35 +552,37 @@ class FactoidManager(cogs.BaseCog):
             channel (discord.abc.GuildChannel): The channel the factoid job is running in
 
         Returns:
-            bot.models.FactoidJob: The database entry for the factoid job
+            FactoidJob: The database entry for the factoid job
         """
 
-        return await self.bot.models.FactoidJob.query.where(
-            (self.bot.models.FactoidJob.guild == str(guild.id))
-            & (self.bot.models.FactoidJob.factoid_data_id == factoid_data_id)
-            & (self.bot.models.FactoidJob.channel == str(channel.id))
-        ).gino.first()
+        return (
+            await FactoidJob.objects()
+            .where(
+                FactoidJob.guild == str(guild.id),
+                FactoidJob.factoid_data_id == factoid_data_id,
+                FactoidJob.channel == str(channel.id),
+            )
+            .first()
+        )
 
     async def get_all_jobs_for_guild(
         self: Self, guild: discord.Guild
-    ) -> list[bot.models.FactoidJob]:
+    ) -> list[FactoidJob]:
         """This returns raw database entries for all jobs for a given guild
 
         Args:
             guild (discord.Guild): The guild to search for
 
         Returns:
-            list[bot.models.FactoidJob]: The list of all database entries of factoid jobs
+            list[FactoidJob]: The list of all database entries of factoid jobs
         """
-        return await self.bot.models.FactoidJob.query.where(
-            (self.bot.models.FactoidJob.guild == str(guild.id))
-        ).gino.all()
+        return await FactoidJob.objects().where(FactoidJob.guild == str(guild.id))
 
     async def get_factoid_calls_by_factoid_id(
         self: Self,
         guild: discord.Guild,
         factoid_data_id: int,
-    ) -> list[bot.models.FactoidCall]:
+    ) -> list[FactoidCall]:
         """Gets a list of all calls of a factoid by a given factoid data ID
 
         Args:
@@ -571,19 +590,19 @@ class FactoidManager(cogs.BaseCog):
             factoid_data_id (int): The database ID of the factoid to search for
 
         Returns:
-            list[bot.models.FactoidCall]: A list of all factoid call database objects for the given factoid
+            list[FactoidCall]: A list of all factoid call database objects for the given factoid
         """
 
-        return await self.bot.models.FactoidCall.query.where(
-            (self.bot.models.FactoidCall.guild == str(guild.id))
-            & (self.bot.models.FactoidCall.factoid_data_id == factoid_data_id)
-        ).gino.all()
+        return await FactoidCall.objects().where(
+            FactoidCall.guild == str(guild.id),
+            FactoidCall.factoid_data_id == factoid_data_id,
+        )
 
     async def get_factoid_jobs_by_factoid_id(
         self: Self,
         guild: discord.Guild,
         factoid_data_id: int,
-    ) -> list[bot.models.FactoidJob]:
+    ) -> list[FactoidJob]:
         """Gets a list of all jobs associated with a specific factoid
 
         Args:
@@ -591,13 +610,13 @@ class FactoidManager(cogs.BaseCog):
             factoid_data_id (int): The ID of the factoid to search for
 
         Returns:
-            list[bot.models.FactoidJob]: The list of all the database entires of the jobs
+            list[FactoidJob]: The list of all the database entires of the jobs
         """
 
-        return await self.bot.models.FactoidJob.query.where(
-            (self.bot.models.FactoidJob.guild == str(guild.id))
-            & (self.bot.models.FactoidJob.factoid_data_id == factoid_data_id)
-        ).gino.all()
+        return await FactoidJob.objects().where(
+            FactoidJob.guild == str(guild.id),
+            FactoidJob.factoid_data_id == factoid_data_id,
+        )
 
     # DATABASE HELPERS
 
@@ -691,14 +710,14 @@ class FactoidManager(cogs.BaseCog):
             return False
 
         for call in calls:
-            await call.delete()
+            await call.remove()
 
         for job in jobs:
             # We need to clear the job from both the database and APScheduler
             await self.unschedule_job(job)
-            await job.delete()
+            await job.remove()
 
-        await data.delete()
+        await data.remove()
         return True
 
     async def move_factoid_call(
@@ -729,12 +748,10 @@ class FactoidManager(cogs.BaseCog):
         old_factoid_data_id = call.factoid_data_id
 
         # Update the call to point to the new factoid
-        await self.bot.models.FactoidCall.update.values(
-            factoid_data_id=new_factoid_data_id
-        ).where(
-            (self.bot.models.FactoidCall.guild == str(guild.id))
-            & (self.bot.models.FactoidCall.name == existing_name)
-        ).gino.status()
+        await FactoidCall.update(factoid_data_id=new_factoid_data_id).where(
+            FactoidCall.guild == str(guild.id),
+            FactoidCall.name == existing_name,
+        )
 
         # Check if the old factoid is now orphaned
         remaining_calls = await self.get_factoid_calls_by_factoid_id(
@@ -764,12 +781,12 @@ class FactoidManager(cogs.BaseCog):
         Returns:
             list[FactoidView]: The list of all the processed factoids as view objects
         """
-        factoid_data = await self.bot.models.FactoidData.query.where(
-            self.bot.models.FactoidData.guild == str(guild.id)
-        ).gino.all()
-        factoid_calls = await self.bot.models.FactoidCall.query.where(
-            self.bot.models.FactoidCall.guild == str(guild.id)
-        ).gino.all()
+        factoid_data = await FactoidData.objects().where(
+            FactoidData.guild == str(guild.id)
+        )
+        factoid_calls = await FactoidCall.objects().where(
+            FactoidCall.guild == str(guild.id)
+        )
 
         calls_by_id: dict[int, list[str]] = {}
 
@@ -835,7 +852,7 @@ class FactoidManager(cogs.BaseCog):
         await self.update_factoid_data(
             guild=guild,
             factoid_data_id=factoid.factoid_data_id,
-            edit_time=datetime.datetime.utcnow(),
+            edit_time=datetime.datetime.now(datetime.UTC),
         )
 
         # Make sure the edited factoid is not in the cache
@@ -943,13 +960,11 @@ class FactoidManager(cogs.BaseCog):
             return True
         return False
 
-    def get_embed_from_factoid(
-        self: Self, factoid: bot.models.FactoidData
-    ) -> discord.Embed:
+    def get_embed_from_factoid(self: Self, factoid: FactoidData) -> discord.Embed:
         """Gets the factoid embed from its database entry
 
         Args:
-            factoid (bot.models.FactoidData): The factoid to get the json of
+            factoid (FactoidData): The factoid to get the json of
 
         Returns:
             discord.Embed: The embed of the factoid
@@ -1546,31 +1561,15 @@ class FactoidManager(cogs.BaseCog):
         Args:
             guild (discord.Guild): The guild to build the cache for
         """
-        factoids = (
-            await self.bot.db.select(
-                [
-                    self.bot.models.FactoidCall.name,
-                    self.bot.models.FactoidData.flags,
-                ]
-            )
-            .select_from(
-                self.bot.models.FactoidCall.join(
-                    self.bot.models.FactoidData,
-                    self.bot.models.FactoidCall.factoid_data_id
-                    == self.bot.models.FactoidData.factoid_data_id,
-                )
-            )
-            .where(self.bot.models.FactoidCall.guild == str(guild.id))
-            .gino.all()
+        factoids = await FactoidCall.select(
+            FactoidCall.name,
+            FactoidCall.factoid_data_id.flags.as_alias("flags"),
+        ).where(
+            FactoidCall.guild == str(guild.id),
+            FactoidCall.factoid_data_id.factoid_data_id.is_not_null(),
         )
 
-        cache = [
-            (
-                factoid.name.lower(),
-                factoid.flags,
-            )
-            for factoid in factoids
-        ]
+        cache = [(factoid["name"].lower(), factoid["flags"]) for factoid in factoids]
 
         cache.sort(key=lambda x: x[0])
 
@@ -2067,12 +2066,12 @@ class FactoidManager(cogs.BaseCog):
         """
         await interaction.response.defer()
 
-        factoid_data = await self.bot.models.FactoidData.query.where(
-            self.bot.models.FactoidData.guild == str(interaction.guild.id)
-        ).gino.all()
-        factoid_calls = await self.bot.models.FactoidCall.query.where(
-            self.bot.models.FactoidCall.guild == str(interaction.guild.id)
-        ).gino.all()
+        factoid_data = await FactoidData.objects().where(
+            FactoidData.guild == str(interaction.guild.id)
+        )
+        factoid_calls = await FactoidCall.objects().where(
+            FactoidCall.guild == str(interaction.guild.id)
+        )
         factoid_jobs = await self.get_all_jobs_for_guild(interaction.guild)
 
         # A master list of valid factoid IDs, pulled from the database
@@ -2091,7 +2090,7 @@ class FactoidManager(cogs.BaseCog):
                 called_factoid_data_ids.add(call.factoid_data_id)
                 continue
 
-            await call.delete()
+            await call.remove()
             factoid_calls_removed += 1
 
         # Find any jobs that point to an invalid factoid
@@ -2100,7 +2099,7 @@ class FactoidManager(cogs.BaseCog):
                 continue
 
             await self.unschedule_job(job)
-            await job.delete()
+            await job.remove()
             factoid_jobs_removed += 1
 
         # Find any data that has no calls
@@ -2192,12 +2191,13 @@ class FactoidManager(cogs.BaseCog):
 
         property_binary = sum(int(value) for value in selected)
 
-        factoid = await self.bot.models.FactoidData.create(
+        factoid = FactoidData(
             guild=str(interaction.guild.id),
             message=form.plaintext.component.value,
             json_string=embed_json_string,
             flags=property_binary,
         )
+        await factoid.save()
         try:
             await self.create_factoid_call(
                 guild=interaction.guild,
@@ -2205,7 +2205,7 @@ class FactoidManager(cogs.BaseCog):
                 factoid_data_id=factoid.factoid_data_id,
             )
         except Exception:
-            await factoid.delete()
+            await factoid.remove()
             raise
 
         # We must update the factoid all and autocomplete list
@@ -2264,10 +2264,10 @@ class FactoidManager(cogs.BaseCog):
             )
             return
 
-        await self.bot.models.FactoidCall.delete.where(
-            (self.bot.models.FactoidCall.guild == str(interaction.guild.id))
-            & (self.bot.models.FactoidCall.name == factoid_name)
-        ).gino.status()
+        await FactoidCall.delete().where(
+            FactoidCall.guild == str(interaction.guild.id),
+            FactoidCall.name == factoid_name,
+        )
         factoid.calls.remove(factoid_name)
         remaining_aliases = ", ".join(factoid.calls)
         embed = auxiliary.prepare_confirm_embed(
@@ -2678,11 +2678,11 @@ class FactoidManager(cogs.BaseCog):
             return
 
         # We can only have 1 factoid have a job per channel
-        existing_job = await self.bot.models.FactoidJob.query.where(
-            (self.bot.models.FactoidJob.guild == str(interaction.guild.id))
-            & (self.bot.models.FactoidJob.factoid_data_id == factoid.factoid_data_id)
-            & (self.bot.models.FactoidJob.channel == str(channel.id))
-        ).gino.all()
+        existing_job = await FactoidJob.objects().where(
+            FactoidJob.guild == str(interaction.guild.id),
+            FactoidJob.factoid_data_id == factoid.factoid_data_id,
+            FactoidJob.channel == str(channel.id),
+        )
         if existing_job:
             await self.respond_error_embed(
                 interaction,
@@ -2694,7 +2694,7 @@ class FactoidManager(cogs.BaseCog):
 
         # Use APSchduler to determine if the cron syntax is valid before scheduling
         trigger = CronTrigger.from_crontab(cron)
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.UTC)
         run_at = trigger.get_next_fire_time(None, now)
 
         if run_at is None:
@@ -2702,12 +2702,13 @@ class FactoidManager(cogs.BaseCog):
                 interaction, f"The cron expression: `{cron}` is invalid."
             )
 
-        job_data = await self.bot.models.FactoidJob.create(
+        job_data = FactoidJob(
             guild=str(interaction.guild.id),
             factoid_data_id=factoid.factoid_data_id,
             channel=str(channel.id),
             cron=cron,
         )
+        await job_data.save()
         await self.register_job(job_data)
 
         # Update the factoid edit time
@@ -2766,7 +2767,7 @@ class FactoidManager(cogs.BaseCog):
         await interaction.response.defer()
         # We need to cancel the job in APScheduler and delete the database entry
         await self.unschedule_job(factoid_job)
-        await factoid_job.delete()
+        await factoid_job.remove()
 
         # Update the factoid edit time
         # This will also remove the factoid from the cache
@@ -2826,7 +2827,8 @@ class FactoidManager(cogs.BaseCog):
         await interaction.response.defer()
         # We need to update the database entry and reschedule the job
         await self.unschedule_job(factoid_job)
-        await factoid_job.update(cron=cron).apply()
+        factoid_job.cron = cron
+        await factoid_job.save(columns=[FactoidJob.cron])
         await self.register_job(factoid_job)
 
         # Update the factoid edit time

@@ -15,12 +15,12 @@ from typing import TYPE_CHECKING, Self
 
 import aiocron
 import discord
-import munch
 from discord import app_commands
 
 import configuration
 import ui
 from core import auxiliary, cogs
+from database.schema import Votes
 
 if TYPE_CHECKING:
     import bot
@@ -124,7 +124,7 @@ class Voting(cogs.LoopCog):
         )
         eligible_voters = "," + ",".join(str(voter.id) for voter in eligible_voters)
 
-        vote = await self.bot.models.Votes(
+        vote = Votes(
             guild_id=str(interaction.guild.id),
             message_id="0",
             vote_owner_id=str(interaction.user.id),
@@ -132,7 +132,8 @@ class Voting(cogs.LoopCog):
             vote_ids_eligible=eligible_voters,
             anonymous=anonymous,
             blind=blind,
-        ).create()
+        )
+        await vote.save()
 
         embed = await self.build_vote_embed(vote.vote_id, interaction.guild)
         view = ui.VotingButtonPersistent()
@@ -149,9 +150,9 @@ class Voting(cogs.LoopCog):
             f"Your vote has been started, {vote_thread.mention}", ephemeral=True
         )
 
-        await vote.update(
-            thread_id=str(vote_thread.id), message_id=str(vote_message.id)
-        ).apply()
+        vote.thread_id = str(vote_thread.id)
+        vote.message_id = str(vote_message.id)
+        await vote.save(columns=[Votes.thread_id, Votes.message_id])
 
     @votingbutton.autocomplete("channel")
     async def vote_channel_autocomplete(
@@ -244,31 +245,29 @@ class Voting(cogs.LoopCog):
 
         return True
 
-    async def search_db_for_vote_by_id(self: Self, vote_id: int) -> munch.Munch:
+    async def search_db_for_vote_by_id(self: Self, vote_id: int) -> Votes | None:
         """Gets a vote entry from the database by a given vote ID
 
         Args:
             vote_id (int): The vote ID (primary key) to search for
 
         Returns:
-            munch.Munch: The database entry that matches the ID
+            Votes | None: The matching database entry, or None if no vote exists
         """
-        return await self.bot.models.Votes.query.where(
-            self.bot.models.Votes.vote_id == vote_id
-        ).gino.first()
+        return await Votes.objects().where(Votes.vote_id == vote_id).first()
 
-    async def search_db_for_vote_by_message(self: Self, message_id: str) -> munch.Munch:
+    async def search_db_for_vote_by_message(
+        self: Self, message_id: str
+    ) -> Votes | None:
         """Gets a vote entry from the database by a given message ID
 
         Args:
             message_id (str): The message ID to search for
 
         Returns:
-            munch.Munch: The database entry that matches the ID
+            Votes | None: The matching database entry, or None if no vote exists
         """
-        return await self.bot.models.Votes.query.where(
-            self.bot.models.Votes.message_id == message_id
-        ).gino.first()
+        return await Votes.objects().where(Votes.message_id == message_id).first()
 
     async def calculate_eligible_voters(
         self: Self,
@@ -389,14 +388,14 @@ class Voting(cogs.LoopCog):
         return embed
 
     async def make_named_eligible_list(
-        self: Self, guild: discord.Guild, db_entry: munch.Munch
+        self: Self, guild: discord.Guild, db_entry: Votes
     ) -> str:
         """This builds a pretty list of eligible voters
         This uses the vote_ids_eligible
 
         Args:
             guild (discord.Guild): The guild the vote is in
-            db_entry (munch.Munch): The db_entry for the vote
+            db_entry (Votes): The db_entry for the vote
 
         Returns:
             str: A comma separated string of names
@@ -498,15 +497,17 @@ class Voting(cogs.LoopCog):
         vote_ids_all.append(user_id)
         db_entry.vote_ids_all = ",".join(vote_ids_all)
 
-        await db_entry.update(
-            vote_ids_no=db_entry.vote_ids_no,
-            votes_no=db_entry.votes_no,
-            vote_ids_yes=db_entry.vote_ids_yes,
-            votes_yes=db_entry.votes_yes,
-            vote_ids_abstain=db_entry.vote_ids_abstain,
-            votes_abstain=db_entry.votes_abstain,
-            vote_ids_all=db_entry.vote_ids_all,
-        ).apply()
+        await db_entry.save(
+            columns=[
+                Votes.vote_ids_no,
+                Votes.votes_no,
+                Votes.vote_ids_yes,
+                Votes.votes_yes,
+                Votes.vote_ids_abstain,
+                Votes.votes_abstain,
+                Votes.vote_ids_all,
+            ]
+        )
 
         embed = await self.build_vote_embed(db_entry.vote_id, interaction.guild)
         await interaction.message.edit(embed=embed, view=view)
@@ -536,32 +537,32 @@ class Voting(cogs.LoopCog):
 
         db_entry = self.clear_vote_record(db_entry, str(interaction.user.id))
 
-        await db_entry.update(
-            vote_ids_no=db_entry.vote_ids_no,
-            votes_no=db_entry.votes_no,
-            vote_ids_yes=db_entry.vote_ids_yes,
-            votes_yes=db_entry.votes_yes,
-            vote_ids_abstain=db_entry.vote_ids_abstain,
-            votes_abstain=db_entry.votes_abstain,
-            vote_ids_all=db_entry.vote_ids_all,
-        ).apply()
+        await db_entry.save(
+            columns=[
+                Votes.vote_ids_no,
+                Votes.votes_no,
+                Votes.vote_ids_yes,
+                Votes.votes_yes,
+                Votes.vote_ids_abstain,
+                Votes.votes_abstain,
+                Votes.vote_ids_all,
+            ]
+        )
 
         embed = await self.build_vote_embed(db_entry.vote_id, interaction.guild)
         await interaction.message.edit(embed=embed, view=view)
         await interaction.followup.send("Your vote has been removed", ephemeral=True)
 
-    def clear_vote_record(
-        self: Self, db_entry: munch.Munch, user_id: str
-    ) -> munch.Munch:
+    def clear_vote_record(self: Self, db_entry: Votes, user_id: str) -> Votes:
         """Clears the vote from a person from the database
         Should always be called before changing or adding a vote
 
         Args:
-            db_entry (munch.Munch): The database entry of the vote
+            db_entry (Votes): The database entry of the vote
             user_id (str): The user ID who is voting
 
         Returns:
-            munch.Munch: The updated database entry that has NOT been synced to postgres
+            Votes: The updated database entry that has NOT been synced to postgres
         """
         # If there is a vote for yes, remove it
         vote_ids_yes = db_entry.vote_ids_yes.split(",")
@@ -603,17 +604,13 @@ class Voting(cogs.LoopCog):
         Args:
             guild (discord.Guild): The guild the vote is being run in
         """
-        # pylint: disable=C0121
-        active_votes = (
-            await self.bot.models.Votes.query.where(
-                self.bot.models.Votes.vote_active == True
-            )
-            .where(self.bot.models.Votes.guild_id == str(guild.id))
-            .gino.all()
+        active_votes = await Votes.objects().where(
+            Votes.vote_active.eq(True),
+            Votes.guild_id == str(guild.id),
         )
         reminder_times = configuration.get_config_entry(guild.id, "voting_reminders_at")
 
-        timestamp_now = int(datetime.datetime.utcnow().timestamp())
+        timestamp_now = int(datetime.datetime.now(datetime.UTC).timestamp())
 
         for vote in active_votes:
             end_time = int((vote.start_time + timedelta(hours=72)).timestamp())
@@ -641,7 +638,7 @@ class Voting(cogs.LoopCog):
 
     async def remind_vote(
         self: Self,
-        vote: munch.Munch,
+        vote: Votes,
         guild: discord.Guild,
         reminder_hour: int,
     ) -> None:
@@ -649,7 +646,7 @@ class Voting(cogs.LoopCog):
         This will send based on configured reminder times
 
         Args:
-            vote (munch.Munch): The vote object we are reminding for
+            vote (Votes): The vote object we are reminding for
             guild (discord.Guild): The guild the vote is in
             reminder_hour (int): The hours remining until the vote closes
         """
@@ -676,22 +673,26 @@ class Voting(cogs.LoopCog):
 
         await channel.send(content=mention_string, embed=embed)
 
-    async def end_vote(self: Self, vote: munch.Munch, guild: discord.Guild) -> None:
+    async def end_vote(self: Self, vote: Votes, guild: discord.Guild) -> None:
         """This ends a vote, and if it was anonymous purges who voted for what from the database
         This will edit the vote message and remove the buttons, and mention the vote owner
 
         Args:
-            vote (munch.Munch): The vote database object that needs to be ended
+            vote (Votes): The vote database object that needs to be ended
             guild (discord.Guild): The guild that vote belongs to
         """
-        await vote.update(vote_active=False).apply()
+        vote.vote_active = False
+        await vote.save(columns=[Votes.vote_active])
         embed = await self.build_vote_embed(vote.vote_id, guild)
         pass_embed = self.build_vote_pass_embed(vote, guild)
         # If the vote is anonymous, at this point we need to clear the vote record forever
         if vote.anonymous:
-            await vote.update(
-                vote_ids_yes="", vote_ids_no="", vote_ids_abstain=""
-            ).apply()
+            vote.vote_ids_yes = ""
+            vote.vote_ids_no = ""
+            vote.vote_ids_abstain = ""
+            await vote.save(
+                columns=[Votes.vote_ids_yes, Votes.vote_ids_no, Votes.vote_ids_abstain]
+            )
 
         channel = await guild.fetch_channel(int(vote.thread_id))
         message = await channel.fetch_message(int(vote.message_id))
@@ -703,13 +704,13 @@ class Voting(cogs.LoopCog):
         )
 
     def build_vote_pass_embed(
-        self: Self, vote: munch.Munch, guild: discord.Guild
+        self: Self, vote: Votes, guild: discord.Guild
     ) -> discord.Embed:
         """This builds an embed that shows if the vote passed or failed,
             based on configurable thresholds
 
         Args:
-            vote (munch.Munch): The vote that has ended and needs an embed
+            vote (Votes): The vote that has ended and needs an embed
             guild (discord.Guild): The guild this vote is in
 
         Returns:

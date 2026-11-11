@@ -12,12 +12,12 @@ from typing import TYPE_CHECKING, Self
 import discord
 from discord import Color as embed_colors
 from discord import app_commands
-from discord.ext import commands
 
 import configuration
 import ui
 from botlogging import LogContext, LogLevel
 from core import auxiliary, cogs, moderation
+from database.schema import DuckUser
 
 if TYPE_CHECKING:
     import bot
@@ -45,7 +45,9 @@ class DuckHunt(cogs.BaseCog):
     """
 
     duck_group: app_commands.Group = app_commands.Group(
-        name="duck", description="...", extras={"module": "duck"}
+        name="duck",
+        description="Duck hunt commands",
+        guild_only=True,
     )
 
     DUCK_PIC_URL: str = (
@@ -266,21 +268,24 @@ class DuckHunt(cogs.BaseCog):
 
         duck_user = await self.get_duck_user(winner.id, guild.id)
         if not duck_user:
-            duck_user = self.bot.models.DuckUser(
+            duck_user = DuckUser(
                 author_id=str(winner.id),
                 guild_id=str(guild.id),
                 befriend_count=0,
                 kill_count=0,
                 speed_record=-1.0,
             )
-            await duck_user.create()
+            await duck_user.save()
 
         if action == "befriended":
-            await duck_user.update(befriend_count=duck_user.befriend_count + 1).apply()
+            duck_user.befriend_count = duck_user.befriend_count + 1
+            await duck_user.save(columns=[DuckUser.befriend_count])
         else:
-            await duck_user.update(kill_count=duck_user.kill_count + 1).apply()
+            duck_user.kill_count = duck_user.kill_count + 1
+            await duck_user.save(columns=[DuckUser.kill_count])
 
-        await duck_user.update(updated=datetime.datetime.now()).apply()
+        duck_user.updated = datetime.datetime.now(datetime.UTC)
+        await duck_user.save(columns=[DuckUser.updated])
 
         embed = discord.Embed(
             title=f"Duck {action}!",
@@ -300,10 +305,12 @@ class DuckHunt(cogs.BaseCog):
         footer_string = ""
         if duration_exact < duck_user.speed_record or duck_user.speed_record == -1:
             footer_string += f"New personal record: {duration_exact} seconds."
-            if duration_exact < global_record:
+            if global_record is None or duration_exact < global_record:
                 footer_string += "\nNew global record!"
-                footer_string += f" Previous global record: {global_record} seconds"
-            await duck_user.update(speed_record=duration_exact).apply()
+                if global_record is not None:
+                    footer_string += f" Previous global record: {global_record} seconds"
+            duck_user.speed_record = duration_exact
+            await duck_user.save(columns=[DuckUser.speed_record])
         else:
             footer_string += f"Exact time: {duration_exact} seconds."
         embed.set_footer(text=footer_string)
@@ -426,9 +433,7 @@ class DuckHunt(cogs.BaseCog):
 
         return choice
 
-    async def get_duck_user(
-        self: Self, user_id: int, guild_id: int
-    ) -> bot.models.DuckUser | None:
+    async def get_duck_user(self: Self, user_id: int, guild_id: int) -> DuckUser | None:
         """If it exists, will return the duck winner database entry
 
         Args:
@@ -436,32 +441,30 @@ class DuckHunt(cogs.BaseCog):
             guild_id (int): The guild ID of where the user belongs to
 
         Returns:
-            bot.models.DuckUser | None: The DuckUser database entry of the user/guild combo.
+            DuckUser | None: The DuckUser database entry of the user/guild combo.
                 Or None if it doesn't exist
         """
         duck_user = (
-            await self.bot.models.DuckUser.query.where(
-                self.bot.models.DuckUser.author_id == str(user_id)
+            await DuckUser.objects()
+            .where(
+                DuckUser.author_id == str(user_id), DuckUser.guild_id == str(guild_id)
             )
-            .where(self.bot.models.DuckUser.guild_id == str(guild_id))
-            .gino.first()
+            .first()
         )
 
         return duck_user
 
-    async def get_global_record(self: Self, guild_id: int) -> float:
+    async def get_global_record(self: Self, guild_id: int) -> float | None:
         """This is a function to get the current global speed record in a given guild
 
         Args:
             guild_id (int): The ID of the guild in question
 
         Returns:
-            float: The exact decimal representation for the fastest speed record
+            float | None: The fastest speed record in seconds, or None if no record exists
         """
 
-        query = await self.bot.models.DuckUser.query.where(
-            self.bot.models.DuckUser.guild_id == str(guild_id)
-        ).gino.all()
+        query = await DuckUser.objects().where(DuckUser.guild_id == str(guild_id))
 
         speed_records = [
             record.speed_record for record in query if record.speed_record > 0
@@ -526,51 +529,35 @@ class DuckHunt(cogs.BaseCog):
             ephemeral=True,
         )
 
-    @commands.group(
-        brief="Executes a duck command",
-        description="Executes a duck command",
-    )
-    async def duck(self: Self, ctx: commands.Context) -> None:
-        """The bare .duck command. This does nothing but generate the help message
-
-        Args:
-            ctx (commands.Context): The context in which the command was run in
-        """
-        return
-
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @duck.command(
-        brief="Get duck stats",
+    @duck_group.command(
         description="Gets duck friendships and kills for yourself or another user",
-        usage="@user (defaults to yourself)",
     )
     async def stats(
-        self: Self, ctx: commands.Context, *, user: discord.User = None
+        self: Self, interaction: discord.Interaction, *, user: discord.User = None
     ) -> None:
         """Discord command for getting duck stats for a given user
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
             user (discord.User, optional): The user to lookup stats for.
-                Defaults to ctx.message.author.
+                Defaults to interaction.user.
         """
         if not user:
-            user = ctx.message.author
+            user = interaction.user
 
         if user.bot:
-            await auxiliary.send_deny_embed(
-                message="If it looks like a duck, quacks like a duck, it's a duck!",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message="If it looks like a duck, quacks like a duck, it's a duck!"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        duck_user = await self.get_duck_user(user.id, ctx.guild.id)
+        duck_user = await self.get_duck_user(user.id, interaction.guild.id)
         if not duck_user:
-            await auxiliary.send_deny_embed(
-                message="That user has not partcipated in the duck hunt",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message="That user has not partcipated in the duck hunt"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         embed = discord.Embed(
@@ -583,46 +570,43 @@ class DuckHunt(cogs.BaseCog):
             footer_string = f"Speed record: {str(duck_user.speed_record)} seconds"
         else:
             footer_string = ""
-        if duck_user.speed_record == await self.get_global_record(ctx.guild.id):
+        if duck_user.speed_record == await self.get_global_record(interaction.guild.id):
             footer_string += "\nYou hold the current global record!"
         embed.set_footer(text=footer_string)
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @duck.command(
-        brief="Get duck friendship scores",
+    @duck_group.command(
         description="Gets duck friendship scores for all users",
     )
-    async def friends(self: Self, ctx: commands.Context) -> None:
+    async def friends(self: Self, interaction: discord.Interaction) -> None:
         """Discord commands to view high scores for befriended ducks
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
         """
         duck_users = (
-            await self.bot.models.DuckUser.query.order_by(
-                -self.bot.models.DuckUser.befriend_count
+            await DuckUser.objects()
+            .where(
+                DuckUser.befriend_count > 0,
+                DuckUser.guild_id == str(interaction.guild.id),
             )
-            .where(self.bot.models.DuckUser.befriend_count > 0)
-            .where(self.bot.models.DuckUser.guild_id == str(ctx.guild.id))
-            .gino.all()
+            .order_by(DuckUser.befriend_count, ascending=False)
         )
 
         if not duck_users:
-            await auxiliary.send_deny_embed(
-                message="It appears nobody has befriended any ducks",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message="It appears nobody has befriended any ducks"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        description = f"Global speed record: {await self.get_global_record(ctx.guild.id)} seconds\n\n"
+        description = f"Global speed record: {await self.get_global_record(interaction.guild.id)} seconds\n\n"
 
         # Top 10 killers
         for position, duck_user in enumerate(duck_users[:10], start=1):
-            user_str = await self.get_user_text(duck_user, ctx.guild)
+            user_str = await self.get_user_text(duck_user, interaction.guild)
             description += f"{position} - {user_str}, {duck_user.befriend_count} friend{"s" if duck_user.befriend_count != 1 else ""}\n"
 
         # Find the command caller's position
@@ -630,7 +614,7 @@ class DuckHunt(cogs.BaseCog):
             (
                 position
                 for position, duck_user in enumerate(duck_users, start=1)
-                if str(duck_user.author_id) == str(ctx.author.id)
+                if str(duck_user.author_id) == str(interaction.user.id)
             ),
             None,
         )
@@ -638,7 +622,7 @@ class DuckHunt(cogs.BaseCog):
         # Display the caller separately if they're outside the top 10
         if caller_position is not None and caller_position > 10:
             caller = duck_users[caller_position - 1]
-            user_str = await self.get_user_text(caller, ctx.guild)
+            user_str = await self.get_user_text(caller, interaction.guild)
 
             description += (
                 f"\n**Your Rank:**\n"
@@ -655,80 +639,74 @@ class DuckHunt(cogs.BaseCog):
         )
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @duck.command(
-        brief="Get the record holder",
+    @duck_group.command(
         description="Gets the current speed record holder, and their time",
     )
-    async def record(self: Self, ctx: commands.Context) -> None:
+    async def record(self: Self, interaction: discord.Interaction) -> None:
         """This outputs an embed shows the current speed record holder and their time
         This is a command and should be run via discord
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
         """
 
-        record_time = await self.get_global_record(ctx.guild.id)
+        record_time = await self.get_global_record(interaction.guild.id)
         if record_time is None:
-            await auxiliary.send_deny_embed(
-                message="It appears nobody has partcipated in the duck hunt",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message="It appears nobody has partcipated in the duck hunt"
             )
+            await interaction.response.send_message(embed=embed)
             return
         record_user_entry = (
-            await self.bot.models.DuckUser.query.where(
-                self.bot.models.DuckUser.speed_record == record_time
+            await DuckUser.objects()
+            .where(
+                DuckUser.speed_record == record_time,
+                DuckUser.guild_id == str(interaction.guild.id),
             )
-            .where(self.bot.models.DuckUser.guild_id == str(ctx.guild.id))
-            .gino.first()
+            .first()
         )
         embed = discord.Embed(title="Duck Speed Record")
         embed.color = embed_colors.green()
         embed.add_field(name="Time", value=f"{str(record_time)} seconds")
         embed.add_field(
             name="Record Holder",
-            value=await self.get_user_text(record_user_entry, ctx.guild),
+            value=await self.get_user_text(record_user_entry, interaction.guild),
         )
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @duck.command(
-        brief="Get duck kill scores",
+    @duck_group.command(
         description="Gets duck kill scores for all users",
     )
-    async def killers(self: Self, ctx: commands.Context) -> None:
+    async def killers(self: Self, interaction: discord.Interaction) -> None:
         """Discord command to view high scores for killed ducks.
 
         Args:
-            ctx (commands.Context): The context in which the command was run.
+            interaction (discord.Interaction): The interaction that called this command.
         """
         duck_users = (
-            await self.bot.models.DuckUser.query.order_by(
-                -self.bot.models.DuckUser.kill_count
+            await DuckUser.objects()
+            .where(
+                DuckUser.kill_count > 0, DuckUser.guild_id == str(interaction.guild.id)
             )
-            .where(self.bot.models.DuckUser.kill_count > 0)
-            .where(self.bot.models.DuckUser.guild_id == str(ctx.guild.id))
-            .gino.all()
+            .order_by(DuckUser.kill_count, ascending=False)
         )
 
         if not duck_users:
-            await auxiliary.send_deny_embed(
-                message="It appears nobody has killed any ducks",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message="It appears nobody has killed any ducks"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        description = f"Global speed record: {await self.get_global_record(ctx.guild.id)} seconds\n\n"
+        description = f"Global speed record: {await self.get_global_record(interaction.guild.id)} seconds\n\n"
 
         # Top 10 killers
         for position, duck_user in enumerate(duck_users[:10], start=1):
-            user_str = await self.get_user_text(duck_user, ctx.guild)
+            user_str = await self.get_user_text(duck_user, interaction.guild)
             description += f"{position} - {user_str}, {duck_user.kill_count} kill{"s" if duck_user.kill_count != 1 else ""}\n"
 
         # Find the command caller's position
@@ -736,7 +714,7 @@ class DuckHunt(cogs.BaseCog):
             (
                 position
                 for position, duck_user in enumerate(duck_users, start=1)
-                if str(duck_user.author_id) == str(ctx.author.id)
+                if str(duck_user.author_id) == str(interaction.user.id)
             ),
             None,
         )
@@ -744,7 +722,7 @@ class DuckHunt(cogs.BaseCog):
         # Display the caller separately if they're outside the top 10
         if caller_position is not None and caller_position > 10:
             caller = duck_users[caller_position - 1]
-            user_str = await self.get_user_text(caller, ctx.guild)
+            user_str = await self.get_user_text(caller, interaction.guild)
 
             description += (
                 f"\n**Your Rank:**\n"
@@ -761,15 +739,15 @@ class DuckHunt(cogs.BaseCog):
         )
         embed.set_thumbnail(url=self.DUCK_PIC_URL)
 
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
     async def get_user_text(
-        self: Self, duck_user: bot.models.DuckUser, guild: discord.Guild
+        self: Self, duck_user: DuckUser, guild: discord.Guild
     ) -> str:
         """Gets the name of a user formatted to be displayed across the extension
 
         Args:
-            duck_user (bot.models.DuckUser): The database entry of the user to format
+            duck_user (DuckUser): The database entry of the user to format
             guild (discord.Guild): The guild to fetch duck records from
 
         Returns:
@@ -799,247 +777,257 @@ class DuckHunt(cogs.BaseCog):
 
         return f"`{user_object.global_name}` (`{user_object.name}`)"
 
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @duck.command(
-        brief="Releases a duck into the wild",
+    @duck_group.command(
         description="Returns a befriended duck to its natural habitat",
     )
-    async def release(self: Self, ctx: commands.Context) -> None:
+    async def release(self: Self, interaction: discord.Interaction) -> None:
         """Releases a duck into the wild, a duck will spawn in the channel this command is run from
         This is a discord command
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
         """
-        if not configuration.get_config_entry(ctx.guild.id, "duck_allow_manipulation"):
-            await auxiliary.send_deny_embed(
-                channel=ctx.channel, message="This command is disabled in this server"
+        if not configuration.get_config_entry(
+            interaction.guild.id, "duck_allow_manipulation"
+        ):
+            embed = auxiliary.prepare_deny_embed(
+                message="This command is disabled in this server"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+        duck_user = await self.get_duck_user(interaction.user.id, interaction.guild.id)
 
         if not duck_user:
-            await auxiliary.send_deny_embed(
-                message="You have not participated in the duck hunt yet.",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message="You have not participated in the duck hunt yet."
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         if not duck_user or duck_user.befriend_count == 0:
-            await auxiliary.send_deny_embed(
-                message="You have no ducks to release.", channel=ctx.channel
+            embed = auxiliary.prepare_deny_embed(
+                message="You have no ducks to release."
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
-        await auxiliary.send_confirm_embed(
-            message=f"Fly safe! You have {duck_user.befriend_count} ducks left.",
-            channel=ctx.channel,
+        duck_user.befriend_count = duck_user.befriend_count - 1
+        await duck_user.save(columns=[DuckUser.befriend_count])
+        embed = auxiliary.prepare_confirm_embed(
+            message=f"Fly safe! You have {duck_user.befriend_count} ducks left."
+        )
+        await interaction.response.send_message(embed=embed)
+
+        await self.spawn_duck(
+            interaction.guild, interaction.channel, banned_user=interaction.user
         )
 
-        await self.spawn_duck(ctx.guild, ctx.channel, banned_user=ctx.author)
-
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @duck.command(
-        brief="Kills a caputred duck",
+    @duck_group.command(
         description=(
             "Adds a duck to your kill count. Why would you even want to do that?!"
         ),
     )
-    async def kill(self: Self, ctx: commands.Context) -> None:
+    async def kill(self: Self, interaction: discord.Interaction) -> None:
         """Kills a friended duck and adds it to your kills.
         Has a chance of failure
         This is a discord command
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
         """
-        if not configuration.get_config_entry(ctx.guild.id, "duck_allow_manipulation"):
-            await auxiliary.send_deny_embed(
-                channel=ctx.channel, message="This command is disabled in this server"
+        if not configuration.get_config_entry(
+            interaction.guild.id, "duck_allow_manipulation"
+        ):
+            embed = auxiliary.prepare_deny_embed(
+                message="This command is disabled in this server"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+        duck_user = await self.get_duck_user(interaction.user.id, interaction.guild.id)
 
         if not duck_user:
-            await auxiliary.send_deny_embed(
-                message="You have not participated in the duck hunt yet.",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message="You have not participated in the duck hunt yet."
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         if duck_user.befriend_count == 0:
-            await auxiliary.send_deny_embed(
-                message="You have no ducks to kill.", channel=ctx.channel
-            )
+            embed = auxiliary.prepare_deny_embed(message="You have no ducks to kill.")
+            await interaction.response.send_message(embed=embed)
             return
 
-        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+        duck_user.befriend_count = duck_user.befriend_count - 1
+        await duck_user.save(columns=[DuckUser.befriend_count])
 
-        passed = self.random_choice(ctx.guild)
+        passed = self.random_choice(interaction.guild)
         if not passed:
-            await auxiliary.send_deny_embed(
-                message="The duck got away before you could kill it.",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message="The duck got away before you could kill it."
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        await duck_user.update(kill_count=duck_user.kill_count + 1).apply()
-        await auxiliary.send_confirm_embed(
+        duck_user.kill_count = duck_user.kill_count + 1
+        await duck_user.save(columns=[DuckUser.kill_count])
+        embed = auxiliary.prepare_confirm_embed(
             message=f"You monster! You have {duck_user.befriend_count} ducks "
-            + f"left and {duck_user.kill_count} kills to your name.",
-            channel=ctx.channel,
+            + f"left and {duck_user.kill_count} kills to your name."
         )
+        await interaction.response.send_message(embed=embed)
 
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @duck.command(
-        brief="Donates a duck to someone",
+    @duck_group.command(
         description="Gives someone the gift of a live duck",
-        usage="[user]",
     )
-    async def donate(self: Self, ctx: commands.Context, user: discord.Member) -> None:
+    async def donate(
+        self: Self, interaction: discord.Interaction, user: discord.Member
+    ) -> None:
         """Donates a befriended duck to a given user. Duck count will be subtracted from invoker
         This has a chance of failure
         This is a discord command
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
             user (discord.Member): The user to donate a duck to
         """
-        if not configuration.get_config_entry(ctx.guild.id, "duck_allow_manipulation"):
-            await auxiliary.send_deny_embed(
-                channel=ctx.channel, message="This command is disabled in this server"
+        if not configuration.get_config_entry(
+            interaction.guild.id, "duck_allow_manipulation"
+        ):
+            embed = auxiliary.prepare_deny_embed(
+                message="This command is disabled in this server"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         if user.bot:
-            await auxiliary.send_deny_embed(
-                message="The only ducks I accept are plated with gold!",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message="The only ducks I accept are plated with gold!"
             )
+            await interaction.response.send_message(embed=embed)
             return
-        if user.id == ctx.author.id:
-            await auxiliary.send_deny_embed(
-                message="You can't donate a duck to yourself", channel=ctx.channel
+        if user.id == interaction.user.id:
+            embed = auxiliary.prepare_deny_embed(
+                message="You can't donate a duck to yourself"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        duck_user = await self.get_duck_user(ctx.author.id, ctx.guild.id)
+        duck_user = await self.get_duck_user(interaction.user.id, interaction.guild.id)
         if not duck_user:
-            await auxiliary.send_deny_embed(
-                message="You have not participated in the duck hunt yet.",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message="You have not participated in the duck hunt yet."
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         if not duck_user or duck_user.befriend_count == 0:
-            await auxiliary.send_deny_embed(
-                message="You have no ducks to donate.", channel=ctx.channel
-            )
+            embed = auxiliary.prepare_deny_embed(message="You have no ducks to donate.")
+            await interaction.response.send_message(embed=embed)
             return
-        recipee = await self.get_duck_user(user.id, ctx.guild.id)
+        recipee = await self.get_duck_user(user.id, interaction.guild.id)
         if not recipee:
-            await auxiliary.send_deny_embed(
-                message=f"{user.mention} has not participated in the duck hunt yet.",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message=f"{user.mention} has not participated in the duck hunt yet."
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        await duck_user.update(befriend_count=duck_user.befriend_count - 1).apply()
+        duck_user.befriend_count = duck_user.befriend_count - 1
+        await duck_user.save(columns=[DuckUser.befriend_count])
 
-        passed = self.random_choice(ctx.guild)
+        passed = self.random_choice(interaction.guild)
         if not passed:
-            await auxiliary.send_deny_embed(
-                message="The duck got away before you could donate it.",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message="The duck got away before you could donate it."
             )
+            await interaction.response.send_message(embed=embed)
             return
 
-        await recipee.update(befriend_count=recipee.befriend_count + 1).apply()
-        await auxiliary.send_confirm_embed(
+        recipee.befriend_count = recipee.befriend_count + 1
+        await recipee.save(columns=[DuckUser.befriend_count])
+        embed = auxiliary.prepare_confirm_embed(
             message=f"You gave a duck to {user.mention}. You now "
-            + f"have {duck_user.befriend_count} ducks left.",
-            channel=ctx.channel,
+            + f"have {duck_user.befriend_count} ducks left."
         )
+        await interaction.response.send_message(embed=embed)
 
-    @auxiliary.with_typing
-    @commands.has_permissions(administrator=True)
-    @commands.guild_only()
-    @duck.command(
-        brief="Resets someones duck counts",
+    @app_commands.checks.has_permissions(administrator=True)
+    @duck_group.command(
         description="Deletes the database entry of the target",
-        usage="[user]",
     )
-    async def reset(self: Self, ctx: commands.Context, user: discord.Member) -> None:
+    async def reset(
+        self: Self, interaction: discord.Interaction, user: discord.Member
+    ) -> None:
         """Admin only command to delete a database entry of a given user
         This is a discord command
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
             user (discord.Member): The user to reset
         """
         if user.bot:
-            await auxiliary.send_deny_embed(
-                message="You leave my ducks alone!", channel=ctx.channel
-            )
+            embed = auxiliary.prepare_deny_embed(message="You leave my ducks alone!")
+            await interaction.response.send_message(embed=embed)
             return
 
-        duck_user = await self.get_duck_user(user.id, ctx.guild.id)
+        duck_user = await self.get_duck_user(user.id, interaction.guild.id)
         if not duck_user:
-            await auxiliary.send_deny_embed(
-                message="The user has not participated in the duck hunt yet.",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message="The user has not participated in the duck hunt yet."
             )
+            await interaction.response.send_message(embed=embed)
             return
 
+        await interaction.response.defer()
         view = ui.Confirm()
         await view.send(
             message=f"Are you sure you want to reset {user.mention}s duck stats?",
-            channel=ctx.channel,
-            author=ctx.author,
+            channel=interaction.channel,
+            author=interaction.user,
+            interaction=interaction,
         )
         await view.wait()
         if view.value is ui.ConfirmResponse.TIMEOUT:
             return
         if view.value is ui.ConfirmResponse.DENIED:
-            await auxiliary.send_deny_embed(
-                message=f"{user.mention}s duck stats were NOT reset.",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message=f"{user.mention}s duck stats were NOT reset."
             )
+            await interaction.followup.send(embed=embed)
             return
 
-        await duck_user.delete()
-        await auxiliary.send_confirm_embed(
-            message=f"Successfully reset {user.mention}s duck stats!",
-            channel=ctx.channel,
+        await duck_user.remove()
+        embed = auxiliary.prepare_confirm_embed(
+            message=f"Successfully reset {user.mention}s duck stats!"
         )
+        await interaction.followup.send(embed=embed)
 
-    @auxiliary.with_typing
-    @commands.guild_only()
-    @duck.command(
-        brief="Spawns a duck on command",
+    @duck_group.command(
         description="Will spawn a duck with the command",
     )
-    async def spawn(self: Self, ctx: commands.Context) -> None:
+    async def spawn(self: Self, interaction: discord.Interaction) -> None:
         """A debug focused command to force spawn a duck in any channel
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
         """
-        spawn_user = configuration.get_config_entry(ctx.guild.id, "duck_spawn_user")
-        for person in spawn_user:
-            if ctx.author.id == int(person):
-                await self.spawn_duck(ctx.guild, ctx.channel, ctx.author)
-                return
-        await auxiliary.send_deny_embed(
-            message="It looks like you don't have permissions to spawn a duck",
-            channel=ctx.channel,
+        spawn_user = configuration.get_config_entry(
+            interaction.guild.id, "duck_spawn_user"
         )
+        for person in spawn_user:
+            if interaction.user.id == int(person):
+                embed = auxiliary.prepare_confirm_embed(message="Spawning a duck!")
+                await interaction.response.send_message(embed=embed)
+                await self.spawn_duck(
+                    interaction.guild, interaction.channel, interaction.user
+                )
+                return
+        embed = auxiliary.prepare_deny_embed(
+            message="It looks like you don't have permissions to spawn a duck"
+        )
+        await interaction.response.send_message(embed=embed)
 
     def random_choice(self: Self, guild: discord.Guild) -> bool:
         """A function to pick true or false randomly based on the success_rate in the config

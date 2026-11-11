@@ -15,7 +15,7 @@ from hypothesis.strategies import text
 
 from core import auxiliary
 from modules.fun import mock
-from tests import config_for_tests, helpers
+from unit_tests import config_for_tests, helpers
 
 
 def setup_local_extension(bot: helpers.MockBot = None) -> mock.Mocker:

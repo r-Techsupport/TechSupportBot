@@ -14,18 +14,19 @@ from typing import Self
 
 import discord
 import expiringdict
-import gino
 import munch
 import yaml
 from discord import app_commands
 from discord.ext import commands
+from piccolo.engine.postgres import PostgresEngine
 
 import botlogging
 import configuration
 import ircrelay
 import ui
 from botlogging import LogContext, LogLevel
-from core import auxiliary, custom_errors, databases, http, scheduler
+from core import auxiliary, custom_errors, http, scheduler
+from database import connection
 
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
@@ -60,7 +61,7 @@ class TechSupportBot(commands.Bot):
         self.startup_time: datetime = None
         self.owner: discord.User = None
         self.guild_config_lock = None
-        self.db = None
+        self.db: PostgresEngine | None = None
         self.file_config = None
 
         # Sets up some dicts and arrays
@@ -122,33 +123,45 @@ class TechSupportBot(commands.Bot):
             self.logger.register_queue()
             asyncio.create_task(self.logger.run())
 
-        # Start the IRC bot in an asynchronous task
-        irc_config = self.file_config.api.irc
-        if irc_config.enable_irc:
-            await self.logger.send_log(
-                message="Connecting to IRC...", level=LogLevel.DEBUG, console_only=True
-            )
-            # Make the IRC class in such a way to allow reload without desctruction
-            # We need to pass it the running loop so it can interact with discord
-            await self.start_irc()
-
-        # this is required for the bot
+        # Synchronize the database before starting IRC, Discord, extensions or jobs.
         await self.logger.send_log(
             message="Connecting to Postgres...", level=LogLevel.DEBUG, console_only=True
         )
         self.db = await self.get_postgres_ref()
+        try:
+            irc_config = self.file_config.api.irc
+            if irc_config.enable_irc:
+                await self.logger.send_log(
+                    message="Connecting to IRC...",
+                    level=LogLevel.DEBUG,
+                    console_only=True,
+                )
+                await self.start_irc()
 
-        await self.logger.send_log(
-            message="Logging into Discord...", level=LogLevel.DEBUG, console_only=True
-        )
-        self.guild_config_lock = asyncio.Lock()
-        await super().start(self.file_config.bot_config.auth_token)
+            await self.logger.send_log(
+                message="Logging into Discord...",
+                level=LogLevel.DEBUG,
+                console_only=True,
+            )
+            self.guild_config_lock = asyncio.Lock()
+            await super().start(self.file_config.bot_config.auth_token)
+        finally:
+            if self.db is not None:
+                await connection.disconnect(self.db)
+
+    async def close(self: Self) -> None:
+        """Close Discord and the Piccolo connection pool."""
+        try:
+            await super().close()
+        finally:
+            if self.db is not None:
+                await connection.disconnect(self.db)
 
     # Discord.py called functions
 
     async def setup_hook(self: Self) -> None:
         """This function is automatically called after the bot has been logged into discord
-        This creates postgres tables if needed, registers new guild configs if needed,
+        This registers new guild configs if needed,
         Loads extensions, registers the custom help command
         and loads guild configs from the database.
 
@@ -160,16 +173,6 @@ class TechSupportBot(commands.Bot):
             message="Loading Help commands...", level=LogLevel.DEBUG, console_only=True
         )
         self.remove_command("help")
-
-        # Get all the tables setup and create them all if needed
-        await self.logger.send_log(
-            message="Syncing Postgres tables...",
-            level=LogLevel.DEBUG,
-            console_only=True,
-        )
-        self.models = munch.DefaultMunch(None)
-        databases.setup_models(self)
-        await self.db.gino.create_all()
 
         # Adds persistent views to the bot
         self.add_view(ui.VotingButtonPersistent())
@@ -496,44 +499,25 @@ class TechSupportBot(commands.Bot):
 
     # Postgres setup function
 
-    async def get_postgres_ref(self: Self) -> gino.GinoEngine:
-        """Connects to postgres based on the database login defined the in the file_config
-        Adds self.db to be the database reference
+    async def get_postgres_ref(self: Self) -> PostgresEngine:
+        """Connect Piccolo using the configured PostgreSQL credentials.
 
         Returns:
-            gino.GinoEngine: The database connection as a gino object
+            PostgresEngine: The connected Postgres database object
         """
         await self.logger.send_log(
-            message="Obtaining and binding to Gino instance",
+            message="Opening Piccolo connection pool",
             level=LogLevel.DEBUG,
             console_only=True,
         )
-
-        db_ref = gino.Gino()
-
-        # Pull information from postgres out of the file config
-        config_child = self.file_config.database.postgres
-        user = config_child.user
-        password = config_child.password
-        name = config_child.name
-        host = config_child.host
-        port = config_child.port
-
-        db_url = f"postgres://{user}:{password}@{host}:{port}/{name}"
-        url_filtered = f"postgres://{user}:********@{host}:{port}/{name}"
-
-        # don't log the password
-        await self.logger.send_log(
-            message=f"Generated DB URL: {url_filtered}",
-            level=LogLevel.DEBUG,
-            console_only=True,
+        config = self.file_config.database.postgres
+        return await connection.connect(
+            user=config.user,
+            password=config.password,
+            database=config.name,
+            host=config.host,
+            port=config.port,
         )
-
-        await db_ref.set_bind(db_url)
-
-        db_ref.Model.__table_args__ = {"extend_existing": True}
-
-        return db_ref
 
     # Extension loading and management functions
 

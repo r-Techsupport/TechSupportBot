@@ -15,7 +15,7 @@ from hypothesis import given
 from hypothesis.strategies import text
 
 from core import auxiliary
-from tests import config_for_tests
+from unit_tests import config_for_tests
 
 if TYPE_CHECKING:
     import helpers

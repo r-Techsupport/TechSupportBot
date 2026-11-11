@@ -12,6 +12,7 @@ from discord.ext import commands
 
 import configuration
 from core import auxiliary, cogs
+from database.schema import XP
 
 if TYPE_CHECKING:
     import bot
@@ -58,10 +59,12 @@ class LevelXP(cogs.MatchCog):
         await interaction.response.defer()
 
         top_xp = (
-            await self.bot.models.XP.query.order_by(-self.bot.models.XP.xp)
-            .where(self.bot.models.XP.xp > 0)
-            .where(self.bot.models.XP.guild_id == str(interaction.guild.id))
-            .gino.all()
+            await XP.objects()
+            .where(
+                XP.xp > 0,
+                XP.guild_id == str(interaction.guild.id),
+            )
+            .order_by(XP.xp, ascending=False)
         )
 
         if not top_xp:
@@ -272,10 +275,14 @@ async def get_current_XP(
         int: The current XP for a given user, or 0 if the user has no XP entry
     """
     current_XP = (
-        await bot.models.XP.query.where(bot.models.XP.user_id == str(user.id))
-        .where(bot.models.XP.guild_id == str(guild.id))
-        .gino.first()
+        await XP.objects()
+        .where(
+            XP.user_id == str(user.id),
+            XP.guild_id == str(guild.id),
+        )
+        .first()
     )
+
     if not current_XP:
         return 0
 
@@ -295,15 +302,19 @@ async def update_current_XP(
 
     """
     current_XP = (
-        await bot.models.XP.query.where(bot.models.XP.user_id == str(user.id))
-        .where(bot.models.XP.guild_id == str(guild.id))
-        .gino.first()
+        await XP.objects()
+        .where(
+            XP.user_id == str(user.id),
+            XP.guild_id == str(guild.id),
+        )
+        .first()
     )
     if not current_XP:
-        current_XP = bot.models.XP(user_id=str(user.id), guild_id=str(guild.id), xp=xp)
-        await current_XP.create()
+        current_XP = XP(user_id=str(user.id), guild_id=str(guild.id), xp=xp)
+        await current_XP.save()
     else:
-        await current_XP.update(xp=xp).apply()
+        current_XP.xp = xp
+        await current_XP.save()
 
 
 async def get_current_XP_role(bot: object, user: discord.Member) -> discord.Role:

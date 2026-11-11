@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from core import auxiliary
-from tests import config_for_tests
+from unit_tests import config_for_tests
 
 
 class Test_EmojiFromChar:

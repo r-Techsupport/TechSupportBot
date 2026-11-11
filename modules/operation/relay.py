@@ -7,11 +7,13 @@ from typing import TYPE_CHECKING, Self
 import discord
 import irc.client
 from bidict import bidict
+from discord import app_commands
 from discord.ext import commands
 
 import configuration
 import ui
 from core import auxiliary, cogs
+from database.schema import IRCChannelMapping
 from modules.moderation import automod
 from modules.moderation import logger as function_logger
 from modules.operation import factoids
@@ -48,6 +50,7 @@ class DiscordToIRC(cogs.MatchCog):
 
     Attributes:
         mapping (bidict): The dict that holds the IRC and discord mappings
+        irc_group (app_commands.Group): The group for the /irc commands
 
     """
 
@@ -57,7 +60,7 @@ class DiscordToIRC(cogs.MatchCog):
         """The preconfig setup for the discord side
         This maps the database to a bidict for quick lookups, and allows lookups in threads
         """
-        allmaps = await self.bot.models.IRCChannelMapping.query.gino.all()
+        allmaps = await IRCChannelMapping.objects()
         self.mapping = bidict({})
         for irc_discord_map in allmaps:
             self.mapping.put(
@@ -139,29 +142,20 @@ class DiscordToIRC(cogs.MatchCog):
             channel=self.mapping[str(channel.id)], factoid=factoid, author=author
         )
 
-    @commands.group(
-        name="irc",
-        brief="Executes an irc command",
-        description="Executes an irc command",
+    irc_group: app_commands.Group = app_commands.Group(
+        name="irc", description="Manage the IRC relay", guild_only=True
     )
-    async def irc_base(self: Self, ctx: commands.Context) -> None:
-        """The base set of IRC commands
 
-        Args:
-            ctx (commands.Context): The context in which the command was run
-        """
-        return
-
-    @irc_base.command(name="maps", description="List all the maps for IRC")
-    async def irc_maps(self: Self, ctx: commands.Context) -> None:
+    @irc_group.command(name="maps", description="List all the maps for IRC")
+    async def irc_maps(self: Self, interaction: discord.Interaction) -> None:
         """Show the current IRC maps
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
         """
-        db_links = await self.bot.models.IRCChannelMapping.query.where(
-            self.bot.models.IRCChannelMapping.guild_id == str(ctx.guild.id)
-        ).gino.all()
+        db_links = await IRCChannelMapping.objects().where(
+            IRCChannelMapping.guild_id == str(interaction.guild.id)
+        )
 
         embed = discord.Embed()
         embed.title = "All IRC links:"
@@ -174,49 +168,47 @@ class DiscordToIRC(cogs.MatchCog):
                 inline=True,
             )
 
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
-    @commands.has_permissions(administrator=True)
-    @irc_base.command(name="disconnect", description="Disconnect from IRC")
-    async def irc_disconnect(self: Self, ctx: commands.Context) -> None:
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @irc_group.command(name="disconnect", description="Disconnect from IRC")
+    async def irc_disconnect(self: Self, interaction: discord.Interaction) -> None:
         """Disconnects from IRC
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
         """
         if not self.bot.irc.connection.is_connected():
-            await auxiliary.send_deny_embed(
-                message="IRC is not connected", channel=ctx.channel
-            )
+            embed = auxiliary.prepare_deny_embed(message="IRC is not connected")
+            await interaction.response.send_message(embed=embed)
             return
 
         self.bot.irc.ready = False
         self.bot.irc.connection.disconnect()
-        await auxiliary.send_confirm_embed(
-            message="Disconnected from IRC", channel=ctx.channel
-        )
+        embed = auxiliary.prepare_confirm_embed(message="Disconnected from IRC")
+        await interaction.response.send_message(embed=embed)
 
-    @commands.has_permissions(administrator=True)
-    @irc_base.command(name="reconnect", description="Reconnects to IRC")
-    async def irc_reconnect(self: Self, ctx: commands.Context) -> None:
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @irc_group.command(name="reconnect", description="Reconnects to IRC")
+    async def irc_reconnect(self: Self, interaction: discord.Interaction) -> None:
         """Reconnects to IRC
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
         """
+        await interaction.response.defer()
         self.bot.irc.ready = False
         self.bot.irc.connection.reconnect()
-        await auxiliary.send_confirm_embed(
-            message="Reconnected to IRC", channel=ctx.channel
-        )
+        embed = auxiliary.prepare_confirm_embed(message="Reconnected to IRC")
+        await interaction.followup.send(embed=embed)
 
-    @irc_base.command(name="status", description="Check status")
-    async def irc_status(self: Self, ctx: commands.Context) -> None:
+    @irc_group.command(name="status", description="Check status")
+    async def irc_status(self: Self, interaction: discord.Interaction) -> None:
         """Prints some basic status of the IRC bot
         This same info is available in .bot
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
         """
         embed = auxiliary.generate_basic_embed(
             title="IRC status",
@@ -233,164 +225,173 @@ class DiscordToIRC(cogs.MatchCog):
             f"IRC Bot Name: `{irc_status['name']}` \n"
             f"Channels: `{irc_status['channels']}`"
         )
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
-    @commands.has_permissions(ban_members=True)
-    @irc_base.command(name="ban", description="Ban a user on IRC")
-    async def irc_ban(self: Self, ctx: commands.Context, *, user: str) -> None:
+    @app_commands.checks.has_permissions(ban_members=True)
+    @irc_group.command(name="ban", description="Ban a user on IRC")
+    async def irc_ban(
+        self: Self, interaction: discord.Interaction, *, user: str
+    ) -> None:
         """A discord command to ban someone on the linked IRC channel
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
             user (str): The hostmask of the user to ban
         """
-        irc_discord_map = self.mapping[str(ctx.channel.id)]
+        irc_discord_map = (self.mapping or {}).get(str(interaction.channel.id))
         if not irc_discord_map:
-            await auxiliary.send_deny_embed(
-                message="This channel is not linked to IRC", channel=ctx.channel
+            embed = auxiliary.prepare_deny_embed(
+                message="This channel is not linked to IRC"
             )
+            await interaction.response.send_message(embed=embed)
             return
         if not self.bot.irc.is_bot_op_on_channel(channel_name=irc_discord_map):
-            await auxiliary.send_deny_embed(
-                message="The IRC bot does not have permissions to ban",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message="The IRC bot does not have permissions to ban"
             )
+            await interaction.response.send_message(embed=embed)
             return
         self.bot.irc.ban_on_irc(user=user, channel=irc_discord_map, action="+b")
-        await auxiliary.send_confirm_embed(
-            message=f"Sucessfully sent ban command for {user} from {irc_discord_map}",
-            channel=ctx.channel,
+        embed = auxiliary.prepare_confirm_embed(
+            message=f"Sucessfully sent ban command for {user} from {irc_discord_map}"
         )
+        await interaction.response.send_message(embed=embed)
 
-    @commands.has_permissions(ban_members=True)
-    @irc_base.command(name="unban", description="Unban a user on IRC")
-    async def irc_unban(self: Self, ctx: commands.Context, *, user: str) -> None:
+    @app_commands.checks.has_permissions(ban_members=True)
+    @irc_group.command(name="unban", description="Unban a user on IRC")
+    async def irc_unban(
+        self: Self, interaction: discord.Interaction, *, user: str
+    ) -> None:
         """A discord command to unban someone on the linked IRC channel
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
             user (str): The hostmask of the user to ban
         """
-        irc_discord_map = self.mapping[str(ctx.channel.id)]
+        irc_discord_map = (self.mapping or {}).get(str(interaction.channel.id))
         if not irc_discord_map:
-            await auxiliary.send_deny_embed(
-                message="This channel is not linked to IRC", channel=ctx.channel
+            embed = auxiliary.prepare_deny_embed(
+                message="This channel is not linked to IRC"
             )
+            await interaction.response.send_message(embed=embed)
             return
         if not self.bot.irc.is_bot_op_on_channel(channel_name=irc_discord_map):
-            await auxiliary.send_deny_embed(
-                message="The IRC bot does not have permissions to unban",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message="The IRC bot does not have permissions to unban"
             )
+            await interaction.response.send_message(embed=embed)
             return
         self.bot.irc.ban_on_irc(user=user, channel=irc_discord_map, action="-b")
-        await auxiliary.send_confirm_embed(
-            message=f"Sucessfully sent unban command for {user} from {irc_discord_map}",
-            channel=ctx.channel,
+        embed = auxiliary.prepare_confirm_embed(
+            message=f"Sucessfully sent unban command for {user} from {irc_discord_map}"
         )
+        await interaction.response.send_message(embed=embed)
 
-    @commands.has_permissions(administrator=True)
-    @irc_base.command(name="link", description="Add a link between IRC and discord")
-    async def irc_link(self: Self, ctx: commands.Context, irc_channel: str) -> None:
+    @app_commands.checks.has_permissions(administrator=True)
+    @irc_group.command(name="link", description="Add a link between IRC and discord")
+    async def irc_link(
+        self: Self, interaction: discord.Interaction, irc_channel: str
+    ) -> None:
         """Create a new link between discord and IRC
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
             irc_channel (str): The string representation of the IRC channel
         """
-        irc_channel = "#" + irc_channel
-        if str(ctx.channel.id) in self.mapping:
-            await auxiliary.send_deny_embed(
+        if not irc_channel.startswith("#"):
+            irc_channel = "#" + irc_channel
+        if str(interaction.channel.id) in self.mapping:
+            embed = auxiliary.prepare_deny_embed(
                 message="This discord channel is already linked "
-                + f"to {self.mapping[str(ctx.channel.id)]}",
-                channel=ctx.channel,
+                + f"to {self.mapping[str(interaction.channel.id)]}"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         if irc_channel in self.mapping.inverse:
-            await auxiliary.send_deny_embed(
+            embed = auxiliary.prepare_deny_embed(
                 message="This IRC channel is already linked"
-                + f"to <#{self.mapping.inverse[irc_channel]}>",
-                channel=ctx.channel,
+                + f"to <#{self.mapping.inverse[irc_channel]}>"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
         joined_channels = self.bot.file_config.api.irc.channels
 
         if irc_channel not in joined_channels:
-            await auxiliary.send_deny_embed(
-                message="I am not in that IRC channel", channel=ctx.channel
-            )
+            embed = auxiliary.prepare_deny_embed(message="I am not in that IRC channel")
+            await interaction.response.send_message(embed=embed)
             return
 
-        irc_discord_map = self.bot.models.IRCChannelMapping(
-            guild_id=str(ctx.guild.id),
-            discord_channel_id=str(ctx.channel.id),
+        irc_discord_map = IRCChannelMapping(
+            guild_id=str(interaction.guild.id),
+            discord_channel_id=str(interaction.channel.id),
             irc_channel_id=irc_channel,
         )
 
+        await irc_discord_map.save()
         self.mapping.put(
             irc_discord_map.discord_channel_id, irc_discord_map.irc_channel_id
         )
-
-        await irc_discord_map.create()
-        await auxiliary.send_confirm_embed(
-            message=(
-                f"New link established between <#{ctx.channel.id}> and {irc_channel}"
-            ),
-            channel=ctx.channel,
+        embed = auxiliary.prepare_confirm_embed(
+            message=f"New link established between <#{interaction.channel.id}> and {irc_channel}"
         )
+        await interaction.response.send_message(embed=embed)
 
-    @commands.has_permissions(administrator=True)
-    @irc_base.command(
+    @app_commands.checks.has_permissions(administrator=True)
+    @irc_group.command(
         name="unlink", description="Remove a link between IRC and discord"
     )
-    async def irc_unlink(self: Self, ctx: commands.Context) -> None:
+    async def irc_unlink(self: Self, interaction: discord.Interaction) -> None:
         """Deletes the link in the current discord channel
 
         Args:
-            ctx (commands.Context): The context in which the command was run
+            interaction (discord.Interaction): The interaction that called this command
         """
-        if str(ctx.channel.id) not in self.mapping:
-            await auxiliary.send_deny_embed(
-                message="This discord channel is not linked to any IRC channel",
-                channel=ctx.channel,
+        if str(interaction.channel.id) not in self.mapping:
+            embed = auxiliary.prepare_deny_embed(
+                message="This discord channel is not linked to any IRC channel"
             )
+            await interaction.response.send_message(embed=embed)
             return
 
+        await interaction.response.defer()
         view = ui.Confirm()
         await view.send(
-            message=f"Are you sure you want to unlink <#{ctx.channel.id}>"
-            + f"and {self.mapping[str(ctx.channel.id)]}",
-            channel=ctx.channel,
-            author=ctx.author,
+            message=f"Are you sure you want to unlink <#{interaction.channel.id}>"
+            + f"and {self.mapping[str(interaction.channel.id)]}",
+            channel=interaction.channel,
+            author=interaction.user,
+            interaction=interaction,
         )
         await view.wait()
         if view.value is ui.ConfirmResponse.TIMEOUT:
             return
         if view.value is ui.ConfirmResponse.DENIED:
-            await auxiliary.send_deny_embed(
-                message=f"The link between <#{ctx.channel.id}> "
-                + f"and {self.mapping[str(ctx.channel.id)]} was not deleted",
-                channel=ctx.channel,
+            embed = auxiliary.prepare_deny_embed(
+                message=f"The link between <#{interaction.channel.id}> "
+                + f"and {self.mapping[str(interaction.channel.id)]} was not deleted"
             )
+            await interaction.followup.send(embed=embed)
             return
 
-        irc_channel = self.mapping.pop(str(ctx.channel.id))
+        irc_channel = self.mapping[str(interaction.channel.id)]
 
-        db_link = await self.bot.models.IRCChannelMapping.query.where(
-            self.bot.models.IRCChannelMapping.discord_channel_id == str(ctx.channel.id)
-        ).gino.first()
-
-        await db_link.delete()
-
-        await auxiliary.send_confirm_embed(
-            message=(
-                f"Successfully deleted link between <#{ctx.channel.id}> and"
-                f" {irc_channel}"
-            ),
-            channel=ctx.channel,
+        db_link = (
+            await IRCChannelMapping.objects()
+            .where(IRCChannelMapping.discord_channel_id == str(interaction.channel.id))
+            .first()
         )
+
+        if db_link is not None:
+            await db_link.remove()
+        self.mapping.pop(str(interaction.channel.id))
+
+        embed = auxiliary.prepare_confirm_embed(
+            message=f"Successfully deleted link between <#{interaction.channel.id}> and"
+            f" {irc_channel}"
+        )
+        await interaction.followup.send(embed=embed)
 
     async def send_message_from_irc(self: Self, split_message: dict[str, str]) -> None:
         """Sends a message on discord after recieving one on IRC

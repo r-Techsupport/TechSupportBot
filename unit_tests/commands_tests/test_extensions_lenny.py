@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from modules.fun import lenny
-from tests import config_for_tests, helpers
+from unit_tests import config_for_tests, helpers
 
 
 def setup_local_extension(bot: helpers.MockBot = None) -> lenny.Lenny:
