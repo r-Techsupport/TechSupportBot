@@ -7,8 +7,7 @@ Config:
     Command: aliases, automatic_responses, modmail_roles, roles_to_ping, thread_creation_message
 API: None
 Postgresql: True
-Models: ModmailBan
-Commands: contact, modmail commands, modmail ban, modmail unban
+Commands: contact, modmail commands
 """
 
 from __future__ import annotations
@@ -26,9 +25,9 @@ from discord.ext import commands
 import configuration
 import ui
 from core import auxiliary, cogs
-from database.schema import FactoidCall, FactoidData, ModmailBan
-from modules.moderation import modlog, rules
-from modules.operation.factoids import Properties
+from database.schema import FactoidCall, FactoidData
+from modules.moderation import rules
+from modules.operation import factoids, featureban
 
 if TYPE_CHECKING:
     import bot
@@ -93,6 +92,21 @@ class Modmail_bot(discord.Client):
         intents = discord.Intents.default()
         super().__init__(intents=intents)
 
+    async def is_user_banned(self: Self, user: discord.Member | discord.User) -> bool:
+        """Check whether the user is banned in the configured modmail guild.
+
+        Args:
+            user (discord.Member | discord.User): The Discord user
+
+        Returns:
+            bool: Whether the user is banned from modmail
+        """
+        if not self.guild_id:
+            return False
+        return await featureban.is_feature_banned(
+            int(self.guild_id), user.id, featureban.FeatureFlag.MODMAIL
+        )
+
     @commands.Cog.listener()
     async def on_message(self: Self, message: discord.Message) -> None:
         """Listen to DMs, send them to handle_dm for proper handling when applicable
@@ -110,11 +124,7 @@ class Modmail_bot(discord.Client):
             )
 
             # User is banned from creating modmail threads
-            if (
-                await ModmailBan.objects()
-                .where(ModmailBan.user_id == str(message.author.id))
-                .first()
-            ):
+            if await self.is_user_banned(message.author):
                 await message.add_reaction("❌")
                 return
 
@@ -169,11 +179,7 @@ class Modmail_bot(discord.Client):
             isinstance(before.channel, discord.DMChannel)
             and before.author.id in active_threads
         ):
-            if (
-                await ModmailBan.objects()
-                .where(ModmailBan.user_id == str(before.author.id))
-                .first()
-            ):
+            if await self.is_user_banned(before.author):
                 return
 
             thread = self.get_channel(active_threads[before.author.id])
@@ -946,91 +952,6 @@ class Modmail(cogs.BaseCog):
 
     @app_commands.check(has_modmail_management_role)
     @modmail_commands.command(
-        name="ban",
-        description="Bans a user from creating future modmail threads",
-    )
-    async def modmail_ban(
-        self: Self, interaction: discord.Interaction, user: discord.User
-    ) -> None:
-        """Bans a user from creating future modmail threads
-
-        Args:
-            interaction (discord.Interaction): The interaction that called this command
-            user (discord.User): The user to ban
-        """
-        if await ModmailBan.objects().where(ModmailBan.user_id == str(user.id)).first():
-            embed = auxiliary.prepare_deny_embed(
-                message=f"{user.mention} is already banned!"
-            )
-            await interaction.response.send_message(embed=embed)
-            return
-
-        # Checking against the user to see if they have the roles specified in the config
-        user_roles = getattr(user, "roles", [])
-        unparsed_roles = configuration.get_config_entry(
-            interaction.guild.id, "modmail_modmail_roles"
-        )
-        modmail_roles = list(dict.fromkeys(unparsed_roles))
-
-        # No error has to be thrown if unparsed_roles is None, it's already checked in
-        # has_modmail_management_role
-
-        # Gets permitted roles
-        for role_id in unparsed_roles:
-            modmail_role = discord.utils.get(interaction.guild.roles, id=int(role_id))
-            if not modmail_role:
-                continue
-
-            modmail_roles.append(modmail_role)
-
-        if any(role in user_roles for role in modmail_roles):
-            embed = auxiliary.prepare_deny_embed(
-                message="You cannot ban someone with a modmail role!",
-            )
-            await interaction.response.send_message(embed=embed)
-            return
-
-        await interaction.response.defer()
-        view = ui.Confirm()
-        await view.send(
-            message=f"Ban {user.mention} from creating modmail threads?",
-            channel=interaction.channel,
-            author=interaction.user,
-            interaction=interaction,
-        )
-
-        await view.wait()
-
-        match view.value:
-            case ui.ConfirmResponse.TIMEOUT:
-                pass
-
-            case ui.ConfirmResponse.DENIED:
-                embed = auxiliary.prepare_deny_embed(
-                    message=f"{user.mention} was NOT banned from creating modmail threads.",
-                )
-                await interaction.followup.send(embed=embed)
-                return
-
-            case ui.ConfirmResponse.CONFIRMED:
-                await ModmailBan(user_id=str(user.id)).save()
-                await modlog.log_action(
-                    bot=self.bot,
-                    action_type="modmail ban",
-                    guild=interaction.guild,
-                    member=user,
-                    moderator=interaction.user,
-                )
-
-                embed = auxiliary.prepare_confirm_embed(
-                    message=f"{user.mention} was successfully banned from creating future modmail"
-                    + " threads.",
-                )
-                await interaction.followup.send(embed=embed)
-                return
-
-    @app_commands.check(has_modmail_management_role)
-    @modmail_commands.command(
         name="contact",
         description="Creates a modmail thread with a user",
     )
@@ -1108,39 +1029,6 @@ class Modmail(cogs.BaseCog):
                         thread=self.bot.get_channel(active_threads[user.id]),
                         anonymous=True,
                     )
-
-    @app_commands.check(has_modmail_management_role)
-    @modmail_commands.command(
-        name="list-bans",
-        description="Lists the users who are banned from using modmail",
-    )
-    async def modmail_list_bans(self: Self, interaction: discord.Interaction) -> None:
-        """Lists the users who are banned from using modmail
-
-        Args:
-            interaction (discord.Interaction): The interaction that called this command
-        """
-        bans = await ModmailBan.objects()
-        if not bans:
-            embed = auxiliary.prepare_deny_embed(
-                message="There are no modmail bans",
-            )
-            await interaction.response.send_message(embed=embed)
-            return
-
-        embed_description = ""
-
-        for ban in bans:
-            user: discord.User = await self.bot.fetch_user(ban.user_id)
-            embed_description += f"{user.mention} - `{user}`\n"
-
-        embed: discord.Embed = discord.Embed(
-            color=discord.Color.green(),
-            title="Modmail Bans:",
-            description=embed_description,
-        )
-
-        await interaction.response.send_message(embed=embed)
 
     @app_commands.check(has_modmail_management_role)
     @modmail_commands.command(
@@ -1224,45 +1112,6 @@ class Modmail(cogs.BaseCog):
                         ),
                         anonymous=True,
                     )
-
-    @app_commands.check(has_modmail_management_role)
-    @modmail_commands.command(
-        name="unban",
-        description="Unbans a user from creating future modmail threads",
-    )
-    async def modmail_unban(
-        self: Self, interaction: discord.Interaction, user: discord.User
-    ) -> None:
-        """Unbans a user from modmail, allowing them to create future threads
-
-        Args:
-            interaction (discord.Interaction): The interaction that called this command
-            user (discord.User): The user to unban
-        """
-        ban_entry = (
-            await ModmailBan.objects().where(ModmailBan.user_id == str(user.id)).first()
-        )
-
-        if not ban_entry:
-            embed = auxiliary.prepare_deny_embed(
-                message=f"{user.mention} is not currently banned from making modmail threads!",
-            )
-            await interaction.response.send_message(embed=embed)
-            return
-
-        await ban_entry.remove()
-        await modlog.log_action(
-            bot=self.bot,
-            action_type="modmail unban",
-            guild=interaction.guild,
-            member=user,
-            moderator=interaction.user,
-        )
-
-        embed = auxiliary.prepare_confirm_embed(
-            message=f"{user.mention} was successfully unbanned from creating modmail threads!",
-        )
-        await interaction.response.send_message(embed=embed)
 
     def pre_thread_checks(self: Self, interaction: discord.Interaction) -> bool:
         """Checks to make sure the thread command is valid and should be executed
@@ -1661,9 +1510,9 @@ class Modmail(cogs.BaseCog):
             return
 
         # Checks for restricted and disabled factoids
-        flags = Properties(factoid.flags)
-        if flags & Properties.DISABLED or (
-            flags & Properties.RESTRICTED
+        flags = factoids.Properties(factoid.flags)
+        if flags & factoids.Properties.DISABLED or (
+            flags & factoids.Properties.RESTRICTED
             and str(self.modmail_forum.id)
             not in configuration.get_config_entry(
                 interaction.guild.id, "factoids_restricted_list"
