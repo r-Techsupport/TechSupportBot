@@ -30,11 +30,11 @@ class FeatureFlag(IntFlag):
         REPORT (int): Ban from Reports
     """
 
-    NONE = 0
-    APPLICATION = 1 << 0
-    HANGMAN = 1 << 1
-    MODMAIL = 1 << 2
-    REPORT = 1 << 3
+    NONE: int = 0
+    APPLICATION: int = 1 << 0
+    HANGMAN: int = 1 << 1
+    MODMAIL: int = 1 << 2
+    REPORT: int = 1 << 3
 
 
 async def setup(bot: bot.TechSupportBot) -> None:
@@ -53,7 +53,7 @@ class FeatureBans(cogs.BaseCog):
         feature_group (app_commands.Group): The group for the /feature commands
     """
 
-    feature_group = app_commands.Group(
+    feature_group: app_commands.Group = app_commands.Group(
         name="feature", description="Manage feature bans", guild_only=True
     )
 
