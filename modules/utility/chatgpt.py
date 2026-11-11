@@ -51,9 +51,9 @@ class ChatGPT(cogs.BaseCog):
     """Main extension class
 
     Attributes:
-        chatgpt (app_commands.Group): The group for the /chatgpt commands
         API_URL (str): The URL for the openai API
-        SYSTEM_PROMPT (dict[str, str]): The default starting prompt for chatGPT
+        chatgpt (app_commands.Group): The group for the /chatgpt commands
+        SYSTEM_PROMPT (list[dict[str, str]]): The default starting prompt for chatGPT
     """
 
     API_URL: str = "https://api.openai.com/v1/chat/completions"

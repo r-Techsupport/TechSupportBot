@@ -51,7 +51,7 @@ class Confirm(discord.ui.View):
             ephemeral (bool, optional): Whether the confirmation should be private. Defaults to False.
         """
         embed = auxiliary.generate_basic_embed(
-            title="Please confirm!", description=message, color=discord.Color.green()
+            title="Please confirm!", description=message, color=discord.Color.yellow()
         )
         self.interaction: discord.Interaction = interaction
         self.timeout: int = timeout
