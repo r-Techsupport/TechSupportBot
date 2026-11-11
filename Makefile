@@ -29,6 +29,7 @@ test:
 
 build:
 	make establish_config
+	bash build_version.sh
 	docker build -t $(full-image) -f Dockerfile .
 
 rebuild:
@@ -44,6 +45,7 @@ start:
 	$(DOCKER_COMPOSE_CMD) up -d
 
 update:
+	bash build_version.sh
 	$(DOCKER_COMPOSE_CMD) down
 	$(DOCKER_COMPOSE_CMD) up -d --build
 

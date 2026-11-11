@@ -10,3 +10,4 @@ __pycache__
 .idea/
 configuration/guild_configs
 database/postgres_data
+resources/dynamic/
