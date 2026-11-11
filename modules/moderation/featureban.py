@@ -48,7 +48,11 @@ class FeatureBans(cogs.BaseCog):
     @app_commands.checks.has_permissions(ban_members=True)
     @feature_group.command(name="ban", description="Ban a user from a feature")
     async def ban_feature(
-        self: Self, interaction: discord.Interaction, user: discord.Member, feature: str
+        self: Self,
+        interaction: discord.Interaction,
+        user: discord.Member,
+        feature: str,
+        reason: str,
     ) -> None:
         """Ban the selected user from a feature.
 
@@ -56,13 +60,18 @@ class FeatureBans(cogs.BaseCog):
             interaction (discord.Interaction): The command interaction
             user (discord.Member): The member to ban
             feature (str): The feature to ban the member from
+            reason (str): The reason for the ban
         """
-        await self.update_feature_ban(interaction, user, feature, banned=True)
+        await self.update_feature_ban(interaction, user, feature, reason, banned=True)
 
     @app_commands.checks.has_permissions(ban_members=True)
     @feature_group.command(name="unban", description="Unban a user from a feature")
     async def unban_feature(
-        self: Self, interaction: discord.Interaction, user: discord.Member, feature: str
+        self: Self,
+        interaction: discord.Interaction,
+        user: discord.Member,
+        feature: str,
+        reason: str,
     ) -> None:
         """Remove the selected user's ban from a feature.
 
@@ -70,8 +79,9 @@ class FeatureBans(cogs.BaseCog):
             interaction (discord.Interaction): The command interaction
             user (discord.Member): The member to unban
             feature (str): The feature to unban the member from
+            reason (str): The reason for the unban
         """
-        await self.update_feature_ban(interaction, user, feature, banned=False)
+        await self.update_feature_ban(interaction, user, feature, reason, banned=False)
 
     @app_commands.checks.has_permissions(ban_members=True)
     @feature_group.command(
@@ -136,19 +146,24 @@ class FeatureBans(cogs.BaseCog):
     async def lookup(
         self: Self, interaction: discord.Interaction, user: discord.User
     ) -> None:
-        """Show the selected user's status for every feature in this guild.
+        """List the features the selected user is banned from in this guild.
 
         Args:
             interaction (discord.Interaction): The command interaction
             user (discord.User): The user whose bans to look up
         """
         banned_flags = await get_feature_bans(interaction.guild_id, user.id)
-        embed = discord.Embed(title="Feature ban status", description=user.mention)
-        for flag in FeatureFlag:
-            embed.add_field(
-                name=flag.name.replace("_", " ").title(),
-                value="Banned" if banned_flags & flag else "Not banned",
-            )
+        features = [
+            f"- {flag.name.replace('_', ' ').title()}"
+            for flag in FeatureFlag
+            if banned_flags & flag
+        ]
+        description = "\n".join(features) if features else "No feature bans."
+        embed = discord.Embed(
+            title=f"Feature bans for {user}",
+            description=description,
+            color=discord.Color.red(),
+        )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @list_bans.autocomplete("feature")
@@ -194,6 +209,7 @@ class FeatureBans(cogs.BaseCog):
         interaction: discord.Interaction,
         user: discord.Member,
         feature: str,
+        reason: str,
         banned: bool,
     ) -> None:
         """Validate the selected feature and update the user's ban.
@@ -202,6 +218,7 @@ class FeatureBans(cogs.BaseCog):
             interaction (discord.Interaction): The command interaction
             user (discord.Member): The member whose ban is being changed
             feature (str): The selected or typed feature name
+            reason (str): The reason for changing the ban
             banned (bool): Whether to add or remove the ban
         """
         flag = FeatureFlag.__members__.get(feature.strip().upper().replace(" ", "_"))
@@ -238,6 +255,7 @@ class FeatureBans(cogs.BaseCog):
                     guild=interaction.guild,
                     member=user,
                     moderator=interaction.user,
+                    reason=reason,
                 )
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
