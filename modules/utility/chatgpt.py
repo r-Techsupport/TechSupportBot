@@ -206,10 +206,9 @@ class ChatGPT(cogs.BaseCog):
         Args:
             interaction (discord.Interaction): The interaction that called the command
         """
-        await interaction.response.defer(ephemeral=True)
         # If the history for the invoker doesn't exist
         if not self.history.get(interaction.user.id):
-            await interaction.followup.send(
+            await interaction.response.send_message(
                 embed=auxiliary.prepare_deny_embed(
                     f"No history found for {interaction.user.mention}"
                 ),
@@ -220,30 +219,26 @@ class ChatGPT(cogs.BaseCog):
         # Deletion confirmation
         view = ui.Confirm()
         await view.send(
-            message="Clear your conversation history?",
-            channel=interaction.channel,
-            author=interaction.user,
             interaction=interaction,
+            message="Clear your conversation history?",
             ephemeral=True,
         )
         await view.wait()
         if view.value is ui.ConfirmResponse.TIMEOUT:
             return
         if view.value is ui.ConfirmResponse.DENIED:
-            await interaction.followup.send(
+            await view.message.edit(
                 embed=auxiliary.prepare_deny_embed(
                     "Conversation history was not cleared"
                 ),
-                ephemeral=True,
             )
             return
 
         # Finally, removes the entry
         self.history.pop(interaction.user.id, None)
 
-        await interaction.followup.send(
+        await view.message.edit(
             embed=auxiliary.prepare_confirm_embed("Chat history cleared!"),
-            ephemeral=True,
         )
 
     @chatgpt.command(
