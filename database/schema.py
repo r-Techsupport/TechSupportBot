@@ -230,6 +230,7 @@ class ModLog(Table, tablename="modlog"):
         data (Varchar): Any extra data specific to the event logged
         moderator_id (Varchar): The ID of the moderator who banned
         member_id (Varchar): The ID of the user who was banned
+        channel_id (Varchar): The ID of the channel related to this event
         action_time (Timestamptz): The date and time of the ban
         until_time (Timestamptz): The time this action will expire
         unique_guild_case (Unique): Prevents duplicate case numbers within a guild
@@ -243,6 +244,7 @@ class ModLog(Table, tablename="modlog"):
     data: Varchar = Varchar(length=None, null=True, default=None)
     moderator_id: Varchar = Varchar(length=None, null=True, default=None)
     member_id: Varchar = Varchar(length=None, null=True, default=None)
+    channel_id: Varchar = Varchar(length=None, null=True, default=None)
     action_time: Timestamptz = Timestamptz()
     until_time: Timestamptz = Timestamptz(null=True, default=None)
 

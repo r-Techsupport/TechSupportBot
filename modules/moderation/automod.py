@@ -173,6 +173,7 @@ class AutoMod(cogs.MatchCog):
                 action_type="timeout",
                 guild=ctx.guild,
                 member=ctx.author,
+                channel=ctx.channel,
                 reason=total_punishment.violation_string,
                 expires_at=expires_at,
                 data=f"**Violating message:** {ctx.message.clean_content[:200]}",
@@ -201,6 +202,7 @@ class AutoMod(cogs.MatchCog):
                 action_type="warn",
                 guild=ctx.guild,
                 member=ctx.author,
+                channel=ctx.channel,
                 reason=total_punishment.violation_string,
                 data=f"**Violating message:** {ctx.message.clean_content[:200]}",
             )
@@ -245,6 +247,7 @@ class AutoMod(cogs.MatchCog):
                     action_type="ban",
                     guild=ctx.guild,
                     member=ctx.author,
+                    channel=ctx.channel,
                     reason=total_punishment.violation_string,
                     data=f"**Violating message:** {ctx.message.clean_content[:100]}",
                 )
@@ -255,6 +258,7 @@ class AutoMod(cogs.MatchCog):
                 action_type="automod notice",
                 guild=ctx.guild,
                 member=ctx.author,
+                channel=ctx.channel,
                 reason=total_punishment.violation_string,
                 data=f"**Violating message:** {ctx.message.clean_content[:200]}",
             )

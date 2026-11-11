@@ -155,13 +155,17 @@ class Notes(cogs.BaseCog):
 
         await note.save()
 
+        notes = await moderation.get_all_notes(self.bot, user, interaction.guild)
+
         await modlog.log_action(
             bot=self.bot,
             action_type="note",
             guild=interaction.guild,
+            reason=body,
             member=user,
             moderator=interaction.user,
-            data=f"**Note:** {body}",
+            channel=interaction.channel,
+            data=f"**Total notes:** {len(notes)}",
         )
 
         role = discord.utils.get(
@@ -237,6 +241,7 @@ class Notes(cogs.BaseCog):
             guild=interaction.guild,
             member=user,
             moderator=interaction.user,
+            channel=interaction.channel,
             data=f"**Total notes:** {len(notes)}",
         )
 

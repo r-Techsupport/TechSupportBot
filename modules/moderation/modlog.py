@@ -377,6 +377,7 @@ class ModLogger(cogs.BaseCog):
         # I hate everything about this
         rule = await execution.fetch_rule()
         member = await rule.guild.fetch_member(execution.user_id)
+        channel = execution.guild.get_channel_or_thread(execution.channel_id)
         if any(
             action.type == discord.AutoModRuleActionType.timeout
             for action in rule.actions
@@ -390,6 +391,7 @@ class ModLogger(cogs.BaseCog):
                     action_type="timeout",
                     guild=rule.guild,
                     member=member,
+                    channel=channel,
                     reason=rule.name,
                     expires_at=expires_at,
                     data=f"**Violating content:** {execution.content[:200]}",
@@ -408,6 +410,7 @@ class ModLogger(cogs.BaseCog):
                         action_type="quarantine",
                         guild=rule.guild,
                         member=member,
+                        channel=channel,
                         reason=rule.name,
                         data=f"**Violating name:** {member.display_name}",
                     )
@@ -421,6 +424,7 @@ class ModLogger(cogs.BaseCog):
                     action_type="automod block",
                     guild=rule.guild,
                     member=member,
+                    channel=channel,
                     reason=rule.name,
                     data=f"**Violating content:** {execution.content[:200]}",
                 )
@@ -430,6 +434,7 @@ class ModLogger(cogs.BaseCog):
                 action_type="automod notice",
                 guild=rule.guild,
                 member=member,
+                channel=channel,
                 reason=rule.name,
                 data=f"**Violating content:** {execution.content[:200]}",
             )
@@ -509,12 +514,17 @@ async def generate_action_embed(
     )
     description_strs = []
 
-    # If this action has a member punished, display if
+    # Keep the recorded ID when an account can no longer be fetched.
     if action_entry.member_id:
-        member_account = await bot.fetch_user(int(action_entry.member_id))
-        description_strs.append(
-            f"**Offender:** {member_account.name} {member_account.mention} ({member_account.id})"
-        )
+        try:
+            member_account = await bot.fetch_user(int(action_entry.member_id))
+            description_strs.append(
+                f"**Offender:** {member_account.name} {member_account.mention} ({member_account.id})"
+            )
+        except (ValueError, discord.HTTPException, discord.InvalidData):
+            description_strs.append(
+                f"**Offender:** Unavailable user ({action_entry.member_id})"
+            )
 
     # Always display the reason line, just if no reason explicilty display that
     if action_entry.reason:
@@ -525,13 +535,41 @@ async def generate_action_embed(
     # If a moderator has been tied to this action, display that
     # If no moderator has been listed, this must be automod
     if action_entry.moderator_id:
-        moderator_account = await bot.fetch_user(int(action_entry.moderator_id))
-        description_strs.append(
-            f"**Responsible moderator:** {moderator_account.name} "
-            f"{moderator_account.mention} ({moderator_account.id})"
-        )
+        try:
+            moderator_account = await bot.fetch_user(int(action_entry.moderator_id))
+            description_strs.append(
+                f"**Responsible moderator:** {moderator_account.name} "
+                f"{moderator_account.mention} ({moderator_account.id})"
+            )
+        except (ValueError, discord.HTTPException, discord.InvalidData):
+            description_strs.append(
+                f"**Responsible moderator:** Unavailable user ({action_entry.moderator_id})"
+            )
     else:
         description_strs.append("**Responsible moderator:** No associated moderator")
+
+    if action_entry.channel_id:
+        channel = None
+        try:
+            guild = bot.get_guild(int(action_entry.guild_id))
+            channel_id = int(action_entry.channel_id)
+            if guild:
+                channel = guild.get_channel_or_thread(channel_id)
+                if channel is None:
+                    channel = await guild.fetch_channel(channel_id)
+        except (ValueError, discord.HTTPException, discord.InvalidData):
+            pass
+
+        if channel:
+            description_strs.append(
+                f"**Channel:** {channel.name} {channel.mention} ({channel.id})"
+            )
+        else:
+            description_strs.append(
+                f"**Channel:** Unavailable channel ({action_entry.channel_id})"
+            )
+    else:
+        description_strs.append("**Channel:** No associated channel")
 
     # If this action has extra data, display it as is.
     if action_entry.data:
@@ -589,6 +627,7 @@ async def log_action(
     guild: discord.Guild,
     member: discord.abc.User | None = None,
     moderator: discord.abc.User | None = None,
+    channel: discord.abc.GuildChannel | None = None,
     reason: str = "",
     data: str = "",
     expires_at: datetime.datetime = None,
@@ -601,6 +640,7 @@ async def log_action(
         guild (discord.Guild): The guild this action occured in
         member (discord.abc.User | None, optional): The member being punished, if applicable.
         moderator (discord.abc.User | None, optional): The moderator taking action, if applicable.
+        channel (discord.abc.GuildChannel | None, optional): The channel the action is assicoated with, if applicable.
         reason (str, optional): The reason this action was taken, if applicable.
         data (str, optional): Any extra data associated with this action, if applicable.
         expires_at (datetime.datetime, optional): When this action expires, if applicable.
@@ -614,10 +654,13 @@ async def log_action(
     # If the action has a member or moderator, get the IDs
     member_id = None
     moderator_id = None
+    channel_id = None
     if member:
         member_id = str(member.id)
     if moderator:
         moderator_id = str(moderator.id)
+    if channel:
+        channel_id = str(channel.id)
 
     # This is done to prevent race conditions where two actions get the same case number
     # We can detect the unique error and just try again. If so, this means
@@ -634,6 +677,7 @@ async def log_action(
                 data=data,
                 moderator_id=moderator_id,
                 member_id=member_id,
+                channel_id=channel_id,
                 until_time=expires_at,
             )
             await entry.save()

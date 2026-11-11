@@ -113,6 +113,7 @@ class ProtectCommands(cogs.BaseCog):
             guild=interaction.guild,
             member=target,
             moderator=interaction.user,
+            channel=interaction.channel,
             reason=reason,
         )
 
@@ -175,6 +176,7 @@ class ProtectCommands(cogs.BaseCog):
             guild=interaction.guild,
             member=target,
             moderator=interaction.user,
+            channel=interaction.channel,
             reason=reason,
         )
 
@@ -233,6 +235,7 @@ class ProtectCommands(cogs.BaseCog):
             guild=interaction.guild,
             member=target,
             moderator=interaction.user,
+            channel=interaction.channel,
             reason=reason,
         )
 
@@ -332,6 +335,7 @@ class ProtectCommands(cogs.BaseCog):
             guild=interaction.guild,
             member=target,
             moderator=interaction.user,
+            channel=interaction.channel,
             reason=reason,
             expires_at=expires_at,
         )
@@ -402,6 +406,7 @@ class ProtectCommands(cogs.BaseCog):
             guild=interaction.guild,
             member=target,
             moderator=interaction.user,
+            channel=interaction.channel,
             reason=reason,
         )
         if not result:
@@ -458,13 +463,19 @@ class ProtectCommands(cogs.BaseCog):
             )
             return
 
+        warnings = await moderation.get_all_warnings(
+            self.bot, target, interaction.guild
+        )
+
         await modlog.log_action(
             bot=self.bot,
             action_type="warn",
             guild=interaction.guild,
             member=target,
             moderator=interaction.user,
+            channel=interaction.channel,
             reason=reason,
+            data=f"**Total warnings:** {len(warnings)}",
         )
         warning_count = len(
             await moderation.get_all_warnings(self.bot, target, interaction.guild)
@@ -516,6 +527,7 @@ class ProtectCommands(cogs.BaseCog):
                         guild=interaction.guild,
                         member=target,
                         moderator=interaction.user,
+                        channel=interaction.channel,
                         reason=ban_reason,
                     )
                 else:
@@ -595,20 +607,28 @@ class ProtectCommands(cogs.BaseCog):
         result = await moderation.unwarn_user(
             bot_object=self.bot, user=target, warning=warning
         )
-        await modlog.log_action(
-            bot=self.bot,
-            action_type="unwarn",
-            guild=interaction.guild,
-            member=target,
-            moderator=interaction.user,
-            reason=reason,
-        )
+
         if not result:
             embed = auxiliary.prepare_deny_embed(
                 message=f"Something went wrong when unwarning {target}"
             )
             await interaction.response.send_message(embed=embed)
             return
+
+        warnings = await moderation.get_all_warnings(
+            self.bot, target, interaction.guild
+        )
+
+        await modlog.log_action(
+            bot=self.bot,
+            action_type="unwarn",
+            guild=interaction.guild,
+            member=target,
+            moderator=interaction.user,
+            channel=interaction.channel,
+            reason=reason,
+            data=f"**Remaining warnings:** {len(warnings)}",
+        )
 
         embed = generate_response_embed(user=target, action="unwarn", reason=reason)
         await interaction.response.send_message(content=target.mention, embed=embed)
@@ -702,6 +722,7 @@ class ProtectCommands(cogs.BaseCog):
             guild=interaction.guild,
             member=target,
             moderator=interaction.user,
+            channel=interaction.channel,
             reason=reason,
             data=f"**Total warnings:** {len(warnings)}",
         )
