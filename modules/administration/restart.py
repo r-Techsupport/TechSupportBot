@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
+import discord
 from discord.ext import commands
 
 from core import auxiliary, cogs
@@ -56,10 +57,10 @@ class Restarter(cogs.BaseCog):
         if irc_config.enable_irc:
             self.bot.irc.exit_irc()
 
-        # Exit modmail if it's enabled
-        modmail_cog = ctx.bot.get_cog("Modmail")
-        if modmail_cog:
-            await modmail_cog.handle_reboot()
+        # Exit modmail if it's running
+        modmail_client: discord.Client = getattr(self.bot, "modmail_client", None)
+        if modmail_client:
+            await modmail_client.close()
 
         # Ending the event loop
         self.bot.loop.stop()

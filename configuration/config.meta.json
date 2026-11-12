@@ -339,6 +339,18 @@
     "datatype": "str",
     "description": "The message sent to the user when confirming a thread creation."
   },
+  "modmail_forum_channel": {
+    "datatype": "discord.ForumChannel",
+    "description": "The forum channel to use for modmail."
+  },
+  "modmail_log_channel": {
+    "datatype": "discord.TextChannel",
+    "description": "The channel to send modmail logs to."
+  },
+  "modmail_disable_threads": {
+    "datatype": "bool",
+    "description": "Whether to completely disable new threads in modmail."
+  },
   "news_category": {
     "datatype": "str",
     "description": "The category to use when receiving cronjob headlines"
