@@ -1,4 +1,5 @@
 # TODO: Handle attachments across the board
+# TODO: Globally ignore any pinned threads
 
 from __future__ import annotations
 
@@ -775,7 +776,9 @@ class Modmail(cogs.BaseCog):
         if recipient is None:
             raise ValueError("The DM recipient could not be found.")
 
-        return await recipient.send(embed=dm_embed)
+        channel = await recipient.create_dm()
+        sent_message = await channel.send(embed=dm_embed)
+        return sent_message
 
     async def build_staff_message_view(
         self: Self,
