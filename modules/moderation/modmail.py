@@ -198,6 +198,7 @@ class Modmail(cogs.BaseCog):
         self.active_threads: dict[int, discord.Thread] = {}
         self.message_id_map: bidict[int, int] = bidict()
         self.scheduled_closures: dict[int, ScheduledClosure] = {}
+        self.command_enabled: bool = True
         super().__init__(bot=bot)
         self.bot.scheduler.register_task("modmail.close", self.run_scheduled_closure)
         # TODO: Auth token rejection still needs handling.
@@ -442,6 +443,26 @@ class Modmail(cogs.BaseCog):
         """
         await self.handle_contact(interaction, interaction.user, message)
 
+    @app_commands.check(auxiliary.bot_admin_check_interaction)
+    @modmail_commands.command(
+        name="toggle", description="Toggles opening of new modmail threads"
+    )
+    async def toggle(
+        self: Self,
+        interaction: discord.Interaction,
+    ):
+        """This command toggles whether threads are enabled in the current running bot
+        This does not edit the config, nor can this override the config
+
+        Args:
+            interaction (discord.Interaction): The interaction that called this command
+        """
+        self.command_enabled = not self.command_enabled
+        embed = auxiliary.prepare_confirm_embed(
+            f"Modmail is now {'enabled' if self.command_enabled else 'disabled'}"
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
     # LISTENERS
 
     @cogs.BaseCog.listener()
@@ -570,16 +591,21 @@ class Modmail(cogs.BaseCog):
         # At this point we have checked every thread and found no open threads
         return None
 
-    def is_thread_creation_disabled(self: Self) -> bool:
+    def is_thread_creation_enabled(self: Self) -> bool:
         """Read the configured thread creation switch.
 
         Returns:
             bool: Whether new modmail threads are disabled
         """
-        return configuration.get_config_entry(
+        is_config_enabled = not configuration.get_config_entry(
             int(self.modmail_guild.id),
             "modmail_disable_thread_creation",
         )
+        # If modmail is enabled by config, let the software config win
+        if is_config_enabled:
+            return self.command_enabled
+        # Default to the config status
+        return is_config_enabled
 
     async def get_forum(self: Self) -> discord.ForumChannel:
         """Resolve and validate the configured modmail forum through TS.
@@ -788,7 +814,7 @@ class Modmail(cogs.BaseCog):
 
         # Handle opening a new thread if needed
         if thread is None:
-            if self.is_thread_creation_disabled():
+            if not self.is_thread_creation_enabled():
                 await message.channel.send(
                     embed=auxiliary.prepare_deny_embed(
                         "Modmail thread creation is disabled."
@@ -988,7 +1014,7 @@ class Modmail(cogs.BaseCog):
         Returns:
             bool: Whether the interaction may change the paired messages
         """
-        if interaction.user.id != author_id and author_id != self.bot.user.id:
+        if interaction.user.id != author_id:
             await interaction.response.send_message(
                 "Only the original sender can edit or delete this message.",
                 ephemeral=True,
@@ -1214,6 +1240,10 @@ class Modmail(cogs.BaseCog):
             author_id (int): The original sender's ID
         """
         staff_message = interaction.message
+        if not await self.can_manage_staff_message(
+            interaction, staff_message, author_id
+        ):
+            return
         await interaction.response.defer(ephemeral=True, thinking=True)
 
         try:
@@ -1365,7 +1395,7 @@ class Modmail(cogs.BaseCog):
             )
             return
 
-        if self.is_thread_creation_disabled():
+        if not self.is_thread_creation_enabled():
             await interaction.response.send_message(
                 embed=auxiliary.prepare_deny_embed(
                     "Modmail thread creation is disabled."
