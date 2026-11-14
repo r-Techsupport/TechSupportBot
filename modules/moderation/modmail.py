@@ -4,7 +4,8 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, datetime
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from functools import partial
 from typing import TYPE_CHECKING, NamedTuple, Self
 
@@ -34,6 +35,25 @@ class ModmailThreadName(NamedTuple):
     username: str
     opened_at: datetime
     user_id: int
+
+
+@dataclass
+class ScheduledClosure:
+    """The prompt and scheduler job associated with a thread closure.
+
+    Attributes:
+        thread_id (int): The thread to close
+        started_by (int): The staff member who requested closure
+        silently (bool): Whether to omit the recipient's closure DM
+        prompt (discord.PartialMessage): The staff-side status message
+        job_id (str | None): The job registered with core.scheduler
+    """
+
+    thread_id: int
+    started_by: int
+    silently: bool
+    prompt: discord.PartialMessage
+    job_id: str | None = None
 
 
 async def has_modmail_management_role(interaction: discord.Interaction) -> bool:
@@ -172,10 +192,14 @@ class Modmail(cogs.BaseCog):
     )
 
     def __init__(self: Self, bot: bot.TechSupportBot) -> None:
-        self.thread_creation_lock = asyncio.Lock()
+        self.thread_creation_lock = (
+            asyncio.Lock()
+        )  # This is to ensure two threads with the same person can never exist
         self.active_threads: dict[int, discord.Thread] = {}
         self.message_id_map: bidict[int, int] = bidict()
+        self.scheduled_closures: dict[int, ScheduledClosure] = {}
         super().__init__(bot=bot)
+        self.bot.scheduler.register_task("modmail.close", self.run_scheduled_closure)
         # TODO: Auth token rejection still needs handling.
         self.bot.modmail_client = Modmail_bot(ts_bot=self.bot, modmail_cog=self)
         self.modmail_task = self.bot.loop.create_task(
@@ -185,6 +209,89 @@ class Modmail(cogs.BaseCog):
         )
 
     # COMMANDS
+
+    @app_commands.check(has_modmail_management_role)
+    @modmail_commands.command(
+        name="close", description="Close this modmail thread now or after a delay"
+    )
+    async def close(
+        self: Self,
+        interaction: discord.Interaction,
+        silently: bool = False,
+        delay: app_commands.Range[int, 0] = 0,
+    ) -> None:
+        """Close a thread or replace its existing scheduled closure.
+
+        Args:
+            interaction (discord.Interaction): The command interaction
+            silently (bool): Whether to omit the closure DM
+            delay (app_commands.Range[int, 0]): Minutes to wait before closing
+        """
+        thread = interaction.channel
+        forum = await self.get_forum()
+        if (
+            interaction.guild != self.modmail_guild
+            or not isinstance(thread, discord.Thread)
+            or thread.parent_id != forum.id
+            or not self.is_open_thread(thread)
+        ):
+            await interaction.response.send_message(
+                embed=auxiliary.prepare_deny_embed(
+                    "This command can only be used in an open modmail thread."
+                ),
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.defer(thinking=True)
+        await self.cancel_closure(
+            thread.id,
+            f"replaced by a new close command from {interaction.user.mention}",
+        )
+
+        content = f"Closure started by {interaction.user.mention}."
+        if delay:
+            closes_at = datetime.now(UTC) + timedelta(minutes=delay)
+            content += (
+                f"\nThis thread will close {discord.utils.format_dt(closes_at, 'F')}"
+                f" ({discord.utils.format_dt(closes_at, 'R')})."
+            )
+            if silently:
+                content += "\nThe user will not be notified."
+        else:
+            content += "\nClosing this thread now."
+
+        prompt = await interaction.edit_original_response(
+            content=None,
+            embed=auxiliary.generate_basic_embed(
+                title="Scheduled closure" if delay else "Closing thread",
+                description=content,
+                color=discord.Color.orange(),
+            ),
+        )
+        closure = ScheduledClosure(
+            thread.id,
+            interaction.user.id,
+            silently,
+            thread.get_partial_message(prompt.id),
+        )
+        if not delay:
+            await self.close_thread(thread, closure)
+            return
+
+        view = discord.ui.View(timeout=None)
+        cancel = discord.ui.Button(
+            label="Cancel closure",
+            style=discord.ButtonStyle.danger,
+            custom_id=f"modmail:cancel-close:{interaction.id}",
+        )
+        cancel.callback = partial(self.cancel_closure_button, closure=closure)
+        view.add_item(cancel)
+        await closure.prompt.edit(view=view)
+        closure.job_id = await self.bot.scheduler.schedule_date(
+            "modmail.close", closes_at, {"closure": closure}
+        )
+        self.scheduled_closures[thread.id] = closure
 
     @app_commands.check(has_modmail_management_role)
     @modmail_commands.command(
@@ -273,6 +380,7 @@ class Modmail(cogs.BaseCog):
             )
             return
 
+        await self.cancel_closure(thread.id, "A staff reply was sent")
         timestamp = datetime.now(UTC)
         view = await self.build_staff_message_view(
             interaction.user,
@@ -722,6 +830,7 @@ class Modmail(cogs.BaseCog):
             message (discord.Message): The original DM sent by the user
             thread (discord.Thread): The user's open modmail thread
         """
+        await self.cancel_closure(thread.id, "A user reply was received")
         if not message.content:
             return
 
@@ -1126,6 +1235,113 @@ class Modmail(cogs.BaseCog):
             )
             return
         await interaction.followup.send("Message deleted.", ephemeral=True)
+
+    async def update_closure_prompt(
+        self: Self, closure: ScheduledClosure, content: str
+    ) -> None:
+        """Update closure status and remove the cancellation button.
+
+        Args:
+            closure (ScheduledClosure): The closure whose prompt to update
+            content (str): The new status text
+        """
+        content += f"\nClosure started by <@{closure.started_by}>."
+        embed = auxiliary.generate_basic_embed(
+            title="Modmail closure", description=content, color=discord.Color.red()
+        )
+        await closure.prompt.edit(content=None, embed=embed, view=None)
+
+    async def cancel_closure(self: Self, thread_id: int, reason: str) -> bool:
+        """Cancel a scheduled closure and update its prompt.
+
+        Args:
+            thread_id (int): The thread whose closure to cancel
+            reason (str): The reason shown in the staff prompt
+
+        Returns:
+            bool: Whether a pending closure was cancelled
+        """
+        # We call this function any time we might need to cancel a queued closure
+        # Just make sure the closure exists before continuing
+        closure = self.scheduled_closures.pop(thread_id, None)
+        if closure is None:
+            return False
+
+        self.bot.scheduler.scheduler.remove_job(closure.job_id)
+        await self.update_closure_prompt(
+            closure,
+            f"Scheduled closure cancelled: {reason}.",
+        )
+        return True
+
+    async def cancel_closure_button(
+        self: Self, interaction: discord.Interaction, closure: ScheduledClosure
+    ) -> None:
+        """A button to cancel the scheduled closure, to be displayed on the closure prompt
+
+        Args:
+            interaction (discord.Interaction): The cancellation button interaction
+            closure (ScheduledClosure): The closure associated with this button
+        """
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        await self.cancel_closure(
+            closure.thread_id, f"cancelled by {interaction.user.mention}"
+        )
+        await interaction.followup.send(
+            embed=auxiliary.prepare_confirm_embed("Closure cancelled."), ephemeral=True
+        )
+
+    async def run_scheduled_closure(self: Self, payload: dict) -> None:
+        """This is the callback from the scheduler, for raw closure events
+        This processes the event and calls the close thread function
+
+        Args:
+            payload (dict): The scheduler payload containing the closure
+        """
+        closure = payload["closure"]
+        self.scheduled_closures.pop(closure.thread_id)
+        thread = await self.modmail_guild.fetch_channel(closure.thread_id)
+        await self.close_thread(thread, closure)
+
+    async def close_thread(
+        self: Self, thread: discord.Thread, closure: ScheduledClosure
+    ) -> None:
+        """Close the thread and optionally notify its user.
+
+        Args:nano
+            thread (discord.Thread): The current open modmail thread
+            closure (ScheduledClosure): The requested closure and staff prompt
+        """
+        parsed_name = self.parse_modmail_thread_name(thread.name)
+
+        await thread.edit(
+            name=f"[CLOSED] | {parsed_name.username} | {parsed_name.opened_at.strftime('%Y-%m-%d %H:%M:%S')} | {parsed_name.user_id}",
+            archived=True,
+            locked=True,
+        )
+        self.active_threads.pop(parsed_name.user_id, None)
+
+        status = "Thread closed."
+
+        if not closure.silently:
+            try:
+                user = await self.get_modmail_user_object(parsed_name.user_id)
+                if user is None:
+                    status += "\nThe user could not be found and was not notified."
+                else:
+                    await user.send(
+                        embed=auxiliary.generate_basic_embed(
+                            title="Thread closed",
+                            description="Your modmail thread has been closed.",
+                            color=discord.Color.light_gray(),
+                        )
+                    )
+            except discord.Forbidden:
+                status += "\nThe thread was closed, but the user could not be notified."
+
+        await self.update_closure_prompt(closure, status)
+
+        # TODO: Add modmail log closure message here
 
     async def handle_contact(
         self: Self,
