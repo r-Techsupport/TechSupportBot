@@ -46,14 +46,14 @@ class ScheduledClosure:
         started_by (int): The staff member who requested closure
         silently (bool): Whether to omit the recipient's closure DM
         prompt (discord.PartialMessage): The staff-side status message
-        job_id (str | None): The job registered with core.scheduler
+        job_id (str): The job registered with core.scheduler
     """
 
     thread_id: int
     started_by: int
     silently: bool
     prompt: discord.PartialMessage
-    job_id: str | None = None
+    job_id: str = None
 
 
 async def has_modmail_management_role(interaction: discord.Interaction) -> bool:
@@ -183,7 +183,7 @@ class Modmail(cogs.BaseCog):
 
     Attributes:
         modmail_commands (app_commands.Group): The modmail command group
-        modmail_guild (discord.Guild | None): The current configured guild from TS
+        modmail_guild (discord.Guild): The current configured guild from TS
         message_id_map (bidict[int, int]): DM message IDs mapped to TS staff message IDs
     """
 
@@ -322,6 +322,7 @@ class Modmail(cogs.BaseCog):
         interaction: discord.Interaction,
         message: app_commands.Range[str, 1, 2000],
         deanonymize: bool = False,
+        attachment: discord.Attachment = None,
     ) -> None:
         """Reply in an open modmail thread, anonymously unless requested otherwise.
 
@@ -329,6 +330,7 @@ class Modmail(cogs.BaseCog):
             interaction (discord.Interaction): The command interaction
             message (app_commands.Range[str, 1, 2000]): The reply text
             deanonymize (bool): Whether to show the sender's username to the recipient
+            attachment (discord.Attachment): An optional file to send to the recipient
         """
         if interaction.guild != self.modmail_guild or not isinstance(
             interaction.channel, discord.Thread
@@ -398,6 +400,7 @@ class Modmail(cogs.BaseCog):
                 message,
                 timestamp,
                 anonymous=not deanonymize,
+                attachment=attachment,
             )
         except ValueError as exc:
             await interaction.edit_original_response(content=str(exc))
@@ -425,6 +428,8 @@ class Modmail(cogs.BaseCog):
             )
             return
         self.message_id_map[dm_message.id] = staff_message.id
+        if attachment:
+            await thread.send(file=await attachment.to_file(), reference=staff_message)
 
     @app_commands.check(has_modmail_management_role)
     @modmail_commands.command(
@@ -483,14 +488,14 @@ class Modmail(cogs.BaseCog):
 
     # HELPERS - INFO GATHER
 
-    def parse_modmail_thread_name(self: Self, name: str) -> ModmailThreadName | None:
+    def parse_modmail_thread_name(self: Self, name: str) -> ModmailThreadName:
         """Parse a modmail thread name, returning None for noncompliant names.
 
         Args:
             name (str): The thread name to parse
 
         Returns:
-            ModmailThreadName | None: The parsed fields, or None if invalid
+            ModmailThreadName: The parsed fields, or None if invalid
         """
         parts = [part.strip() for part in name.split("|")]
         if len(parts) != 4:
@@ -534,7 +539,7 @@ class Modmail(cogs.BaseCog):
 
     async def get_open_thread(
         self: Self, forum: discord.ForumChannel, user: discord.Member | discord.User
-    ) -> discord.Thread | None:
+    ) -> discord.Thread:
         """Find a user's open thread in the cache, forum, or archived threads.
 
         Args:
@@ -542,7 +547,7 @@ class Modmail(cogs.BaseCog):
             user (discord.Member | discord.User): The user whose thread to find
 
         Returns:
-            discord.Thread | None: The open thread, or None if none exists
+            discord.Thread: The open thread, or None if none exists
         """
         # Assume the existing open thread is actually closed and test it
         existing = self.active_threads.pop(user.id, None)
@@ -643,7 +648,7 @@ class Modmail(cogs.BaseCog):
             self.modmail_guild.id, user.id, featureban.FeatureFlag.MODMAIL
         )
 
-    async def get_modmail_member(self: Self, user_id: int) -> discord.Member | None:
+    async def get_modmail_member(self: Self, user_id: int) -> discord.Member:
         """This gets a discord.Member object through the main bot's cache or API.
         This should be used over get_modmail_user_object unless access to DMs is needed.
 
@@ -651,7 +656,7 @@ class Modmail(cogs.BaseCog):
             user_id (int): The member's Discord ID
 
         Returns:
-            discord.Member | None: The member, or None if they no longer belong to the guild
+            discord.Member: The member, or None if they no longer belong to the guild
 
         Raises:
             ValueError: The guild is unavailable or Discord cannot fetch the member
@@ -674,7 +679,7 @@ class Modmail(cogs.BaseCog):
                 "The member could not be found due to API errors."
             ) from exc
 
-    async def get_modmail_user_object(self: Self, user_id: int) -> discord.User | None:
+    async def get_modmail_user_object(self: Self, user_id: int) -> discord.User:
         """This gets a discord.User object from the modmail bots perspective.
         This is needed to access DMs
 
@@ -682,7 +687,7 @@ class Modmail(cogs.BaseCog):
             user_id (int): The recipient's Discord ID
 
         Returns:
-            discord.User | None: The recipient, or None if the account cannot be found
+            discord.User: The recipient, or None if the account cannot be found
 
         Raises:
             ValueError: Discord cannot fetch the recipient
@@ -700,7 +705,7 @@ class Modmail(cogs.BaseCog):
 
     async def get_paired_dm(
         self: Self, user_id: int, staff_message_id: int
-    ) -> discord.Message | None:
+    ) -> discord.Message:
         """Fetch the modmail bot's DM paired with a staff message.
 
         Args:
@@ -708,7 +713,7 @@ class Modmail(cogs.BaseCog):
             staff_message_id (int): The TS message ID in the bidict
 
         Returns:
-            discord.Message | None: The paired DM, or None if its mapping or recipient is missing
+            discord.Message: The paired DM, or None if its mapping or recipient is missing
         """
         dm_message_id = self.message_id_map.inverse.get(staff_message_id)
 
@@ -723,14 +728,14 @@ class Modmail(cogs.BaseCog):
 
     async def get_staff_copy(
         self: Self, dm_message: discord.Message
-    ) -> discord.Message | None:
+    ) -> discord.Message:
         """Find a DM's staff copy only while its original thread is open.
 
         Args:
             message (discord.Message): The source DM
 
         Returns:
-            discord.Message | None: The staff copy, or None if unavailable or closed
+            discord.Message: The staff copy, or None if unavailable or closed
         """
         staff_message_id = self.message_id_map.get(dm_message.id)
         if staff_message_id is None:
@@ -856,19 +861,30 @@ class Modmail(cogs.BaseCog):
             message (discord.Message): The original DM sent by the user
             thread (discord.Thread): The user's open modmail thread
         """
-        await self.cancel_closure(thread.id, "A user reply was received")
-        if not message.content:
+        if not message.content and not message.attachments:
             return
+
+        # Attempt to close the thread if we recieve any message
+        await self.cancel_closure(thread.id, "A user reply was received")
+
+        files = [
+            await attachment.to_file(
+                filename=f"{attachment.id}_{attachment.filename}",
+            )
+            for attachment in message.attachments
+        ]
 
         staff_message = await thread.send(
             view=await self.build_staff_message_view(
                 message.author,
-                message.content,
+                message.content or "(No content)",
                 message.created_at,
                 message_id=message.id,
-            )
+            ),
         )
         self.message_id_map[message.id] = staff_message.id
+        if files:
+            await thread.send(files=files, reference=staff_message)
 
     async def send_staff_dm(
         self: Self,
@@ -878,6 +894,7 @@ class Modmail(cogs.BaseCog):
         message: str,
         timestamp: datetime,
         anonymous: bool = True,
+        attachment: discord.Attachment = None,
     ) -> discord.Message:
         """Send a copy of the message to the DMs of the target user
 
@@ -888,6 +905,7 @@ class Modmail(cogs.BaseCog):
             message (str): The response text
             timestamp (datetime): The response's original timestamp
             anonymous (bool): Whether to hide the sender's identity in the DM
+            attachment (discord.Attachment): An optional file to reupload
 
         Returns:
             discord.Message: The delivered DM for pairing with the staff copy
@@ -912,7 +930,8 @@ class Modmail(cogs.BaseCog):
             raise ValueError("The DM recipient could not be found.")
 
         channel = await recipient.create_dm()
-        sent_message = await channel.send(embed=dm_embed)
+        files = [await attachment.to_file()] if attachment else []
+        sent_message = await channel.send(embed=dm_embed, files=files)
         return sent_message
 
     async def build_staff_message_view(
@@ -920,9 +939,9 @@ class Modmail(cogs.BaseCog):
         author: discord.Member | discord.User,
         content: str,
         timestamp: datetime,
-        user_id: int | None = None,
+        user_id: int = None,
         anonymous: bool = True,
-        message_id: int | None = None,
+        message_id: int = None,
     ) -> discord.ui.LayoutView:
         """Build the staff conversation message layout and its controls.
 
@@ -930,9 +949,9 @@ class Modmail(cogs.BaseCog):
             author (discord.Member | discord.User): The original sender
             content (str): The message text
             timestamp (datetime): The original message timestamp
-            user_id (int | None): The recipient's ID for staff-authored messages
+            user_id (int): The recipient's ID for staff-authored messages
             anonymous (bool): Whether the staff response hides the sender's identity
-            message_id (int | None): The source message ID for incoming DMs
+            message_id (int): The source message ID for incoming DMs
 
         Returns:
             discord.ui.LayoutView: The Components V2 staff conversation message
@@ -1169,7 +1188,7 @@ class Modmail(cogs.BaseCog):
         Args:
             message (discord.Message): The edited user DM
         """
-        if not message.content:
+        if not message.content and not message.attachments:
             return
 
         staff_message = await self.get_staff_copy(message)
@@ -1180,7 +1199,7 @@ class Modmail(cogs.BaseCog):
             await staff_message.edit(
                 view=await self.build_staff_message_view(
                     message.author,
-                    message.content,
+                    message.content or "(No content)",
                     message.created_at,
                     message_id=message.id,
                 )
