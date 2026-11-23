@@ -7,7 +7,7 @@ dependencies = [
     "apscheduler==3.11.3",
     "bidict==0.24.1",
     "cryptography==50.0.2",
-    "dateparser==1.5.0",
+    "dateparser==1.5.1",
     "discord.py==2.7.1",
     "emoji==2.16.0",
     "expiringdict==1.2.2",
