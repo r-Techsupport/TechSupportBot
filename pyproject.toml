@@ -15,7 +15,7 @@ dependencies = [
     "irc==20.5.0",
     "munch==4.0.0",
     "piccolo[postgres]==1.39.0",
-    "pyyaml==6.0.3",
+    "pyyaml==6.0.4",
     "unidecode==1.4.0",
 ]
 
