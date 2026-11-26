@@ -394,7 +394,7 @@ requires-dist = [
     { name = "expiringdict", specifier = "==1.2.2" },
     { name = "flake8", marker = "extra == 'dev'", specifier = "==7.5.0" },
     { name = "flake8-annotations", marker = "extra == 'dev'", specifier = "==3.3.1" },
-    { name = "flake8-bugbear", marker = "extra == 'dev'", specifier = "==26.10.27" },
+    { name = "flake8-bugbear", marker = "extra == 'dev'", specifier = "==26.11.22" },
     { name = "flake8-docstrings-complete", marker = "extra == 'dev'", specifier = "==1.4.1" },
     { name = "flake8-modern-annotations", marker = "extra == 'dev'", specifier = "==1.6.0" },
     { name = "flake8-variables-names", marker = "extra == 'dev'", specifier = "==0.0.6" },
@@ -503,15 +503,15 @@ wheels = [
 
 [[package]]
 name = "flake8-bugbear"
-version = "26.10.27"
+version = "26.11.22"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "flake8" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7e/42/fb5947d70cf6a370d824ea60a79eacfa71729eef3084c0172c071c44e3bd/flake8_bugbear-26.10.27.tar.gz", hash = "sha256:2dbacb5149856a38ff539f21098ec5f1b70d8ebe0c87fe107dacda28a2d83955", size = 124849, upload-time = "2026-10-27T16:09:02.969Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/26/b4/2d6c97486396d8ab985537ce01de9048cff21b6c3f9d0029d261e1017132/flake8_bugbear-26.11.22.tar.gz", hash = "sha256:df1a764570a3047deb99c6c1309679277815ef48d7c9dada7e04973e2b327a10", size = 148709, upload-time = "2026-11-22T14:25:52.305Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cd/33/269ef2c8b6a8a1c9ba44555796da18820bcc1e862d1efe8cdc5d6bc3f92c/flake8_bugbear-26.10.27-py3-none-any.whl", hash = "sha256:84be4e7533f9e9e4c98c1fdadecddb9b527aaea32509f7779ce2e6ec79ba012d", size = 57117, upload-time = "2026-10-27T16:09:01.528Z" },
+    { url = "https://files.pythonhosted.org/packages/46/ba/da7d4108baed185aecfc0c8cc8e64b2964f92a1897d3310b79c168ac94d3/flake8_bugbear-26.11.22-py3-none-any.whl", hash = "sha256:bc10d62be1dc512dc7825ee34c20492425370b209e47fb09a1dedd29eba49aca", size = 65763, upload-time = "2026-11-22T14:25:51.217Z" },
 ]
 
 [[package]]
